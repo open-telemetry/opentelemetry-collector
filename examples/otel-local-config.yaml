@@ -8,7 +8,6 @@
    receivers:
 
      opencensus:
-       endpoint: 0.0.0.0:55678
 
      # Collect own metrics
      prometheus:
@@ -22,18 +21,11 @@
      jaeger:
        protocols:
          grpc:
-           endpoint: 0.0.0.0:14250
          thrift_binary:
-           endpoint: 0.0.0.0:6832
          thrift_compact:
-           endpoint: 0.0.0.0:6831
          thrift_http:
-           endpoint: 0.0.0.0:14268
-         thrift_tchannel:
-           endpoint: 0.0.0.0:14267
 
      zipkin:
-       endpoint: 0.0.0.0:9411
 
    processors:
      batch:

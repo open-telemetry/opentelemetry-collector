@@ -286,6 +286,120 @@ func TestSimpleConfig(t *testing.T) {
 	}
 }
 
+func TestEscapedEnvVars(t *testing.T) {
+	const receiverExtraMapValue = "some receiver map value"
+	assert.NoError(t, os.Setenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2", receiverExtraMapValue))
+	defer func() {
+		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2"))
+	}()
+
+	factories, err := ExampleComponents()
+	assert.NoError(t, err)
+
+	// Load the config
+	config, err := LoadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
+	if err != nil {
+		t.Fatalf("Unable to load config, %v", err)
+	}
+
+	// Verify extensions.
+	assert.Equal(t, 1, len(config.Extensions))
+	assert.Equal(t,
+		&ExampleExtensionCfg{
+			ExtensionSettings: configmodels.ExtensionSettings{
+				TypeVal: "exampleextension",
+				NameVal: "exampleextension",
+			},
+			ExtraSetting:     "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}",
+			ExtraMapSetting:  map[string]string{"ext-1": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1}", "ext-2": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2}"},
+			ExtraListSetting: []string{"${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1}", "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2}"},
+		},
+		config.Extensions["exampleextension"],
+		"Did not load extension config correctly")
+
+	// Verify service.
+	assert.Equal(t, 1, len(config.Service.Extensions))
+	assert.Equal(t, "exampleextension", config.Service.Extensions[0])
+
+	// Verify receivers
+	assert.Equal(t, 1, len(config.Receivers))
+
+	assert.Equal(t,
+		&ExampleReceiver{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  "examplereceiver",
+				NameVal:  "examplereceiver",
+				Endpoint: "localhost:1234",
+			},
+			ExtraSetting: "$RECEIVERS_EXAMPLERECEIVER_EXTRA",
+			ExtraMapSetting: map[string]string{
+				// $$ -> escaped $
+				"recv.1": "$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_1",
+				// $$$ -> escaped $ + substituted env var
+				"recv.2": "$" + receiverExtraMapValue,
+				// $$$$ -> two escaped $
+				"recv.3": "$$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_3",
+				// escaped $ in the middle
+				"recv.4": "some${RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_4}text",
+				// $$$$ -> two escaped $
+				"recv.5": "${ONE}${TWO}",
+				// trailing escaped $
+				"recv.6": "text$",
+				// escaped $ alone
+				"recv.7": "$",
+			},
+			ExtraListSetting: []string{"$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", "$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"},
+		},
+		config.Receivers["examplereceiver"],
+		"Did not load receiver config correctly")
+
+	// Verify exporters
+	assert.Equal(t, 1, len(config.Exporters))
+
+	assert.Equal(t,
+		&ExampleExporter{
+			ExporterSettings: configmodels.ExporterSettings{
+				NameVal: "exampleexporter",
+				TypeVal: "exampleexporter",
+			},
+			ExtraSetting:     "${EXPORTERS_EXAMPLEEXPORTER_EXTRA}",
+			ExtraMapSetting:  map[string]string{"exp_1": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1}", "exp_2": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2}"},
+			ExtraListSetting: []string{"${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}", "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"},
+		},
+		config.Exporters["exampleexporter"],
+		"Did not load exporter config correctly")
+
+	// Verify Processors
+	assert.Equal(t, 1, len(config.Processors))
+
+	assert.Equal(t,
+		&ExampleProcessorCfg{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: "exampleprocessor",
+				NameVal: "exampleprocessor",
+			},
+			ExtraSetting:     "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA",
+			ExtraMapSetting:  map[string]string{"proc_1": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", "proc_2": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2"},
+			ExtraListSetting: []string{"$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2"},
+		},
+		config.Processors["exampleprocessor"],
+		"Did not load processor config correctly")
+
+	// Verify Pipelines
+	assert.Equal(t, 1, len(config.Service.Pipelines))
+
+	assert.Equal(t,
+		&configmodels.Pipeline{
+			Name:       "traces",
+			InputType:  configmodels.TracesDataType,
+			Receivers:  []string{"examplereceiver"},
+			Processors: []string{"exampleprocessor"},
+			Exporters:  []string{"exampleexporter"},
+		},
+		config.Service.Pipelines["traces"],
+		"Did not load pipeline config correctly")
+}
+
 func TestDecodeConfig_MultiProto(t *testing.T) {
 	factories, err := ExampleComponents()
 	assert.NoError(t, err)

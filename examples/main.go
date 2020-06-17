@@ -33,7 +33,7 @@ import (
 func main() {
 	ocAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
 	if !ok {
-		ocAgentAddr = ocagent.DefaultAgentHost + ":" + string(ocagent.DefaultAgentPort)
+		ocAgentAddr = "0.0.0.0:55678"
 	}
 	oce, err := ocagent.NewExporter(
 		ocagent.WithAddress(ocAgentAddr),

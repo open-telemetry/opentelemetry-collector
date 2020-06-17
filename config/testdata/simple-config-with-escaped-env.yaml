@@ -1,0 +1,62 @@
+receivers:
+  examplereceiver:
+    endpoint: "localhost:1234"
+    extra: "$$RECEIVERS_EXAMPLERECEIVER_EXTRA"
+    extra_map:
+      # $$ -> escaped $
+      recv.1: "$$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_1"
+      # $$$ -> escaped $ + substituted env var
+      recv.2: "$$$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2"
+      # $$$$ -> two escaped $
+      recv.3: "$$$$RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_3"
+      # escaped $ in the middle
+      recv.4: "some$${RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_4}text"
+      # two escaped $
+      recv.5: "$${ONE}$${TWO}"
+      # trailing escaped $
+      recv.6: "text$$"
+      # escaped $ alone
+      recv.7: "$$"
+    extra_list:
+      - "$$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1"
+      - "$$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"
+    
+
+processors:
+  exampleprocessor:
+    extra: "$$PROCESSORS_EXAMPLEPROCESSOR_EXTRA"
+    extra_map:
+      proc_1: "$$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1"
+      proc_2: "$$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2"
+    extra_list: 
+      - "$$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1"
+      - "$$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2"
+
+exporters:
+  exampleexporter:
+    extra: "$${EXPORTERS_EXAMPLEEXPORTER_EXTRA}"
+    extra_map:
+      exp_1: "$${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1}"
+      exp_2: "$${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2}"
+    extra_list: 
+      - "$${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}"
+      - "$${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"
+
+extensions:
+  exampleextension:
+    extra: "$${EXTENSIONS_EXAMPLEEXTENSION_EXTRA}"
+    extra_map:
+      ext-1: "$${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1}"
+      ext-2: "$${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2}"
+    extra_list:
+      - "$${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1}"
+      - "$${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2}"
+
+service:
+  extensions: [exampleextension]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+
