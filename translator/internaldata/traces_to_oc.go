@@ -178,8 +178,9 @@ func spanKindToOCAttribute(kind pdata.SpanKind) *octrace.AttributeValue {
 		ocKind = tracetranslator.OpenTracingSpanKindConsumer
 	case pdata.SpanKindPRODUCER:
 		ocKind = tracetranslator.OpenTracingSpanKindProducer
-	case pdata.SpanKindUNSPECIFIED:
 	case pdata.SpanKindINTERNAL:
+		ocKind = tracetranslator.OpenTracingSpanKindInternal
+	case pdata.SpanKindUNSPECIFIED:
 	case pdata.SpanKindSERVER: // explicitly handled as SpanKind
 	case pdata.SpanKindCLIENT: // explicitly handled as SpanKind
 	default:
