@@ -197,6 +197,28 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
+			name:     "error: valid oc status priority over http",
+			expected: &tracepb.Status{Code: 4},
+			attributes: map[string]string{
+				"error": "DEADLINE_EXCEEDED",
+
+				"http.status_message": "a description",
+				"http.status_code":    "500",
+			},
+		},
+
+		{
+			name:     "error: invalid oc status uses http",
+			expected: &tracepb.Status{Code: 13, Message: "a description"},
+			attributes: map[string]string{
+				"error": "123",
+
+				"http.status_message": "a description",
+				"http.status_code":    "500",
+			},
+		},
+
+		{
 			name:     "error only: string description",
 			expected: &tracepb.Status{Code: 2},
 			attributes: map[string]string{

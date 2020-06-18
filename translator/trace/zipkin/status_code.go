@@ -39,6 +39,8 @@ type statusMapper struct {
 	fromHTTP status
 	// oc status code extracted from "error" tags
 	fromErrorTag status
+	// oc status code 'unknown' when the "error" tag exists but is invalid
+	fromErrorTagUnknown status
 }
 
 // ocStatus returns an OC status from the best possible extraction source.
@@ -53,25 +55,17 @@ func (m *statusMapper) ocStatus() *tracepb.Status {
 		s = m.fromCensus
 	case m.fromStatus.codePtr != nil:
 		s = m.fromStatus
-	default:
+	case m.fromErrorTag.codePtr != nil:
+		s = m.fromErrorTag
+		if m.fromCensus.message != "" {
+			s.message = m.fromCensus.message
+		} else if m.fromStatus.message != "" {
+			s.message = m.fromStatus.message
+		}
+	case m.fromHTTP.codePtr != nil:
 		s = m.fromHTTP
-	}
-
-	// If no codePtr was provided, fallback to the first source with a message
-	// and use the error tag code
-	if s.codePtr == nil {
-		switch {
-		case m.fromCensus.message != "":
-			s = m.fromCensus
-		case m.fromStatus.message != "":
-			s = m.fromStatus
-		default:
-			s = m.fromHTTP
-		}
-
-		if s.codePtr == nil {
-			s.codePtr = m.fromErrorTag.codePtr
-		}
+	default:
+		s = m.fromErrorTagUnknown
 	}
 
 	if s.codePtr != nil {
@@ -122,7 +116,12 @@ func (m *statusMapper) fromAttribute(key string, attrib *tracepb.AttributeValue)
 		m.fromHTTP.message = attrib.GetStringValue().GetValue()
 
 	case tracetranslator.TagError:
-		m.fromErrorTag.codePtr = extractStatusFromError(attrib)
+		code, ok := extractStatusFromError(attrib)
+		if ok {
+			m.fromErrorTag.codePtr = code
+			return true
+		}
+		m.fromErrorTagUnknown.codePtr = code
 	}
 	return false
 }
@@ -154,7 +153,7 @@ func toInt32(i int) (int32, error) {
 	return 0, fmt.Errorf("outside of the int32 range")
 }
 
-func extractStatusFromError(attrib *tracepb.AttributeValue) *int32 {
+func extractStatusFromError(attrib *tracepb.AttributeValue) (*int32, bool) {
 	// The status is stored with the "error" key
 	// See https://github.com/census-instrumentation/opencensus-go/blob/1eb9a13c7dd02141e065a665f6bf5c99a090a16a/exporter/zipkin/zipkin.go#L160-L165
 	var unknown int32 = 2
@@ -163,17 +162,17 @@ func extractStatusFromError(attrib *tracepb.AttributeValue) *int32 {
 	case *tracepb.AttributeValue_StringValue:
 		canonicalCodeStr := val.StringValue.GetValue()
 		if canonicalCodeStr == "" {
-			return nil
+			return nil, true
 		}
 		code, set := canonicalCodesMap[canonicalCodeStr]
 		if set {
-			return &code
+			return &code, true
 		}
 	default:
 		break
 	}
 
-	return &unknown
+	return &unknown, false
 }
 
 var canonicalCodesMap = map[string]int32{
