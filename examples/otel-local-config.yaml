@@ -41,6 +41,7 @@
 
    exporters:
      logging:
+       logLevel: debug
 
    service:
 
