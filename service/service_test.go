@@ -53,7 +53,6 @@ func TestApplication_Start(t *testing.T) {
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-		"--add-instance-id=true",
 	})
 
 	appDone := make(chan struct{})
@@ -67,7 +66,16 @@ func TestApplication_Start(t *testing.T) {
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
 	assert.Equal(t, app.logger, app.GetLogger())
 
-	assertMetricsPrefix(t, testPrefix, metricsPort)
+	// All labels added to all collector metrics by default are listed below.
+	// These labels are hard coded here in order to avoid inadvertent changes:
+	// at this point changing labels should be treated as a breaking changing
+	// and requires a good justification. The reason is that changes to metric
+	// names or labels can break alerting, dashboards, etc that are used to
+	// monitor the Collector in production deployments.
+	madatoryLabels := []string{
+		"service_instance_id",
+	}
+	assertMetrics(t, testPrefix, metricsPort, madatoryLabels)
 
 	close(app.stopTestChan)
 	<-appDone
@@ -127,7 +135,7 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-func assertMetricsPrefix(t *testing.T, prefix string, metricsPort uint16) {
+func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
 	client := &http.Client{}
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
 	require.NoError(t, err)
@@ -154,6 +162,22 @@ func assertMetricsPrefix(t *testing.T, prefix string, metricsPort uint16) {
 			"expected prefix %q but string starts with %q",
 			prefix,
 			s[:len(prefix)+1]+"...")
+
+		for _, mandatoryLabel := range mandatoryLabels {
+			i := strings.Index(s, mandatoryLabel)
+			require.True(
+				t,
+				i > 0,
+				"mandatory label %q not found on metric: %s",
+				mandatoryLabel,
+				s)
+			require.True(
+				t,
+				s[i-1] == '{' || s[i-1] == ',',
+				"mandatory label %q seems incorrect on metric: %s",
+				mandatoryLabel,
+				s)
+		}
 	}
 }
 

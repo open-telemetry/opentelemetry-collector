@@ -71,19 +71,19 @@ func Flags(flags *flag.FlagSet) {
 
 	useLegacyMetricsPtr = flags.Bool(
 		"legacy-metrics",
-		true,
+		false,
 		"Flag to control usage of legacy metrics",
 	)
 
 	useNewMetricsPtr = flags.Bool(
 		"new-metrics",
-		false,
+		true,
 		"Flag to control usage of new metrics",
 	)
 
 	addInstanceIDPtr = flags.Bool(
 		"add-instance-id",
-		false,
+		true,
 		"Flag to control the addition of 'service.instance.id' to the collector metrics.")
 }
 
