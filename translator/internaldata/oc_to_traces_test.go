@@ -180,6 +180,16 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			},
 			otlpKind: otlptrace.Span_CLIENT,
 		},
+		{
+			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
+			ocAttrs: &octrace.Span_Attributes{
+				AttributeMap: map[string]*octrace.AttributeValue{
+					"span.kind": {Value: &octrace.AttributeValue_StringValue{
+						StringValue: &octrace.TruncatableString{Value: "internal"}}},
+				},
+			},
+			otlpKind: otlptrace.Span_INTERNAL,
+		},
 	}
 
 	for _, test := range tests {
