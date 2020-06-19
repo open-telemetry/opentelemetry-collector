@@ -99,6 +99,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
+				performanceResultsSummary,
 				processors,
 			)
 		})
@@ -177,6 +178,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 					test.sender,
 					test.receiver,
 					test.resourceSpec,
+					performanceResultsSummary,
 					testConf,
 				)
 			})
@@ -192,6 +194,7 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			attrSizeByte:   0,
 			expectedMaxCPU: 30,
 			expectedMaxRAM: 100,
+			resultsSummary: performanceResultsSummary,
 		},
 
 		// We generate 10 attributes each with average key length of 100 bytes and
@@ -202,6 +205,7 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			attrSizeByte:   50,
 			expectedMaxCPU: 120,
 			expectedMaxRAM: 100,
+			resultsSummary: performanceResultsSummary,
 		},
 
 		// Approx 10 KiB attributes.
@@ -210,6 +214,7 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			attrSizeByte:   1000,
 			expectedMaxCPU: 100,
 			expectedMaxRAM: 100,
+			resultsSummary: performanceResultsSummary,
 		},
 
 		// Approx 100 KiB attributes.
@@ -218,6 +223,7 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			attrSizeByte:   5000,
 			expectedMaxCPU: 250,
 			expectedMaxRAM: 100,
+			resultsSummary: performanceResultsSummary,
 		},
 	})
 }
@@ -231,24 +237,28 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 			attrSizeByte:   0,
 			expectedMaxCPU: 30,
 			expectedMaxRAM: 2000,
+			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      100,
 			attrSizeByte:   50,
 			expectedMaxCPU: 80,
 			expectedMaxRAM: 2000,
+			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      10,
 			attrSizeByte:   1000,
 			expectedMaxCPU: 80,
 			expectedMaxRAM: 2000,
+			resultsSummary: performanceResultsSummary,
 		},
 		{
 			attrCount:      20,
 			attrSizeByte:   5000,
 			expectedMaxCPU: 120,
 			expectedMaxRAM: 2000,
+			resultsSummary: performanceResultsSummary,
 		},
 	})
 }
@@ -264,24 +274,28 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 				attrSizeByte:   0,
 				expectedMaxCPU: 30,
 				expectedMaxRAM: 2000,
+				resultsSummary: performanceResultsSummary,
 			},
 			{
 				attrCount:      100,
 				attrSizeByte:   50,
 				expectedMaxCPU: 80,
 				expectedMaxRAM: 2000,
+				resultsSummary: performanceResultsSummary,
 			},
 			{
 				attrCount:      10,
 				attrSizeByte:   1000,
 				expectedMaxCPU: 80,
 				expectedMaxRAM: 2000,
+				resultsSummary: performanceResultsSummary,
 			},
 			{
 				attrCount:      20,
 				attrSizeByte:   5000,
 				expectedMaxCPU: 120,
 				expectedMaxRAM: 2000,
+				resultsSummary: performanceResultsSummary,
 			},
 		},
 		testbed.WithConfigFile(path.Join("testdata", "add-attributes-config.yaml")),
