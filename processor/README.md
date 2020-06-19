@@ -213,15 +213,22 @@ regexp:
 
 ## <a name="recommended-processors"></a>Recommended Processors
 
-No processors are enabled by default, however multiple processors are recommended to
-be enabled. These are:
+No processors are enabled by default, however multiple processors are
+recommended to be enabled depending on the data source. Processors must be
+enabled for every data source and not all processors support all data sources.
+In addition, it is important to note that the order of processors matters. The
+order in each section below is the best practice. Refer to the individual
+processor documentation for more information.
 
-1. memory_limiter
+### Traces
+
+1. [memory_limiter](memorylimiter/README.md)
 2. *any sampling processors*
-3. batch
+3. [batch](batchprocessor/README.md)
 4. *any other processors*
-5. queued_retry
+5. [queued_retry](queuedprocessor/README.md)
 
-In addition, it is important to note that the order of processors matters. The order
-above is the best practice. Refer to the individual processor documentation below
-for more information.
+### Metrics
+
+1. [memory_limiter](memorylimiter/README.md)
+2. [batch](batchprocessor/README.md)
