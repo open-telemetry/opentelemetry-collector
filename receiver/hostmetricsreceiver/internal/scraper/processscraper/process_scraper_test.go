@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestScrapeMetrics(t *testing.T) {
@@ -39,32 +40,43 @@ func TestScrapeMetrics(t *testing.T) {
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	metrics, err := scraper.ScrapeMetrics(context.Background())
+	resourceMetrics, err := scraper.ScrapeMetrics(context.Background())
 
 	// may receive some partial errors as a result of attempting to:
 	// a) read native system processes on Windows (e.g. Registry process)
 	// b) read info on processes that have just terminated
 	//
-	// so validate that we have less errors than processes & some valid data returned
+	// so validate that we have less errors than resources & some valid data is returned
 	if err != nil {
 		errs := strings.Split(err.Error(), ";")
 
 		noErrors := len(errs)
-		noProcessDataPoints := metrics.At(1).Int64DataPoints().Len()
-		require.Lessf(t, noErrors, noProcessDataPoints, "Failed to scrape metrics - more errors returned than metrics: %v", err)
+		noResources := resourceMetrics.Len()
+		require.Lessf(t, noErrors, noResources, "Failed to scrape metrics - more errors returned than metrics: %v", err)
 	}
 
-	// expect 3 metrics
-	assert.Equal(t, 3, metrics.Len())
-
-	assertCPUUsageMetricValid(t, metrics.At(0))
-	assertMemoryUsageMetricValid(t, metrics.At(1))
-	assertDiskBytesMetricValid(t, metrics.At(2))
+	require.Greater(t, resourceMetrics.Len(), 1)
+	assertResourceAttributes(t, resourceMetrics)
+	assertCPUUsageMetricValid(t, resourceMetrics)
+	assertMemoryUsageMetricValid(t, resourceMetrics)
+	assertDiskBytesMetricValid(t, resourceMetrics)
 }
 
-func assertCPUUsageMetricValid(t *testing.T, cpuUsageMetric pdata.Metric) {
+func assertResourceAttributes(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		attr := resourceMetrics.At(0).Resource().Attributes()
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessID)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessUsername)
+	}
+}
+
+func assertCPUUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	cpuUsageMetric := getMetric(t, metricCPUUsageDescriptor, resourceMetrics)
 	internal.AssertDescriptorEqual(t, metricCPUUsageDescriptor, cpuUsageMetric.MetricDescriptor())
-	assertDoubleMetricHasProcessLabels(t, cpuUsageMetric)
 	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 0, stateLabelName, userStateLabelValue)
 	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 1, stateLabelName, systemStateLabelValue)
 	if runtime.GOOS == "linux" {
@@ -72,32 +84,37 @@ func assertCPUUsageMetricValid(t *testing.T, cpuUsageMetric pdata.Metric) {
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, memoryUsageMetric pdata.Metric) {
+func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	memoryUsageMetric := getMetric(t, metricMemoryUsageDescriptor, resourceMetrics)
 	internal.AssertDescriptorEqual(t, metricMemoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
-	assertInt64MetricHasProcessLabels(t, memoryUsageMetric)
 }
 
-func assertDiskBytesMetricValid(t *testing.T, diskBytesMetric pdata.Metric) {
+func assertDiskBytesMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	diskBytesMetric := getMetric(t, metricDiskBytesDescriptor, resourceMetrics)
 	internal.AssertDescriptorEqual(t, metricDiskBytesDescriptor, diskBytesMetric.MetricDescriptor())
-	assertInt64MetricHasProcessLabels(t, diskBytesMetric)
 	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
-func assertInt64MetricHasProcessLabels(t *testing.T, metric pdata.Metric) {
-	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 1)
-	internal.AssertInt64MetricLabelNotEmpty(t, metric, pidLabelName)
-	internal.AssertInt64MetricLabelNotEmpty(t, metric, processLabelName)
-	internal.AssertInt64MetricLabelNotEmpty(t, metric, usernameLabelName)
-	internal.AssertInt64MetricLabelNotEmpty(t, metric, cmdlineLabelName)
+func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.ResourceMetricsSlice) pdata.Metric {
+	for i := 0; i < rms.Len(); i++ {
+		metrics := getMetricSlice(t, rms.At(i))
+		for j := 0; j < metrics.Len(); j++ {
+			metric := metrics.At(j)
+			if metric.MetricDescriptor().Name() == descriptor.Name() {
+				return metric
+			}
+		}
+	}
+
+	require.Failf(t, "no metric with name %s was returned", descriptor.Name())
+	return pdata.NewMetric()
 }
 
-func assertDoubleMetricHasProcessLabels(t *testing.T, metric pdata.Metric) {
-	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 1)
-	internal.AssertDoubleMetricLabelNotEmpty(t, metric, pidLabelName)
-	internal.AssertDoubleMetricLabelNotEmpty(t, metric, processLabelName)
-	internal.AssertDoubleMetricLabelNotEmpty(t, metric, usernameLabelName)
-	internal.AssertDoubleMetricLabelNotEmpty(t, metric, cmdlineLabelName)
+func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
+	ilms := rm.InstrumentationLibraryMetrics()
+	require.Equal(t, 1, ilms.Len())
+	return ilms.At(0).Metrics()
 }
 
 func TestScrapeMetrics_NewError(t *testing.T) {
@@ -165,6 +182,11 @@ func (p *processHandleMock) Cmdline() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (p *processHandleMock) CmdlineSlice() ([]string, error) {
+	args := p.MethodCalled("CmdlineSlice")
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func (p *processHandleMock) Times() (*cpu.TimesStat, error) {
 	args := p.MethodCalled("Times")
 	return args.Get(0).(*cpu.TimesStat), args.Error(1)
@@ -184,6 +206,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock := &processHandleMock{}
 	handleMock.On("Username").Return("username", nil)
 	handleMock.On("Cmdline").Return("cmdline", nil)
+	handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, nil)
 	handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
@@ -268,24 +291,14 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				return &processHandlesMock{handles: handles}, nil
 			}
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			resourceMetrics, err := scraper.ScrapeMetrics(context.Background())
 			require.NoError(t, err)
 
-			if len(test.expectedNames) > 0 {
-				assert.Greater(t, metrics.Len(), 0)
-			} else {
-				assert.Equal(t, 0, metrics.Len())
-			}
-
-			for i := 0; i < metrics.Len(); i++ {
-				switch metricType := metrics.At(i).MetricDescriptor().Type(); metricType {
-				case pdata.MetricTypeCounterInt64, pdata.MetricTypeGaugeInt64:
-					internal.AssertInt64MetricHasLabelValues(t, metrics.At(i), processLabelName, test.expectedNames)
-				case pdata.MetricTypeCounterDouble, pdata.MetricTypeGaugeDouble:
-					internal.AssertDoubleMetricHasLabelValues(t, metrics.At(i), processLabelName, test.expectedNames)
-				default:
-					assert.Failf(t, "Unexpected metric type returned", "Metric Type: %v", metricType)
-				}
+			assert.Equal(t, len(test.expectedNames), resourceMetrics.Len())
+			for i, expectedName := range test.expectedNames {
+				rm := resourceMetrics.At(i)
+				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
+				assert.Equal(t, expectedName, name.StringVal())
 			}
 		})
 	}
@@ -294,7 +307,9 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	type testCase struct {
 		name            string
+		osFilter        string
 		nameError       error
+		exeError        error
 		usernameError   error
 		cmdlineError    error
 		timesError      error
@@ -306,62 +321,78 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:          "Name Error",
+			osFilter:      "windows",
 			nameError:     errors.New("err1"),
 			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
-			name:          "Username Error",
-			usernameError: errors.New("err2"),
-			expectedError: `error reading process username for process "test" (pid 1): err2`,
+			name:          "Exe Error",
+			exeError:      errors.New("err1"),
+			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
 			name:          "Cmdline Error",
-			cmdlineError:  errors.New("err3"),
-			expectedError: `error reading process cmdline for process "test" (pid 1): err3`,
+			cmdlineError:  errors.New("err2"),
+			expectedError: `error reading command for process "test" (pid 1): err2`,
+		},
+		{
+			name:          "Username Error",
+			usernameError: errors.New("err3"),
+			expectedError: `error reading username for process "test" (pid 1): err3`,
 		},
 		{
 			name:          "Times Error",
 			timesError:    errors.New("err4"),
-			expectedError: `error reading process cpu times for process "test" (pid 1): err4`,
+			expectedError: `error reading cpu times for process "test" (pid 1): err4`,
 		},
 		{
 			name:            "Memory Info Error",
 			memoryInfoError: errors.New("err5"),
-			expectedError:   `error reading process memory info for process "test" (pid 1): err5`,
+			expectedError:   `error reading memory info for process "test" (pid 1): err5`,
 		},
 		{
 			name:            "IO Counters Error",
 			ioCountersError: errors.New("err6"),
-			expectedError:   `error reading process disk usage for process "test" (pid 1): err6`,
+			expectedError:   `error reading disk usage for process "test" (pid 1): err6`,
 		},
 		{
 			name:            "Multiple Errors",
-			usernameError:   errors.New("err2"),
-			cmdlineError:    errors.New("err3"),
+			cmdlineError:    errors.New("err2"),
+			usernameError:   errors.New("err3"),
 			timesError:      errors.New("err4"),
 			memoryInfoError: errors.New("err5"),
 			ioCountersError: errors.New("err6"),
-			expectedError: `[[error reading process username for process "test" (pid 1): err2; ` +
-				`error reading process cmdline for process "test" (pid 1): err3]; ` +
-				`error reading process cpu times for process "test" (pid 1): err4; ` +
-				`error reading process memory info for process "test" (pid 1): err5; ` +
-				`error reading process disk usage for process "test" (pid 1): err6]`,
+			expectedError: `[[error reading command for process "test" (pid 1): err2; ` +
+				`error reading username for process "test" (pid 1): err3]; ` +
+				`error reading cpu times for process "test" (pid 1): err4; ` +
+				`error reading memory info for process "test" (pid 1): err5; ` +
+				`error reading disk usage for process "test" (pid 1): err6]`,
 		},
 	}
 
-	scraper, err := newProcessScraper(&Config{})
-	require.NoError(t, err, "Failed to create process scraper: %v", err)
-	err = scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			if test.osFilter == runtime.GOOS {
+				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
+			}
+
+			scraper, err := newProcessScraper(&Config{})
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.Initialize(context.Background())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			username := "username"
+			if test.usernameError != nil {
+				username = ""
+			}
+
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", test.nameError)
-			handleMock.On("Exe").Return("test", test.nameError)
-			handleMock.On("Username").Return("username", test.usernameError)
+			handleMock.On("Exe").Return("test", test.exeError)
+			handleMock.On("Username").Return(username, test.usernameError)
 			handleMock.On("Cmdline").Return("cmdline", test.cmdlineError)
+			handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, test.cmdlineError)
 			handleMock.On("Times").Return(&cpu.TimesStat{}, test.timesError)
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
@@ -370,14 +401,17 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			resourceMetrics, err := scraper.ScrapeMetrics(context.Background())
 			assert.EqualError(t, err, test.expectedError)
 
-			expectedLen := 0
-			if test.nameError == nil {
-				expectedLen = getExpectedLengthOfReturnedMetrics(test.timesError, test.memoryInfoError, test.ioCountersError)
+			if test.nameError != nil || test.exeError != nil {
+				assert.Equal(t, 0, resourceMetrics.Len())
+			} else {
+				require.Equal(t, 1, resourceMetrics.Len())
+				metrics := getMetricSlice(t, resourceMetrics.At(0))
+				expectedLen := getExpectedLengthOfReturnedMetrics(test.timesError, test.memoryInfoError, test.ioCountersError)
+				assert.Equal(t, expectedLen, metrics.Len())
 			}
-			assert.Equal(t, expectedLen, metrics.Len())
 		})
 	}
 }

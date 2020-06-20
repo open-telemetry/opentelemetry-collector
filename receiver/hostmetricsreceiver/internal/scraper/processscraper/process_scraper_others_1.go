@@ -12,19 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
+// +build !windows
 
 package processscraper
 
-import (
-	"github.com/shirou/gopsutil/cpu"
+func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+	name, err := proc.Name()
+	if err != nil {
+		return nil, err
+	}
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
+	exe, err := proc.Exe()
+	if err != nil {
+		return nil, err
+	}
 
-const cpuStatesLen = 2
+	executable := &executableMetadata{name: name, path: exe}
+	return executable, nil
+}
 
-func appendCPUStateTimes(ddps pdata.DoubleDataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, metadata processMetadata, cpuTime *cpu.TimesStat) {
-	initializeProcessDoubleDataPoint(ddps.At(startIdx+0), startTime, metadata, cpuTime.User, stateLabelName, userStateLabelValue)
-	initializeProcessDoubleDataPoint(ddps.At(startIdx+1), startTime, metadata, cpuTime.System, stateLabelName, systemStateLabelValue)
+func getProcessCommand(proc processHandle) (*commandMetadata, error) {
+	cmdline, err := proc.CmdlineSlice()
+	if err != nil {
+		return nil, err
+	}
+
+	var cmd string
+	if len(cmdline) > 0 {
+		cmd = cmdline[0]
+	}
+
+	command := &commandMetadata{command: cmd, commandLineSlice: cmdline}
+	return command, nil
 }

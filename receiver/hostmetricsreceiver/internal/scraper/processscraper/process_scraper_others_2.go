@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build linux
+// +build !linux,!windows
 
 package processscraper
 
@@ -22,10 +22,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const cpuStatesLen = 3
+const cpuStatesLen = 2
 
 func appendCPUStateTimes(ddps pdata.DoubleDataPointSlice, startTime pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
 	initializeCPUUsageDataPoint(ddps.At(0), startTime, cpuTime.User, userStateLabelValue)
 	initializeCPUUsageDataPoint(ddps.At(1), startTime, cpuTime.System, systemStateLabelValue)
-	initializeCPUUsageDataPoint(ddps.At(2), startTime, cpuTime.Iowait, waitStateLabelValue)
 }

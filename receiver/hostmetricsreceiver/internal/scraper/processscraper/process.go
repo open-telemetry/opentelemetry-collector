@@ -15,11 +15,81 @@
 package processscraper
 
 import (
+	"strings"
+
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/process"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// These interfaces & struct provide a wrapper around []*process.Process
+// processMetadata stores process related metadata along
+// with the process handle, and provides a function to
+// initialize a pdata.Resource with the metadata
+
+type processMetadata struct {
+	pid        int32
+	executable *executableMetadata
+	command    *commandMetadata
+	username   string
+	handle     processHandle
+}
+
+type executableMetadata struct {
+	name string
+	path string
+}
+
+type commandMetadata struct {
+	command          string
+	commandLine      string
+	commandLineSlice []string
+}
+
+func (m *processMetadata) initializeResource(resource pdata.Resource) {
+	resource.InitEmpty()
+	attr := resource.Attributes()
+	attr.InitEmptyWithCapacity(6)
+	m.insertPid(attr)
+	m.insertExecutable(attr)
+	m.insertCommand(attr)
+	m.insertUsername(attr)
+}
+
+func (m *processMetadata) insertPid(attr pdata.AttributeMap) {
+	attr.InsertInt(conventions.AttributeProcessID, int64(m.pid))
+}
+
+func (m *processMetadata) insertExecutable(attr pdata.AttributeMap) {
+	attr.InsertString(conventions.AttributeProcessExecutableName, m.executable.name)
+	attr.InsertString(conventions.AttributeProcessExecutablePath, m.executable.path)
+}
+
+func (m *processMetadata) insertCommand(attr pdata.AttributeMap) {
+	if m.command == nil {
+		return
+	}
+
+	attr.InsertString(conventions.AttributeProcessCommand, m.command.command)
+	if m.command.commandLineSlice != nil {
+		// TODO insert slice here once this is supported by the data model
+		// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
+		attr.InsertString(conventions.AttributeProcessCommandLine, strings.Join(m.command.commandLineSlice, " "))
+	} else {
+		attr.InsertString(conventions.AttributeProcessCommandLine, m.command.commandLine)
+	}
+}
+
+func (m *processMetadata) insertUsername(attr pdata.AttributeMap) {
+	if m.username == "" {
+		return
+	}
+
+	attr.InsertString(conventions.AttributeProcessUsername, m.username)
+}
+
+// processHandles provides a wrapper around []*process.Process
 // to support testing
 
 type processHandles interface {
@@ -33,6 +103,7 @@ type processHandle interface {
 	Exe() (string, error)
 	Username() (string, error)
 	Cmdline() (string, error)
+	CmdlineSlice() ([]string, error)
 	Times() (*cpu.TimesStat, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
