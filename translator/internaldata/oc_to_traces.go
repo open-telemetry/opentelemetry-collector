@@ -251,6 +251,8 @@ func ocSpanKindToInternal(ocKind octrace.Span_SpanKind, ocAttrs *octrace.Span_At
 						otlpKind = pdata.SpanKindCONSUMER
 					case tracetranslator.OpenTracingSpanKindProducer:
 						otlpKind = pdata.SpanKindPRODUCER
+					case tracetranslator.OpenTracingSpanKindInternal:
+						otlpKind = pdata.SpanKindINTERNAL
 					default:
 						return pdata.SpanKindUNSPECIFIED
 					}

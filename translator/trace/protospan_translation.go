@@ -48,4 +48,5 @@ const (
 	OpenTracingSpanKindServer      OpenTracingSpanKind = "server"
 	OpenTracingSpanKindConsumer    OpenTracingSpanKind = "consumer"
 	OpenTracingSpanKindProducer    OpenTracingSpanKind = "producer"
+	OpenTracingSpanKindInternal    OpenTracingSpanKind = "internal"
 )
