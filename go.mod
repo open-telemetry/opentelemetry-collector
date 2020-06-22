@@ -48,9 +48,11 @@ require (
 	github.com/tcnksm/ghr v0.13.0
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	go.opencensus.io v0.22.3
+	go.uber.org/atomic v1.5.1
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b
+	golang.org/x/text v0.3.2
 	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20200408120641-fbb3ad325eb7

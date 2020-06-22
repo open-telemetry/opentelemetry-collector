@@ -16,11 +16,12 @@ package testbed
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"sync"
-	"sync/atomic"
+	"time"
+
+	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -42,6 +43,7 @@ type MockBackend struct {
 	// Start/stop flags
 	isStarted bool
 	stopOnce  sync.Once
+	startedAt time.Time
 
 	// Recording fields.
 	isRecording        bool
@@ -87,6 +89,7 @@ func (mb *MockBackend) Start() error {
 	}
 
 	mb.isStarted = true
+	mb.startedAt = time.Now()
 	return nil
 }
 
@@ -115,12 +118,13 @@ func (mb *MockBackend) EnableRecording() {
 }
 
 func (mb *MockBackend) GetStats() string {
-	return fmt.Sprintf("Received:%5d items", mb.DataItemsReceived())
+	received := mb.DataItemsReceived()
+	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received)/time.Since(mb.startedAt).Seconds()))
 }
 
 // DataItemsReceived returns total number of received spans and metrics.
 func (mb *MockBackend) DataItemsReceived() uint64 {
-	return atomic.LoadUint64(&mb.tc.spansReceived) + atomic.LoadUint64(&mb.mc.metricsReceived)
+	return mb.tc.spansReceived.Load() + mb.mc.metricsReceived.Load()
 }
 
 // ClearReceivedItems clears the list of received traces and metrics. Note: counters
@@ -169,12 +173,12 @@ func (mb *MockBackend) ConsumeMetricOld(md consumerdata.MetricsData) {
 }
 
 type MockTraceConsumer struct {
-	spansReceived uint64
+	spansReceived atomic.Uint64
 	backend       *MockBackend
 }
 
 func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	atomic.AddUint64(&tc.spansReceived, uint64(td.SpanCount()))
+	tc.spansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
@@ -210,7 +214,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces)
 }
 
 func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	atomic.AddUint64(&tc.spansReceived, uint64(len(td.Spans)))
+	tc.spansReceived.Add(uint64(len(td.Spans)))
 
 	for _, span := range td.Spans {
 		var spanSeqnum int64
@@ -240,13 +244,13 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 }
 
 type MockMetricConsumer struct {
-	metricsReceived uint64
+	metricsReceived atomic.Uint64
 	backend         *MockBackend
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	_, dataPoints := pdatautil.MetricAndDataPointCount(md)
-	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
+	mc.metricsReceived.Add(uint64(dataPoints))
 	mc.backend.ConsumeMetric(md)
 	return nil
 }
@@ -259,7 +263,7 @@ func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consume
 		}
 	}
 
-	atomic.AddUint64(&mc.metricsReceived, uint64(dataPoints))
+	mc.metricsReceived.Add(uint64(dataPoints))
 
 	mc.backend.ConsumeMetricOld(md)
 

@@ -26,11 +26,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/message"
 
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
-var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+var (
+	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+	printer                                              = message.NewPrinter(message.MatchLanguage("en"))
+)
 
 // createConfigYaml creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
@@ -123,7 +127,7 @@ func Scenario10kItemsPerSecond(
 	require.NoError(t, err)
 
 	options := testbed.LoadOptions{
-		DataItemsPerSecond: 10000,
+		DataItemsPerSecond: 10_000,
 		ItemsPerBatch:      100,
 	}
 	agentProc := &testbed.ChildProcess{}

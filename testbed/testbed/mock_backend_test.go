@@ -3,7 +3,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-////     http://www.apache.org/licenses/LICENSE-2.0
+//   http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,12 +52,12 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 			defer mb.Stop()
 
-			options := LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			options := LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 			dataProvider := NewPerfTestDataProvider(options)
 			lg, err := NewLoadGenerator(dataProvider, test.sender)
 			require.NoError(t, err, "Cannot start load generator")
 
-			assert.EqualValues(t, 0, lg.dataItemsSent)
+			assert.EqualValues(t, 0, lg.dataItemsSent.Load())
 
 			// Generate at 1000 SPS
 			lg.Start(LoadOptions{DataItemsPerSecond: 1000})

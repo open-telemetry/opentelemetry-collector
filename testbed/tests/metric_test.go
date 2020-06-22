@@ -24,7 +24,7 @@ import (
 )
 
 func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
-	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
@@ -40,7 +40,7 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 200, ExpectedMaxRAM: 200})
 	tc.StartAgent()
 
-	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10000})
+	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 10_000})
 
 	tc.Sleep(tc.Duration)
 }
