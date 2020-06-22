@@ -19,13 +19,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +53,6 @@ func TestApplication_Start(t *testing.T) {
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-		"--add-instance-id=true",
 	})
 
 	appDone := make(chan struct{})
@@ -67,7 +66,16 @@ func TestApplication_Start(t *testing.T) {
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
 	assert.Equal(t, app.logger, app.GetLogger())
 
-	assertMetricsPrefix(t, testPrefix, metricsPort)
+	// All labels added to all collector metrics by default are listed below.
+	// These labels are hard coded here in order to avoid inadvertent changes:
+	// at this point changing labels should be treated as a breaking changing
+	// and requires a good justification. The reason is that changes to metric
+	// names or labels can break alerting, dashboards, etc that are used to
+	// monitor the Collector in production deployments.
+	mandatoryLabels := []string{
+		"service_instance_id",
+	}
+	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
 	close(app.stopTestChan)
 	<-appDone
@@ -127,7 +135,7 @@ func isAppAvailable(t *testing.T, healthCheckEndPoint string) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-func assertMetricsPrefix(t *testing.T, prefix string, metricsPort uint16) {
+func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
 	client := &http.Client{}
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
 	require.NoError(t, err)
@@ -135,25 +143,30 @@ func assertMetricsPrefix(t *testing.T, prefix string, metricsPort uint16) {
 	defer resp.Body.Close()
 	reader := bufio.NewReader(resp.Body)
 
-	for {
-		s, err := reader.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
+	var parser expfmt.TextParser
+	parsed, err := parser.TextToMetricFamilies(reader)
+	require.NoError(t, err)
 
-		require.NoError(t, err)
-		if len(s) == 0 || s[0] == '#' {
-			// Skip this line since it is not a metric.
-			continue
-		}
-
+	for metricName, metricFamily := range parsed {
 		// require is used here so test fails with a single message.
 		require.True(
 			t,
-			strings.HasPrefix(s, prefix),
+			strings.HasPrefix(metricName, prefix),
 			"expected prefix %q but string starts with %q",
 			prefix,
-			s[:len(prefix)+1]+"...")
+			metricName[:len(prefix)+1]+"...")
+
+		for _, metric := range metricFamily.Metric {
+			var labelNames []string
+			for _, labelPair := range metric.Label {
+				labelNames = append(labelNames, *labelPair.Name)
+			}
+
+			for _, mandatoryLabel := range mandatoryLabels {
+				// require is used here so test fails with a single message.
+				require.Contains(t, labelNames, mandatoryLabel, "mandatory label %q not present", mandatoryLabel)
+			}
+		}
 	}
 }
 
