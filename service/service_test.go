@@ -19,13 +19,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,10 +72,10 @@ func TestApplication_Start(t *testing.T) {
 	// and requires a good justification. The reason is that changes to metric
 	// names or labels can break alerting, dashboards, etc that are used to
 	// monitor the Collector in production deployments.
-	madatoryLabels := []string{
+	mandatoryLabels := []string{
 		"service_instance_id",
 	}
-	assertMetrics(t, testPrefix, metricsPort, madatoryLabels)
+	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
 	close(app.stopTestChan)
 	<-appDone
@@ -143,40 +143,29 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 	defer resp.Body.Close()
 	reader := bufio.NewReader(resp.Body)
 
-	for {
-		s, err := reader.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
+	var parser expfmt.TextParser
+	parsed, err := parser.TextToMetricFamilies(reader)
+	require.NoError(t, err)
 
-		require.NoError(t, err)
-		if len(s) == 0 || s[0] == '#' {
-			// Skip this line since it is not a metric.
-			continue
-		}
-
+	for metricName, metricFamily := range parsed {
 		// require is used here so test fails with a single message.
 		require.True(
 			t,
-			strings.HasPrefix(s, prefix),
+			strings.HasPrefix(metricName, prefix),
 			"expected prefix %q but string starts with %q",
 			prefix,
-			s[:len(prefix)+1]+"...")
+			metricName[:len(prefix)+1]+"...")
 
-		for _, mandatoryLabel := range mandatoryLabels {
-			i := strings.Index(s, mandatoryLabel)
-			require.True(
-				t,
-				i > 0,
-				"mandatory label %q not found on metric: %s",
-				mandatoryLabel,
-				s)
-			require.True(
-				t,
-				s[i-1] == '{' || s[i-1] == ',',
-				"mandatory label %q seems incorrect on metric: %s",
-				mandatoryLabel,
-				s)
+		for _, metric := range metricFamily.Metric {
+			var labelNames []string
+			for _, labelPair := range metric.Label {
+				labelNames = append(labelNames, *labelPair.Name)
+			}
+
+			for _, mandatoryLabel := range mandatoryLabels {
+				// require is used here so test fails with a single message.
+				require.Contains(t, labelNames, mandatoryLabel, "mandatory label %q not present", mandatoryLabel)
+			}
 		}
 	}
 }
