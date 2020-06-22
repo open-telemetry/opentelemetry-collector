@@ -39,8 +39,9 @@ service:
   pipelines:
     traces:
       receivers: [opencensus]
-      exporters: [logging, zipkin, jaeger]
       processors: [batch, queued_retry]
+      exporters: [logging, zipkin, jaeger]
     metrics:
       receivers: [opencensus]
+      processors: [batch]
       exporters: [logging,prometheus]

@@ -46,6 +46,7 @@
 
        metrics:
          receivers: [opencensus, prometheus]
+         processors: [batch]
          exporters: [logging]
 
      extensions: [health_check, pprof, zpages]
