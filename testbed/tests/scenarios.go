@@ -34,15 +34,14 @@ var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceR
 
 // createConfigYaml creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
+// Map of processor names to their configs. Config is in YAML and must be
+// indented by 2 spaces. Processors will be placed between batch and queue for traces
+// pipeline. For metrics pipeline these will be sole processors.
 func createConfigYaml(
 	t *testing.T,
-	sender testbed.DataSender, // Sender to send test data.
-	receiver testbed.DataReceiver, // Receiver to receive test data.
-	resultDir string, // Directory to write config file to.
-
-	// Map of processor names to their configs. Config is in YAML and must be
-	// indented by 2 spaces. Processors will be placed between batch and queue for traces
-	// pipeline. For metrics pipeline these will be sole processors.
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	resultDir string,
 	processors map[string]string,
 ) string {
 
@@ -117,6 +116,7 @@ func Scenario10kItemsPerSecond(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
 	processors map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -140,7 +140,7 @@ func Scenario10kItemsPerSecond(
 		receiver,
 		agentProc,
 		&testbed.PerfTestValidator{},
-		performanceResultsSummary,
+		resultsSummary,
 	)
 	defer tc.Stop()
 
@@ -168,6 +168,7 @@ type TestCase struct {
 	attrSizeByte   int
 	expectedMaxCPU uint32
 	expectedMaxRAM uint32
+	resultsSummary testbed.TestResultsSummary
 }
 
 func genRandByteString(len int) string {
@@ -194,7 +195,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 				&testbed.ChildProcess{},
 				&testbed.PerfTestValidator{},
-				performanceResultsSummary,
+				test.resultsSummary,
 				opts...,
 			)
 			defer tc.Stop()
@@ -231,8 +232,14 @@ type processorConfig struct {
 	ExpectedMinFinalRAM uint32
 }
 
-func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver,
-	resourceSpec testbed.ResourceSpec, configuration processorConfig) {
+func ScenarioTestTraceNoBackend10kSPS(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
+	configuration processorConfig,
+) {
 
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
@@ -252,7 +259,7 @@ func ScenarioTestTraceNoBackend10kSPS(t *testing.T, sender testbed.DataSender, r
 		receiver,
 		agentProc,
 		&testbed.PerfTestValidator{},
-		performanceResultsSummary,
+		resultsSummary,
 	)
 
 	defer tc.Stop()
