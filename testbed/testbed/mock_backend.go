@@ -119,7 +119,7 @@ func (mb *MockBackend) EnableRecording() {
 
 func (mb *MockBackend) GetStats() string {
 	received := mb.DataItemsReceived()
-	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received) / time.Since(mb.startedAt).Seconds()))
+	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received)/time.Since(mb.startedAt).Seconds()))
 }
 
 // DataItemsReceived returns total number of received spans and metrics.

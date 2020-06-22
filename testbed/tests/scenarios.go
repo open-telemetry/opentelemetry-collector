@@ -33,7 +33,7 @@ import (
 
 var (
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
-	printer = message.NewPrinter(message.MatchLanguage("en"))
+	printer                                              = message.NewPrinter(message.MatchLanguage("en"))
 )
 
 // createConfigYaml creates a collector config file that corresponds to the
