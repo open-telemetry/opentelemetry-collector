@@ -82,7 +82,6 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 
 	ze := &zipkinExporter{
 		defaultServiceName:   serviceName,
-		exportResourceLabels: exportResourceLabels,
 		url:                  zCfg.URL,
 		client:               &http.Client{Timeout: defaultTimeout},
 	}
@@ -101,11 +100,6 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 
 func (ze *zipkinExporter) PushTraceData(_ context.Context, td consumerdata.TraceData) (int, error) {
 	tbatch := make([]*zipkinmodel.SpanModel, 0, len(td.Spans))
-
-	var resource *resourcepb.Resource
-	if ze.exportResourceLabels {
-		resource = td.Resource
-	}
 
 	for _, span := range td.Spans {
 		zs, err := zipkin.OCSpanProtoToZipkin(td.Node, resource, span, ze.defaultServiceName)
