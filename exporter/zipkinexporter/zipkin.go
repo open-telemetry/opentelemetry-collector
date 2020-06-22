@@ -42,7 +42,6 @@ import (
 type zipkinExporter struct {
 	defaultServiceName string
 
-	exportResourceLabels bool
 	url                  string
 	client               *http.Client
 	serializer           zipkinreporter.SpanSerializer
@@ -79,11 +78,6 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 	serviceName := defaultServiceName
 	if zCfg.DefaultServiceName != "" {
 		serviceName = zCfg.DefaultServiceName
-	}
-
-	exportResourceLabels := DefaultExportResourceLabels
-	if zCfg.ExportResourceLabels != nil {
-		exportResourceLabels = *zCfg.ExportResourceLabels
 	}
 
 	ze := &zipkinExporter{
