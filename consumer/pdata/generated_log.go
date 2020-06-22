@@ -136,6 +136,14 @@ func (es ResourceLogsSlice) Resize(newLen int) {
 	(*es.orig) = oldOrig
 }
 
+// Append will increase the length of the ResourceLogsSlice by one and set the
+// given ResourceLogs at that new position.  The original ResourceLogs
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es ResourceLogsSlice) Append(e *ResourceLogs) {
+	(*es.orig) = append((*es.orig), *e.orig)
+}
+
 // ResourceLogs is a collection of logs from a Resource.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -317,6 +325,14 @@ func (es LogSlice) Resize(newLen int) {
 		oldOrig = append(oldOrig, &extraOrigs[i])
 	}
 	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the LogSlice by one and set the
+// given LogRecord at that new position.  The original LogRecord
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es LogSlice) Append(e *LogRecord) {
+	(*es.orig) = append((*es.orig), *e.orig)
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.

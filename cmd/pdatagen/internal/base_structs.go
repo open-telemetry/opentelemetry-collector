@@ -132,6 +132,14 @@ func (es ${structName}) Resize(newLen int) {
 		oldOrig = append(oldOrig, &extraOrigs[i])
 	}
 	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the ${structName} by one and set the
+// given ${elementName} at that new position.  The original ${elementName}
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es ${structName}) Append(e *${elementName}) {
+	(*es.orig) = append((*es.orig), *e.orig)
 }`
 
 const sliceTestTemplate = `func Test${structName}(t *testing.T) {
@@ -233,6 +241,23 @@ func Test${structName}_Resize(t *testing.T) {
 	// Test Resize 0 elements.
 	es.Resize(0)
 	assert.EqualValues(t, New${structName}(), es)
+}
+
+func Test${structName}_Append(t *testing.T) {
+	es := generateTest${structName}()
+	emptyVal := New${elementName}()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= New${elementName}()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
 }`
 
 const sliceGenerateTest = `func generateTest${structName}() ${structName} {
