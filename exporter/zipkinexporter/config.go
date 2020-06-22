@@ -27,10 +27,5 @@ type Config struct {
 	URL    string `mapstructure:"url"`
 	Format string `mapstructure:"format"`
 
-	// Whether resource labels from TraceData are to be included in Span. True by default
-	// This is a temporary flag and will be removed soon,
-	// see https://go.opentelemetry.io/collector/issues/595
-	ExportResourceLabels *bool `mapstructure:"export_resource_labels"`
-
 	DefaultServiceName string `mapstructure:"default_service_name"`
 }
