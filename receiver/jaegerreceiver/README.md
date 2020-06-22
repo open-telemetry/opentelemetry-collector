@@ -1,43 +1,45 @@
 # Jaeger Receiver
 
-This receiver supports [Jaeger](https://www.jaegertracing.io)
-formatted traces.
+Receives trace data in [Jaeger](https://www.jaegertracing.io/) format.
 
-It supports the Jaeger Collector and Agent protocols:
-- gRPC
-- Thrift HTTP
-- Thrift TChannel
-- Thrift Compact
-- Thrift Binary
+By default, the Jaeger receiver will not serve any protocol. A protocol must be
+named under the `protocols` object for the jaeger receiver to start. The
+below protocols are supported and each supports an optional `endpoint`
+object configuration parameter.
 
-By default, the Jaeger receiver will not serve any protocol. A protocol must be named
-for the jaeger receiver to start.  The following demonstrates how to start the Jaeger
-receiver with only gRPC enabled on the default port.
+- `grpc` (default `endpoint` = 0.0.0.0:14250)
+- `thrift_binary` (default `endpoint` = 0.0.0.0:6832)
+- `thrift_compact` (default `endpoint` = 0.0.0.0:6831)
+- `thrift_http` (default `endpoint` = 0.0.0.0:14268)
+
+Examples:
+
 ```yaml
 receivers:
   jaeger:
     protocols:
       grpc:
+  jaeger/withendpoint:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:14260
 ```
 
-It is possible to configure the protocols on different ports, refer to
-[config.yaml](./testdata/config.yaml) for detailed config
-examples. The full list of settings exposed for this receiver are
-documented [here](./config.go).
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Communicating over TLS
 The Jaeger receiver supports communication using Transport Layer Security (TLS), but
-only using the gRPC protocol. It can be configured by specifying a
-`tls_settings` object in the gRPC receiver configuration.
+only using the `grpc` protocol. It can be configured by specifying a
+`tls_credentials` object in the `grpc` object receiver configuration.
 ```yaml
 receivers:
   jaeger:
     protocols:
       grpc:
-        tls_settings:
+        tls_credentials:
           key_file: /key.pem # path to private key
           cert_file: /cert.pem # path to certificate
-        endpoint: "0.0.0.0:9876"
 ```
 
 ## Remote Sampling
@@ -75,5 +77,5 @@ receivers:
       strategy_file: "/etc/strategy.json"
 ```
 
-Note: gRPC must be enabled for this to work as Jaeger serves its remote
-sampling strategies over gRPC.
+Note: the `grpc` protocol must be enabled for this to work as Jaeger serves its
+remote sampling strategies over gRPC.
