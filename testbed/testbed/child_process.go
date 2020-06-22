@@ -25,12 +25,12 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/process"
+	"go.uber.org/atomic"
 )
 
 // ResourceSpec is a resource consumption specification.
@@ -95,10 +95,10 @@ type ChildProcess struct {
 	lastProcessTimes *cpu.TimesStat
 
 	// Current RAM RSS in MiBs
-	ramMiBCur uint32
+	ramMiBCur atomic.Uint32
 
 	// Current CPU percentage times 1000 (we use scaling since we have to use int for atomic operations).
-	cpuPercentX1000Cur uint32
+	cpuPercentX1000Cur atomic.Uint32
 
 	// Maximum CPU seen
 	cpuPercentMax float64
@@ -287,8 +287,8 @@ func (cp *ChildProcess) Stop() (stopped bool, err error) {
 		close(finished)
 
 		// Set resource consumption stats to 0
-		atomic.StoreUint32(&cp.ramMiBCur, 0)
-		atomic.StoreUint32(&cp.cpuPercentX1000Cur, 0)
+		cp.ramMiBCur.Store(0)
+		cp.cpuPercentX1000Cur.Store(0)
 
 		log.Printf("%s process stopped, exit code=%d", cp.name, cp.cmd.ProcessState.ExitCode())
 
@@ -369,7 +369,7 @@ func (cp *ChildProcess) fetchRAMUsage() {
 	}
 
 	// Store current usage.
-	atomic.StoreUint32(&cp.ramMiBCur, ramMiBCur)
+	cp.ramMiBCur.Store(ramMiBCur)
 }
 
 func (cp *ChildProcess) fetchCPUUsage() {
@@ -398,19 +398,19 @@ func (cp *ChildProcess) fetchCPUUsage() {
 	curCPUPercentageX1000 := uint32(cpuPercent * 1000)
 
 	// Store current usage.
-	atomic.StoreUint32(&cp.cpuPercentX1000Cur, curCPUPercentageX1000)
+	cp.cpuPercentX1000Cur.Store(curCPUPercentageX1000)
 }
 
 func (cp *ChildProcess) checkAllowedResourceUsage() error {
 	// Check if current CPU usage exceeds expected.
 	var errMsg string
-	if cp.resourceSpec.ExpectedMaxCPU != 0 && cp.cpuPercentX1000Cur/1000 > cp.resourceSpec.ExpectedMaxCPU {
+	if cp.resourceSpec.ExpectedMaxCPU != 0 && cp.cpuPercentX1000Cur.Load()/1000 > cp.resourceSpec.ExpectedMaxCPU {
 		errMsg = fmt.Sprintf("CPU consumption is %.1f%%, max expected is %d%%",
-			float64(cp.cpuPercentX1000Cur)/1000.0, cp.resourceSpec.ExpectedMaxCPU)
+			float64(cp.cpuPercentX1000Cur.Load())/1000.0, cp.resourceSpec.ExpectedMaxCPU)
 	}
 
 	// Check if current RAM usage exceeds expected.
-	if cp.resourceSpec.ExpectedMaxRAM != 0 && cp.ramMiBCur > cp.resourceSpec.ExpectedMaxRAM {
+	if cp.resourceSpec.ExpectedMaxRAM != 0 && cp.ramMiBCur.Load() > cp.resourceSpec.ExpectedMaxRAM {
 		errMsg = fmt.Sprintf("RAM consumption is %d MiB, max expected is %d MiB",
 			cp.ramMiBCur, cp.resourceSpec.ExpectedMaxRAM)
 	}
@@ -431,8 +431,8 @@ func (cp *ChildProcess) GetResourceConsumption() string {
 		return ""
 	}
 
-	curRSSMib := atomic.LoadUint32(&cp.ramMiBCur)
-	curCPUPercentageX1000 := atomic.LoadUint32(&cp.cpuPercentX1000Cur)
+	curRSSMib := cp.ramMiBCur.Load()
+	curCPUPercentageX1000 := cp.cpuPercentX1000Cur.Load()
 
 	return fmt.Sprintf("%s RAM (RES):%4d MiB, CPU:%4.1f%%", cp.name,
 		curRSSMib, float64(curCPUPercentageX1000)/1000.0)

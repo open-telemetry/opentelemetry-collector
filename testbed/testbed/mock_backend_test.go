@@ -52,7 +52,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 			defer mb.Stop()
 
-			options := LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			options := LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 			dataProvider := NewPerfTestDataProvider(options)
 			lg, err := NewLoadGenerator(dataProvider, test.sender)
 			require.NoError(t, err, "Cannot start load generator")

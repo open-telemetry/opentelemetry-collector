@@ -18,13 +18,16 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.uber.org/atomic"
+	"golang.org/x/text/message"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
+
+var printer = message.NewPrinter(message.MatchLanguage("en"))
 
 // LoadGenerator is a simple load generator.
 type LoadGenerator struct {
@@ -33,10 +36,10 @@ type LoadGenerator struct {
 	dataProvider DataProvider
 
 	// Number of batches of data items sent.
-	batchesSent uint64
+	batchesSent atomic.Uint64
 
 	// Number of data items (spans or metric data points) sent.
-	dataItemsSent uint64
+	dataItemsSent atomic.Uint64
 
 	stopOnce   sync.Once
 	stopWait   sync.WaitGroup
@@ -111,11 +114,11 @@ func (lg *LoadGenerator) Stop() {
 
 // GetStats returns the stats as a printable string.
 func (lg *LoadGenerator) GetStats() string {
-	return fmt.Sprintf("Sent:%5d items", atomic.LoadUint64(&lg.dataItemsSent))
+	return printer.Sprintf("Sent:%10d items", lg.DataItemsSent())
 }
 
 func (lg *LoadGenerator) DataItemsSent() uint64 {
-	return atomic.LoadUint64(&lg.dataItemsSent)
+	return lg.dataItemsSent.Load()
 }
 
 // IncDataItemsSent is used when a test bypasses the LoadGenerator and sends data
@@ -125,7 +128,7 @@ func (lg *LoadGenerator) DataItemsSent() uint64 {
 // reports to use their own counter and load generator and other sending sources
 // to contribute to this counter. This could be done as a future improvement.
 func (lg *LoadGenerator) IncDataItemsSent() {
-	atomic.AddUint64(&lg.dataItemsSent, 1)
+	lg.dataItemsSent.Inc()
 }
 
 func (lg *LoadGenerator) generate() {

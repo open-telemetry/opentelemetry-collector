@@ -347,7 +347,7 @@ func (tc *TestCase) logStats() {
 }
 
 func (tc *TestCase) logStatsOnce() {
-	log.Printf("%s, %s, %s",
+	log.Printf("%s | %s | %s",
 		tc.agentProc.GetResourceConsumption(),
 		tc.LoadGenerator.GetStats(),
 		tc.MockBackend.GetStats())
