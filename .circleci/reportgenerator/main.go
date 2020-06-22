@@ -15,21 +15,20 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
+	"github.com/google/go-github/github"
+	"github.com/joshdk/go-junit"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"golang.org/x/oauth2"
 )
 
 const (
-	githubAPIBaseURL = "https://api.github.com"
 
 	// Keys of required environment variables
 	projectUsernameKey = "CIRCLE_PROJECT_USERNAME"
@@ -37,86 +36,84 @@ const (
 	circleBuildURLKey  = "CIRCLE_BUILD_URL"
 	jobNameKey         = "CIRCLE_JOB"
 	githubAPITokenKey  = "GITHUB_TOKEN"
+
+	ciFailureGithubLabel = "ci_failure"
 )
 
 func main() {
-	cfg := zap.Config{
-		Encoding:         "json",
-		Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey:  "message",
-			LevelKey:    "level",
-			EncodeLevel: zapcore.CapitalLevelEncoder,
-		},
-	}
-	logger, _ := cfg.Build()
-
-	rg := &reportGenerator{
-		logger: logger,
-		httpClient: http.Client{
-			Timeout: 5 * time.Second,
-		},
+	pathToArtifacts := ""
+	if len(os.Args) > 1 {
+		pathToArtifacts = os.Args[1]
 	}
 
-	if err := rg.getRequiredEnv(); err != nil {
-		logger.Error("Required environment variable not set", zap.Error(err))
-		os.Exit(1)
-	}
-
-	rg.setupDefaultHTTPHeaders()
+	rg := newReportGenerator(pathToArtifacts)
 
 	// Look for existing open GitHub Issue that resulted from previous
 	// failures of this job.
-	if err := rg.getExistingIssue(); err != nil {
-		logger.Error("Failed to get exiting GitHub Issue", zap.Error(err))
+	rg.logger.Info("Searching GitHub for existing Issues")
+	existingIssue := rg.getExistingIssue()
+
+	if existingIssue == nil {
+		//	// If none exists, create a new GitHub Issue for the failure.
+		rg.logger.Info("No existing Issues found, creating a new one.")
+		createdIssue := rg.createIssue()
+		rg.logger.Info("New GitHub Issue created", zap.String("html_url", *createdIssue.HTMLURL))
+	} else {
+		//	// Otherwise, add a comment to the existing Issue.
+		rg.logger.Info(
+			"Updating GitHub Issue with latest failure",
+			zap.String("html_url", *existingIssue.HTMLURL),
+		)
+		createdIssueComment := rg.commentOnIssue(existingIssue)
+		rg.logger.Info("GitHub Issue updated", zap.String("html_url", *createdIssueComment.HTMLURL))
+	}
+}
+
+func newReportGenerator(pathToArtifacts string) *reportGenerator {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		fmt.Printf("Failed to set up logger: %v", err)
 		os.Exit(1)
 	}
 
-	rg.templateHelper = func(param string) string {
-		switch param {
-		case "jobName":
-			return "`" + rg.envVariables[jobNameKey] + "`"
-		case "linkToBuild":
-			return os.Getenv(circleBuildURLKey)
-		default:
-			return ""
-		}
+	rg := &reportGenerator{
+		ctx:    context.Background(),
+		logger: logger,
 	}
 
-	if rg.issue == nil {
-		// If none exists, create a new GitHub Issue for the failure.
-		logger.Info("No existing Issues found, creating a new one.")
-		if err := rg.createIssue(); err != nil {
-			logger.Error("Failed to create GitHub Issue", zap.Error(err))
-			os.Exit(1)
-		}
-	} else {
-		// Otherwise, add a comment to the existing Issue.
-		logger.Info("Updating GitHub Issue with latest failure")
-		if err := rg.commentOnIssue(); err != nil {
-			logger.Error("Failed to comment on GitHub Issue", zap.Error(err))
-			os.Exit(1)
-		}
+	rg.getRequiredEnv()
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: rg.envVariables[githubAPITokenKey]})
+	tc := oauth2.NewClient(rg.ctx, ts)
+	rg.client = github.NewClient(tc)
+
+	rg.logger.Info("Ingesting test reports", zap.String("path", pathToArtifacts))
+	suites, err := junit.IngestFile(pathToArtifacts)
+	if err != nil {
+		rg.logger.Warn(
+			"Failed to ingest JUnit xml, omitting test results from report",
+			zap.Error(err),
+		)
 	}
 
+	rg.testSuites = suites
+
+	return rg
 }
 
 type reportGenerator struct {
-	logger         *zap.Logger
-	httpClient     http.Client
-	envVariables   map[string]string
-	headers        map[string]string
-	issue          *githubIssue
-	templateHelper func(string) string
+	ctx          context.Context
+	logger       *zap.Logger
+	client       *github.Client
+	envVariables map[string]string
+	testSuites   []junit.Suite
 }
 
 // getRequiredEnv loads required environment variables for the main method.
 // Some of the environment variables are built-in in CircleCI, whereas others
 // need to be configured. See https://circleci.com/docs/2.0/env-vars/#built-in-environment-variables
 // for a list of built-in environment variables.
-func (rg *reportGenerator) getRequiredEnv() error {
+func (rg *reportGenerator) getRequiredEnv() {
 	env := map[string]string{}
 
 	env[projectUsernameKey] = os.Getenv(projectUsernameKey)
@@ -126,22 +123,14 @@ func (rg *reportGenerator) getRequiredEnv() error {
 
 	for k, v := range env {
 		if v == "" {
-			return fmt.Errorf("%s environment variable not set", k)
+			rg.logger.Fatal(
+				"Required environment variable not set",
+				zap.String("env_var", k),
+			)
 		}
 	}
+
 	rg.envVariables = env
-
-	return nil
-}
-
-func (rg *reportGenerator) setupDefaultHTTPHeaders() {
-	headers := map[string]string{}
-
-	headers["Authorization"] = "token " + rg.envVariables[githubAPITokenKey]
-	headers["Content-Type"] = "application/json"
-	headers["Accept"] = "application/vnd.github.v3+json"
-
-	rg.headers = headers
 }
 
 const (
@@ -149,102 +138,64 @@ const (
 	issueBodyTemplate  = `
 Auto-generated report for ${jobName} job build.
 
-Link to failed build: ${linkToBuild}.
+Link to failed build: ${linkToBuild}
 
-Note: Information about any subsequent build failures that happen while
+${failedTests}
+
+**Note**: Information about any subsequent build failures that happen while
 this issue is open, will be added as comments with more information to this issue.
 `
 	issueCommentTemplate = `
 Link to latest failed build: ${linkToBuild}
+
+${failedTests}
 `
 )
 
+func (rg reportGenerator) templateHelper(param string) string {
+	switch param {
+	case "jobName":
+		return "`" + rg.envVariables[jobNameKey] + "`"
+	case "linkToBuild":
+		return os.Getenv(circleBuildURLKey)
+	case "failedTests":
+		return rg.getFailedTests()
+	default:
+		return ""
+	}
+}
+
 // getExistingIssues gathers an existing GitHub Issue related to previous failures
 // of the same job.
-func (rg *reportGenerator) getExistingIssue() error {
-	url := githubAPIBaseURL + "/search/issues"
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to prepare GET request: %v", err)
-	}
-
-	for k, v := range rg.headers {
-		req.Header.Set(k, v)
-	}
-
-	q := req.URL.Query()
-	q.Add("q",
-		fmt.Sprintf(
-			"%s in:title is:open repo:%s/%s",
-			rg.getIssueTitle(),
-			rg.envVariables[projectUsernameKey],
-			rg.envVariables[projectRepoNameKey],
-		),
+func (rg *reportGenerator) getExistingIssue() *github.Issue {
+	issues, response, err := rg.client.Issues.ListByRepo(
+		rg.ctx,
+		rg.envVariables[projectUsernameKey],
+		rg.envVariables[projectRepoNameKey],
+		&github.IssueListByRepoOptions{
+			State:  "open",
+			Labels: []string{ciFailureGithubLabel},
+		},
 	)
-	req.URL.RawQuery = q.Encode()
-
-	rg.logger.Info("Searching GitHub for existing Issues")
-	resp, err := rg.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to get exiting GitHub issues: %v", err)
+		rg.logger.Fatal("Failed to search GitHub Issues", zap.Error(err))
 	}
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read exiting GitHub issues: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		rg.logger.Error(
-			"unexpected response from GitHub",
-			zap.String("status_code", string(resp.StatusCode)),
+	if response.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(response.Body)
+		rg.logger.Fatal(
+			"Unexpected response from GitHub",
+			zap.String("status_code", string(response.StatusCode)),
 			zap.String("response", string(body)),
-			zap.String("url", url),
+			zap.String("url", response.Request.URL.String()),
 		)
-		return fmt.Errorf("unexpected response from GitHub")
 	}
 
-	var respUnmarshalled githubIssueSearchResult
-	if err = json.Unmarshal(body, &respUnmarshalled); err != nil {
-		return fmt.Errorf("failed to unmarshal response: %v", err)
-	}
-
-	switch respUnmarshalled.Count {
-	case 0:
-		// Nothing to do if there aren't any existing issues for the job.
-	case 1:
-		rg.issue = &respUnmarshalled.Issues[0]
-	default:
-		// If there are multiple issues matching the query, pick the one
-		// where there's an exact match in the Issue title. Unfortunately,
-		// GitHub API does not do an exact match.
-		rg.logger.Info(
-			"Received multiple issues. Looking for exact match",
-			zap.Int("num_issues", respUnmarshalled.Count),
-		)
-
-		requiredTitle := rg.getIssueTitle()
-		for _, issue := range respUnmarshalled.Issues {
-			if issue.Title == requiredTitle {
-				rg.issue = &issue
-				rg.logger.Info("Exact match found for Issue",
-					zap.String(
-						"html_url",
-						issue.HTMLURL,
-					),
-				)
-				return nil
-			}
+	requiredTitle := rg.getIssueTitle()
+	for _, issue := range issues {
+		if *issue.Title == requiredTitle {
+			return issue
 		}
-
-		rg.logger.Info("No exact match found for Issue",
-			zap.String(
-				"required_title",
-				requiredTitle,
-			),
-		)
 	}
 
 	return nil
@@ -253,142 +204,89 @@ func (rg *reportGenerator) getExistingIssue() error {
 // commentOnIssue adds a new comment on an existing GitHub issue with
 // information about the latest failure. This method is expected to be
 // called only if there's an existing open Issue for the current job.
-func (rg *reportGenerator) commentOnIssue() error {
-	url := fmt.Sprintf(
-		"%s/repos/%s/%s/issues/%d/comments",
-		githubAPIBaseURL,
+func (rg *reportGenerator) commentOnIssue(issue *github.Issue) *github.IssueComment {
+	body := os.Expand(issueCommentTemplate, rg.templateHelper)
+
+	issueComment, response, err := rg.client.Issues.CreateComment(
+		rg.ctx,
 		rg.envVariables[projectUsernameKey],
 		rg.envVariables[projectRepoNameKey],
-		rg.issue.Number,
+		*issue.Number,
+		&github.IssueComment{
+			Body: &body,
+		},
 	)
-
-	// TODO: Extend comments to list out failed tests
-	j, err := json.Marshal(map[string]interface{}{
-		"body": os.Expand(issueCommentTemplate, rg.templateHelper),
-	})
 	if err != nil {
-		return fmt.Errorf("failed to marshal Issue comment: %v", err)
+		rg.logger.Fatal("Failed to search GitHub Issues", zap.Error(err))
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(j))
-	if err != nil {
-		return fmt.Errorf("failed to prepare POST request: %v", err)
-	}
-
-	for k, v := range rg.headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := rg.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to comment on GitHub issue: %v", err)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to comment on GitHub Issue: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		rg.logger.Error(
-			"unexpected response from GitHub",
-			zap.String("status_code", string(resp.StatusCode)),
+	if response.StatusCode != http.StatusCreated {
+		body, _ := ioutil.ReadAll(response.Body)
+		rg.logger.Fatal(
+			"Unexpected response from GitHub",
+			zap.String("status_code", string(response.StatusCode)),
 			zap.String("response", string(body)),
-			zap.String("url", url),
+			zap.String("url", response.Request.URL.String()),
 		)
-		return fmt.Errorf("unexpected response from GitHub")
 	}
 
-	rg.logger.Info(
-		"GitHub Issue updated",
-		zap.String(
-			"html_link",
-			rg.issue.HTMLURL,
-		),
-	)
-	return nil
+	return issueComment
 }
 
 // createIssue creates a new GitHub Issue corresponding to a build failure.
-func (rg *reportGenerator) createIssue() error {
-	url := fmt.Sprintf(
-		"%s/repos/%s/%s/issues",
-		githubAPIBaseURL,
+func (rg *reportGenerator) createIssue() *github.Issue {
+	title := rg.getIssueTitle()
+	body := os.Expand(issueBodyTemplate, rg.templateHelper)
+
+	issue, response, err := rg.client.Issues.Create(
+		rg.ctx,
 		rg.envVariables[projectUsernameKey],
 		rg.envVariables[projectRepoNameKey],
-	)
-
-	// TODO: Add code owners to assignees and ensure permission to set labels exist.
-	j, err := json.Marshal(map[string]interface{}{
-		"title":  rg.getIssueTitle(),
-		"body":   os.Expand(issueBodyTemplate, rg.templateHelper),
-		"labels": []string{"ci_failure"},
-	})
+		&github.IssueRequest{
+			Title:  &title,
+			Body:   &body,
+			Labels: &[]string{ciFailureGithubLabel},
+			// TODO: Set Assignees
+		})
 	if err != nil {
-		return fmt.Errorf("failed to marshal Issue body: %v", err)
+		rg.logger.Fatal("Failed to create GitHub Issue", zap.Error(err))
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(j))
-	if err != nil {
-		return fmt.Errorf("failed to prepare POST request: %v", err)
-	}
-
-	for k, v := range rg.headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := rg.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to create GitHub Issue: %v", err)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to load created GitHub Issue: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		rg.logger.Error(
-			"unexpected response from GitHub",
-			zap.String("status_code", string(resp.StatusCode)),
+	if response.StatusCode != http.StatusCreated {
+		body, _ := ioutil.ReadAll(response.Body)
+		rg.logger.Fatal(
+			"Unexpected response from GitHub",
+			zap.String("status_code", string(response.StatusCode)),
 			zap.String("response", string(body)),
-			zap.String("url", url),
+			zap.String("url", response.Request.URL.String()),
 		)
-		return fmt.Errorf("unexpected response from GitHub")
 	}
 
-	var githubIssueUnmarshalled githubIssue
-	if err = json.Unmarshal(body, &githubIssueUnmarshalled); err != nil {
-		return fmt.Errorf("failed to unmarshal response: %v", err)
-	}
-	rg.issue = &githubIssueUnmarshalled
-
-	rg.logger.Info(
-		"Created GitHub Issue",
-		zap.String(
-			"html_link",
-			rg.issue.HTMLURL,
-		),
-	)
-	return nil
+	return issue
 }
 
 func (rg reportGenerator) getIssueTitle() string {
 	return strings.Replace(issueTitleTemplate, "${jobName}", rg.envVariables[jobNameKey], 1)
 }
 
-type githubIssueSearchResult struct {
-	Count  int           `json:"total_count"`
-	Issues []githubIssue `json:"items"`
-}
+// getFailedTests returns information about failed tests if available, otherwise
+// an empty string.
+func (rg reportGenerator) getFailedTests() string {
+	if len(rg.testSuites) == 0 {
+		return ""
+	}
 
-// githubIssue maps to an Issue object returned by the API.
-type githubIssue struct {
-	Number  int    `json:"number"`
-	Title   string `json:"title"`
-	HTMLURL string `json:"html_url"`
+	var sb strings.Builder
+	sb.WriteString("#### Test Failures\n")
+
+	for _, s := range rg.testSuites {
+		for _, t := range s.Tests {
+			if t.Status != junit.StatusFailed {
+				continue
+			}
+			sb.WriteString("-  " + t.Name + "\n")
+		}
+	}
+
+	return sb.String()
 }
