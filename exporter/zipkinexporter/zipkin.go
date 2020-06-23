@@ -42,9 +42,9 @@ import (
 type zipkinExporter struct {
 	defaultServiceName string
 
-	url                  string
-	client               *http.Client
-	serializer           zipkinreporter.SpanSerializer
+	url        string
+	client     *http.Client
+	serializer zipkinreporter.SpanSerializer
 }
 
 // Default values for Zipkin endpoint.
@@ -79,9 +79,9 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 	}
 
 	ze := &zipkinExporter{
-		defaultServiceName:   serviceName,
-		url:                  zCfg.URL,
-		client:               &http.Client{Timeout: defaultTimeout},
+		defaultServiceName: serviceName,
+		url:                zCfg.URL,
+		client:             &http.Client{Timeout: defaultTimeout},
 	}
 
 	switch zCfg.Format {
