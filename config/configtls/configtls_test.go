@@ -124,9 +124,11 @@ func TestOptionsToConfig(t *testing.T) {
 }
 
 func TestTLSSetting_LoadgRPCTLSServerCredentialsError(t *testing.T) {
-	tlsSetting := TLSSetting{
-		CertFile: "doesnt/exist",
-		KeyFile:  "doesnt/exist",
+	tlsSetting := TLSServerSetting{
+		TLSSetting: TLSSetting{
+			CertFile: "doesnt/exist",
+			KeyFile:  "doesnt/exist",
+		},
 	}
 	_, err := tlsSetting.LoadgRPCTLSServerCredentials()
 	assert.Error(t, err)

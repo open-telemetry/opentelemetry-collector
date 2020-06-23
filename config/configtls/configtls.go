@@ -63,6 +63,15 @@ type TLSClientSetting struct {
 	ServerName string `mapstructure:"server_name_override"`
 }
 
+// TLSServerSetting contains TLS configurations that are specific to server
+// connections in addition to the common configurations. This should be used by
+// components configuring TLS server connections.
+type TLSServerSetting struct {
+	TLSSetting `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// These are config options specific to server connections.
+}
+
 // LoadTLSConfig loads TLS certificates and returns a tls.Config.
 // This will set the RootCAs and Certificates of a tls.Config.
 func (c TLSSetting) LoadTLSConfig() (*tls.Config, error) {
@@ -124,7 +133,7 @@ func (c TLSClientSetting) LoadgRPCTLSClientCredentials() (grpc.DialOption, error
 	return grpc.WithTransportCredentials(creds), nil
 }
 
-func (c TLSSetting) LoadgRPCTLSServerCredentials() (grpc.ServerOption, error) {
+func (c TLSServerSetting) LoadgRPCTLSServerCredentials() (grpc.ServerOption, error) {
 	tlsConf, err := c.LoadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)

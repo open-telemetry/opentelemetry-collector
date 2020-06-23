@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -103,7 +104,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		TypeVal:   typeStr,
 		NameVal:   typeStr,
-		Protocols: map[string]*SecureSetting{},
+		Protocols: map[string]*configprotocol.ProtocolServerSettings{},
 	}
 }
 
@@ -247,7 +248,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 }
 
 // returns a default value for a protocol name.  this really just boils down to the endpoint
-func defaultsForProtocol(proto string) (*SecureSetting, error) {
+func defaultsForProtocol(proto string) (*configprotocol.ProtocolServerSettings, error) {
 	var defaultEndpoint string
 
 	switch proto {
@@ -263,9 +264,7 @@ func defaultsForProtocol(proto string) (*SecureSetting, error) {
 		return nil, fmt.Errorf("unknown Jaeger protocol %s", proto)
 	}
 
-	return &SecureSetting{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: defaultEndpoint,
-		},
+	return &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultEndpoint,
 	}, nil
 }

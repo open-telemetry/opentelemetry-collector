@@ -1,7 +1,6 @@
 receivers:
   prometheus:
   prometheus/customname:
-    endpoint: "1.2.3.4:456"
     buffer_period: 234
     buffer_count: 45
     use_start_time_metric: true
