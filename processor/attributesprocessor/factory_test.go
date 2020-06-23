@@ -166,7 +166,7 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "key", RegexPattern: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: INSERT},
 			},
-			errorString:"error creating \"attributes\" processor. Action \"insert\" does not use the \"pattern\" field. This must not be specified for 0-th action of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Action \"insert\" does not use the \"pattern\" field. This must not be specified for 0-th action of processor \"attributes/error\"",
 		},
 		{
 			name: "missing rule for extract",
