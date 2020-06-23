@@ -44,6 +44,7 @@
 
 ---
 
+### Test Bot
 
 ### OpenTelemetry Collector
 
