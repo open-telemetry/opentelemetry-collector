@@ -42,10 +42,9 @@ import (
 type zipkinExporter struct {
 	defaultServiceName string
 
-	exportResourceLabels bool
-	url                  string
-	client               *http.Client
-	serializer           zipkinreporter.SpanSerializer
+	url        string
+	client     *http.Client
+	serializer zipkinreporter.SpanSerializer
 }
 
 // Default values for Zipkin endpoint.
@@ -53,8 +52,6 @@ const (
 	defaultTimeout = time.Second * 5
 
 	defaultServiceName string = "<missing service name>"
-
-	DefaultExportResourceLabels = true
 )
 
 // NewTraceExporter creates an zipkin trace exporter.
@@ -81,16 +78,10 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 		serviceName = zCfg.DefaultServiceName
 	}
 
-	exportResourceLabels := DefaultExportResourceLabels
-	if zCfg.ExportResourceLabels != nil {
-		exportResourceLabels = *zCfg.ExportResourceLabels
-	}
-
 	ze := &zipkinExporter{
-		defaultServiceName:   serviceName,
-		exportResourceLabels: exportResourceLabels,
-		url:                  zCfg.URL,
-		client:               &http.Client{Timeout: defaultTimeout},
+		defaultServiceName: serviceName,
+		url:                zCfg.URL,
+		client:             &http.Client{Timeout: defaultTimeout},
 	}
 
 	switch zCfg.Format {
@@ -108,10 +99,7 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 func (ze *zipkinExporter) PushTraceData(_ context.Context, td consumerdata.TraceData) (int, error) {
 	tbatch := make([]*zipkinmodel.SpanModel, 0, len(td.Spans))
 
-	var resource *resourcepb.Resource
-	if ze.exportResourceLabels {
-		resource = td.Resource
-	}
+	var resource *resourcepb.Resource = td.Resource
 
 	for _, span := range td.Spans {
 		zs, err := zipkin.OCSpanProtoToZipkin(td.Node, resource, span, ze.defaultServiceName)

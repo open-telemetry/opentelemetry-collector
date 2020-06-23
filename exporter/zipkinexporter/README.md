@@ -9,9 +9,6 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- (temporary flag) `export_resource_labels` (default = true): Whether Resource labels are going to be merged with span attributes
-Note: this flag was added to aid the migration to new (fixed and symmetric) behavior and is going to be 
-removed soon. See https://github.com/open-telemetry/opentelemetry-collector/issues/595 for more details
 - `defaultservicename` (no default): What to name services missing this information
 
 Example:
