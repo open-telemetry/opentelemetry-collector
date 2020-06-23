@@ -60,7 +60,7 @@ commands:
             equal: [master, << pipeline.git.branch >>]
           steps:
             - run:
-                name: GitHub Issue generator
+                name: Generate GitHub Issue
                 command: go run .circleci/reportgenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 

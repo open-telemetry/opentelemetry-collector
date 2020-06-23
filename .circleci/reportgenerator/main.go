@@ -36,8 +36,6 @@ const (
 	circleBuildURLKey  = "CIRCLE_BUILD_URL"
 	jobNameKey         = "CIRCLE_JOB"
 	githubAPITokenKey  = "GITHUB_TOKEN"
-
-	ciFailureGithubLabel = "ci_failure"
 )
 
 func main() {
@@ -87,16 +85,18 @@ func newReportGenerator(pathToArtifacts string) *reportGenerator {
 	tc := oauth2.NewClient(rg.ctx, ts)
 	rg.client = github.NewClient(tc)
 
-	rg.logger.Info("Ingesting test reports", zap.String("path", pathToArtifacts))
-	suites, err := junit.IngestFile(pathToArtifacts)
-	if err != nil {
-		rg.logger.Warn(
-			"Failed to ingest JUnit xml, omitting test results from report",
-			zap.Error(err),
-		)
-	}
+	if pathToArtifacts != "" {
+		rg.logger.Info("Ingesting test reports", zap.String("path", pathToArtifacts))
+		suites, err := junit.IngestFile(pathToArtifacts)
+		if err != nil {
+			rg.logger.Warn(
+				"Failed to ingest JUnit xml, omitting test results from report",
+				zap.Error(err),
+			)
+		}
 
-	rg.testSuites = suites
+		rg.testSuites = suites
+	}
 
 	return rg
 }
@@ -173,8 +173,7 @@ func (rg *reportGenerator) getExistingIssue() *github.Issue {
 		rg.envVariables[projectUsernameKey],
 		rg.envVariables[projectRepoNameKey],
 		&github.IssueListByRepoOptions{
-			State:  "open",
-			Labels: []string{ciFailureGithubLabel},
+			State: "open",
 		},
 	)
 	if err != nil {
@@ -182,13 +181,7 @@ func (rg *reportGenerator) getExistingIssue() *github.Issue {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(response.Body)
-		rg.logger.Fatal(
-			"Unexpected response from GitHub",
-			zap.String("status_code", string(response.StatusCode)),
-			zap.String("response", string(body)),
-			zap.String("url", response.Request.URL.String()),
-		)
+		rg.handleBadResponses(response)
 	}
 
 	requiredTitle := rg.getIssueTitle()
@@ -221,13 +214,7 @@ func (rg *reportGenerator) commentOnIssue(issue *github.Issue) *github.IssueComm
 	}
 
 	if response.StatusCode != http.StatusCreated {
-		body, _ := ioutil.ReadAll(response.Body)
-		rg.logger.Fatal(
-			"Unexpected response from GitHub",
-			zap.String("status_code", string(response.StatusCode)),
-			zap.String("response", string(body)),
-			zap.String("url", response.Request.URL.String()),
-		)
+		rg.handleBadResponses(response)
 	}
 
 	return issueComment
@@ -243,23 +230,16 @@ func (rg *reportGenerator) createIssue() *github.Issue {
 		rg.envVariables[projectUsernameKey],
 		rg.envVariables[projectRepoNameKey],
 		&github.IssueRequest{
-			Title:  &title,
-			Body:   &body,
-			Labels: &[]string{ciFailureGithubLabel},
-			// TODO: Set Assignees
+			Title: &title,
+			Body:  &body,
+			// TODO: Set Assignees and labels
 		})
 	if err != nil {
 		rg.logger.Fatal("Failed to create GitHub Issue", zap.Error(err))
 	}
 
 	if response.StatusCode != http.StatusCreated {
-		body, _ := ioutil.ReadAll(response.Body)
-		rg.logger.Fatal(
-			"Unexpected response from GitHub",
-			zap.String("status_code", string(response.StatusCode)),
-			zap.String("response", string(body)),
-			zap.String("url", response.Request.URL.String()),
-		)
+		rg.handleBadResponses(response)
 	}
 
 	return issue
@@ -289,4 +269,14 @@ func (rg reportGenerator) getFailedTests() string {
 	}
 
 	return sb.String()
+}
+
+func (rg reportGenerator) handleBadResponses(response *github.Response) {
+	body, _ := ioutil.ReadAll(response.Body)
+	rg.logger.Fatal(
+		"Unexpected response from GitHub",
+		zap.String("status_code", string(response.StatusCode)),
+		zap.String("response", string(body)),
+		zap.String("url", response.Request.URL.String()),
+	)
 }
