@@ -578,7 +578,7 @@ Other than that, in some Prometheus client implementations, such as the Python
 version, Summary is allowed to have no quantiles, in which case the receiver
 will produce an OpenTelemetry Summary with Snapshot set to `nil`.
 
-#### Others
+### Others
 
 For any other Prometheus metrics types, they will be transformed into the
 OpenTelemetry [Gauge](#gague) type.
