@@ -99,8 +99,7 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 func (ze *zipkinExporter) PushTraceData(_ context.Context, td consumerdata.TraceData) (int, error) {
 	tbatch := make([]*zipkinmodel.SpanModel, 0, len(td.Spans))
 
-	var resource *resourcepb.Resource
-    resource = td.Resource
+	var resource *resourcepb.Resource = td.Resource
 
 	for _, span := range td.Spans {
 		zs, err := zipkin.OCSpanProtoToZipkin(td.Node, resource, span, ze.defaultServiceName)
