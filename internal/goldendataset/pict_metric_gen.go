@@ -15,6 +15,8 @@
 package goldendataset
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 )
@@ -37,6 +39,7 @@ func GenerateMetricDatas(metricPairsFile string) ([]data.MetricData, error) {
 			NumPtLabels:     PICTNumPtLabels(values[2]),
 		}
 		cfg := pictToCfg(metricInputs)
+		cfg.MetricNamePrefix = fmt.Sprintf("pict_%d_", i)
 		md := MetricDataFromCfg(cfg)
 		out = append(out, md)
 	}

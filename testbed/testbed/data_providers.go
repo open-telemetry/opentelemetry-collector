@@ -286,30 +286,35 @@ func timeToTimestamp(t time.Time) *timestamp.Timestamp {
 // GoldenDataProvider is an implementation of DataProvider for use in correctness tests.
 // Provided data from the "Golden" dataset generated using pairwise combinatorial testing techniques.
 type GoldenDataProvider struct {
-	tracePairsFile     string
-	spanPairsFile      string
-	random             io.Reader
-	batchesGenerated   *atomic.Uint64
-	dataItemsGenerated *atomic.Uint64
-	resourceSpans      []*otlptrace.ResourceSpans
-	spansIndex         int
-	spansMap           map[string]*otlptrace.Span
+	tracePairsFile        string
+	spanPairsFile         string
+	random                io.Reader
+	numBatchesGenerated   *atomic.Uint64
+	numDataItemsGenerated *atomic.Uint64
+	resourceSpans         []*otlptrace.ResourceSpans
+	spansIndex            int
+	spansMap              map[string]*otlptrace.Span
+
+	metricPairsFile  string
+	metricsGenerated []data.MetricData
+	metricsIndex     int
 }
 
 // NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
 // The supplied randomSeed is used to initialize the random number generator used in generating tracing IDs.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, randomSeed int64) *GoldenDataProvider {
+func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string, randomSeed int64) *GoldenDataProvider {
 	return &GoldenDataProvider{
-		tracePairsFile: tracePairsFile,
-		spanPairsFile:  spanPairsFile,
-		random:         io.Reader(rand.New(rand.NewSource(randomSeed))),
+		tracePairsFile:  tracePairsFile,
+		spanPairsFile:   spanPairsFile,
+		metricPairsFile: metricPairsFile,
+		random:          io.Reader(rand.New(rand.NewSource(randomSeed))),
 	}
 }
 
 func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64) {
-	dp.batchesGenerated = batchesGenerated
-	dp.dataItemsGenerated = dataItemsGenerated
+	dp.numBatchesGenerated = batchesGenerated
+	dp.numDataItemsGenerated = dataItemsGenerated
 }
 
 func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
@@ -321,7 +326,8 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 			dp.resourceSpans = make([]*otlptrace.ResourceSpans, 0)
 		}
 	}
-	dp.batchesGenerated.Inc()
+
+	dp.numBatchesGenerated.Inc()
 	if dp.spansIndex >= len(dp.resourceSpans) {
 		return pdata.TracesFromOtlp(make([]*otlptrace.ResourceSpans, 0)), true
 	}
@@ -332,7 +338,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	for _, libSpans := range resourceSpans[0].InstrumentationLibrarySpans {
 		spanCount += uint64(len(libSpans.Spans))
 	}
-	dp.dataItemsGenerated.Add(spanCount)
+	dp.numDataItemsGenerated.Add(spanCount)
 	return pdata.TracesFromOtlp(resourceSpans), false
 }
 
@@ -347,11 +353,38 @@ func (dp *GoldenDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
-	return data.MetricData{}, true
+	if dp.metricsGenerated == nil {
+		var err error
+		dp.metricsGenerated, err = goldendataset.GenerateMetricDatas(dp.metricPairsFile)
+		if err != nil {
+			log.Printf("cannot generate metrics: %s", err)
+		}
+	}
+	numMetricsGenerated := len(dp.metricsGenerated)
+	if dp.metricsIndex == numMetricsGenerated {
+		return data.MetricData{}, true
+	}
+	md := dp.metricsGenerated[dp.metricsIndex]
+	dp.metricsIndex++
+	_, dpCount := md.MetricAndDataPointCount()
+	dp.numDataItemsGenerated.Add(uint64(dpCount))
+	return md, false
 }
 
-func (dp *GoldenDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool) {
-	return make([]*metricspb.Metric, 0), true
+func (dp *GoldenDataProvider) GenerateMetricsOld() (out []*metricspb.Metric, done bool) {
+	md, done := dp.GenerateMetrics()
+	if done {
+		return nil, true
+	}
+	oc := internaldata.MetricDataToOC(md)
+	for _, metricsData := range oc {
+		out = append(out, metricsData.Metrics...)
+	}
+	return out, false
+}
+
+func (dp *GoldenDataProvider) GetMetricsGenerated() []data.MetricData {
+	return dp.metricsGenerated
 }
 
 func (dp *GoldenDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {

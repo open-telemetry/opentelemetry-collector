@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testbed
+package metrics
 
 import (
 	"fmt"
@@ -26,13 +26,13 @@ import (
 // testing. Two MetricDatas, when compared, could produce a list of MetricDiffs containing all of their
 // differences, which could be used to correct the differences between the expected and actual values.
 type MetricDiff struct {
-	expectedValue interface{}
-	actualValue   interface{}
-	msg           string
+	ExpectedValue interface{}
+	ActualValue   interface{}
+	Msg           string
 }
 
 func (mf MetricDiff) String() string {
-	return fmt.Sprintf("{msg='%v' expected=[%v] actual=[%v]}\n", mf.msg, mf.expectedValue, mf.actualValue)
+	return fmt.Sprintf("{msg='%v' expected=[%v] actual=[%v]}\n", mf.Msg, mf.ExpectedValue, mf.ActualValue)
 }
 
 func pdmToPDRM(pdm []pdata.Metrics) (out []pdata.ResourceMetrics) {
@@ -51,9 +51,9 @@ func diffRMSlices(sent []pdata.ResourceMetrics, recd []pdata.ResourceMetrics) []
 	var diffs []*MetricDiff
 	if len(sent) != len(recd) {
 		return []*MetricDiff{{
-			expectedValue: len(sent),
-			actualValue:   len(recd),
-			msg:           "Sent vs received ResourceMetrics not equal length",
+			ExpectedValue: len(sent),
+			ActualValue:   len(recd),
+			Msg:           "Sent vs received ResourceMetrics not equal length",
 		}}
 	}
 	for i := 0; i < len(sent); i++ {
@@ -105,12 +105,12 @@ func diffMetrics(diffs []*MetricDiff, expected pdata.MetricSlice, actual pdata.M
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs = diffMetric(diffs, expected.At(i), actual.At(i))
+		diffs = DiffMetric(diffs, expected.At(i), actual.At(i))
 	}
 	return diffs
 }
 
-func diffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric) []*MetricDiff {
+func DiffMetric(diffs []*MetricDiff, expected pdata.Metric, actual pdata.Metric) []*MetricDiff {
 	diffs = diffMetricDescriptor(diffs, expected.MetricDescriptor(), actual.MetricDescriptor())
 	diffs = diffInt64Pts(diffs, expected.Int64DataPoints(), actual.Int64DataPoints())
 	diffs = diffDoublePts(diffs, expected.DoubleDataPoints(), actual.DoubleDataPoints())
@@ -305,9 +305,9 @@ func diffResource(diffs []*MetricDiff, expected pdata.Resource, actual pdata.Res
 func diffAttrs(diffs []*MetricDiff, expected pdata.AttributeMap, actual pdata.AttributeMap) []*MetricDiff {
 	if !reflect.DeepEqual(expected, actual) {
 		diffs = append(diffs, &MetricDiff{
-			expectedValue: attrMapToString(expected),
-			actualValue:   attrMapToString(actual),
-			msg:           "Resource attributes",
+			ExpectedValue: attrMapToString(expected),
+			ActualValue:   attrMapToString(actual),
+			Msg:           "Resource attributes",
 		})
 	}
 	return diffs
@@ -326,9 +326,9 @@ func diffValues(
 ) ([]*MetricDiff, bool) {
 	if expected != actual {
 		return append(diffs, &MetricDiff{
-			msg:           msg,
-			expectedValue: expected,
-			actualValue:   actual,
+			Msg:           msg,
+			ExpectedValue: expected,
+			ActualValue:   actual,
 		}), true
 	}
 	return diffs, false

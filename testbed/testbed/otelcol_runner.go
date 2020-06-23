@@ -115,7 +115,7 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 	if err != nil {
 		return receiverAddr, err
 	}
-	ipp.svc.Command().SetArgs(args.cmdArgs)
+	ipp.svc.Command().SetArgs(args.CmdArgs)
 
 	ipp.appDone = make(chan struct{})
 	go func() {

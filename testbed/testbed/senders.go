@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal/data"
 )
@@ -344,6 +345,7 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("%s:%d", ome.host, ome.port)
+
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
@@ -421,4 +423,69 @@ func (zs *ZipkinDataSender) GenConfigYAMLStr() string {
 
 func (zs *ZipkinDataSender) ProtocolName() string {
 	return "zipkin"
+}
+
+// prometheus
+
+type PrometheusDataSender struct {
+	host      string
+	port      int
+	namespace string
+	exporter  component.MetricsExporterOld
+}
+
+var _ MetricDataSenderOld = (*PrometheusDataSender)(nil)
+
+func NewPrometheusDataSender(host string, port int) *PrometheusDataSender {
+	return &PrometheusDataSender{
+		host: host,
+		port: port,
+	}
+}
+
+func (pds *PrometheusDataSender) Start() error {
+	factory := prometheusexporter.Factory{}
+	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
+	cfg.Endpoint = pds.endpoint()
+	cfg.Namespace = pds.namespace
+
+	exporter, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	if err != nil {
+		return err
+	}
+
+	pds.exporter = exporter
+	return nil
+}
+
+func (pds *PrometheusDataSender) endpoint() string {
+	return fmt.Sprintf("%s:%d", pds.host, pds.port)
+}
+
+func (pds *PrometheusDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
+	return pds.exporter.ConsumeMetricsData(context.Background(), metrics)
+}
+
+func (pds *PrometheusDataSender) Flush() {
+}
+
+func (pds *PrometheusDataSender) GenConfigYAMLStr() string {
+	format := `
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'testbed'
+          scrape_interval: 100ms
+          static_configs:
+            - targets: ['%s']
+`
+	return fmt.Sprintf(format, pds.endpoint())
+}
+
+func (pds *PrometheusDataSender) GetCollectorPort() int {
+	return pds.port
+}
+
+func (pds *PrometheusDataSender) ProtocolName() string {
+	return "prometheus"
 }
