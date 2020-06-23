@@ -187,9 +187,7 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
-	}
+	assert.EqualValues(t, got, want)
 }
 
 func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
@@ -236,9 +234,7 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
-	}
+	assert.EqualValues(t, got, want)
 }
 
 func sortTraceByNodeName(trace []consumerdata.TraceData) {
@@ -652,7 +648,18 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 				Kind:         tracepb.Span_SERVER,
 				StartTime:    &timestamp.Timestamp{Seconds: 1544805927, Nanos: 448081000},
 				EndTime:      &timestamp.Timestamp{Seconds: 1544805927, Nanos: 460102000},
-				TimeEvents:   nil,
+				TimeEvents: &tracepb.Span_TimeEvents{
+					TimeEvent: []*tracepb.Span_TimeEvent{
+						{
+							Time: &timestamp.Timestamp{Seconds: 1544805927, Nanos: 450000000},
+							Value: &tracepb.Span_TimeEvent_Annotation_{
+								Annotation: &tracepb.Span_TimeEvent_Annotation{
+									Description: &tracepb.TruncatableString{Value: "custom time event"},
+								},
+							},
+						},
+					},
+				},
 			},
 			{
 				TraceId:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8},
@@ -792,4 +799,28 @@ func TestSpanKindTranslation(t *testing.T) {
 			assert.EqualValues(t, test.zipkinV2Kind, zSpanTranslated.Kind)
 		})
 	}
+}
+
+func TestZipkinV1ToOCSpanInvalidTraceId(t *testing.T) {
+	zSpan := &zipkinV1Span{
+		TraceID: "abc",
+		ID:      "0123456789123456",
+		Annotations: []*annotation{
+			{Value: "cr"},
+		},
+	}
+	_, _, err := zipkinV1ToOCSpan(zSpan)
+	assert.EqualError(t, err, "zipkinV1 span traceId: hex traceId span has wrong length (expected 16 or 32)")
+}
+
+func TestZipkinV1ToOCSpanInvalidSpanId(t *testing.T) {
+	zSpan := &zipkinV1Span{
+		TraceID: "1234567890123456",
+		ID:      "abc",
+		Annotations: []*annotation{
+			{Value: "cr"},
+		},
+	}
+	_, _, err := zipkinV1ToOCSpan(zSpan)
+	assert.EqualError(t, err, "zipkinV1 span id: hex Id has wrong length (expected 16)")
 }

@@ -177,7 +177,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	}
 
 	setSpanKind(ocSpan, parsedAnnotations.Kind, parsedAnnotations.ExtendedKind)
-	SetTimestampsIfUnset(ocSpan)
+	setTimestampsIfUnset(ocSpan)
 
 	return ocSpan, parsedAnnotations, nil
 }
@@ -215,15 +215,8 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 		if binAnnotation.Endpoint != nil && binAnnotation.Endpoint.ServiceName != "" {
 			fallbackServiceName = binAnnotation.Endpoint.ServiceName
 		}
-		pbAttrib := &tracepb.AttributeValue{}
-		if iValue, err := strconv.ParseInt(binAnnotation.Value, 10, 64); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-		} else if bValue, err := strconv.ParseBool(binAnnotation.Value); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
-		} else {
-			// For now all else go to string
-			pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: binAnnotation.Value}}
-		}
+
+		pbAttrib := parseAnnotationValue(binAnnotation.Value)
 
 		key := binAnnotation.Key
 
@@ -255,6 +248,21 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 	}
 
 	return attributes, status, fallbackServiceName
+}
+
+func parseAnnotationValue(value string) *tracepb.AttributeValue {
+	pbAttrib := &tracepb.AttributeValue{}
+
+	if iValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+		pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
+	} else if bValue, err := strconv.ParseBool(value); err == nil {
+		pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
+	} else {
+		// For now all else go to string
+		pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
+	}
+
+	return pbAttrib
 }
 
 // annotationParseResult stores the results of examining the original annotations,
@@ -354,17 +362,7 @@ func parseZipkinV1Annotations(annotations []*annotation) *annotationParseResult 
 			// Using the more expensive annotation until/if something cheaper is needed.
 			Value: &tracepb.Span_TimeEvent_Annotation_{
 				Annotation: &tracepb.Span_TimeEvent_Annotation{
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							currAnnotation.Value: {
-								Value: &tracepb.AttributeValue_StringValue{
-									StringValue: &tracepb.TruncatableString{
-										Value: endpointName,
-									},
-								},
-							},
-						},
-					},
+					Description: &tracepb.TruncatableString{Value: currAnnotation.Value},
 				},
 			},
 		}
@@ -485,7 +483,7 @@ func (ep *endpoint) createAttributeMap() map[string]string {
 	return attributeMap
 }
 
-func SetTimestampsIfUnset(span *tracepb.Span) {
+func setTimestampsIfUnset(span *tracepb.Span) {
 	// zipkin allows timestamp to be unset, but opentelemetry-collector expects it to have a value.
 	// If this is unset, the conversion from open census to the internal trace format breaks
 	// what should be an identity transformation oc -> internal -> oc

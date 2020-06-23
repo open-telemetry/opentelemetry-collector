@@ -14,6 +14,15 @@
                 }
             },
             {
+              "timestamp": 1544805927450000,
+              "value": "custom time event",
+              "host": {
+                "ipv4": -1407254524,
+                "port": 0,
+                "service_name": "service1"
+              }
+          },
+          {
                 "timestamp": 1544805927460102,
                 "value": "ss",
                 "host": {
