@@ -294,6 +294,8 @@ type GoldenDataProvider struct {
 	resourceSpans      []*otlptrace.ResourceSpans
 	spansIndex         int
 	spansMap           map[string]*otlptrace.Span
+
+	metricsGenerated []data.MetricData
 }
 
 // NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
@@ -347,11 +349,31 @@ func (dp *GoldenDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
-	return data.MetricData{}, true
+	metrics, err := goldendataset.GenerateMetrics(
+		&goldendataset.PICTMetricInputs{
+			MetricInputs: goldendataset.AttrsOne,
+		},
+	)
+	if err != nil {
+		log.Printf("cannot generate metrics: %s", err)
+	}
+	dp.batchesGenerated.Inc()
+	dp.dataItemsGenerated.Add(uint64(metrics.MetricCount()))
+	dp.metricsGenerated = append(dp.metricsGenerated, metrics)
+	return metrics, false
 }
 
-func (dp *GoldenDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool) {
-	return make([]*metricspb.Metric, 0), true
+func (dp *GoldenDataProvider) GetMetricsGenerated() []data.MetricData {
+	return dp.metricsGenerated
+}
+
+func (dp *GoldenDataProvider) GenerateMetricsOld() (out []*metricspb.Metric, done bool) {
+	md, _ := dp.GenerateMetrics()
+	oc := internaldata.MetricDataToOC(md)
+	for _, metricsData := range oc {
+		out = append(out, metricsData.Metrics...)
+	}
+	return out, false
 }
 
 func (dp *GoldenDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {
