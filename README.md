@@ -44,6 +44,7 @@
 
 ---
 
+### Fix column
 
 ### OpenTelemetry Collector
 
