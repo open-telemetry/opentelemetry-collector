@@ -1,0 +1,2 @@
+Receiver: opencensus
+Exporter: opencensus
