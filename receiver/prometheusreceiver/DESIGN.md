@@ -334,7 +334,7 @@ metrics := []*metricspb.Metric{
 *Note: `startTimestamp` is the timestamp cached from the first scrape, `currentTimestamp` is the timestamp of the current scrape*
 
 
-#### Gauge
+### Gauge
 Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#guage),
 > is a metric that represents a single numerical value that can arbitrarily go up and down
 
