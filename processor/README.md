@@ -5,11 +5,11 @@ modify attributes or sample) or helps ensure that data makes it through a
 pipeline successfully (e.g. batch/retry).
 
 Some important aspects of pipelines and processors to be aware of:
+- [Recommended Processors](#recommended-processors)
 - [Data Ownership](#data-ownership)
 - [Exclusive Ownership](#exclusive-ownership)
 - [Shared Ownership](#shared-ownership)
 - [Ordering Processors](#ordering-processors)
-- [Recommended Processors](#recommended-processors)
 
 Supported processors (sorted alphabetically):
 - [Attributes Processor](attributesprocessor/README.md)
@@ -25,6 +25,28 @@ Supported processors (sorted alphabetically):
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more processors that can be added to custom builds of the Collector.
+
+## <a name="recommended-processors"></a>Recommended Processors
+
+No processors are enabled by default, however multiple processors are
+recommended to be enabled depending on the data source. Processors must be
+enabled for every data source and not all processors support all data sources.
+In addition, it is important to note that the order of processors matters. The
+order in each section below is the best practice. Refer to the individual
+processor documentation for more information.
+
+### Traces
+
+1. [memory_limiter](memorylimiter/README.md)
+2. *any sampling processors*
+3. [batch](batchprocessor/README.md)
+4. *any other processors*
+5. [queued_retry](queuedprocessor/README.md)
+
+### Metrics
+
+1. [memory_limiter](memorylimiter/README.md)
+2. [batch](batchprocessor/README.md)
 
 ## <a name="data-ownership"></a>Data Ownership
 
@@ -210,25 +232,3 @@ regexp:
   # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
   cachemaxnumentries: <int>
 ```
-
-## <a name="recommended-processors"></a>Recommended Processors
-
-No processors are enabled by default, however multiple processors are
-recommended to be enabled depending on the data source. Processors must be
-enabled for every data source and not all processors support all data sources.
-In addition, it is important to note that the order of processors matters. The
-order in each section below is the best practice. Refer to the individual
-processor documentation for more information.
-
-### Traces
-
-1. [memory_limiter](memorylimiter/README.md)
-2. *any sampling processors*
-3. [batch](batchprocessor/README.md)
-4. *any other processors*
-5. [queued_retry](queuedprocessor/README.md)
-
-### Metrics
-
-1. [memory_limiter](memorylimiter/README.md)
-2. [batch](batchprocessor/README.md)
