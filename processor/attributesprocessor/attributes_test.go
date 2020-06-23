@@ -418,7 +418,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 	}
 }
 
-func TestAttributes_UpsertFromRegex(t *testing.T) {
+func TestAttributes_Extract(t *testing.T) {
 	testCases := []testCase{
 		// Ensure `new_user_key` is not set for spans with no attributes.
 		{
@@ -428,7 +428,7 @@ func TestAttributes_UpsertFromRegex(t *testing.T) {
 		},
 		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
-			name: "UpsertFromRegexNoExist",
+			name: "No extract with no target key",
 			inputAttributes: map[string]pdata.AttributeValue{
 				"boo": pdata.NewAttributeValueString("ghosts are scary"),
 			},
@@ -436,9 +436,22 @@ func TestAttributes_UpsertFromRegex(t *testing.T) {
 				"boo": pdata.NewAttributeValueString("ghosts are scary"),
 			},
 		},
-		// Ensure `new_user_key` is not updated for spans with attribute `user_key` that does not match regex.
+		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
-			name: "UpsertFromRegexNotMatch",
+			name: "No extract with non string target key",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo":      pdata.NewAttributeValueString("ghosts are scary"),
+				"user_key": pdata.NewAttributeValueInt(1234),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo":      pdata.NewAttributeValueString("ghosts are scary"),
+				"user_key": pdata.NewAttributeValueInt(1234),
+			},
+		},
+		// Ensure `new_user_key` is not updated for spans with attribute
+		// `user_key` because `user_key` does not match the regular expression.
+		{
+			name: "No extract with no pattern matching",
 			inputAttributes: map[string]pdata.AttributeValue{
 				"user_key": pdata.NewAttributeValueString("does not match"),
 				"boo":      pdata.NewAttributeValueString("ghosts are scary"),
@@ -448,30 +461,62 @@ func TestAttributes_UpsertFromRegex(t *testing.T) {
 				"boo":      pdata.NewAttributeValueString("ghosts are scary"),
 			},
 		},
-		// Ensure `new_user_key` is inserted for spans with attribute `user_key`.
+		// Ensure `new_user_key` is not updated for spans with attribute
+		// `user_key` because `user_key` does not match all of the regular
+		// expression.
 		{
-			name: "UpsertFromRegexExistsInsert",
+			name: "No extract with no pattern matching",
 			inputAttributes: map[string]pdata.AttributeValue{
 				"user_key": pdata.NewAttributeValueString("/api/v1/document/12345678/update"),
+				"boo":      pdata.NewAttributeValueString("ghosts are scary"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user_key": pdata.NewAttributeValueString("/api/v1/document/12345678/update"),
+				"boo":      pdata.NewAttributeValueString("ghosts are scary"),
+			},
+		},
+		// Ensure `new_user_key` and `version` is inserted for spans with attribute `user_key`.
+		{
+			name: "Extract insert new values.",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user_key": pdata.NewAttributeValueString("/api/v1/document/12345678/update/v1"),
 				"foo":      pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
 			expectedAttributes: map[string]pdata.AttributeValue{
-				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update"),
+				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update/v1"),
 				"new_user_key": pdata.NewAttributeValueString("12345678"),
+				"version":      pdata.NewAttributeValueString("v1"),
 				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
 		},
-		// Ensure `new_user_key` is updated for spans with attribute `user_key`.
+		// Ensure `new_user_key` and `version` is updated for spans with attribute `user_key`.
 		{
-			name: "UpsertFromRegexExistsUpdate",
+			name: "Extract updates existing values ",
 			inputAttributes: map[string]pdata.AttributeValue{
-				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update"),
+				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update/v1"),
+				"new_user_key": pdata.NewAttributeValueString("2321"),
+				"version":      pdata.NewAttributeValueString("na"),
+				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update/v1"),
+				"new_user_key": pdata.NewAttributeValueString("12345678"),
+				"version":      pdata.NewAttributeValueString("v1"),
+				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
+			},
+		},
+		// Ensure `new_user_key` is updated and `version` is inserted for spans with attribute `user_key`.
+		{
+			name: "Extract upserts values",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update/v1"),
 				"new_user_key": pdata.NewAttributeValueString("2321"),
 				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
 			expectedAttributes: map[string]pdata.AttributeValue{
-				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update"),
+				"user_key":     pdata.NewAttributeValueString("/api/v1/document/12345678/update/v1"),
 				"new_user_key": pdata.NewAttributeValueString("12345678"),
+				"version":      pdata.NewAttributeValueString("v1"),
 				"foo":          pdata.NewAttributeValueString("casper the friendly ghost"),
 			},
 		},
@@ -481,7 +526,7 @@ func TestAttributes_UpsertFromRegex(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []ActionKeyValue{
-		{Regex: "^\\/api\\/v1\\/document\\/(?P<new_user_key>.*)\\/update$", Action: UPSERT, FromAttribute: "user_key"},
+		{Key: "user_key", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<new_user_key>.*)\\/update\\/(?P<version>.*)$", Action: EXTRACT},
 	}
 
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)

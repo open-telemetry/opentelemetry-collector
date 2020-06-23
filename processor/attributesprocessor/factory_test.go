@@ -94,7 +94,7 @@ func TestFactory_validateActionsConfiguration(t *testing.T) {
 		{Key: "two", Value: 123, Action: "INSERT"},
 		{Key: "three", FromAttribute: "two", Action: "upDaTE"},
 		{Key: "five", FromAttribute: "two", Action: "upsert"},
-		{FromAttribute: "two", Regex: "^\\/api\\/v1\\/document\\/(?P<documentId>.*)\\/update$", Action: "Upsert"},
+		{Key: "two", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<documentId>.*)\\/update$", Action: "EXTRact"},
 	}
 	output, err := buildAttributesConfiguration(*oCfg)
 	require.NoError(t, err)
@@ -109,7 +109,7 @@ func TestFactory_validateActionsConfiguration(t *testing.T) {
 		},
 		{Key: "three", FromAttribute: "two", Action: UPDATE},
 		{Key: "five", FromAttribute: "two", Action: UPSERT},
-		{FromAttribute: "two", Regex: compiledRegex, AttrNames: []string{"", "documentId"}, Action: UPSERT},
+		{Key: "two", Regex: compiledRegex, AttrNames: []string{"", "documentId"}, Action: EXTRACT},
 	}, output)
 
 }
@@ -162,53 +162,59 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 			errorString: "error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the 0-th actions of processor \"attributes/error\"",
 		},
 		{
-			name: "both set key and regex",
+			name: "pattern shouldn't be specified",
 			actionLists: []ActionKeyValue{
-				{Key: "Key", Regex: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: UPSERT},
+				{Key: "key", RegexPattern: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: INSERT},
 			},
-			errorString: "error creating \"attributes\" processor, only one of \"key\" or \"regex\" can be specified at the 0-th actions of processor \"attributes/error\"",
+			errorString:"error creating \"attributes\" processor. Action \"insert\" does not use the \"pattern\" field. This must not be specified for 0-th action of processor \"attributes/error\"",
 		},
 		{
-			name: "both set value and regex",
+			name: "missing rule for extract",
 			actionLists: []ActionKeyValue{
-				{Value: "value", Regex: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: UPSERT},
+				{Key: "aa", Action: EXTRACT},
 			},
-			errorString: "error creating \"attributes\" processor due to both fields \"value\" and \"regex\" being set at the 0-th actions of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor due to missing required field \"pattern\" for action \"extract\" at the 0-th action of processor \"attributes/error\"",
+		},
+		{name: "set value for extract",
+			actionLists: []ActionKeyValue{
+				{Key: "Key", RegexPattern: "(?P<operation_website>.*?)$", Value: "value", Action: EXTRACT},
+			},
+			errorString: "error creating \"attributes\" processor. Action \"extract\" does not use \"value\" or \"from_attribute\" field. These must not be specified for 0-th action of processor \"attributes/error\"",
 		},
 		{
-			name: "regex and not from attribute",
+			name: "set from attribute for extract",
 			actionLists: []ActionKeyValue{
-				{Regex: "(?P<operation_website>.*?)$", Action: UPSERT},
+				{Key: "key", RegexPattern: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: EXTRACT},
 			},
-			errorString: "error creating \"attributes\" processor. Field \"regex\" requires a \"from_attribute\" to be set at the 0-th actions of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Action \"extract\" does not use \"value\" or \"from_attribute\" field. These must not be specified for 0-th action of processor \"attributes/error\"",
 		},
 		{
 			name: "invalid regex",
 			actionLists: []ActionKeyValue{
-				{Regex: "(?P<invalid.regex>.*?)$", FromAttribute: "aa", Action: UPSERT},
+				{Key: "aa", RegexPattern: "(?P<invalid.regex>.*?)$", Action: EXTRACT},
 			},
-			errorString: "error creating \"attributes\" processor. Field \"regex\" has invalid pattern: \"(?P<invalid.regex>.*?)$\" to be set at the 0-th actions of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Field \"pattern\" has invalid pattern: \"(?P<invalid.regex>.*?)$\" to be set at the 0-th actions of processor \"attributes/error\"",
 		},
 		{
 			name: "delete with regex",
 			actionLists: []ActionKeyValue{
-				{Regex: "(?P<operation_website>.*?)$", Key: "", Value: 123, Action: DELETE},
+				{RegexPattern: "(?P<operation_website>.*?)$", Key: "ab", Action: DELETE},
 			},
-			errorString: "error creating \"attributes\" processor. Action \"DELETE\" does not use \"value\", \"regex\" or \"from_attribute\" field. These must not be specified for 0-th action of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Action \"delete\" does not use \"value\", \"pattern\" or \"from_attribute\" field. These must not be specified for 0-th action of processor \"attributes/error\"",
 		},
 		{
 			name: "regex with unnamed capture group",
 			actionLists: []ActionKeyValue{
-				{Regex: "(.*)$", FromAttribute: "aa", Action: UPSERT},
+				{Key: "aa", RegexPattern: ".*$", Action: EXTRACT},
 			},
-			errorString: "error creating \"attributes\" processor. Field \"regex\" contains an unnamed matcher group at the 0-th actions of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Field \"pattern\" contains no named matcher groups at the 0-th actions of processor \"attributes/error\"",
 		},
 		{
-			name: "regex with no named capture groups",
+			name: "regex with one unnamed capture groups",
 			actionLists: []ActionKeyValue{
-				{Regex: ".*", FromAttribute: "aa", Action: UPSERT},
+				{Key: "aa", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<new_user_key>.*)\\/update\\/(.*)$", Action: EXTRACT},
 			},
-			errorString: "error creating \"attributes\" processor. Field \"regex\" contains no named matcher groups at the 0-th actions of processor \"attributes/error\"",
+			errorString: "error creating \"attributes\" processor. Field \"pattern\" contains at least one unnamed matcher group at the 0-th actions of processor \"attributes/error\"",
 		},
 	}
 	factory := Factory{}
@@ -220,7 +226,7 @@ func TestFactory_validateActionsConfiguration_InvalidConfig(t *testing.T) {
 			oCfg.Actions = tc.actionLists
 			output, err := buildAttributesConfiguration(*oCfg)
 			assert.Nil(t, output)
-			assert.Error(t, err)
+			assert.Equal(t, err.Error(), tc.errorString)
 		})
 	}
 }
