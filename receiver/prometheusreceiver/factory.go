@@ -95,9 +95,8 @@ func CustomUnmarshalerFunc(componentViperSection *viper.Viper, intoCfg interface
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  typeStr,
-			Endpoint: "0.0.0.0:9090",
+			TypeVal: typeStr,
+			NameVal: typeStr,
 		},
 	}
 }

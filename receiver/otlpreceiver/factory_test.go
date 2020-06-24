@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutils"
 )
@@ -59,10 +60,13 @@ func TestCreateTraceReceiver(t *testing.T) {
 	factory := Factory{}
 	endpoint := testutils.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
-		TypeVal:  typeStr,
-		NameVal:  typeStr,
+		TypeVal: typeStr,
+		NameVal: typeStr,
+	}
+	defaultProtocolSettings := configprotocol.ProtocolServerSettings{
 		Endpoint: endpoint,
 	}
+
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -71,17 +75,19 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
-				TLSCredentials:   nil,
-				Transport:        "tcp",
+				ReceiverSettings:       defaultReceiverSettings,
+				ProtocolServerSettings: defaultProtocolSettings,
+				Transport:              "tcp",
 			},
 		},
 		{
 			name: "invalid_port",
 			cfg: &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  typeStr,
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 					Endpoint: "localhost:112233",
 				},
 				Transport: "tcp",
@@ -120,8 +126,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 	factory := Factory{}
 	endpoint := testutils.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
-		TypeVal:  typeStr,
-		NameVal:  typeStr,
+		TypeVal: typeStr,
+		NameVal: typeStr,
+	}
+	defaultProtocolSettings := configprotocol.ProtocolServerSettings{
 		Endpoint: endpoint,
 	}
 	tests := []struct {
@@ -132,16 +140,19 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings: defaultReceiverSettings,
-				Transport:        "tcp",
+				ReceiverSettings:       defaultReceiverSettings,
+				ProtocolServerSettings: defaultProtocolSettings,
+				Transport:              "tcp",
 			},
 		},
 		{
 			name: "invalid_address",
 			cfg: &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  typeStr,
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 					Endpoint: "327.0.0.1:1122",
 				},
 				Transport: "tcp",

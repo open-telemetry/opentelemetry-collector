@@ -22,16 +22,15 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 // Config defines configuration for OpenCensus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// Configures the receiver to use TLS.
-	// The default value is nil, which will cause the receiver to not use TLS.
-	TLSCredentials *configtls.TLSSetting `mapstructure:"tls_credentials, omitempty"`
+	// Configures the receiver server protocol.
+	configprotocol.ProtocolServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Transport to use: one of tcp or unix, defaults to tcp
 	Transport string `mapstructure:"transport"`

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 func TestDecodeConfig(t *testing.T) {
@@ -50,8 +51,10 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t,
 		&ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  "examplereceiver",
-				NameVal:  "examplereceiver",
+				TypeVal: "examplereceiver",
+				NameVal: "examplereceiver",
+			},
+			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 				Endpoint: "localhost:1000",
 			},
 			ExtraSetting: "some string",
@@ -62,8 +65,10 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t,
 		&ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  "examplereceiver",
-				NameVal:  "examplereceiver/myreceiver",
+				TypeVal: "examplereceiver",
+				NameVal: "examplereceiver/myreceiver",
+			},
+			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 				Endpoint: "localhost:12345",
 			},
 			ExtraSetting: "some string",
@@ -226,8 +231,10 @@ func TestSimpleConfig(t *testing.T) {
 		assert.Equalf(t,
 			&ExampleReceiver{
 				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  "examplereceiver",
-					NameVal:  "examplereceiver",
+					TypeVal: "examplereceiver",
+					NameVal: "examplereceiver",
+				},
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 					Endpoint: "localhost:1234",
 				},
 				ExtraSetting:     receiverExtra,
@@ -327,8 +334,10 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t,
 		&ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  "examplereceiver",
-				NameVal:  "examplereceiver",
+				TypeVal: "examplereceiver",
+				NameVal: "examplereceiver",
+			},
+			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 				Endpoint: "localhost:1234",
 			},
 			ExtraSetting: "$RECEIVERS_EXAMPLERECEIVER_EXTRA",

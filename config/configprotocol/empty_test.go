@@ -12,17 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zipkinreceiver
+package configprotocol
 
-import (
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
-)
-
-// Config defines configuration for Zipkin receiver.
-type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-
-	// Configures the receiver server protocol.
-	configprotocol.ProtocolServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
+// Package with interfaces and structs only.

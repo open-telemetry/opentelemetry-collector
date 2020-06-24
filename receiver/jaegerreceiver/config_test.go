@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -45,26 +45,18 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/customname",
-			Protocols: map[string]*SecureSetting{
+			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:9876",
-					},
+					Endpoint: "localhost:9876",
 				},
 				"thrift_http": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: ":3456",
-					},
+					Endpoint: ":3456",
 				},
 				"thrift_compact": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:456",
-					},
+					Endpoint: "0.0.0.0:456",
 				},
 				"thrift_binary": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:789",
-					},
+					Endpoint: "0.0.0.0:789",
 				},
 			},
 			RemoteSampling: &RemoteSamplingConfig{
@@ -81,26 +73,18 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/defaults",
-			Protocols: map[string]*SecureSetting{
+			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultGRPCBindEndpoint,
-					},
+					Endpoint: defaultGRPCBindEndpoint,
 				},
 				"thrift_http": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultHTTPBindEndpoint,
-					},
+					Endpoint: defaultHTTPBindEndpoint,
 				},
 				"thrift_compact": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultThriftCompactBindEndpoint,
-					},
+					Endpoint: defaultThriftCompactBindEndpoint,
 				},
 				"thrift_binary": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultThriftBinaryBindEndpoint,
-					},
+					Endpoint: defaultThriftBinaryBindEndpoint,
 				},
 			},
 		})
@@ -110,16 +94,12 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/mixed",
-			Protocols: map[string]*SecureSetting{
+			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:9876",
-					},
+					Endpoint: "localhost:9876",
 				},
 				"thrift_compact": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultThriftCompactBindEndpoint,
-					},
+					Endpoint: defaultThriftCompactBindEndpoint,
 				},
 			},
 		})
@@ -130,20 +110,18 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: typeStr,
 			NameVal: "jaeger/tls",
-			Protocols: map[string]*SecureSetting{
+			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:9876",
-					},
-					TLSCredentials: &configtls.TLSSetting{
-						CertFile: "/test.crt",
-						KeyFile:  "/test.key",
+					Endpoint: "localhost:9876",
+					TLSCredentials: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "/test.crt",
+							KeyFile:  "/test.key",
+						},
 					},
 				},
 				"thrift_http": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: ":3456",
-					},
+					Endpoint: ":3456",
 				},
 			},
 		})

@@ -129,14 +129,11 @@ type Service struct {
 // These are helper structs which you can embed when implementing your specific
 // receiver/exporter/processor config storage.
 
-// ReceiverSettings defines common settings for a single-protocol receiver configuration.
+// ReceiverSettings defines common settings for a receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 type ReceiverSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
-	// Endpoint configures the endpoint in the format 'address:port' for the receiver.
-	// The default value is set by the receiver populating the struct.
-	Endpoint string `mapstructure:"endpoint"`
 }
 
 // Name gets the receiver name.

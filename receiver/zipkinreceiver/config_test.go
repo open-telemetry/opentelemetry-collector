@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,8 +46,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "zipkin/customname",
+				TypeVal: typeStr,
+				NameVal: "zipkin/customname",
+			},
+			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
 				Endpoint: "localhost:8765",
 			},
 		})
