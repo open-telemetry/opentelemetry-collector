@@ -123,7 +123,7 @@ func TestOptionsToConfig(t *testing.T) {
 	}
 }
 
-func TestTLSSetting_LoadTLSClientConfigError(t *testing.T) {
+func TestLoadTLSClientConfigError(t *testing.T) {
 	tlsSetting := TLSClientSetting{
 		TLSSetting: TLSSetting{
 			CertFile: "doesnt/exist",
@@ -134,7 +134,21 @@ func TestTLSSetting_LoadTLSClientConfigError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestTLSSetting_LoadTLSServerConfigError(t *testing.T) {
+func TestLoadTLSClientConfig(t *testing.T) {
+	tlsSetting := TLSClientSetting{
+		Insecure: true,
+	}
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.Nil(t, tlsCfg)
+
+	tlsSetting = TLSClientSetting{}
+	tlsCfg, err = tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, tlsCfg)
+}
+
+func TestLoadTLSServerConfigError(t *testing.T) {
 	tlsSetting := TLSServerSetting{
 		TLSSetting: TLSSetting{
 			CertFile: "doesnt/exist",
@@ -143,4 +157,17 @@ func TestTLSSetting_LoadTLSServerConfigError(t *testing.T) {
 	}
 	_, err := tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
+
+	tlsSetting = TLSServerSetting{
+		ClientCAFile: "doesnt/exist",
+	}
+	_, err = tlsSetting.LoadTLSConfig()
+	assert.Error(t, err)
+}
+
+func TestLoadTLSServerConfig(t *testing.T) {
+	tlsSetting := TLSServerSetting{}
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, tlsCfg)
 }

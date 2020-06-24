@@ -67,6 +67,11 @@ type TLSServerSetting struct {
 	TLSSetting `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// These are config options specific to server connections.
+
+	// Path to the TLS cert to use by the server to verify a client certificate. (optional)
+	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
+	// https://godoc.org/crypto/tls#Config for more information. (optional)
+	ClientCAFile string `mapstructure:"client_ca_file"`
 }
 
 // LoadTLSConfig loads TLS certificates and returns a tls.Config.
@@ -133,6 +138,14 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
+	}
+	if c.ClientCAFile != "" {
+		certPool, err := c.loadCert(c.ClientCAFile)
+		if err != nil {
+			return nil, err
+		}
+		tlsCfg.ClientCAs = certPool
+		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
 }
