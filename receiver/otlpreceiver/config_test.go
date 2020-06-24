@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -51,9 +52,11 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "otlp/customname",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint:       "localhost:9090",
-				TLSCredentials: nil,
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+					Endpoint:       "localhost:9090",
+					TLSCredentials: nil,
+				},
 			},
 			Transport: "tcp",
 		})
@@ -65,24 +68,26 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "otlp/keepalive",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint:       "0.0.0.0:55680",
-				TLSCredentials: nil,
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+					Endpoint:       "0.0.0.0:55680",
+					TLSCredentials: nil,
+				},
+				Keepalive: &configgrpc.KeepaliveServerConfig{
+					ServerParameters: &configgrpc.KeepaliveServerParameters{
+						MaxConnectionIdle:     11 * time.Second,
+						MaxConnectionAge:      12 * time.Second,
+						MaxConnectionAgeGrace: 13 * time.Second,
+						Time:                  30 * time.Second,
+						Timeout:               5 * time.Second,
+					},
+					EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						MinTime:             10 * time.Second,
+						PermitWithoutStream: true,
+					},
+				},
 			},
 			Transport: "tcp",
-			Keepalive: &serverParametersAndEnforcementPolicy{
-				ServerParameters: &keepaliveServerParameters{
-					MaxConnectionIdle:     11 * time.Second,
-					MaxConnectionAge:      12 * time.Second,
-					MaxConnectionAgeGrace: 13 * time.Second,
-					Time:                  30 * time.Second,
-					Timeout:               5 * time.Second,
-				},
-				EnforcementPolicy: &keepaliveEnforcementPolicy{
-					MinTime:             10 * time.Second,
-					PermitWithoutStream: true,
-				},
-			},
 		})
 
 	r3 := cfg.Receivers["otlp/msg-size-conc-connect-max-idle"].(*Config)
@@ -92,18 +97,20 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "otlp/msg-size-conc-connect-max-idle",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint:       "0.0.0.0:55680",
-				TLSCredentials: nil,
-			},
-			Transport:            "tcp",
-			MaxRecvMsgSizeMiB:    32,
-			MaxConcurrentStreams: 16,
-			Keepalive: &serverParametersAndEnforcementPolicy{
-				ServerParameters: &keepaliveServerParameters{
-					MaxConnectionIdle: 10 * time.Second,
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+					Endpoint:       "0.0.0.0:55680",
+					TLSCredentials: nil,
+				},
+				MaxRecvMsgSizeMiB:    32,
+				MaxConcurrentStreams: 16,
+				Keepalive: &configgrpc.KeepaliveServerConfig{
+					ServerParameters: &configgrpc.KeepaliveServerParameters{
+						MaxConnectionIdle: 10 * time.Second,
+					},
 				},
 			},
+			Transport: "tcp",
 		})
 
 	// NOTE: Once the config loader checks for the files existence, this test may fail and require
@@ -115,12 +122,14 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "otlp/tlscredentials",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint: "0.0.0.0:55680",
-				TLSCredentials: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "test.crt",
-						KeyFile:  "test.key",
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+					Endpoint: "0.0.0.0:55680",
+					TLSCredentials: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "test.crt",
+							KeyFile:  "test.key",
+						},
 					},
 				},
 			},
@@ -134,9 +143,11 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "otlp/cors",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint:       "0.0.0.0:55680",
-				TLSCredentials: nil,
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+					Endpoint:       "0.0.0.0:55680",
+					TLSCredentials: nil,
+				},
 			},
 			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
@@ -149,9 +160,11 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "otlp/uds",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint:       "/tmp/otlp.sock",
-				TLSCredentials: nil,
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+					Endpoint:       "/tmp/otlp.sock",
+					TLSCredentials: nil,
+				},
 			},
 			Transport: "unix",
 		})
@@ -162,16 +175,18 @@ func TestBuildOptions_TLSCredentials(t *testing.T) {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			NameVal: "IncorrectTLS",
 		},
-		ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-			TLSCredentials: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
-					CertFile: "willfail",
+		GRPCServerSettings: configgrpc.GRPCServerSettings{
+			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+				TLSCredentials: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "willfail",
+					},
 				},
 			},
 		},
 	}
 	_, err := cfg.buildOptions()
-	assert.EqualError(t, err, `error initializing OTLP receiver "IncorrectTLS" TLS Credentials: failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+	assert.EqualError(t, err, `error initializing TLS Credentials: failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 
 	cfg.TLSCredentials = &configtls.TLSServerSetting{}
 	opt, err := cfg.buildOptions()

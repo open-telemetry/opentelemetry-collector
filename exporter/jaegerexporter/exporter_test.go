@@ -56,7 +56,7 @@ func TestNew(t *testing.T) {
 						TLSSetting: configtls.TLSClientSetting{
 							Insecure: true,
 						},
-						KeepaliveParameters: nil,
+						Keepalive: nil,
 					},
 				},
 			},
@@ -66,10 +66,10 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Headers:             map[string]string{"extra-header": "header-value"},
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						KeepaliveParameters: nil,
+						Headers:     map[string]string{"extra-header": "header-value"},
+						Endpoint:    "foo.bar",
+						Compression: "",
+						Keepalive:   nil,
 					},
 				},
 			},
@@ -79,10 +79,10 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Headers:             nil,
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						KeepaliveParameters: nil,
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						Keepalive:   nil,
 					},
 				},
 			},
@@ -101,7 +101,7 @@ func TestNew(t *testing.T) {
 							},
 							Insecure: false,
 						},
-						KeepaliveParameters: nil,
+						Keepalive: nil,
 					},
 				},
 			},
@@ -121,7 +121,7 @@ func TestNew(t *testing.T) {
 							Insecure:   false,
 							ServerName: "",
 						},
-						KeepaliveParameters: &configgrpc.KeepaliveConfig{
+						Keepalive: &configgrpc.KeepaliveClientConfig{
 							Time:                0,
 							Timeout:             0,
 							PermitWithoutStream: false,
@@ -144,7 +144,7 @@ func TestNew(t *testing.T) {
 							},
 							Insecure: false,
 						},
-						KeepaliveParameters: nil,
+						Keepalive: nil,
 					},
 				},
 			},

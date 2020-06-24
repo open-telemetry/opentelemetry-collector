@@ -104,11 +104,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "KeepaliveParameters",
+			name: "Keepalive",
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: rcvCfg.Endpoint,
-					KeepaliveParameters: &configgrpc.KeepaliveConfig{
+					Keepalive: &configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,

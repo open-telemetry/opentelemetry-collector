@@ -23,13 +23,13 @@ import (
 )
 
 func TestBasicGrpcSettings(t *testing.T) {
-
-	_, err := GrpcSettingsToDialOptions(GRPCClientSettings{
-		Headers:             nil,
-		Endpoint:            "",
-		Compression:         "",
-		KeepaliveParameters: nil,
-	})
+	gcs := &GRPCClientSettings{
+		Headers:     nil,
+		Endpoint:    "",
+		Compression: "",
+		Keepalive:   nil,
+	}
+	_, err := gcs.ToDialOptions()
 
 	assert.NoError(t, err)
 }
@@ -52,7 +52,7 @@ func TestInvalidPemFile(t *testing.T) {
 					Insecure:   false,
 					ServerName: "",
 				},
-				KeepaliveParameters: nil,
+				Keepalive: nil,
 			},
 		},
 		{
@@ -68,27 +68,27 @@ func TestInvalidPemFile(t *testing.T) {
 					Insecure:   false,
 					ServerName: "",
 				},
-				KeepaliveParameters: nil,
+				Keepalive: nil,
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := GrpcSettingsToDialOptions(test.settings)
+			_, err := test.settings.ToDialOptions()
 			assert.Regexp(t, test.err, err)
 		})
 	}
 }
 
 func TestUseSecure(t *testing.T) {
-	dialOpts, err := GrpcSettingsToDialOptions(GRPCClientSettings{
-		Headers:             nil,
-		Endpoint:            "",
-		Compression:         "",
-		TLSSetting:          configtls.TLSClientSetting{},
-		KeepaliveParameters: nil,
-	})
-
+	gcs := &GRPCClientSettings{
+		Headers:     nil,
+		Endpoint:    "",
+		Compression: "",
+		TLSSetting:  configtls.TLSClientSetting{},
+		Keepalive:   nil,
+	}
+	dialOpts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
 	assert.Equal(t, len(dialOpts), 1)
 }

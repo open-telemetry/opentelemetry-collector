@@ -27,7 +27,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/config/configgrpc"
 	otlpmetriccol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlplogcol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
@@ -62,7 +61,7 @@ func newExporter(config *Config) (*exporterImp, error) {
 	e.config = config
 
 	var err error
-	e.dialOpts, err = configgrpc.GrpcSettingsToDialOptions(e.config.GRPCClientSettings)
+	e.dialOpts, err = e.config.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}
