@@ -51,7 +51,7 @@ import (
 
 const otlpReceiver = "otlp_receiver_test"
 
-func TestGrpcGateway_endToEnd(t *testing.T) {
+func TestGrpcGateway_JSONNotSupported(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
@@ -68,46 +68,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
-	// Verify that CORS is not enabled by default, but that it gives an 405
-	// method not allowed error.
-	verifyCorsResp(t, url, "origin.com", 405, false)
-
-	traceJSON := []byte(`
-	{
-	  "resource_spans": [
-		{
-		  "resource": {
-			"attributes": [
-			  {
-				"key": "host.hostname",
-				"string_value": "testHost"
-			  }
-			]
-		  },
-		  "instrumentation_library_spans": [
-			{
-			  "spans": [
-				{
-				  "trace_id": "W47/95gDgQPSabYzgT/GDA==",
-				  "span_id": "7uGbfsPBsXM=",
-				  "name": "testSpan",
-				  "start_time_unix_nano": 1544712660000000000,
-				  "end_time_unix_nano": 1544712661000000000,
-				  "attributes": [
-					{
-					  "key": "attr1",
-					  "type": 1,
-					  "int_value": 55
-					}
-				  ]
-				}
-			  ]
-			}
-		  ]
-		}
-	  ]
-	}`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(traceJSON))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(`{}`)))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -119,58 +80,22 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
 	}
-	respStr := string(respBytes)
 
 	err = resp.Body.Close()
 	if err != nil {
 		t.Errorf("Error closing response body, %v", err)
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 400 {
 		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
 	}
 
-	if respStr != "{}" {
+	respStr := string(respBytes)
+	expectedResp := fmt.Sprintf(`{"error":"%s","code":3,"message":"%s"}`,
+		jsonUnsupportedErrorMessage, jsonUnsupportedErrorMessage)
+	if respStr != expectedResp {
 		t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
 	}
-
-	got := sink.AllTraces()[0]
-
-	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
-		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
-					{
-						Key:         conventions.AttributeHostHostname,
-						StringValue: "testHost",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						{
-							TraceId:           []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
-							SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
-							Name:              "testSpan",
-							StartTimeUnixNano: 1544712660000000000,
-							EndTimeUnixNano:   1544712661000000000,
-							Attributes: []*otlpcommon.AttributeKeyValue{
-								{
-									Key:      "attr1",
-									Type:     otlpcommon.AttributeKeyValue_INT,
-									IntValue: 55,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-
-	assert.EqualValues(t, got, want)
 }
 
 func TestProtoHttp(t *testing.T) {

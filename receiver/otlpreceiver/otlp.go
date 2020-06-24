@@ -77,11 +77,18 @@ func New(
 		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
 	}
 
+	protobufMarshaler := &xProtobufMarshaler{}
 	r := &Receiver{
 		ln:          ln,
 		corsOrigins: []string{}, // Disable CORS by default.
 		gatewayMux: gatewayruntime.NewServeMux(
-			gatewayruntime.WithMarshalerOption("application/x-protobuf", &xProtobufMarshaler{}),
+			gatewayruntime.WithMarshalerOption("application/x-protobuf", protobufMarshaler),
+			// Explicitly handle "application/json" encoding to return custom human friendly error
+			// See issue https://github.com/open-telemetry/opentelemetry-proto/issues/129
+			// describing why we don't support JSON at the moment.
+			gatewayruntime.WithMarshalerOption("application/json", newJSONUnsupportedMarshaler()),
+			// gRPC Gateway is using JSON marshaler by default. Override it with Protobuf.
+			gatewayruntime.WithMarshalerOption(gatewayruntime.MIMEWildcard, protobufMarshaler),
 		),
 	}
 
@@ -244,7 +251,7 @@ func (r *Receiver) startServer(host component.Host) error {
 			return
 		}
 
-		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
+		// Start the gRPC and Protobuf-over-HTTP (grpc-gateway) servers on the same port.
 		m := cmux.New(r.ln)
 		grpcL := m.MatchWithWriters(
 			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
