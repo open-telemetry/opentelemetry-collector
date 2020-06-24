@@ -6,9 +6,9 @@ processors:
 
 exporters:
   zipkin:
-    url: "http://some.location.org:9411/api/v2/spans"
+    endpoint: "http://some.location.org:9411/api/v2/spans"
   zipkin/2:
-    url: "https://somedest:1234/api/v2/spans"
+    endpoint: "https://somedest:1234/api/v2/spans"
     format: proto
     default_service_name: test_name
 

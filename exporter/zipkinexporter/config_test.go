@@ -40,13 +40,13 @@ func TestLoadConfig(t *testing.T) {
 
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.URL = "http://some.location.org:9411/api/v2/spans"
+	defaultCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
 	assert.Equal(t, defaultCfg, e0)
 	assert.Equal(t, "json", e0.(*Config).Format)
 
 	e1 := cfg.Exporters["zipkin/2"]
 	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
-	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).URL)
+	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).Endpoint)
 	assert.Equal(t, "proto", e1.(*Config).Format)
 	_, err = factory.CreateTraceExporter(zap.NewNop(), e1)
 	require.NoError(t, err)

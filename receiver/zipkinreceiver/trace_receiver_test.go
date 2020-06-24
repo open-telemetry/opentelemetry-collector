@@ -41,7 +41,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -318,11 +317,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	defer backend.Close()
 
 	factory := &zipkinexporter.Factory{}
-	config := &zipkinexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{},
-		URL:              backend.URL,
-		Format:           "json",
-	}
+	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
+	config.Endpoint = backend.URL
 	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)

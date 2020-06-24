@@ -242,7 +242,7 @@ func (zr *ZipkinDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   zipkin:
-    url: http://localhost:%d/api/v2/spans
+    endpoint: http://localhost:%d/api/v2/spans
     format: json`, zr.Port)
 }
 
