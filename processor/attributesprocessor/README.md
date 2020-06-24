@@ -16,6 +16,10 @@ The supported actions are:
   does exist.
 - `delete`: Deletes an attribute from a span.
 - `hash`: Hashes (SHA1) an existing attribute value.
+- `extract`: Extracts values using a regular expression rule from the input key
+  to target keys specified in the rule. If a target key already exists, it will
+  be overridden. Note: It behaves similar to the Span Processor `to_attributes`
+  setting with the existing attribute as the source.
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
@@ -55,6 +59,23 @@ For the `hash` action,
 - key: <key>
   action: hash
 ```
+
+
+For the `extract` action,
+ - `key` is required
+ - `pattern` is required.
+ ```yaml
+ # Key specifies the attribute to extract values from.
+ # The value of `key` is NOT altered.
+- key: <key>
+  # Rule specifies the regex pattern used to extract attributes from the value
+  # of `key`.
+  # The submatchers must be named.
+  # If attributes already exist, they will be overwritten.
+  pattern: <regular pattern with named matchers>
+  action: extract
+
+ ```
 
 The list of actions can be composed to create rich scenarios, such as
 back filling attribute, copying values to a new key, redacting sensitive information.

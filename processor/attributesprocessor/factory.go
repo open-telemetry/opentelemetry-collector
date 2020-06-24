@@ -17,6 +17,7 @@ package attributesprocessor
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -118,8 +119,13 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 			if a.Value == nil && a.FromAttribute == "" {
 				return nil, fmt.Errorf("error creating \"attributes\" processor. Either field \"value\" or \"from_attribute\" setting must be specified for %d-th action of processor %q", i, config.Name())
 			}
+
 			if a.Value != nil && a.FromAttribute != "" {
 				return nil, fmt.Errorf("error creating \"attributes\" processor due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions of processor %q", i, config.Name())
+			}
+			if a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use the \"pattern\" field. This must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
+
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
@@ -132,10 +138,33 @@ func buildAttributesConfiguration(config Config) ([]attributeAction, error) {
 				action.FromAttribute = a.FromAttribute
 			}
 		case HASH, DELETE:
+			if a.Value != nil || a.FromAttribute != "" || a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use \"value\", \"pattern\" or \"from_attribute\" field. These must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
+			}
+		case EXTRACT:
 			if a.Value != nil || a.FromAttribute != "" {
 				return nil, fmt.Errorf("error creating \"attributes\" processor. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action of processor %q", a.Action, i, config.Name())
 			}
+			if a.RegexPattern == "" {
+				return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"pattern\" for action \"%s\" at the %d-th action of processor %q", a.Action, i, config.Name())
 
+			}
+			re, err := regexp.Compile(a.RegexPattern)
+			if err != nil {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"pattern\" has invalid pattern: \"%s\" to be set at the %d-th actions of processor %q", a.RegexPattern, i, config.Name())
+			}
+			attrNames := re.SubexpNames()
+			if len(attrNames) <= 1 {
+				return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"pattern\" contains no named matcher groups at the %d-th actions of processor %q", i, config.Name())
+			}
+
+			for subExpIndex := 1; subExpIndex < len(attrNames); subExpIndex++ {
+				if attrNames[subExpIndex] == "" {
+					return nil, fmt.Errorf("error creating \"attributes\" processor. Field \"pattern\" contains at least one unnamed matcher group at the %d-th actions of processor %q", i, config.Name())
+				}
+			}
+			action.Regex = re
+			action.AttrNames = attrNames
 		default:
 			return nil, fmt.Errorf("error creating \"attributes\" processor due to unsupported action %q at the %d-th actions of processor %q", a.Action, i, config.Name())
 		}
