@@ -111,7 +111,7 @@ func TestOptionsToConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfg, err := test.options.LoadTLSConfig()
+			cfg, err := test.options.loadTLSConfig()
 			if test.expectError != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), test.expectError)
@@ -123,13 +123,24 @@ func TestOptionsToConfig(t *testing.T) {
 	}
 }
 
-func TestTLSSetting_LoadgRPCTLSServerCredentialsError(t *testing.T) {
+func TestTLSSetting_LoadTLSClientConfigError(t *testing.T) {
+	tlsSetting := TLSClientSetting{
+		TLSSetting: TLSSetting{
+			CertFile: "doesnt/exist",
+			KeyFile:  "doesnt/exist",
+		},
+	}
+	_, err := tlsSetting.LoadTLSConfig()
+	assert.Error(t, err)
+}
+
+func TestTLSSetting_LoadTLSServerConfigError(t *testing.T) {
 	tlsSetting := TLSServerSetting{
 		TLSSetting: TLSSetting{
 			CertFile: "doesnt/exist",
 			KeyFile:  "doesnt/exist",
 		},
 	}
-	_, err := tlsSetting.LoadgRPCTLSServerCredentials()
+	_, err := tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 }
