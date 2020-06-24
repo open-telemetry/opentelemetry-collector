@@ -224,24 +224,16 @@ func (r *Receiver) startServer(host component.Host) error {
 	err := componenterror.ErrAlreadyStarted
 	r.startServerOnce.Do(func() {
 		err = nil
+
 		// Register the grpc-gateway on the HTTP server mux
-		c := context.Background()
-		opts := []grpc.DialOption{grpc.WithInsecure()}
-		endpoint := r.ln.Addr().String()
-
-		_, ok := r.ln.(*net.UnixListener)
-		if ok {
-			endpoint = "unix:" + endpoint
+		if r.traceReceiver != nil {
+			// Cannot return error, impossible to test
+			_ = collectortrace.RegisterTraceServiceHandlerServer(context.Background(), r.gatewayMux, r.traceReceiver)
 		}
 
-		err = collectortrace.RegisterTraceServiceHandlerFromEndpoint(c, r.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
-		}
-
-		err = collectormetrics.RegisterMetricsServiceHandlerFromEndpoint(c, r.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
+		if r.metricsReceiver != nil {
+			// Cannot return error, impossible to test
+			_ = collectormetrics.RegisterMetricsServiceHandlerServer(context.Background(), r.gatewayMux, r.metricsReceiver)
 		}
 
 		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
