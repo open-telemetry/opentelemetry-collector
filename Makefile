@@ -20,7 +20,7 @@ GO_ACC=go-acc
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
-ADDLICENCESE= addlicense
+ADDLICENSE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
@@ -81,14 +81,14 @@ test-with-cover:
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENCESE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
+	$(ADDLICENSE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			echo "Use 'make addlicense' to fix this."; \
 			exit 1; \
 		else \
