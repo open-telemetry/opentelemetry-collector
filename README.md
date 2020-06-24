@@ -64,7 +64,7 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Owais Lone](https://github.com/owais), Splunk
 - [Rahul Patel](https://github.com/rghetia), Google
 - [Steve Flanders](https://github.com/flands), Splunk
-- [Yang Song](https://github.com/songy23), Google
+- [James Bebbington](https://github.com/james-bebbington), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
