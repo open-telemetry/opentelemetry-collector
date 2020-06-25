@@ -74,10 +74,11 @@ type ChildProcess struct {
 	outputWG sync.WaitGroup
 
 	// Various starting/stopping flags
-	isStarted  bool
-	stopOnce   sync.Once
-	isStopped  bool
-	doneSignal chan struct{}
+	isStarted     bool
+	stopOnce      sync.Once
+	isStopped     bool
+	doneSignal    chan struct{}
+	watchFinished chan struct{}
 
 	// Resource specification that must be monitored for.
 	resourceSpec *ResourceSpec
@@ -252,6 +253,11 @@ func (cp *ChildProcess) Stop() (stopped bool, err error) {
 		// Notify resource monitor to stop.
 		close(cp.doneSignal)
 
+		if cp.watchFinished != nil {
+			// Wait for resource monitor to stop.
+			<-cp.watchFinished
+		}
+
 		// Gracefully signal process to stop.
 		if err = cp.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 			log.Printf("Cannot send SIGTEM: %s", err.Error())
@@ -313,6 +319,8 @@ func (cp *ChildProcess) WatchResourceConsumption() error {
 			cp.cmd.Process.Pid, err.Error())
 	}
 
+	cp.watchFinished = make(chan struct{})
+
 	cp.fetchRAMUsage()
 
 	// Begin measuring elapsed and process CPU times.
@@ -335,11 +343,15 @@ func (cp *ChildProcess) WatchResourceConsumption() error {
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
 				cp.Stop()
+				close(cp.watchFinished)
 				return err
 			}
 
 		case <-cp.doneSignal:
+			cp.fetchRAMUsage()
+			cp.fetchCPUUsage()
 			log.Printf("Stopping process monitor.")
+			close(cp.watchFinished)
 			return nil
 		}
 	}
@@ -451,6 +463,8 @@ func (cp *ChildProcess) GetTotalConsumption() *ResourceConsumption {
 			rc.CPUPercentAvg = cp.lastProcessTimes.Total() / elapsedDuration * 100.0
 		}
 		rc.CPUPercentMax = cp.cpuPercentMax
+
+		log.Printf("GetTotalConsumption: Elapsed: %vs, CPU: %vs", elapsedDuration, cp.lastProcessTimes.Total())
 
 		if cp.memProbeCount > 0 {
 			// Calculate average RAM usage by averaging all RAM measurements

@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/otlpwsreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -235,6 +236,54 @@ func (or *OTLPDataReceiver) GenConfigYAMLStr() string {
 
 func (or *OTLPDataReceiver) ProtocolName() string {
 	return "otlp"
+}
+
+// OTLPWSDataReceiver implements OTLPWS format receiver.
+type OTLPWSDataReceiver struct {
+	DataReceiverBase
+	receiver *otlpwsreceiver.Receiver
+}
+
+// Ensure OTLPWSDataReceiver implements DataReceiver.
+var _ DataReceiver = (*OTLPWSDataReceiver)(nil)
+
+const DefaultOTLPWSPort = 55681
+
+// NewOTLPWSDataReceiver creates a new OTLPWSDataReceiver that will listen on the specified port after Start
+// is called.
+func NewOTLPWSDataReceiver(port int) *OTLPWSDataReceiver {
+	return &OTLPWSDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+}
+
+func (or *OTLPWSDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+	addr := fmt.Sprintf("localhost:%d", or.Port)
+	var err error
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		return err
+	}
+
+	or.receiver, err = otlpwsreceiver.New(logger, "otlpws", "tcp", addr, tc, mc)
+	if err != nil {
+		return err
+	}
+
+	return or.receiver.Start(context.Background(), or)
+}
+
+func (or *OTLPWSDataReceiver) Stop() {
+	or.receiver.Shutdown(context.Background())
+}
+
+func (or *OTLPWSDataReceiver) GenConfigYAMLStr() string {
+	// Note that this generates an exporter config for agent.
+	return fmt.Sprintf(`
+  otlpws:
+    endpoint: "localhost:%d"`, or.Port)
+}
+
+func (or *OTLPWSDataReceiver) ProtocolName() string {
+	return "otlpws"
 }
 
 // ZipkinDataReceiver implements Zipkin format receiver.

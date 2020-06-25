@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlpwsexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
@@ -46,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/otlpwsreceiver"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/receiver/vmmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
@@ -63,6 +65,7 @@ func TestDefaultComponents(t *testing.T) {
 		"prometheus":  &prometheusreceiver.Factory{},
 		"opencensus":  &opencensusreceiver.Factory{},
 		"otlp":        &otlpreceiver.Factory{},
+		"otlpws":      &otlpwsreceiver.Factory{},
 		"vmmetrics":   &vmmetricsreceiver.Factory{},
 		"hostmetrics": hostmetricsreceiver.NewFactory(),
 	}
@@ -85,6 +88,7 @@ func TestDefaultComponents(t *testing.T) {
 		"jaeger":     &jaegerexporter.Factory{},
 		"file":       &fileexporter.Factory{},
 		"otlp":       &otlpexporter.Factory{},
+		"otlpws":     &otlpwsexporter.Factory{},
 	}
 
 	factories, err := Components()

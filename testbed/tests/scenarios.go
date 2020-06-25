@@ -122,13 +122,14 @@ func Scenario10kItemsPerSecond(
 	resourceSpec testbed.ResourceSpec,
 	resultsSummary testbed.TestResultsSummary,
 	processors map[string]string,
+	spansPerBatch int,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
 	options := testbed.LoadOptions{
 		DataItemsPerSecond: 10_000,
-		ItemsPerBatch:      100,
+		ItemsPerBatch:      spansPerBatch,
 	}
 	agentProc := &testbed.ChildProcess{}
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors)

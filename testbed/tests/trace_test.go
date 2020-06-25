@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -53,8 +54,13 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
+<<<<<<< HEAD
 				ExpectedMaxCPU: 40,
 				ExpectedMaxRAM: 70,
+=======
+				ExpectedMaxCPU: 1140,
+				ExpectedMaxRAM: 160,
+>>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 		{
@@ -62,26 +68,50 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
+<<<<<<< HEAD
 				ExpectedMaxCPU: 39,
 				ExpectedMaxRAM: 70,
+=======
+				ExpectedMaxCPU: 1139,
+				ExpectedMaxRAM: 160,
+>>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 		{
-			"OTLP",
+			"OTLP      ",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
+<<<<<<< HEAD
 				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 70,
+=======
+				ExpectedMaxCPU: 11120,
+				ExpectedMaxRAM: 1160,
+>>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
+		//{
+		//	"Zipkin",
+		//	testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		//	testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+		//	testbed.ResourceSpec{
+		//		ExpectedMaxCPU: 180,
+		//		ExpectedMaxRAM: 160,
+		//	},
+		//},
 		{
-			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+			"OTLPWS    ",
+			testbed.NewOTLPWSTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPWSDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
+<<<<<<< HEAD
 				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 70,
+=======
+				ExpectedMaxCPU: 1120,
+				ExpectedMaxRAM: 160,
+>>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 	}
@@ -92,17 +122,22 @@ func TestTrace10kSPS(t *testing.T) {
 `,
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			Scenario10kItemsPerSecond(
-				t,
-				test.sender,
-				test.receiver,
-				test.resourceSpec,
-				performanceResultsSummary,
-				processors,
-			)
-		})
+	spansPerBatches := []int{3, 10, 100, 1000}
+
+	for _, spansPerBatch := range spansPerBatches {
+		for _, test := range tests {
+			t.Run(test.name+"/"+strconv.Itoa(spansPerBatch)+" spans/batch", func(t *testing.T) {
+				Scenario10kItemsPerSecond(
+					t,
+					test.sender,
+					test.receiver,
+					test.resourceSpec,
+					performanceResultsSummary,
+					processors,
+					spansPerBatch,
+				)
+			})
+		}
 	}
 }
 

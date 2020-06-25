@@ -1,0 +1,58 @@
+receivers:
+  # The following entry initializes the default OTLP receiver.
+  # The full name of this receiver is `otlp` and can be referenced in pipelines by 'otlp'.
+  otlpws:
+  # The following entry demonstrates configuring the common receiver settings:
+  # - endpoint
+  # This configuration is of type 'otlp' and has the name 'customname' with a full name of 'otlp/customname'
+  # ('<type>/<name>'. To reference this configuration in a pipeline, use the full name `otlp/customname`.
+  otlpws/customname:
+    # The receiver will listen on endpoint: "localhost:9090".
+    endpoint: localhost:9090
+  # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
+  otlpws/keepalive:
+    keepalive:
+      server_parameters:
+        max_connection_idle: 11s
+        max_connection_age: 12s
+        max_connection_age_grace: 13s
+        time: 30s
+        timeout: 5s
+      enforcement_policy:
+        min_time: 10s
+        permit_without_stream: true
+  # The following demonstrates how to set maximum limits on stream, message size and connection idle time.
+  # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+  # be mix and matched like adding the maximum connection idle setting in this example.
+  otlpws/msg-size-conc-connect-max-idle:
+    max_recv_msg_size_mib: 32
+    max_concurrent_streams: 16
+    keepalive:
+      server_parameters:
+        max_connection_idle: 10s
+  # The following entry demonstrates how to specify TLS credentials for the server.
+  # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
+  otlpws/tlscredentials:
+    tls_credentials:
+      cert_file: test.crt
+      key_file: test.key
+  # The following entry demonstrates how to specify a Unix Domain Socket for the server.
+  otlpws/uds:
+    transport: unix
+    endpoint: /tmp/otlp.sock
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlpws/customname]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+    metrics:
+      receivers: [otlpws]
+      exporters: [exampleexporter]

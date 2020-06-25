@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlpwsexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal/data"
 )
@@ -378,6 +379,51 @@ func (ome *OTLPMetricsDataSender) GetCollectorPort() int {
 
 func (ome *OTLPMetricsDataSender) ProtocolName() string {
 	return "otlp"
+}
+
+// OTLPWSTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
+type OTLPWSTraceDataSender struct {
+	DataSenderOverTraceExporter
+}
+
+// Ensure OTLPWSTraceDataSender implements TraceDataSender.
+var _ TraceDataSender = (*OTLPWSTraceDataSender)(nil)
+
+// NewOTLPWSTraceDataSender creates a new OTLPWSTraceDataSender that will send
+// to the specified port after Start is called.
+func NewOTLPWSTraceDataSender(host string, port int) *OTLPWSTraceDataSender {
+	return &OTLPWSTraceDataSender{DataSenderOverTraceExporter{
+		Host: host,
+		Port: port,
+	}}
+}
+
+func (ote *OTLPWSTraceDataSender) Start() error {
+	cfg := &otlpwsexporter.Config{
+		Endpoint: fmt.Sprintf("%s:%d", ote.Host, ote.Port),
+	}
+
+	factory := otlpwsexporter.Factory{}
+	creationParams := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+
+	if err != nil {
+		return err
+	}
+
+	ote.exporter = exporter
+	return err
+}
+
+func (ote *OTLPWSTraceDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  otlpws:
+    endpoint: "%s:%d"`, ote.Host, ote.Port)
+}
+
+func (ote *OTLPWSTraceDataSender) ProtocolName() string {
+	return "otlpws"
 }
 
 // ZipkinDataSender implements TraceDataSender for Zipkin http protocol.

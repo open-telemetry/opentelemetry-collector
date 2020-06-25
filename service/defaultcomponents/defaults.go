@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlpwsexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
@@ -42,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/otlpwsreceiver"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/receiver/vmmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
@@ -70,6 +72,7 @@ func Components() (
 		&prometheusreceiver.Factory{},
 		&opencensusreceiver.Factory{},
 		&otlpreceiver.Factory{},
+		&otlpwsreceiver.Factory{},
 		&vmmetricsreceiver.Factory{},
 		hostmetricsreceiver.NewFactory(),
 	)
@@ -85,6 +88,7 @@ func Components() (
 		&jaegerexporter.Factory{},
 		&fileexporter.Factory{},
 		&otlpexporter.Factory{},
+		&otlpwsexporter.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
