@@ -48,7 +48,7 @@ Based on this document, Prometheus supports the following 5 types of metrics:
 * Gauge
 * Histogram
 * Summary
-* Untyped
+* Untyped (untyped metrics are converted to `gauge` by default)
 
 However, this is not the whole story, from the implementation details of
 Prometheus scraper, which the receiver based on, it supports a couple more
