@@ -17,16 +17,13 @@ package componenttest
 import (
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewNopHost(t *testing.T) {
 	got := NewNopHost()
-	if got == nil {
-		t.Fatal("NewNopHost() = nil, want non-nil", got)
-	}
-	_, ok := got.(*NopHost)
-	if !ok {
-		t.Fatal("got.(*NopHost) failed")
-	}
+	require.IsType(t, &NopHost{}, got)
+
 	got.ReportFatalError(errors.New("TestError"))
 }

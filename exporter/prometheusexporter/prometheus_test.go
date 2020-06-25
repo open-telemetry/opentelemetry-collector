@@ -93,9 +93,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		consumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
 
 		res, err := http.Get("http://localhost:7777/metrics")
-		if err != nil {
-			t.Fatalf("Failed to perform a scrape: %v", err)
-		}
+		require.NoError(t, err, "Failed to perform a scrape")
+
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 		}

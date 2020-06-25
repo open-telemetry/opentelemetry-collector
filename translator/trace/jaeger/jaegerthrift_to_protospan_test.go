@@ -18,12 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutils"
@@ -265,9 +265,7 @@ func TestConservativeConversions(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", got, want)
-	}
+	require.Equal(t, want, got, "Unsuccessful conversion")
 }
 
 func TestJaegerStatusTagsToOCStatus(t *testing.T) {
@@ -494,12 +492,8 @@ func TestJaegerStatusTagsToOCStatus(t *testing.T) {
 			continue
 		}
 		gs := gb.Spans[0]
-		if !reflect.DeepEqual(gs.Attributes, c.wantAttributes) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Attributes, c.wantAttributes)
-		}
-		if !reflect.DeepEqual(gs.Status, c.wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, c.wantStatus)
-		}
+		require.Equal(t, c.wantAttributes, gs.Attributes, "Unsuccessful conversion %d", i)
+		require.Equal(t, c.wantStatus, gs.Status, "Unsuccessful conversion %d", i)
 	}
 }
 
@@ -524,8 +518,6 @@ func TestHTTPToGRPCStatusCode(t *testing.T) {
 			continue
 		}
 		gs := gb.Spans[0]
-		if !reflect.DeepEqual(gs.Status.Code, wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, wantStatus)
-		}
+		require.Equal(t, wantStatus, gs.Status.Code, "Unsuccessful conversion %d", i)
 	}
 }
