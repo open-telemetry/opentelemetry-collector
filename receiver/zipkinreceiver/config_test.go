@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "zipkin/customname",
 			},
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:8765",
 			},
 		})

@@ -220,8 +220,11 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 
 func (zr *ZipkinDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
 	var err error
-	address := fmt.Sprintf("localhost:%d", zr.Port)
-	zr.receiver, err = zipkinreceiver.New("zipkin", address, tc)
+	factory := zipkinreceiver.Factory{}
+	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
+	cfg.NameVal = "zipkin"
+	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
+	zr.receiver, err = zipkinreceiver.New(cfg, tc)
 
 	if err != nil {
 		return err
