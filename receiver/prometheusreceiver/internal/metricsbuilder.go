@@ -214,7 +214,8 @@ func convToOCAMetricType(metricType textparse.MetricType) metricspb.MetricDescri
 	case textparse.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
 		return metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
-	case textparse.MetricTypeGauge:
+	// textparse.MetricTypeUnknown is converted to gauge by default to fix Prometheus untyped metrics from being dropped
+	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
 		return metricspb.MetricDescriptor_GAUGE_DOUBLE
 	case textparse.MetricTypeHistogram:
 		return metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
@@ -225,7 +226,7 @@ func convToOCAMetricType(metricType textparse.MetricType) metricspb.MetricDescri
 	case textparse.MetricTypeSummary:
 		return metricspb.MetricDescriptor_SUMMARY
 	default:
-		// including: textparse.MetricTypeUnknown, textparse.MetricTypeInfo, textparse.MetricTypeStateset
+		// including: textparse.MetricTypeInfo, textparse.MetricTypeStateset
 		return metricspb.MetricDescriptor_UNSPECIFIED
 	}
 }

@@ -426,7 +426,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "unknown_test",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -504,7 +504,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "some_count",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -1223,7 +1223,7 @@ func Test_convToOCAMetricType(t *testing.T) {
 		{"summary", textparse.MetricTypeSummary, metricspb.MetricDescriptor_SUMMARY},
 		{"info", textparse.MetricTypeInfo, metricspb.MetricDescriptor_UNSPECIFIED},
 		{"stateset", textparse.MetricTypeStateset, metricspb.MetricDescriptor_UNSPECIFIED},
-		{"unknown", textparse.MetricTypeUnknown, metricspb.MetricDescriptor_UNSPECIFIED},
+		{"unknown", textparse.MetricTypeUnknown, metricspb.MetricDescriptor_GAUGE_DOUBLE},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
