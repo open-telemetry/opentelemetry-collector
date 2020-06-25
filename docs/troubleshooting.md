@@ -1,7 +1,7 @@
 # Troubleshooting
 
 The Collector offers multiple ways to measure the health of the Collector
-as well as investigate issues.
+as well as investigate issues:
 
 - The [zpages](https://github.com/open-telemetry/opentelemetry-collector/tree/master/extension/zpagesextension/README.md)
   extension, which by default is on port `55679`, can be used to check
