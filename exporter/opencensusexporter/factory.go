@@ -110,11 +110,11 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 	if ocac.ReconnectionDelay > 0 {
 		opts = append(opts, ocagent.WithReconnectionPeriod(ocac.ReconnectionDelay))
 	}
-	if ocac.KeepaliveParameters != nil {
+	if ocac.Keepalive != nil {
 		opts = append(opts, ocagent.WithGRPCDialOption(grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                ocac.KeepaliveParameters.Time,
-			Timeout:             ocac.KeepaliveParameters.Timeout,
-			PermitWithoutStream: ocac.KeepaliveParameters.PermitWithoutStream,
+			Time:                ocac.Keepalive.Time,
+			Timeout:             ocac.Keepalive.Timeout,
+			PermitWithoutStream: ocac.Keepalive.PermitWithoutStream,
 		})))
 	}
 	return opts, nil

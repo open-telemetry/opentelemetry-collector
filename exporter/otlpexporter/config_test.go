@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				KeepaliveParameters: &configgrpc.KeepaliveConfig{
+				Keepalive: &configgrpc.KeepaliveClientConfig{
 					Time:                20 * time.Second,
 					PermitWithoutStream: true,
 					Timeout:             30 * time.Second,

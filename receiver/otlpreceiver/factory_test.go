@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -63,8 +64,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	defaultProtocolSettings := configprotocol.ProtocolServerSettings{
-		Endpoint: endpoint,
+	defaultGRPCSettings := configgrpc.GRPCServerSettings{
+		ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+			Endpoint: endpoint,
+		},
 	}
 
 	tests := []struct {
@@ -75,9 +78,9 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:       defaultReceiverSettings,
-				ProtocolServerSettings: defaultProtocolSettings,
-				Transport:              "tcp",
+				ReceiverSettings:   defaultReceiverSettings,
+				GRPCServerSettings: defaultGRPCSettings,
+				Transport:          "tcp",
 			},
 		},
 		{
@@ -87,8 +90,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-					Endpoint: "localhost:112233",
+				GRPCServerSettings: configgrpc.GRPCServerSettings{
+					ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+						Endpoint: "localhost:112233",
+					},
 				},
 				Transport: "tcp",
 			},
@@ -97,10 +102,15 @@ func TestCreateTraceReceiver(t *testing.T) {
 		{
 			name: "max-msg-size-and-concurrent-connections",
 			cfg: &Config{
-				ReceiverSettings:     defaultReceiverSettings,
-				Transport:            "tcp",
-				MaxRecvMsgSizeMiB:    32,
-				MaxConcurrentStreams: 16,
+				ReceiverSettings: defaultReceiverSettings,
+				GRPCServerSettings: configgrpc.GRPCServerSettings{
+					ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+						Endpoint: endpoint,
+					},
+					MaxRecvMsgSizeMiB:    32,
+					MaxConcurrentStreams: 16,
+				},
+				Transport: "tcp",
 			},
 		},
 	}
@@ -129,9 +139,12 @@ func TestCreateMetricReceiver(t *testing.T) {
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	defaultProtocolSettings := configprotocol.ProtocolServerSettings{
-		Endpoint: endpoint,
+	defaultGRPCSettings := configgrpc.GRPCServerSettings{
+		ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+			Endpoint: endpoint,
+		},
 	}
+
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -140,9 +153,9 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:       defaultReceiverSettings,
-				ProtocolServerSettings: defaultProtocolSettings,
-				Transport:              "tcp",
+				ReceiverSettings:   defaultReceiverSettings,
+				GRPCServerSettings: defaultGRPCSettings,
+				Transport:          "tcp",
 			},
 		},
 		{
@@ -152,8 +165,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-					Endpoint: "327.0.0.1:1122",
+				GRPCServerSettings: configgrpc.GRPCServerSettings{
+					ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+						Endpoint: "327.0.0.1:1122",
+					},
 				},
 				Transport: "tcp",
 			},
@@ -163,16 +178,21 @@ func TestCreateMetricReceiver(t *testing.T) {
 			name: "keepalive",
 			cfg: &Config{
 				ReceiverSettings: defaultReceiverSettings,
-				Transport:        "tcp",
-				Keepalive: &serverParametersAndEnforcementPolicy{
-					ServerParameters: &keepaliveServerParameters{
-						MaxConnectionAge: 60 * time.Second,
+				GRPCServerSettings: configgrpc.GRPCServerSettings{
+					ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+						Endpoint: endpoint,
 					},
-					EnforcementPolicy: &keepaliveEnforcementPolicy{
-						MinTime:             30 * time.Second,
-						PermitWithoutStream: true,
+					Keepalive: &configgrpc.KeepaliveServerConfig{
+						ServerParameters: &configgrpc.KeepaliveServerParameters{
+							MaxConnectionAge: 60 * time.Second,
+						},
+						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+							MinTime:             30 * time.Second,
+							PermitWithoutStream: true,
+						},
 					},
 				},
+				Transport: "tcp",
 			},
 		},
 	}
