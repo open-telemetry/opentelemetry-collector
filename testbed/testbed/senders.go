@@ -452,14 +452,9 @@ func NewZipkinDataSender(host string, port int) *ZipkinDataSender {
 }
 
 func (zs *ZipkinDataSender) Start() error {
-	spansURL := fmt.Sprintf("http://localhost:%d/api/v2/spans", zs.Port)
-
-	cfg := &zipkinexporter.Config{
-		URL:    spansURL,
-		Format: "json",
-	}
-
 	factory := zipkinexporter.Factory{}
+	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
+	cfg.Endpoint = fmt.Sprintf("http://localhost:%d/api/v2/spans", zs.Port)
 	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
 
 	if err != nil {

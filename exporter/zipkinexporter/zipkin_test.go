@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
@@ -59,10 +60,12 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	defer cst.Close()
 
 	config := &Config{
-		URL:    cst.URL,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: cst.URL,
+		},
 		Format: "json",
 	}
-	tes, err := NewTraceExporter(config)
+	tes, err := newTraceExporter(config)
 	assert.NoError(t, err)
 	require.NotNil(t, tes)
 
@@ -267,7 +270,9 @@ const zipkinSpansJSONJavaLibrary = `
 
 func TestZipkinExporter_invalidFormat(t *testing.T) {
 	config := &Config{
-		URL:    "1.2.3.4",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "1.2.3.4",
+		},
 		Format: "foobar",
 	}
 	f := &Factory{}
@@ -287,10 +292,12 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	defer cst.Close()
 
 	config := &Config{
-		URL:    cst.URL,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: cst.URL,
+		},
 		Format: "proto",
 	}
-	tes, err := NewTraceExporter(config)
+	tes, err := newTraceExporter(config)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use

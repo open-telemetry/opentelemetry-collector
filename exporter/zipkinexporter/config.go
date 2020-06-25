@@ -15,6 +15,7 @@
 package zipkinexporter
 
 import (
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -22,9 +23,10 @@ import (
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
-	// The URL to send the Zipkin trace data to (e.g.:
-	// http://some.url:9411/api/v2/spans).
-	URL    string `mapstructure:"url"`
+	// Configures the exporter client.
+	// The Endpoint to send the Zipkin trace data to (e.g.: http://some.url:9411/api/v2/spans).
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
 	Format string `mapstructure:"format"`
 
 	DefaultServiceName string `mapstructure:"default_service_name"`

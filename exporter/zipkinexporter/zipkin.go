@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
@@ -27,7 +26,6 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -47,22 +45,13 @@ type zipkinExporter struct {
 	serializer zipkinreporter.SpanSerializer
 }
 
-// Default values for Zipkin endpoint.
-const (
-	defaultTimeout = time.Second * 5
-
-	defaultServiceName string = "<missing service name>"
-)
-
-// NewTraceExporter creates an zipkin trace exporter.
-func NewTraceExporter(config configmodels.Exporter) (component.TraceExporterOld, error) {
+// newTraceExporter creates an zipkin trace exporter.
+func newTraceExporter(config *Config) (component.TraceExporterOld, error) {
 	ze, err := createZipkinExporter(config)
 	if err != nil {
 		return nil, err
 	}
-	zexp, err := exporterhelper.NewTraceExporterOld(
-		config,
-		ze.PushTraceData)
+	zexp, err := exporterhelper.NewTraceExporterOld(config, ze.PushTraceData)
 	if err != nil {
 		return nil, err
 	}
@@ -70,27 +59,25 @@ func NewTraceExporter(config configmodels.Exporter) (component.TraceExporterOld,
 	return zexp, nil
 }
 
-func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error) {
-	zCfg := config.(*Config)
-
-	serviceName := defaultServiceName
-	if zCfg.DefaultServiceName != "" {
-		serviceName = zCfg.DefaultServiceName
+func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
+	client, err := cfg.HTTPClientSettings.ToClient()
+	if err != nil {
+		return nil, err
 	}
 
 	ze := &zipkinExporter{
-		defaultServiceName: serviceName,
-		url:                zCfg.URL,
-		client:             &http.Client{Timeout: defaultTimeout},
+		defaultServiceName: cfg.DefaultServiceName,
+		url:                cfg.Endpoint,
+		client:             client,
 	}
 
-	switch zCfg.Format {
+	switch cfg.Format {
 	case "json":
 		ze.serializer = zipkinreporter.JSONSerializer{}
 	case "proto":
 		ze.serializer = zipkinproto.SpanSerializer{}
 	default:
-		return nil, fmt.Errorf("%s is not one of json or proto", zCfg.Format)
+		return nil, fmt.Errorf("%s is not one of json or proto", cfg.Format)
 	}
 
 	return ze, nil
