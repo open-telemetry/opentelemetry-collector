@@ -226,7 +226,7 @@ func convToOCAMetricType(metricType textparse.MetricType) metricspb.MetricDescri
 	case textparse.MetricTypeSummary:
 		return metricspb.MetricDescriptor_SUMMARY
 	default:
-		// including: textparse.MetricTypeUnknown, textparse.MetricTypeInfo, textparse.MetricTypeStateset
+		// including: textparse.MetricTypeInfo, textparse.MetricTypeStateset
 		return metricspb.MetricDescriptor_UNSPECIFIED
 	}
 }
