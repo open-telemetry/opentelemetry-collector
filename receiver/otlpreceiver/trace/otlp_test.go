@@ -63,10 +63,10 @@ func TestExport(t *testing.T) {
 	resourceSpans := []*otlptrace.ResourceSpans{
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "key1",
-						StringValue: "value1",
+						Key:   "key1",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -88,11 +88,10 @@ func TestExport(t *testing.T) {
 								{
 									TimeUnixNano: unixnanos,
 									Name:         "event1",
-									Attributes: []*otlpcommon.AttributeKeyValue{
+									Attributes: []*otlpcommon.KeyValue{
 										{
-											Key:         "eventattr1",
-											Type:        otlpcommon.AttributeKeyValue_STRING,
-											StringValue: "eventattrval1",
+											Key:   "eventattr1",
+											Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "eventattrval1"}},
 										},
 									},
 									DroppedAttributesCount: 4,

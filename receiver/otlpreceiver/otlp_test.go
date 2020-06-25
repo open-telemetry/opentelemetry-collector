@@ -80,7 +80,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 			"attributes": [
 			  {
 				"key": "host.hostname",
-				"string_value": "testHost"
+				"value": { "stringValue": "testHost" }
 			  }
 			]
 		  },
@@ -96,8 +96,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 				  "attributes": [
 					{
 					  "key": "attr1",
-					  "type": 1,
-					  "int_value": 55
+					  "value": { "intValue": 55 }
 					}
 				  ]
 				}
@@ -139,11 +138,10 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         conventions.AttributeHostHostname,
-						StringValue: "testHost",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
+						Key:   conventions.AttributeHostHostname,
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
 					},
 				},
 			},
@@ -156,11 +154,10 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 							Name:              "testSpan",
 							StartTimeUnixNano: 1544712660000000000,
 							EndTimeUnixNano:   1544712661000000000,
-							Attributes: []*otlpcommon.AttributeKeyValue{
+							Attributes: []*otlpcommon.KeyValue{
 								{
-									Key:      "attr1",
-									Type:     otlpcommon.AttributeKeyValue_INT,
-									IntValue: 55,
+									Key:   "attr1",
+									Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
 								},
 							},
 						},
@@ -366,10 +363,10 @@ func runContentTypeTests(addr string, contentTypeDesignation bool, contentType s
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.AttributeKeyValue{
+					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:         "sub-type",
-							StringValue: contentType,
+							Key:   "sub-type",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: contentType}},
 						},
 					},
 				},
@@ -573,10 +570,10 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.AttributeKeyValue{
+					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:         conventions.AttributeServiceName,
-							StringValue: "test-svc",
+							Key:   conventions.AttributeServiceName,
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test-svc"}},
 						},
 					},
 				},

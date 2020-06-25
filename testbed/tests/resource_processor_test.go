@@ -15,16 +15,16 @@
 package tests
 
 import (
-	"encoding/json"
 	"path"
 	"path/filepath"
 	"testing"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
-	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/testbed/testbed"
@@ -37,11 +37,11 @@ const (
 	  "attributes": [
 		{
 		  "key": "opencensus.resourcetype",
-		  "string_value": "host"
+		  "value": { "stringValue": "host" }
 		},
 		{
 		  "key": "label-key",
-		  "string_value": "label-value"
+		  "value": { "stringValue": "label-value" }
 		}
 	  ]
 	},
@@ -73,7 +73,7 @@ const (
       "attributes": [
         {
           "key": "label-key",
-          "string_value": "label-value"
+          "value": { "stringValue": "label-value" }
         }
       ]
     },
@@ -171,18 +171,18 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithTypeJSON),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: &otlpresource.Resource{
-					Attributes: []*v1.AttributeKeyValue{
+					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:         "opencensus.resourcetype",
-							StringValue: "vm",
+							Key:   "opencensus.resourcetype",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "vm"}},
 						},
 						{
-							Key:         "label-key",
-							StringValue: "label-value",
+							Key:   "label-key",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "label-value"}},
 						},
 						{
-							Key:         "additional-label-key",
-							StringValue: "additional-label-value",
+							Key:   "additional-label-key",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},
@@ -218,14 +218,14 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithoutTypeJSON),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: &otlpresource.Resource{
-					Attributes: []*v1.AttributeKeyValue{
+					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:         "label-key",
-							StringValue: "label-value",
+							Key:   "label-key",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "label-value"}},
 						},
 						{
-							Key:         "additional-label-key",
-							StringValue: "additional-label-value",
+							Key:   "additional-label-key",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},
@@ -243,10 +243,10 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 
 				Resource: &otlpresource.Resource{
-					Attributes: []*v1.AttributeKeyValue{
+					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:         "additional-label-key",
-							StringValue: "additional-label-value",
+							Key:   "additional-label-key",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},
@@ -264,7 +264,7 @@ func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) data.Metr
 func getMetricDataFromJSON(t *testing.T, rmString string) data.MetricData {
 	var mockedResourceMetrics otlpmetrics.ResourceMetrics
 
-	err := json.Unmarshal([]byte(rmString), &mockedResourceMetrics)
+	err := jsonpb.UnmarshalString(rmString, &mockedResourceMetrics)
 	require.NoError(t, err, "failed to get mocked resource metrics object", err)
 
 	return data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics})

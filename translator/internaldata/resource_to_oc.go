@@ -17,6 +17,7 @@ package internaldata
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -42,7 +43,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 
 	labels := make(map[string]string, attrs.Len())
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
-		val := attributeValueToString(v)
+		val := attributeValueToString(v, false)
 
 		switch k {
 		case conventions.OCAttributeResourceType:
@@ -106,17 +107,48 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	return &ocNode, &ocResource
 }
 
-func attributeValueToString(attr pdata.AttributeValue) string {
+func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 	switch attr.Type() {
+	case pdata.AttributeValueNULL:
+		if jsonLike {
+			return "null"
+		}
+		return ""
 	case pdata.AttributeValueSTRING:
+		if jsonLike {
+			return fmt.Sprintf("%q", attr.StringVal())
+		}
 		return attr.StringVal()
+
 	case pdata.AttributeValueBOOL:
 		return strconv.FormatBool(attr.BoolVal())
+
 	case pdata.AttributeValueDOUBLE:
 		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
+
 	case pdata.AttributeValueINT:
 		return strconv.FormatInt(attr.IntVal(), 10)
+
+	case pdata.AttributeValueMAP:
+		// OpenCensus attributes cannot represent maps natively. Convert the
+		// map to a JSON-like string.
+		var sb strings.Builder
+		sb.WriteString("{")
+		m := attr.MapVal()
+		first := true
+		m.ForEach(func(k string, v pdata.AttributeValue) {
+			if !first {
+				sb.WriteString(",")
+			}
+			first = false
+			sb.WriteString(fmt.Sprintf("%q:%s", k, attributeValueToString(v, true)))
+		})
+		sb.WriteString("}")
+		return sb.String()
+
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
 	}
+
+	// TODO: Add support for ARRAY type.
 }
