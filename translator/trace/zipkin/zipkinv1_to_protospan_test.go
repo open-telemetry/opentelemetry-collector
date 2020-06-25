@@ -141,17 +141,11 @@ func Test_hexTraceIDToOCTraceID(t *testing.T) {
 
 func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_local_component.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
-	reqs, err := V1JSONBatchToOCProto(blob)
-	if err != nil {
-		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
 
-	if len(reqs) != 2 {
-		t.Fatalf("got %d trace service request(s), want 2", len(reqs))
-	}
+	reqs, err := V1JSONBatchToOCProto(blob)
+	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
+	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
 
 	// Ensure the order of nodes
 	sort.Slice(reqs, func(i, j int) bool {
@@ -160,28 +154,19 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 
 	// First span didn't have a host/endpoint to give service name, use the local component.
 	got := reqs[0].Node.ServiceInfo.Name
-	want := "myLocalComponent"
-	if got != want {
-		t.Fatalf("got %q for service name, want %q", got, want)
-	}
+	require.Equal(t, "myLocalComponent", got)
 
 	// Second span have a host/endpoint to give service name, do not use local component.
 	got = reqs[1].Node.ServiceInfo.Name
-	want = "myServiceName"
-	if got != want {
-		t.Fatalf("got %q for service name, want %q", got, want)
-	}
+	require.Equal(t, "myServiceName", got)
 }
 
 func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
+
 	got, err := V1JSONBatchToOCProto(blob)
-	if err != nil {
-		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
-	}
+	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 	want := ocBatchesFromZipkinV1
 	sortTraceByNodeName(want)
@@ -192,27 +177,20 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 
 func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
 
 	var batches []interface{}
-	if err := json.Unmarshal(blob, &batches); err != nil {
-		t.Fatalf("failed to load the batches: %v", err)
-	}
+	err = json.Unmarshal(blob, &batches)
+	require.NoError(t, err, "Failed to load the batches")
 
 	nodeToTraceReqs := make(map[string]*consumerdata.TraceData)
 	var got []consumerdata.TraceData
 	for _, batch := range batches {
 		jsonBatch, err := json.Marshal(batch)
-		if err != nil {
-			t.Fatalf("failed to marshal interface back to blob: %v", err)
-		}
+		require.NoError(t, err, "Failed to marshal interface back to blob")
 
 		g, err := V1JSONBatchToOCProto(jsonBatch)
-		if err != nil {
-			t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
-		}
+		require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 		// Coalesce the nodes otherwise they will differ due to multiple
 		// nodes representing same logical service
@@ -526,14 +504,8 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 				return
 			}
 			gs := gb[0].Spans[0]
-
-			if !reflect.DeepEqual(gs.Attributes, c.wantAttributes) {
-				t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", gs.Attributes, c.wantAttributes)
-			}
-
-			if !reflect.DeepEqual(gs.Status, c.wantStatus) {
-				t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, c.wantStatus)
-			}
+			require.Equal(t, c.wantAttributes, gs.Attributes, "Unsuccessful conversion %d", i)
+			require.Equal(t, c.wantStatus, gs.Status, "Unsuccessful conversion %d", i)
 		})
 	}
 }
@@ -607,9 +579,7 @@ func TestJSONHTTPToGRPCStatusCode(t *testing.T) {
 		}
 
 		gs := gb[0].Spans[0]
-		if !reflect.DeepEqual(gs.Status.Code, wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, wantStatus)
-		}
+		require.Equal(t, wantStatus, gs.Status.Code, "Unsuccessful conversion %d", i)
 	}
 }
 

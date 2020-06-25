@@ -32,9 +32,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
-	if err != nil {
-		t.Fatalf("unable to load config, %v", err)
-	}
+	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(config.Extensions))
@@ -196,100 +194,99 @@ func TestSimpleConfig(t *testing.T) {
 	}()
 
 	for _, test := range testCases {
-		t.Logf("TEST[%s]", test.name)
-		factories, err := ExampleComponents()
-		assert.NoError(t, err)
+		t.Run(test.name, func(t *testing.T) {
+			factories, err := ExampleComponents()
+			assert.NoError(t, err)
 
-		// Load the config
-		config, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
-		if err != nil {
-			t.Fatalf("TEST[%s] unable to load config, %v", test.name, err)
-		}
+			// Load the config
+			config, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
+			require.NoError(t, err, "Unable to load config")
 
-		// Verify extensions.
-		assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
-		assert.Equalf(t,
-			&ExampleExtensionCfg{
-				ExtensionSettings: configmodels.ExtensionSettings{
-					TypeVal: "exampleextension",
-					NameVal: "exampleextension",
+			// Verify extensions.
+			assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
+			assert.Equalf(t,
+				&ExampleExtensionCfg{
+					ExtensionSettings: configmodels.ExtensionSettings{
+						TypeVal: "exampleextension",
+						NameVal: "exampleextension",
+					},
+					ExtraSetting:     extensionExtra,
+					ExtraMapSetting:  map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
+					ExtraListSetting: []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
 				},
-				ExtraSetting:     extensionExtra,
-				ExtraMapSetting:  map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
-				ExtraListSetting: []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
-			},
-			config.Extensions["exampleextension"],
-			"TEST[%s] Did not load extension config correctly", test.name)
+				config.Extensions["exampleextension"],
+				"TEST[%s] Did not load extension config correctly", test.name)
 
-		// Verify service.
-		assert.Equalf(t, 1, len(config.Service.Extensions), "TEST[%s]", test.name)
-		assert.Equalf(t, "exampleextension", config.Service.Extensions[0], "TEST[%s]", test.name)
+			// Verify service.
+			assert.Equalf(t, 1, len(config.Service.Extensions), "TEST[%s]", test.name)
+			assert.Equalf(t, "exampleextension", config.Service.Extensions[0], "TEST[%s]", test.name)
 
-		// Verify receivers
-		assert.Equalf(t, 1, len(config.Receivers), "TEST[%s]", test.name)
+			// Verify receivers
+			assert.Equalf(t, 1, len(config.Receivers), "TEST[%s]", test.name)
 
-		assert.Equalf(t,
-			&ExampleReceiver{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "examplereceiver",
-					NameVal: "examplereceiver",
+			assert.Equalf(t,
+				&ExampleReceiver{
+					ReceiverSettings: configmodels.ReceiverSettings{
+						TypeVal: "examplereceiver",
+						NameVal: "examplereceiver",
+					},
+					ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+						Endpoint: "localhost:1234",
+					},
+					ExtraSetting:     receiverExtra,
+					ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
+					ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
 				},
-				ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-					Endpoint: "localhost:1234",
+				config.Receivers["examplereceiver"],
+				"TEST[%s] Did not load receiver config correctly", test.name)
+
+			// Verify exporters
+			assert.Equalf(t, 1, len(config.Exporters), "TEST[%s]", test.name)
+
+			assert.Equalf(t,
+				&ExampleExporter{
+					ExporterSettings: configmodels.ExporterSettings{
+						NameVal: "exampleexporter",
+						TypeVal: "exampleexporter",
+					},
+					ExtraInt:         65,
+					ExtraSetting:     exporterExtra,
+					ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
+					ExtraListSetting: []string{exporterExtraListElement + "_1", exporterExtraListElement + "_2"},
 				},
-				ExtraSetting:     receiverExtra,
-				ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
-				ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
-			},
-			config.Receivers["examplereceiver"],
-			"TEST[%s] Did not load receiver config correctly", test.name)
+				config.Exporters["exampleexporter"],
+				"TEST[%s] Did not load exporter config correctly", test.name)
 
-		// Verify exporters
-		assert.Equalf(t, 1, len(config.Exporters), "TEST[%s]", test.name)
+			// Verify Processors
+			assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
 
-		assert.Equalf(t,
-			&ExampleExporter{
-				ExporterSettings: configmodels.ExporterSettings{
-					NameVal: "exampleexporter",
-					TypeVal: "exampleexporter",
+			assert.Equalf(t,
+				&ExampleProcessorCfg{
+					ProcessorSettings: configmodels.ProcessorSettings{
+						TypeVal: "exampleprocessor",
+						NameVal: "exampleprocessor",
+					},
+					ExtraSetting:     processorExtra,
+					ExtraMapSetting:  map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
+					ExtraListSetting: []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
 				},
-				ExtraInt:         65,
-				ExtraSetting:     exporterExtra,
-				ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
-				ExtraListSetting: []string{exporterExtraListElement + "_1", exporterExtraListElement + "_2"},
-			},
-			config.Exporters["exampleexporter"],
-			"TEST[%s] Did not load exporter config correctly", test.name)
+				config.Processors["exampleprocessor"],
+				"TEST[%s] Did not load processor config correctly", test.name)
 
-		// Verify Processors
-		assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
+			// Verify Pipelines
+			assert.Equalf(t, 1, len(config.Service.Pipelines), "TEST[%s]", test.name)
 
-		assert.Equalf(t,
-			&ExampleProcessorCfg{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					TypeVal: "exampleprocessor",
-					NameVal: "exampleprocessor",
+			assert.Equalf(t,
+				&configmodels.Pipeline{
+					Name:       "traces",
+					InputType:  configmodels.TracesDataType,
+					Receivers:  []string{"examplereceiver"},
+					Processors: []string{"exampleprocessor"},
+					Exporters:  []string{"exampleexporter"},
 				},
-				ExtraSetting:     processorExtra,
-				ExtraMapSetting:  map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
-				ExtraListSetting: []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
-			},
-			config.Processors["exampleprocessor"],
-			"TEST[%s] Did not load processor config correctly", test.name)
-
-		// Verify Pipelines
-		assert.Equalf(t, 1, len(config.Service.Pipelines), "TEST[%s]", test.name)
-
-		assert.Equalf(t,
-			&configmodels.Pipeline{
-				Name:       "traces",
-				InputType:  configmodels.TracesDataType,
-				Receivers:  []string{"examplereceiver"},
-				Processors: []string{"exampleprocessor"},
-				Exporters:  []string{"exampleexporter"},
-			},
-			config.Service.Pipelines["traces"],
-			"TEST[%s] Did not load pipeline config correctly", test.name)
+				config.Service.Pipelines["traces"],
+				"TEST[%s] Did not load pipeline config correctly", test.name)
+		})
 	}
 }
 
@@ -305,9 +302,7 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
-	if err != nil {
-		t.Fatalf("Unable to load config, %v", err)
-	}
+	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
 	assert.Equal(t, 1, len(config.Extensions))
@@ -415,9 +410,7 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 
 	// Load the config
 	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
-	if err != nil {
-		t.Fatalf("unable to load config, %v", err)
-	}
+	require.NoError(t, err, "Unable to load config")
 
 	// Verify receivers
 	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")

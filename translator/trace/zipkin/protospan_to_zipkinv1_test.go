@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace/tracestate"
 
 	"go.opentelemetry.io/collector/internal"
@@ -224,15 +225,12 @@ func TestOCSpanProtoToZipkin_endToEnd(t *testing.T) {
 	}
 
 	gotOCSpanData, err := OCSpanProtoToZipkin(nil, resource, protoSpan, "default_service")
-	if err != nil {
-		t.Fatalf("Failed to convert from ProtoSpan to OCSpanData: %v", err)
-	}
+	require.NoError(t, err, "Failed to convert from ProtoSpan to OCSpanData")
 
 	ocTracestate, err := tracestate.New(new(tracestate.Tracestate), tracestate.Entry{Key: "foo", Value: "bar"},
 		tracestate.Entry{Key: "a", Value: "b"})
-	if err != nil || ocTracestate == nil {
-		t.Fatalf("Failed to create ocTracestate: %v", err)
-	}
+	require.NotNil(t, ocTracestate)
+	require.NoError(t, err)
 
 	sampled := true
 	parentID := zipkinmodel.ID(uint64(0xEFEEEDECEBEAE9E8))

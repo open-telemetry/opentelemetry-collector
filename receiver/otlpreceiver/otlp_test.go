@@ -211,14 +211,10 @@ func TestProtoHttp(t *testing.T) {
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("Error reading response from trace grpc-gateway, %v", err)
-	}
+	require.NoError(t, err, "Error reading response from trace grpc-gateway")
 
 	err = resp.Body.Close()
-	if err != nil {
-		t.Fatalf("Error closing response body, %v", err)
-	}
+	require.NoError(t, err, "Error closing response body")
 
 	if resp.StatusCode != 200 {
 		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
@@ -230,9 +226,7 @@ func TestProtoHttp(t *testing.T) {
 
 	tmp := collectortrace.ExportTraceServiceResponse{}
 	err = proto.Unmarshal(respBytes, &tmp)
-	if err != nil {
-		t.Errorf("Unable to unmarshal response to ExportTraceServiceResponse proto: %v", err)
-	}
+	require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
 	gotOtlp := pdata.TracesToOtlp(sink.AllTraces()[0])
 
