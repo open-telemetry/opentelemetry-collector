@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -141,11 +142,11 @@ func (f *Factory) CreateTraceReceiver(
 		}
 
 		if protoGRPC.TLSCredentials != nil {
-			option, err := protoGRPC.TLSCredentials.LoadgRPCTLSServerCredentials()
+			tlsCfg, err := protoGRPC.TLSCredentials.LoadTLSConfig()
 			if err != nil {
 				return nil, fmt.Errorf("failed to configure TLS: %v", err)
 			}
-			grpcServerOptions = append(grpcServerOptions, option)
+			grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 		}
 		config.CollectorGRPCOptions = grpcServerOptions
 	}

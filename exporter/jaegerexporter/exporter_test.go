@@ -190,10 +190,12 @@ func TestMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC Jaeger server
-	tlsCfgOpts := configtls.TLSSetting{
-		CAFile:   caPath,
-		CertFile: serverCertPath,
-		KeyFile:  serverKeyPath,
+	tlsCfgOpts := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caPath,
+			CertFile: serverCertPath,
+			KeyFile:  serverKeyPath,
+		},
 	}
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)

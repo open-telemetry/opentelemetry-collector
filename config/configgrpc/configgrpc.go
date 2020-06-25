@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
@@ -79,9 +80,13 @@ func GrpcSettingsToDialOptions(settings GRPCClientSettings) ([]grpc.DialOption, 
 		}
 	}
 
-	tlsDialOption, err := settings.TLSSetting.LoadgRPCTLSClientCredentials()
+	tlsCfg, err := settings.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
+	}
+	tlsDialOption := grpc.WithInsecure()
+	if tlsCfg != nil {
+		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
 	}
 	opts = append(opts, tlsDialOption)
 

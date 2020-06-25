@@ -260,9 +260,9 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		},
 	}
 
-	tlsOption, _ := tlsCreds.LoadgRPCTLSServerCredentials()
-
-	grpcServerOptions = append(grpcServerOptions, tlsOption)
+	tlsCfg, err := tlsCreds.LoadTLSConfig()
+	assert.NoError(t, err)
+	grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 
 	port := testutils.GetAvailablePort(t)
 	config := &Configuration{
@@ -552,10 +552,12 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC server that serves sampling strategies
-	tlsCfgOpts := configtls.TLSSetting{
-		CAFile:   caPath,
-		CertFile: serverCertPath,
-		KeyFile:  serverKeyPath,
+	tlsCfgOpts := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caPath,
+			CertFile: serverCertPath,
+			KeyFile:  serverKeyPath,
+		},
 	}
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)

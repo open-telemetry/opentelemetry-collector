@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -79,11 +80,11 @@ type keepaliveEnforcementPolicy struct {
 func (rOpts *Config) buildOptions() ([]Option, error) {
 	var opts []Option
 	if rOpts.TLSCredentials != nil {
-		tlsCredsOptions, err := rOpts.TLSCredentials.LoadgRPCTLSServerCredentials()
+		tlsCfg, err := rOpts.TLSCredentials.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("error initializing OTLP receiver %q TLS Credentials: %v", rOpts.NameVal, err)
 		}
-		opts = append(opts, WithGRPCServerOptions(tlsCredsOptions))
+		opts = append(opts, WithGRPCServerOptions(grpc.Creds(credentials.NewTLS(tlsCfg))))
 	}
 	if len(rOpts.CorsOrigins) > 0 {
 		opts = append(opts, WithCorsOrigins(rOpts.CorsOrigins))

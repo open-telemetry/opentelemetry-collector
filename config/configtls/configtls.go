@@ -20,9 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 // TLSSetting exposes the common client and server TLS configurations.
@@ -70,11 +67,16 @@ type TLSServerSetting struct {
 	TLSSetting `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// These are config options specific to server connections.
+
+	// Path to the TLS cert to use by the server to verify a client certificate. (optional)
+	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
+	// https://godoc.org/crypto/tls#Config for more information. (optional)
+	ClientCAFile string `mapstructure:"client_ca_file"`
 }
 
 // LoadTLSConfig loads TLS certificates and returns a tls.Config.
 // This will set the RootCAs and Certificates of a tls.Config.
-func (c TLSSetting) LoadTLSConfig() (*tls.Config, error) {
+func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	// There is no need to load the System Certs for RootCAs because
 	// if the value is nil, it will default to checking against th System Certs.
 	var err error
@@ -119,25 +121,31 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
-func (c TLSClientSetting) LoadgRPCTLSClientCredentials() (grpc.DialOption, error) {
+func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	if c.Insecure && c.CAFile == "" {
-		return grpc.WithInsecure(), nil
+		return nil, nil
 	}
 
-	tlsConf, err := c.TLSSetting.LoadTLSConfig()
+	tlsCfg, err := c.TLSSetting.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
-	tlsConf.ServerName = c.ServerName
-	creds := credentials.NewTLS(tlsConf)
-	return grpc.WithTransportCredentials(creds), nil
+	tlsCfg.ServerName = c.ServerName
+	return tlsCfg, nil
 }
 
-func (c TLSServerSetting) LoadgRPCTLSServerCredentials() (grpc.ServerOption, error) {
-	tlsConf, err := c.LoadTLSConfig()
+func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
+	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
-	creds := credentials.NewTLS(tlsConf)
-	return grpc.Creds(creds), nil
+	if c.ClientCAFile != "" {
+		certPool, err := c.loadCert(c.ClientCAFile)
+		if err != nil {
+			return nil, err
+		}
+		tlsCfg.ClientCAs = certPool
+		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+	return tlsCfg, nil
 }
