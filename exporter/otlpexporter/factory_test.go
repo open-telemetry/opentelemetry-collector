@@ -116,7 +116,6 @@ func TestCreateTraceExporter(t *testing.T) {
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				},
-				NumWorkers: 3,
 			},
 		},
 		{
