@@ -165,8 +165,8 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	assert.Equal(t, Starting, <-app.GetStateChannel())
 	assert.Equal(t, Running, <-app.GetStateChannel())
 
-	app.SignalTestComplete()
-	app.SignalTestComplete()
+	app.Shutdown()
+	app.Shutdown()
 	<-appDone
 	assert.Equal(t, Closing, <-app.GetStateChannel())
 	assert.Equal(t, Closed, <-app.GetStateChannel())
@@ -473,7 +473,7 @@ func TestApplication_GetExtensions(t *testing.T) {
 	assert.Equal(t, []string{"exampleextension"}, extTypes)
 
 	// Stop the Application.
-	close(app.stopTestChan)
+	app.Shutdown()
 	<-appDone
 }
 
@@ -512,7 +512,7 @@ func TestApplication_GetExporters(t *testing.T) {
 	assert.EqualValues(t, "exampleexporter", expCfg.Type())
 
 	// Stop the Application.
-	close(app.stopTestChan)
+	app.Shutdown()
 	<-appDone
 }
 

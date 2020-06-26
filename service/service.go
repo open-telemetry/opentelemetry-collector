@@ -81,8 +81,8 @@ type Application struct {
 	factories config.Factories
 	config    *configmodels.Config
 
-	// stopTestChan is used to terminate the application in end to end tests.
-	stopTestChan chan struct{}
+	// shutdownChannel is used to terminate the application.
+	shutdownChannel chan struct{}
 
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
@@ -234,13 +234,13 @@ func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), app.handleExtensionzRequest)
 }
 
-func (app *Application) SignalTestComplete() {
+func (app *Application) Shutdown() {
 	defer func() {
 		if r := recover(); r != nil {
-			app.logger.Info("stopTestChan already closed")
+			app.logger.Info("shutdownChannel already closed")
 		}
 	}()
-	close(app.stopTestChan)
+	close(app.shutdownChannel)
 }
 
 func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
@@ -272,15 +272,15 @@ func (app *Application) runAndWaitForShutdownEvent() {
 	signal.Notify(app.signalsChannel, os.Interrupt, syscall.SIGTERM)
 
 	// set the channel to stop testing.
-	app.stopTestChan = make(chan struct{})
+	app.shutdownChannel = make(chan struct{})
 	app.stateChannel <- Running
 	select {
 	case err := <-app.asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 	case s := <-app.signalsChannel:
 		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
-	case <-app.stopTestChan:
-		app.logger.Info("Received stop test request")
+	case <-app.shutdownChannel:
+		app.logger.Info("Received shutdown request")
 	}
 	app.stateChannel <- Closing
 }
