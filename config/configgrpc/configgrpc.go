@@ -20,13 +20,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -103,8 +101,14 @@ type KeepaliveEnforcementPolicy struct {
 }
 
 type GRPCServerSettings struct {
-	// Configures the generic server protocol.
-	configprotocol.ProtocolServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// The target to which the exporter is going to send traces or metrics,
+	// using the gRPC protocol. The valid syntax is described at
+	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
+	Endpoint string `mapstructure:"endpoint"`
+
+	// Configures the protocol to use TLS.
+	// The default value is nil, which will cause the protocol to not use TLS.
+	TLSCredentials *configtls.TLSServerSetting `mapstructure:"tls_credentials, omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib,omitempty"`
@@ -158,7 +162,7 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 	if gss.TLSCredentials != nil {
 		tlsCfg, err := gss.TLSCredentials.LoadTLSConfig()
 		if err != nil {
-			return nil, errors.Wrap(err, "error initializing TLS Credentials")
+			return nil, err
 		}
 		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
