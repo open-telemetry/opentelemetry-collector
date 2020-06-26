@@ -48,7 +48,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -342,8 +342,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	// fail with error. Use a small hack to transform the multiple arrays into a
 	// single one.
 	accumulatedJSONMsgs := strings.Replace(buf.String(), "][", ",", -1)
-	gj := testutils.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
-	wj := testutils.GenerateNormalizedJSON(t, string(receiverInputJSON))
+	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
+	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
 	assert.Equal(t, wj, gj)
 }
 

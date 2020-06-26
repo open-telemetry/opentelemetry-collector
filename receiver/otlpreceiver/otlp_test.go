@@ -45,14 +45,14 @@ import (
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/observability/observabilitytest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const otlpReceiver = "otlp_receiver_test"
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
@@ -171,7 +171,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 }
 
 func TestProtoHttp(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
@@ -245,7 +245,7 @@ func TestProtoHttp(t *testing.T) {
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkTraceExporter)
@@ -269,7 +269,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 }
 
 func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkMetricsExporter)
@@ -298,7 +298,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	t.Skip("Currently a flaky test as we need a way to flush all written traces")
 
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporter)
 	ocr, err := New(otlpReceiver, "tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
@@ -428,7 +428,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 }
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	ocr, err := New(otlpReceiver, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
@@ -436,7 +436,7 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 }
 
 func TestNewPortAlreadyUsed(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
@@ -447,7 +447,7 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	r, err := New(otlpReceiver, "tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -457,7 +457,7 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 }
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	r, err := New(otlpReceiver, "tcp", addr, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -565,7 +565,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		},
 	}
 
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	req := &collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{

@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 const jaegerAgent = "jaeger_agent_test"
@@ -75,7 +75,7 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 
 	config := &Configuration{
 		AgentBinaryThriftPort: int(port),
@@ -137,7 +137,7 @@ func TestJaegerHTTP(t *testing.T) {
 	})
 	defer s.GracefulStop()
 
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	config := &Configuration{
 		AgentHTTPPort: int(port),
 		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
@@ -156,7 +156,7 @@ func TestJaegerHTTP(t *testing.T) {
 	assert.NoError(t, err, "Start failed")
 
 	// allow http server to start
-	err = testutils.WaitForPort(t, port)
+	err = testutil.WaitForPort(t, port)
 	assert.NoError(t, err, "WaitForPort failed")
 
 	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)

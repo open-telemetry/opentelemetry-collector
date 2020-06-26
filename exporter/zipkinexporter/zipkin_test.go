@@ -38,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 // This function tests that Zipkin spans that are received then processed roundtrip
@@ -76,7 +76,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := processor.NewTraceFanOutConnectorOld([]consumer.TraceConsumerOld{tes})
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			NameVal: "zipkin_receiver",
@@ -139,9 +139,9 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		}]
 		`}
 	for i, s := range wants {
-		want := testutils.GenerateNormalizedJSON(t, s)
+		want := testutil.GenerateNormalizedJSON(t, s)
 		gotBytes := buf.Next(int(sizes[i]))
-		got := testutils.GenerateNormalizedJSON(t, string(gotBytes))
+		got := testutil.GenerateNormalizedJSON(t, string(gotBytes))
 		assert.Equal(t, want, got)
 	}
 }
@@ -317,7 +317,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	zexp := processor.NewTraceFanOutConnectorOld([]consumer.TraceConsumerOld{tes})
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			NameVal: "zipkin_receiver",

@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 // TODO: add E2E tests once ocagent implements metric service client.
@@ -342,7 +342,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (oci *
 		}
 	}
 
-	_, port, err = testutils.HostPortFromAddr(ln.Addr())
+	_, port, err = testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)

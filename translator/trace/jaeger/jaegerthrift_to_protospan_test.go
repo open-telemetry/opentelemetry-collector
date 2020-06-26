@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -65,7 +65,7 @@ func TestThriftBatchToOCProto(t *testing.T) {
 			continue
 		}
 
-		gj, wj := testutils.GenerateNormalizedJSON(t, string(gb)), testutils.GenerateNormalizedJSON(t, string(wb))
+		gj, wj := testutil.GenerateNormalizedJSON(t, string(gb)), testutil.GenerateNormalizedJSON(t, string(wb))
 		if gj != wj {
 			t.Errorf("The roundtrip JSON doesn't match the JSON that we want\nGot:\n%s\nWant:\n%s", gj, wj)
 		}
