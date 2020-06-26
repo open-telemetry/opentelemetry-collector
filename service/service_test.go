@@ -105,9 +105,9 @@ func (tel *mockAppTelemetry) shutdown() error {
 
 func TestApplication_ReportError(t *testing.T) {
 	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := AppTelemetry
-	AppTelemetry = &mockAppTelemetry{}
-	defer func() { AppTelemetry = preservedAppTelemetry }()
+	preservedAppTelemetry := applicationTelemetry
+	applicationTelemetry = &mockAppTelemetry{}
+	defer func() { applicationTelemetry = preservedAppTelemetry }()
 
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
