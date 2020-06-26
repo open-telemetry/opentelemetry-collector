@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -257,6 +258,63 @@ func TestHttpReception(t *testing.T) {
 			require.NoError(t, s.Close())
 		})
 	}
+}
+
+func TestHttpCors(t *testing.T) {
+	hss := &HTTPServerSettings{
+		Endpoint:    "localhost:0",
+		CorsOrigins: []string{"allowed-*.com"},
+	}
+
+	ln, err := hss.ToListener()
+	assert.NoError(t, err)
+	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	go func() {
+		_ = s.Serve(ln)
+	}()
+
+	// TODO: make starting server deterministic
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	url := fmt.Sprintf("http://%s", ln.Addr().String())
+
+	// Verify allowed domain gets responses that allow CORS.
+	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
+
+	// Verify disallowed domain gets responses that disallow CORS.
+	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
+
+	require.NoError(t, s.Close())
+}
+
+func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
+	req, err := http.NewRequest("OPTIONS", url, nil)
+	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
+	req.Header.Set("Origin", origin)
+	req.Header.Set("Access-Control-Request-Method", "POST")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Error sending OPTIONS to http server: %v", err)
+
+	err = resp.Body.Close()
+	if err != nil {
+		t.Errorf("Error closing OPTIONS response body, %v", err)
+	}
+
+	assert.Equal(t, wantStatus, resp.StatusCode)
+
+	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
+	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
+
+	wantAllowOrigin := ""
+	wantAllowMethods := ""
+	if wantAllowed {
+		wantAllowOrigin = origin
+		wantAllowMethods = "POST"
+	}
+	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
+	assert.Equal(t, wantAllowMethods, gotAllowMethods)
 }
 
 func ExampleHTTPServerSettings() {

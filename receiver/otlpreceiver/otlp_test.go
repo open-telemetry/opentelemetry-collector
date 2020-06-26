@@ -396,18 +396,15 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	require.NoError(t, err, "Error sending OPTIONS to grpc-gateway server: %v", err)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Error sending OPTIONS to http server: %v", err)
 
 	err = resp.Body.Close()
 	if err != nil {
 		t.Errorf("Error closing OPTIONS response body, %v", err)
 	}
 
-	if resp.StatusCode != wantStatus {
-		t.Errorf("Unexpected status from OPTIONS: %v", resp.StatusCode)
-	}
+	assert.Equal(t, wantStatus, resp.StatusCode)
 
 	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
@@ -418,13 +415,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
 	}
-
-	if gotAllowOrigin != wantAllowOrigin {
-		t.Errorf("Unexpected Access-Control-Allow-Origin: %v", gotAllowOrigin)
-	}
-	if gotAllowMethods != wantAllowMethods {
-		t.Errorf("Unexpected Access-Control-Allow-Methods: %v", gotAllowMethods)
-	}
+	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
+	assert.Equal(t, wantAllowMethods, gotAllowMethods)
 }
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
