@@ -34,7 +34,7 @@ func TestBasicGrpcSettings(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInvalidPemFile(t *testing.T) {
+func TestGRPCClientSettingsError(t *testing.T) {
 	tests := []struct {
 		settings GRPCClientSettings
 		err      string
@@ -91,6 +91,53 @@ func TestUseSecure(t *testing.T) {
 	dialOpts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
 	assert.Equal(t, len(dialOpts), 1)
+}
+
+func TestGRPCServerSettingsError(t *testing.T) {
+	tests := []struct {
+		settings GRPCServerSettings
+		err      string
+	}{
+		{
+			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
+			settings: GRPCServerSettings{
+				Endpoint: "",
+				TLSCredentials: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "/doesnt/exist",
+					},
+				},
+				Keepalive: nil,
+			},
+		},
+		{
+			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
+			settings: GRPCServerSettings{
+				Endpoint: "",
+				TLSCredentials: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "/doesnt/exist",
+					},
+				},
+				Keepalive: nil,
+			},
+		},
+		{
+			err: "^failed to load TLS config: failed to load client CA CertPool: failed to load CA /doesnt/exist:",
+			settings: GRPCServerSettings{
+				Endpoint: "",
+				TLSCredentials: &configtls.TLSServerSetting{
+					ClientCAFile: "/doesnt/exist",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.err, func(t *testing.T) {
+			_, err := test.settings.ToServerOption()
+			assert.Regexp(t, test.err, err)
+		})
+	}
 }
 
 func TestGetGRPCCompressionKey(t *testing.T) {

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -53,9 +52,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
-			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
-				Endpoint: "0.0.0.0:55678",
-			},
+			Endpoint: "0.0.0.0:55678",
 		},
 		Transport: "tcp",
 	}
