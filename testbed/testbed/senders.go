@@ -157,28 +157,11 @@ func (je *JaegerGRPCDataSender) Start() error {
 }
 
 func (je *JaegerGRPCDataSender) GenConfigYAMLStr() string {
-	// Note that this generates a receiver config for agent.
-	// We only need to enable gRPC protocol because that's what we use in tests.
-	// Due to bug in Jaeger receiver (https://go.opentelemetry.io/collector/issues/445)
-	// which makes it impossible to disable protocols that we don't need to receive on we
-	// have to use fake ports for all endpoints except gRPC, otherwise it is
-	// impossible to start the Collector because the standard ports for those protocols
-	// are already listened by mock Jaeger backend that is part of the tests.
-	// As soon as the bug is fixed remove the endpoints and use "disabled: true" setting
-	// instead.
 	return fmt.Sprintf(`
   jaeger:
     protocols:
       grpc:
-        endpoint: "%s:%d"
-      thrift_tchannel:
-        endpoint: "localhost:8372"
-      thrift_compact:
-        endpoint: "localhost:8373"
-      thrift_binary:
-        endpoint: "localhost:8374"
-      thrift_http:
-        endpoint: "localhost:8375"`, je.Host, je.Port)
+        endpoint: "%s:%d"`, je.Host, je.Port)
 }
 
 func (je *JaegerGRPCDataSender) ProtocolName() string {

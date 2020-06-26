@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -48,8 +49,9 @@ func TestCreateReceiver(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
-
+	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+		Endpoint: defaultGRPCBindEndpoint,
+	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
@@ -64,9 +66,10 @@ func TestCreateReceiver(t *testing.T) {
 func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
+	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+		Endpoint: defaultGRPCBindEndpoint,
+	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
@@ -77,13 +80,14 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
-	rCfg.Protocols[protoGRPC].TLSCredentials = &configtls.TLSServerSetting{
-		TLSSetting: configtls.TLSSetting{
-			CertFile: "./testdata/certificate.pem",
-			KeyFile:  "./testdata/key.pem",
+	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+		Endpoint: defaultGRPCBindEndpoint,
+		TLSCredentials: &configtls.TLSServerSetting{
+			TLSSetting: configtls.TLSSetting{
+				CertFile: "./testdata/certificate.pem",
+				KeyFile:  "./testdata/key.pem",
+			},
 		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -95,9 +99,10 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP], _ = defaultsForProtocol(protoThriftHTTP)
+	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
+		Endpoint: defaultHTTPBindEndpoint,
+	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
@@ -108,9 +113,10 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftBinary], _ = defaultsForProtocol(protoThriftBinary)
+	cfg.(*Config).Protocols.ThriftBinary = &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultThriftBinaryBindEndpoint,
+	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
@@ -121,9 +127,10 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	cfg.(*Config).Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultThriftCompactBindEndpoint,
+	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 
@@ -136,7 +143,9 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	rCfg.Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultThriftCompactBindEndpoint,
+	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
@@ -152,7 +161,9 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	endpoint := "localhost:1234"
-	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	rCfg.Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultThriftCompactBindEndpoint,
+	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
@@ -169,9 +180,8 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 func TestCreateNoPort(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP] = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: "localhost:",
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -182,9 +192,8 @@ func TestCreateNoPort(t *testing.T) {
 func TestCreateLargePort(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftHTTP] = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: "localhost:65536",
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -195,11 +204,11 @@ func TestCreateLargePort(t *testing.T) {
 func TestCreateInvalidHost(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoGRPC] = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		Endpoint: "1234",
 	}
+
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with bad hostname must fail")
@@ -208,10 +217,8 @@ func TestCreateInvalidHost(t *testing.T) {
 func TestCreateNoProtocols(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols = make(map[string]*configprotocol.ProtocolServerSettings)
-
+	cfg.(*Config).Protocols = Protocols{}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")
@@ -220,12 +227,10 @@ func TestCreateNoProtocols(t *testing.T) {
 func TestThriftBinaryBadPort(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftBinary] = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftBinary = &configprotocol.ProtocolServerSettings{
 		Endpoint: "localhost:65536",
 	}
-
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with a bad thrift binary port must fail")
@@ -234,9 +239,8 @@ func TestThriftBinaryBadPort(t *testing.T) {
 func TestThriftCompactBadPort(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftCompact] = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
 		Endpoint: "localhost:65536",
 	}
 
@@ -253,7 +257,9 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	hostPort := 5778
 	endpoint := "localhost:1234"
 	strategyFile := "strategies.json"
-	rCfg.Protocols[protoGRPC], _ = defaultsForProtocol(protoGRPC)
+	rCfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
+		Endpoint: defaultGRPCBindEndpoint,
+	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: endpoint,
@@ -275,10 +281,13 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	strategyFile := "strategies.json"
-	rCfg.Protocols[protoThriftCompact], _ = defaultsForProtocol(protoThriftCompact)
+	// Remove all default protocols
+	rCfg.Protocols = Protocols{}
+	rCfg.Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultThriftCompactBindEndpoint,
+	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
-		StrategyFile: strategyFile,
+		StrategyFile: "strategies.json",
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
@@ -297,11 +306,4 @@ func TestCustomUnmarshalErrors(t *testing.T) {
 
 	err = f(config.NewViper(), &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
-}
-
-func TestDefaultsForProtocolError(t *testing.T) {
-	d, err := defaultsForProtocol("badproto")
-
-	assert.Nil(t, d, "defaultsForProtocol should have returned nil")
-	assert.Error(t, err, "defaultsForProtocol should have errored")
 }
