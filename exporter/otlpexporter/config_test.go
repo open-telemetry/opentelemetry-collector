@@ -68,6 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					PermitWithoutStream: true,
 					Timeout:             30 * time.Second,
 				},
+				WriteBufferSize: 512 * 1024,
 			},
 			NumWorkers: 8,
 		})

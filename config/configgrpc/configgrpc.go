@@ -71,6 +71,14 @@ type GRPCClientSettings struct {
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
 
+	// The WriteBufferSize for client gRPC. See grpc.WithReadBufferSize
+	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
+	ReadBufferSize int `mapstructure:"read_buffer_size"`
+
+	// The WriteBufferSize for client gRPC. See grpc.WithWriteBufferSize
+	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
+	WriteBufferSize int `mapstructure:"write_buffer_size"`
+
 	// WaitForReady parameter configures client to wait for ready state before sending data.
 	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
 	WaitForReady bool `mapstructure:"wait_for_ready"`
@@ -122,18 +130,18 @@ type GRPCServerSettings struct {
 }
 
 // ToServerOption maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
-func (settings *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
+func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	opts := []grpc.DialOption{}
 
-	if settings.Compression != "" {
-		if compressionKey := GetGRPCCompressionKey(settings.Compression); compressionKey != CompressionUnsupported {
+	if gcs.Compression != "" {
+		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
 			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
 		} else {
-			return nil, fmt.Errorf("unsupported compression type %q", settings.Compression)
+			return nil, fmt.Errorf("unsupported compression type %q", gcs.Compression)
 		}
 	}
 
-	tlsCfg, err := settings.TLSSetting.LoadTLSConfig()
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -143,11 +151,19 @@ func (settings *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	}
 	opts = append(opts, tlsDialOption)
 
-	if settings.Keepalive != nil {
+	if gcs.ReadBufferSize > 0 {
+		opts = append(opts, grpc.WithReadBufferSize(gcs.ReadBufferSize))
+	}
+
+	if gcs.WriteBufferSize > 0 {
+		opts = append(opts, grpc.WithWriteBufferSize(gcs.WriteBufferSize))
+	}
+
+	if gcs.Keepalive != nil {
 		keepAliveOption := grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                settings.Keepalive.Time,
-			Timeout:             settings.Keepalive.Timeout,
-			PermitWithoutStream: settings.Keepalive.PermitWithoutStream,
+			Time:                gcs.Keepalive.Time,
+			Timeout:             gcs.Keepalive.Timeout,
+			PermitWithoutStream: gcs.Keepalive.PermitWithoutStream,
 		})
 		opts = append(opts, keepAliveOption)
 	}
