@@ -16,8 +16,6 @@ package opencensusreceiver
 
 import (
 	"google.golang.org/grpc"
-
-	"go.opentelemetry.io/collector/receiver/opencensusreceiver/octrace"
 )
 
 // Option interface defines for configuration settings to be applied to receivers.
@@ -25,22 +23,6 @@ import (
 // withReceiver applies the configuration to the given receiver.
 type Option interface {
 	withReceiver(*Receiver)
-}
-
-type traceReceiverOptions struct {
-	opts []octrace.Option
-}
-
-var _ Option = (*traceReceiverOptions)(nil)
-
-func (tro *traceReceiverOptions) withReceiver(ocr *Receiver) {
-	ocr.traceReceiverOpts = tro.opts
-}
-
-// WithTraceReceiverOptions is an option to specify the options that will be
-// passed to the New call for octrace.Receiver
-func WithTraceReceiverOptions(opts ...octrace.Option) Option {
-	return &traceReceiverOptions{opts: opts}
 }
 
 type corsOrigins struct {
@@ -72,12 +54,3 @@ func WithGRPCServerOptions(gsOpts ...grpc.ServerOption) Option {
 	gsvOpts := grpcServerOptions(gsOpts)
 	return gsvOpts
 }
-
-type noopOption int
-
-var _ Option = (noopOption)(0)
-
-func (noopOpt noopOption) withReceiver(ocr *Receiver) {}
-
-// WithNoopOption returns an option that doesn't mutate the receiver.
-func WithNoopOption() Option { return noopOption(0) }

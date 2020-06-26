@@ -45,12 +45,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -253,16 +253,18 @@ func TestGRPCReception(t *testing.T) {
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
 	grpcServerOptions := []grpc.ServerOption{}
-	tlsCreds := configtls.TLSSetting{
-		CertFile: path.Join(".", "testdata", "certificate.pem"),
-		KeyFile:  path.Join(".", "testdata", "key.pem"),
+	tlsCreds := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CertFile: path.Join(".", "testdata", "certificate.pem"),
+			KeyFile:  path.Join(".", "testdata", "key.pem"),
+		},
 	}
 
-	tlsOption, _ := tlsCreds.LoadgRPCTLSServerCredentials()
+	tlsCfg, err := tlsCreds.LoadTLSConfig()
+	assert.NoError(t, err)
+	grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 
-	grpcServerOptions = append(grpcServerOptions, tlsOption)
-
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	config := &Configuration{
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
@@ -445,7 +447,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 }
 
 func TestSampling(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	config := &Configuration{
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
@@ -498,7 +500,7 @@ func TestSampling(t *testing.T) {
 }
 
 func TestSamplingFailsOnNotConfigured(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	// prepare
 	config := &Configuration{
 		CollectorGRPCPort: int(port),
@@ -527,7 +529,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 }
 
 func TestSamplingFailsOnBadFile(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	// prepare
 	config := &Configuration{
 		CollectorGRPCPort:          int(port),
@@ -550,10 +552,12 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC server that serves sampling strategies
-	tlsCfgOpts := configtls.TLSSetting{
-		CAFile:   caPath,
-		CertFile: serverCertPath,
-		KeyFile:  serverKeyPath,
+	tlsCfgOpts := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caPath,
+			CertFile: serverCertPath,
+			KeyFile:  serverKeyPath,
+		},
 	}
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)
@@ -590,10 +594,10 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	// at least one protocol has to be enabled
 	thriftHTTPPort, err := randomAvailablePort()
 	require.NoError(t, err)
-	cfg.Protocols = map[string]*SecureSetting{
-		"thrift_http": {ReceiverSettings: configmodels.ReceiverSettings{
+	cfg.Protocols = map[string]*configprotocol.ProtocolServerSettings{
+		"thrift_http": {
 			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
-		}},
+		},
 	}
 	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())
 	require.NoError(t, err)

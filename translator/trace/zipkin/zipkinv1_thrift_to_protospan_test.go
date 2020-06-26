@@ -19,36 +19,28 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"math"
-	"reflect"
 	"sort"
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
+
 	var ztSpans []*zipkincore.Span
 	err = json.Unmarshal(blob, &ztSpans)
-	if err != nil {
-		t.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
-	}
+	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	reqs, err := V1ThriftBatchToOCProto(ztSpans)
-	if err != nil {
-		t.Fatalf("failed to translate zipkinv1 thrift to OC proto: %v", err)
-	}
-
-	if len(reqs) != 2 {
-		t.Fatalf("got %d trace service request(s), want 2", len(reqs))
-	}
+	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
+	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
 
 	// Ensure the order of nodes
 	sort.Slice(reqs, func(i, j int) bool {
@@ -57,35 +49,23 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 
 	// First span didn't have a host/endpoint to give service name, use the local component.
 	got := reqs[0].Node.ServiceInfo.Name
-	want := "myLocalComponent"
-	if got != want {
-		t.Fatalf("got %q for service name, want %q", got, want)
-	}
+	require.Equal(t, "myLocalComponent", got)
 
 	// Second span have a host/endpoint to give service name, do not use local component.
 	got = reqs[1].Node.ServiceInfo.Name
-	want = "myServiceName"
-	if got != want {
-		t.Fatalf("got %q for service name, want %q", got, want)
-	}
+	require.Equal(t, "myServiceName", got)
 }
 
 func TestV1ThriftToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
 	err = json.Unmarshal(blob, &ztSpans)
-	if err != nil {
-		t.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
-	}
+	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	got, err := V1ThriftBatchToOCProto(ztSpans)
-	if err != nil {
-		t.Fatalf("failed to translate zipkinv1 thrift to OC proto: %v", err)
-	}
+	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 
 	want := ocBatchesFromZipkinV1
 	sortTraceByNodeName(want)
@@ -96,15 +76,11 @@ func TestV1ThriftToOCProto(t *testing.T) {
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
-	if err != nil {
-		b.Fatalf("failed to load test data: %v", err)
-	}
+	require.NoError(b, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
 	err = json.Unmarshal(blob, &ztSpans)
-	if err != nil {
-		b.Fatalf("failed to unmarshal json into zipkin v1 thrift: %v", err)
-	}
+	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	for n := 0; n < b.N; n++ {
 		V1ThriftBatchToOCProto(ztSpans)
@@ -436,17 +412,12 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			continue
 		}
 		gs := gb[0].Spans[0]
-		if !reflect.DeepEqual(gs.Attributes, c.wantAttributes) {
-			t.Fatalf("Unsuccessful conversion %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Attributes, c.wantAttributes)
-		}
-
-		if !reflect.DeepEqual(gs.Status, c.wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, c.wantStatus)
-		}
+		require.Equal(t, c.wantAttributes, gs.Attributes, "Unsuccessful conversion %d", i)
+		require.Equal(t, c.wantStatus, gs.Status, "Unsuccessful conversion %d", i)
 	}
 }
 
-func TestThirftHTTPToGRPCStatusCode(t *testing.T) {
+func TestThriftHTTPToGRPCStatusCode(t *testing.T) {
 	for i := int32(100); i <= 600; i++ {
 		wantStatus := tracetranslator.OCStatusCodeFromHTTP(i)
 		gb, err := V1ThriftBatchToOCProto([]*zipkincore.Span{{
@@ -465,9 +436,7 @@ func TestThirftHTTPToGRPCStatusCode(t *testing.T) {
 			continue
 		}
 		gs := gb[0].Spans[0]
-		if !reflect.DeepEqual(gs.Status.Code, wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, wantStatus)
-		}
+		require.Equal(t, wantStatus, gs.Status.Code, "Unsuccessful conversion %d", i)
 	}
 }
 

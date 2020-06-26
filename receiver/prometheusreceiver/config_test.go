@@ -46,9 +46,8 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["prometheus/customname"].(*Config)
 	assert.Equal(t, r1.ReceiverSettings,
 		configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  "prometheus/customname",
-			Endpoint: "1.2.3.4:456",
+			TypeVal: typeStr,
+			NameVal: "prometheus/customname",
 		})
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
@@ -72,9 +71,8 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	r := cfg.Receivers["prometheus"].(*Config)
 	assert.Equal(t, r.ReceiverSettings,
 		configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  "prometheus",
-			Endpoint: "1.2.3.4:456",
+			TypeVal: typeStr,
+			NameVal: "prometheus",
 		})
 	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
 	os.Unsetenv(jobnamevar)

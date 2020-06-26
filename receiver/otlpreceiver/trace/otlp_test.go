@@ -33,7 +33,7 @@ import (
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
@@ -63,10 +63,10 @@ func TestExport(t *testing.T) {
 	resourceSpans := []*otlptrace.ResourceSpans{
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "key1",
-						StringValue: "value1",
+						Key:   "key1",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -88,11 +88,10 @@ func TestExport(t *testing.T) {
 								{
 									TimeUnixNano: unixnanos,
 									Name:         "event1",
-									Attributes: []*otlpcommon.AttributeKeyValue{
+									Attributes: []*otlpcommon.KeyValue{
 										{
-											Key:         "eventattr1",
-											Type:        otlpcommon.AttributeKeyValue_STRING,
-											StringValue: "eventattrval1",
+											Key:   "eventattr1",
+											Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "eventattrval1"}},
 										},
 									},
 									DroppedAttributesCount: 4,
@@ -158,7 +157,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Recei
 		}
 	}
 
-	_, port, err = testutils.HostPortFromAddr(ln.Addr())
+	_, port, err = testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)

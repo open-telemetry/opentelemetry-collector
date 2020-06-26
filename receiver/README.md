@@ -51,5 +51,5 @@ must be unique. For the example above:
 - Receiver 2 has full name `examplereceiver/settings`.
 
 All receivers expose a setting to disable it, by default receivers are enabled.
-At least one receiver must be enabled per [pipeline](docs/pipelines.md) to be a
+At least one receiver must be enabled per [pipeline](../docs/pipelines.md) to be a
 valid configuration.

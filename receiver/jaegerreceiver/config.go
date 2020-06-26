@@ -17,7 +17,7 @@ package jaegerreceiver
 import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 // The config field name to load the protocol map from
@@ -30,37 +30,9 @@ type RemoteSamplingConfig struct {
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 }
 
-type SecureSetting struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	// Configures the receiver to use TLS.
-	// The default value is nil, which will cause the receiver to not use TLS.
-	TLSCredentials *configtls.TLSSetting `mapstructure:"tls_credentials, omitempty"`
-}
-
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	TypeVal        configmodels.Type         `mapstructure:"-"`
-	NameVal        string                    `mapstructure:"-"`
-	Protocols      map[string]*SecureSetting `mapstructure:"protocols"`
-	RemoteSampling *RemoteSamplingConfig     `mapstructure:"remote_sampling"`
-}
-
-// Name gets the receiver name.
-func (rs *Config) Name() string {
-	return rs.NameVal
-}
-
-// SetName sets the receiver name.
-func (rs *Config) SetName(name string) {
-	rs.NameVal = name
-}
-
-// Type sets the receiver type.
-func (rs *Config) Type() configmodels.Type {
-	return rs.TypeVal
-}
-
-// SetType sets the receiver type.
-func (rs *Config) SetType(typeStr configmodels.Type) {
-	rs.TypeVal = typeStr
+	configmodels.ReceiverSettings `mapstructure:",squash"`                          // squash ensures fields are correctly decoded in embedded struct
+	Protocols                     map[string]*configprotocol.ProtocolServerSettings `mapstructure:"protocols"`
+	RemoteSampling                *RemoteSamplingConfig                             `mapstructure:"remote_sampling"`
 }

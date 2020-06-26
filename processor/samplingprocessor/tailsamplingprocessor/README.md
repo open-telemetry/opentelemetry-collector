@@ -54,5 +54,5 @@ processors:
       ]
 ```
 
-Refer to [config.yaml](./testdata/config.yaml) for detailed
+Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed
 examples on using the processor.

@@ -41,13 +41,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -77,7 +78,15 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(zipkinReceiver, tt.args.address, tt.args.nextConsumer)
+			cfg := &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					NameVal: zipkinReceiver,
+				},
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: tt.args.address,
+				},
+			}
+			got, err := New(cfg, tt.args.nextConsumer)
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -94,22 +103,18 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	defer l.Close()
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
-	traceReceiver, err := New(zipkinReceiver, "localhost:"+portStr, exportertest.NewNopTraceExporterOld())
+	cfg := &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: zipkinReceiver,
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "localhost:" + portStr,
+		},
+	}
+	traceReceiver, err := New(cfg, exportertest.NewNopTraceExporterOld())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
-	if err == nil {
-		traceReceiver.Shutdown(context.Background())
-		t.Fatal("conflict on port was expected")
-	}
-}
-
-func TestCustomHTTPServer(t *testing.T) {
-	zr, err := New(zipkinReceiver, "localhost:9411", exportertest.NewNopTraceExporterOld())
-	require.NoError(t, err, "Failed to create receiver: %v", err)
-
-	server := &http.Server{}
-	zr = zr.WithHTTPServer(server)
-	assert.True(t, assert.ObjectsAreEqual(server, zr.server), "custom server passed to New was not used")
+	require.Error(t, err)
 }
 
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
@@ -318,11 +323,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	defer backend.Close()
 
 	factory := &zipkinexporter.Factory{}
-	config := &zipkinexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{},
-		URL:              backend.URL,
-		Format:           "json",
-	}
+	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
+	config.Endpoint = backend.URL
 	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
@@ -340,8 +342,8 @@ func TestConversionRoundtrip(t *testing.T) {
 	// fail with error. Use a small hack to transform the multiple arrays into a
 	// single one.
 	accumulatedJSONMsgs := strings.Replace(buf.String(), "][", ",", -1)
-	gj := testutils.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
-	wj := testutils.GenerateNormalizedJSON(t, string(receiverInputJSON))
+	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
+	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
 	assert.Equal(t, wj, gj)
 }
 
@@ -364,7 +366,15 @@ func TestStartTraceReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporterOld)
-			zr, err := New(zipkinReceiver, "localhost:0", sink)
+			cfg := &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					NameVal: zipkinReceiver,
+				},
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "localhost:0",
+				},
+			}
+			zr, err := New(cfg, sink)
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
@@ -454,7 +464,15 @@ func TestReceiverContentTypes(t *testing.T) {
 			next := &zipkinMockTraceConsumer{
 				ch: make(chan consumerdata.TraceData, 10),
 			}
-			zr, err := New(zipkinReceiver, "", next)
+			cfg := &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					NameVal: zipkinReceiver,
+				},
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "",
+				},
+			}
+			zr, err := New(cfg, next)
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -483,7 +501,15 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	next := &zipkinMockTraceConsumer{
 		ch: make(chan consumerdata.TraceData, 10),
 	}
-	zr, err := New(zipkinReceiver, "", next)
+	cfg := &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: zipkinReceiver,
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "",
+		},
+	}
+	zr, err := New(cfg, next)
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -505,7 +531,15 @@ func TestReceiverConsumerError(t *testing.T) {
 		ch:  make(chan consumerdata.TraceData, 10),
 		err: errors.New("consumer error"),
 	}
-	zr, err := New(zipkinReceiver, "", next)
+	cfg := &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: zipkinReceiver,
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "localhost:9411",
+		},
+	}
+	zr, err := New(cfg, next)
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()

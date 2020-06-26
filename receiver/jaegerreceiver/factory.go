@@ -25,10 +25,12 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -101,9 +103,11 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		TypeVal:   typeStr,
-		NameVal:   typeStr,
-		Protocols: map[string]*SecureSetting{},
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		Protocols: map[string]*configprotocol.ProtocolServerSettings{},
 	}
 }
 
@@ -140,11 +144,11 @@ func (f *Factory) CreateTraceReceiver(
 		}
 
 		if protoGRPC.TLSCredentials != nil {
-			option, err := protoGRPC.TLSCredentials.LoadgRPCTLSServerCredentials()
+			tlsCfg, err := protoGRPC.TLSCredentials.LoadTLSConfig()
 			if err != nil {
 				return nil, fmt.Errorf("failed to configure TLS: %v", err)
 			}
-			grpcServerOptions = append(grpcServerOptions, option)
+			grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 		}
 		config.CollectorGRPCOptions = grpcServerOptions
 	}
@@ -247,7 +251,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 }
 
 // returns a default value for a protocol name.  this really just boils down to the endpoint
-func defaultsForProtocol(proto string) (*SecureSetting, error) {
+func defaultsForProtocol(proto string) (*configprotocol.ProtocolServerSettings, error) {
 	var defaultEndpoint string
 
 	switch proto {
@@ -263,9 +267,7 @@ func defaultsForProtocol(proto string) (*SecureSetting, error) {
 		return nil, fmt.Errorf("unknown Jaeger protocol %s", proto)
 	}
 
-	return &SecureSetting{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: defaultEndpoint,
-		},
+	return &configprotocol.ProtocolServerSettings{
+		Endpoint: defaultEndpoint,
 	}, nil
 }

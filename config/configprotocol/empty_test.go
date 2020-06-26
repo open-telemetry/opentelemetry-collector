@@ -12,22 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlpreceiver
+package configprotocol
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-)
-
-func TestNoopOption(t *testing.T) {
-	plainReceiver := new(Receiver)
-
-	subjectReceiver := new(Receiver)
-	opts := []Option{noopOption(0), noopOption(0)}
-	for _, opt := range opts {
-		opt.withReceiver(subjectReceiver)
-	}
-
-	require.Equal(t, plainReceiver, subjectReceiver, "noopOption has side effects")
-}
+// Package with interfaces and structs only.

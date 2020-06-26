@@ -23,32 +23,41 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestApplication_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}})
+	loggingHookCalled := false
+	hook := func(entry zapcore.Entry) error {
+		loggingHookCalled = true
+		return nil
+	}
+
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}, LoggingHooks: []func(entry zapcore.Entry) error{hook}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
 	const testPrefix = "a_test"
-	metricsPort := testutils.GetAvailablePort(t)
+	metricsPort := testutil.GetAvailablePort(t)
 	app.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
@@ -65,6 +74,7 @@ func TestApplication_Start(t *testing.T) {
 	assert.Equal(t, Running, <-app.GetStateChannel())
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
 	assert.Equal(t, app.logger, app.GetLogger())
+	assert.True(t, loggingHookCalled)
 
 	// All labels added to all collector metrics by default are listed below.
 	// These labels are hard coded here in order to avoid inadvertent changes:
@@ -77,7 +87,45 @@ func TestApplication_Start(t *testing.T) {
 	}
 	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
-	close(app.stopTestChan)
+	app.signalsChannel <- syscall.SIGTERM
+	<-appDone
+	assert.Equal(t, Closing, <-app.GetStateChannel())
+	assert.Equal(t, Closed, <-app.GetStateChannel())
+}
+
+type mockAppTelemetry struct{}
+
+func (tel *mockAppTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+	return nil
+}
+
+func (tel *mockAppTelemetry) shutdown() error {
+	return errors.New("err1")
+}
+
+func TestApplication_ReportError(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := applicationTelemetry
+	applicationTelemetry = &mockAppTelemetry{}
+	defer func() { applicationTelemetry = preservedAppTelemetry }()
+
+	factories, err := defaultcomponents.Components()
+	require.NoError(t, err)
+
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}})
+	require.NoError(t, err)
+
+	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
+
+	appDone := make(chan struct{})
+	go func() {
+		defer close(appDone)
+		assert.EqualError(t, app.Start(), "failed to shutdown extensions: err1")
+	}()
+
+	assert.Equal(t, Starting, <-app.GetStateChannel())
+	assert.Equal(t, Running, <-app.GetStateChannel())
+	app.ReportFatalError(errors.New("err2"))
 	<-appDone
 	assert.Equal(t, Closing, <-app.GetStateChannel())
 	assert.Equal(t, Closed, <-app.GetStateChannel())

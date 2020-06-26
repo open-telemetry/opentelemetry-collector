@@ -54,12 +54,3 @@ func WithGRPCServerOptions(gsOpts ...grpc.ServerOption) Option {
 	gsvOpts := grpcServerOptions(gsOpts)
 	return gsvOpts
 }
-
-type noopOption int
-
-var _ Option = (noopOption)(0)
-
-func (noopOpt noopOption) withReceiver(r *Receiver) {}
-
-// WithNoopOption returns an option that doesn't mutate the receiver.
-func WithNoopOption() Option { return noopOption(0) }

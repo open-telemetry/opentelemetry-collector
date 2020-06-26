@@ -220,8 +220,11 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 
 func (zr *ZipkinDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
 	var err error
-	address := fmt.Sprintf("localhost:%d", zr.Port)
-	zr.receiver, err = zipkinreceiver.New("zipkin", address, tc)
+	factory := zipkinreceiver.Factory{}
+	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
+	cfg.NameVal = "zipkin"
+	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
+	zr.receiver, err = zipkinreceiver.New(cfg, tc)
 
 	if err != nil {
 		return err
@@ -242,7 +245,7 @@ func (zr *ZipkinDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   zipkin:
-    url: http://localhost:%d/api/v2/spans
+    endpoint: http://localhost:%d/api/v2/spans
     format: json`, zr.Port)
 }
 

@@ -12,22 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver
+// +build !windows
 
-import (
-	"testing"
+package main
 
-	"github.com/stretchr/testify/require"
-)
+import "go.opentelemetry.io/collector/service"
 
-func TestNoopOption(t *testing.T) {
-	plainReceiver := new(Receiver)
-
-	subjectReceiver := new(Receiver)
-	opts := []Option{noopOption(0), noopOption(0)}
-	for _, opt := range opts {
-		opt.withReceiver(subjectReceiver)
-	}
-
-	require.Equal(t, plainReceiver, subjectReceiver, "noopOption has side effects")
+func run(params service.Parameters) error {
+	return runInteractive(params)
 }

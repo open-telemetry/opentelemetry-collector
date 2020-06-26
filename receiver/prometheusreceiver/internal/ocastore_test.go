@@ -20,6 +20,8 @@ import (
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestOcaStore(t *testing.T) {
@@ -27,29 +29,22 @@ func TestOcaStore(t *testing.T) {
 	o := NewOcaStore(context.Background(), nil, nil, nil, false, "prometheus")
 
 	_, err := o.Appender()
-	if err == nil {
-		t.Fatal("expecting error, but get nil")
-	}
+	require.Error(t, err)
 
 	o.SetScrapeManager(nil)
 	_, err = o.Appender()
-	if err == nil {
-		t.Fatal("expecting error when ScrapeManager is not set, but get nil")
-	}
+	require.Error(t, err, "Expecting error when ScrapeManager is not set")
 
 	o.SetScrapeManager(&scrape.Manager{})
 
 	app, err := o.Appender()
-	if app == nil {
-		t.Fatalf("expecting app, but got error %v\n", err)
-	}
+	require.NotNil(t, app, "Expecting app, but got error %v\n", err)
 
 	_ = o.Close()
 
 	app, err = o.Appender()
-	if app != noop || err != nil {
-		t.Fatalf("expect app!=nil and err==nil, got app=%v and err=%v", app, err)
-	}
+	assert.Equal(t, noop, app)
+	assert.NoError(t, err)
 }
 
 func TestNoopAppender(t *testing.T) {

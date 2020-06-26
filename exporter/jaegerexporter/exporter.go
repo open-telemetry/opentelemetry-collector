@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -34,7 +33,7 @@ import (
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func New(config *Config) (component.TraceExporter, error) {
 
-	opts, err := configgrpc.GrpcSettingsToDialOptions(config.GRPCClientSettings)
+	opts, err := config.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}

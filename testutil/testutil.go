@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutils
+package testutil
 
 import (
 	"encoding/json"
@@ -49,9 +49,7 @@ func GenerateNormalizedJSON(t *testing.T, jsonStr string) string {
 // immediately.
 func GetAvailableLocalAddress(t *testing.T) string {
 	ln, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatalf("failed to get a free local port: %v", err)
-	}
+	require.NoError(t, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
 	defer ln.Close()

@@ -35,5 +35,5 @@ processors:
         - hello/world
 ```
 
-Refer to [config.yaml](./testdata/config.yaml) for detailed
+Refer to the config files in [testdata](./testdata) for detailed
 examples on using the processor.

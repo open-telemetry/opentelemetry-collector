@@ -20,7 +20,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -47,9 +49,13 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  typeStr,
-			Endpoint: "0.0.0.0:55678",
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		GRPCServerSettings: configgrpc.GRPCServerSettings{
+			ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+				Endpoint: "0.0.0.0:55678",
+			},
 		},
 		Transport: "tcp",
 	}

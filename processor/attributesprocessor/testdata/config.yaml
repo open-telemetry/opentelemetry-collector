@@ -19,6 +19,27 @@ processors:
         from_attribute: "anotherkey"
         action: insert
 
+  # The following example demonstrates using regex to create new attributes
+  # based on the value of another attribute.
+  attributes/regex_insert:
+    actions:
+      # The following uses the value from `key:http.url` to upsert attributes
+      # to the target keys specified in the `rule`.
+      # (Insert attributes for target keys that do not exist and update keys
+      # that exist.)
+      # Given http.url = http://example.com/path?queryParam1=value1,queryParam2=value2
+      # then the following attributes will be inserted:
+      # http_protocol: http
+      # http_domain: example.com
+      # http_path: path
+      # http_query_params=queryParam1=value1,queryParam2=value2
+      # http.url value does NOT change.
+      # Note: Similar to the Span Procesor, if a target key already exists,
+      # it will be updated.
+      - key: "http.url"
+        pattern: ^(?P<http_protocol>.*):\/\/(?P<http_domain>.*)\/(?P<http_path>.*)(\?|\&)(?P<http_query_params>.*)
+        action: extract
+
   # The following demonstrates configuring the processor to only update existing
   # keys in an attribute.
   # Note: `action: update` must be set.

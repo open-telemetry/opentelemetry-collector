@@ -170,11 +170,10 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	ld := []*logspb.ResourceLogs{
 		{
 			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "attr1",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-						StringValue: "value1",
+						Key:   "attr1",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -191,11 +190,10 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 		},
 		{
 			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "attr2",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-						StringValue: "value2",
+						Key:   "attr2",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
 					},
 				},
 			},
@@ -219,8 +217,10 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			"resource": map[string]interface{}{
 				"attributes": []interface{}{
 					map[string]interface{}{
-						"key":         "attr1",
-						"stringValue": "value1",
+						"key": "attr1",
+						"value": map[string]interface{}{
+							"stringValue": "value1",
+						},
 					},
 				},
 			},
@@ -243,8 +243,10 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			"resource": map[string]interface{}{
 				"attributes": []interface{}{
 					map[string]interface{}{
-						"key":         "attr2",
-						"stringValue": "value2",
+						"key": "attr2",
+						"value": map[string]interface{}{
+							"stringValue": "value2",
+						},
 					},
 				},
 			},
@@ -263,11 +265,10 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	ld := []*logspb.ResourceLogs{
 		{
 			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "attr1",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-						StringValue: "value1",
+						Key:   "attr1",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -284,11 +285,10 @@ func TestFileLogsExporterErrors(t *testing.T) {
 		},
 		{
 			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "attr2",
-						Type:        otlpcommon.AttributeKeyValue_STRING,
-						StringValue: "value2",
+						Key:   "attr2",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
 					},
 				},
 			},

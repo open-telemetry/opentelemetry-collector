@@ -33,7 +33,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
@@ -58,10 +58,10 @@ func TestExport(t *testing.T) {
 	resourceMetrics := []*otlpmetrics.ResourceMetrics{
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.AttributeKeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
-						Key:         "key1",
-						StringValue: "value1",
+						Key:   "key1",
+						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -154,7 +154,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Rec
 		}
 	}
 
-	_, port, err = testutils.HostPortFromAddr(ln.Addr())
+	_, port, err = testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
