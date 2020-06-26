@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componentdocs
+package componenttest
 
 import (
 	"os"
@@ -100,7 +100,7 @@ func TestGetImportPrefixesToCheck(t *testing.T) {
 	}
 }
 
-func TestVerifyComponentDocumentation(t *testing.T) {
+func TestCheckDocs(t *testing.T) {
 	type args struct {
 		projectPath                   string
 		relativeDefaultComponentsPath string
@@ -159,8 +159,8 @@ func TestVerifyComponentDocumentation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := VerifyComponentDocumentation(tt.args.projectPath, tt.args.relativeDefaultComponentsPath, tt.args.projectGoModule); (err != nil) != tt.wantErr {
-				t.Errorf("VerifyComponentDocumentation() error = %v, wantErr %v", err, tt.wantErr)
+			if err := CheckDocs(tt.args.projectPath, tt.args.relativeDefaultComponentsPath, tt.args.projectGoModule); (err != nil) != tt.wantErr {
+				t.Errorf("CheckDocs() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

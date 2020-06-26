@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package componenttest define types and functions used to help test packages
-// implementing the component package interfaces.
-package componentdocs
+package componenttest
 
 import (
 	"fmt"
@@ -29,7 +27,7 @@ const (
 	readMeFileName = "README.md"
 )
 
-// VerifyComponentDocumentation returns an error if README.md for at least one
+// CheckDocs returns an error if README.md for at least one
 // enabled component is missing. "projectPath" is the absolute path to the root
 // of the project to which the components belong. "defaultComponentsFilePath" is
 // the path to the file that contains imports to all required components,
@@ -37,20 +35,21 @@ const (
 // to be used only to verify documentation in Opentelemetry core and contrib
 // repositories. Examples,
 // 1) Usage in the core repo:
-// componenttest.VerifyComponentDocumentation(
+//
+// componenttest.CheckDocs(
 //		"path/to/project",
 //		"service/defaultcomponents/defaults.go",
 //      "go.opentelemetry.io/collector",
 //	)
 //
 // 2) Usage in the contrib repo:
-// componenttest.VerifyComponentDocumentation(
+// componenttest.CheckDocs(
 //		"path/to/project",
 //		"cmd/otelcontrib/components.go",
 //      "github.com/open-telemetry/opentelemetry-collector-contrib",
 //	).
-func VerifyComponentDocumentation(projectPath string, relativeDefaultComponentsPath string, projectGoModule string) error {
-	defaultComponentsFilePath := filepath.Join(projectPath, relativeDefaultComponentsPath)
+func CheckDocs(projectPath string, relativeComponentsPath string, projectGoModule string) error {
+	defaultComponentsFilePath := filepath.Join(projectPath, relativeComponentsPath)
 	_, err := os.Stat(defaultComponentsFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load file %s: %v", defaultComponentsFilePath, err)
