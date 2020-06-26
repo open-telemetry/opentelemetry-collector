@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -193,7 +194,7 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.Traces) (in
 			code: errAlreadyStopped,
 			msg:  "OpenTelemetry exporter was already stopped.",
 		}
-		return td.SpanCount(), err
+		return td.SpanCount(), errors.Wrap(err, "failed to push trace data via OTLP exporter")
 	}
 
 	// Perform the request.
@@ -205,7 +206,7 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.Traces) (in
 	// Return the exporter to the pool.
 	oce.exporters <- exporter
 	if err != nil {
-		return td.SpanCount(), err
+		return td.SpanCount(), errors.Wrap(err, "failed to push trace data via OTLP exporter")
 	}
 	return 0, nil
 }
@@ -219,7 +220,7 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) 
 			code: errAlreadyStopped,
 			msg:  "OpenTelemetry exporter was already stopped.",
 		}
-		return imd.MetricCount(), err
+		return imd.MetricCount(), errors.Wrap(err, "failed to push metrics data via OTLP exporter")
 	}
 
 	// Perform the request.
@@ -231,7 +232,7 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) 
 	// Return the exporter to the pool.
 	oce.exporters <- exporter
 	if err != nil {
-		return imd.MetricCount(), err
+		return imd.MetricCount(), errors.Wrap(err, "failed to push metrics data via OTLP exporter")
 	}
 	return 0, nil
 }
@@ -244,7 +245,7 @@ func (oce *otlpExporter) pushLogData(ctx context.Context, logs data.Logs) (int, 
 			code: errAlreadyStopped,
 			msg:  "OpenTelemetry exporter was already stopped.",
 		}
-		return logs.LogRecordCount(), err
+		return logs.LogRecordCount(), errors.Wrap(err, "failed to push log data via OTLP exporter")
 	}
 
 	request := &otlplogs.ExportLogServiceRequest{
@@ -255,7 +256,7 @@ func (oce *otlpExporter) pushLogData(ctx context.Context, logs data.Logs) (int, 
 	// Return the exporter to the pool.
 	oce.exporters <- exporter
 	if err != nil {
-		return logs.LogRecordCount(), err
+		return logs.LogRecordCount(), errors.Wrap(err, "failed to push log data via OTLP exporter")
 	}
 	return 0, nil
 }

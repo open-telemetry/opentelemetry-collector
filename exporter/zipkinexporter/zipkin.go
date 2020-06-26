@@ -25,6 +25,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
+	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -96,33 +97,32 @@ func createZipkinExporter(config configmodels.Exporter) (*zipkinExporter, error)
 	return ze, nil
 }
 
-func (ze *zipkinExporter) PushTraceData(_ context.Context, td consumerdata.TraceData) (int, error) {
+func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	tbatch := make([]*zipkinmodel.SpanModel, 0, len(td.Spans))
-
 	var resource *resourcepb.Resource = td.Resource
 
 	for _, span := range td.Spans {
 		zs, err := zipkin.OCSpanProtoToZipkin(td.Node, resource, span, ze.defaultServiceName)
 		if err != nil {
-			return len(td.Spans), consumererror.Permanent(err)
+			return len(td.Spans), consumererror.Permanent(errors.Wrap(err, "failed to push trace data via Zipkin exporter"))
 		}
 		tbatch = append(tbatch, zs)
 	}
 
 	body, err := ze.serializer.Serialize(tbatch)
 	if err != nil {
-		return len(td.Spans), consumererror.Permanent(err)
+		return len(td.Spans), consumererror.Permanent(errors.Wrap(err, "failed to push trace data via Zipkin exporter"))
 	}
 
-	req, err := http.NewRequest("POST", ze.url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", ze.url, bytes.NewReader(body))
 	if err != nil {
-		return len(td.Spans), err
+		return len(td.Spans), errors.Wrap(err, "failed to push trace data via Zipkin exporter")
 	}
 	req.Header.Set("Content-Type", ze.serializer.ContentType())
 
 	resp, err := ze.client.Do(req)
 	if err != nil {
-		return len(td.Spans), err
+		return len(td.Spans), errors.Wrap(err, "failed to push trace data via Zipkin exporter")
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {

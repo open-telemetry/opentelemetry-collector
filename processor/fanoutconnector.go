@@ -16,6 +16,7 @@ package processor
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 )
+
+const timeout = 5 * time.Second
 
 // This file contains implementations of Trace/Metrics connectors
 // that fan out the data to multiple other consumers.
@@ -63,9 +66,12 @@ var _ consumer.MetricsConsumerOld = (*metricsFanOutConnectorOld)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
 func (mfc metricsFanOutConnectorOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var errs []error
 	for _, mc := range mfc {
-		if err := mc.ConsumeMetricsData(ctx, md); err != nil {
+		if err := mc.ConsumeMetricsData(ctxWithTimeout, md); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -83,9 +89,12 @@ var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
 func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var errs []error
 	for _, mc := range mfc {
-		if err := mc.ConsumeMetrics(ctx, md); err != nil {
+		if err := mc.ConsumeMetrics(ctxWithTimeout, md); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -127,9 +136,12 @@ var _ consumer.TraceConsumerOld = (*traceFanOutConnectorOld)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
 func (tfc traceFanOutConnectorOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var errs []error
 	for _, tc := range tfc {
-		if err := tc.ConsumeTraceData(ctx, td); err != nil {
+		if err := tc.ConsumeTraceData(ctxWithTimeout, td); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -147,9 +159,12 @@ var _ consumer.TraceConsumer = (*traceFanOutConnector)(nil)
 
 // ConsumeTraces exports the span data to all trace consumers wrapped by the current one.
 func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var errs []error
 	for _, tc := range tfc {
-		if err := tc.ConsumeTraces(ctx, td); err != nil {
+		if err := tc.ConsumeTraces(ctxWithTimeout, td); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -167,9 +182,12 @@ var _ consumer.LogConsumer = (*LogFanOutConnector)(nil)
 
 // Consume exports the span data to all  consumers wrapped by the current one.
 func (fc LogFanOutConnector) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	var errs []error
 	for _, tc := range fc {
-		if err := tc.ConsumeLogs(ctx, ld); err != nil {
+		if err := tc.ConsumeLogs(ctxWithTimeout, ld); err != nil {
 			errs = append(errs, err)
 		}
 	}

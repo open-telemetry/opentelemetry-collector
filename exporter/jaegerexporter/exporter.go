@@ -18,6 +18,7 @@ import (
 	"context"
 
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -71,7 +72,7 @@ func (s *protoGRPCSender) pushTraceData(
 
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
+		return td.SpanCount(), consumererror.Permanent(errors.Wrap(err, "failed to push trace data via Jaeger exporter"))
 	}
 
 	if s.metadata.Len() > 0 {
@@ -84,7 +85,7 @@ func (s *protoGRPCSender) pushTraceData(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
 		if err != nil {
-			return td.SpanCount() - sentSpans, err
+			return td.SpanCount() - sentSpans, errors.Wrap(err, "failed to push trace data via Jaeger exporter")
 		}
 		sentSpans += len(batch.Spans)
 	}

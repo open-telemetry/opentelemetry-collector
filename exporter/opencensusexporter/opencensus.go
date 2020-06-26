@@ -22,6 +22,7 @@ import (
 	"contrib.go.opencensus.io/exporter/ocagent"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -156,7 +157,7 @@ func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 			code: errAlreadyStopped,
 			msg:  "OpenCensus exporter was already stopped.",
 		}
-		return len(td.Spans), err
+		return len(td.Spans), errors.Wrap(err, "failed to push trace data via OpenCensus exporter")
 	}
 
 	err := exporter.ExportTraceServiceRequest(
@@ -168,7 +169,7 @@ func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 	)
 	oce.exporters <- exporter
 	if err != nil {
-		return len(td.Spans), err
+		return len(td.Spans), errors.Wrap(err, "failed to push trace data via OpenCensus exporter")
 	}
 	return 0, nil
 }
@@ -181,7 +182,7 @@ func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata
 			code: errAlreadyStopped,
 			msg:  "OpenCensus exporter was already stopped.",
 		}
-		return exporterhelper.NumTimeSeries(md), err
+		return exporterhelper.NumTimeSeries(md), errors.Wrap(err, "failed to push metrics data via OpenCensus exporter")
 	}
 
 	req := &agentmetricspb.ExportMetricsServiceRequest{
@@ -192,7 +193,7 @@ func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata
 	err := exporter.ExportMetricsServiceRequest(req)
 	oce.exporters <- exporter
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), err
+		return exporterhelper.NumTimeSeries(md), errors.Wrap(err, "failed to push metrics data via OpenCensus exporter")
 	}
 	return 0, nil
 }
