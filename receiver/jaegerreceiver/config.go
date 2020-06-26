@@ -32,28 +32,7 @@ type RemoteSamplingConfig struct {
 
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	TypeVal        configmodels.Type                                 `mapstructure:"-"`
-	NameVal        string                                            `mapstructure:"-"`
-	Protocols      map[string]*configprotocol.ProtocolServerSettings `mapstructure:"protocols"`
-	RemoteSampling *RemoteSamplingConfig                             `mapstructure:"remote_sampling"`
-}
-
-// Name gets the receiver name.
-func (rs *Config) Name() string {
-	return rs.NameVal
-}
-
-// SetName sets the receiver name.
-func (rs *Config) SetName(name string) {
-	rs.NameVal = name
-}
-
-// Type sets the receiver type.
-func (rs *Config) Type() configmodels.Type {
-	return rs.TypeVal
-}
-
-// SetType sets the receiver type.
-func (rs *Config) SetType(typeStr configmodels.Type) {
-	rs.TypeVal = typeStr
+	configmodels.ReceiverSettings `mapstructure:",squash"`                          // squash ensures fields are correctly decoded in embedded struct
+	Protocols                     map[string]*configprotocol.ProtocolServerSettings `mapstructure:"protocols"`
+	RemoteSampling                *RemoteSamplingConfig                             `mapstructure:"remote_sampling"`
 }

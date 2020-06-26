@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -43,8 +44,10 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/customname",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/customname",
+			},
 			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
 					Endpoint: "localhost:9876",
@@ -71,8 +74,10 @@ func TestLoadConfig(t *testing.T) {
 	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/defaults",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/defaults",
+			},
 			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
 					Endpoint: defaultGRPCBindEndpoint,
@@ -92,8 +97,10 @@ func TestLoadConfig(t *testing.T) {
 	rMixed := cfg.Receivers["jaeger/mixed"].(*Config)
 	assert.Equal(t, rMixed,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/mixed",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/mixed",
+			},
 			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
 					Endpoint: "localhost:9876",
@@ -108,8 +115,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, tlsConfig,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/tls",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/tls",
+			},
 			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"grpc": {
 					Endpoint: "localhost:9876",
