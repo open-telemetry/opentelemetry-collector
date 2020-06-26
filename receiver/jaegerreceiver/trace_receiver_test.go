@@ -74,7 +74,7 @@ func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }
 
 func jaegerBatchToHTTPBody(b *tJaeger.Batch) (*http.Request, error) {
-	body, err := thrift.NewTSerializer().Write(b)
+	body, err := thrift.NewTSerializer().Write(context.Background(), b)
 	if err != nil {
 		return nil, err
 	}
