@@ -49,7 +49,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
@@ -185,7 +185,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkMetricsExporterOld)
-			tc, err := factory.CreateMetricsReceiver(logger, tt.cfg, sink)
+			tc, err := factory.CreateMetricsReceiver(context.Background(), logger, tt.cfg, sink)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -417,13 +417,13 @@ func createMetricsReceiver(
 	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
 	// use Factory.CreateMetricsReceiver.
 	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factoryOld.CreateMetricsReceiver(logger, cfg, nextConsumer)
+		return factoryOld.CreateMetricsReceiver(context.Background(), logger, cfg, nextConsumer)
 	}
 
 	// If receiver is of the old type, but downstream consumer is of the new type,
 	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
 	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
-	return factoryOld.CreateMetricsReceiver(logger, cfg, metricsConverter)
+	return factoryOld.CreateMetricsReceiver(context.Background(), logger, cfg, metricsConverter)
 }
 
 // createLogReceiver creates a log receiver using given factory and next consumer.

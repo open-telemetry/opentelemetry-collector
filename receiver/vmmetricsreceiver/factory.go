@@ -70,19 +70,15 @@ func (f *Factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	config configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
-) (component.MetricsReceiver, error) {
+func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 
 	if runtime.GOOS != "linux" {
 		// TODO: add support for other platforms.
 		return nil, errors.New("vmmetrics receiver is only supported on linux")
 	}
-	cfg := config.(*Config)
+	rCfg := cfg.(*Config)
 
-	vmc, err := NewVMMetricsCollector(cfg.ScrapeInterval, cfg.MountPoint, cfg.ProcessMountPoint, cfg.MetricPrefix, consumer)
+	vmc, err := NewVMMetricsCollector(rCfg.ScrapeInterval, rCfg.MountPoint, rCfg.ProcessMountPoint, rCfg.MetricPrefix, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

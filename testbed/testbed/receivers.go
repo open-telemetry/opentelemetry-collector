@@ -100,7 +100,7 @@ func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) e
 	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, tc); err != nil {
 		return err
 	}
-	if or.metricsReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, mc); err != nil {
+	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, mc); err != nil {
 		return err
 	}
 	if err = or.traceReceiver.Start(context.Background(), or); err != nil {
