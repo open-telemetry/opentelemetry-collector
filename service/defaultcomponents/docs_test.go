@@ -20,8 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/component/componentdocs"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 const (
@@ -42,7 +41,7 @@ func TestComponentDocs(t *testing.T) {
 	// Absolute path to the project root directory
 	projectPath := filepath.Join(wd, "../../")
 
-	err = componentdocs.VerifyComponentDocumentation(
+	err = componenttest.CheckDocs(
 		projectPath,
 		relativeDefaultComponentsPath,
 		projectGoModule,
