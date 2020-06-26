@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// telemetry is application's own telemetry.
+// applicationTelemetry is application's own telemetry.
 var applicationTelemetry appTelemetryExporter = &appTelemetry{}
 
 type appTelemetryExporter interface {
