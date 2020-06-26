@@ -21,8 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -56,7 +56,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},
 	}
@@ -69,9 +69,8 @@ func (f *Factory) CreateTraceReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
-
 	rCfg := cfg.(*Config)
-	return New(rCfg.Name(), rCfg.Endpoint, nextConsumer)
+	return New(rCfg, nextConsumer)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.

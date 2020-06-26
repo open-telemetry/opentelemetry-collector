@@ -142,7 +142,7 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	if c.ClientCAFile != "" {
 		certPool, err := c.loadCert(c.ClientCAFile)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
 		}
 		tlsCfg.ClientCAs = certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert

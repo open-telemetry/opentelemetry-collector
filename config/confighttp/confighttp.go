@@ -15,6 +15,8 @@
 package confighttp
 
 import (
+	"crypto/tls"
+	"net"
 	"net/http"
 	"time"
 
@@ -45,4 +47,35 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 		Transport: transport,
 		Timeout:   hcs.Timeout,
 	}, nil
+}
+
+type HTTPServerSettings struct {
+	// Endpoint configures the listening address for the server.
+	Endpoint string `mapstructure:"endpoint"`
+
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings, omitempty"`
+}
+
+func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
+	listener, err := net.Listen("tcp", hss.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	if hss.TLSSetting != nil {
+		var tlsCfg *tls.Config
+		tlsCfg, err = hss.TLSSetting.LoadTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+		listener = tls.NewListener(listener, tlsCfg)
+	}
+	return listener, nil
+}
+
+func (hss *HTTPServerSettings) ToServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler: handler,
+	}
 }

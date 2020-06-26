@@ -19,7 +19,6 @@ import (
 	"compress/zlib"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net"
@@ -31,6 +30,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/client"
@@ -57,7 +57,6 @@ type ZipkinReceiver struct {
 	mu sync.Mutex
 
 	// addr is the address onto which the HTTP server will be bound
-	addr         string
 	host         component.Host
 	nextConsumer consumer.TraceConsumerOld
 	instanceName string
@@ -65,40 +64,23 @@ type ZipkinReceiver struct {
 	startOnce sync.Once
 	stopOnce  sync.Once
 	server    *http.Server
+	config    *Config
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(instanceName, address string, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
+func New(config *Config, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
-		addr:         address,
 		nextConsumer: nextConsumer,
-		instanceName: instanceName,
+		instanceName: config.Name(),
+		config:       config,
 	}
 	return zr, nil
-}
-
-const defaultAddress = ":9411"
-
-func (zr *ZipkinReceiver) address() string {
-	addr := zr.addr
-	if addr == "" {
-		addr = defaultAddress
-	}
-	return addr
-}
-
-func (zr *ZipkinReceiver) WithHTTPServer(s *http.Server) *ZipkinReceiver {
-	if s.Handler == nil {
-		s.Handler = zr
-	}
-	zr.server = s
-	return zr
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
@@ -113,21 +95,21 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 	var err = componenterror.ErrAlreadyStarted
 
 	zr.startOnce.Do(func() {
-		ln, lerr := net.Listen("tcp", zr.address())
-		if lerr != nil {
-			err = lerr
+		err = nil
+		zr.host = host
+		zr.server = zr.config.HTTPServerSettings.ToServer(zr)
+		var listener net.Listener
+		listener, err = zr.config.HTTPServerSettings.ToListener()
+		if err != nil {
+			host.ReportFatalError(err)
 			return
 		}
-
-		zr.host = host
-		if zr.server == nil {
-			zr.server = &http.Server{Handler: zr}
-		}
 		go func() {
-			host.ReportFatalError(zr.server.Serve(ln))
+			err = zr.server.Serve(listener)
+			if err != nil {
+				host.ReportFatalError(err)
+			}
 		}()
-
-		err = nil
 	})
 
 	return err
