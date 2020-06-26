@@ -50,7 +50,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -264,7 +264,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	assert.NoError(t, err)
 	grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	config := &Configuration{
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
@@ -447,7 +447,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 }
 
 func TestSampling(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	config := &Configuration{
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
@@ -500,7 +500,7 @@ func TestSampling(t *testing.T) {
 }
 
 func TestSamplingFailsOnNotConfigured(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	// prepare
 	config := &Configuration{
 		CollectorGRPCPort: int(port),
@@ -529,7 +529,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 }
 
 func TestSamplingFailsOnBadFile(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	// prepare
 	config := &Configuration{
 		CollectorGRPCPort:          int(port),

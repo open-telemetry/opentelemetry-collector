@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -58,7 +58,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateExtension(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Port = testutils.GetAvailablePort(t)
+	cfg.Port = testutil.GetAvailablePort(t)
 
 	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Port = testutils.GetAvailablePort(t)
+	cfg.Port = testutil.GetAvailablePort(t)
 
 	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)

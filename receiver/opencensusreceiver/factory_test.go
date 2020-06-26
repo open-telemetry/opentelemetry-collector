@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -44,7 +44,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	config := cfg.(*Config)
-	config.Endpoint = testutils.GetAvailableLocalAddress(t)
+	config.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NotNil(t, tReceiver)
@@ -57,7 +57,7 @@ func TestCreateReceiver(t *testing.T) {
 
 func TestCreateTraceReceiver(t *testing.T) {
 	factory := Factory{}
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
@@ -132,7 +132,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := Factory{}
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,

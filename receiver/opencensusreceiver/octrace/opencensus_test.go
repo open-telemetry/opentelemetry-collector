@@ -41,7 +41,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -471,7 +471,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...
 		}
 	}
 
-	_, port, err = testutils.HostPortFromAddr(ln.Addr())
+	_, port, err = testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)

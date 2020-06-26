@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -42,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	oexp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	require.Nil(t, err)
@@ -57,7 +57,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	rcvFactory := &opencensusreceiver.Factory{}
 	require.NotNil(t, rcvFactory)
 	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
-	rcvCfg.Endpoint = testutils.GetAvailableLocalAddress(t)
+	rcvCfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	rcv, err := rcvFactory.CreateTraceReceiver(
 		context.Background(),

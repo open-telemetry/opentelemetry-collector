@@ -36,7 +36,7 @@ import (
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 type mockTraceReceiver struct {
@@ -150,7 +150,7 @@ func TestSendTraceData(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
-	testutils.WaitFor(t, func() bool {
+	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
 	}, "receive a request")
 
@@ -168,7 +168,7 @@ func TestSendTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait until it is received.
-	testutils.WaitFor(t, func() bool {
+	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
 	}, "receive a request")
 
@@ -303,7 +303,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 	cancel()
 
 	// Wait until it is received.
-	testutils.WaitFor(t, func() bool {
+	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
 	}, "receive a request")
 
@@ -355,7 +355,7 @@ func TestSendLogData(t *testing.T) {
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), td))
 
 	// Wait until it is received.
-	testutils.WaitFor(t, func() bool {
+	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
 	}, "receive a request")
 
@@ -373,7 +373,7 @@ func TestSendLogData(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait until it is received.
-	testutils.WaitFor(t, func() bool {
+	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
 	}, "receive a request")
 

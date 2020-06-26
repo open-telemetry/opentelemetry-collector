@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -40,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
@@ -49,7 +49,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
 		name     string
@@ -184,7 +184,7 @@ func TestCreateTraceExporter(t *testing.T) {
 func TestCreateLogsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	oexp, err := factory.CreateLogExporter(context.Background(), creationParams, cfg)

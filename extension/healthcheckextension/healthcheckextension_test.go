@@ -27,12 +27,12 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
@@ -67,7 +67,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 }
 
 func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	_, portStr, err := net.SplitHostPort(endpoint)
 	require.NoError(t, err)
 
@@ -100,7 +100,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
@@ -122,7 +122,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
@@ -136,7 +136,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
 	hcExt, err := newServer(config, zap.NewNop())
