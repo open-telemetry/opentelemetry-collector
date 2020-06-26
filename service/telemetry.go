@@ -34,10 +34,8 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-var (
-	// AppTelemetry is application's own telemetry.
-	AppTelemetry appTelemetryExporter = &appTelemetry{}
-)
+// applicationTelemetry is application's own telemetry.
+var applicationTelemetry appTelemetryExporter = &appTelemetry{}
 
 type appTelemetryExporter interface {
 	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error

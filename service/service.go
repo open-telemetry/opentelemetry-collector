@@ -255,7 +255,7 @@ func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
 func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 	app.logger.Info("Setting up own telemetry...")
 
-	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
+	err := applicationTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize telemetry")
 	}
@@ -466,7 +466,7 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
 	}
 
-	err = AppTelemetry.shutdown()
+	err = applicationTelemetry.shutdown()
 	if err != nil {
 		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
 	}
