@@ -23,7 +23,6 @@ import (
 	"strconv"
 
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -39,12 +38,10 @@ const (
 	typeStr = "jaeger"
 
 	// Protocol values.
-	protoGRPC       = "grpc"
-	protoThriftHTTP = "thrift_http"
-	// Deprecated, see https://go.opentelemetry.io/collector/issues/267
-	protoThriftTChannel = "thrift_tchannel"
-	protoThriftBinary   = "thrift_binary"
-	protoThriftCompact  = "thrift_compact"
+	protoGRPC          = "grpc"
+	protoThriftHTTP    = "thrift_http"
+	protoThriftBinary  = "thrift_binary"
+	protoThriftCompact = "thrift_compact"
 
 	// Default endpoints to bind to.
 	defaultGRPCBindEndpoint = "0.0.0.0:14250"
@@ -126,14 +123,12 @@ func (f *Factory) CreateTraceReceiver(
 
 	protoGRPC := rCfg.Protocols[protoGRPC]
 	protoHTTP := rCfg.Protocols[protoThriftHTTP]
-	protoTChannel := rCfg.Protocols[protoThriftTChannel]
 	protoThriftCompact := rCfg.Protocols[protoThriftCompact]
 	protoThriftBinary := rCfg.Protocols[protoThriftBinary]
 	remoteSamplingConfig := rCfg.RemoteSampling
 
 	config := Configuration{}
 	var grpcServerOptions []grpc.ServerOption
-	logger := params.Logger
 
 	// Set ports
 	if protoGRPC != nil {
@@ -159,10 +154,6 @@ func (f *Factory) CreateTraceReceiver(
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if protoTChannel != nil {
-		logger.Warn("Protocol unknown or not supported", zap.String("protocol", protoThriftTChannel))
 	}
 
 	if protoThriftBinary != nil {
