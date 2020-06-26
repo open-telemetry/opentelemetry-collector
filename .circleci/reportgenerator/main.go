@@ -52,12 +52,12 @@ func main() {
 	existingIssue := rg.getExistingIssue()
 
 	if existingIssue == nil {
-		//	// If none exists, create a new GitHub Issue for the failure.
+		// If none exists, create a new GitHub Issue for the failure.
 		rg.logger.Info("No existing Issues found, creating a new one.")
 		createdIssue := rg.createIssue()
 		rg.logger.Info("New GitHub Issue created", zap.String("html_url", *createdIssue.HTMLURL))
 	} else {
-		//	// Otherwise, add a comment to the existing Issue.
+		// Otherwise, add a comment to the existing Issue.
 		rg.logger.Info(
 			"Updating GitHub Issue with latest failure",
 			zap.String("html_url", *existingIssue.HTMLURL),
