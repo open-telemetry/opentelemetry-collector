@@ -103,8 +103,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		TypeVal:   typeStr,
-		NameVal:   typeStr,
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
 		Protocols: map[string]*configprotocol.ProtocolServerSettings{},
 	}
 }
