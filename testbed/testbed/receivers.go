@@ -271,8 +271,8 @@ func (or *OTLPWSDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsume
 	return or.receiver.Start(context.Background(), or)
 }
 
-func (or *OTLPWSDataReceiver) Stop() {
-	or.receiver.Shutdown(context.Background())
+func (or *OTLPWSDataReceiver) Stop() error {
+	return or.receiver.Shutdown(context.Background())
 }
 
 func (or *OTLPWSDataReceiver) GenConfigYAMLStr() string {

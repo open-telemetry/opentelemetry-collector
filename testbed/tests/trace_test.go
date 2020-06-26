@@ -54,13 +54,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-<<<<<<< HEAD
-				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 70,
-=======
 				ExpectedMaxCPU: 1140,
 				ExpectedMaxRAM: 160,
->>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 		{
@@ -68,13 +63,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-<<<<<<< HEAD
-				ExpectedMaxCPU: 39,
-				ExpectedMaxRAM: 70,
-=======
 				ExpectedMaxCPU: 1139,
 				ExpectedMaxRAM: 160,
->>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 		{
@@ -82,13 +72,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-<<<<<<< HEAD
-				ExpectedMaxCPU: 20,
-				ExpectedMaxRAM: 70,
-=======
 				ExpectedMaxCPU: 11120,
 				ExpectedMaxRAM: 1160,
->>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 		//{
@@ -105,13 +90,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPWSTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPWSDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-<<<<<<< HEAD
-				ExpectedMaxCPU: 80,
-				ExpectedMaxRAM: 70,
-=======
 				ExpectedMaxCPU: 1120,
 				ExpectedMaxRAM: 160,
->>>>>>> [WIP] [DON'T REVIEW] Implement experimental OTLP/WS
 			},
 		},
 	}
@@ -119,6 +99,9 @@ func TestTrace10kSPS(t *testing.T) {
 	processors := map[string]string{
 		"batch": `
   batch:
+`,
+		"queued_retry": `
+  queued_retry:
 `,
 	}
 

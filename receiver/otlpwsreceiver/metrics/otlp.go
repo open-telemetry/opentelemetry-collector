@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"context"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
@@ -52,12 +53,12 @@ const (
 	receiverTransport = "grpc"
 )
 
-func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
+func (r *Receiver) Export(ctx context.Context, httpReq *http.Request, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
 	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
 	md := data.MetricDataFromOtlp(req.ResourceMetrics)
 
-	err := r.sendToNextConsumer(receiverCtx, md)
+	err := r.sendToNextConsumer(receiverCtx, httpReq, md)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetri
 	return &collectormetrics.ExportMetricsServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, md data.MetricData) error {
+func (r *Receiver) sendToNextConsumer(ctx context.Context, httpReq *http.Request, md data.MetricData) error {
 	metricCount, dataPointCount := md.MetricAndDataPointCount()
 	if metricCount == 0 {
 		return nil

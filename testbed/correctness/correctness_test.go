@@ -70,6 +70,8 @@ func constructSender(t *testing.T, receiver string) testbed.DataSender {
 	switch receiver {
 	case "otlp":
 		sender = testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	case "otlpws":
+		sender = testbed.NewOTLPWSTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "opencensus":
 		sender = testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "jaeger":
@@ -87,6 +89,8 @@ func constructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	switch exporter {
 	case "otlp":
 		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	case "otlpws":
+		receiver = testbed.NewOTLPWSDataReceiver(testbed.GetAvailablePort(t))
 	case "opencensus":
 		receiver = testbed.NewOCDataReceiver(testbed.GetAvailablePort(t))
 	case "jaeger":

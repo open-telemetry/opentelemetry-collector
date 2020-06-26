@@ -16,7 +16,7 @@ package otlpwsexporter
 
 import (
 	"context"
-	"log"
+	"errors"
 	"net/http"
 	"net/url"
 	"sync"
@@ -26,6 +26,7 @@ import (
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/status"
 
 	"go.opentelemetry.io/collector/receiver/otlpwsreceiver/encoding"
 )
@@ -33,16 +34,13 @@ import (
 type exporterImp struct {
 	logger *zap.Logger
 
-	// Input configuration.
 	config *Config
 
 	stopOnce sync.Once
 
-	conn            *websocket.Conn
-	pendingAck      map[uint64]*encoding.Message
-	pendingAckMutex sync.Mutex
-	nextID          uint64
-	Compression     encoding.CompressionMethod
+	conn        *websocket.Conn
+	nextID      uint64
+	Compression encoding.CompressionMethod
 
 	encoder encoding.Encoder
 }
@@ -54,7 +52,7 @@ var dialer = &websocket.Dialer{
 	// (which degrades performance). See https://godoc.org/github.com/gorilla/websocket#hdr-Buffers
 	// Note that we don't care about read buffer size since the exporter does not receive
 	// anything large.
-	WriteBufferSize: 4000 * 1024,
+	WriteBufferSize: 512 * 1024,
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but
@@ -66,8 +64,6 @@ func newExporter(config *Config, logger *zap.Logger) (*exporterImp, error) {
 	e.encoder = encoding.NewEncoder()
 
 	// Set up a connection to the server.
-	e.pendingAck = make(map[uint64]*encoding.Message)
-
 	u := url.URL{Scheme: "ws", Host: e.config.Endpoint, Path: "/v1/ws"}
 
 	var err error
@@ -76,7 +72,7 @@ func newExporter(config *Config, logger *zap.Logger) (*exporterImp, error) {
 		return nil, err
 	}
 
-	go e.readStream()
+	// TODO: Handle retries, etc.
 
 	return e, nil
 }
@@ -107,50 +103,44 @@ func (e *exporterImp) exportRequest(ctx context.Context, body gogoproto.Message)
 		return err
 	}
 
-	// Add the ID to pendingAck map
-	e.pendingAckMutex.Lock()
-	e.pendingAck[id] = &message
-	e.pendingAckMutex.Unlock()
-
 	err = e.conn.WriteMessage(websocket.BinaryMessage, bytes)
 	if err != nil {
 		return err
 	}
+
+	msg, err := e.readResponse()
+	if err != nil {
+		return err
+	}
+
+	status, _ := msg.Body.(*status.Status)
+	if status != nil {
+		return errors.New(status.Message)
+	}
+
+	// TODO: Handle retries, etc.
+
 	return nil
 }
 
-func (e *exporterImp) readStream() {
-	lastID := uint64(0)
-	for {
-		mt, bytes, err := e.conn.ReadMessage()
-		if err != nil {
-			e.logger.Error("cannot read from WebSocket", zap.Error(err))
-			break
-		}
-		if mt != websocket.BinaryMessage {
-			e.logger.Error("expecting binary message type but got a different type", zap.Int("mt", mt))
-			continue
-		}
-
-		var message encoding.Message
-		err = encoding.Decode(bytes, &message)
-		if err != nil {
-			e.logger.Debug("Cannot decode the message", zap.Error(err))
-		}
-
-		id := message.ID
-		if id != lastID+1 {
-			log.Fatalf("Received out of order response ID=%d", id)
-		}
-		lastID = id
-
-		e.pendingAckMutex.Lock()
-		_, ok := e.pendingAck[id]
-		if !ok {
-			e.pendingAckMutex.Unlock()
-			log.Fatalf("Received ack on batch ID that does not exist: %v", id)
-		}
-		delete(e.pendingAck, id)
-		e.pendingAckMutex.Unlock()
+func (e *exporterImp) readResponse() (*encoding.Message, error) {
+	mt, bytes, err := e.conn.ReadMessage()
+	if err != nil {
+		e.logger.Error("cannot read from WebSocket", zap.Error(err))
+		return nil, err
 	}
+	if mt != websocket.BinaryMessage {
+		err = errors.New("expecting binary message type but got a different type")
+		e.logger.Error(err.Error(), zap.Int("mt", mt))
+		return nil, err
+	}
+
+	var message encoding.Message
+	err = encoding.Decode(bytes, &message)
+	if err != nil {
+		e.logger.Debug("Cannot decode the message", zap.Error(err))
+		return nil, err
+	}
+
+	return &message, nil
 }

@@ -32,9 +32,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	collectormetric "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/metrics"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/trace"
 	"go.opentelemetry.io/collector/receiver/otlpwsreceiver/encoding"
+	"go.opentelemetry.io/collector/receiver/otlpwsreceiver/metrics"
+	"go.opentelemetry.io/collector/receiver/otlpwsreceiver/trace"
 )
 
 // Receiver is the type that exposes Trace and Metrics reception.
@@ -171,9 +171,9 @@ func (r *Receiver) onReceive(w http.ResponseWriter, resp *http.Request) {
 		var responseBody gogoproto.Message
 		switch body := message.Body.(type) {
 		case *collectortrace.ExportTraceServiceRequest:
-			responseBody, err = r.traceReceiver.Export(resp.Context(), body)
+			responseBody, err = r.traceReceiver.Export(resp.Context(), resp, body)
 		case *collectormetric.ExportMetricsServiceRequest:
-			responseBody, err = r.metricsReceiver.Export(resp.Context(), body)
+			responseBody, err = r.metricsReceiver.Export(resp.Context(), resp, body)
 		default:
 			r.logger.Debug("Received unexpected body type. Ignoring.")
 			continue

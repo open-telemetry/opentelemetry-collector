@@ -16,6 +16,7 @@ package trace
 
 import (
 	"context"
+	"net/http"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -54,12 +55,12 @@ const (
 	receiverTransport = "http/ws"
 )
 
-func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
+func (r *Receiver) Export(ctx context.Context, httpReq *http.Request, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
 	td := pdata.TracesFromOtlp(req.ResourceSpans)
-	err := r.sendToNextConsumer(ctxWithReceiverName, td)
+	err := r.sendToNextConsumer(ctxWithReceiverName, httpReq, td)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +68,8 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	return &collectortrace.ExportTraceServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, td pdata.Traces) error {
-	if c, ok := client.FromGRPC(ctx); ok {
+func (r *Receiver) sendToNextConsumer(ctx context.Context, httpReq *http.Request, td pdata.Traces) error {
+	if c, ok := client.FromHTTP(httpReq); ok {
 		ctx = client.NewContext(ctx, c)
 	}
 

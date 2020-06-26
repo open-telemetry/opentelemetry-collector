@@ -41,7 +41,7 @@ import (
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/observability/observabilitytest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -53,7 +53,7 @@ const (
 )
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	ocr, err := New(zap.NewNop(), otlpReceiver, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
@@ -61,7 +61,7 @@ func TestStopWithoutStartNeverCrashes(t *testing.T) {
 }
 
 func TestNewPortAlreadyUsed(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
@@ -72,7 +72,7 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	r, err := New(zap.NewNop(), otlpReceiver, "tcp", addr, nil, nil)
 	r.traceConsumer = new(exportertest.SinkTraceExporter)
 	r.metricsConsumer = new(exportertest.SinkMetricsExporter)
@@ -84,7 +84,7 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 }
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	r, err := New(zap.NewNop(), otlpReceiver, "tcp", addr, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -135,7 +135,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		},
 	}
 
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	req := &collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{

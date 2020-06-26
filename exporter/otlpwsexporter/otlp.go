@@ -50,7 +50,7 @@ func (e *exporterError) Error() string {
 }
 
 const (
-	defaultNumWorkers int = 1
+	defaultNumWorkers int = 8
 
 	_ exporterErrorCode = iota // skip 0
 	// errEndpointRequired indicates that this exporter was not provided with an endpoint in its config.

@@ -90,10 +90,6 @@ func (e *Encoder) Encode(
 ) ([]byte, error) {
 	//e.buf = gogoproto.NewBuffer(nil)
 	e.buf.Reset()
-	//bodyBytes, err := gogoproto.Marshal(message.Body)
-	//if err != nil {
-	//	return nil, err
-	//}
 
 	// Compose flags.
 
