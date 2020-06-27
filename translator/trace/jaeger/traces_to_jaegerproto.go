@@ -237,6 +237,11 @@ func getJaegerProtoSpanTags(span pdata.Span) []model.KeyValue {
 		}
 	}
 
+	traceStateTags, traceStateTagsFound := getTagsFromTraceState(span.TraceState())
+	if traceStateTagsFound {
+		tagsCount += len(traceStateTags)
+	}
+
 	if tagsCount == 0 {
 		return nil
 	}
@@ -254,6 +259,9 @@ func getJaegerProtoSpanTags(span pdata.Span) []model.KeyValue {
 	}
 	if statusMsgTagFound {
 		tags = append(tags, statusMsgTag)
+	}
+	if traceStateTagsFound {
+		tags = append(tags, traceStateTags...)
 	}
 	return tags
 }
@@ -358,7 +366,14 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 			continue
 		}
 
-		fields := make([]model.KeyValue, 0, event.Attributes().Len())
+		fields := make([]model.KeyValue, 0, event.Attributes().Len()+1)
+		if event.Name() != "" {
+			fields = append(fields, model.KeyValue{
+				Key:   tracetranslator.TagMessage,
+				VType: model.ValueType_STRING,
+				VStr:  event.Name(),
+			})
+		}
 		fields = appendTagsFromAttributes(fields, event.Attributes())
 		logs = append(logs, model.Log{
 			Timestamp: internal.UnixNanoToTime(event.Timestamp()),
@@ -380,6 +395,8 @@ func getTagFromSpanKind(spanKind pdata.SpanKind) (model.KeyValue, bool) {
 		tagStr = string(tracetranslator.OpenTracingSpanKindProducer)
 	case pdata.SpanKindCONSUMER:
 		tagStr = string(tracetranslator.OpenTracingSpanKindConsumer)
+	case pdata.SpanKindINTERNAL:
+		tagStr = string(tracetranslator.OpenTracingSpanKindInternal)
 	default:
 		return model.KeyValue{}, false
 	}
@@ -419,4 +436,19 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 		VStr:  statusMsg,
 		VType: model.ValueType_STRING,
 	}, true
+}
+
+func getTagsFromTraceState(traceState pdata.TraceState) ([]model.KeyValue, bool) {
+	keyValues := make([]model.KeyValue, 0)
+	exists := traceState != pdata.TraceStateEmpty
+	if exists {
+		// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
+		kv := model.KeyValue{
+			Key:   tracetranslator.TagW3CTraceState,
+			VStr:  string(traceState),
+			VType: model.ValueType_STRING,
+		}
+		keyValues = append(keyValues, kv)
+	}
+	return keyValues, exists
 }

@@ -146,7 +146,7 @@ func GenerateSpan(traceID []byte, parentID []byte, spanName string, spanInputs *
 		Kind:                   lookupSpanKind(spanInputs.Kind),
 		StartTimeUnixNano:      uint64(endTime.Add(-215 * time.Millisecond).UnixNano()),
 		EndTimeUnixNano:        uint64(endTime.UnixNano()),
-		Attributes:             generateSpanAttributes(spanInputs.Attributes),
+		Attributes:             generateSpanAttributes(spanInputs.Attributes, spanInputs.Status),
 		DroppedAttributesCount: 0,
 		Events:                 generateSpanEvents(spanInputs.Events),
 		DroppedEventsCount:     0,
@@ -188,7 +188,8 @@ func lookupSpanKind(kind PICTInputKind) otlptrace.Span_SpanKind {
 	}
 }
 
-func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.KeyValue {
+func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) []*otlpcommon.KeyValue {
+	includeStatus := SpanStatusNil != statusStr
 	var attrs map[string]interface{}
 	switch spanTypeID {
 	case SpanAttrNil:
@@ -202,7 +203,7 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.KeyVal
 	case SpanAttrFaaSDatasource:
 		attrs = generateFaaSDatasourceAttributes()
 	case SpanAttrFaaSHTTP:
-		attrs = generateFaaSHTTPAttributes()
+		attrs = generateFaaSHTTPAttributes(includeStatus)
 	case SpanAttrFaaSPubSub:
 		attrs = generateFaaSPubSubAttributes()
 	case SpanAttrFaaSTimer:
@@ -210,9 +211,9 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.KeyVal
 	case SpanAttrFaaSOther:
 		attrs = generateFaaSOtherAttributes()
 	case SpanAttrHTTPClient:
-		attrs = generateHTTPClientAttributes()
+		attrs = generateHTTPClientAttributes(includeStatus)
 	case SpanAttrHTTPServer:
-		attrs = generateHTTPServerAttributes()
+		attrs = generateHTTPServerAttributes(includeStatus)
 	case SpanAttrMessagingProducer:
 		attrs = generateMessagingProducerAttributes()
 	case SpanAttrMessagingConsumer:
@@ -224,7 +225,7 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes) []*otlpcommon.KeyVal
 	case SpanAttrInternal:
 		attrs = generateInternalAttributes()
 	case SpanAttrMaxCount:
-		attrs = generateMaxCountAttributes()
+		attrs = generateMaxCountAttributes(includeStatus)
 	default:
 		attrs = generateGRPCClientAttributes()
 	}
@@ -279,7 +280,7 @@ func generateFaaSDatasourceAttributes() map[string]interface{} {
 	return attrMap
 }
 
-func generateFaaSHTTPAttributes() map[string]interface{} {
+func generateFaaSHTTPAttributes(includeStatus bool) map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeFaaSTrigger] = conventions.FaaSTriggerHTTP
 	attrMap[conventions.AttributeHTTPMethod] = "POST"
@@ -287,7 +288,9 @@ func generateFaaSHTTPAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeHTTPHost] = "api.opentelemetry.io"
 	attrMap[conventions.AttributeHTTPTarget] = "/blog/posts"
 	attrMap[conventions.AttributeHTTPFlavor] = "2"
-	attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
+	if includeStatus {
+		attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
+	}
 	attrMap[conventions.AttributeHTTPUserAgent] =
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
@@ -324,17 +327,19 @@ func generateFaaSOtherAttributes() map[string]interface{} {
 	return attrMap
 }
 
-func generateHTTPClientAttributes() map[string]interface{} {
+func generateHTTPClientAttributes(includeStatus bool) map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeHTTPMethod] = "GET"
 	attrMap[conventions.AttributeHTTPURL] = "https://opentelemetry.io/registry/"
-	attrMap[conventions.AttributeHTTPStatusCode] = int64(200)
-	attrMap[conventions.AttributeHTTPStatusText] = "More Than OK"
+	if includeStatus {
+		attrMap[conventions.AttributeHTTPStatusCode] = int64(200)
+		attrMap[conventions.AttributeHTTPStatusText] = "More Than OK"
+	}
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
 }
 
-func generateHTTPServerAttributes() map[string]interface{} {
+func generateHTTPServerAttributes(includeStatus bool) map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeHTTPMethod] = "POST"
 	attrMap[conventions.AttributeHTTPScheme] = "https"
@@ -342,7 +347,9 @@ func generateHTTPServerAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeNetHostPort] = int64(443)
 	attrMap[conventions.AttributeHTTPTarget] = "/blog/posts"
 	attrMap[conventions.AttributeHTTPFlavor] = "2"
-	attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
+	if includeStatus {
+		attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
+	}
 	attrMap[conventions.AttributeHTTPUserAgent] =
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
 	attrMap[conventions.AttributeHTTPRoute] = "/blog/posts"
@@ -397,7 +404,7 @@ func generateInternalAttributes() map[string]interface{} {
 	return attrMap
 }
 
-func generateMaxCountAttributes() map[string]interface{} {
+func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeHTTPMethod] = "POST"
 	attrMap[conventions.AttributeHTTPScheme] = "https"
@@ -407,8 +414,10 @@ func generateMaxCountAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeNetHostPort] = int64(443)
 	attrMap[conventions.AttributeHTTPTarget] = "/blog/posts"
 	attrMap[conventions.AttributeHTTPFlavor] = "2"
-	attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
-	attrMap[conventions.AttributeHTTPStatusText] = "Created"
+	if includeStatus {
+		attrMap[conventions.AttributeHTTPStatusCode] = int64(201)
+		attrMap[conventions.AttributeHTTPStatusText] = "Created"
+	}
 	attrMap[conventions.AttributeHTTPUserAgent] =
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
 	attrMap[conventions.AttributeHTTPRoute] = "/blog/posts"

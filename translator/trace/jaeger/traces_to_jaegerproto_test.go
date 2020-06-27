@@ -163,6 +163,17 @@ func TestGetTagFromSpanKind(t *testing.T) {
 			},
 			ok: true,
 		},
+
+		{
+			name: "internal",
+			kind: pdata.SpanKindINTERNAL,
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindInternal),
+			},
+			ok: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -244,10 +255,10 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 		{
 			name: "one-span-no-resources",
-			td:   generateTraceDataOneSpanNoResource(),
+			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
 			jb: model.Batch{
 				Spans: []*model.Span{
-					generateProtoSpan(),
+					generateProtoSpanWithTraceState(),
 				},
 			},
 			err: nil,

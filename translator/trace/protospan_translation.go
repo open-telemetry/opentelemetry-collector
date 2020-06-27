@@ -23,6 +23,8 @@ const (
 	MessageEventCompressedSizeKey   = "message.compressed_size"
 	MessageEventUncompressedSizeKey = "message.uncompressed_size"
 
+	TagMessage = "message"
+
 	TagSpanKind = "span.kind"
 
 	TagStatusCode          = "status.code"
@@ -33,6 +35,8 @@ const (
 	TagZipkinCensusCode    = "census.status_code"
 	TagZipkinCensusMsg     = "census.status_description"
 	TagZipkinOpenCensusMsg = "opencensus.status_description"
+
+	TagW3CTraceState = "w3c.tracestate"
 )
 
 // OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing
