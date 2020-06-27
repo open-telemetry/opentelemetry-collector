@@ -14,7 +14,7 @@
 
 package tracetranslator
 
-// Some of the keys used to represent OC proto constructs as tags or annotations in other formats.
+// Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
 const (
 	AnnotationDescriptionKey = "description"
 
@@ -39,12 +39,17 @@ const (
 	TagW3CTraceState = "w3c.tracestate"
 )
 
+// Constants used for signifying batch-level attribute values where not supplied by OTLP data but required
+// by other protocols.
+const (
+	ResourceNotSet  = "OTLPResourceNotSet"
+	ResourceNoAttrs = "OTLPResourceNoAttributes"
+)
+
 // OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing
 // conventions: https://github.com/opentracing/specification/blob/master/semantic_conventions.md
-// These values are also used for representing internally span kinds that have no
+// These values are used for representing span kinds that have no
 // equivalents in OpenCensus format. They are stored as values of TagSpanKind
-// Note: this internal usage needs to be eliminated when we move to OTLP for internal
-// in-memory representation since OTLP has the equivalents.
 type OpenTracingSpanKind string
 
 const (

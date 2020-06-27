@@ -257,6 +257,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "one-span-no-resources",
 			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpanWithTraceState(),
 				},
@@ -267,6 +270,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "two-spans-child-parent",
 			td:   generateTraceDataTwoSpansChildParent(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
 					generateProtoChildSpanWithErrorTags(),
@@ -279,6 +285,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "two-spans-with-follower",
 			td:   generateTraceDataTwoSpansWithFollower(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
 					generateProtoFollowerSpan(),

@@ -105,16 +105,18 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 }
 
 func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
+
+	process := model.Process{}
 	if resource.IsNil() {
-		return nil
+		process.ServiceName = tracetranslator.ResourceNotSet
+		return &process
 	}
 
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
-		return nil
+		process.ServiceName = tracetranslator.ResourceNoAttrs
+		return &process
 	}
-
-	process := model.Process{}
 	attrsCount := attrs.Len()
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		process.ServiceName = serviceName.StringVal()

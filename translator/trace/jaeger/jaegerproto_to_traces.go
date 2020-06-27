@@ -90,13 +90,16 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 }
 
 func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
-	if process == nil {
+	if process == nil || process.ServiceName == tracetranslator.ResourceNotSet {
 		return
 	}
 
 	dest.InitEmpty()
 
 	serviceName := process.GetServiceName()
+	if serviceName == tracetranslator.ResourceNoAttrs {
+		return
+	}
 	tags := process.GetTags()
 	if serviceName == "" && tags == nil {
 		return
