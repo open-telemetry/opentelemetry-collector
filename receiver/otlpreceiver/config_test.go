@@ -52,7 +52,8 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "otlp/customname",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "localhost:9090",
+				Endpoint:       "localhost:9090",
+				ReadBufferSize: 512 * 1024,
 			},
 			Transport: "tcp",
 		})
@@ -65,7 +66,8 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "otlp/keepalive",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:55680",
+				Endpoint:       "0.0.0.0:55680",
+				ReadBufferSize: 512 * 1024,
 				Keepalive: &configgrpc.KeepaliveServerConfig{
 					ServerParameters: &configgrpc.KeepaliveServerParameters{
 						MaxConnectionIdle:     11 * time.Second,
@@ -94,6 +96,8 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint:             "0.0.0.0:55680",
 				MaxRecvMsgSizeMiB:    32,
 				MaxConcurrentStreams: 16,
+				ReadBufferSize:       1024,
+				WriteBufferSize:      1024,
 				Keepalive: &configgrpc.KeepaliveServerConfig{
 					ServerParameters: &configgrpc.KeepaliveServerParameters{
 						MaxConnectionIdle: 10 * time.Second,
@@ -113,7 +117,8 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "otlp/tlscredentials",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:55680",
+				Endpoint:       "0.0.0.0:55680",
+				ReadBufferSize: 512 * 1024,
 				TLSCredentials: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "test.crt",
@@ -133,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				Endpoint:       "0.0.0.0:55680",
-				TLSCredentials: nil,
+				ReadBufferSize: 512 * 1024,
 			},
 			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
@@ -148,7 +153,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				Endpoint:       "/tmp/otlp.sock",
-				TLSCredentials: nil,
+				ReadBufferSize: 512 * 1024,
 			},
 			Transport: "unix",
 		})

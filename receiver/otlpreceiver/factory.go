@@ -51,6 +51,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		},
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			Endpoint: "0.0.0.0:55680",
+			// We almost write 0 bytes, so no need to tune WriteBufferSize.
+			ReadBufferSize: 512 * 1024,
 		},
 		Transport: "tcp",
 	}
