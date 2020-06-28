@@ -29,8 +29,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/observability"
 	"go.opentelemetry.io/collector/testutil"
@@ -62,20 +60,8 @@ func TestExport(t *testing.T) {
 
 	resourceSpans := []*otlptrace.ResourceSpans{
 		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
-					{
-						Key:   "key1",
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
-					},
-				},
-			},
 			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 				{
-					InstrumentationLibrary: &otlpcommon.InstrumentationLibrary{
-						Name:    "name1",
-						Version: "version1",
-					},
 					Spans: []*otlptrace.Span{
 						{
 							TraceId:           traceID,
@@ -84,29 +70,8 @@ func TestExport(t *testing.T) {
 							Kind:              otlptrace.Span_SERVER,
 							StartTimeUnixNano: unixnanos,
 							EndTimeUnixNano:   unixnanos,
-							Events: []*otlptrace.Span_Event{
-								{
-									TimeUnixNano: unixnanos,
-									Name:         "event1",
-									Attributes: []*otlpcommon.KeyValue{
-										{
-											Key:   "eventattr1",
-											Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "eventattrval1"}},
-										},
-									},
-									DroppedAttributesCount: 4,
-								},
-							},
-							Links: []*otlptrace.Span_Link{
-								{
-									TraceId: traceID,
-									SpanId:  spanID,
-								},
-							},
-							DroppedAttributesCount: 1,
-							DroppedEventsCount:     2,
-							Status:                 &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_Cancelled},
-							TraceState:             "a=text,b=123",
+							Status:            &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_Cancelled},
+							TraceState:        "a=text,b=123",
 						},
 					},
 				},
@@ -131,6 +96,53 @@ func TestExport(t *testing.T) {
 	require.Equal(t, 1, len(traceSink.AllTraces()), "unexpected length: %v", len(traceSink.AllTraces()))
 
 	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
+}
+
+func TestExport_EmptyRequest(t *testing.T) {
+	traceSink := new(exportertest.SinkTraceExporter)
+
+	_, port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
+	defer doneFn()
+
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
+	defer traceClientDoneFn()
+
+	resp, err := traceClient.Export(context.Background(), &collectortrace.ExportTraceServiceRequest{})
+	assert.NoError(t, err, "Failed to export trace: %v", err)
+	assert.NotNil(t, resp, "The response is missing")
+}
+
+func TestExport_ErrorConsumer(t *testing.T) {
+	traceSink := new(exportertest.SinkTraceExporter)
+	traceSink.SetConsumeTraceError(fmt.Errorf("error"))
+
+	_, port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
+	defer doneFn()
+
+	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
+	defer traceClientDoneFn()
+
+	req := &collectortrace.ExportTraceServiceRequest{
+		ResourceSpans: []*otlptrace.ResourceSpans{
+			{
+				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+					{
+						Spans: []*otlptrace.Span{
+							{
+								Name: "operationB",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	resp, err := traceClient.Export(context.Background(), req)
+	assert.EqualError(t, err, "rpc error: code = Unknown desc = error")
+	assert.Nil(t, resp)
 }
 
 func makeTraceServiceClient(port int) (collectortrace.TraceServiceClient, func(), error) {
@@ -163,8 +175,8 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Recei
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
-	r, err = New(receiverTagValue, tc)
-	require.NoError(t, err, "Failed to create the Receiver: %v", err)
+	r = New(receiverTagValue, tc)
+	require.NoError(t, err)
 
 	// Now run it as a gRPC server
 	srv := observability.GRPCServerWithObservabilityEnabled()

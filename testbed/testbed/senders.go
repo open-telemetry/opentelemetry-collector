@@ -327,7 +327,9 @@ func (ote *OTLPTraceDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	return fmt.Sprintf(`
   otlp:
-    endpoint: "%s:%d"`, ote.Host, ote.Port)
+    protocols:
+      grpc:
+        endpoint: "%s:%d"`, ote.Host, ote.Port)
 }
 
 func (ote *OTLPTraceDataSender) ProtocolName() string {
@@ -382,7 +384,9 @@ func (ome *OTLPMetricsDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	return fmt.Sprintf(`
   otlp:
-    endpoint: "%s:%d"`, ome.host, ome.port)
+    protocols:
+      grpc:
+        endpoint: "%s:%d"`, ome.host, ome.port)
 }
 
 func (ome *OTLPMetricsDataSender) GetCollectorPort() int {

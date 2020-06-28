@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -39,144 +40,163 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 7)
+	assert.Equal(t, len(cfg.Receivers), 9)
 
-	r0 := cfg.Receivers["otlp"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, cfg.Receivers["otlp"], factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["otlp/customname"].(*Config)
-	assert.Equal(t, r1,
+	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyGRPC.SetName("otlp/only_grpc")
+	defaultOnlyGRPC.HTTP = nil
+	assert.Equal(t, cfg.Receivers["otlp/only_grpc"], defaultOnlyGRPC)
+
+	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTP.SetName("otlp/only_http")
+	defaultOnlyHTTP.GRPC = nil
+	assert.Equal(t, cfg.Receivers["otlp/only_http"], defaultOnlyHTTP)
+
+	assert.Equal(t, cfg.Receivers["otlp/customname"],
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/customname",
 			},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:       "localhost:9090",
-				ReadBufferSize: 512 * 1024,
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					Endpoint:       "localhost:9090",
+					ReadBufferSize: 512 * 1024,
+				},
 			},
-			Transport: "tcp",
 		})
 
-	r2 := cfg.Receivers["otlp/keepalive"].(*Config)
-	assert.Equal(t, r2,
+	assert.Equal(t, cfg.Receivers["otlp/keepalive"],
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/keepalive",
 			},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:       "0.0.0.0:55680",
-				ReadBufferSize: 512 * 1024,
-				Keepalive: &configgrpc.KeepaliveServerConfig{
-					ServerParameters: &configgrpc.KeepaliveServerParameters{
-						MaxConnectionIdle:     11 * time.Second,
-						MaxConnectionAge:      12 * time.Second,
-						MaxConnectionAgeGrace: 13 * time.Second,
-						Time:                  30 * time.Second,
-						Timeout:               5 * time.Second,
-					},
-					EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
-						MinTime:             10 * time.Second,
-						PermitWithoutStream: true,
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					Endpoint:       "0.0.0.0:55680",
+					ReadBufferSize: 512 * 1024,
+					Keepalive: &configgrpc.KeepaliveServerConfig{
+						ServerParameters: &configgrpc.KeepaliveServerParameters{
+							MaxConnectionIdle:     11 * time.Second,
+							MaxConnectionAge:      12 * time.Second,
+							MaxConnectionAgeGrace: 13 * time.Second,
+							Time:                  30 * time.Second,
+							Timeout:               5 * time.Second,
+						},
+						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+							MinTime:             10 * time.Second,
+							PermitWithoutStream: true,
+						},
 					},
 				},
 			},
-			Transport: "tcp",
 		})
 
-	r3 := cfg.Receivers["otlp/msg-size-conc-connect-max-idle"].(*Config)
-	assert.Equal(t, r3,
+	assert.Equal(t, cfg.Receivers["otlp/msg-size-conc-connect-max-idle"],
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/msg-size-conc-connect-max-idle",
 			},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:             "0.0.0.0:55680",
-				MaxRecvMsgSizeMiB:    32,
-				MaxConcurrentStreams: 16,
-				ReadBufferSize:       1024,
-				WriteBufferSize:      1024,
-				Keepalive: &configgrpc.KeepaliveServerConfig{
-					ServerParameters: &configgrpc.KeepaliveServerParameters{
-						MaxConnectionIdle: 10 * time.Second,
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					Endpoint:             "0.0.0.0:55680",
+					MaxRecvMsgSizeMiB:    32,
+					MaxConcurrentStreams: 16,
+					ReadBufferSize:       1024,
+					WriteBufferSize:      1024,
+					Keepalive: &configgrpc.KeepaliveServerConfig{
+						ServerParameters: &configgrpc.KeepaliveServerParameters{
+							MaxConnectionIdle: 10 * time.Second,
+						},
 					},
 				},
 			},
-			Transport: "tcp",
 		})
 
 	// NOTE: Once the config loader checks for the files existence, this test may fail and require
 	// 	use of fake cert/key for test purposes.
-	r4 := cfg.Receivers["otlp/tlscredentials"].(*Config)
-	assert.Equal(t, r4,
+	assert.Equal(t, cfg.Receivers["otlp/tlscredentials"],
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/tlscredentials",
 			},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:       "0.0.0.0:55680",
-				ReadBufferSize: 512 * 1024,
-				TLSCredentials: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "test.crt",
-						KeyFile:  "test.key",
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					Endpoint: "0.0.0.0:55680",
+					TLSCredentials: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "test.crt",
+							KeyFile:  "test.key",
+						},
+					},
+					ReadBufferSize: 512 * 1024,
+				},
+				HTTP: &confighttp.HTTPServerSettings{
+					Endpoint: "0.0.0.0:55681",
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "test.crt",
+							KeyFile:  "test.key",
+						},
 					},
 				},
 			},
-			Transport: "tcp",
 		})
 
-	r5 := cfg.Receivers["otlp/cors"].(*Config)
-	assert.Equal(t, r5,
+	assert.Equal(t, cfg.Receivers["otlp/cors"],
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/cors",
 			},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:       "0.0.0.0:55680",
-				ReadBufferSize: 512 * 1024,
+			Protocols: Protocols{
+				HTTP: &confighttp.HTTPServerSettings{
+					Endpoint:    "0.0.0.0:55681",
+					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+				},
 			},
-			Transport:   "tcp",
-			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})
 
-	r6 := cfg.Receivers["otlp/uds"].(*Config)
-	assert.Equal(t, r6,
+	assert.Equal(t, cfg.Receivers["otlp/uds"],
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/uds",
 			},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:       "/tmp/otlp.sock",
-				ReadBufferSize: 512 * 1024,
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					Endpoint: "/tmp/grpc_otlp.sock",
+					// Transport: "unix",
+					ReadBufferSize: 512 * 1024,
+				},
+				HTTP: &confighttp.HTTPServerSettings{
+					Endpoint: "/tmp/http_otlp.sock",
+					// Transport: "unix",
+				},
 			},
-			Transport: "unix",
 		})
 }
 
-func TestBuildOptions_TLSCredentials(t *testing.T) {
-	cfg := Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: "IncorrectTLS",
-		},
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
-			TLSCredentials: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
-					CertFile: "willfail",
-				},
-			},
-		},
-	}
-	_, err := cfg.buildOptions()
-	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
-
-	cfg.TLSCredentials = &configtls.TLSServerSetting{}
-	opt, err := cfg.buildOptions()
+func TestFailedLoadConfig(t *testing.T) {
+	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
-	assert.NotNil(t, opt)
+
+	factory := &Factory{}
+	factories.Receivers[typeStr] = factory
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "typo_default_proto_config.yaml"), factories)
+	assert.EqualError(t, err, `error reading settings for receiver type "otlp": unknown protocols in the OTLP receiver`)
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading settings for receiver type \"otlp\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading settings for receiver type \"otlp\": must specify at least one protocol when using the OTLP receiver")
+
+	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading settings for receiver type \"otlp\": empty config for OTLP receiver")
 }

@@ -198,7 +198,8 @@ func (or *OTLPDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer)
 	factory := otlpreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(or.ProtocolName())
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", or.Port)
+	cfg.GRPC.Endpoint = fmt.Sprintf("localhost:%d", or.Port)
+	cfg.HTTP = nil
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
