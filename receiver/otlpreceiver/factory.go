@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -55,7 +56,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		},
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:55680",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:55680",
+					Transport: "tcp",
+				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},

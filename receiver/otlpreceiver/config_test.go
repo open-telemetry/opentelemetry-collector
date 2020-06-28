@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -62,7 +63,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint:       "localhost:9090",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9090",
+						Transport: "tcp",
+					},
 					ReadBufferSize: 512 * 1024,
 				},
 			},
@@ -76,7 +80,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint:       "0.0.0.0:55680",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "0.0.0.0:55680",
+						Transport: "tcp",
+					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
@@ -103,7 +110,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint:             "0.0.0.0:55680",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "0.0.0.0:55680",
+						Transport: "tcp",
+					},
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
 					ReadBufferSize:       1024,
@@ -127,7 +137,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint: "0.0.0.0:55680",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "0.0.0.0:55680",
+						Transport: "tcp",
+					},
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "test.crt",
@@ -170,8 +183,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint: "/tmp/grpc_otlp.sock",
-					// Transport: "unix",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "/tmp/grpc_otlp.sock",
+						Transport: "unix",
+					},
 					ReadBufferSize: 512 * 1024,
 				},
 				HTTP: &confighttp.HTTPServerSettings{

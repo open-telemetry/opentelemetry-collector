@@ -65,7 +65,7 @@ receivers:
   otlp/uds:
     protocols:
       grpc:
-        # transport: unix
+        transport: unix
         endpoint: /tmp/grpc_otlp.sock
       http:
         # transport: unix

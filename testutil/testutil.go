@@ -18,7 +18,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,6 +43,15 @@ func GenerateNormalizedJSON(t *testing.T, jsonStr string) string {
 	require.NoError(t, err)
 
 	return string(n)
+}
+
+func TempSocketName(t *testing.T) string {
+	tmpfile, err := ioutil.TempFile("", "sock")
+	require.NoError(t, err)
+	require.NoError(t, tmpfile.Close())
+	socket := tmpfile.Name()
+	require.NoError(t, os.Remove(socket))
+	return socket
 }
 
 // GetAvailableLocalAddress finds an available local port and returns an endpoint
