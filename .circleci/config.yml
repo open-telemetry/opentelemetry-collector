@@ -53,6 +53,17 @@ commands:
             docker push otel/<< parameters.repo >>:<< parameters.tag >>
             docker push otel/<< parameters.repo >>:latest
 
+  github_issue_generator:
+    steps:
+      - when:
+          condition:
+            equal: [master, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: Generate GitHub Issue
+                command: go run .circleci/reportgenerator/main.go ${TEST_RESULTS}
+                when: on_fail
+
 workflows:
   version: 2
   build-and-test:
@@ -179,6 +190,8 @@ jobs:
 
   loadtest:
     executor: golang
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
     parallelism: 10
     resource_class: medium+
     steps:
@@ -190,22 +203,26 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+      - github_issue_generator
 
   test:
     executor: golang
+    environment:
+      TEST_RESULTS: unit-test-results/junit/results.xml
     steps:
       - attach_to_workspace
       - run:
           name: Unit tests
           command: |
-               mkdir -p unit-test-results/junit
-               trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
-               make test | tee unit-test-results/go-unit-tests.out
+            mkdir -p unit-test-results/junit
+            trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
+            make test | tee unit-test-results/go-unit-tests.out
       - store_artifacts:
           path: unit-test-results
       - store_test_results:
           path: unit-test-results/junit
       - save_module_cache
+      - github_issue_generator
 
   gosec:
     executor: golang
@@ -239,7 +256,7 @@ jobs:
           repo: opentelemetry-collector
           tag: ${CIRCLE_TAG:1}
       - run:
-          name: Calculate checksums 
+          name: Calculate checksums
           command: cd bin && shasum -a 256 * > checksums.txt
       - run:
           name: Create Github release and upload artifacts
@@ -273,6 +290,7 @@ jobs:
           name: Unit tests
           command: go test ./...
       - save_module_cache
+      - github_issue_generator
 
   check-links:
     docker:
