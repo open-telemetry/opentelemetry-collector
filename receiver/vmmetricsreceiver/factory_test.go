@@ -43,7 +43,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 
-	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, nil)
 
 	// Currently vmmetrics receiver is only supported on linux.
 	if runtime.GOOS != "linux" {

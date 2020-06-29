@@ -96,8 +96,8 @@ type ReceiverFactoryOld interface {
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
-	CreateMetricsReceiver(logger *zap.Logger, cfg configmodels.Receiver,
-		consumer consumer.MetricsConsumerOld) (MetricsReceiver, error)
+	CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
+		nextConsumer consumer.MetricsConsumerOld) (MetricsReceiver, error)
 }
 
 // ReceiverCreateParams is passed to ReceiverFactory.Create* functions.

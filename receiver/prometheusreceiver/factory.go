@@ -113,14 +113,10 @@ func (f *Factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
-) (component.MetricsReceiver, error) {
+func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig
 	}
-	return newPrometheusReceiver(logger, config, consumer), nil
+	return newPrometheusReceiver(logger, config, nextConsumer), nil
 }
