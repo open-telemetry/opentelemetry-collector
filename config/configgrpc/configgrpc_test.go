@@ -15,12 +15,16 @@
 package configgrpc
 
 import (
+	"context"
+	"path"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/config/configtls"
+	otelcol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
@@ -201,6 +205,20 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 }
 
+func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
+	settings := GRPCServerSettings{
+		Endpoint: "127.0.0.1:1234567",
+		TLSCredentials: &configtls.TLSServerSetting{
+			TLSSetting: configtls.TLSSetting{
+				CertFile: "/doesnt/exist",
+			},
+		},
+		Keepalive: nil,
+	}
+	_, err := settings.ToListener()
+	assert.Error(t, err)
+}
+
 func TestGetGRPCCompressionKey(t *testing.T) {
 	if GetGRPCCompressionKey("gzip") != CompressionGzip {
 		t.Error("gzip is marked as supported but returned unsupported")
@@ -213,4 +231,155 @@ func TestGetGRPCCompressionKey(t *testing.T) {
 	if GetGRPCCompressionKey("badType") != CompressionUnsupported {
 		t.Error("badType is not supported but was returned as supported")
 	}
+}
+
+func TestHttpReception(t *testing.T) {
+	tests := []struct {
+		name           string
+		tlsServerCreds *configtls.TLSServerSetting
+		tlsClientCreds *configtls.TLSClientSetting
+		hasError       bool
+	}{
+		{
+			name:           "noTLS",
+			tlsServerCreds: nil,
+			tlsClientCreds: &configtls.TLSClientSetting{
+				Insecure: true,
+			},
+		},
+		{
+			name: "TLS",
+			tlsServerCreds: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   path.Join(".", "testdata", "ca.crt"),
+					CertFile: path.Join(".", "testdata", "server.crt"),
+					KeyFile:  path.Join(".", "testdata", "server.key"),
+				},
+			},
+			tlsClientCreds: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: path.Join(".", "testdata", "ca.crt"),
+				},
+				ServerName: "localhost",
+			},
+		},
+		{
+			name: "NoServerCertificates",
+			tlsServerCreds: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: path.Join(".", "testdata", "ca.crt"),
+				},
+			},
+			tlsClientCreds: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: path.Join(".", "testdata", "ca.crt"),
+				},
+				ServerName: "localhost",
+			},
+			hasError: true,
+		},
+		{
+			name: "mTLS",
+			tlsServerCreds: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   path.Join(".", "testdata", "ca.crt"),
+					CertFile: path.Join(".", "testdata", "server.crt"),
+					KeyFile:  path.Join(".", "testdata", "server.key"),
+				},
+				ClientCAFile: path.Join(".", "testdata", "ca.crt"),
+			},
+			tlsClientCreds: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   path.Join(".", "testdata", "ca.crt"),
+					CertFile: path.Join(".", "testdata", "client.crt"),
+					KeyFile:  path.Join(".", "testdata", "client.key"),
+				},
+				ServerName: "localhost",
+			},
+		},
+		{
+			name: "NoClientCertificate",
+			tlsServerCreds: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   path.Join(".", "testdata", "ca.crt"),
+					CertFile: path.Join(".", "testdata", "server.crt"),
+					KeyFile:  path.Join(".", "testdata", "server.key"),
+				},
+				ClientCAFile: path.Join(".", "testdata", "ca.crt"),
+			},
+			tlsClientCreds: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: path.Join(".", "testdata", "ca.crt"),
+				},
+				ServerName: "localhost",
+			},
+			hasError: true,
+		},
+		{
+			name: "WrongClientCA",
+			tlsServerCreds: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   path.Join(".", "testdata", "ca.crt"),
+					CertFile: path.Join(".", "testdata", "server.crt"),
+					KeyFile:  path.Join(".", "testdata", "server.key"),
+				},
+				ClientCAFile: path.Join(".", "testdata", "server.crt"),
+			},
+			tlsClientCreds: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   path.Join(".", "testdata", "ca.crt"),
+					CertFile: path.Join(".", "testdata", "client.crt"),
+					KeyFile:  path.Join(".", "testdata", "client.key"),
+				},
+				ServerName: "localhost",
+			},
+			hasError: true,
+		},
+	}
+	// prepare
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gss := &GRPCServerSettings{
+				Endpoint:       "localhost:0",
+				TLSCredentials: tt.tlsServerCreds,
+			}
+			ln, err := gss.ToListener()
+			assert.NoError(t, err)
+			opts, err := gss.ToServerOption()
+			assert.NoError(t, err)
+			s := grpc.NewServer(opts...)
+			otelcol.RegisterTraceServiceServer(s, &grpcTraceServer{})
+
+			go func() {
+				_ = s.Serve(ln)
+			}()
+
+			gcs := &GRPCClientSettings{
+				Endpoint:   ln.Addr().String(),
+				TLSSetting: *tt.tlsClientCreds,
+			}
+			clientOpts, errClient := gcs.ToDialOptions()
+			assert.NoError(t, errClient)
+			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
+			assert.NoError(t, errDial)
+			client := otelcol.NewTraceServiceClient(grpcClientConn)
+			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+			resp, errResp := client.Export(ctx, &otelcol.ExportTraceServiceRequest{}, grpc.WaitForReady(true))
+			if tt.hasError {
+				assert.Error(t, errResp)
+			} else {
+				assert.NoError(t, errResp)
+				assert.NotNil(t, resp)
+			}
+			cancelFunc()
+			s.Stop()
+		})
+	}
+}
+
+type grpcTraceServer struct{}
+
+func (gts *grpcTraceServer) Export(context.Context, *otelcol.ExportTraceServiceRequest) (*otelcol.ExportTraceServiceResponse, error) {
+	return &otelcol.ExportTraceServiceResponse{}, nil
 }

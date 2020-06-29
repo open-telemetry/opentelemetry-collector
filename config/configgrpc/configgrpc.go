@@ -17,6 +17,7 @@ package configgrpc
 
 import (
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -177,6 +178,15 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	}
 
 	return opts, nil
+}
+
+func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
+	listener, err := net.Listen("tcp", gss.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return listener, nil
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
