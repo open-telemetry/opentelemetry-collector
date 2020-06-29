@@ -11,16 +11,15 @@ https://github.com/grpc/grpc/blob/master/doc/naming.md.
 The following settings can be optionally configured:
 
 - `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
-only be used if `secure` is set to true.
+only be used if `insecure` is set to `false`.
 - `compression`: compression key for supported compression types within
 collector. Currently the only supported mode is `gzip`.
 - `headers`: the headers associated with gRPC requests.
 - `keepalive`: keepalive parameters for client gRPC. See
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-- `num_workers` (default = 2): number of workers that send the gRPC requests. Optional.
 - `reconnection_delay`: time period between each reconnection performed by the
 exporter.
-- `secure`: whether to enable client transport security for the exporter's gRPC
+- `insecure`: whether to enable client transport security for the exporter's gRPC
 connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 
 Example:
@@ -30,7 +29,7 @@ exporters:
   otlp:
     endpoint: 0.0.0.0:14250
     reconnection_delay: 60s
-    secure: false
+    insecure: true
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
