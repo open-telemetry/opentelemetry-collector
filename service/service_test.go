@@ -535,7 +535,7 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := config.Load(v, factories)
