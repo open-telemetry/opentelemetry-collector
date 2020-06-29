@@ -16,39 +16,19 @@ package otlpreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
+
+type Protocols struct {
+	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
+	HTTP *confighttp.HTTPServerSettings `mapstructure:"http"`
+}
 
 // Config defines configuration for OTLP receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// Configures the receiver server protocol.
-	configgrpc.GRPCServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// Transport to use: one of tcp or unix, defaults to tcp
-	Transport string `mapstructure:"transport"`
-
-	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
-	// for the OTLP receiver. See github.com/rs/cors
-	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
-	// used to match any origin or one or more characters of an origin.
-	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
-}
-
-func (rOpts *Config) buildOptions() ([]Option, error) {
-	var opts []Option
-	if len(rOpts.CorsOrigins) > 0 {
-		opts = append(opts, WithCorsOrigins(rOpts.CorsOrigins))
-	}
-
-	grpcServerOptions, err := rOpts.GRPCServerSettings.ToServerOption()
-	if err != nil {
-		return nil, err
-	}
-	if len(grpcServerOptions) > 0 {
-		opts = append(opts, WithGRPCServerOptions(grpcServerOptions...))
-	}
-
-	return opts, nil
+	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
+	Protocols `mapstructure:"protocols"`
 }

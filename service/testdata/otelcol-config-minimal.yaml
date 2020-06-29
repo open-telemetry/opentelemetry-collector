@@ -1,5 +1,7 @@
 receivers:
   otlp:
+    protocols:
+      grpc:
 
 exporters:
   otlp:

@@ -1,0 +1,16 @@
+receivers:
+  otlp:
+    protocols:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+     receivers: [otlp]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]

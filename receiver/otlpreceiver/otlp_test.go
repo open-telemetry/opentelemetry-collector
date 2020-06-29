@@ -23,8 +23,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,10 +31,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -56,10 +59,9 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(otlpReceiver, "tcp", addr, sink, nil)
-	require.NoError(t, err, "Failed to create trace receiver: %v", err)
+	ocr := newHTTPReceiver(t, otlpReceiver, addr, sink, nil)
 
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver: %v", err)
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())
 
 	// TODO(nilebox): make starting server deterministic
@@ -67,10 +69,6 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
-
-	// Verify that CORS is not enabled by default, but that it gives an 405
-	// method not allowed error.
-	verifyCorsResp(t, url, "origin.com", 405, false)
 
 	traceJSON := []byte(`
 	{
@@ -174,11 +172,11 @@ func TestProtoHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(otlpReceiver, "tcp", addr, sink, nil)
-	require.NoError(t, err, "Failed to create trace receiver: %v", err)
+	tSink := new(exportertest.SinkTraceExporter)
+	mSink := new(exportertest.SinkMetricsExporter)
+	ocr := newHTTPReceiver(t, otlpReceiver, addr, tSink, mSink)
 
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver: %v", err)
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())
 
 	// TODO(nilebox): make starting server deterministic
@@ -188,7 +186,6 @@ func TestProtoHttp(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
 	wantOtlp := pdata.TracesToOtlp(testdata.GenerateTraceDataOneSpan())
-
 	traceProto := collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: wantOtlp,
 	}
@@ -198,34 +195,21 @@ func TestProtoHttp(t *testing.T) {
 	}
 
 	buf := bytes.NewBuffer(traceBytes)
-
-	req, err := http.NewRequest("POST", url, buf)
-	require.NoError(t, err, "Error creating trace POST request: %v", err)
-	req.Header.Set("Content-Type", "application/x-protobuf")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.Post(url, "application/x-protobuf", buf)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err, "Error reading response from trace grpc-gateway")
+	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
-	err = resp.Body.Close()
-	require.NoError(t, err, "Error closing response body")
-
-	if resp.StatusCode != 200 {
-		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
-	}
-
-	if resType := resp.Header.Get("Content-Type"); resType != "application/x-protobuf" {
-		t.Errorf("response Content-Type got: %s, want: %s", resType, "application/x-protobuf")
-	}
+	require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
+	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
 	tmp := collectortrace.ExportTraceServiceResponse{}
 	err = proto.Unmarshal(respBytes, &tmp)
 	require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
-	gotOtlp := pdata.TracesToOtlp(sink.AllTraces()[0])
+	gotOtlp := pdata.TracesToOtlp(tSink.AllTraces()[0])
 
 	if len(gotOtlp) != len(wantOtlp) {
 		t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
@@ -244,279 +228,42 @@ func TestProtoHttp(t *testing.T) {
 
 }
 
-func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	corsOrigins := []string{"allowed-*.com"}
-
-	sink := new(exportertest.SinkTraceExporter)
-	ocr, err := New(otlpReceiver, "tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
-	require.NoError(t, err, "Failed to create trace receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
-
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver: %v", err)
-
-	// TODO(nilebox): make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
-
-	// Verify allowed domain gets responses that allow CORS.
-	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
-
-	// Verify disallowed domain gets responses that disallow CORS.
-	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
-}
-
-func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	corsOrigins := []string{"allowed-*.com"}
-
-	sink := new(exportertest.SinkMetricsExporter)
-	ocr, err := New(otlpReceiver, "tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
-	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
-
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start metrics receiver: %v", err)
-
-	// TODO(nilebox): make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
-	url := fmt.Sprintf("http://%s/v1/metrics", addr)
-
-	// Verify allowed domain gets responses that allow CORS.
-	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
-
-	// Verify disallowed domain gets responses that disallow CORS.
-	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
-}
-
-// As per Issue https://github.com/census-instrumentation/opencensus-service/issues/366
-// the agent's mux should be able to accept all Proto affiliated content-types and not
-// redirect them to the web-grpc-gateway endpoint.
-func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
-	t.Skip("Currently a flaky test as we need a way to flush all written traces")
-
-	addr := testutil.GetAvailableLocalAddress(t)
-	cbts := new(exportertest.SinkTraceExporter)
-	ocr, err := New(otlpReceiver, "tcp", addr, cbts, nil)
-	require.NoError(t, err, "Failed to create trace receiver: %v", err)
-
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start the trace receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
-
-	// Now start the client with the various Proto affiliated gRPC Content-SubTypes as per:
-	//      https://godoc.org/google.golang.org/grpc#CallContentSubtype
-	protoAffiliatedContentSubTypes := []string{"", "proto"}
-	for _, subContentType := range protoAffiliatedContentSubTypes {
-		if err := runContentTypeTests(addr, asSubContentType, subContentType); err != nil {
-			t.Errorf("%q subContentType failed to send proto: %v", subContentType, err)
-		}
-	}
-
-	// Now start the client with the various Proto affiliated gRPC Content-Types,
-	// as we encountered in https://github.com/census-instrumentation/opencensus-service/issues/366
-	protoAffiliatedContentTypes := []string{"application/grpc", "application/grpc+proto"}
-	for _, contentType := range protoAffiliatedContentTypes {
-		if err := runContentTypeTests(addr, asContentType, contentType); err != nil {
-			t.Errorf("%q Content-type failed to send proto: %v", contentType, err)
-		}
-	}
-
-	// Before we exit we have to verify that we got exactly 4 TraceService requests.
-	wantLen := len(protoAffiliatedContentSubTypes) + len(protoAffiliatedContentTypes)
-	gotReqs := cbts.AllTraces()
-	if len(gotReqs) != wantLen {
-		t.Errorf("Receiver ExportTraceServiceRequest length mismatch:: Got %d Want %d", len(gotReqs), wantLen)
-	}
-}
-
-const (
-	asSubContentType = true
-	asContentType    = false
-)
-
-func runContentTypeTests(addr string, contentTypeDesignation bool, contentType string) error {
-	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithDisableRetry(),
-	}
-
-	if contentTypeDesignation == asContentType {
-		opts = append(opts, grpc.WithDefaultCallOptions(
-			grpc.Header(&metadata.MD{"Content-Type": []string{contentType}})))
-	} else {
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.CallContentSubtype(contentType)))
-	}
-
-	cc, err := grpc.Dial(addr, opts...)
-	if err != nil {
-		return fmt.Errorf("Creating grpc.ClientConn: %v", err)
-	}
-	defer cc.Close()
-
-	acc := collectortrace.NewTraceServiceClient(cc)
-
-	req := &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: []*otlptrace.ResourceSpans{
-			{
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
-						{
-							Key:   "sub-type",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: contentType}},
-						},
-					},
-				},
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-					{
-						Spans: []*otlptrace.Span{
-							{
-								TraceId: []byte{
-									0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-									0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	_, err = acc.Export(context.Background(), req)
-	return err
-}
-
-func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest("OPTIONS", url, nil)
-	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
-	req.Header.Set("Origin", origin)
-	req.Header.Set("Access-Control-Request-Method", "POST")
-
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending OPTIONS to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing OPTIONS response body, %v", err)
-	}
-
-	assert.Equal(t, wantStatus, resp.StatusCode)
-
-	gotAllowOrigin := resp.Header.Get("Access-Control-Allow-Origin")
-	gotAllowMethods := resp.Header.Get("Access-Control-Allow-Methods")
-
-	wantAllowOrigin := ""
-	wantAllowMethods := ""
-	if wantAllowed {
-		wantAllowOrigin = origin
-		wantAllowMethods = "POST"
-	}
-	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
-	assert.Equal(t, wantAllowMethods, gotAllowMethods)
-}
-
-func TestStopWithoutStartNeverCrashes(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	ocr, err := New(otlpReceiver, "tcp", addr, nil, nil)
-	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
-	// Stop it before ever invoking Start*.
-	ocr.stop()
-}
-
-func TestNewPortAlreadyUsed(t *testing.T) {
+func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r, err := New(otlpReceiver, "tcp", addr, nil, nil)
-	require.Error(t, err)
-	require.Nil(t, r)
-}
-
-func TestMultipleStopReceptionShouldNotError(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := New(otlpReceiver, "tcp", addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
-	require.NoError(t, err)
-	require.NotNil(t, r)
-
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, r.Shutdown(context.Background()))
-}
-
-func TestStartWithoutConsumersShouldFail(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := New(otlpReceiver, "tcp", addr, nil, nil)
-	require.NoError(t, err)
+	r := newGRPCReceiver(t, otlpReceiver, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
+func TestHTTPNewPortAlreadyUsed(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	ln, err := net.Listen("tcp", addr)
+	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
+	defer ln.Close()
+
+	r := newHTTPReceiver(t, otlpReceiver, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	require.NotNil(t, r)
+
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
-	socketName := tempSocketName(t)
-	cbts := new(exportertest.SinkTraceExporter)
-	r, err := New(otlpReceiver, "unix", socketName, cbts, nil)
-	require.NoError(t, err)
+func TestGRPCStartWithoutConsumers(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	r := newGRPCReceiver(t, otlpReceiver, addr, nil, nil)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	defer r.Shutdown(context.Background())
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+}
 
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
-	span := `
-	{
-	  "resource_spans": [
-		{
-		  "instrumentation_library_spans": [
-			{
-			  "spans": [
-				{
-				  "trace_id": "YpsR8/le4OgjwSSxhjlrEg==",
-				  "span_id": "2CogcbJh7Ko=",
-				  "name": "testSpan",
-				  "start_time_unix_nano": 1544712660000000000,
-				  "end_time_unix_nano": 1544712661000000000
-				}
-			  ]
-			}
-		  ]
-		}
-	  ]
-	}`
-
-	c := http.Client{
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
-				return net.Dial("unix", socketName)
-			},
-		},
-	}
-
-	response, err := c.Post("http://unix/v1/trace", "application/json", strings.NewReader(span))
-	require.NoError(t, err)
-	defer response.Body.Close()
-
-	bodyBytes, err := ioutil.ReadAll(response.Body)
-	require.NoError(t, err)
-	bodyString := string(bodyBytes)
-	fmt.Println(bodyString)
-
-	require.Equal(t, 200, response.StatusCode)
+func TestHTTPStartWithoutConsumers(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	r := newHTTPReceiver(t, otlpReceiver, addr, nil, nil)
+	require.NotNil(t, r)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
@@ -561,14 +308,6 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	req := &collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
-				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
-						{
-							Key:   conventions.AttributeServiceName,
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test-svc"}},
-						},
-					},
-				},
 				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 					{
 						Spans: []*otlptrace.Span{
@@ -616,19 +355,13 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				sink := new(exportertest.SinkTraceExporter)
 
-				var opts []Option
-				ocr, err := New(otlpReceiver, "tcp", addr, nil, nil, opts...)
-				require.Nil(t, err)
+				ocr := newGRPCReceiver(t, otlpReceiver, addr, sink, nil)
 				require.NotNil(t, ocr)
-
-				ocr.traceConsumer = sink
-				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				defer ocr.Shutdown(context.Background())
 
 				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
-				if err != nil {
-					t.Errorf("grpc.Dial: %v", err)
-				}
+				require.NoError(t, err)
 				defer cc.Close()
 
 				for _, ingestionState := range tt.ingestionStates {
@@ -655,4 +388,85 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestGRPCInvalidTLSCredentials(t *testing.T) {
+	cfg := &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: "IncorrectTLS",
+		},
+		Protocols: Protocols{
+			GRPC: &configgrpc.GRPCServerSettings{
+				Endpoint: "localhost:50000",
+				TLSCredentials: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "willfail",
+					},
+				},
+			},
+		},
+	}
+
+	// TLS is resolved during Creation of the receiver for GRPC.
+	factory := &Factory{}
+	_, err := factory.createReceiver(cfg)
+	assert.EqualError(t, err,
+		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+}
+
+func TestHTTPInvalidTLSCredentials(t *testing.T) {
+	cfg := &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: "IncorrectTLS",
+		},
+		Protocols: Protocols{
+			HTTP: &confighttp.HTTPServerSettings{
+				Endpoint: "localhost:50000",
+				TLSSetting: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "willfail",
+					},
+				},
+			},
+		},
+	}
+
+	// TLS is resolved during Start for HTTP.
+	r := newReceiver(t, &Factory{}, cfg, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
+		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+}
+
+func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SetName(name)
+	cfg.GRPC.Endpoint = endpoint
+	cfg.HTTP = nil
+	return newReceiver(t, factory, cfg, tc, mc)
+}
+
+func newHTTPReceiver(t *testing.T, name string, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SetName(name)
+	cfg.HTTP.Endpoint = endpoint
+	cfg.GRPC = nil
+	return newReceiver(t, factory, cfg, tc, mc)
+}
+
+func newReceiver(t *testing.T, factory *Factory, cfg *Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
+	r, err := factory.createReceiver(cfg)
+	require.NoError(t, err)
+	if tc != nil {
+		params := component.ReceiverCreateParams{}
+		_, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+		require.NoError(t, err)
+	}
+	if mc != nil {
+		params := component.ReceiverCreateParams{}
+		_, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+		require.NoError(t, err)
+	}
+	return r
 }

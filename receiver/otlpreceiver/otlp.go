@@ -17,14 +17,11 @@ package otlpreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
 
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/rs/cors"
-	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,66 +29,43 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	"go.opentelemetry.io/collector/observability"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/trace"
 )
 
 // Receiver is the type that exposes Trace and Metrics reception.
 type Receiver struct {
-	mu                sync.Mutex
-	ln                net.Listener
-	serverGRPC        *grpc.Server
-	serverHTTP        *http.Server
-	gatewayMux        *gatewayruntime.ServeMux
-	corsOrigins       []string
-	grpcServerOptions []grpc.ServerOption
+	cfg        *Config
+	serverGRPC *grpc.Server
+	gatewayMux *gatewayruntime.ServeMux
+	serverHTTP *http.Server
 
 	traceReceiver   *trace.Receiver
 	metricsReceiver *metrics.Receiver
 
-	traceConsumer   consumer.TraceConsumer
-	metricsConsumer consumer.MetricsConsumer
-
-	stopOnce                 sync.Once
-	startServerOnce          sync.Once
-	startTraceReceiverOnce   sync.Once
-	startMetricsReceiverOnce sync.Once
-
-	instanceName string
+	stopOnce        sync.Once
+	startServerOnce sync.Once
 }
 
 // New just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func New(
-	instanceName string,
-	transport string,
-	addr string,
-	tc consumer.TraceConsumer,
-	mc consumer.MetricsConsumer,
-	opts ...Option,
-) (*Receiver, error) {
-	ln, err := net.Listen(transport, addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
-	}
-
+func New(cfg *Config) (*Receiver, error) {
 	r := &Receiver{
-		ln:          ln,
-		corsOrigins: []string{}, // Disable CORS by default.
-		gatewayMux: gatewayruntime.NewServeMux(
+		cfg: cfg,
+	}
+	if cfg.GRPC != nil {
+		opts, err := cfg.GRPC.ToServerOption()
+		if err != nil {
+			return nil, err
+		}
+		r.serverGRPC = grpc.NewServer(opts...)
+	}
+	if cfg.HTTP != nil {
+		r.gatewayMux = gatewayruntime.NewServeMux(
 			gatewayruntime.WithMarshalerOption("application/x-protobuf", &xProtobufMarshaler{}),
-		),
+		)
 	}
-
-	for _, opt := range opts {
-		opt.withReceiver(r)
-	}
-
-	r.instanceName = instanceName
-	r.traceConsumer = tc
-	r.metricsConsumer = mc
 
 	return r, nil
 }
@@ -99,173 +73,82 @@ func New(
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	return r.start(host)
-}
-
-func (r *Receiver) registerTraceConsumer() error {
-	var err = componenterror.ErrAlreadyStarted
-
-	r.startTraceReceiverOnce.Do(func() {
-		r.traceReceiver, err = trace.New(r.instanceName, r.traceConsumer)
-		if err != nil {
-			return
-		}
-		srv := r.grpcServer()
-		collectortrace.RegisterTraceServiceServer(srv, r.traceReceiver)
-	})
-
-	return err
-}
-
-func (r *Receiver) registerMetricsConsumer() error {
-	var err = componenterror.ErrAlreadyStarted
-
-	r.startMetricsReceiverOnce.Do(func() {
-		r.metricsReceiver, err = metrics.New(r.instanceName, r.metricsConsumer)
-		if err != nil {
-			return
-		}
-		srv := r.grpcServer()
-		collectormetrics.RegisterMetricsServiceServer(srv, r.metricsReceiver)
-	})
-
-	return err
-}
-
-func (r *Receiver) grpcServer() *grpc.Server {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if r.serverGRPC == nil {
-		r.serverGRPC = observability.GRPCServerWithObservabilityEnabled(r.grpcServerOptions...)
+	if r.traceReceiver == nil && r.metricsReceiver == nil {
+		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
-	return r.serverGRPC
+	var err error
+	r.startServerOnce.Do(func() {
+		if r.cfg.GRPC != nil {
+			var gln net.Listener
+			gln, err = net.Listen("tcp", r.cfg.GRPC.Endpoint)
+			if err != nil {
+				return
+			}
+			go func() {
+				if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil {
+					host.ReportFatalError(errGrpc)
+				}
+			}()
+		}
+		if r.cfg.HTTP != nil {
+			r.serverHTTP = r.cfg.HTTP.ToServer(r.gatewayMux)
+			var hln net.Listener
+			hln, err = r.cfg.HTTP.ToListener()
+			if err != nil {
+				return
+			}
+			go func() {
+				if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil {
+					host.ReportFatalError(errHTTP)
+				}
+			}()
+		}
+	})
+	return err
 }
 
 // Shutdown is a method to turn off receiving.
 func (r *Receiver) Shutdown(context.Context) error {
-	if err := r.stop(); err != componenterror.ErrAlreadyStopped {
-		return err
-	}
-	return nil
-}
-
-// start runs all the receivers/services namely, Trace and Metrics services.
-func (r *Receiver) start(host component.Host) error {
-	hasConsumer := false
-	if r.traceConsumer != nil {
-		hasConsumer = true
-		if err := r.registerTraceConsumer(); err != nil && err != componenterror.ErrAlreadyStarted {
-			return err
-		}
-	}
-
-	if r.metricsConsumer != nil {
-		hasConsumer = true
-		if err := r.registerMetricsConsumer(); err != nil && err != componenterror.ErrAlreadyStarted {
-			return err
-		}
-	}
-
-	if !hasConsumer {
-		return errors.New("cannot start receiver: no consumers were specified")
-	}
-
-	if err := r.startServer(host); err != nil && err != componenterror.ErrAlreadyStarted {
-		return err
-	}
-
-	// At this point we've successfully started all the services/receivers.
-	// Add other start routines here.
-	return nil
-}
-
-// stop stops the underlying gRPC server and all the services running on it.
-func (r *Receiver) stop() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var err = componenterror.ErrAlreadyStopped
+	var err error
 	r.stopOnce.Do(func() {
 		err = nil
 
 		if r.serverHTTP != nil {
-			_ = r.serverHTTP.Close()
+			err = r.serverHTTP.Close()
 		}
 
-		if r.ln != nil {
-			_ = r.ln.Close()
+		if r.serverGRPC != nil {
+			r.serverGRPC.Stop()
 		}
-
-		// TODO(nilebox): investigate, takes too long
-		//  r.serverGRPC.Stop()
 	})
 	return err
 }
 
-func (r *Receiver) httpServer() *http.Server {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if r.serverHTTP == nil {
-		var mux http.Handler = r.gatewayMux
-		if len(r.corsOrigins) > 0 {
-			co := cors.Options{AllowedOrigins: r.corsOrigins}
-			mux = cors.New(co).Handler(mux)
-		}
-		r.serverHTTP = &http.Server{Handler: mux}
+func (r *Receiver) registerTraceConsumer(ctx context.Context, tc consumer.TraceConsumer) error {
+	if tc == nil {
+		return componenterror.ErrNilNextConsumer
 	}
-
-	return r.serverHTTP
+	r.traceReceiver = trace.New(r.cfg.Name(), tc)
+	if r.serverGRPC != nil {
+		collectortrace.RegisterTraceServiceServer(r.serverGRPC, r.traceReceiver)
+	}
+	if r.gatewayMux != nil {
+		return collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
+	}
+	return nil
 }
 
-func (r *Receiver) startServer(host component.Host) error {
-	err := componenterror.ErrAlreadyStarted
-	r.startServerOnce.Do(func() {
-		err = nil
-		// Register the grpc-gateway on the HTTP server mux
-		c := context.Background()
-		opts := []grpc.DialOption{grpc.WithInsecure()}
-		endpoint := r.ln.Addr().String()
-
-		_, ok := r.ln.(*net.UnixListener)
-		if ok {
-			endpoint = "unix:" + endpoint
-		}
-
-		err = collectortrace.RegisterTraceServiceHandlerFromEndpoint(c, r.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
-		}
-
-		err = collectormetrics.RegisterMetricsServiceHandlerFromEndpoint(c, r.gatewayMux, endpoint, opts)
-		if err != nil {
-			return
-		}
-
-		// Start the gRPC and HTTP/JSON (grpc-gateway) servers on the same port.
-		m := cmux.New(r.ln)
-		grpcL := m.MatchWithWriters(
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-			cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"))
-
-		httpL := m.Match(cmux.Any())
-		go func() {
-			if errGrpc := r.serverGRPC.Serve(grpcL); errGrpc != nil {
-				host.ReportFatalError(errGrpc)
-			}
-		}()
-		go func() {
-			if errHTTP := r.httpServer().Serve(httpL); errHTTP != nil {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-		go func() {
-			if errServe := m.Serve(); errServe != nil {
-				host.ReportFatalError(errServe)
-			}
-		}()
-	})
-	return err
+func (r *Receiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
+	if mc == nil {
+		return componenterror.ErrNilNextConsumer
+	}
+	r.metricsReceiver = metrics.New(r.cfg.Name(), mc)
+	if r.serverGRPC != nil {
+		collectormetrics.RegisterMetricsServiceServer(r.serverGRPC, r.metricsReceiver)
+	}
+	if r.gatewayMux != nil {
+		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, r.gatewayMux, r.metricsReceiver)
+	}
+	return nil
 }

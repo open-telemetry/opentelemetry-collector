@@ -16,9 +16,13 @@ package otlpreceiver
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -26,6 +30,11 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "otlp"
+
+	// Protocol values.
+	protoGRPC          = "grpc"
+	protoHTTP          = "http"
+	protocolsFieldName = "protocols"
 )
 
 // Factory is the Factory for receiver.
@@ -37,11 +46,6 @@ func (f *Factory) Type() configmodels.Type {
 	return typeStr
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
 // CreateDefaultConfig creates the default configuration for receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
@@ -49,18 +53,69 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
-			Endpoint: "0.0.0.0:55680",
-			// We almost write 0 bytes, so no need to tune WriteBufferSize.
-			ReadBufferSize: 512 * 1024,
+		Protocols: Protocols{
+			GRPC: &configgrpc.GRPCServerSettings{
+				Endpoint: "0.0.0.0:55680",
+				// We almost write 0 bytes, so no need to tune WriteBufferSize.
+				ReadBufferSize: 512 * 1024,
+			},
+			HTTP: &confighttp.HTTPServerSettings{
+				Endpoint: "0.0.0.0:55681",
+			},
 		},
-		Transport: "tcp",
+	}
+}
+
+// CustomUnmarshaler is used to add defaults for named but empty protocols
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return func(componentViperSection *viper.Viper, intoCfg interface{}) error {
+		if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
+			return fmt.Errorf("empty config for OTLP receiver")
+		}
+		// first load the config normally
+		err := componentViperSection.UnmarshalExact(intoCfg)
+		if err != nil {
+			return err
+		}
+		receiverCfg, ok := intoCfg.(*Config)
+		if !ok {
+			return fmt.Errorf("config type not *otlpreceiver.Config")
+		}
+
+		// next manually search for protocols in viper, if a protocol is not present it means it is disable.
+		protocols := componentViperSection.GetStringMap(protocolsFieldName)
+
+		// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
+		// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
+		// include only known protocols.
+		knownProtocols := 0
+		if _, ok := protocols[protoGRPC]; !ok {
+			receiverCfg.GRPC = nil
+		} else {
+			knownProtocols++
+		}
+
+		if _, ok := protocols[protoHTTP]; !ok {
+			receiverCfg.HTTP = nil
+		} else {
+			knownProtocols++
+		}
+
+		if len(protocols) != knownProtocols {
+			return fmt.Errorf("unknown protocols in the OTLP receiver")
+		}
+
+		if receiverCfg.GRPC == nil && receiverCfg.HTTP == nil {
+			return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
+		}
+
+		return nil
 	}
 }
 
 // CreateTraceReceiver creates a  trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(
-	_ context.Context,
+	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
@@ -69,27 +124,26 @@ func (f *Factory) CreateTraceReceiver(
 	if err != nil {
 		return nil, err
 	}
-
-	r.traceConsumer = nextConsumer
-
+	if err = r.registerTraceConsumer(ctx, nextConsumer); err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-
 	r, err := f.createReceiver(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	r.metricsConsumer = consumer
-
+	if err = r.registerMetricsConsumer(ctx, consumer); err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
@@ -102,15 +156,9 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 	// Check to see if there is already a receiver for this config.
 	receiver, ok := receivers[rCfg]
 	if !ok {
-		// Build the configuration options.
-		opts, err := rCfg.buildOptions()
-		if err != nil {
-			return nil, err
-		}
-
+		var err error
 		// We don't have a receiver, so create one.
-		receiver, err = New(
-			rCfg.Name(), rCfg.Transport, rCfg.Endpoint, nil, nil, opts...)
+		receiver, err = New(rCfg)
 		if err != nil {
 			return nil, err
 		}

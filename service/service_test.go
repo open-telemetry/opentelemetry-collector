@@ -520,6 +520,8 @@ func constructMimumalOpConfig(t *testing.T, factories config.Factories) *configm
 	configStr := `
 receivers:
   otlp:
+    protocols:
+      grpc:
 exporters:
   logging:
 processors:
