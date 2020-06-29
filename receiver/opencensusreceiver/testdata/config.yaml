@@ -31,6 +31,8 @@ receivers:
   opencensus/msg-size-conc-connect-max-idle:
     max_recv_msg_size_mib: 32
     max_concurrent_streams: 16
+    read_buffer_size: 1024
+    write_buffer_size: 1024
     keepalive:
       server_parameters:
         max_connection_idle: 10s

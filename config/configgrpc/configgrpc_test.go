@@ -16,22 +16,83 @@ package configgrpc
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-func TestBasicGrpcSettings(t *testing.T) {
+func TestDefaultGrpcClientSettings(t *testing.T) {
 	gcs := &GRPCClientSettings{
-		Headers:     nil,
-		Endpoint:    "",
-		Compression: "",
-		Keepalive:   nil,
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
 	}
-	_, err := gcs.ToDialOptions()
-
+	opts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
+	assert.Len(t, opts, 1)
+}
+
+func TestAllGrpcClientSettings(t *testing.T) {
+	gcs := &GRPCClientSettings{
+		Headers: map[string]string{
+			"test": "test",
+		},
+		Endpoint:    "localhost:1234",
+		Compression: "gzip",
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: false,
+		},
+		Keepalive: &KeepaliveClientConfig{
+			Time:                time.Second,
+			Timeout:             time.Second,
+			PermitWithoutStream: true,
+		},
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		WaitForReady:    true,
+	}
+	opts, err := gcs.ToDialOptions()
+	assert.NoError(t, err)
+	assert.Len(t, opts, 5)
+}
+
+func TestDefaultGrpcServerSettings(t *testing.T) {
+	gss := &GRPCServerSettings{}
+	opts, err := gss.ToServerOption()
+	assert.NoError(t, err)
+	assert.Len(t, opts, 0)
+}
+
+func TestAllGrpcServerSettings(t *testing.T) {
+	gss := &GRPCServerSettings{
+		Endpoint: "localhost:1234",
+		TLSCredentials: &configtls.TLSServerSetting{
+			TLSSetting:   configtls.TLSSetting{},
+			ClientCAFile: "",
+		},
+		MaxRecvMsgSizeMiB:    1,
+		MaxConcurrentStreams: 1024,
+		ReadBufferSize:       1024,
+		WriteBufferSize:      1024,
+		Keepalive: &KeepaliveServerConfig{
+			ServerParameters: &KeepaliveServerParameters{
+				MaxConnectionIdle:     time.Second,
+				MaxConnectionAge:      time.Second,
+				MaxConnectionAgeGrace: time.Second,
+				Time:                  time.Second,
+				Timeout:               time.Second,
+			},
+			EnforcementPolicy: &KeepaliveEnforcementPolicy{
+				MinTime:             time.Second,
+				PermitWithoutStream: true,
+			},
+		},
+	}
+	opts, err := gss.ToServerOption()
+	assert.NoError(t, err)
+	assert.Len(t, opts, 7)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
