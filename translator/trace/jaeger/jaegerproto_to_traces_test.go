@@ -205,6 +205,16 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 		},
 
 		{
+			name: "no-resource-attrs",
+			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoAttrs,
+				},
+			},
+			td: generateTraceDataResourceOnlyWithNoAttrs(),
+		},
+
+		{
 			name: "one-span-no-resources",
 			jb: model.Batch{
 				Process: &model.Process{
@@ -401,12 +411,57 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	assert.EqualValues(t, expected, got)
 }
 
+func TestJSpanKindToInternal(t *testing.T) {
+	tests := []struct {
+		jSpanKind    string
+		otlpSpanKind pdata.SpanKind
+	}{
+		{
+			jSpanKind:    "client",
+			otlpSpanKind: pdata.SpanKindCLIENT,
+		},
+		{
+			jSpanKind:    "server",
+			otlpSpanKind: pdata.SpanKindSERVER,
+		},
+		{
+			jSpanKind:    "producer",
+			otlpSpanKind: pdata.SpanKindPRODUCER,
+		},
+		{
+			jSpanKind:    "consumer",
+			otlpSpanKind: pdata.SpanKindCONSUMER,
+		},
+		{
+			jSpanKind:    "internal",
+			otlpSpanKind: pdata.SpanKindINTERNAL,
+		},
+		{
+			jSpanKind:    "all-others",
+			otlpSpanKind: pdata.SpanKindUNSPECIFIED,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.jSpanKind, func(t *testing.T) {
+			assert.Equal(t, test.otlpSpanKind, jSpanKindToInternal(test.jSpanKind))
+		})
+	}
+}
+
 func generateTraceDataResourceOnly() pdata.Traces {
 	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
 	rs.InitEmpty()
 	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
 	rs.Attributes().InsertInt("int-attr-1", 123)
+	return td
+}
+
+func generateTraceDataResourceOnlyWithNoAttrs() pdata.Traces {
+	td := testdata.GenerateTraceDataOneEmptyResourceSpans()
+	rs := td.ResourceSpans().At(0).Resource()
+	rs.InitEmpty()
 	return td
 }
 

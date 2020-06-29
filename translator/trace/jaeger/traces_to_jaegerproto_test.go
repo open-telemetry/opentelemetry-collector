@@ -254,6 +254,17 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 
 		{
+			name: "no-resource-attrs",
+			td:   generateTraceDataResourceOnlyWithNoAttrs(),
+			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoAttrs,
+				},
+			},
+			err: nil,
+		},
+
+		{
 			name: "one-span-no-resources",
 			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
 			jb: model.Batch{
