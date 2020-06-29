@@ -54,7 +54,7 @@ receivers:
   otlp/tlscredentials:
     protocols:
       grpc:
-        tls_credentials:
+        tls_settings:
           cert_file: test.crt
           key_file: test.key
       http:

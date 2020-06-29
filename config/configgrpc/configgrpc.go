@@ -117,7 +117,7 @@ type GRPCServerSettings struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSCredentials *configtls.TLSServerSetting `mapstructure:"tls_credentials,omitempty"`
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings,omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
@@ -193,8 +193,8 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
-	if gss.TLSCredentials != nil {
-		tlsCfg, err := gss.TLSCredentials.LoadTLSConfig()
+	if gss.TLSSetting != nil {
+		tlsCfg, err := gss.TLSSetting.LoadTLSConfig()
 		if err != nil {
 			return nil, err
 		}

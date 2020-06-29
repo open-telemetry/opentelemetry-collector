@@ -39,7 +39,7 @@ receivers:
   # The following entry demonstrates how to specify TLS credentials for the server.
   # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
   opencensus/tlscredentials:
-    tls_credentials:
+    tls_settings:
       cert_file: test.crt
       key_file: test.key
   # The following entry demonstrates how to specify a Unix Domain Socket for the server.

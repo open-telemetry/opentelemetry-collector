@@ -119,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
 				Endpoint:       "0.0.0.0:55678",
 				ReadBufferSize: 512 * 1024,
-				TLSCredentials: &configtls.TLSServerSetting{
+				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "test.crt",
 						KeyFile:  "test.key",
@@ -165,7 +165,7 @@ func TestBuildOptions_TLSCredentials(t *testing.T) {
 			NameVal: "IncorrectTLS",
 		},
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
-			TLSCredentials: &configtls.TLSServerSetting{
+			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "willfail",
 				},
@@ -175,7 +175,7 @@ func TestBuildOptions_TLSCredentials(t *testing.T) {
 	_, err := cfg.buildOptions()
 	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 
-	cfg.TLSCredentials = &configtls.TLSServerSetting{}
+	cfg.TLSSetting = &configtls.TLSServerSetting{}
 	opt, err := cfg.buildOptions()
 	assert.NoError(t, err)
 	assert.NotNil(t, opt)

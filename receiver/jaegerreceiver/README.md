@@ -28,13 +28,13 @@ documented [here](./config.go).
 ## Communicating over TLS
 The Jaeger receiver supports communication using Transport Layer Security (TLS), but
 only using the gRPC protocol. It can be configured by specifying a
-`tls_credentials` object in the gRPC receiver configuration.
+`tls_settings` object in the gRPC receiver configuration.
 ```yaml
 receivers:
   jaeger:
     protocols:
       grpc:
-        tls_credentials:
+        tls_settings:
           key_file: /key.pem # path to private key
           cert_file: /cert.pem # path to certificate
         endpoint: "0.0.0.0:9876"

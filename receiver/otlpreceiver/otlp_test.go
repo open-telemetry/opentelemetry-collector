@@ -398,7 +398,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				Endpoint: "localhost:50000",
-				TLSCredentials: &configtls.TLSServerSetting{
+				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "willfail",
 					},

@@ -37,7 +37,7 @@ receivers:
   jaeger/tls:
     protocols:
       grpc:
-        tls_credentials:
+        tls_settings:
           cert_file: /test.crt
           key_file: /test.key
         endpoint: "localhost:9876"
