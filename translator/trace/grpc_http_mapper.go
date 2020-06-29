@@ -44,7 +44,6 @@ var httpToOCCodeMap = map[int32]int32{
 	403: OCPermissionDenied,
 	404: OCNotFound,
 	429: OCResourceExhausted,
-	499: OCCancelled,
 	501: OCUnimplemented,
 	503: OCUnavailable,
 	504: OCDeadlineExceeded,
@@ -70,7 +69,6 @@ func OCStatusCodeFromHTTP(code int32) int32 {
 
 var ocToHTTPCodeMap = map[int32]int32{
 	OCOK:                 http.StatusOK,
-	OCCancelled:          499,
 	OCUnknown:            http.StatusInternalServerError,
 	OCInvalidArgument:    http.StatusBadRequest,
 	OCDeadlineExceeded:   http.StatusGatewayTimeout,
