@@ -126,6 +126,23 @@ func TestResourceSpansSlice_Resize(t *testing.T) {
 	assert.EqualValues(t, NewResourceSpansSlice(), es)
 }
 
+func TestResourceSpansSlice_Append(t *testing.T) {
+	es := generateTestResourceSpansSlice()
+	emptyVal := NewResourceSpans()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewResourceSpans()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
+}
+
 func TestResourceSpans_InitEmpty(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.True(t, ms.IsNil())
@@ -261,6 +278,23 @@ func TestInstrumentationLibrarySpansSlice_Resize(t *testing.T) {
 	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), es)
 }
 
+func TestInstrumentationLibrarySpansSlice_Append(t *testing.T) {
+	es := generateTestInstrumentationLibrarySpansSlice()
+	emptyVal := NewInstrumentationLibrarySpans()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewInstrumentationLibrarySpans()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
+}
+
 func TestInstrumentationLibrarySpans_InitEmpty(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	assert.True(t, ms.IsNil())
@@ -394,6 +428,23 @@ func TestSpanSlice_Resize(t *testing.T) {
 	// Test Resize 0 elements.
 	es.Resize(0)
 	assert.EqualValues(t, NewSpanSlice(), es)
+}
+
+func TestSpanSlice_Append(t *testing.T) {
+	es := generateTestSpanSlice()
+	emptyVal := NewSpan()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewSpan()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
 }
 
 func TestSpan_InitEmpty(t *testing.T) {
@@ -648,6 +699,23 @@ func TestSpanEventSlice_Resize(t *testing.T) {
 	assert.EqualValues(t, NewSpanEventSlice(), es)
 }
 
+func TestSpanEventSlice_Append(t *testing.T) {
+	es := generateTestSpanEventSlice()
+	emptyVal := NewSpanEvent()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewSpanEvent()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
+}
+
 func TestSpanEvent_InitEmpty(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.True(t, ms.IsNil())
@@ -798,6 +866,23 @@ func TestSpanLinkSlice_Resize(t *testing.T) {
 	// Test Resize 0 elements.
 	es.Resize(0)
 	assert.EqualValues(t, NewSpanLinkSlice(), es)
+}
+
+func TestSpanLinkSlice_Append(t *testing.T) {
+	es := generateTestSpanLinkSlice()
+	emptyVal := NewSpanLink()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewSpanLink()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
 }
 
 func TestSpanLink_InitEmpty(t *testing.T) {
