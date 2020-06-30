@@ -54,7 +54,7 @@ func createMetricCPUUsageDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("process/cpu/usage")
 	descriptor.SetDescription("Total CPU seconds broken down by different states.")
 	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeCounterDouble)
+	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 	return descriptor
 }
 
@@ -66,7 +66,7 @@ func createMetricMemoryUsageDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("process/memory/usage")
 	descriptor.SetDescription("Bytes of memory in use.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeGaugeInt64)
+	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
 }
 
@@ -78,6 +78,6 @@ func createMetricDiskBytesDescriptor() pdata.MetricDescriptor {
 	descriptor.SetName("process/disk/bytes")
 	descriptor.SetDescription("Disk bytes transferred.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeCounterInt64)
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }
