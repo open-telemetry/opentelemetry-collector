@@ -23,11 +23,11 @@ import (
 	"strconv"
 
 	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
@@ -44,9 +44,8 @@ const (
 	protoThriftCompact = "thrift_compact"
 
 	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint = "0.0.0.0:14250"
-	defaultHTTPBindEndpoint = "0.0.0.0:14268"
-
+	defaultGRPCBindEndpoint            = "0.0.0.0:14250"
+	defaultHTTPBindEndpoint            = "0.0.0.0:14268"
 	defaultThriftCompactBindEndpoint   = "0.0.0.0:6831"
 	defaultThriftBinaryBindEndpoint    = "0.0.0.0:6832"
 	defaultAgentRemoteSamplingHTTPPort = 5778
@@ -68,7 +67,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			return fmt.Errorf("empty config for Jaeger receiver")
 		}
 
-		// first load the config normally
+		componentViperSection.SetConfigType("yaml")
+
+		// UnmarshalExact will not set struct properties to nil even if no key is provided,
+		// so set the protocol structs to nil where the keys were omitted.
 		err := componentViperSection.UnmarshalExact(intoCfg)
 		if err != nil {
 			return err
@@ -79,20 +81,38 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			return fmt.Errorf("config type not *jaegerreceiver.Config")
 		}
 
-		// next manually search for protocols in viper that do not appear in the normally loaded config
-		// these protocols were excluded during normal loading and we need to add defaults for them
 		protocols := componentViperSection.GetStringMap(protocolsFieldName)
 		if len(protocols) == 0 {
 			return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
 		}
-		for k := range protocols {
-			if _, ok := receiverCfg.Protocols[k]; !ok {
-				if receiverCfg.Protocols[k], err = defaultsForProtocol(k); err != nil {
-					return err
-				}
-			}
-		}
 
+		knownProtocols := 0
+		if _, ok := protocols[protoGRPC]; !ok {
+			receiverCfg.GRPC = nil
+		} else {
+			knownProtocols++
+		}
+		if _, ok := protocols[protoThriftHTTP]; !ok {
+			receiverCfg.ThriftHTTP = nil
+		} else {
+			knownProtocols++
+		}
+		if _, ok := protocols[protoThriftBinary]; !ok {
+			receiverCfg.ThriftBinary = nil
+		} else {
+			knownProtocols++
+		}
+		if _, ok := protocols[protoThriftCompact]; !ok {
+			receiverCfg.ThriftCompact = nil
+		} else {
+			knownProtocols++
+		}
+		// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
+		// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
+		// include only known protocols.
+		if len(protocols) != knownProtocols {
+			return fmt.Errorf("unknown protocols in the Jaeger receiver")
+		}
 		return nil
 	}
 }
@@ -104,7 +124,20 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Protocols: map[string]*configprotocol.ProtocolServerSettings{},
+		Protocols: Protocols{
+			GRPC: &configgrpc.GRPCServerSettings{
+				Endpoint: defaultGRPCBindEndpoint,
+			},
+			ThriftHTTP: &confighttp.HTTPServerSettings{
+				Endpoint: defaultHTTPBindEndpoint,
+			},
+			ThriftBinary: &configprotocol.ProtocolServerSettings{
+				Endpoint: defaultThriftBinaryBindEndpoint,
+			},
+			ThriftCompact: &configprotocol.ProtocolServerSettings{
+				Endpoint: defaultThriftCompactBindEndpoint,
+			},
+		},
 	}
 }
 
@@ -120,53 +153,43 @@ func (f *Factory) CreateTraceReceiver(
 	// that Jaeger receiver understands.
 
 	rCfg := cfg.(*Config)
-
-	protoGRPC := rCfg.Protocols[protoGRPC]
-	protoHTTP := rCfg.Protocols[protoThriftHTTP]
-	protoThriftCompact := rCfg.Protocols[protoThriftCompact]
-	protoThriftBinary := rCfg.Protocols[protoThriftBinary]
 	remoteSamplingConfig := rCfg.RemoteSampling
 
 	config := Configuration{}
-	var grpcServerOptions []grpc.ServerOption
 
 	// Set ports
-	if protoGRPC != nil {
+	if rCfg.Protocols.GRPC != nil {
 		var err error
-		config.CollectorGRPCPort, err = extractPortFromEndpoint(protoGRPC.Endpoint)
+		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.Endpoint)
 		if err != nil {
 			return nil, err
 		}
 
-		if protoGRPC.TLSCredentials != nil {
-			tlsCfg, err := protoGRPC.TLSCredentials.LoadTLSConfig()
-			if err != nil {
-				return nil, fmt.Errorf("failed to configure TLS: %v", err)
-			}
-			grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
-		}
-		config.CollectorGRPCOptions = grpcServerOptions
-	}
-
-	if protoHTTP != nil {
-		var err error
-		config.CollectorHTTPPort, err = extractPortFromEndpoint(protoHTTP.Endpoint)
+		config.CollectorGRPCOptions, err = rCfg.Protocols.GRPC.ToServerOption()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if protoThriftBinary != nil {
+	if rCfg.Protocols.ThriftHTTP != nil {
 		var err error
-		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(protoThriftBinary.Endpoint)
+		config.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.Endpoint)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if protoThriftCompact != nil {
+	if rCfg.Protocols.ThriftBinary != nil {
 		var err error
-		config.AgentCompactThriftPort, err = extractPortFromEndpoint(protoThriftCompact.Endpoint)
+		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftBinary.Endpoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if rCfg.Protocols.ThriftCompact != nil {
+		var err error
+		config.AgentCompactThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftCompact.Endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -198,13 +221,13 @@ func (f *Factory) CreateTraceReceiver(
 		}
 	}
 
-	if (protoGRPC == nil && protoHTTP == nil && protoThriftBinary == nil && protoThriftCompact == nil) ||
+	if (rCfg.Protocols.GRPC == nil && rCfg.Protocols.ThriftHTTP == nil && rCfg.Protocols.ThriftBinary == nil && rCfg.Protocols.ThriftCompact == nil) ||
 		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0 && config.AgentBinaryThriftPort == 0 && config.AgentCompactThriftPort == 0) {
 		err := fmt.Errorf("either %v, %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
-			protoGRPC,
-			protoThriftHTTP,
-			protoThriftCompact,
-			protoThriftBinary,
+			rCfg.Protocols.GRPC,
+			rCfg.Protocols.ThriftHTTP,
+			rCfg.Protocols.ThriftCompact,
+			rCfg.Protocols.ThriftBinary,
 			typeStr,
 		)
 		return nil, err
@@ -239,26 +262,4 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 		return 0, fmt.Errorf("port number must be between 1 and 65535")
 	}
 	return int(port), nil
-}
-
-// returns a default value for a protocol name.  this really just boils down to the endpoint
-func defaultsForProtocol(proto string) (*configprotocol.ProtocolServerSettings, error) {
-	var defaultEndpoint string
-
-	switch proto {
-	case protoGRPC:
-		defaultEndpoint = defaultGRPCBindEndpoint
-	case protoThriftHTTP:
-		defaultEndpoint = defaultHTTPBindEndpoint
-	case protoThriftBinary:
-		defaultEndpoint = defaultThriftBinaryBindEndpoint
-	case protoThriftCompact:
-		defaultEndpoint = defaultThriftCompactBindEndpoint
-	default:
-		return nil, fmt.Errorf("unknown Jaeger protocol %s", proto)
-	}
-
-	return &configprotocol.ProtocolServerSettings{
-		Endpoint: defaultEndpoint,
-	}, nil
 }

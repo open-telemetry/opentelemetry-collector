@@ -16,6 +16,7 @@ package jaegerreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configprotocol"
 )
@@ -30,9 +31,16 @@ type RemoteSamplingConfig struct {
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 }
 
+type Protocols struct {
+	GRPC          *configgrpc.GRPCServerSettings         `mapstructure:"grpc"`
+	ThriftHTTP    *confighttp.HTTPServerSettings         `mapstructure:"thrift_http"`
+	ThriftBinary  *configprotocol.ProtocolServerSettings `mapstructure:"thrift_binary"`
+	ThriftCompact *configprotocol.ProtocolServerSettings `mapstructure:"thrift_compact"`
+}
+
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`                          // squash ensures fields are correctly decoded in embedded struct
-	Protocols                     map[string]*configprotocol.ProtocolServerSettings `mapstructure:"protocols"`
-	RemoteSampling                *RemoteSamplingConfig                             `mapstructure:"remote_sampling"`
+	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	Protocols                     `mapstructure:"protocols"`
+	RemoteSampling                *RemoteSamplingConfig `mapstructure:"remote_sampling"`
 }

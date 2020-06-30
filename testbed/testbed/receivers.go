@@ -22,8 +22,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -147,7 +147,7 @@ func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer
 	factory := jaegerreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
-	cfg.Protocols["grpc"] = &configprotocol.ProtocolServerSettings{
+	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		Endpoint: fmt.Sprintf("localhost:%d", jr.Port),
 	}
 	var err error
