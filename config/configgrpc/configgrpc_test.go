@@ -72,7 +72,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 func TestAllGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{
 		Endpoint: "localhost:1234",
-		TLSCredentials: &configtls.TLSServerSetting{
+		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting:   configtls.TLSSetting{},
 			ClientCAFile: "",
 		},
@@ -167,7 +167,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCServerSettings{
 				Endpoint: "",
-				TLSCredentials: &configtls.TLSServerSetting{
+				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
 					},
@@ -179,7 +179,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: GRPCServerSettings{
 				Endpoint: "",
-				TLSCredentials: &configtls.TLSServerSetting{
+				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
 					},
@@ -191,7 +191,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCServerSettings{
 				Endpoint: "",
-				TLSCredentials: &configtls.TLSServerSetting{
+				TLSSetting: &configtls.TLSServerSetting{
 					ClientCAFile: "/doesnt/exist",
 				},
 			},
@@ -208,7 +208,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	settings := GRPCServerSettings{
 		Endpoint: "127.0.0.1:1234567",
-		TLSCredentials: &configtls.TLSServerSetting{
+		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "/doesnt/exist",
 			},
@@ -341,8 +341,8 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gss := &GRPCServerSettings{
-				Endpoint:       "localhost:0",
-				TLSCredentials: tt.tlsServerCreds,
+				Endpoint:   "localhost:0",
+				TLSSetting: tt.tlsServerCreds,
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)

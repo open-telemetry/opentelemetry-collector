@@ -123,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					Endpoint: "localhost:9876",
-					TLSCredentials: &configtls.TLSServerSetting{
+					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "/test.crt",
 							KeyFile:  "/test.key",

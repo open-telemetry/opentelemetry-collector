@@ -17,12 +17,12 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Communicating over TLS
 This receiver supports communication using Transport Layer Security (TLS). TLS
-can be configured by specifying a `tls_credentials` object in the receiver
+can be configured by specifying a `tls_settings` object in the receiver
 configuration for receivers that support it.
 ```yaml
 receivers:
   opencensus:
-    tls_credentials:
+    tls_settings:
       key_file: /key.pem # path to private key
       cert_file: /cert.pem # path to certificate
 ```

@@ -83,7 +83,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		Endpoint: defaultGRPCBindEndpoint,
-		TLSCredentials: &configtls.TLSServerSetting{
+		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "./testdata/certificate.pem",
 				KeyFile:  "./testdata/key.pem",
