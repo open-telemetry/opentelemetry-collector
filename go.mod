@@ -57,7 +57,6 @@ require (
 	golang.org/x/text v0.3.2
 	google.golang.org/genproto v0.0.0-20200603110839-e855014d5736
 	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
