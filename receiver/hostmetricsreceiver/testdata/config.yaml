@@ -12,6 +12,11 @@ receivers:
       filesystem:
       memory:
       network:
+      process:
+        include:
+          names: ["test1", "test2"]
+          match_type: "regexp"
+      virtualmemory:
 
 processors:
   exampleprocessor:
