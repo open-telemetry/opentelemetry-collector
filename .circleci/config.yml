@@ -300,5 +300,8 @@ jobs:
       - run:
           name: Check links in markdown docs
           command: |
-            sudo npm install -g markdown-link-check
+            pushd $HOME
+            npm install --save-dev markdown-link-check@3.8.1
+            popd
+            export NODE_PATH=$HOME/node_modules
             bash .circleci/check-links/check-links.sh
