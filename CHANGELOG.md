@@ -2,6 +2,79 @@
 
 ## Unreleased
 
+## v0.5.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Enable "new-metrics" by default (#1148)
+- Remove `export_resource_labels` flag from Zipkin exporter (#1163)
+- Add config settings for Http Client, change Zipkin to use it. (#1186)
+- Update OTLP to v0.4.0 (#1142)
+
+## ⚠️ Major changes ⚠️
+
+- Split OTLP receiver by protocols, allow mTLS support (#1223)
+- Use tls_settings consistently between gRPC and HTTP (#1233)
+
+## 🚀 New components 🚀
+
+- Receivers
+  - Added process scraper to the `hostmetrics` receiver (#1047)
+
+## 💡 Enhancements 💡
+
+- otlpexporter: send configured headers in request (#1130)
+- Add protocol server settings and remove endpoint from ReceiverSettings (#1172)
+- Add a NetAddr that can be used for HTTP or other protocols (#1188)
+- Enable Collector to be run as a Windows service (#1120)
+- Add config for HttpServer (#1196)
+- Allow cors in HTTPServerSettings (#1211)
+- Add a generic grpc server settings config, cleanup client config (#1183)
+- Rely on gRPC to batch and loadbalance between connections instead of custom logic (#1212)
+- Allow to tune the read/write buffers for gRPC clients (#1213)
+- Allow to tune the read/write buffers for gRPC server (#1218)
+- Bump jaeger version to v1.8.2 with thrift 0.13 (#1203)
+
+## 🧰 Bug fixes 🧰
+
+- Handle overlapping metrics from different jobs in prometheus exporter (#1096)
+- Fix handling of SpanKind INTERNAL in OTLP OC translation (#1143)
+- Unify zipkin v1 and v2 annotation/tag parsing logic (#1002)
+- mTLS: Add support to configure client CA and enforce ClientAuth (#1185)
+- Fixed untyped Prometheus receiver bug (#1194)
+- Do not embed ProtocolServerSettings in gRPC (#1210)
+- Add Context to the missing CreateMetricsReceiver method (#1216)
+
+## 🧩 Components 🧩
+
+### Traces
+
+| Receivers | Processors | Exporters |
+|:----------:|:-----------:|:----------:|
+| Jaeger | Attributes | File |
+| OpenCensus | Batch | Jaeger |
+| OTLP | Memory Limiter | Logging |
+| Zipkin | Queued Retry | OpenCensus |
+| | Resource | OTLP |
+| | Sampling | Zipkin |
+| | Span ||
+
+### Metrics
+
+| Receivers | Processors | Exporters |
+|:----------:|:-----------:|:----------:|
+| HostMetrics | Batch | File |
+| OpenCensus | Filter | Logging |
+| OTLP | Memory Limiter | OpenCensus |
+| Prometheus || OTLP |
+| VM Metrics || Prometheus |
+
+### Extensions
+
+- Health Check
+- Performance Profiler
+- zPages
+
 ## v0.4.0 Beta
 
 Released 2020-06-16
