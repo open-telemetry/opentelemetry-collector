@@ -68,6 +68,7 @@ const (
 	AttributeEnduserID    = "enduser.id"
 	AttributeEnduserRole  = "enduser.role"
 	AttributeEnduserScope = "enduser.scope"
+	AttributePeerService  = "peer.service"
 )
 
 // OpenTelemetry Semantic Convention values for component attribute values.
@@ -80,20 +81,24 @@ const (
 // OpenTelemetry Semantic Convention attribute names for HTTP related attributes
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md
 const (
-	AttributeHTTPMethod     = "http.method"
-	AttributeHTTPURL        = "http.url"
-	AttributeHTTPTarget     = "http.target"
-	AttributeHTTPHost       = "http.host"
-	AttributeHTTPScheme     = "http.scheme"
-	AttributeHTTPStatusCode = "http.status_code"
-	AttributeHTTPStatusText = "http.status_text"
-	AttributeHTTPFlavor     = "http.flavor"
-	AttributeHTTPServerName = "http.server_name"
-	AttributeHTTPHostName   = "host.name"
-	AttributeHTTPHostPort   = "host.port"
-	AttributeHTTPRoute      = "http.route"
-	AttributeHTTPClientIP   = "http.client_ip"
-	AttributeHTTPUserAgent  = "http.user_agent"
+	AttributeHTTPMethod                            = "http.method"
+	AttributeHTTPURL                               = "http.url"
+	AttributeHTTPTarget                            = "http.target"
+	AttributeHTTPHost                              = "http.host"
+	AttributeHTTPScheme                            = "http.scheme"
+	AttributeHTTPStatusCode                        = "http.status_code"
+	AttributeHTTPStatusText                        = "http.status_text"
+	AttributeHTTPFlavor                            = "http.flavor"
+	AttributeHTTPServerName                        = "http.server_name"
+	AttributeHTTPHostName                          = "host.name"
+	AttributeHTTPHostPort                          = "host.port"
+	AttributeHTTPRoute                             = "http.route"
+	AttributeHTTPClientIP                          = "http.client_ip"
+	AttributeHTTPUserAgent                         = "http.user_agent"
+	AttributeHTTPRequestContentLength              = "http.request_content_length"
+	AttributeHTTPRequestContentLengthUncompressed  = "http.request_content_length_uncompressed"
+	AttributeHTTPResponseContentLength             = "http.response_content_length"
+	AttributeHTTPResponseContentLengthUncompressed = "http.response_content_length_uncompressed"
 )
 
 // OpenTelemetry Semantic Convention attribute names for database related attributes
@@ -109,7 +114,9 @@ const (
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/rpc.md
 const (
+	AttributeRPCSystem               = "rpc.system"
 	AttributeRPCService              = "rpc.service"
+	AttributeRPCMethod               = "rpc.method"
 	EventTypeMessage                 = "message"
 	AttributeMessageType             = "message.type"
 	MessageTypeReceived              = "RECEIVED"
