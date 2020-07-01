@@ -235,6 +235,9 @@ func TestHttpReception(t *testing.T) {
 				_ = s.Serve(ln)
 			}()
 
+			// Wait for the servers to start
+			<-time.After(10 * time.Millisecond)
+
 			prefix := "https://"
 			if tt.tlsClientCreds.Insecure {
 				prefix = "http://"

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -95,7 +96,7 @@ func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) e
 	factory := opencensusreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.SetName(or.ProtocolName())
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", or.Port)
+	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
 	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, tc); err != nil {
 		return err
@@ -148,7 +149,7 @@ func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
 	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		Endpoint: fmt.Sprintf("localhost:%d", jr.Port),
+		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", jr.Port), Transport: "tcp"},
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -198,7 +199,7 @@ func (or *OTLPDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer)
 	factory := otlpreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(or.ProtocolName())
-	cfg.GRPC.Endpoint = fmt.Sprintf("localhost:%d", or.Port)
+	cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	cfg.HTTP = nil
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}

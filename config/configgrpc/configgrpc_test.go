@@ -17,14 +17,17 @@ package configgrpc
 import (
 	"context"
 	"path"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	otelcol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
@@ -71,7 +74,10 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 
 func TestAllGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{
-		Endpoint: "localhost:1234",
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "localhost:1234",
+			Transport: "tcp",
+		},
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting:   configtls.TLSSetting{},
 			ClientCAFile: "",
@@ -166,31 +172,38 @@ func TestGRPCServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCServerSettings{
-				Endpoint: "",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "127.0.0.1:1234",
+					Transport: "tcp",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
 					},
 				},
-				Keepalive: nil,
 			},
 		},
 		{
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: GRPCServerSettings{
-				Endpoint: "",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "127.0.0.1:1234",
+					Transport: "tcp",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
 					},
 				},
-				Keepalive: nil,
 			},
 		},
 		{
 			err: "^failed to load TLS config: failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: GRPCServerSettings{
-				Endpoint: "",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "127.0.0.1:1234",
+					Transport: "tcp",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					ClientCAFile: "/doesnt/exist",
 				},
@@ -207,7 +220,10 @@ func TestGRPCServerSettingsError(t *testing.T) {
 
 func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	settings := GRPCServerSettings{
-		Endpoint: "127.0.0.1:1234567",
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "127.0.0.1:1234567",
+			Transport: "tcp",
+		},
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "/doesnt/exist",
@@ -341,7 +357,10 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gss := &GRPCServerSettings{
-				Endpoint:   "localhost:0",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:0",
+					Transport: "tcp",
+				},
 				TLSSetting: tt.tlsServerCreds,
 			}
 			ln, err := gss.ToListener()
@@ -376,6 +395,47 @@ func TestHttpReception(t *testing.T) {
 			s.Stop()
 		})
 	}
+}
+
+func TestReceiveOnUnixDomainSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows")
+	}
+	socketName := testutil.TempSocketName(t)
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint:  socketName,
+			Transport: "unix",
+		},
+	}
+	ln, err := gss.ToListener()
+	assert.NoError(t, err)
+	opts, err := gss.ToServerOption()
+	assert.NoError(t, err)
+	s := grpc.NewServer(opts...)
+	otelcol.RegisterTraceServiceServer(s, &grpcTraceServer{})
+
+	go func() {
+		_ = s.Serve(ln)
+	}()
+
+	gcs := &GRPCClientSettings{
+		Endpoint: "unix://" + ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
+	}
+	clientOpts, errClient := gcs.ToDialOptions()
+	assert.NoError(t, errClient)
+	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
+	assert.NoError(t, errDial)
+	client := otelcol.NewTraceServiceClient(grpcClientConn)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+	resp, errResp := client.Export(ctx, &otelcol.ExportTraceServiceRequest{}, grpc.WaitForReady(true))
+	assert.NoError(t, errResp)
+	assert.NotNil(t, resp)
+	cancelFunc()
+	s.Stop()
 }
 
 type grpcTraceServer struct{}

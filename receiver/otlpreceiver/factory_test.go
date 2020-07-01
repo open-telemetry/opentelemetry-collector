@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -44,7 +45,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	config := cfg.(*Config)
-	config.GRPC.Endpoint = testutil.GetAvailableLocalAddress(t)
+	config.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	config.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -64,7 +65,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 		NameVal: typeStr,
 	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		NetAddr: confignet.NetAddr{
+			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Transport: "tcp",
+		},
 	}
 	defaultHTTPSettings := &confighttp.HTTPServerSettings{
 		Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -94,7 +98,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 				},
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
-						Endpoint: "localhost:112233",
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "localhost:112233",
+							Transport: "tcp",
+						},
 					},
 					HTTP: defaultHTTPSettings,
 				},
@@ -143,7 +150,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 		NameVal: typeStr,
 	}
 	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		NetAddr: confignet.NetAddr{
+			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Transport: "tcp",
+		},
 	}
 	defaultHTTPSettings := &confighttp.HTTPServerSettings{
 		Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -173,7 +183,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 				},
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
-						Endpoint: "327.0.0.1:1122",
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "327.0.0.1:1122",
+							Transport: "tcp",
+						},
 					},
 					HTTP: defaultHTTPSettings,
 				},

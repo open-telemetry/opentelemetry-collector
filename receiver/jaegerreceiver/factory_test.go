@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -50,7 +51,10 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		Endpoint: defaultGRPCBindEndpoint,
+		NetAddr: confignet.NetAddr{
+			Endpoint:  defaultGRPCBindEndpoint,
+			Transport: "tcp",
+		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
@@ -68,7 +72,10 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		Endpoint: defaultGRPCBindEndpoint,
+		NetAddr: confignet.NetAddr{
+			Endpoint:  defaultGRPCBindEndpoint,
+			Transport: "tcp",
+		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
@@ -82,7 +89,10 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		Endpoint: defaultGRPCBindEndpoint,
+		NetAddr: confignet.NetAddr{
+			Endpoint:  defaultGRPCBindEndpoint,
+			Transport: "tcp",
+		},
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "./testdata/certificate.pem",
@@ -206,7 +216,10 @@ func TestCreateInvalidHost(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		Endpoint: "1234",
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "1234",
+			Transport: "tcp",
+		},
 	}
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -258,7 +271,10 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 	endpoint := "localhost:1234"
 	strategyFile := "strategies.json"
 	rCfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		Endpoint: defaultGRPCBindEndpoint,
+		NetAddr: confignet.NetAddr{
+			Endpoint:  defaultGRPCBindEndpoint,
+			Transport: "tcp",
+		},
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{

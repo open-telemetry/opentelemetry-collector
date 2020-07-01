@@ -81,7 +81,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 	r.startServerOnce.Do(func() {
 		if r.cfg.GRPC != nil {
 			var gln net.Listener
-			gln, err = net.Listen("tcp", r.cfg.GRPC.Endpoint)
+			gln, err = r.cfg.GRPC.ToListener()
 			if err != nil {
 				return
 			}

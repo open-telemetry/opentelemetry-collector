@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -51,7 +52,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint: "localhost:9876",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9876",
+						Transport: "tcp",
+					},
 				},
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: ":3456",
@@ -81,7 +85,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint: defaultGRPCBindEndpoint,
+					NetAddr: confignet.NetAddr{
+						Endpoint:  defaultGRPCBindEndpoint,
+						Transport: "tcp",
+					},
 				},
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPBindEndpoint,
@@ -104,7 +111,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint: "localhost:9876",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9876",
+						Transport: "tcp",
+					},
 				},
 				ThriftCompact: &configprotocol.ProtocolServerSettings{
 					Endpoint: defaultThriftCompactBindEndpoint,
@@ -122,7 +132,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
-					Endpoint: "localhost:9876",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9876",
+						Transport: "tcp",
+					},
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "/test.crt",

@@ -18,10 +18,12 @@ require (
 	github.com/golang/protobuf v1.3.5
 	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/jaegertracing/jaeger v1.18.2-0.20200626141145-be17169a4179
+	github.com/joshdk/go-junit v0.0.0-20200312181801-e5d93c0f31a8
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
@@ -50,6 +52,7 @@ require (
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
 	golang.org/x/text v0.3.2
 	google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884

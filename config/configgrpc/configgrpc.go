@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -53,9 +54,6 @@ type KeepaliveClientConfig struct {
 
 // GRPCClientSettings defines common settings for a gRPC client configuration.
 type GRPCClientSettings struct {
-	// The headers associated with gRPC requests.
-	Headers map[string]string `mapstructure:"headers"`
-
 	// The target to which the exporter is going to send traces or metrics,
 	// using the gRPC protocol. The valid syntax is described at
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
@@ -83,6 +81,9 @@ type GRPCClientSettings struct {
 	// WaitForReady parameter configures client to wait for ready state before sending data.
 	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
 	WaitForReady bool `mapstructure:"wait_for_ready"`
+
+	// The headers associated with gRPC requests.
+	Headers map[string]string `mapstructure:"headers"`
 }
 
 type KeepaliveServerConfig struct {
@@ -110,10 +111,8 @@ type KeepaliveEnforcementPolicy struct {
 }
 
 type GRPCServerSettings struct {
-	// The target to which the exporter is going to send traces or metrics,
-	// using the gRPC protocol. The valid syntax is described at
-	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
-	Endpoint string `mapstructure:"endpoint"`
+	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
+	NetAddr confignet.NetAddr `mapstructure:",squash"`
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
@@ -181,12 +180,7 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 }
 
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
-	listener, err := net.Listen("tcp", gss.Endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	return listener, nil
+	return gss.NetAddr.Listen()
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC

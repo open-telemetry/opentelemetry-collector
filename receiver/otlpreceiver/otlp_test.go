@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -397,7 +398,10 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
-				Endpoint: "localhost:50000",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "localhost:50000",
+					Transport: "tcp",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "willfail",
@@ -441,7 +445,7 @@ func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Tra
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SetName(name)
-	cfg.GRPC.Endpoint = endpoint
+	cfg.GRPC.NetAddr.Endpoint = endpoint
 	cfg.HTTP = nil
 	return newReceiver(t, factory, cfg, tc, mc)
 }

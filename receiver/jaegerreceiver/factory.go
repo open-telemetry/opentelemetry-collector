@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -126,7 +127,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		},
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
-				Endpoint: defaultGRPCBindEndpoint,
+				NetAddr: confignet.NetAddr{
+					Endpoint:  defaultGRPCBindEndpoint,
+					Transport: "tcp",
+				},
 			},
 			ThriftHTTP: &confighttp.HTTPServerSettings{
 				Endpoint: defaultHTTPBindEndpoint,
@@ -160,7 +164,7 @@ func (f *Factory) CreateTraceReceiver(
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
 		var err error
-		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.Endpoint)
+		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
 		if err != nil {
 			return nil, err
 		}
