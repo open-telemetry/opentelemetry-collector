@@ -35,11 +35,9 @@ import (
 	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
-	"github.com/jaegertracing/jaeger/thrift-gen/agent"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -273,7 +271,7 @@ func consumeTraces(ctx context.Context, batches []*jaeger.Batch, consumer consum
 	return numSpans, componenterror.CombineErrors(consumerErrors)
 }
 
-var _ agent.Agent = (*agentHandler)(nil)
+var _ jaeger.Agent = (*agentHandler)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 
@@ -284,14 +282,9 @@ type agentHandler struct {
 	nextConsumer consumer.TraceConsumer
 }
 
-// EmitZipkinBatch is unsupported agent's
-func (h *agentHandler) EmitZipkinBatch(ctx context.Context, spans []*zipkincore.Span) (err error) {
-	panic("unsupported receiver")
-}
-
-// EmitBatch implements thrift-gen/agent/Agent and it forwards
+// EmitBatch implements cmd/agent/reporter.Reporter and it forwards
 // Jaeger spans received by the Jaeger agent processor.
-func (h *agentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) error {
+func (h *agentHandler) EmitBatch(batch *jaeger.Batch) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		h.ctx, h.name, h.transport)
 
@@ -303,12 +296,12 @@ func (h *agentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) error {
 	return err
 }
 
-func (jr *jReceiver) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
-	return jr.agentSamplingManager.GetSamplingStrategy(ctx, serviceName)
+func (jr *jReceiver) GetSamplingStrategy(serviceName string) (*sampling.SamplingStrategyResponse, error) {
+	return jr.agentSamplingManager.GetSamplingStrategy(serviceName)
 }
 
-func (jr *jReceiver) GetBaggageRestrictions(ctx context.Context, serviceName string) ([]*baggage.BaggageRestriction, error) {
-	br, err := jr.agentSamplingManager.GetBaggageRestrictions(ctx, serviceName)
+func (jr *jReceiver) GetBaggageRestrictions(serviceName string) ([]*baggage.BaggageRestriction, error) {
+	br, err := jr.agentSamplingManager.GetBaggageRestrictions(serviceName)
 	if err != nil {
 		// Baggage restrictions are not yet implemented - refer to - https://github.com/jaegertracing/jaeger/issues/373
 		// As of today, GetBaggageRestrictions() always returns an error.
@@ -406,8 +399,8 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	return nil
 }
 
-func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
-	handler := agent.NewAgentProcessor(a)
+func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory, agent jaeger.Agent) (processors.Processor, error) {
+	handler := jaeger.NewAgentProcessor(agent)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
 		return nil, err
