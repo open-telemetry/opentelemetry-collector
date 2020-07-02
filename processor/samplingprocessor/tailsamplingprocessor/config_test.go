@@ -66,6 +66,35 @@ func TestLoadConfig(t *testing.T) {
 					Type:            RateLimiting,
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},
+				{
+					Name: "composite-policy-1",
+					Type: Composite,
+					CompositeCfg: CompositeCfg{
+						PolicyOrder: []string{"test-composite-policy-1", "test-composite-policy-2"},
+						PolicyCfgs: []PolicyCfg{
+							{
+								Name:                "test-composite-policy-1",
+								Type:                NumericAttribute,
+								NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+							},
+							{
+								Name:               "test-composite-policy-2",
+								Type:               StringAttribute,
+								StringAttributeCfg: StringAttributeCfg{Key: "key1", Values: []string{"value1", "value2"}},
+							},
+						},
+						RateAllocation: []RateAllocationCfg{
+							{
+								Policy:  "test-composite-policy-1",
+								Percent: 50,
+							},
+							{
+								Policy:  "test-composite-policy-2",
+								Percent: 25,
+							},
+						},
+					},
+				},
 			},
 		})
 }

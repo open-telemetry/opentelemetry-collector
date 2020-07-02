@@ -32,8 +32,8 @@ processors:
          },
           {
             name: composite-policy-1,
-            type: composite_policy,
-            composite_policy:
+            type: composite,
+            composite:
               {
                 policy_order: [test-composite-policy-1, test-composite-policy-2],
                 composite_sub_policy:
