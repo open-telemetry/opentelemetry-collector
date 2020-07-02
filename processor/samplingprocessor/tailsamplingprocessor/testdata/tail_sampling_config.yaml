@@ -29,7 +29,39 @@ processors:
             name: test-policy-4,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
-         }
+         },
+          {
+            name: composite-policy-1,
+            type: composite_policy,
+            composite_policy:
+              {
+                policy_order: [test-composite-policy-1, test-composite-policy-2],
+                composite_sub_policy:
+                  [
+                  {
+                    name: test-composite-policy-1,
+                    type: numeric_attribute,
+                    numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+                  },
+                  {
+                    name: test-composite-policy-2,
+                    type: string_attribute,
+                    string_attribute: {key: key1, values: [value1, value2]}
+                  }
+                  ],
+                rate_allocation:
+                  [
+                  {
+                    policy: test-composite-policy-1,
+                    percent: 50
+                  },
+                  {
+                    policy: test-composite-policy-2,
+                    percent: 25
+                  }
+                  ]
+              }
+          },
       ]
 
 service:

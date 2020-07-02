@@ -131,9 +131,28 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
+	case Composite:
+		rlfCfg := cfg.CompositeCfg
+		return newCompositeFromCfg(logger, rlfCfg)
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
+}
+
+func newCompositeFromCfg(logger *zap.Logger, config CompositeCfg) (sampling.PolicyEvaluator, error) {
+	SubPolicyEvalParams := []sampling.SubPolicyEvalParams{}
+
+	for _, policyCfg := range config.PolicyCfgs{
+		policy, err := getPolicyEvaluator(logger, &policyCfg)
+		if err!=nil {return nil, err}
+
+		evalParms :=sampling.SubPolicyEvalParams{
+			Evaluator: policy,
+			MaxSpansPerSecond: 1000, //cfg.RateAllocationSpansPerSecond[plocfg]
+		}
+		SubPolicyEvalParams = append(SubPolicyEvalParams, evalParms)
+	}
+	return sampling.NewComposite(logger, 1000, SubPolicyEvalParams, sampling.MonotonicClock{}), nil
 }
 
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
