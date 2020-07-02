@@ -16,6 +16,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
@@ -205,6 +206,51 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
 	require.Equal(t, expectedNumWithLateSpan, msp.TotalSpans, "late span was not accounted for")
 	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+}
+
+var compositePolicy = []PolicyCfg{
+	{
+		Name: "composite-policy-1",
+		Type: Composite,
+		CompositeCfg: CompositeCfg{
+			MaxTotalSpansPerSecond: 1000,
+			PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2"},
+			PolicyCfgs: []PolicyCfg{
+				{
+					Name:                "test-composite-policy-1",
+					Type:                NumericAttribute,
+					NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+				},
+				{
+					Name:               "test-composite-policy-2",
+					Type:               StringAttribute,
+					StringAttributeCfg: StringAttributeCfg{Key: "key1", Values: []string{"value1", "value2"}},
+				},
+			},
+			RateAllocation: []RateAllocationCfg{
+				{
+					Policy:  "test-composite-policy-1",
+					Percent: 50,
+				},
+				{
+					Policy:  "test-composite-policy-2",
+					Percent: 25,
+				},
+			},
+		},
+	},
+}
+
+func TestCompositePolicyCreation(t *testing.T) {
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(1),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              compositePolicy,
+	}
+	sp, _ := newTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporterOld{}, cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	assert.NotNil(t, tsp)
 }
 
 func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {

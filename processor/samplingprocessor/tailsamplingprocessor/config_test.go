@@ -70,7 +70,8 @@ func TestLoadConfig(t *testing.T) {
 					Name: "composite-policy-1",
 					Type: Composite,
 					CompositeCfg: CompositeCfg{
-						PolicyOrder: []string{"test-composite-policy-1", "test-composite-policy-2"},
+						MaxTotalSpansPerSecond: 1000,
+						PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2"},
 						PolicyCfgs: []PolicyCfg{
 							{
 								Name:                "test-composite-policy-1",

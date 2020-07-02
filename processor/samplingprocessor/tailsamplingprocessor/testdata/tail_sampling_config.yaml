@@ -35,6 +35,7 @@ processors:
             type: composite,
             composite:
               {
+                max_total_spans_per_second: 1000,
                 policy_order: [test-composite-policy-1, test-composite-policy-2],
                 composite_sub_policy:
                   [

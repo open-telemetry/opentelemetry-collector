@@ -84,9 +84,10 @@ type RateLimitingCfg struct {
 // CompositeCfg holds the configurable settings to create a composite
 // sampling policy evaluator.
 type CompositeCfg struct {
-	PolicyOrder    []string            `mapstructure:"policy_order"`
-	PolicyCfgs     []PolicyCfg         `mapstructure:"composite_sub_policy"`
-	RateAllocation []RateAllocationCfg `mapstructure:"rate_allocation"`
+	MaxTotalSpansPerSecond int64               `mapstructure:"max_total_spans_per_second"`
+	PolicyOrder            []string            `mapstructure:"policy_order"`
+	PolicyCfgs             []PolicyCfg         `mapstructure:"composite_sub_policy"`
+	RateAllocation         []RateAllocationCfg `mapstructure:"rate_allocation"`
 }
 
 type RateAllocationCfg struct {

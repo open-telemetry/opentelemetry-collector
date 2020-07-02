@@ -140,22 +140,28 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 }
 
 func newCompositeFromCfg(logger *zap.Logger, config CompositeCfg) (sampling.PolicyEvaluator, error) {
-	SubPolicyEvalParams := []sampling.SubPolicyEvalParams{}
-
+	var SubPolicyEvalParams []sampling.SubPolicyEvalParams
+	rateAllocationsMap := getRateAllocationMap(config)
 	for i := range config.PolicyCfgs {
 		policyCfg := &config.PolicyCfgs[i]
-		policy, err := getPolicyEvaluator(logger, policyCfg)
-		if err != nil {
-			return nil, err
-		}
+		policy, _ := getPolicyEvaluator(logger, policyCfg)
 
-		evalParms := sampling.SubPolicyEvalParams{
+		evalParams := sampling.SubPolicyEvalParams{
 			Evaluator:         policy,
-			MaxSpansPerSecond: 1000, //cfg.RateAllocationSpansPerSecond[plocfg]
+			MaxSpansPerSecond: rateAllocationsMap[policyCfg.Name],
 		}
-		SubPolicyEvalParams = append(SubPolicyEvalParams, evalParms)
+		SubPolicyEvalParams = append(SubPolicyEvalParams, evalParams)
 	}
-	return sampling.NewComposite(logger, 1000, SubPolicyEvalParams, sampling.MonotonicClock{}), nil
+	return sampling.NewComposite(logger, config.MaxTotalSpansPerSecond, SubPolicyEvalParams, sampling.MonotonicClock{}), nil
+}
+
+func getRateAllocationMap(config CompositeCfg) map[string]int64 {
+	rateAllocationsMap := make(map[string]int64)
+	for i := 0; i < len(config.RateAllocation); i++ {
+		rAlloc := &config.RateAllocation[i]
+		rateAllocationsMap[rAlloc.Policy] = rAlloc.Percent
+	}
+	return rateAllocationsMap
 }
 
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
