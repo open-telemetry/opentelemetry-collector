@@ -26,6 +26,7 @@ import (
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
+	_ "github.com/joshdk/go-junit" // go mod tidy seems to ignore this in the `reportgenerator/main.go`
 	_ "github.com/jstemmer/go-junit-report"
 	_ "github.com/mjibson/esc"
 	_ "github.com/ory/go-acc"
