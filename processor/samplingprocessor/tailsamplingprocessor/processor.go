@@ -142,12 +142,15 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 func newCompositeFromCfg(logger *zap.Logger, config CompositeCfg) (sampling.PolicyEvaluator, error) {
 	SubPolicyEvalParams := []sampling.SubPolicyEvalParams{}
 
-	for _, policyCfg := range config.PolicyCfgs{
-		policy, err := getPolicyEvaluator(logger, &policyCfg)
-		if err!=nil {return nil, err}
+	for i := range config.PolicyCfgs {
+		policyCfg := &config.PolicyCfgs[i]
+		policy, err := getPolicyEvaluator(logger, policyCfg)
+		if err != nil {
+			return nil, err
+		}
 
-		evalParms :=sampling.SubPolicyEvalParams{
-			Evaluator: policy,
+		evalParms := sampling.SubPolicyEvalParams{
+			Evaluator:         policy,
 			MaxSpansPerSecond: 1000, //cfg.RateAllocationSpansPerSecond[plocfg]
 		}
 		SubPolicyEvalParams = append(SubPolicyEvalParams, evalParms)

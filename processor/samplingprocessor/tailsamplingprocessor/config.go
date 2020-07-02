@@ -50,9 +50,8 @@ type PolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
-
+	// CompositeCfg for defining composite policy
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
-
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
@@ -85,14 +84,14 @@ type RateLimitingCfg struct {
 // CompositeCfg holds the configurable settings to create a composite
 // sampling policy evaluator.
 type CompositeCfg struct {
-	PolicyOrder []string `mapstructure:"policy_order"`
-	PolicyCfgs  []PolicyCfg `mapstructure:"composite_sub_policy"`
+	PolicyOrder    []string            `mapstructure:"policy_order"`
+	PolicyCfgs     []PolicyCfg         `mapstructure:"composite_sub_policy"`
 	RateAllocation []RateAllocationCfg `mapstructure:"rate_allocation"`
 }
 
-type RateAllocationCfg struct{
-	Policy string `mapstructure:"policy"`
-	Percent int64 `mapstructure:"percent"`
+type RateAllocationCfg struct {
+	Policy  string `mapstructure:"policy"`
+	Percent int64  `mapstructure:"percent"`
 }
 
 // Config holds the configuration for tail-based sampling.

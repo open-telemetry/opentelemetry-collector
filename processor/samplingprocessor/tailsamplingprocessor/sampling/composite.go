@@ -79,7 +79,7 @@ func NewComposite(
 		maxTotalSPS:  maxTotalSpansPerSecond,
 		subpolicies:  subpolicies,
 		timeProvider: timeProvider,
-		logger: logger,
+		logger:       logger,
 	}
 }
 
@@ -87,8 +87,9 @@ func NewComposite(
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (c *Composite) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error { return nil}
-
+func (c *Composite) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error {
+	return nil
+}
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (c *Composite) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {

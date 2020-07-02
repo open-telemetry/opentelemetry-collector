@@ -98,7 +98,8 @@ func validateConfigDataType(t reflect.Type) error {
 		nf := t.NumField()
 		for i := 0; i < nf; i++ {
 			f := t.Field(i)
-			if f.Name!="PolicyCfgs" { //TODO Need remove this after discussion
+			//TODO Need remove this check after discussion
+			if f.Name != "PolicyCfgs" {
 				if err := checkStructFieldTags(f); err != nil {
 					errs = append(errs, err)
 				}
