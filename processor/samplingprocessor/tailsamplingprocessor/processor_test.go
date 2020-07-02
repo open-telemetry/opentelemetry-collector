@@ -16,12 +16,12 @@ package tailsamplingprocessor
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
