@@ -85,7 +85,7 @@ func (b *logDataBuffer) logMetricDescriptor(md pdata.MetricDescriptor) {
 	b.logEntry("     -> Type: %s", md.Type().String())
 }
 
-func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric)  {
+func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 	md := m.MetricDescriptor()
 	if md.IsNil() {
 		return
@@ -119,7 +119,9 @@ func (b *logDataBuffer) logInt64DataPoints(ps pdata.Int64DataPointSlice) {
 		b.logEntry("Int64DataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		// TODO: Add logging for values
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Value: %d", p.Value())
 	}
 }
 
@@ -133,7 +135,9 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 		b.logEntry("DoubleDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		// TODO: Add logging for values
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Value: %f", p.Value())
 	}
 }
 
@@ -147,7 +151,29 @@ func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice)
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		// TODO: Add logging for values
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Count: %d", p.Count())
+		b.logEntry("Sum: %f", p.Sum())
+
+		buckets := p.Buckets()
+		if buckets.Len() != 0 {
+			for i := 0; i < buckets.Len(); i++ {
+				bucket := buckets.At(i)
+				if bucket.IsNil() {
+					continue
+				}
+
+				b.logEntry("Buckets #%d, Count: %d", i, bucket.Count())
+			}
+		}
+
+		bounds := p.ExplicitBounds()
+		if len(bounds) != 0 {
+			for i, bound := range bounds {
+				b.logEntry("ExplicitBounds #%d: %f", i, bound)
+			}
+		}
 	}
 }
 
@@ -161,7 +187,23 @@ func (b *logDataBuffer) logSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
-		// TODO: Add logging for values
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Count: %d", p.Count())
+		b.logEntry("Sum: %f", p.Sum())
+
+		percentiles := p.ValueAtPercentiles()
+		if percentiles.Len() != 0 {
+			for i := 0; i < percentiles.Len(); i++ {
+				percentile := percentiles.At(i)
+				if percentile.IsNil() {
+					continue
+				}
+
+				b.logEntry("ValueAtPercentiles #%d, Value: %f, Percentile: %f",
+					i, percentile.Value(), percentile.Percentile())
+			}
+		}
 	}
 }
 
@@ -304,6 +346,7 @@ func (s *loggingExporter) pushMetricsData(
 			}
 		}
 	}
+
 	s.logger.Debug(buf.str.String())
 
 	return 0, nil
