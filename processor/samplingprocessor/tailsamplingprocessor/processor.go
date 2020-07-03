@@ -148,22 +148,23 @@ func newCompositeFromCfg(logger *zap.Logger, config CompositeCfg) (sampling.Poli
 
 		evalParams := sampling.SubPolicyEvalParams{
 			Evaluator:         policy,
-			MaxSpansPerSecond: rateAllocationsMap[policyCfg.Name],
+			MaxSpansPerSecond: int64(rateAllocationsMap[policyCfg.Name]),
 		}
 		SubPolicyEvalParams = append(SubPolicyEvalParams, evalParams)
 	}
 	return sampling.NewComposite(logger, config.MaxTotalSpansPerSecond, SubPolicyEvalParams, sampling.MonotonicClock{}), nil
 }
 
-func getRateAllocationMap(config CompositeCfg) map[string]int64 {
-	rateAllocationsMap := make(map[string]int64)
+func getRateAllocationMap(config CompositeCfg) map[string]float64 {
+	rateAllocationsMap := make(map[string]float64)
+	maxTotalSPS := float64(config.MaxTotalSpansPerSecond)
+	// Default SPS determined by equally diving number of sub policies
+	defaultSPS :=  maxTotalSPS / float64(len(config.PolicyCfgs))
 	for i := 0; i < len(config.RateAllocation); i++ {
 		rAlloc := &config.RateAllocation[i]
+		rateAllocationsMap[rAlloc.Policy] = defaultSPS
 		if rAlloc.Percent > 0 {
-			rateAllocationsMap[rAlloc.Policy] = (rAlloc.Percent / 100) * config.MaxTotalSpansPerSecond
-		} else {
-			// Default 10% of MaxTotalSpansPerSeconds will be applied.
-			rateAllocationsMap[rAlloc.Policy] = (int64(10) / 100) * config.MaxTotalSpansPerSecond
+			rateAllocationsMap[rAlloc.Policy] = (float64(rAlloc.Percent) / 100) * maxTotalSPS
 		}
 	}
 	return rateAllocationsMap
