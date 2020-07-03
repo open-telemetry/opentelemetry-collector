@@ -78,19 +78,21 @@ func ValidateConfig(config interface{}) error {
 			"config must be a struct or a pointer to one, the passed object is a %s",
 			tk)
 	}
+	// Need to detect composites in config and to avoid overflow
+	fieldMap := make(map[string]string)
 
-	return validateConfigDataType(t)
+	return validateConfigDataType(t, fieldMap)
 }
 
 // validateConfigDataType performs a descending validation of the given type.
 // If the type is a struct it goes to each of its fields to check for the proper
 // tags.
-func validateConfigDataType(t reflect.Type) error {
+func validateConfigDataType(t reflect.Type, fMap map[string]string) error {
 	var errs []error
 
 	switch t.Kind() {
 	case reflect.Ptr:
-		if err := validateConfigDataType(t.Elem()); err != nil {
+		if err := validateConfigDataType(t.Elem(), fMap); err != nil {
 			errs = append(errs, err)
 		}
 	case reflect.Struct:
@@ -98,9 +100,10 @@ func validateConfigDataType(t reflect.Type) error {
 		nf := t.NumField()
 		for i := 0; i < nf; i++ {
 			f := t.Field(i)
-			//TODO Need remove this check after discussion
-			if f.Name != "PolicyCfgs" {
-				if err := checkStructFieldTags(f); err != nil {
+			// Detect composites/recurrence in config and avoid checking same type again and again
+			if _, ok := fMap[f.Name]; !ok {
+				fMap[f.Name] = f.Name
+				if err := checkStructFieldTags(f, fMap); err != nil {
 					errs = append(errs, err)
 				}
 			}
@@ -124,7 +127,7 @@ func validateConfigDataType(t reflect.Type) error {
 }
 
 // checkStructFieldTags inspects the tags of a struct field.
-func checkStructFieldTags(f reflect.StructField) error {
+func checkStructFieldTags(f reflect.StructField, fmap map[string]string) error {
 
 	tagValue := f.Tag.Get("mapstructure")
 	if tagValue == "" {
@@ -175,11 +178,11 @@ func checkStructFieldTags(f reflect.StructField) error {
 	switch f.Type.Kind() {
 	case reflect.Struct:
 		// It is another struct, continue down-level
-		return validateConfigDataType(f.Type)
+		return validateConfigDataType(f.Type, fmap)
 
 	case reflect.Map, reflect.Slice, reflect.Array:
 		// The element of map, array, or slice can be itself a configuration object.
-		return validateConfigDataType(f.Type.Elem())
+		return validateConfigDataType(f.Type.Elem(), fmap)
 
 	default:
 		fieldTag := tagParts[0]
