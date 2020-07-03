@@ -159,7 +159,7 @@ func getRateAllocationMap(config CompositeCfg) map[string]float64 {
 	rateAllocationsMap := make(map[string]float64)
 	maxTotalSPS := float64(config.MaxTotalSpansPerSecond)
 	// Default SPS determined by equally diving number of sub policies
-	defaultSPS :=  maxTotalSPS / float64(len(config.PolicyCfgs))
+	defaultSPS := maxTotalSPS / float64(len(config.PolicyCfgs))
 	for i := 0; i < len(config.RateAllocation); i++ {
 		rAlloc := &config.RateAllocation[i]
 		rateAllocationsMap[rAlloc.Policy] = defaultSPS
