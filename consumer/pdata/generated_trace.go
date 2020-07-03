@@ -136,6 +136,14 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 	(*es.orig) = oldOrig
 }
 
+// Append will increase the length of the ResourceSpansSlice by one and set the
+// given ResourceSpans at that new position.  The original ResourceSpans
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es ResourceSpansSlice) Append(e *ResourceSpans) {
+	(*es.orig) = append((*es.orig), *e.orig)
+}
+
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -319,6 +327,14 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 	(*es.orig) = oldOrig
 }
 
+// Append will increase the length of the InstrumentationLibrarySpansSlice by one and set the
+// given InstrumentationLibrarySpans at that new position.  The original InstrumentationLibrarySpans
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es InstrumentationLibrarySpansSlice) Append(e *InstrumentationLibrarySpans) {
+	(*es.orig) = append((*es.orig), *e.orig)
+}
+
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -500,6 +516,14 @@ func (es SpanSlice) Resize(newLen int) {
 		oldOrig = append(oldOrig, &extraOrigs[i])
 	}
 	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the SpanSlice by one and set the
+// given Span at that new position.  The original Span
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es SpanSlice) Append(e *Span) {
+	(*es.orig) = append((*es.orig), *e.orig)
 }
 
 // Span represents a single operation within a trace.
@@ -867,6 +891,14 @@ func (es SpanEventSlice) Resize(newLen int) {
 	(*es.orig) = oldOrig
 }
 
+// Append will increase the length of the SpanEventSlice by one and set the
+// given SpanEvent at that new position.  The original SpanEvent
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es SpanEventSlice) Append(e *SpanEvent) {
+	(*es.orig) = append((*es.orig), *e.orig)
+}
+
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
 // text description and key-value pairs. See OTLP for event definition.
 //
@@ -1083,6 +1115,14 @@ func (es SpanLinkSlice) Resize(newLen int) {
 		oldOrig = append(oldOrig, &extraOrigs[i])
 	}
 	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the SpanLinkSlice by one and set the
+// given SpanLink at that new position.  The original SpanLink
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es SpanLinkSlice) Append(e *SpanLink) {
+	(*es.orig) = append((*es.orig), *e.orig)
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a

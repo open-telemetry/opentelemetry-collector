@@ -17,6 +17,7 @@ package configgrpc
 
 import (
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -52,9 +54,6 @@ type KeepaliveClientConfig struct {
 
 // GRPCClientSettings defines common settings for a gRPC client configuration.
 type GRPCClientSettings struct {
-	// The headers associated with gRPC requests.
-	Headers map[string]string `mapstructure:"headers"`
-
 	// The target to which the exporter is going to send traces or metrics,
 	// using the gRPC protocol. The valid syntax is described at
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
@@ -82,6 +81,9 @@ type GRPCClientSettings struct {
 	// WaitForReady parameter configures client to wait for ready state before sending data.
 	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
 	WaitForReady bool `mapstructure:"wait_for_ready"`
+
+	// The headers associated with gRPC requests.
+	Headers map[string]string `mapstructure:"headers"`
 }
 
 type KeepaliveServerConfig struct {
@@ -109,21 +111,27 @@ type KeepaliveEnforcementPolicy struct {
 }
 
 type GRPCServerSettings struct {
-	// The target to which the exporter is going to send traces or metrics,
-	// using the gRPC protocol. The valid syntax is described at
-	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
-	Endpoint string `mapstructure:"endpoint"`
+	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
+	NetAddr confignet.NetAddr `mapstructure:",squash"`
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSCredentials *configtls.TLSServerSetting `mapstructure:"tls_credentials, omitempty"`
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings,omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
-	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib,omitempty"`
+	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
-	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
+	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
+
+	// The WriteBufferSize for client gRPC. See grpc.ReadBufferSize
+	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
+	ReadBufferSize int `mapstructure:"read_buffer_size"`
+
+	// The WriteBufferSize for client gRPC. See grpc.WriteBufferSize
+	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
+	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
@@ -171,12 +179,16 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	return opts, nil
 }
 
+func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
+	return gss.NetAddr.Listen()
+}
+
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
 func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
-	if gss.TLSCredentials != nil {
-		tlsCfg, err := gss.TLSCredentials.LoadTLSConfig()
+	if gss.TLSSetting != nil {
+		tlsCfg, err := gss.TLSSetting.LoadTLSConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -189,6 +201,14 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 
 	if gss.MaxConcurrentStreams > 0 {
 		opts = append(opts, grpc.MaxConcurrentStreams(gss.MaxConcurrentStreams))
+	}
+
+	if gss.ReadBufferSize > 0 {
+		opts = append(opts, grpc.ReadBufferSize(gss.ReadBufferSize))
+	}
+
+	if gss.WriteBufferSize > 0 {
+		opts = append(opts, grpc.WriteBufferSize(gss.WriteBufferSize))
 	}
 
 	// The default values referenced in the GRPC docs are set within the server, so this code doesn't need

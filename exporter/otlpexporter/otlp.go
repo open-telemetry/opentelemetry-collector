@@ -158,7 +158,7 @@ func (oce *otlpExporter) pushTraceData(ctx context.Context, td pdata.Traces) (in
 	err := oce.exporter.exportTrace(ctx, request)
 
 	if err != nil {
-		return td.SpanCount(), err
+		return td.SpanCount(), fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
 	}
 	return 0, nil
 }
@@ -171,7 +171,7 @@ func (oce *otlpExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) 
 	err := oce.exporter.exportMetrics(ctx, request)
 
 	if err != nil {
-		return imd.MetricCount(), err
+		return imd.MetricCount(), fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
 	}
 	return 0, nil
 }
@@ -183,7 +183,7 @@ func (oce *otlpExporter) pushLogData(ctx context.Context, logs data.Logs) (int, 
 	err := oce.exporter.exportLogs(ctx, request)
 
 	if err != nil {
-		return logs.LogRecordCount(), err
+		return logs.LogRecordCount(), fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
 	}
 	return 0, nil
 }

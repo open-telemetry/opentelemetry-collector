@@ -126,6 +126,23 @@ func TestResourceLogsSlice_Resize(t *testing.T) {
 	assert.EqualValues(t, NewResourceLogsSlice(), es)
 }
 
+func TestResourceLogsSlice_Append(t *testing.T) {
+	es := generateTestResourceLogsSlice()
+	emptyVal := NewResourceLogs()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewResourceLogs()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
+}
+
 func TestResourceLogs_InitEmpty(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.True(t, ms.IsNil())
@@ -259,6 +276,23 @@ func TestLogSlice_Resize(t *testing.T) {
 	// Test Resize 0 elements.
 	es.Resize(0)
 	assert.EqualValues(t, NewLogSlice(), es)
+}
+
+func TestLogSlice_Append(t *testing.T) {
+	es := generateTestLogSlice()
+	emptyVal := NewLogRecord()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewLogRecord()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
 }
 
 func TestLogRecord_InitEmpty(t *testing.T) {

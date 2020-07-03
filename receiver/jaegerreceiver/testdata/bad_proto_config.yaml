@@ -2,7 +2,8 @@ receivers:
   # The following demonstrates how to enable protocols with defaults
   jaeger:
     protocols:
-      badproto:
+      thrift_htttp:
+        endpoint: "127.0.0.1:123"
 
 processors:
   exampleprocessor:

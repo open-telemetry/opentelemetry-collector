@@ -22,6 +22,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+func AssertContainsAttribute(t *testing.T, attr pdata.AttributeMap, key string) {
+	_, ok := attr.Get(key)
+	assert.True(t, ok)
+}
+
 func AssertDescriptorEqual(t *testing.T, expected pdata.MetricDescriptor, actual pdata.MetricDescriptor) {
 	assert.Equal(t, expected.Name(), actual.Name())
 	assert.Equal(t, expected.Description(), actual.Description())

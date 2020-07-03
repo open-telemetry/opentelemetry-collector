@@ -45,7 +45,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configprotocol"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -594,10 +594,8 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	// at least one protocol has to be enabled
 	thriftHTTPPort, err := randomAvailablePort()
 	require.NoError(t, err)
-	cfg.Protocols = map[string]*configprotocol.ProtocolServerSettings{
-		"thrift_http": {
-			Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
-		},
+	cfg.Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
+		Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 	}
 	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())
 	require.NoError(t, err)

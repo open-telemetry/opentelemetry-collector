@@ -171,9 +171,11 @@ func (bp *batchTraceProcessor) resetTimer() {
 func (bp *batchTraceProcessor) sendItems(measure *stats.Int64Measure) {
 	// Add that it came form the trace pipeline?
 	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
-	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
+	stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
 
-	_ = bp.traceConsumer.ConsumeTraces(context.Background(), bp.batchTraces.getTraceData())
+	if err := bp.traceConsumer.ConsumeTraces(context.Background(), bp.batchTraces.getTraceData()); err != nil {
+		bp.logger.Warn("Sender failed", zap.Error(err))
+	}
 	bp.batchTraces.reset()
 }
 

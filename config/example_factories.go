@@ -110,11 +110,7 @@ func (f *ExampleReceiverFactory) createReceiver(cfg configmodels.Receiver) *Exam
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *ExampleReceiverFactory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumerOld,
-) (component.MetricsReceiver, error) {
+func (f *ExampleReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -244,11 +240,7 @@ func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
-) (component.MetricsReceiver, error) {
+func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }

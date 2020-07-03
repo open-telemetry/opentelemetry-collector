@@ -15,9 +15,7 @@
 package jaegerreceiver
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -51,11 +49,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
-)
-
-var (
-	batchSubmitNotOkResponse = &jaeger.BatchSubmitResponse{}
-	batchSubmitOkResponse    = &jaeger.BatchSubmitResponse{Ok: true}
 )
 
 // Configuration defines the behavior and the ports that
@@ -256,42 +249,26 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 			return
 		}
 		// Otherwise combine all these errors
-		buf := new(bytes.Buffer)
-		for _, err := range errs {
-			fmt.Fprintf(buf, "%s\n", err.Error())
-		}
-		err = errors.New(buf.String())
+		err = componenterror.CombineErrors(errs)
 	})
 
 	return err
 }
 
-func consumeTraces(
-	ctx context.Context,
-	batches []*jaeger.Batch,
-	consumer consumer.TraceConsumer,
-) ([]*jaeger.BatchSubmitResponse, int, error) {
-
-	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
-	var consumerError error
+func consumeTraces(ctx context.Context, batches []*jaeger.Batch, consumer consumer.TraceConsumer) (int, error) {
+	var consumerErrors []error
 	numSpans := 0
 	for _, batch := range batches {
 		numSpans += len(batch.Spans)
-		if consumerError != nil {
-			jbsr = append(jbsr, batchSubmitNotOkResponse)
-			continue
-		}
 
 		td := jaegertranslator.ThriftBatchToInternalTraces(batch)
-		consumerError = consumer.ConsumeTraces(ctx, td)
-		jsr := batchSubmitOkResponse
-		if consumerError != nil {
-			jsr = batchSubmitNotOkResponse
+		err := consumer.ConsumeTraces(ctx, td)
+		if err != nil {
+			consumerErrors = append(consumerErrors, err)
 		}
-		jbsr = append(jbsr, jsr)
 	}
 
-	return jbsr, numSpans, consumerError
+	return numSpans, componenterror.CombineErrors(consumerErrors)
 }
 
 var _ jaeger.Agent = (*agentHandler)(nil)
@@ -493,7 +470,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, numSpans, err := consumeTraces(ctx, []*jaeger.Batch{batch}, jr.nextConsumer)
+	numSpans, err := consumeTraces(ctx, []*jaeger.Batch{batch}, jr.nextConsumer)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Cannot submit Jaeger batch: %v", err), http.StatusInternalServerError)
 	} else {

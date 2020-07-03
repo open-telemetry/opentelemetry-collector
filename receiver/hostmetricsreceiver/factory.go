@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
 
@@ -46,13 +47,14 @@ const (
 
 // Factory is the Factory for receiver.
 type Factory struct {
-	scraperFactories map[string]internal.Factory
+	scraperFactories         map[string]internal.ScraperFactory
+	resourceScraperFactories map[string]internal.ResourceScraperFactory
 }
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() *Factory {
 	return &Factory{
-		scraperFactories: map[string]internal.Factory{
+		scraperFactories: map[string]internal.ScraperFactory{
 			cpuscraper.TypeStr:           &cpuscraper.Factory{},
 			diskscraper.TypeStr:          &diskscraper.Factory{},
 			loadscraper.TypeStr:          &loadscraper.Factory{},
@@ -60,6 +62,9 @@ func NewFactory() *Factory {
 			memoryscraper.TypeStr:        &memoryscraper.Factory{},
 			networkscraper.TypeStr:       &networkscraper.Factory{},
 			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
+		},
+		resourceScraperFactories: map[string]internal.ResourceScraperFactory{
+			processscraper.TypeStr: &processscraper.Factory{},
 		},
 	}
 }
@@ -99,7 +104,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 		}
 
 		for key := range componentViperSection.GetStringMap(scrapersKey) {
-			factory, ok := f.scraperFactories[key]
+			factory, ok := f.getScraperFactory(key)
 			if !ok {
 				return fmt.Errorf("invalid scraper key: %s", key)
 			}
@@ -116,6 +121,18 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 
 		return nil
 	}
+}
+
+func (f *Factory) getScraperFactory(key string) (internal.BaseFactory, bool) {
+	if factory, ok := f.scraperFactories[key]; ok {
+		return factory, true
+	}
+
+	if factory, ok := f.resourceScraperFactories[key]; ok {
+		return factory, true
+	}
+
+	return nil, false
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
@@ -149,7 +166,7 @@ func (f *Factory) CreateMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 
-	hmr, err := newHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
+	hmr, err := newHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, f.resourceScraperFactories, consumer)
 	if err != nil {
 		return nil, err
 	}

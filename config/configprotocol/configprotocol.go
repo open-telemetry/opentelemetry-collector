@@ -27,5 +27,5 @@ type ProtocolServerSettings struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSCredentials *configtls.TLSServerSetting `mapstructure:"tls_credentials, omitempty"`
+	TLSSettings *configtls.TLSServerSetting `mapstructure:"tls_settings, omitempty"`
 }

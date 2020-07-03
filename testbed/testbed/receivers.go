@@ -22,8 +22,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -95,12 +96,12 @@ func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) e
 	factory := opencensusreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.SetName(or.ProtocolName())
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", or.Port)
+	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
 	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, tc); err != nil {
 		return err
 	}
-	if or.metricsReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, mc); err != nil {
+	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, mc); err != nil {
 		return err
 	}
 	if err = or.traceReceiver.Start(context.Background(), or); err != nil {
@@ -147,8 +148,8 @@ func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer
 	factory := jaegerreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
-	cfg.Protocols["grpc"] = &configprotocol.ProtocolServerSettings{
-		Endpoint: fmt.Sprintf("localhost:%d", jr.Port),
+	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
+		NetAddr: confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", jr.Port), Transport: "tcp"},
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -198,7 +199,8 @@ func (or *OTLPDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer)
 	factory := otlpreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(or.ProtocolName())
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", or.Port)
+	cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
+	cfg.HTTP = nil
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {

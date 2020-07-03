@@ -24,7 +24,4 @@ type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-
-	// The number of workers that send the gRPC requests.
-	NumWorkers int `mapstructure:"num_workers"`
 }

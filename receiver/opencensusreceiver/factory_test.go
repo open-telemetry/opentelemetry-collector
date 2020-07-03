@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -43,26 +44,29 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	config := cfg.(*Config)
-	config.Endpoint = testutil.GetAvailableLocalAddress(t)
+	config.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
 	factory := Factory{}
-	endpoint := testutil.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
+	defaultNetAddr := confignet.NetAddr{
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+		Transport: "tcp",
+	}
 	defaultGRPCSettings := configgrpc.GRPCServerSettings{
-		Endpoint: endpoint,
+		NetAddr: defaultNetAddr,
 	}
 	tests := []struct {
 		name    string
@@ -74,7 +78,6 @@ func TestCreateTraceReceiver(t *testing.T) {
 			cfg: &Config{
 				ReceiverSettings:   defaultReceiverSettings,
 				GRPCServerSettings: defaultGRPCSettings,
-				Transport:          "tcp",
 			},
 		},
 		{
@@ -85,9 +88,11 @@ func TestCreateTraceReceiver(t *testing.T) {
 					NameVal: typeStr,
 				},
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					Endpoint: "localhost:112233",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:112233",
+						Transport: "tcp",
+					},
 				},
-				Transport: "tcp",
 			},
 			wantErr: true,
 		},
@@ -96,11 +101,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 			cfg: &Config{
 				ReceiverSettings: defaultReceiverSettings,
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					Endpoint:             endpoint,
+					NetAddr:              defaultNetAddr,
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
 				},
-				Transport: "tcp",
 			},
 		},
 	}
@@ -125,13 +129,16 @@ func TestCreateTraceReceiver(t *testing.T) {
 
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := Factory{}
-	endpoint := testutil.GetAvailableLocalAddress(t)
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
+	defaultNetAddr := confignet.NetAddr{
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+		Transport: "tcp",
+	}
 	defaultGRPCSettings := configgrpc.GRPCServerSettings{
-		Endpoint: endpoint,
+		NetAddr: defaultNetAddr,
 	}
 
 	tests := []struct {
@@ -144,7 +151,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				ReceiverSettings:   defaultReceiverSettings,
 				GRPCServerSettings: defaultGRPCSettings,
-				Transport:          "tcp",
 			},
 		},
 		{
@@ -155,9 +161,11 @@ func TestCreateMetricReceiver(t *testing.T) {
 					NameVal: typeStr,
 				},
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					Endpoint: "327.0.0.1:1122",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "327.0.0.1:1122",
+						Transport: "tcp",
+					},
 				},
-				Transport: "tcp",
 			},
 			wantErr: true,
 		},
@@ -166,7 +174,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 			cfg: &Config{
 				ReceiverSettings: defaultReceiverSettings,
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					Endpoint: endpoint,
+					NetAddr: defaultNetAddr,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
 							MaxConnectionAge: 60 * time.Second,
@@ -177,7 +185,6 @@ func TestCreateMetricReceiver(t *testing.T) {
 						},
 					},
 				},
-				Transport: "tcp",
 			},
 		},
 	}
@@ -185,7 +192,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkMetricsExporterOld)
-			tc, err := factory.CreateMetricsReceiver(logger, tt.cfg, sink)
+			tc, err := factory.CreateMetricsReceiver(context.Background(), logger, tt.cfg, sink)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return

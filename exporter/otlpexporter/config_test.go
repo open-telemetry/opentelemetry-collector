@@ -70,6 +70,5 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 			},
-			NumWorkers: 8,
 		})
 }

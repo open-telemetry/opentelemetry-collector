@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -52,9 +53,12 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/customname",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:9090",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:9090",
+					Transport: "tcp",
+				},
+				ReadBufferSize: 512 * 1024,
 			},
-			Transport: "tcp",
 		})
 
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
@@ -65,7 +69,11 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/keepalive",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:55678",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:55678",
+					Transport: "tcp",
+				},
+				ReadBufferSize: 512 * 1024,
 				Keepalive: &configgrpc.KeepaliveServerConfig{
 					ServerParameters: &configgrpc.KeepaliveServerParameters{
 						MaxConnectionIdle:     11 * time.Second,
@@ -80,7 +88,6 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-			Transport: "tcp",
 		})
 
 	r3 := cfg.Receivers["opencensus/msg-size-conc-connect-max-idle"].(*Config)
@@ -91,16 +98,20 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/msg-size-conc-connect-max-idle",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint:             "0.0.0.0:55678",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:55678",
+					Transport: "tcp",
+				},
 				MaxRecvMsgSizeMiB:    32,
 				MaxConcurrentStreams: 16,
+				ReadBufferSize:       1024,
+				WriteBufferSize:      1024,
 				Keepalive: &configgrpc.KeepaliveServerConfig{
 					ServerParameters: &configgrpc.KeepaliveServerParameters{
 						MaxConnectionIdle: 10 * time.Second,
 					},
 				},
 			},
-			Transport: "tcp",
 		})
 
 	// TODO(ccaraman): Once the config loader checks for the files existence, this test may fail and require
@@ -113,15 +124,18 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/tlscredentials",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:55678",
-				TLSCredentials: &configtls.TLSServerSetting{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:55678",
+					Transport: "tcp",
+				},
+				ReadBufferSize: 512 * 1024,
+				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "test.crt",
 						KeyFile:  "test.key",
 					},
 				},
 			},
-			Transport: "tcp",
 		})
 
 	r5 := cfg.Receivers["opencensus/cors"].(*Config)
@@ -132,9 +146,12 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/cors",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "0.0.0.0:55678",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:55678",
+					Transport: "tcp",
+				},
+				ReadBufferSize: 512 * 1024,
 			},
-			Transport:   "tcp",
 			CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 		})
 
@@ -146,9 +163,12 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "opencensus/uds",
 			},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{
-				Endpoint: "/tmp/opencensus.sock",
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "/tmp/opencensus.sock",
+					Transport: "unix",
+				},
+				ReadBufferSize: 512 * 1024,
 			},
-			Transport: "unix",
 		})
 }
 
@@ -158,7 +178,7 @@ func TestBuildOptions_TLSCredentials(t *testing.T) {
 			NameVal: "IncorrectTLS",
 		},
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
-			TLSCredentials: &configtls.TLSServerSetting{
+			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "willfail",
 				},
@@ -168,7 +188,7 @@ func TestBuildOptions_TLSCredentials(t *testing.T) {
 	_, err := cfg.buildOptions()
 	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 
-	cfg.TLSCredentials = &configtls.TLSServerSetting{}
+	cfg.TLSSetting = &configtls.TLSServerSetting{}
 	opt, err := cfg.buildOptions()
 	assert.NoError(t, err)
 	assert.NotNil(t, opt)

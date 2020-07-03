@@ -520,6 +520,8 @@ func constructMimumalOpConfig(t *testing.T, factories config.Factories) *configm
 	configStr := `
 receivers:
   otlp:
+    protocols:
+      grpc:
 exporters:
   logging:
 processors:
@@ -535,7 +537,7 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	v := viper.NewWithOptions(viper.KeyDelimiter("::"))
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := config.Load(v, factories)
