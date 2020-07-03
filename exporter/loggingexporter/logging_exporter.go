@@ -55,6 +55,17 @@ func (b *logDataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	})
 }
 
+func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
+	if sm.Len() == 0 {
+		return
+	}
+
+	b.logEntry("%s:", description)
+	sm.ForEach(func(k string, v pdata.StringValue) {
+		b.logEntry("     -> %s: %s", k, v.Value())
+	})
+}
+
 func (b *logDataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
 	b.logEntry(
 		"InstrumentationLibrary %s %s",
@@ -72,6 +83,90 @@ func (b *logDataBuffer) logMetricDescriptor(md pdata.MetricDescriptor) {
 	b.logEntry("     -> Description: %s", md.Description())
 	b.logEntry("     -> Unit: %s", md.Unit())
 	b.logEntry("     -> Type: %s", md.Type().String())
+}
+
+func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric)  {
+	md := m.MetricDescriptor()
+	if md.IsNil() {
+		return
+	}
+
+	switch md.Type() {
+	case pdata.MetricTypeInvalid:
+		return
+	case pdata.MetricTypeInt64:
+		b.logInt64DataPoints(m.Int64DataPoints())
+	case pdata.MetricTypeDouble:
+		b.logDoubleDataPoints(m.DoubleDataPoints())
+	case pdata.MetricTypeMonotonicInt64:
+		b.logInt64DataPoints(m.Int64DataPoints())
+	case pdata.MetricTypeMonotonicDouble:
+		b.logDoubleDataPoints(m.DoubleDataPoints())
+	case pdata.MetricTypeHistogram:
+		b.logHistogramDataPoints(m.HistogramDataPoints())
+	case pdata.MetricTypeSummary:
+		b.logSummaryDataPoints(m.SummaryDataPoints())
+	}
+}
+
+func (b *logDataBuffer) logInt64DataPoints(ps pdata.Int64DataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("Int64DataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		// TODO: Add logging for values
+	}
+}
+
+func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("DoubleDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		// TODO: Add logging for values
+	}
+}
+
+func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("HistogramDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		// TODO: Add logging for values
+	}
+}
+
+func (b *logDataBuffer) logSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("SummaryDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		// TODO: Add logging for values
+	}
+}
+
+func (b *logDataBuffer) logDataPointLabels(labels pdata.StringMap) {
+	b.logStringMap("Data point labels", labels)
 }
 
 func attributeValueToString(av pdata.AttributeValue) string {
@@ -205,8 +300,7 @@ func (s *loggingExporter) pushMetricsData(
 				}
 
 				buf.logMetricDescriptor(metric.MetricDescriptor())
-
-				// TODO: Add logging for the rest of the metric properties: points.
+				buf.logMetricDataPoints(metric)
 			}
 		}
 	}
