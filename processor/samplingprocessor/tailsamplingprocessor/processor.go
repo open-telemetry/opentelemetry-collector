@@ -159,7 +159,12 @@ func getRateAllocationMap(config CompositeCfg) map[string]int64 {
 	rateAllocationsMap := make(map[string]int64)
 	for i := 0; i < len(config.RateAllocation); i++ {
 		rAlloc := &config.RateAllocation[i]
-		rateAllocationsMap[rAlloc.Policy] = rAlloc.Percent
+		if rAlloc.Percent > 0 {
+			rateAllocationsMap[rAlloc.Policy] = (rAlloc.Percent / 100) * config.MaxTotalSpansPerSecond
+		} else {
+			// Default 10% of MaxTotalSpansPerSeconds will be applied.
+			rateAllocationsMap[rAlloc.Policy] = (int64(10) / 100) * config.MaxTotalSpansPerSecond
+		}
 	}
 	return rateAllocationsMap
 }

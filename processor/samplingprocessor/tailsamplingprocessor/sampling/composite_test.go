@@ -87,6 +87,29 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 	}
 }
 
+func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
+
+	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
+	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
+	n2 := NewAlwaysSample(zap.NewNop())
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+
+	for i := 1; i <= 3; i++ {
+		trace := createTrace()
+
+		decision, err := c.Evaluate(traceID, trace)
+		if err != nil {
+			t.Fatalf("Failed to evaluate composite policy: %v", err)
+		}
+
+		// The second policy is AlwaysSample, so the decision should be Sampled.
+		expected := Sampled
+		if decision != expected {
+			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
+		}
+	}
+}
+
 func TestCompositeEvaluatorThrottling(t *testing.T) {
 
 	// Create only one subpolicy, with 100% Sampled policy.

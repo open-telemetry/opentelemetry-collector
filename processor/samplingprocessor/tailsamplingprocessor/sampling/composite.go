@@ -123,7 +123,7 @@ func (c *Composite) Evaluate(traceID []byte, trace *TraceData) (Decision, error)
 			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount
 
 			// Check if the rate will be within the allocated bandwidth.
-			if spansInSecondIfSampled <= sub.allocatedSPS {
+			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
 				sub.sampledSPS = spansInSecondIfSampled
 
 				// Let the sampling happen
