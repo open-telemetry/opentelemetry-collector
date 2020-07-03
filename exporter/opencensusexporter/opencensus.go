@@ -156,7 +156,7 @@ func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 			code: errAlreadyStopped,
 			msg:  "OpenCensus exporter was already stopped.",
 		}
-		return len(td.Spans), err
+		return len(td.Spans), fmt.Errorf("failed to push trace data via OpenCensus exporter: %w", err)
 	}
 
 	err := exporter.ExportTraceServiceRequest(
@@ -168,7 +168,7 @@ func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.T
 	)
 	oce.exporters <- exporter
 	if err != nil {
-		return len(td.Spans), err
+		return len(td.Spans), fmt.Errorf("failed to push trace data via OpenCensus exporter: %w", err)
 	}
 	return 0, nil
 }
@@ -181,7 +181,7 @@ func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata
 			code: errAlreadyStopped,
 			msg:  "OpenCensus exporter was already stopped.",
 		}
-		return exporterhelper.NumTimeSeries(md), err
+		return exporterhelper.NumTimeSeries(md), fmt.Errorf("failed to push metrics data via OpenCensus exporter: %w", err)
 	}
 
 	req := &agentmetricspb.ExportMetricsServiceRequest{
@@ -192,7 +192,7 @@ func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata
 	err := exporter.ExportMetricsServiceRequest(req)
 	oce.exporters <- exporter
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), err
+		return exporterhelper.NumTimeSeries(md), fmt.Errorf("failed to push metrics data via OpenCensus exporter: %w", err)
 	}
 	return 0, nil
 }
