@@ -50,6 +50,10 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary())))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetricOneNil())))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataWithCountersHistogramAndSummary())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataAllTypesNilDataPoint())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataAllTypesEmptyDataPoint())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataNilMetricDescriptor())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())))
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }
