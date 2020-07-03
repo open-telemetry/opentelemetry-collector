@@ -233,8 +233,7 @@ var compositePolicy = []PolicyCfg{
 					Percent: 50,
 				},
 				{
-					Policy:  "test-composite-policy-2",
-					Percent: 25,
+					Policy: "test-composite-policy-2",
 				},
 			},
 		},
