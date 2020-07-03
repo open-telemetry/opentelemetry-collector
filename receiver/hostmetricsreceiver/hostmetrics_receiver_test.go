@@ -116,7 +116,9 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	// canceling the context provided to Start should not cancel any async processes initiated by the receiver
 	cancelFn()
 
-	require.Eventually(t, func() bool {
+	const tick = 50 * time.Millisecond
+	const waitFor = 5 * time.Second
+	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
 		if len(got) == 0 {
 			return false
@@ -125,7 +127,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		assertIncludesStandardMetrics(t, got[0])
 		assertIncludesResourceMetrics(t, got[0])
 		return true
-	}, time.Second, 10*time.Millisecond, "No metrics were collected after 1s")
+	}, waitFor, tick, "No metrics were collected after %v", waitFor)
 }
 
 func assertIncludesStandardMetrics(t *testing.T, got pdata.Metrics) {
