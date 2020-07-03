@@ -47,7 +47,7 @@ processors:
                   {
                     name: test-composite-policy-2,
                     type: string_attribute,
-                    string_attribute: {key: key1, values: [value1, value2]}
+                    string_attribute: {key: key2, values: [value1, value2]}
                   }
                   ],
                 rate_allocation:
