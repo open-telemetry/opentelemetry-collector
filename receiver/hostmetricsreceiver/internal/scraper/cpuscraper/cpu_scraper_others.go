@@ -25,8 +25,16 @@ import (
 const cpuStatesLen = 4
 
 func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, cpuTime cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, cpuTime.User)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, cpuTime.System)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, cpuTime.Idle)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, cpuTime.Irq)
+	initializeCPUDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, cpuTime.User)
+	initializeCPUDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, cpuTime.System)
+	initializeCPUDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, cpuTime.Idle)
+	initializeCPUDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, cpuTime.Irq)
+}
+
+func appendCPUUtilizationStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, cpuTime cpu.TimesStat, prevCPUTime cpu.TimesStat) {
+	total := cpuTime.Total() - prevCPUTime.Total()
+	initializeCPUDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, (cpuTime.User-prevCPUTime.User)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, (cpuTime.System-prevCPUTime.System)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, (cpuTime.Idle-prevCPUTime.Idle)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, (cpuTime.Irq-prevCPUTime.Irq)/total*100)
 }

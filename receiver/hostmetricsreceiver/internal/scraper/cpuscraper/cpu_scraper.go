@@ -26,13 +26,17 @@ import (
 
 // scraper for CPU Metrics
 type scraper struct {
-	config    *Config
-	startTime pdata.TimestampUnixNano
+	config       *Config
+	startTime    pdata.TimestampUnixNano
+	prevCPUTimes map[string]cpu.TimesStat
+
+	// for mocking gopsutil cpu.Times
+	times func(bool) ([]cpu.TimesStat, error)
 }
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, times: cpu.Times}
 }
 
 // Initialize
@@ -55,13 +59,29 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	cpuTimes, err := cpu.Times(s.config.ReportPerCPU)
+	cpuTimes, err := s.times(s.config.ReportPerCPU)
 	if err != nil {
 		return metrics, err
 	}
 
-	metrics.Resize(1)
+	noMetrics := 1
+	if s.prevCPUTimes != nil {
+		noMetrics = 2
+	}
+
+	metrics.Resize(noMetrics)
 	initializeCPUTimeMetric(metrics.At(0), s.startTime, cpuTimes)
+
+	if s.prevCPUTimes != nil {
+		initializeCPUUtilizationMetric(metrics.At(1), s.startTime, cpuTimes, s.prevCPUTimes)
+	}
+
+	// store cpu times so we can calculate utilization over the collection interval
+	s.prevCPUTimes = make(map[string]cpu.TimesStat, len(cpuTimes))
+	for _, cpuTime := range cpuTimes {
+		s.prevCPUTimes[cpuTime.CPU] = cpuTime
+	}
+
 	return metrics, nil
 }
 
@@ -75,9 +95,24 @@ func initializeCPUTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixN
 	}
 }
 
+func initializeCPUUtilizationMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat, prevCPUTimes map[string]cpu.TimesStat) {
+	cpuUtilizationDescriptor.CopyTo(metric.MetricDescriptor())
+
+	ddps := metric.DoubleDataPoints()
+	ddps.Resize(len(cpuTimes) * cpuStatesLen)
+	for i, cpuTime := range cpuTimes {
+		prevCPUTime, ok := prevCPUTimes[cpuTime.CPU]
+		if !ok {
+			continue
+		}
+
+		appendCPUUtilizationStateDataPoints(ddps, i*cpuStatesLen, startTime, cpuTime, prevCPUTime)
+	}
+}
+
 const gopsCPUTotal string = "cpu-total"
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) {
+func initializeCPUDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {

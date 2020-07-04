@@ -43,6 +43,7 @@ import (
 
 var standardMetrics = []string{
 	"system.cpu.time",
+	"system.cpu.utilization",
 	"system.memory.usage",
 	"system.disk.io",
 	"system.disk.ops",
@@ -123,12 +124,13 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	const waitFor = 5 * time.Second
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
-		if len(got) == 0 {
+		if len(got) < 2 {
 			return false
 		}
 
-		assertIncludesStandardMetrics(t, got[0])
-		assertIncludesResourceMetrics(t, got[0])
+		// wait until the second scrape to ensure so computed metrics can be returned
+		assertIncludesStandardMetrics(t, got[1])
+		assertIncludesResourceMetrics(t, got[1])
 		return true
 	}, waitFor, tick, "No metrics were collected after %v", waitFor)
 }

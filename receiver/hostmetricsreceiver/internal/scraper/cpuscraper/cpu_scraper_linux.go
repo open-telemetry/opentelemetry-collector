@@ -25,12 +25,24 @@ import (
 const cpuStatesLen = 8
 
 func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, cpuTime cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, cpuTime.User)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, cpuTime.System)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, cpuTime.Idle)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, cpuTime.Irq)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+4), startTime, cpuTime.CPU, niceStateLabelValue, cpuTime.Nice)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+5), startTime, cpuTime.CPU, softIRQStateLabelValue, cpuTime.Softirq)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+6), startTime, cpuTime.CPU, stealStateLabelValue, cpuTime.Steal)
-	initializeCPUTimeDataPoint(ddps.At(startIdx+7), startTime, cpuTime.CPU, waitStateLabelValue, cpuTime.Iowait)
+	initializeCPUDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, cpuTime.User)
+	initializeCPUDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, cpuTime.System)
+	initializeCPUDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, cpuTime.Idle)
+	initializeCPUDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, cpuTime.Irq)
+	initializeCPUDataPoint(ddps.At(startIdx+4), startTime, cpuTime.CPU, niceStateLabelValue, cpuTime.Nice)
+	initializeCPUDataPoint(ddps.At(startIdx+5), startTime, cpuTime.CPU, softIRQStateLabelValue, cpuTime.Softirq)
+	initializeCPUDataPoint(ddps.At(startIdx+6), startTime, cpuTime.CPU, stealStateLabelValue, cpuTime.Steal)
+	initializeCPUDataPoint(ddps.At(startIdx+7), startTime, cpuTime.CPU, waitStateLabelValue, cpuTime.Iowait)
+}
+
+func appendCPUUtilizationStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, startTime pdata.TimestampUnixNano, cpuTime cpu.TimesStat, prevCPUTime cpu.TimesStat) {
+	total := cpuTime.Total() - prevCPUTime.Total()
+	initializeCPUDataPoint(ddps.At(startIdx+0), startTime, cpuTime.CPU, userStateLabelValue, (cpuTime.User-prevCPUTime.User)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+1), startTime, cpuTime.CPU, systemStateLabelValue, (cpuTime.System-prevCPUTime.System)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+2), startTime, cpuTime.CPU, idleStateLabelValue, (cpuTime.Idle-prevCPUTime.Idle)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+3), startTime, cpuTime.CPU, interruptStateLabelValue, (cpuTime.Irq-prevCPUTime.Irq)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+4), startTime, cpuTime.CPU, niceStateLabelValue, (cpuTime.Nice-prevCPUTime.Nice)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+5), startTime, cpuTime.CPU, softIRQStateLabelValue, (cpuTime.Softirq-prevCPUTime.Softirq)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+6), startTime, cpuTime.CPU, stealStateLabelValue, (cpuTime.Steal-prevCPUTime.Steal)/total*100)
+	initializeCPUDataPoint(ddps.At(startIdx+7), startTime, cpuTime.CPU, waitStateLabelValue, (cpuTime.Iowait-prevCPUTime.Iowait)/total*100)
 }

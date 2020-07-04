@@ -49,3 +49,13 @@ var cpuTimeDescriptor = func() pdata.MetricDescriptor {
 	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 	return descriptor
 }()
+
+var cpuUtilizationDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.cpu.utilization")
+	descriptor.SetDescription("CPU utilization broken down by different states.")
+	descriptor.SetUnit("%")
+	descriptor.SetType(pdata.MetricTypeDouble)
+	return descriptor
+}()
