@@ -14,7 +14,7 @@
 
 // +build windows
 
-package virtualmemoryscraper
+package swapscraper
 
 import (
 	"context"
@@ -31,7 +31,7 @@ const (
 	pageWritesperSecPath = `\Memory\Page Writes/sec`
 )
 
-// scraper for VirtualMemory Metrics
+// scraper for Swap Metrics
 type scraper struct {
 	config *Config
 
@@ -42,11 +42,14 @@ type scraper struct {
 	prevPagingScrapeTime time.Time
 	cumulativePageReads  float64
 	cumulativePageWrites float64
+
+	// for mocking getPageFileStats
+	pageFileStats func() ([]*pageFileData, error)
 }
 
-// newVirtualMemoryScraper creates a set of VirtualMemory related metrics
-func newVirtualMemoryScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+// newSwapScraper creates a Swap Scraper
+func newSwapScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg, pageFileStats: getPageFileStats}
 }
 
 // Initialize
@@ -109,10 +112,8 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-var getPageFileStats = getPageFileStatsInternal
-
 func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
-	pageFiles, err := getPageFileStats()
+	pageFiles, err := s.pageFileStats()
 	if err != nil {
 		return err
 	}

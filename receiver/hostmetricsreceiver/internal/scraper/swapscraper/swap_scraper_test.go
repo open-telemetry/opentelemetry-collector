@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package virtualmemoryscraper
+package swapscraper
 
 import (
 	"context"
@@ -26,23 +26,27 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, pdata.MetricSlice)
-
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
-		// expect 3 metrics (windows does not currently support page_faults metric)
-		expectedMetrics := 3
-		if runtime.GOOS == "windows" {
-			expectedMetrics = 2
-		}
-		assert.Equal(t, expectedMetrics, metrics.Len())
+	scraper := newSwapScraper(context.Background(), &Config{})
+	err := scraper.Initialize(context.Background())
+	require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
+	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-		assertSwapUsageMetricValid(t, metrics.At(0))
-		assertPagingMetricValid(t, metrics.At(1))
-		if runtime.GOOS != "windows" {
-			assertPageFaultsMetricValid(t, metrics.At(2))
-		}
-	})
+	metrics, err := scraper.ScrapeMetrics(context.Background())
+	assert.NoError(t, err)
+
+	// expect 3 metrics (windows does not currently support page_faults metric)
+	expectedMetrics := 3
+	if runtime.GOOS == "windows" {
+		expectedMetrics = 2
+	}
+	assert.Equal(t, expectedMetrics, metrics.Len())
+
+	assertSwapUsageMetricValid(t, metrics.At(0))
+	assertPagingMetricValid(t, metrics.At(1))
+	if runtime.GOOS != "windows" {
+		assertPageFaultsMetricValid(t, metrics.At(2))
+	}
 }
 
 func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) {
@@ -101,16 +105,4 @@ func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric) {
 	internal.AssertDescriptorEqual(t, swapPageFaultsDescriptor, pageFaultsMetric.MetricDescriptor())
 	assert.Equal(t, 1, pageFaultsMetric.Int64DataPoints().Len())
 	internal.AssertInt64MetricLabelHasValue(t, pageFaultsMetric, 0, typeLabelName, minorTypeLabelValue)
-}
-
-func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := newVirtualMemoryScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize virtual memory scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-	assertFn(t, metrics)
 }

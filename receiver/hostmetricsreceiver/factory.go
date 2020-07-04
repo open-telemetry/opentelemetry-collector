@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -56,14 +56,14 @@ type Factory struct {
 func NewFactory() *Factory {
 	return &Factory{
 		scraperFactories: map[string]internal.ScraperFactory{
-			cpuscraper.TypeStr:           &cpuscraper.Factory{},
-			diskscraper.TypeStr:          &diskscraper.Factory{},
-			loadscraper.TypeStr:          &loadscraper.Factory{},
-			filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
-			memoryscraper.TypeStr:        &memoryscraper.Factory{},
-			networkscraper.TypeStr:       &networkscraper.Factory{},
-			processesscraper.TypeStr:     &processesscraper.Factory{},
-			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
+			cpuscraper.TypeStr:        &cpuscraper.Factory{},
+			diskscraper.TypeStr:       &diskscraper.Factory{},
+			loadscraper.TypeStr:       &loadscraper.Factory{},
+			filesystemscraper.TypeStr: &filesystemscraper.Factory{},
+			memoryscraper.TypeStr:     &memoryscraper.Factory{},
+			networkscraper.TypeStr:    &networkscraper.Factory{},
+			processesscraper.TypeStr:  &processesscraper.Factory{},
+			swapscraper.TypeStr:       &swapscraper.Factory{},
 		},
 		resourceScraperFactories: map[string]internal.ResourceScraperFactory{
 			processscraper.TypeStr: &processscraper.Factory{},

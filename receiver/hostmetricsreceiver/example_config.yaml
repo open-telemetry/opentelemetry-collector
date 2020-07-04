@@ -12,7 +12,7 @@ receivers:
       disk:
       filesystem:
       network:
-      virtualmemory:
+      swap:
 
 exporters:
   logging:
