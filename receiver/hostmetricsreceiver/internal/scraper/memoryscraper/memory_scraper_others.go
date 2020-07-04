@@ -26,7 +26,7 @@ const availableStateLabelValue = "available"
 
 const memStatesLen = 2
 
-func appendMemoryUsedStates(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsedDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsedDataPoint(idps.At(1), availableStateLabelValue, int64(memInfo.Available))
+func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
+	initializeMemoryUsageDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.At(1), availableStateLabelValue, int64(memInfo.Available))
 }

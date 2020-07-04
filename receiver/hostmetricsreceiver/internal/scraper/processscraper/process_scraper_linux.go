@@ -24,8 +24,8 @@ import (
 
 const cpuStatesLen = 3
 
-func appendCPUStateTimes(ddps pdata.DoubleDataPointSlice, startTime pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
-	initializeCPUUsageDataPoint(ddps.At(0), startTime, cpuTime.User, userStateLabelValue)
-	initializeCPUUsageDataPoint(ddps.At(1), startTime, cpuTime.System, systemStateLabelValue)
-	initializeCPUUsageDataPoint(ddps.At(2), startTime, cpuTime.Iowait, waitStateLabelValue)
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
+	initializeCPUTimeDataPoint(ddps.At(0), startTime, cpuTime.User, userStateLabelValue)
+	initializeCPUTimeDataPoint(ddps.At(1), startTime, cpuTime.System, systemStateLabelValue)
+	initializeCPUTimeDataPoint(ddps.At(2), startTime, cpuTime.Iowait, waitStateLabelValue)
 }

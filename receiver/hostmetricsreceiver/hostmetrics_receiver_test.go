@@ -41,36 +41,36 @@ import (
 )
 
 var standardMetrics = []string{
-	"host/cpu/usage",
-	"host/memory/used",
-	"host/disk/bytes",
-	"host/disk/ops",
-	"host/disk/time",
-	"host/filesystem/used",
-	"host/load/1m",
-	"host/load/5m",
-	"host/load/15m",
-	"host/network/packets",
-	"host/network/dropped_packets",
-	"host/network/errors",
-	"host/network/bytes",
-	"host/network/tcp_connections",
-	"host/swap/paging",
-	"host/swap/usage",
+	"system.cpu.time",
+	"system.memory.usage",
+	"system.disk.io",
+	"system.disk.ops",
+	"system.disk.time",
+	"system.filesystem.usage",
+	"system.cpu.load_average.1m",
+	"system.cpu.load_average.5m",
+	"system.cpu.load_average.15m",
+	"system.network.packets",
+	"system.network.dropped_packets",
+	"system.network.errors",
+	"system.network.io",
+	"system.network.tcp_connections",
+	"system.swap.paging_ops",
+	"system.swap.usage",
 }
 
 var resourceMetrics = []string{
-	"process/cpu/usage",
-	"process/memory/usage",
-	"process/disk/bytes",
+	"process.cpu.time",
+	"process.memory.usage",
+	"process.disk.io",
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"host/filesystem/inodes/used", "host/swap/page_faults"},
-	"darwin":  {"host/filesystem/inodes/used", "host/swap/page_faults"},
-	"freebsd": {"host/filesystem/inodes/used", "host/swap/page_faults"},
-	"openbsd": {"host/filesystem/inodes/used", "host/swap/page_faults"},
-	"solaris": {"host/filesystem/inodes/used", "host/swap/page_faults"},
+	"linux":   {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"solaris": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
 }
 
 var factories = map[string]internal.ScraperFactory{

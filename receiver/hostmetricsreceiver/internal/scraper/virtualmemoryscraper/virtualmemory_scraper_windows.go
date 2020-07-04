@@ -129,7 +129,7 @@ func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) erro
 }
 
 func initializeSwapUsageMetric(metric pdata.Metric, pageFiles []*pageFileData) {
-	metricSwapUsageDescriptor.CopyTo(metric.MetricDescriptor())
+	swapUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2 * len(pageFiles))
@@ -175,7 +175,7 @@ func (s *scraper) scrapeAndAppendPagingMetric(metrics pdata.MetricSlice) error {
 }
 
 func initializePagingMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, reads float64, writes float64) {
-	metricPagingDescriptor.CopyTo(metric.MetricDescriptor())
+	swapPagingDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2)

@@ -58,9 +58,9 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	}
 
 	metrics.Resize(3)
-	initializeLoadMetric(metrics.At(0), metric1MLoadDescriptor, avgLoadValues.Load1)
-	initializeLoadMetric(metrics.At(1), metric5MLoadDescriptor, avgLoadValues.Load5)
-	initializeLoadMetric(metrics.At(2), metric15MLoadDescriptor, avgLoadValues.Load15)
+	initializeLoadMetric(metrics.At(0), loadAvg1MDescriptor, avgLoadValues.Load1)
+	initializeLoadMetric(metrics.At(1), loadAvg5mDescriptor, avgLoadValues.Load5)
+	initializeLoadMetric(metrics.At(2), loadAvg15mDescriptor, avgLoadValues.Load15)
 	return metrics, nil
 }
 

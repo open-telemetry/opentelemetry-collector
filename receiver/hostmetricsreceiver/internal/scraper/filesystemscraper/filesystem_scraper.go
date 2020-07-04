@@ -80,7 +80,7 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	if len(usages) > 0 {
 		metrics.Resize(1 + systemSpecificMetricsLen)
 
-		initializeMetricFileSystemUsed(metrics.At(0), usages)
+		initializeFileSystemUsageMetric(metrics.At(0), usages)
 		appendSystemSpecificMetrics(metrics, 1, usages)
 	}
 
@@ -91,17 +91,17 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	return metrics, nil
 }
 
-func initializeMetricFileSystemUsed(metric pdata.Metric, deviceUsages []*deviceUsage) {
-	metricFilesystemUsedDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeFileSystemUsageMetric(metric pdata.Metric, deviceUsages []*deviceUsage) {
+	fileSystemUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(fileSystemStatesLen * len(deviceUsages))
 	for i, deviceUsage := range deviceUsages {
-		appendFileSystemUsedStateDataPoints(idps, i*fileSystemStatesLen, deviceUsage)
+		appendFileSystemUsageStateDataPoints(idps, i*fileSystemStatesLen, deviceUsage)
 	}
 }
 
-func initializeFileSystemUsedDataPoint(dataPoint pdata.Int64DataPoint, deviceLabel string, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(stateLabelName, stateLabel)

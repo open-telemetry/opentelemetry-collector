@@ -24,11 +24,11 @@ import (
 
 const memStatesLen = 6
 
-func appendMemoryUsedStates(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsedDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsedDataPoint(idps.At(1), freeStateLabelValue, int64(memInfo.Free))
-	initializeMemoryUsedDataPoint(idps.At(2), bufferedStateLabelValue, int64(memInfo.Buffers))
-	initializeMemoryUsedDataPoint(idps.At(3), cachedStateLabelValue, int64(memInfo.Cached))
-	initializeMemoryUsedDataPoint(idps.At(4), slabReclaimableStateLabelValue, int64(memInfo.SReclaimable))
-	initializeMemoryUsedDataPoint(idps.At(5), slabUnreclaimableStateLabelValue, int64(memInfo.SUnreclaim))
+func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
+	initializeMemoryUsageDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.At(1), freeStateLabelValue, int64(memInfo.Free))
+	initializeMemoryUsageDataPoint(idps.At(2), bufferedStateLabelValue, int64(memInfo.Buffers))
+	initializeMemoryUsageDataPoint(idps.At(3), cachedStateLabelValue, int64(memInfo.Cached))
+	initializeMemoryUsageDataPoint(idps.At(4), slabReclaimableStateLabelValue, int64(memInfo.SReclaimable))
+	initializeMemoryUsageDataPoint(idps.At(5), slabUnreclaimableStateLabelValue, int64(memInfo.SUnreclaim))
 }
