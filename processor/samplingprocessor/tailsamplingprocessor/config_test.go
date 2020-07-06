@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 							{
 								Name:               "test-composite-policy-2",
 								Type:               StringAttribute,
-								StringAttributeCfg: StringAttributeCfg{Key: "key1", Values: []string{"value1", "value2"}},
+								StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 							},
 						},
 						RateAllocation: []RateAllocationCfg{
