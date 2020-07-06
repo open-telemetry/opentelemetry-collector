@@ -27,6 +27,12 @@ func appendFileSystemUsageStateDataPoints(idps pdata.Int64DataPointSlice, startI
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.Free))
 }
 
+func appendFileSystemUtilizationStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, deviceUsage *deviceUsage) {
+	total := float64(deviceUsage.usage.Total)
+	initializeFileSystemUtilizationDataPoint(ddps.At(startIdx+0), deviceUsage.deviceName, usedLabelValue, float64(deviceUsage.usage.Used)/total*100)
+	initializeFileSystemUtilizationDataPoint(ddps.At(startIdx+1), deviceUsage.deviceName, freeLabelValue, float64(deviceUsage.usage.Free)/total*100)
+}
+
 const systemSpecificMetricsLen = 0
 
 func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, deviceUsages []*deviceUsage) {

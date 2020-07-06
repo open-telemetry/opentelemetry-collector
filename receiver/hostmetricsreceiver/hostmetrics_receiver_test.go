@@ -48,6 +48,7 @@ var standardMetrics = []string{
 	"system.disk.ops",
 	"system.disk.time",
 	"system.filesystem.usage",
+	"system.filesystem.utilization",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
 	"system.cpu.load_average.15m",
@@ -67,11 +68,11 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"solaris": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"linux":   {"system.disk.merged", "system.filesystem.inodes.usage", "system.filesystem.inodes.utilization", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.filesystem.inodes.utilization", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.filesystem.inodes.utilization", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.filesystem.inodes.utilization", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"solaris": {"system.filesystem.inodes.usage", "system.filesystem.inodes.utilization", "system.swap.page_faults"},
 }
 
 var factories = map[string]internal.ScraperFactory{

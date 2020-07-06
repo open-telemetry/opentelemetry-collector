@@ -45,12 +45,32 @@ var fileSystemUsageDescriptor = func() pdata.MetricDescriptor {
 	return descriptor
 }()
 
+var fileSystemUtilizationDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.filesystem.utilization")
+	descriptor.SetDescription("Filesystem utilization.")
+	descriptor.SetUnit("%")
+	descriptor.SetType(pdata.MetricTypeDouble)
+	return descriptor
+}()
+
 var fileSystemINodesUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.filesystem.inodes.usage")
-	descriptor.SetDescription("FileSystem operations count.")
+	descriptor.SetDescription("FileSystem inodes used.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeInt64)
+	return descriptor
+}()
+
+var fileSystemINodesUtilizationDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.filesystem.inodes.utilization")
+	descriptor.SetDescription("Filesystem inodes utilization.")
+	descriptor.SetUnit("%")
+	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
 }()

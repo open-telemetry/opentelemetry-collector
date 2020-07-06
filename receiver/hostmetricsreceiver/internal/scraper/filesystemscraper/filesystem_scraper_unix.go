@@ -28,17 +28,45 @@ func appendFileSystemUsageStateDataPoints(idps pdata.Int64DataPointSlice, startI
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+2), deviceUsage.deviceName, reservedLabelValue, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
 }
 
-const systemSpecificMetricsLen = 1
+func appendFileSystemUtilizationStateDataPoints(ddps pdata.DoubleDataPointSlice, startIdx int, deviceUsage *deviceUsage) {
+	total := float64(deviceUsage.usage.Total)
+	initializeFileSystemUtilizationDataPoint(ddps.At(startIdx+0), deviceUsage.deviceName, usedLabelValue, float64(deviceUsage.usage.Used)/total)
+	initializeFileSystemUtilizationDataPoint(ddps.At(startIdx+1), deviceUsage.deviceName, freeLabelValue, float64(deviceUsage.usage.Free)/total)
+	initializeFileSystemUtilizationDataPoint(ddps.At(startIdx+2), deviceUsage.deviceName, reservedLabelValue, float64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free)/total)
+}
+
+const systemSpecificMetricsLen = 2
 
 func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, deviceUsages []*deviceUsage) {
-	metric := metrics.At(startIdx)
+	initializeFileSystemINodesUsageMetric(metrics.At(startIdx+0), deviceUsages)
+	initializeFileSystemINodesUtilizationMetric(metrics.At(startIdx+1), deviceUsages)
+}
+
+func initializeFileSystemINodesUsageMetric(metric pdata.Metric, deviceUsages []*deviceUsage) {
 	fileSystemINodesUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2 * len(deviceUsages))
-	for idx, deviceUsage := range deviceUsages {
-		startIndex := 2 * idx
-		initializeFileSystemUsageDataPoint(idps.At(startIndex+0), deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.InodesUsed))
-		initializeFileSystemUsageDataPoint(idps.At(startIndex+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.InodesFree))
+
+	idx := 0
+	for _, deviceUsage := range deviceUsages {
+		initializeFileSystemUsageDataPoint(idps.At(idx+0), deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.InodesUsed))
+		initializeFileSystemUsageDataPoint(idps.At(idx+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.InodesFree))
+		idx += 2
+	}
+}
+
+func initializeFileSystemINodesUtilizationMetric(metric pdata.Metric, deviceUsages []*deviceUsage) {
+	fileSystemINodesUtilizationDescriptor.CopyTo(metric.MetricDescriptor())
+
+	ddps := metric.DoubleDataPoints()
+	ddps.Resize(2 * len(deviceUsages))
+
+	idx := 0
+	for _, deviceUsage := range deviceUsages {
+		total := float64(deviceUsage.usage.InodesTotal)
+		initializeFileSystemUtilizationDataPoint(ddps.At(idx+0), deviceUsage.deviceName, usedLabelValue, float64(deviceUsage.usage.InodesUsed)/total*100)
+		initializeFileSystemUtilizationDataPoint(ddps.At(idx+1), deviceUsage.deviceName, freeLabelValue, float64(deviceUsage.usage.InodesFree)/total*100)
+		idx += 2
 	}
 }
