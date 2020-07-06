@@ -36,7 +36,6 @@ func TestLoadConfig(t *testing.T) {
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "tail_sampling_config.yaml"), factories)
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
-
 	assert.Equal(t, cfg.Processors["tail_sampling"],
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
