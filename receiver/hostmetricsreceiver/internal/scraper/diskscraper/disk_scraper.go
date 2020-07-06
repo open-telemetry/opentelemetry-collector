@@ -28,11 +28,14 @@ import (
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
+
+	// for mocking gopsutil disk.IOCounters
+	ioCounters func(names ...string) (map[string]disk.IOCountersStat, error)
 }
 
 // newDiskScraper creates a Disk Scraper
 func newDiskScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, ioCounters: disk.IOCounters}
 }
 
 // Initialize
@@ -55,19 +58,20 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	ioCounters, err := disk.IOCounters()
+	ioCounters, err := s.ioCounters()
 	if err != nil {
 		return metrics, err
 	}
 
-	metrics.Resize(3)
-	initializeDiskIOMetric(metrics.At(0), ioCounters, s.startTime)
-	initializeDiskOpsMetric(metrics.At(1), ioCounters, s.startTime)
-	initializeDiskTimeMetric(metrics.At(2), ioCounters, s.startTime)
+	metrics.Resize(3 + systemSpecificMetricsLen)
+	initializeDiskIOMetric(metrics.At(0), s.startTime, ioCounters)
+	initializeDiskOpsMetric(metrics.At(1), s.startTime, ioCounters)
+	initializeDiskTimeMetric(metrics.At(2), s.startTime, ioCounters)
+	appendSystemSpecificMetrics(metrics, 3, s.startTime, ioCounters)
 	return metrics, nil
 }
 
-func initializeDiskIOMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
+func initializeDiskIOMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 	diskIODescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
@@ -81,7 +85,7 @@ func initializeDiskIOMetric(metric pdata.Metric, ioCounters map[string]disk.IOCo
 	}
 }
 
-func initializeDiskOpsMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
+func initializeDiskOpsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 	diskOpsDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
@@ -95,7 +99,7 @@ func initializeDiskOpsMetric(metric pdata.Metric, ioCounters map[string]disk.IOC
 	}
 }
 
-func initializeDiskTimeMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
+func initializeDiskTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 	diskTimeDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()

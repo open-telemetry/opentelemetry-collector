@@ -63,3 +63,13 @@ var diskTimeDescriptor = func() pdata.MetricDescriptor {
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
 }()
+
+var diskMergedDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.disk.merged")
+	descriptor.SetDescription("The number of disk reads merged into single physical disk access operations.")
+	descriptor.SetUnit("1")
+	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	return descriptor
+}()

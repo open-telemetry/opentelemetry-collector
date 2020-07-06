@@ -16,8 +16,11 @@ package diskscraper
 
 import (
 	"context"
+	"errors"
+	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -25,35 +28,58 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, pdata.MetricSlice)
-
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
-		// expect 3 metrics
-		assert.Equal(t, 3, metrics.Len())
+	type testCase struct {
+		name           string
+		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
+		expectedErr    string
+	}
 
-		// for each disk metric, expect a read & write datapoint for at least one drive
-		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(0), diskIODescriptor)
-		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(1), diskOpsDescriptor)
-		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(2), diskTimeDescriptor)
-	})
+	testCases := []testCase{
+		{
+			name: "Standard",
+		},
+		{
+			name:           "Error",
+			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
+			expectedErr:    "err1",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper := newDiskScraper(context.Background(), &Config{})
+			if test.ioCountersFunc != nil {
+				scraper.ioCounters = test.ioCountersFunc
+			}
+
+			err := scraper.Initialize(context.Background())
+			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			metrics, err := scraper.ScrapeMetrics(context.Background())
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			assert.GreaterOrEqual(t, metrics.Len(), 3)
+
+			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor)
+			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor)
+			assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor)
+
+			if runtime.GOOS == "Linux" {
+				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor)
+			}
+		})
+	}
 }
 
-func assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor) {
+func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
-}
-
-func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := newDiskScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-	assertFn(t, metrics)
 }
