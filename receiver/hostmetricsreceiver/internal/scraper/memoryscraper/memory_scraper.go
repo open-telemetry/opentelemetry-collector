@@ -26,11 +26,14 @@ import (
 // scraper for Memory Metrics
 type scraper struct {
 	config *Config
+
+	// for mocking gopsutil mem.VirtualMemory
+	virtualMemory func() (*mem.VirtualMemoryStat, error)
 }
 
 // newMemoryScraper creates a Memory Scraper
 func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory}
 }
 
 // Initialize
@@ -47,13 +50,14 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	memInfo, err := mem.VirtualMemory()
+	memInfo, err := s.virtualMemory()
 	if err != nil {
 		return metrics, err
 	}
 
-	metrics.Resize(1)
+	metrics.Resize(2)
 	initializeMemoryUsageMetric(metrics.At(0), memInfo)
+	initializeMemoryUtilizationMetric(metrics.At(1), memInfo)
 	return metrics, nil
 }
 
@@ -66,6 +70,21 @@ func initializeMemoryUsageMetric(metric pdata.Metric, memInfo *mem.VirtualMemory
 }
 
 func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, stateLabel string, value int64) {
+	labelsMap := dataPoint.LabelsMap()
+	labelsMap.Insert(stateLabelName, stateLabel)
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
+
+func initializeMemoryUtilizationMetric(metric pdata.Metric, memInfo *mem.VirtualMemoryStat) {
+	memoryUtilizationDescriptor.CopyTo(metric.MetricDescriptor())
+
+	ddps := metric.DoubleDataPoints()
+	ddps.Resize(memStatesLen)
+	appendMemoryUtilizationStateDataPoints(ddps, memInfo)
+}
+
+func initializeMemoryUtilizationDataPoint(dataPoint pdata.DoubleDataPoint, stateLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))

@@ -32,3 +32,13 @@ func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *m
 	initializeMemoryUsageDataPoint(idps.At(4), slabReclaimableStateLabelValue, int64(memInfo.SReclaimable))
 	initializeMemoryUsageDataPoint(idps.At(5), slabUnreclaimableStateLabelValue, int64(memInfo.SUnreclaim))
 }
+
+func appendMemoryUtilizationStateDataPoints(ddps pdata.DoubleDataPointSlice, memInfo *mem.VirtualMemoryStat) {
+	total := float64(memInfo.Total)
+	initializeMemoryUtilizationDataPoint(ddps.At(0), usedStateLabelValue, float64(memInfo.Used)/total*100)
+	initializeMemoryUtilizationDataPoint(ddps.At(1), freeStateLabelValue, float64(memInfo.Free)/total*100)
+	initializeMemoryUtilizationDataPoint(ddps.At(2), bufferedStateLabelValue, float64(memInfo.Buffers)/total*100)
+	initializeMemoryUtilizationDataPoint(ddps.At(3), cachedStateLabelValue, float64(memInfo.Cached)/total*100)
+	initializeMemoryUtilizationDataPoint(ddps.At(4), slabReclaimableStateLabelValue, float64(memInfo.SReclaimable)/total*100)
+	initializeMemoryUtilizationDataPoint(ddps.At(5), slabUnreclaimableStateLabelValue, float64(memInfo.SUnreclaim)/total*100)
+}

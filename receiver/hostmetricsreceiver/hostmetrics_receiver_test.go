@@ -44,6 +44,7 @@ import (
 var standardMetrics = []string{
 	"system.cpu.time",
 	"system.memory.usage",
+	"system.memory.utilization",
 	"system.disk.io",
 	"system.disk.ops",
 	"system.disk.time",

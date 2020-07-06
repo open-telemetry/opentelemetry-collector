@@ -39,8 +39,18 @@ var memoryUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.memory.usage")
-	descriptor.SetDescription("Bytes of memory in use.")
+	descriptor.SetDescription("Bytes of memory in use broken down by different states.")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeInt64)
+	return descriptor
+}()
+
+var memoryUtilizationDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.memory.utilization")
+	descriptor.SetDescription("Memory utilization broken down by different states.")
+	descriptor.SetUnit("%")
+	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
 }()

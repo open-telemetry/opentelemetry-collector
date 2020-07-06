@@ -22,11 +22,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const availableStateLabelValue = "available"
-
 const memStatesLen = 2
 
 func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
 	initializeMemoryUsageDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.At(1), availableStateLabelValue, int64(memInfo.Available))
+	initializeMemoryUsageDataPoint(idps.At(1), freeStateLabelValue, int64(memInfo.Available))
+}
+
+func appendMemoryUtilizationStateDataPoints(ddps pdata.DoubleDataPointSlice, memInfo *mem.VirtualMemoryStat) {
+	total := float64(memInfo.Total)
+	initializeMemoryUtilizationDataPoint(ddps.At(0), usedStateLabelValue, float64(memInfo.Used)/total*100)
+	initializeMemoryUtilizationDataPoint(ddps.At(1), freeStateLabelValue, float64(memInfo.Available)/total*100)
 }
