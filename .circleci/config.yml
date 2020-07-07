@@ -84,7 +84,7 @@ workflows:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - cross-compile:
           requires:
-            - build
+            - setup-and-lint
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -112,6 +112,12 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - publish-stable:
           requires:
             - cross-compile
@@ -120,6 +126,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
           filters:
             branches:
               ignore: /.*/
@@ -133,6 +140,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
           filters:
             branches:
               only: master
@@ -305,3 +313,24 @@ jobs:
             popd
             export NODE_PATH=$HOME/node_modules
             bash .circleci/check-links/check-links.sh
+
+  windows-msi:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install Wix Toolset
+          command: .\packaging\msi\make.ps1 Install-Tools
+      - run:
+          name: Build MSI
+          command: |
+            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+            .\packaging\msi\make.ps1 New-MSI -Version $Version
+      - run:
+          name: Validate MSI
+          command: .\packaging\msi\make.ps1 Confirm-MSI
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
