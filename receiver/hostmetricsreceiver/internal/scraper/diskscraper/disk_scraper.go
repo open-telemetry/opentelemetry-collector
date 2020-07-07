@@ -65,14 +65,14 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	}
 
 	metrics.Resize(3)
-	initializeMetricDiskBytes(metrics.At(0), ioCounters, s.startTime)
-	initializeMetricDiskOps(metrics.At(1), ioCounters, s.startTime)
-	initializeMetricDiskTime(metrics.At(2), ioCounters, s.startTime)
+	initializeDiskIOMetric(metrics.At(0), ioCounters, s.startTime)
+	initializeDiskOpsMetric(metrics.At(1), ioCounters, s.startTime)
+	initializeDiskTimeMetric(metrics.At(2), ioCounters, s.startTime)
 	return metrics, nil
 }
 
-func initializeMetricDiskBytes(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
-	metricDiskBytesDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeDiskIOMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
+	diskIODescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2 * len(ioCounters))
@@ -85,8 +85,8 @@ func initializeMetricDiskBytes(metric pdata.Metric, ioCounters map[string]disk.I
 	}
 }
 
-func initializeMetricDiskOps(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
-	metricDiskOpsDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeDiskOpsMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
+	diskOpsDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2 * len(ioCounters))
@@ -99,8 +99,8 @@ func initializeMetricDiskOps(metric pdata.Metric, ioCounters map[string]disk.IOC
 	}
 }
 
-func initializeMetricDiskTime(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
-	metricDiskTimeDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeDiskTimeMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat, startTime pdata.TimestampUnixNano) {
+	diskTimeDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2 * len(ioCounters))

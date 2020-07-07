@@ -34,14 +34,14 @@ func TestScrapeMetrics_MinimalData(t *testing.T) {
 		assert.Equal(t, 1, metrics.Len())
 
 		// for cpu seconds metric, expect a datapoint for each state label, including at least 4 standard states
-		hostCPUTimeMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostCPUTimeMetric.DoubleDataPoints().Len(), 4)
-		internal.AssertDoubleMetricLabelDoesNotExist(t, hostCPUTimeMetric, 0, cpuLabelName)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 0, stateLabelName, userStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 1, stateLabelName, systemStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 2, stateLabelName, idleStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 3, stateLabelName, interruptStateLabelValue)
+		cpuTimeMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric.MetricDescriptor())
+		assert.GreaterOrEqual(t, cpuTimeMetric.DoubleDataPoints().Len(), 4)
+		internal.AssertDoubleMetricLabelDoesNotExist(t, cpuTimeMetric, 0, cpuLabelName)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, idleStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 3, stateLabelName, interruptStateLabelValue)
 	})
 }
 
@@ -55,14 +55,14 @@ func TestScrapeMetrics_AllData(t *testing.T) {
 		assert.Equal(t, 1, metrics.Len())
 
 		// for cpu seconds metric, expect a datapoint for each state label & core combination with at least 4 standard states
-		hostCPUTimeMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostCPUTimeMetric.DoubleDataPoints().Len(), runtime.NumCPU()*4)
-		internal.AssertDoubleMetricLabelExists(t, hostCPUTimeMetric, 0, cpuLabelName)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 0, stateLabelName, userStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 1, stateLabelName, systemStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 2, stateLabelName, idleStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 3, stateLabelName, interruptStateLabelValue)
+		cpuTimeMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric.MetricDescriptor())
+		assert.GreaterOrEqual(t, cpuTimeMetric.DoubleDataPoints().Len(), runtime.NumCPU()*4)
+		internal.AssertDoubleMetricLabelExists(t, cpuTimeMetric, 0, cpuLabelName)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, idleStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 3, stateLabelName, interruptStateLabelValue)
 	})
 }
 
@@ -73,18 +73,18 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 
 	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
 		// for cpu seconds metric, expect a datapoint for all 8 state labels
-		hostCPUTimeMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricCPUSecondsDescriptor, hostCPUTimeMetric.MetricDescriptor())
-		assert.Equal(t, 8, hostCPUTimeMetric.DoubleDataPoints().Len())
-		internal.AssertDoubleMetricLabelDoesNotExist(t, hostCPUTimeMetric, 0, cpuLabelName)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 0, stateLabelName, userStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 1, stateLabelName, systemStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 2, stateLabelName, idleStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 3, stateLabelName, interruptStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 4, stateLabelName, niceStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 5, stateLabelName, softIRQStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 6, stateLabelName, stealStateLabelValue)
-		internal.AssertDoubleMetricLabelHasValue(t, hostCPUTimeMetric, 7, stateLabelName, waitStateLabelValue)
+		cpuTimeMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric.MetricDescriptor())
+		assert.Equal(t, 8, cpuTimeMetric.DoubleDataPoints().Len())
+		internal.AssertDoubleMetricLabelDoesNotExist(t, cpuTimeMetric, 0, cpuLabelName)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, idleStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 3, stateLabelName, interruptStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 4, stateLabelName, niceStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 5, stateLabelName, softIRQStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 6, stateLabelName, stealStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 7, stateLabelName, waitStateLabelValue)
 	})
 }
 

@@ -33,16 +33,16 @@ func TestScrapeMetrics(t *testing.T) {
 		assert.Equal(t, 5, metrics.Len())
 
 		// for network packets, dropped packets, errors, & bytes metrics, expect a transmit & receive datapoint
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(0), metricNetworkPacketsDescriptor)
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(1), metricNetworkDroppedPacketsDescriptor)
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(2), metricNetworkErrorsDescriptor)
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(3), metricNetworkBytesDescriptor)
+		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(0), networkPacketsDescriptor)
+		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(1), networkDroppedPacketsDescriptor)
+		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(2), networkErrorsDescriptor)
+		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(3), networkIODescriptor)
 
 		// for tcp connections metric, expect at least one datapoint with a state label
-		hostNetworkTCPConnectionsMetric := metrics.At(4)
-		internal.AssertDescriptorEqual(t, metricNetworkTCPConnectionDescriptor, hostNetworkTCPConnectionsMetric.MetricDescriptor())
-		internal.AssertInt64MetricLabelExists(t, hostNetworkTCPConnectionsMetric, 0, stateLabelName)
-		assert.GreaterOrEqual(t, hostNetworkTCPConnectionsMetric.Int64DataPoints().Len(), 1)
+		networkTCPConnectionsMetric := metrics.At(4)
+		internal.AssertDescriptorEqual(t, networkTCPConnectionsDescriptor, networkTCPConnectionsMetric.MetricDescriptor())
+		internal.AssertInt64MetricLabelExists(t, networkTCPConnectionsMetric, 0, stateLabelName)
+		assert.GreaterOrEqual(t, networkTCPConnectionsMetric.Int64DataPoints().Len(), 1)
 	})
 }
 

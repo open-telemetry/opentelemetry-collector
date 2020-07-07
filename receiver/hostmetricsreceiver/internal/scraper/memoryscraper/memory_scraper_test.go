@@ -34,10 +34,10 @@ func TestScrapeMetrics(t *testing.T) {
 		assert.Equal(t, 1, metrics.Len())
 
 		// for memory used metric, expect a datapoint for each state label, including at least 2 states, one of which is 'Used'
-		hostMemoryUsedMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricMemoryUsedDescriptor, hostMemoryUsedMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostMemoryUsedMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 0, stateLabelName, usedStateLabelValue)
+		memoryUsageMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
+		assert.GreaterOrEqual(t, memoryUsageMetric.Int64DataPoints().Len(), 2)
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 0, stateLabelName, usedStateLabelValue)
 	})
 }
 
@@ -51,15 +51,15 @@ func TestScrapeMetrics_Linux(t *testing.T) {
 		assert.Equal(t, 1, metrics.Len())
 
 		// for memory used metric, expect a datapoint for all 6 state labels
-		hostMemoryUsedMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricMemoryUsedDescriptor, hostMemoryUsedMetric.MetricDescriptor())
-		assert.Equal(t, 6, hostMemoryUsedMetric.Int64DataPoints().Len())
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 0, stateLabelName, usedStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 1, stateLabelName, freeStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 2, stateLabelName, bufferedStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 3, stateLabelName, cachedStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 4, stateLabelName, slabReclaimableStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostMemoryUsedMetric, 5, stateLabelName, slabUnreclaimableStateLabelValue)
+		memoryUsageMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
+		assert.Equal(t, 6, memoryUsageMetric.Int64DataPoints().Len())
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 0, stateLabelName, usedStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 1, stateLabelName, freeStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 2, stateLabelName, bufferedStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 3, stateLabelName, cachedStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 4, stateLabelName, slabReclaimableStateLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 5, stateLabelName, slabUnreclaimableStateLabelValue)
 	})
 }
 

@@ -46,7 +46,7 @@ func TestScrapeMetrics(t *testing.T) {
 }
 
 func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, metricSwapUsageDescriptor, hostSwapUsageMetric.MetricDescriptor())
+	internal.AssertDescriptorEqual(t, swapUsageDescriptor, hostSwapUsageMetric.MetricDescriptor())
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
 	if hostSwapUsageMetric.Int64DataPoints().Len() == 0 {
@@ -75,7 +75,7 @@ func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) 
 }
 
 func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, metricPagingDescriptor, pagingMetric.MetricDescriptor())
+	internal.AssertDescriptorEqual(t, swapPagingDescriptor, pagingMetric.MetricDescriptor())
 
 	// expect an in & out datapoint, for both major and minor paging types (windows does not currently support minor paging data)
 	expectedDataPoints := 4
@@ -98,7 +98,7 @@ func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric) {
 
 func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric) {
 	// expect a single datapoint for the page faults metric with minor type
-	internal.AssertDescriptorEqual(t, metricPageFaultsDescriptor, pageFaultsMetric.MetricDescriptor())
+	internal.AssertDescriptorEqual(t, swapPageFaultsDescriptor, pageFaultsMetric.MetricDescriptor())
 	assert.Equal(t, 1, pageFaultsMetric.Int64DataPoints().Len())
 	internal.AssertInt64MetricLabelHasValue(t, pageFaultsMetric, 0, typeLabelName, minorTypeLabelValue)
 }

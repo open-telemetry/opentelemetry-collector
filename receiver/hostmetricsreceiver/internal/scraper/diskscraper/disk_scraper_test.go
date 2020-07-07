@@ -33,9 +33,9 @@ func TestScrapeMetrics(t *testing.T) {
 		assert.Equal(t, 3, metrics.Len())
 
 		// for each disk metric, expect a read & write datapoint for at least one drive
-		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(0), metricDiskBytesDescriptor)
-		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(1), metricDiskOpsDescriptor)
-		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(2), metricDiskTimeDescriptor)
+		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(0), diskIODescriptor)
+		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(1), diskOpsDescriptor)
+		assertDiskMetricMatchesDescriptorAndHasReadAndWriteDataPoints(t, metrics.At(2), diskTimeDescriptor)
 	})
 }
 

@@ -34,15 +34,15 @@ func TestScrapeMetrics(t *testing.T) {
 		assert.GreaterOrEqual(t, metrics.Len(), 1)
 
 		// for filesystem used metric, expect a used & free datapoint for at least one drive
-		hostFileSystemUsedMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricFilesystemUsedDescriptor, hostFileSystemUsedMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostFileSystemUsedMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemUsedMetric, 0, stateLabelName, usedLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemUsedMetric, 1, stateLabelName, freeLabelValue)
+		fileSystemUsageMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, fileSystemUsageDescriptor, fileSystemUsageMetric.MetricDescriptor())
+		assert.GreaterOrEqual(t, fileSystemUsageMetric.Int64DataPoints().Len(), 2)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemUsageMetric, 0, stateLabelName, usedLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemUsageMetric, 1, stateLabelName, freeLabelValue)
 	})
 }
 
-func TestScrapeMetrics_Unux(t *testing.T) {
+func TestScrapeMetrics_Unix(t *testing.T) {
 	if !isUnix() {
 		return
 	}
@@ -52,19 +52,19 @@ func TestScrapeMetrics_Unux(t *testing.T) {
 		assert.Equal(t, 2, metrics.Len())
 
 		// for filesystem used metric, expect a used, free & reserved datapoint for at least one drive
-		hostFileSystemUsedMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, metricFilesystemUsedDescriptor, hostFileSystemUsedMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostFileSystemUsedMetric.Int64DataPoints().Len(), 3)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemUsedMetric, 0, stateLabelName, usedLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemUsedMetric, 1, stateLabelName, freeLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemUsedMetric, 2, stateLabelName, reservedLabelValue)
+		fileSystemUsageMetric := metrics.At(0)
+		internal.AssertDescriptorEqual(t, fileSystemUsageDescriptor, fileSystemUsageMetric.MetricDescriptor())
+		assert.GreaterOrEqual(t, fileSystemUsageMetric.Int64DataPoints().Len(), 3)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemUsageMetric, 0, stateLabelName, usedLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemUsageMetric, 1, stateLabelName, freeLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemUsageMetric, 2, stateLabelName, reservedLabelValue)
 
 		// for filesystem inodes used metric, expect a used, free & reserved datapoint for at least one drive
-		hostFileSystemINodesUsedMetric := metrics.At(1)
-		internal.AssertDescriptorEqual(t, metricFilesystemINodesUsedDescriptor, hostFileSystemINodesUsedMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, hostFileSystemINodesUsedMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemINodesUsedMetric, 0, stateLabelName, usedLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, hostFileSystemINodesUsedMetric, 1, stateLabelName, freeLabelValue)
+		fileSystemINodesUsageMetric := metrics.At(1)
+		internal.AssertDescriptorEqual(t, fileSystemINodesUsageDescriptor, fileSystemINodesUsageMetric.MetricDescriptor())
+		assert.GreaterOrEqual(t, fileSystemINodesUsageMetric.Int64DataPoints().Len(), 2)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemINodesUsageMetric, 0, stateLabelName, usedLabelValue)
+		internal.AssertInt64MetricLabelHasValue(t, fileSystemINodesUsageMetric, 1, stateLabelName, freeLabelValue)
 	})
 }
 

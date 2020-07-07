@@ -57,19 +57,19 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	}
 
 	metrics.Resize(1)
-	initializeMetricMemoryUsed(metrics.At(0), memInfo)
+	initializeMemoryUsageMetric(metrics.At(0), memInfo)
 	return metrics, nil
 }
 
-func initializeMetricMemoryUsed(metric pdata.Metric, memInfo *mem.VirtualMemoryStat) {
-	metricMemoryUsedDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeMemoryUsageMetric(metric pdata.Metric, memInfo *mem.VirtualMemoryStat) {
+	memoryUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(memStatesLen)
-	appendMemoryUsedStates(idps, memInfo)
+	appendMemoryUsageStateDataPoints(idps, memInfo)
 }
 
-func initializeMemoryUsedDataPoint(dataPoint pdata.Int64DataPoint, stateLabel string, value int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))

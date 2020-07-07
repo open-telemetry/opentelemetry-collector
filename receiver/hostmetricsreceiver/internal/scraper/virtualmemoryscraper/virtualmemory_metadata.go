@@ -49,38 +49,32 @@ const (
 	minorTypeLabelValue = "minor"
 )
 
-var metricSwapUsageDescriptor = createMetricSwapUsageDescriptor()
-
-func createMetricSwapUsageDescriptor() pdata.MetricDescriptor {
+var swapUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/swap/usage")
+	descriptor.SetName("system.swap.usage")
 	descriptor.SetDescription("Swap (unix) or pagefile (windows) usage.")
 	descriptor.SetUnit("pages")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
-}
+}()
 
-var metricPagingDescriptor = createMetricPagingDescriptor()
-
-func createMetricPagingDescriptor() pdata.MetricDescriptor {
+var swapPagingDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/swap/paging")
+	descriptor.SetName("system.swap.paging_ops")
 	descriptor.SetDescription("The number of paging operations.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()
 
-var metricPageFaultsDescriptor = createMetricPageFaultsDescriptor()
-
-func createMetricPageFaultsDescriptor() pdata.MetricDescriptor {
+var swapPageFaultsDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/swap/page_faults")
+	descriptor.SetName("system.swap.page_faults")
 	descriptor.SetDescription("The number of page faults.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()
