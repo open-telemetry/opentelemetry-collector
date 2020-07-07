@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/observability"
 )
 
 const (
@@ -106,7 +105,7 @@ func EndTraceDataExportOp(
 	err error,
 ) {
 	if useLegacy {
-		observability.RecordMetricsForTraceExporter(
+		LegacyRecordMetricsForTraceExporter(
 			exporterCtx, numExportedSpans, numDroppedSpans)
 	}
 
@@ -141,7 +140,7 @@ func EndMetricsExportOp(
 	err error,
 ) {
 	if useLegacy {
-		observability.RecordMetricsForMetricsExporter(
+		LegacyRecordMetricsForMetricsExporter(
 			exporterCtx, numExportedTimeSeries, numDroppedTimeSeries)
 	}
 
@@ -175,7 +174,7 @@ func EndLogsExportOp(
 	err error,
 ) {
 	if useLegacy {
-		observability.RecordMetricsForLogsExporter(
+		LegacyRecordMetricsForLogsExporter(
 			exporterCtx, numExportedLogs, numDroppedLogs)
 	}
 
@@ -196,7 +195,7 @@ func ExporterContext(
 	exporter string,
 ) context.Context {
 	if useLegacy {
-		ctx = observability.ContextWithExporterName(ctx, exporter)
+		ctx = LegacyContextWithExporterName(ctx, exporter)
 	}
 
 	if useNew {

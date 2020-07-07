@@ -24,7 +24,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/observability"
 )
 
 const (
@@ -65,9 +64,7 @@ func setParentLink(parentCtx context.Context, childSpan *trace.Span) bool {
 
 // Configure is used to control the settings that will be used by the obsreport
 // package.
-func Configure(
-	generateLegacy, generateNew bool,
-) (views []*view.View) {
+func Configure(generateLegacy, generateNew bool) (views []*view.View) {
 
 	// TODO: expose some level control, similar to telemetry.Level
 
@@ -75,11 +72,11 @@ func Configure(
 	useNew = generateNew
 
 	if useLegacy {
-		views = append(views, observability.AllViews...)
+		views = append(views, LegacyAllViews...)
 	}
 
 	if useNew {
-		views = append(views, genAllViews()...)
+		views = append(views, AllViews()...)
 	}
 
 	return views
@@ -108,26 +105,29 @@ func buildComponentPrefix(componentPrefix, configType string) string {
 	return componentPrefix + configType + nameSep
 }
 
-func genAllViews() (views []*view.View) {
+// AllViews return the list of all views that needs to be configured.
+func AllViews() (views []*view.View) {
 	// Receiver views.
 	measures := []*stats.Int64Measure{
-		mReceiverAcceptedSpans, mReceiverRefusedSpans,
-		mReceiverAcceptedMetricPoints, mReceiverRefusedMetricPoints,
+		mReceiverAcceptedSpans,
+		mReceiverRefusedSpans,
+		mReceiverAcceptedMetricPoints,
+		mReceiverRefusedMetricPoints,
 	}
 	tagKeys := []tag.Key{
 		tagKeyReceiver, tagKeyTransport,
 	}
-	views = append(views, genViews(
-		measures, tagKeys, view.Sum())...)
+	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	// Exporter views.
 	measures = []*stats.Int64Measure{
-		mExporterSentSpans, mExporterFailedToSendSpans,
-		mExporterSentMetricPoints, mExporterFailedToSendMetricPoints,
+		mExporterSentSpans,
+		mExporterFailedToSendSpans,
+		mExporterSentMetricPoints,
+		mExporterFailedToSendMetricPoints,
 	}
 	tagKeys = []tag.Key{tagKeyExporter}
-	views = append(views, genViews(
-		measures, tagKeys, view.Sum())...)
+	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	// Processor views.
 	measures = []*stats.Int64Measure{
@@ -139,8 +139,7 @@ func genAllViews() (views []*view.View) {
 		mProcessorDroppedMetricPoints,
 	}
 	tagKeys = []tag.Key{tagKeyProcessor}
-	views = append(views, genViews(
-		measures, tagKeys, view.Sum())...)
+	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	return views
 }

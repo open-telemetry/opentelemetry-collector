@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/observability"
 )
 
 const (
@@ -160,7 +159,7 @@ func EndTraceDataReceiveOp(
 			numDroppedSpans = numReceivedSpans
 			numReceivedLegacy = 0
 		}
-		observability.RecordMetricsForTraceReceiver(
+		LegacyRecordMetricsForTraceReceiver(
 			receiverCtx, numReceivedLegacy, numDroppedSpans)
 	}
 
@@ -205,7 +204,7 @@ func EndMetricsReceiveOp(
 			numDroppedTimeSeries = numReceivedTimeSeries
 			numReceivedTimeSeries = 0
 		}
-		observability.RecordMetricsForMetricsReceiver(
+		LegacyRecordMetricsForMetricsReceiver(
 			receiverCtx, numReceivedTimeSeries, numDroppedTimeSeries)
 	}
 
@@ -233,7 +232,7 @@ func ReceiverContext(
 		if legacyName != "" {
 			name = legacyName
 		}
-		ctx = observability.ContextWithReceiverName(ctx, name)
+		ctx = LegacyContextWithReceiverName(ctx, name)
 	}
 
 	if useNew {

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreport
+// obsreport_test instead of just obsreport to avoid dependency cycle between
+// obsreport_test and obsreporttest
+package obsreport_test
 
 import (
 	"context"
@@ -29,8 +31,8 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 const (
@@ -80,14 +82,14 @@ func TestConfigure(t *testing.T) {
 			args: args{
 				generateLegacy: true,
 			},
-			wantViews: observability.AllViews,
+			wantViews: obsreport.LegacyAllViews,
 		},
 		{
 			name: "new_only",
 			args: args{
 				generateNew: true,
 			},
-			wantViews: genAllViews(),
+			wantViews: obsreport.AllViews(),
 		},
 		{
 			name: "new_only",
@@ -96,13 +98,13 @@ func TestConfigure(t *testing.T) {
 				generateLegacy: true,
 			},
 			wantViews: append(
-				observability.AllViews,
-				genAllViews()...),
+				obsreport.LegacyAllViews,
+				obsreport.AllViews()...),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotViews := Configure(tt.args.generateLegacy, tt.args.generateNew)
+			gotViews := obsreport.Configure(tt.args.generateLegacy, tt.args.generateNew)
 			assert.Equal(t, tt.wantViews, gotViews)
 		})
 	}
@@ -110,8 +112,8 @@ func TestConfigure(t *testing.T) {
 
 func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 	doneFn, err := setupViews()
-	defer doneFn()
 	require.NoError(t, err)
+	defer doneFn()
 
 	ss := &spanStore{}
 	trace.RegisterExporter(ss)
@@ -121,17 +123,17 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
+	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, legacyName)
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
 	}
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
-		ctx := StartTraceDataReceiveOp(receiverCtx, receiver, param.transport)
+		ctx := obsreport.StartTraceDataReceiveOp(receiverCtx, receiver, param.transport)
 		assert.NotNil(t, ctx)
 
-		EndTraceDataReceiveOp(
+		obsreport.EndTraceDataReceiveOp(
 			ctx,
 			format,
 			rcvdSpans[i],
@@ -143,32 +145,32 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 
 	var acceptedSpans, refusedSpans int
 	for i, span := range spans {
-		assert.Equal(t, receiverPrefix+receiver+receiveTraceDataOperationSuffix, span.Name)
+		assert.Equal(t, "receiver/"+receiver+"/TraceDataReceived", span.Name)
 		switch params[i].err {
 		case nil:
 			acceptedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[RefusedSpansKey])
-			assert.Equal(t, okStatus, span.Status)
+			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.AcceptedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedSpansKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			refusedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[AcceptedSpansKey])
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[RefusedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedSpansKey])
+			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.RefusedSpansKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 		switch params[i].transport {
 		case "":
-			assert.NotContains(t, span.Attributes, TransportKey)
+			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
 		default:
-			assert.Equal(t, params[i].transport, span.Attributes[TransportKey])
+			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
 		}
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, observabilitytest.CheckValueViewReceiverReceivedSpans(legacyName, acceptedSpans))
-	assert.NoError(t, observabilitytest.CheckValueViewReceiverDroppedSpans(legacyName, refusedSpans))
+	assert.NoError(t, obsreporttest.CheckValueViewReceiverReceivedSpans(legacyName, acceptedSpans))
+	assert.NoError(t, obsreporttest.CheckValueViewReceiverDroppedSpans(legacyName, refusedSpans))
 	// Check new metrics.
 	receiverTags := receiverViewTags(receiver, transport)
 	checkValueForSumView(t, "receiver/accepted_spans", receiverTags, acceptedSpans)
@@ -177,8 +179,8 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 
 func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	doneFn, err := setupViews()
-	defer doneFn()
 	require.NoError(t, err)
+	defer doneFn()
 
 	ss := &spanStore{}
 	trace.RegisterExporter(ss)
@@ -188,7 +190,7 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
+	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, legacyName)
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
@@ -196,10 +198,10 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	rcvdTimeSeries := []int{2, 3}
 	for i, param := range params {
-		ctx := StartMetricsReceiveOp(receiverCtx, receiver, param.transport)
+		ctx := obsreport.StartMetricsReceiveOp(receiverCtx, receiver, param.transport)
 		assert.NotNil(t, ctx)
 
-		EndMetricsReceiveOp(
+		obsreport.EndMetricsReceiveOp(
 			ctx,
 			format,
 			rcvdMetricPts[i],
@@ -213,34 +215,34 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	var receivedTimeSeries, droppedTimeSeries int
 	var acceptedMetricPoints, refusedMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, receiverPrefix+receiver+receiverMetricsOperationSuffix, span.Name)
+		assert.Equal(t, "receiver/"+receiver+"/MetricsReceived", span.Name)
 		switch params[i].err {
 		case nil:
 			receivedTimeSeries += rcvdTimeSeries[i]
 			acceptedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[AcceptedMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[RefusedMetricPointsKey])
-			assert.Equal(t, okStatus, span.Status)
+			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.AcceptedMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedMetricPointsKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			droppedTimeSeries += rcvdTimeSeries[i]
 			refusedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(0), span.Attributes[AcceptedMetricPointsKey])
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[RefusedMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedMetricPointsKey])
+			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.RefusedMetricPointsKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 		switch params[i].transport {
 		case "":
-			assert.NotContains(t, span.Attributes, TransportKey)
+			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
 		default:
-			assert.Equal(t, params[i].transport, span.Attributes[TransportKey])
+			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
 		}
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, observabilitytest.CheckValueViewReceiverReceivedTimeSeries(legacyName, receivedTimeSeries))
-	assert.NoError(t, observabilitytest.CheckValueViewReceiverDroppedTimeSeries(legacyName, droppedTimeSeries))
+	assert.NoError(t, obsreporttest.CheckValueViewReceiverReceivedTimeSeries(legacyName, receivedTimeSeries))
+	assert.NoError(t, obsreporttest.CheckValueViewReceiverDroppedTimeSeries(legacyName, droppedTimeSeries))
 	// Check new metrics.
 	receiverTags := receiverViewTags(receiver, transport)
 	checkValueForSumView(t, "receiver/accepted_metric_points", receiverTags, acceptedMetricPoints)
@@ -249,8 +251,8 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 
 func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	doneFn, err := setupViews()
-	defer doneFn()
 	require.NoError(t, err)
+	defer doneFn()
 
 	ss := &spanStore{}
 	trace.RegisterExporter(ss)
@@ -260,15 +262,15 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	// observabilitytest for exporters expects the context to flow the original
+	// obsreporttest for exporters expects the context to flow the original
 	// receiver tags, adding that to parent span.
-	parentCtx = observability.ContextWithReceiverName(parentCtx, receiver)
+	parentCtx = obsreport.LegacyContextWithReceiverName(parentCtx, receiver)
 
-	exporterCtx := ExporterContext(parentCtx, exporter)
+	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := StartTraceDataExportOp(exporterCtx, exporter)
+		ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
 
 		var numDroppedSpans int
@@ -276,7 +278,7 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 			numDroppedSpans = numExportedSpans[i]
 		}
 
-		EndTraceDataExportOp(ctx, numExportedSpans[i], numDroppedSpans, err)
+		obsreport.EndTraceDataExportOp(ctx, numExportedSpans[i], numDroppedSpans, err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -284,17 +286,17 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
-		assert.Equal(t, exporterPrefix+exporter+exportTraceDataOperationSuffix, span.Name)
+		assert.Equal(t, "exporter/"+exporter+"/TraceDataExported", span.Name)
 		switch errs[i] {
 		case nil:
 			sentSpans += numExportedSpans[i]
-			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[SentSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[FailedToSendSpansKey])
-			assert.Equal(t, okStatus, span.Status)
+			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[obsreport.SentSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.FailedToSendSpansKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			failedToSendSpans += numExportedSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[SentSpansKey])
-			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[FailedToSendSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.SentSpansKey])
+			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[obsreport.FailedToSendSpansKey])
 			assert.Equal(t, errs[i].Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected error: %v", errs[i])
@@ -302,8 +304,8 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, observabilitytest.CheckValueViewExporterReceivedSpans(receiver, exporter, sentSpans+failedToSendSpans))
-	assert.NoError(t, observabilitytest.CheckValueViewExporterDroppedSpans(receiver, exporter, failedToSendSpans))
+	assert.NoError(t, obsreporttest.CheckValueViewExporterReceivedSpans(receiver, exporter, sentSpans+failedToSendSpans))
+	assert.NoError(t, obsreporttest.CheckValueViewExporterDroppedSpans(receiver, exporter, failedToSendSpans))
 	// Check new metrics.
 	exporterTags := exporterViewTags(exporter)
 	checkValueForSumView(t, "exporter/sent_spans", exporterTags, sentSpans)
@@ -312,8 +314,8 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 
 func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	doneFn, err := setupViews()
-	defer doneFn()
 	require.NoError(t, err)
+	defer doneFn()
 
 	ss := &spanStore{}
 	trace.RegisterExporter(ss)
@@ -323,16 +325,16 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	// observabilitytest for exporters expects the context to flow the original
+	// obsreporttest for exporters expects the context to flow the original
 	// receiver tags, adding that to parent span.
-	parentCtx = observability.ContextWithReceiverName(parentCtx, receiver)
+	parentCtx = obsreport.LegacyContextWithReceiverName(parentCtx, receiver)
 
-	exporterCtx := ExporterContext(parentCtx, exporter)
+	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
 	toSendMetricPts := []int{17, 23}
 	toSendTimeSeries := []int{3, 5}
 	for i, err := range errs {
-		ctx := StartMetricsExportOp(exporterCtx, exporter)
+		ctx := obsreport.StartMetricsExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
 
 		var numDroppedTimeSeires int
@@ -340,7 +342,7 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 			numDroppedTimeSeires = toSendTimeSeries[i]
 		}
 
-		EndMetricsExportOp(
+		obsreport.EndMetricsExportOp(
 			ctx,
 			toSendMetricPts[i],
 			toSendTimeSeries[i],
@@ -354,19 +356,19 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	var receivedTimeSeries, droppedTimeSeries int
 	var sentPoints, failedToSendPoints int
 	for i, span := range spans {
-		assert.Equal(t, exporterPrefix+exporter+exportMetricsOperationSuffix, span.Name)
+		assert.Equal(t, "exporter/"+exporter+"/MetricsExported", span.Name)
 		receivedTimeSeries += toSendTimeSeries[i]
 		switch errs[i] {
 		case nil:
 			sentPoints += toSendMetricPts[i]
-			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[SentMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[FailedToSendMetricPointsKey])
-			assert.Equal(t, okStatus, span.Status)
+			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[obsreport.SentMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.FailedToSendMetricPointsKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			failedToSendPoints += toSendMetricPts[i]
 			droppedTimeSeries += toSendTimeSeries[i]
-			assert.Equal(t, int64(0), span.Attributes[SentMetricPointsKey])
-			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[FailedToSendMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.SentMetricPointsKey])
+			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[obsreport.FailedToSendMetricPointsKey])
 			assert.Equal(t, errs[i].Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected error: %v", errs[i])
@@ -374,8 +376,8 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, observabilitytest.CheckValueViewExporterReceivedTimeSeries(receiver, exporter, receivedTimeSeries))
-	assert.NoError(t, observabilitytest.CheckValueViewExporterDroppedTimeSeries(receiver, exporter, droppedTimeSeries))
+	assert.NoError(t, obsreporttest.CheckValueViewExporterReceivedTimeSeries(receiver, exporter, receivedTimeSeries))
+	assert.NoError(t, obsreporttest.CheckValueViewExporterDroppedTimeSeries(receiver, exporter, droppedTimeSeries))
 	// Check new metrics.
 	exporterTags := exporterViewTags(exporter)
 	checkValueForSumView(t, "exporter/sent_metric_points", exporterTags, sentPoints)
@@ -399,7 +401,7 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
 	defer parentSpan.End()
 
-	longLivedCtx := ReceiverContext(parentCtx, receiver, transport, legacyName)
+	longLivedCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, legacyName)
 	ops := []struct {
 		numSpans int
 		err      error
@@ -410,14 +412,14 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	for _, op := range ops {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		ctx := StartTraceDataReceiveOp(
+		ctx := obsreport.StartTraceDataReceiveOp(
 			longLivedCtx,
 			receiver,
 			transport,
-			WithLongLivedCtx())
+			obsreport.WithLongLivedCtx())
 		assert.NotNil(t, ctx)
 
-		EndTraceDataReceiveOp(
+		obsreport.EndTraceDataReceiveOp(
 			ctx,
 			format,
 			op.numSpans,
@@ -434,16 +436,16 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 		assert.Equal(t, trace.LinkTypeParent, link.Type)
 		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
 		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
-		assert.Equal(t, receiverPrefix+receiver+receiveTraceDataOperationSuffix, span.Name)
-		assert.Equal(t, transport, span.Attributes[TransportKey])
+		assert.Equal(t, "receiver/"+receiver+"/TraceDataReceived", span.Name)
+		assert.Equal(t, transport, span.Attributes[obsreport.TransportKey])
 		switch ops[i].err {
 		case nil:
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[RefusedSpansKey])
-			assert.Equal(t, okStatus, span.Status)
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.AcceptedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedSpansKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
-			assert.Equal(t, int64(0), span.Attributes[AcceptedSpansKey])
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[RefusedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedSpansKey])
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.RefusedSpansKey])
 			assert.Equal(t, ops[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected error: %v", ops[i].err)
@@ -453,18 +455,18 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 
 func Test_obsreport_ProcessorTraceData(t *testing.T) {
 	doneFn, err := setupViews()
-	defer doneFn()
 	require.NoError(t, err)
+	defer doneFn()
 
 	const acceptedSpans = 27
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	processorCtx := ProcessorContext(context.Background(), processor)
+	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
 
-	ProcessorTraceDataAccepted(processorCtx, acceptedSpans)
-	ProcessorTraceDataRefused(processorCtx, refusedSpans)
-	ProcessorTraceDataDropped(processorCtx, droppedSpans)
+	obsreport.ProcessorTraceDataAccepted(processorCtx, acceptedSpans)
+	obsreport.ProcessorTraceDataRefused(processorCtx, refusedSpans)
+	obsreport.ProcessorTraceDataDropped(processorCtx, droppedSpans)
 
 	processorTags := processorViewTags(processor)
 	checkValueForSumView(t, "processor/accepted_spans", processorTags, acceptedSpans)
@@ -474,17 +476,17 @@ func Test_obsreport_ProcessorTraceData(t *testing.T) {
 
 func Test_obsreport_ProcessorMetricsData(t *testing.T) {
 	doneFn, err := setupViews()
-	defer doneFn()
 	require.NoError(t, err)
+	defer doneFn()
 
 	const acceptedPoints = 29
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	processorCtx := ProcessorContext(context.Background(), processor)
-	ProcessorMetricsDataAccepted(processorCtx, acceptedPoints)
-	ProcessorMetricsDataRefused(processorCtx, refusedPoints)
-	ProcessorMetricsDataDropped(processorCtx, droppedPoints)
+	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
+	obsreport.ProcessorMetricsDataAccepted(processorCtx, acceptedPoints)
+	obsreport.ProcessorMetricsDataRefused(processorCtx, refusedPoints)
+	obsreport.ProcessorMetricsDataDropped(processorCtx, droppedPoints)
 
 	processorTags := processorViewTags(processor)
 	checkValueForSumView(t, "processor/accepted_metric_points", processorTags, acceptedPoints)
@@ -509,12 +511,6 @@ func Test_obsreport_ProcessorMetricViews(t *testing.T) {
 			Aggregation: view.Count(),
 		},
 	}
-
-	// Ensure that the settings for useLegace and useNew a restored.
-	defer func(prevUseLegacy, prevUseNew bool) {
-		useLegacy = prevUseLegacy
-		useNew = prevUseNew
-	}(useLegacy, useNew)
 
 	tests := []struct {
 		name       string
@@ -550,17 +546,14 @@ func Test_obsreport_ProcessorMetricViews(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			useLegacy = tt.withLegacy
-			useNew = tt.withNew
-			got := ProcessorMetricViews("test_type", legacyViews)
+			obsreport.Configure(tt.withLegacy, tt.withNew)
+			got := obsreport.ProcessorMetricViews("test_type", legacyViews)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 func setupViews() (doneFn func(), err error) {
-	genLegacy := true
-	genNew := true
-	views := Configure(genLegacy, genNew)
+	views := obsreport.Configure(true, true)
 	err = view.Register(views...)
 
 	return func() {

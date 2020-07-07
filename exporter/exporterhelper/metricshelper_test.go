@@ -29,9 +29,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 const (
@@ -257,20 +256,20 @@ func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
 }
 
 func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, droppedTimeSeries int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	md := testdata.GenerateMetricDataTwoMetrics()
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
+	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, me.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*md.MetricCount())
+	err := obsreporttest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*md.MetricCount())
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
+	err = obsreporttest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 }
 
@@ -324,7 +323,7 @@ func newPushMetricsDataOld(droppedTimeSeries int, retError error) PushMetricsDat
 }
 
 func checkRecordedMetricsForMetricsExporterOld(t *testing.T, me component.MetricsExporterOld, wantError error, droppedTimeSeries int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 	metrics := []*metricspb.Metric{
 		{
@@ -335,16 +334,16 @@ func checkRecordedMetricsForMetricsExporterOld(t *testing.T, me component.Metric
 		},
 	}
 	md := consumerdata.MetricsData{Metrics: metrics}
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
+	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, me.ConsumeMetricsData(ctx, md))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*NumTimeSeries(md))
+	err := obsreporttest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*NumTimeSeries(md))
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
+	err = obsreporttest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 }
 

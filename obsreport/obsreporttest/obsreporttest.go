@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observabilitytest
+package obsreporttest
 
 import (
 	"fmt"
@@ -22,97 +22,97 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The returned function should be deferred.
 func SetupRecordedMetricsTest() (doneFn func()) {
 	// Register views
-	view.Register(observability.AllViews...)
+	view.Register(obsreport.LegacyAllViews...)
 
 	return func() {
-		view.Unregister(observability.AllViews...)
+		view.Unregister(obsreport.LegacyAllViews...)
 	}
 }
 
-// CheckValueViewExporterReceivedSpans checks that for the current exported value in the ViewExporterReceivedSpans
+// CheckValueViewExporterReceivedSpans checks that for the current exported value in the LegacyViewExporterReceivedSpans
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewExporterReceivedSpans(receiverName string, exporterTagName string, value int) error {
-	return checkValueForView(observability.ViewExporterReceivedSpans.Name,
+	return checkValueForView(obsreport.LegacyViewExporterReceivedSpans.Name,
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
-// CheckValueViewExporterDroppedSpans checks that for the current exported value in the ViewExporterDroppedSpans
+// CheckValueViewExporterDroppedSpans checks that for the current exported value in the LegacyViewExporterDroppedSpans
 // for {TagKeyReceiver: receiverName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewExporterDroppedSpans(receiverName string, exporterTagName string, value int) error {
-	return checkValueForView(observability.ViewExporterDroppedSpans.Name,
+	return checkValueForView(obsreport.LegacyViewExporterDroppedSpans.Name,
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
-// CheckValueViewExporterReceivedTimeSeries checks that for the current exported value in the ViewExporterReceivedTimeSeries
+// CheckValueViewExporterReceivedTimeSeries checks that for the current exported value in the LegacyViewExporterReceivedTimeSeries
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewExporterReceivedTimeSeries(receiverName string, exporterTagName string, value int) error {
-	return checkValueForView(observability.ViewExporterReceivedTimeSeries.Name,
+	return checkValueForView(obsreport.LegacyViewExporterReceivedTimeSeries.Name,
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
-// CheckValueViewExporterDroppedTimeSeries checks that for the current exported value in the ViewExporterDroppedTimeSeries
+// CheckValueViewExporterDroppedTimeSeries checks that for the current exported value in the LegacyViewExporterDroppedTimeSeries
 // for {TagKeyReceiver: receiverName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewExporterDroppedTimeSeries(receiverName string, exporterTagName string, value int) error {
-	return checkValueForView(observability.ViewExporterDroppedTimeSeries.Name,
+	return checkValueForView(obsreport.LegacyViewExporterDroppedTimeSeries.Name,
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
-// CheckValueViewExporterReceivedLogRecords checks that for the current exported value in the ViewExporterReceivedLogRecords
+// CheckValueViewExporterReceivedLogRecords checks that for the current exported value in the LegacyViewExporterReceivedLogRecords
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewExporterReceivedLogRecords(receiverName string, exporterTagName string, value int) error {
-	return checkValueForView(observability.ViewExporterReceivedLogRecords.Name,
+	return checkValueForView(obsreport.LegacyViewExporterReceivedLogRecords.Name,
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
-// CheckValueViewExporterDroppedLogRecords checks that for the current exported value in the ViewExporterDroppedLogRecords
+// CheckValueViewExporterDroppedLogRecords checks that for the current exported value in the LegacyViewExporterDroppedLogRecords
 // for {TagKeyReceiver: receiverName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewExporterDroppedLogRecords(receiverName string, exporterTagName string, value int) error {
-	return checkValueForView(observability.ViewExporterDroppedLogRecords.Name,
+	return checkValueForView(obsreport.LegacyViewExporterDroppedLogRecords.Name,
 		wantsTagsForExporterView(receiverName, exporterTagName), int64(value))
 }
 
-// CheckValueViewReceiverReceivedSpans checks that for the current exported value in the ViewReceiverReceivedSpans
+// CheckValueViewReceiverReceivedSpans checks that for the current exported value in the LegacyViewReceiverReceivedSpans
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewReceiverReceivedSpans(receiverName string, value int) error {
-	return checkValueForView(observability.ViewReceiverReceivedSpans.Name,
+	return checkValueForView(obsreport.LegacyViewReceiverReceivedSpans.Name,
 		wantsTagsForReceiverView(receiverName), int64(value))
 }
 
-// CheckValueViewReceiverDroppedSpans checks that for the current exported value in the ViewReceiverDroppedSpans
+// CheckValueViewReceiverDroppedSpans checks that for the current exported value in the LegacyViewReceiverDroppedSpans
 // for {TagKeyReceiver: receiverName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewReceiverDroppedSpans(receiverName string, value int) error {
-	return checkValueForView(observability.ViewReceiverDroppedSpans.Name,
+	return checkValueForView(obsreport.LegacyViewReceiverDroppedSpans.Name,
 		wantsTagsForReceiverView(receiverName), int64(value))
 }
 
-// CheckValueViewReceiverReceivedTimeSeries checks that for the current exported value in the ViewReceiverReceivedTimeSeries
+// CheckValueViewReceiverReceivedTimeSeries checks that for the current exported value in the LegacyViewReceiverReceivedTimeSeries
 // for {TagKeyReceiver: receiverName, TagKeyExporter: exporterTagName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewReceiverReceivedTimeSeries(receiverName string, value int) error {
-	return checkValueForView(observability.ViewReceiverReceivedTimeSeries.Name,
+	return checkValueForView(obsreport.LegacyViewReceiverReceivedTimeSeries.Name,
 		wantsTagsForReceiverView(receiverName), int64(value))
 }
 
-// CheckValueViewReceiverDroppedTimeSeries checks that for the current exported value in the ViewReceiverDroppedTimeSeries
+// CheckValueViewReceiverDroppedTimeSeries checks that for the current exported value in the LegacyViewReceiverDroppedTimeSeries
 // for {TagKeyReceiver: receiverName} is equal to "value".
 // In tests that this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckValueViewReceiverDroppedTimeSeries(receiverName string, value int) error {
-	return checkValueForView(observability.ViewReceiverDroppedTimeSeries.Name,
+	return checkValueForView(obsreport.LegacyViewReceiverDroppedTimeSeries.Name,
 		wantsTagsForReceiverView(receiverName), int64(value))
 }
 
@@ -142,14 +142,14 @@ func checkValueForView(vName string, wantTags []tag.Tag, value int64) error {
 
 func wantsTagsForExporterView(receiverName string, exporterTagName string) []tag.Tag {
 	return []tag.Tag{
-		{Key: observability.TagKeyReceiver, Value: receiverName},
-		{Key: observability.TagKeyExporter, Value: exporterTagName},
+		{Key: obsreport.TagKeyReceiver, Value: receiverName},
+		{Key: obsreport.TagKeyExporter, Value: exporterTagName},
 	}
 }
 
 func wantsTagsForReceiverView(receiverName string) []tag.Tag {
 	return []tag.Tag{
-		{Key: observability.TagKeyReceiver, Value: receiverName},
+		{Key: obsreport.TagKeyReceiver, Value: receiverName},
 	}
 }
 
