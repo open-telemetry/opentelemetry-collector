@@ -76,12 +76,6 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - build:
-          requires:
-            - setup-and-lint
-          filters:
-            tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - cross-compile:
           requires:
             - setup-and-lint
@@ -90,7 +84,7 @@ workflows:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - loadtest:
           requires:
-            - build
+            - cross-compile
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -172,17 +166,6 @@ jobs:
       - run:
           name: Lint
           command: make -j4 checklicense impi lint misspell
-
-  build:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Build collector for linux_amd64
-          command: make binaries
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
 
   cross-compile:
     executor: golang
