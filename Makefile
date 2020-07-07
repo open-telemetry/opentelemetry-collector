@@ -204,6 +204,11 @@ binaries-linux_arm64:
 binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) binaries
 
+.PHONY: deb-rpm-package
+%-package: binaries-linux_amd64
+	docker build -t otelcol-$*-packager packaging/$*
+	docker run --rm -v $(CURDIR):/repo -e VERSION=$(VERSION) otelcol-$*-packager
+
 # Definitions for ProtoBuf generation.
 
 # The source directory for OTLP ProtoBufs.
