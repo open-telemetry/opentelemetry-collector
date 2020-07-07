@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -46,10 +45,7 @@ func (s *scraper) Close(ctx context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
-	_, span := trace.StartSpan(ctx, "loadscraper.ScrapeMetrics")
-	defer span.End()
-
+func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	avgLoadValues, err := getSampledLoadAverages()

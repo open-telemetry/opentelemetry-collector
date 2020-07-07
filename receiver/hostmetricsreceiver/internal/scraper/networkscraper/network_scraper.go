@@ -21,7 +21,6 @@ import (
 
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/net"
-	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -55,10 +54,7 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
-	_, span := trace.StartSpan(ctx, "networkscraper.ScrapeMetrics")
-	defer span.End()
-
+func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	var errors []error
@@ -82,9 +78,7 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 
 func scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
 	// get total stats only
-	perNetworkInterfaceController := false
-
-	networkStatsSlice, err := net.IOCounters(perNetworkInterfaceController)
+	networkStatsSlice, err := net.IOCounters( /*perNetworkInterfaceController=*/ false)
 	if err != nil {
 		return err
 	}
