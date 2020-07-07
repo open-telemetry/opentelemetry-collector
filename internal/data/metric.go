@@ -88,6 +88,18 @@ func (md MetricData) MetricCount() int {
 	return metricCount
 }
 
+// Size returns size in bytes.
+func (md MetricData) Size() int {
+	size := 0
+	for i := 0; i < len(*md.orig); i++ {
+		if (*md.orig)[i] == nil {
+			continue
+		}
+		size += (*(*md.orig)[i]).Size()
+	}
+	return size
+}
+
 // MetricAndDataPointCount calculates the total number of metrics and data points.
 func (md MetricData) MetricAndDataPointCount() (metricCount int, dataPointCount int) {
 	rms := md.ResourceMetrics()
