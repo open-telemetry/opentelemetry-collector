@@ -305,15 +305,15 @@ jobs:
       - attach_to_workspace
       - run:
           name: Install Wix Toolset
-          command: .\packaging\msi\make.ps1 Install-Tools
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
       - run:
           name: Build MSI
           command: |
             $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
-            .\packaging\msi\make.ps1 New-MSI -Version $Version
+            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
       - run:
           name: Validate MSI
-          command: .\packaging\msi\make.ps1 Confirm-MSI
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - persist_to_workspace:
           root: ~/
           paths: project/bin
