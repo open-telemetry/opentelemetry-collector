@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
@@ -66,10 +67,10 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.filesystem.inodes.usage", "system.swap.page_faults"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.swap.page_faults"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"linux":   {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
 	"solaris": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
 }
 
@@ -80,6 +81,7 @@ var factories = map[string]internal.ScraperFactory{
 	loadscraper.TypeStr:          &loadscraper.Factory{},
 	memoryscraper.TypeStr:        &memoryscraper.Factory{},
 	networkscraper.TypeStr:       &networkscraper.Factory{},
+	processesscraper.TypeStr:     &processesscraper.Factory{},
 	virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
 }
 
@@ -100,6 +102,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			memoryscraper.TypeStr:        &memoryscraper.Config{},
 			networkscraper.TypeStr:       &networkscraper.Config{},
 			processscraper.TypeStr:       &processscraper.Config{},
+			processesscraper.TypeStr:     &processesscraper.Config{},
 			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
 		},
 	}
@@ -329,6 +332,7 @@ func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
 			loadscraper.TypeStr:          (&loadscraper.Factory{}).CreateDefaultConfig(),
 			memoryscraper.TypeStr:        (&memoryscraper.Factory{}).CreateDefaultConfig(),
 			networkscraper.TypeStr:       (&networkscraper.Factory{}).CreateDefaultConfig(),
+			processesscraper.TypeStr:     (&processesscraper.Factory{}).CreateDefaultConfig(),
 			virtualmemoryscraper.TypeStr: (&virtualmemoryscraper.Factory{}).CreateDefaultConfig(),
 		},
 	}
@@ -345,8 +349,9 @@ func Benchmark_ScrapeAllMetrics(b *testing.B) {
 			loadscraper.TypeStr:          &loadscraper.Config{},
 			memoryscraper.TypeStr:        &memoryscraper.Config{},
 			networkscraper.TypeStr:       &networkscraper.Config{},
-			processscraper.TypeStr:       &processscraper.Config{},
+			processesscraper.TypeStr:     &processesscraper.Config{},
 			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
+			processscraper.TypeStr:       &processscraper.Config{},
 		},
 	}
 

@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
 )
@@ -61,6 +62,7 @@ func NewFactory() *Factory {
 			filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
 			memoryscraper.TypeStr:        &memoryscraper.Factory{},
 			networkscraper.TypeStr:       &networkscraper.Factory{},
+			processesscraper.TypeStr:     &processesscraper.Factory{},
 			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
 		},
 		resourceScraperFactories: map[string]internal.ResourceScraperFactory{
