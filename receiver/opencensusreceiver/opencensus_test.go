@@ -46,7 +46,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -517,7 +517,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				doneFn := observabilitytest.SetupRecordedMetricsTest()
+				doneFn := obsreporttest.SetupRecordedMetricsTest()
 				defer doneFn()
 
 				sink := new(sinkTraceConsumer)
@@ -554,7 +554,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
 				require.Nil(
 					t,
-					observabilitytest.CheckValueViewReceiverReceivedSpans(
+					obsreporttest.CheckValueViewReceiverReceivedSpans(
 						exporter.receiverTag,
 						tt.expectedReceivedBatches),
 				)
@@ -670,7 +670,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				doneFn := observabilitytest.SetupRecordedMetricsTest()
+				doneFn := obsreporttest.SetupRecordedMetricsTest()
 				defer doneFn()
 
 				sink := new(sinkMetricsConsumer)
@@ -707,7 +707,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
 				require.Nil(
 					t,
-					observabilitytest.CheckValueViewReceiverReceivedTimeSeries(
+					obsreporttest.CheckValueViewReceiverReceivedTimeSeries(
 						exporter.receiverTag,
 						tt.expectedReceivedBatches),
 				)

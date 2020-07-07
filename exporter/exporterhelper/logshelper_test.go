@@ -26,9 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 const (
@@ -153,20 +152,20 @@ func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
 }
 
 func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter, wantError error, droppedTimeSeries int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	ld := testdata.GenerateLogDataTwoLogsSameResource()
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeLogsReceiverName)
+	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeLogsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, me.ConsumeLogs(ctx, ld))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedLogRecords(fakeLogsReceiverName, fakeLogsExporterName, numBatches*ld.LogRecordCount())
+	err := obsreporttest.CheckValueViewExporterReceivedLogRecords(fakeLogsReceiverName, fakeLogsExporterName, numBatches*ld.LogRecordCount())
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedLogRecords(fakeLogsReceiverName, fakeLogsExporterName, numBatches*droppedTimeSeries)
+	err = obsreporttest.CheckValueViewExporterDroppedLogRecords(fakeLogsReceiverName, fakeLogsExporterName, numBatches*droppedTimeSeries)
 	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
 }
 

@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -179,7 +179,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.TraceConsumer) (r *Recei
 	require.NoError(t, err)
 
 	// Now run it as a gRPC server
-	srv := observability.GRPCServerWithObservabilityEnabled()
+	srv := obsreport.GRPCServerWithObservabilityEnabled()
 	collectortrace.RegisterTraceServiceServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)

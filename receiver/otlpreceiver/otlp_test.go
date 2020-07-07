@@ -48,7 +48,7 @@ import (
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -351,7 +351,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				doneFn := observabilitytest.SetupRecordedMetricsTest()
+				doneFn := obsreporttest.SetupRecordedMetricsTest()
 				defer doneFn()
 
 				sink := new(exportertest.SinkTraceExporter)
@@ -382,7 +382,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
 				require.Nil(
 					t,
-					observabilitytest.CheckValueViewReceiverReceivedSpans(
+					obsreporttest.CheckValueViewReceiverReceivedSpans(
 						exporter.receiverTag,
 						tt.expectedReceivedBatches),
 				)
