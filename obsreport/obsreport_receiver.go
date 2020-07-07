@@ -79,6 +79,14 @@ var (
 		receiverPrefix+RefusedMetricPointsKey,
 		"Number of metric points that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
+	mReceiverAcceptedLogRecords = stats.Int64(
+		receiverPrefix+AcceptedLogRecordsKey,
+		"Number of  log records successfully pushed into the pipeline.",
+		stats.UnitDimensionless)
+	mReceiverRefusedLogRecords = stats.Int64(
+		receiverPrefix+RefusedLogRecordsKey,
+		"Number of  log records that could not be pushed into the pipeline.",
+		stats.UnitDimensionless)
 )
 
 // StartReceiveOptions has the options related to starting a receive operation.
@@ -165,8 +173,7 @@ func EndTraceDataReceiveOp(
 			numDroppedSpans = numReceivedSpans
 			numReceivedLegacy = 0
 		}
-		LegacyRecordMetricsForTraceReceiver(
-			receiverCtx, numReceivedLegacy, numDroppedSpans)
+		stats.Record(receiverCtx, mReceiverReceivedSpans.M(int64(numReceivedLegacy)), mReceiverDroppedSpans.M(int64(numDroppedSpans)))
 	}
 
 	endReceiveOp(
@@ -210,8 +217,7 @@ func EndMetricsReceiveOp(
 			numDroppedTimeSeries = numReceivedTimeSeries
 			numReceivedTimeSeries = 0
 		}
-		LegacyRecordMetricsForMetricsReceiver(
-			receiverCtx, numReceivedTimeSeries, numDroppedTimeSeries)
+		stats.Record(receiverCtx, mReceiverReceivedTimeSeries.M(int64(numReceivedTimeSeries)), mReceiverDroppedTimeSeries.M(int64(numDroppedTimeSeries)))
 	}
 
 	endReceiveOp(
@@ -238,7 +244,7 @@ func ReceiverContext(
 		if legacyName != "" {
 			name = legacyName
 		}
-		ctx = LegacyContextWithReceiverName(ctx, name)
+		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyReceiver, name, tag.WithTTL(tag.TTLNoPropagation)))
 	}
 
 	if useNew {

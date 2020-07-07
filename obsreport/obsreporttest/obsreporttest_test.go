@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// observabilitytest_test instead of just obsreporttest to avoid dependency cycle between
-// obsreporttest and other test packages.
 package obsreporttest_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/obsreport"
@@ -27,116 +26,81 @@ import (
 )
 
 const (
-	receiverName = "fake_receiver"
-	exporterName = "fake_exporter"
+	exporter  = "fakeExporter"
+	processor = "fakeProcessor"
+	receiver  = "fakeReicever"
+	transport = "fakeTransport"
+	format    = "fakeFormat"
 )
 
-func TestCheckValueViewTraceReceiverViews(t *testing.T) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+func TestCheckReceiverTracesViews(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
-	receiverCtx := obsreport.LegacyContextWithReceiverName(context.Background(), receiverName)
-	obsreport.LegacyRecordMetricsForTraceReceiver(receiverCtx, 17, 13)
-	// Test expected values.
-	err := obsreporttest.CheckValueViewReceiverReceivedSpans(receiverName, 17)
-	require.Nil(t, err, "When check receiver received spans")
-	err = obsreporttest.CheckValueViewReceiverDroppedSpans(receiverName, 13)
-	require.Nil(t, err, "When check receiver dropped spans")
+	receiverCtx := obsreport.ReceiverContext(context.Background(), receiver, transport, "")
+	ctx := obsreport.StartTraceDataReceiveOp(receiverCtx, receiver, transport)
+	assert.NotNil(t, ctx)
+	obsreport.EndTraceDataReceiveOp(
+		ctx,
+		format,
+		7,
+		nil)
 
-	// Test unexpected tag values
-	err = obsreporttest.CheckValueViewReceiverReceivedSpans(exporterName, 17)
-	require.NotNil(t, err, "When check for unexpected tag value")
-	err = obsreporttest.CheckValueViewReceiverDroppedSpans(exporterName, 13)
-	require.NotNil(t, err, "When check for unexpected tag value")
-
-	// Test unexpected recorded values
-	err = obsreporttest.CheckValueViewReceiverReceivedSpans(receiverName, 13)
-	require.NotNil(t, err, "When check for unexpected value")
-	err = obsreporttest.CheckValueViewReceiverDroppedSpans(receiverName, 17)
-	require.NotNil(t, err, "When check for unexpected value")
+	obsreporttest.CheckReceiverTracesViews(t, receiver, transport, 7, 0)
 }
 
-func TestCheckValueViewMetricsReceiverViews(t *testing.T) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+func TestCheckReceiverMetricsViews(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
-	receiverCtx := obsreport.LegacyContextWithReceiverName(context.Background(), receiverName)
-	obsreport.LegacyRecordMetricsForMetricsReceiver(receiverCtx, 17, 13)
-	// Test expected values.
-	err := obsreporttest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17)
-	require.Nil(t, err, "When check receiver received timeseries")
-	err = obsreporttest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 13)
-	require.Nil(t, err, "When check receiver dropped timeseries")
+	receiverCtx := obsreport.ReceiverContext(context.Background(), receiver, transport, "")
+	ctx := obsreport.StartMetricsReceiveOp(receiverCtx, receiver, transport)
+	assert.NotNil(t, ctx)
+	obsreport.EndMetricsReceiveOp(
+		ctx,
+		format,
+		7,
+		0,
+		nil)
 
-	// Test unexpected tag values
-	err = obsreporttest.CheckValueViewReceiverReceivedTimeSeries(exporterName, 17)
-	require.NotNil(t, err, "When check for unexpected tag value")
-	err = obsreporttest.CheckValueViewReceiverDroppedTimeSeries(exporterName, 13)
-	require.NotNil(t, err, "When check for unexpected tag value")
-
-	// Test unexpected recorded values
-	err = obsreporttest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 13)
-	require.NotNil(t, err, "When check for unexpected value")
-	err = obsreporttest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 17)
-	require.NotNil(t, err, "When check for unexpected value")
+	obsreporttest.CheckReceiverMetricsViews(t, receiver, transport, 7, 0)
 }
 
-func TestCheckValueViewTraceExporterViews(t *testing.T) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+func TestCheckExporterTracesViews(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
-	receiverCtx := obsreport.LegacyContextWithReceiverName(context.Background(), receiverName)
-	exporterCtx := obsreport.LegacyContextWithExporterName(receiverCtx, exporterName)
-	obsreport.LegacyRecordMetricsForTraceExporter(exporterCtx, 17, 13)
-	// Test expected values.
-	err := obsreporttest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 17)
-	require.Nil(t, err, "When check exporter received spans")
-	err = obsreporttest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 13)
-	require.Nil(t, err, "When check exporter dropped spans")
+	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
+	ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
+	assert.NotNil(t, ctx)
 
-	// Test unexpected tag values
-	err = obsreporttest.CheckValueViewExporterReceivedSpans(receiverName, receiverName, 17)
-	require.NotNil(t, err, "When check for unexpected tag value")
-	err = obsreporttest.CheckValueViewExporterDroppedSpans(receiverName, receiverName, 13)
-	require.NotNil(t, err, "When check for unexpected tag value")
+	obsreport.EndTraceDataExportOp(
+		ctx,
+		7,
+		5,
+		nil)
 
-	// Test unexpected recorded values
-	err = obsreporttest.CheckValueViewExporterReceivedSpans(receiverName, exporterName, 13)
-	require.NotNil(t, err, "When check for unexpected value")
-	err = obsreporttest.CheckValueViewExporterDroppedSpans(receiverName, exporterName, 17)
-	require.NotNil(t, err, "When check for unexpected value")
+	obsreporttest.CheckExporterTracesViews(t, exporter, 7, 0)
 }
 
-func TestCheckValueViewMetricsExporterViews(t *testing.T) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+func TestCheckExporterMetricsViews(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
-	receiverCtx := obsreport.LegacyContextWithReceiverName(context.Background(), receiverName)
-	exporterCtx := obsreport.LegacyContextWithExporterName(receiverCtx, exporterName)
-	obsreport.LegacyRecordMetricsForMetricsExporter(exporterCtx, 17, 13)
-	// Test expected values.
-	err := obsreporttest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 17)
-	require.Nil(t, err, "When check exporter received timeseries")
-	err = obsreporttest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 13)
-	require.Nil(t, err, "When check exporter dropped timeseries")
+	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
+	ctx := obsreport.StartMetricsExportOp(exporterCtx, exporter)
+	assert.NotNil(t, ctx)
 
-	// Test unexpected tag values
-	err = obsreporttest.CheckValueViewExporterReceivedTimeSeries(receiverName, receiverName, 17)
-	require.NotNil(t, err, "When check for unexpected tag value")
-	err = obsreporttest.CheckValueViewExporterDroppedTimeSeries(receiverName, receiverName, 13)
-	require.NotNil(t, err, "When check for unexpected tag value")
+	obsreport.EndMetricsExportOp(
+		ctx,
+		7,
+		5,
+		0,
+		nil)
 
-	// Test unexpected recorded values
-	err = obsreporttest.CheckValueViewExporterReceivedTimeSeries(receiverName, exporterName, 13)
-	require.NotNil(t, err, "When check for unexpected value")
-	err = obsreporttest.CheckValueViewExporterDroppedTimeSeries(receiverName, exporterName, 17)
-	require.NotNil(t, err, "When check for unexpected value")
-}
-
-func TestNoSetupCalled(t *testing.T) {
-	receiverCtx := obsreport.LegacyContextWithReceiverName(context.Background(), receiverName)
-	obsreport.LegacyRecordMetricsForTraceReceiver(receiverCtx, 17, 13)
-	// Failed to check because views are not registered.
-	err := obsreporttest.CheckValueViewReceiverReceivedSpans(receiverName, 17)
-	require.NotNil(t, err, "When check with no views registered")
+	obsreporttest.CheckExporterMetricsViews(t, exporter, 7, 0)
 }
