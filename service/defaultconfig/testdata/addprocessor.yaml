@@ -1,0 +1,17 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+processors:
+  queued_retry: {}
+
+exporters:
+  otlp:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [queued_retry]
+      exporters: [otlp]

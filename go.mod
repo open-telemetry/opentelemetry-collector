@@ -25,6 +25,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
+	github.com/imdario/mergo v0.3.9
 	github.com/jaegertracing/jaeger v1.18.2-0.20200707061226-97d2319ff2be
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1

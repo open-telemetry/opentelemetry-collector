@@ -1,0 +1,19 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+processors:
+  queued_retry: {}
+  batch:
+    timeout: 5s
+
+exporters:
+  otlp:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]

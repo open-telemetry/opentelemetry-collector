@@ -42,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/builder"
+	"go.opentelemetry.io/collector/service/defaultconfig"
 	"go.opentelemetry.io/collector/service/internal"
 )
 
@@ -113,7 +114,8 @@ type Parameters struct {
 // ConfigFactory creates config.
 type ConfigFactory func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error)
 
-// FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
+// FileLoaderConfigFactory implements ConfigFactory. It loads configuration from file and merges it
+// with default/hardcoded configuration. See defaultconfig.CreateDefaultConfig.
 func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
@@ -124,7 +126,16 @@ func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*co
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
 	}
-	return config.Load(v, factories)
+	cfg, err := config.Load(v, factories)
+	if err != nil {
+		return nil, err
+	}
+	defaultConfig := defaultconfig.CreateDefaultConfig(factories, cfg)
+	err = defaultconfig.MergeConfigs(cfg, defaultConfig)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // New creates and returns a new instance of Application.
