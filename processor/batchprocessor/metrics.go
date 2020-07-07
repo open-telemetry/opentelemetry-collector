@@ -26,6 +26,7 @@ import (
 var (
 	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
 	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
+	statBatchSendSize        = stats.Int64("batch_send_size", "Number of units in the batch", stats.UnitDimensionless)
 )
 
 // MetricViews returns the metrics views related to batching
@@ -48,9 +49,18 @@ func MetricViews() []*view.View {
 		Aggregation: view.Sum(),
 	}
 
+	distributionBatchSendSizeView := &view.View{
+		Name:        statBatchSendSize.Name(),
+		Measure:     statBatchSendSize,
+		Description: statBatchSendSize.Description(),
+		TagKeys:     processorTagKeys,
+		Aggregation: view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000),
+	}
+
 	legacyViews := []*view.View{
 		countBatchSizeTriggerSendView,
 		countTimeoutTriggerSendView,
+		distributionBatchSendSizeView,
 	}
 
 	return obsreport.ProcessorMetricViews(typeStr, legacyViews)

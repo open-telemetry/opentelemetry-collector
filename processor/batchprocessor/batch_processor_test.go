@@ -21,7 +21,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bmizerany/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -73,6 +75,10 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
+	views := MetricViews()
+	view.Register(views...)
+	defer view.Unregister(views...)
+
 	sender := newTestSender()
 	cfg := generateDefaultConfig()
 	sendBatchSize := 20
@@ -113,6 +119,15 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 			require.Equal(t, spansPerRequest, rss.At(i).InstrumentationLibrarySpans().At(0).Spans().Len())
 		}
 	}
+
+	data, err := view.RetrieveData(statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(data))
+	distData := data[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sender.spansReceived, int(distData.Sum()))
+	assert.Equal(t, sendBatchSize, int(distData.Min))
+	assert.Equal(t, sendBatchSize, int(distData.Max))
 
 	sender.mtx.RUnlock()
 }
@@ -384,6 +399,10 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
+	views := MetricViews()
+	view.Register(views...)
+	defer view.Unregister(views...)
+
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
 	cfg := Config{
@@ -427,6 +446,15 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 		}
 	}
+
+	data, err := view.RetrieveData(statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(data))
+	distData := data[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, tms.metricsReceived, int(distData.Sum()))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 	tms.mtx.RUnlock()
 }
 

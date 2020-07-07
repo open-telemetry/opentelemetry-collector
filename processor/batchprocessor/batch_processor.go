@@ -171,7 +171,8 @@ func (bp *batchTraceProcessor) resetTimer() {
 func (bp *batchTraceProcessor) sendItems(measure *stats.Int64Measure) {
 	// Add that it came form the trace pipeline?
 	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
-	stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
+	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
+	_ = stats.RecordWithTags(context.Background(), statsTags, statBatchSendSize.M(int64(bp.batchTraces.getSpanCount())))
 
 	if err := bp.traceConsumer.ConsumeTraces(context.Background(), bp.batchTraces.getTraceData()); err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
@@ -232,6 +233,7 @@ func (bp *batchMetricProcessor) sendItems(measure *stats.Int64Measure) {
 	// Add that it came from the metrics pipeline
 	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
 	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
+	_ = stats.RecordWithTags(context.Background(), statsTags, statBatchSendSize.M(int64(bp.batchMetrics.metricData.MetricCount())))
 
 	_ = bp.metricsConsumer.ConsumeMetrics(context.Background(), bp.batchMetrics.getData())
 	bp.batchMetrics.reset()
