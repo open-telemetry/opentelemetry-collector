@@ -37,7 +37,7 @@ function New-MSI(
     [string]$Version="0.0.1",
     [string]$Config="./examples/otel-local-config.yaml"
 ) {
-    candle -arch x64 -dVersion="$Version" -dConfig="$Config" packaging/msi/opentelemetry-collector.wxs
+    candle -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-collector.wxs
     light opentelemetry-collector.wixobj
     Move-Item -Force opentelemetry-collector.msi bin/opentelemetry-collector.msi
 }

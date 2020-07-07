@@ -2,7 +2,7 @@
    <Product Id="*" UpgradeCode="B7C263DD-95A5-436A-A025-DCA5200C2BE3" Name="OpenTelemetry Collector" Version="$(var.Version)" Manufacturer="OpenTelemetry" Language="1033">
       <Package InstallerVersion="200" Compressed="yes" Comments="Windows Installer Package"/>
       <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
-      <Icon Id="ProductIcon" SourceFile="./packaging/msi/opentelemetry.ico"/>
+      <Icon Id="ProductIcon" SourceFile="./internal/buildscripts/packaging/msi/opentelemetry.ico"/>
       <Property Id="ARPPRODUCTICON" Value="ProductIcon"/>
       <Property Id="ARPHELPLINK" Value="https://opentelemetry.io/"/>
       <Property Id="ARPURLINFOABOUT" Value="https://opentelemetry.io/"/>
