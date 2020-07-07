@@ -19,7 +19,6 @@ import (
 
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
-	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -57,10 +56,7 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
-	_, span := trace.StartSpan(ctx, "processesscraper.ScrapeMetrics")
-	defer span.End()
-
+func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 	err := appendSystemSpecificProcessesMetrics(metrics, 0, s.misc)
 	return metrics, err
