@@ -97,19 +97,24 @@ type grpcSender struct {
 }
 
 func newGrpcSender(config *Config) (sender, error) {
-	gs := &grpcSender{}
 	dialOpts, err := config.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}
 
-	if gs.grpcClientConn, err = grpc.Dial(config.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
+	var clientConn *grpc.ClientConn
+	if clientConn, err = grpc.Dial(config.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
 		return nil, err
 	}
-	gs.traceExporter = otlptracecol.NewTraceServiceClient(gs.grpcClientConn)
-	gs.metricExporter = otlpmetriccol.NewMetricsServiceClient(gs.grpcClientConn)
-	gs.logExporter = otlplogcol.NewLogServiceClient(gs.grpcClientConn)
-	gs.metadata = metadata.New(config.GRPCClientSettings.Headers)
+
+	gs := &grpcSender{
+		traceExporter:  otlptracecol.NewTraceServiceClient(clientConn),
+		metricExporter: otlpmetriccol.NewMetricsServiceClient(clientConn),
+		logExporter:    otlplogcol.NewLogServiceClient(clientConn),
+		grpcClientConn: clientConn,
+		metadata:       metadata.New(config.GRPCClientSettings.Headers),
+		waitForReady:   config.GRPCClientSettings.WaitForReady,
+	}
 	return gs, nil
 }
 
