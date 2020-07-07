@@ -49,7 +49,7 @@ func MetricViews() []*view.View {
 		Aggregation: view.Sum(),
 	}
 
-	countBatchSendSizeView := &view.View{
+	distributionBatchSendSizeView := &view.View{
 		Name:        statBatchSendSize.Name(),
 		Measure:     statBatchSendSize,
 		Description: statBatchSendSize.Description(),
@@ -60,7 +60,7 @@ func MetricViews() []*view.View {
 	legacyViews := []*view.View{
 		countBatchSizeTriggerSendView,
 		countTimeoutTriggerSendView,
-		countBatchSendSizeView,
+		distributionBatchSendSizeView,
 	}
 
 	return obsreport.ProcessorMetricViews(typeStr, legacyViews)
