@@ -68,3 +68,11 @@ type LogConsumer interface {
 	// ConsumeLogs receives data.Logs for processing.
 	ConsumeLogs(ctx context.Context, ld data.Logs) error
 }
+
+// TestBedTraceConsumer is an interface that receives pdata.Traces,
+// and counts the number of traces received by the mock backend
+type TestBedTraceConsumer interface {
+	TraceConsumerBase
+	// ConsumeTraces receives pdata.Traces for processing.
+	ConsumeTestbedTraces(spansCount int) error
+}

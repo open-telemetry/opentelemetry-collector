@@ -269,3 +269,8 @@ func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consume
 
 	return nil
 }
+
+func (tc *MockTraceConsumer) ConsumeTestbedTraces(spansCount int) error {
+	tc.spansReceived.Add(uint64(spansCount))
+	return nil
+}
