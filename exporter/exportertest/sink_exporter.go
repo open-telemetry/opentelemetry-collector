@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // SinkTraceExporterOld acts as a trace receiver for use in tests.
@@ -204,5 +205,51 @@ func (sme *SinkMetricsExporter) AllMetrics() []pdata.Metrics {
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+// SinkLogExporter acts as a metrics receiver for use in tests.
+type SinkLogExporter struct {
+	consumeLogError error // to be returned by ConsumeLog, if set
+	mu              sync.Mutex
+	metrics         []data.Logs
+}
+
+// SetConsumeLogError sets an error that will be returned by ConsumeLog
+func (sme *SinkLogExporter) SetConsumeLogError(err error) {
+	sme.consumeLogError = err
+}
+
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned.
+func (sme *SinkLogExporter) Start(ctx context.Context, host component.Host) error {
+	return nil
+}
+
+// ConsumeLogData stores traces for tests.
+func (sme *SinkLogExporter) ConsumeLogs(_ context.Context, md data.Logs) error {
+	if sme.consumeLogError != nil {
+		return sme.consumeLogError
+	}
+
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
+	sme.metrics = append(sme.metrics, md)
+
+	return nil
+}
+
+// AllLog returns the metrics sent to the test sink.
+func (sme *SinkLogExporter) AllLogs() []data.Logs {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
+	return sme.metrics
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (sme *SinkLogExporter) Shutdown(context.Context) error {
 	return nil
 }

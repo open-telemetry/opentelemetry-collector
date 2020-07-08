@@ -137,6 +137,9 @@ func AllViews() (views []*view.View) {
 		mProcessorAcceptedMetricPoints,
 		mProcessorRefusedMetricPoints,
 		mProcessorDroppedMetricPoints,
+		mProcessorAcceptedLogRecords,
+		mProcessorRefusedLogRecords,
+		mProcessorDroppedLogRecords,
 	}
 	tagKeys = []tag.Key{tagKeyProcessor}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)

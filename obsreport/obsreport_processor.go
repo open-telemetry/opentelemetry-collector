@@ -31,6 +31,9 @@ const (
 
 	// Key used to identify metric points dropped by the Collector.
 	DroppedMetricPointsKey = "dropped_metric_points"
+
+	// Key used to identify log records dropped by the Collector.
+	DroppedLogRecordsKey = "dropped_log_records"
 )
 
 var (
@@ -63,6 +66,18 @@ var (
 	mProcessorDroppedMetricPoints = stats.Int64(
 		processorPrefix+DroppedMetricPointsKey,
 		"Number of metric points that were dropped.",
+		stats.UnitDimensionless)
+	mProcessorAcceptedLogRecords = stats.Int64(
+		processorPrefix+AcceptedLogRecordsKey,
+		"Number of log records successfully pushed into the next component in the pipeline.",
+		stats.UnitDimensionless)
+	mProcessorRefusedLogRecords = stats.Int64(
+		processorPrefix+RefusedLogRecordsKey,
+		"Number of log records that were rejected by the next component in the pipeline.",
+		stats.UnitDimensionless)
+	mProcessorDroppedLogRecords = stats.Int64(
+		processorPrefix+DroppedLogRecordsKey,
+		"Number of log records that were dropped.",
 		stats.UnitDimensionless)
 )
 
@@ -202,6 +217,51 @@ func ProcessorMetricsDataDropped(
 			mProcessorAcceptedMetricPoints.M(0),
 			mProcessorRefusedMetricPoints.M(0),
 			mProcessorDroppedMetricPoints.M(int64(numPoints)),
+		)
+	}
+}
+
+// ProcessorLogRecordsAccepted reports that the metrics were accepted.
+func ProcessorLogRecordsAccepted(
+	processorCtx context.Context,
+	numRecords int,
+) {
+	if useNew {
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedLogRecords.M(int64(numRecords)),
+			mProcessorRefusedLogRecords.M(0),
+			mProcessorDroppedLogRecords.M(0),
+		)
+	}
+}
+
+// ProcessorLogRecordsRefused reports that the metrics were refused.
+func ProcessorLogRecordsRefused(
+	processorCtx context.Context,
+	numRecords int,
+) {
+	if useNew {
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedLogRecords.M(0),
+			mProcessorRefusedLogRecords.M(int64(numRecords)),
+			mProcessorDroppedMetricPoints.M(0),
+		)
+	}
+}
+
+// ProcessorLogRecordsDropped reports that the metrics were dropped.
+func ProcessorLogRecordsDropped(
+	processorCtx context.Context,
+	numRecords int,
+) {
+	if useNew {
+		stats.Record(
+			processorCtx,
+			mProcessorAcceptedLogRecords.M(0),
+			mProcessorRefusedLogRecords.M(0),
+			mProcessorDroppedLogRecords.M(int64(numRecords)),
 		)
 	}
 }
