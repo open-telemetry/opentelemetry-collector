@@ -205,9 +205,11 @@ binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) binaries
 
 .PHONY: deb-rpm-package
-%-package: binaries-linux_amd64
-	docker build -t otelcol-$*-packager packaging/$*
-	docker run --rm -v $(CURDIR):/repo -e VERSION=$(VERSION) otelcol-$*-packager
+%-package: ARCH ?= amd64
+%-package:
+	$(MAKE) binaries-linux_$(ARCH)
+	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
+	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
 
 # Definitions for ProtoBuf generation.
 
