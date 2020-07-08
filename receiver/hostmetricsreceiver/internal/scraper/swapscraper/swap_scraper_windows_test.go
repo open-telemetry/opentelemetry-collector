@@ -14,7 +14,7 @@
 
 // +build windows
 
-package virtualmemoryscraper
+package swapscraper
 
 import (
 	"context"
@@ -61,23 +61,22 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 		},
 	}
 
-	preservedGetPageFileStats := getPageFileStats
-
-	scraper := newVirtualMemoryScraper(context.Background(), &Config{})
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize virtual memory scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			getPageFileStats = func() ([]*pageFileData, error) { return nil, test.pageFileError }
+			scraper := newSwapScraper(context.Background(), &Config{})
+			if test.pageFileError != nil {
+				scraper.pageFileStats = func() ([]*pageFileData, error) { return nil, test.pageFileError }
+			}
+
+			err := scraper.Initialize(context.Background())
+			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
 			scraper.pageReadsPerSecCounter = pdh.NewMockPerfCounter(test.pageReadsPerSecCounterReturnValue)
 			scraper.pageWritesPerSecCounter = pdh.NewMockPerfCounter(test.pageWritesPerSecCounterReturnValue)
 
 			_, err = scraper.ScrapeMetrics(context.Background())
 			assert.EqualError(t, err, test.expectedError)
-
-			getPageFileStats = preservedGetPageFileStats
 		})
 	}
 }

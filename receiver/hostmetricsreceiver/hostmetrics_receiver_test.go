@@ -38,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 )
 
 var standardMetrics = []string{
@@ -75,14 +75,14 @@ var systemSpecificMetrics = map[string][]string{
 }
 
 var factories = map[string]internal.ScraperFactory{
-	cpuscraper.TypeStr:           &cpuscraper.Factory{},
-	diskscraper.TypeStr:          &diskscraper.Factory{},
-	filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
-	loadscraper.TypeStr:          &loadscraper.Factory{},
-	memoryscraper.TypeStr:        &memoryscraper.Factory{},
-	networkscraper.TypeStr:       &networkscraper.Factory{},
-	processesscraper.TypeStr:     &processesscraper.Factory{},
-	virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
+	cpuscraper.TypeStr:        &cpuscraper.Factory{},
+	diskscraper.TypeStr:       &diskscraper.Factory{},
+	filesystemscraper.TypeStr: &filesystemscraper.Factory{},
+	loadscraper.TypeStr:       &loadscraper.Factory{},
+	memoryscraper.TypeStr:     &memoryscraper.Factory{},
+	networkscraper.TypeStr:    &networkscraper.Factory{},
+	processesscraper.TypeStr:  &processesscraper.Factory{},
+	swapscraper.TypeStr:       &swapscraper.Factory{},
 }
 
 var resourceFactories = map[string]internal.ResourceScraperFactory{
@@ -95,15 +95,15 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	config := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:           &cpuscraper.Config{ReportPerCPU: true},
-			diskscraper.TypeStr:          &diskscraper.Config{},
-			filesystemscraper.TypeStr:    &filesystemscraper.Config{},
-			loadscraper.TypeStr:          &loadscraper.Config{},
-			memoryscraper.TypeStr:        &memoryscraper.Config{},
-			networkscraper.TypeStr:       &networkscraper.Config{},
-			processscraper.TypeStr:       &processscraper.Config{},
-			processesscraper.TypeStr:     &processesscraper.Config{},
-			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
+			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+			diskscraper.TypeStr:       &diskscraper.Config{},
+			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			loadscraper.TypeStr:       &loadscraper.Config{},
+			memoryscraper.TypeStr:     &memoryscraper.Config{},
+			networkscraper.TypeStr:    &networkscraper.Config{},
+			processesscraper.TypeStr:  &processesscraper.Config{},
+			swapscraper.TypeStr:       &swapscraper.Config{},
+			processscraper.TypeStr:    &processscraper.Config{},
 		},
 	}
 
@@ -318,22 +318,22 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
-func Benchmark_ScrapeVirtualMemoryMetrics(b *testing.B) {
-	cfg := &Config{Scrapers: map[string]internal.Config{virtualmemoryscraper.TypeStr: (&virtualmemoryscraper.Factory{}).CreateDefaultConfig()}}
+func Benchmark_ScrapeSwapMetrics(b *testing.B) {
+	cfg := &Config{Scrapers: map[string]internal.Config{swapscraper.TypeStr: (&swapscraper.Factory{}).CreateDefaultConfig()}}
 	benchmarkScrapeMetrics(b, cfg)
 }
 
 func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
 	cfg := &Config{
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:           (&cpuscraper.Factory{}).CreateDefaultConfig(),
-			diskscraper.TypeStr:          (&diskscraper.Factory{}).CreateDefaultConfig(),
-			filesystemscraper.TypeStr:    (&filesystemscraper.Factory{}).CreateDefaultConfig(),
-			loadscraper.TypeStr:          (&loadscraper.Factory{}).CreateDefaultConfig(),
-			memoryscraper.TypeStr:        (&memoryscraper.Factory{}).CreateDefaultConfig(),
-			networkscraper.TypeStr:       (&networkscraper.Factory{}).CreateDefaultConfig(),
-			processesscraper.TypeStr:     (&processesscraper.Factory{}).CreateDefaultConfig(),
-			virtualmemoryscraper.TypeStr: (&virtualmemoryscraper.Factory{}).CreateDefaultConfig(),
+			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
+			diskscraper.TypeStr:       (&diskscraper.Factory{}).CreateDefaultConfig(),
+			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
+			loadscraper.TypeStr:       (&loadscraper.Factory{}).CreateDefaultConfig(),
+			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
+			networkscraper.TypeStr:    (&networkscraper.Factory{}).CreateDefaultConfig(),
+			processesscraper.TypeStr:  (&processesscraper.Factory{}).CreateDefaultConfig(),
+			swapscraper.TypeStr:       (&swapscraper.Factory{}).CreateDefaultConfig(),
 		},
 	}
 
@@ -343,15 +343,15 @@ func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
 func Benchmark_ScrapeAllMetrics(b *testing.B) {
 	cfg := &Config{
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:           &cpuscraper.Config{ReportPerCPU: true},
-			diskscraper.TypeStr:          &diskscraper.Config{},
-			filesystemscraper.TypeStr:    &filesystemscraper.Config{},
-			loadscraper.TypeStr:          &loadscraper.Config{},
-			memoryscraper.TypeStr:        &memoryscraper.Config{},
-			networkscraper.TypeStr:       &networkscraper.Config{},
-			processesscraper.TypeStr:     &processesscraper.Config{},
-			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
-			processscraper.TypeStr:       &processscraper.Config{},
+			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+			diskscraper.TypeStr:       &diskscraper.Config{},
+			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			loadscraper.TypeStr:       &loadscraper.Config{},
+			memoryscraper.TypeStr:     &memoryscraper.Config{},
+			networkscraper.TypeStr:    &networkscraper.Config{},
+			processesscraper.TypeStr:  &processesscraper.Config{},
+			swapscraper.TypeStr:       &swapscraper.Config{},
+			processscraper.TypeStr:    &processscraper.Config{},
 		},
 	}
 

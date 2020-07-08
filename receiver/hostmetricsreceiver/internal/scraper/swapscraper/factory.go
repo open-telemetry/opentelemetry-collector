@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package virtualmemoryscraper
+package swapscraper
 
 import (
 	"context"
@@ -23,11 +23,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/obsreportscraper"
 )
 
-// This file implements Factory for VirtualMemory scraper.
+// This file implements Factory for Swap scraper.
 
 const (
 	// The value of "type" key in configuration.
-	TypeStr = "virtualmemory"
+	TypeStr = "swap"
 )
 
 // Factory is the Factory for scraper.
@@ -46,5 +46,5 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (internal.Scraper, error) {
 	cfg := config.(*Config)
-	return obsreportscraper.WrapScraper(newVirtualMemoryScraper(ctx, cfg), TypeStr), nil
+	return obsreportscraper.WrapScraper(newSwapScraper(ctx, cfg), TypeStr), nil
 }

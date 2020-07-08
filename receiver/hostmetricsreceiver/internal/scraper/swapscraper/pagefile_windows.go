@@ -14,7 +14,7 @@
 
 // +build windows
 
-package virtualmemoryscraper
+package swapscraper
 
 import (
 	"syscall"
@@ -43,7 +43,7 @@ type enumPageFileInformation struct {
 	peakUsage  uint64
 }
 
-func getPageFileStatsInternal() ([]*pageFileData, error) {
+func getPageFileStats() ([]*pageFileData, error) {
 	// the following system call invokes the supplied callback function once for each page file before returning
 	// see https://docs.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-enumpagefilesw
 	var pageFiles []*pageFileData

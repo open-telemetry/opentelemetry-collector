@@ -22,15 +22,15 @@ import (
 
 func TestSpanName(t *testing.T) {
 	scraperTypes := map[string]string{
-		"cpu":           "cpuscraper.ScrapeMetrics",
-		"disk":          "diskscraper.ScrapeMetrics",
-		"load":          "loadscraper.ScrapeMetrics",
-		"filesystem":    "filesystemscraper.ScrapeMetrics",
-		"memory":        "memoryscraper.ScrapeMetrics",
-		"network":       "networkscraper.ScrapeMetrics",
-		"processes":     "processesscraper.ScrapeMetrics",
-		"virtualmemory": "virtualmemoryscraper.ScrapeMetrics",
-		"process":       "processscraper.ScrapeMetrics",
+		"cpu":        "cpuscraper.ScrapeMetrics",
+		"disk":       "diskscraper.ScrapeMetrics",
+		"load":       "loadscraper.ScrapeMetrics",
+		"filesystem": "filesystemscraper.ScrapeMetrics",
+		"memory":     "memoryscraper.ScrapeMetrics",
+		"network":    "networkscraper.ScrapeMetrics",
+		"processes":  "processesscraper.ScrapeMetrics",
+		"swap":       "swapscraper.ScrapeMetrics",
+		"process":    "processscraper.ScrapeMetrics",
 	}
 
 	for typeStr, spanName := range scraperTypes {

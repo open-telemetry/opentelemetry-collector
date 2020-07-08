@@ -14,7 +14,7 @@
 
 // +build !windows
 
-package virtualmemoryscraper
+package swapscraper
 
 import (
 	"context"
@@ -27,15 +27,19 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// scraper for VirtualMemory Metrics
+// scraper for Swap Metrics
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
+
+	// for mocking gopsutil mem.VirtualMemory & mem.SwapMemory
+	virtualMemory func() (*mem.VirtualMemoryStat, error)
+	swapMemory    func() (*mem.SwapMemoryStat, error)
 }
 
-// newVirtualMemoryScraper creates a VirtualMemory Scraper
-func newVirtualMemoryScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+// newSwapScraper creates a Swap Scraper
+func newSwapScraper(_ context.Context, cfg *Config) *scraper {
+	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory, swapMemory: mem.SwapMemory}
 }
 
 // Initialize
@@ -77,10 +81,8 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-var getVirtualMemory = mem.VirtualMemory
-
 func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
-	vmem, err := getVirtualMemory()
+	vmem, err := s.virtualMemory()
 	if err != nil {
 		return err
 	}
@@ -108,10 +110,8 @@ func initializeSwapUsageDataPoint(dataPoint pdata.Int64DataPoint, stateLabel str
 	dataPoint.SetValue(value)
 }
 
-var getSwapMemory = mem.SwapMemory
-
 func (s *scraper) scrapeAndAppendPagingMetrics(metrics pdata.MetricSlice) error {
-	swap, err := getSwapMemory()
+	swap, err := s.swapMemory()
 	if err != nil {
 		return err
 	}

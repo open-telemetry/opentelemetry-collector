@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					Config: filterset.Config{MatchType: "regexp"},
 				},
 			},
-			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Config{},
+			swapscraper.TypeStr: &swapscraper.Config{},
 		},
 	}
 
