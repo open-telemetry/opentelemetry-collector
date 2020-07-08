@@ -25,7 +25,7 @@ require (
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
-	github.com/open-telemetry/opentelemetry-proto v0.3.0
+	github.com/open-telemetry/opentelemetry-proto v0.4.0
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.1
