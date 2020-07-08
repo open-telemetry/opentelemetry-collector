@@ -34,7 +34,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1
 	github.com/prometheus/common v0.10.0
-	github.com/prometheus/procfs v0.0.11
+	github.com/prometheus/procfs v0.1.3
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
