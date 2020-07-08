@@ -61,7 +61,7 @@ commands:
           steps:
             - run:
                 name: Generate GitHub Issue
-                command: go run .circleci/reportgenerator/main.go ${TEST_RESULTS}
+                command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
 workflows:
