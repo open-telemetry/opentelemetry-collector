@@ -46,38 +46,32 @@ const (
 
 // descriptors
 
-var metricCPUUsageDescriptor = createMetricCPUUsageDescriptor()
-
-func createMetricCPUUsageDescriptor() pdata.MetricDescriptor {
+var cpuTimeDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("process/cpu/usage")
+	descriptor.SetName("process.cpu.time")
 	descriptor.SetDescription("Total CPU seconds broken down by different states.")
 	descriptor.SetUnit("s")
 	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 	return descriptor
-}
+}()
 
-var metricMemoryUsageDescriptor = createMetricMemoryUsageDescriptor()
-
-func createMetricMemoryUsageDescriptor() pdata.MetricDescriptor {
+var memoryUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("process/memory/usage")
+	descriptor.SetName("process.memory.usage")
 	descriptor.SetDescription("Bytes of memory in use.")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
-}
+}()
 
-var metricDiskBytesDescriptor = createMetricDiskBytesDescriptor()
-
-func createMetricDiskBytesDescriptor() pdata.MetricDescriptor {
+var diskIODescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("process/disk/bytes")
+	descriptor.SetName("process.disk.io")
 	descriptor.SetDescription("Disk bytes transferred.")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()

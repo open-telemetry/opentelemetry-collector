@@ -51,7 +51,7 @@ func (f *Factory) CreateTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (component.TraceProcessor, error) {
-	return f.createProcessor(params.Logger, nextConsumer, nil, cfg)
+	return f.createProcessor(params.Logger, nextConsumer, nil, nil, cfg)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -61,12 +61,25 @@ func (f *Factory) CreateMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
 ) (component.MetricsProcessor, error) {
-	return f.createProcessor(params.Logger, nil, nextConsumer, cfg)
+	return f.createProcessor(params.Logger, nil, nextConsumer, nil, cfg)
 }
 
-type DualTypeProcessor interface {
+// CreateLogsProcessor creates a metrics processor based on this config.
+func (f *Factory) CreateLogProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogConsumer,
+) (component.LogProcessor, error) {
+	return f.createProcessor(params.Logger, nil, nil, nextConsumer, cfg)
+}
+
+var _ component.LogProcessorFactory = new(Factory)
+
+type TripleTypeProcessor interface {
 	consumer.TraceConsumer
 	consumer.MetricsConsumer
+	consumer.LogConsumer
 	component.Processor
 }
 
@@ -74,13 +87,15 @@ func (f *Factory) createProcessor(
 	logger *zap.Logger,
 	traceConsumer consumer.TraceConsumer,
 	metricConsumer consumer.MetricsConsumer,
+	logConsumer consumer.LogConsumer,
 	cfg configmodels.Processor,
-) (DualTypeProcessor, error) {
+) (TripleTypeProcessor, error) {
 	pCfg := cfg.(*Config)
 	return newMemoryLimiter(
 		logger,
 		traceConsumer,
 		metricConsumer,
+		logConsumer,
 		pCfg,
 	)
 }

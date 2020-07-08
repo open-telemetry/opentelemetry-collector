@@ -21,3 +21,7 @@ coverage.txt
 coverage_all.txt
 coverage_old.txt
 coverage.html
+
+# Wix
+*.wixobj
+*.wixpdb

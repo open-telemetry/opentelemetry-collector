@@ -29,7 +29,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 // Ensure that if we add a metrics exporter that our target metrics
@@ -40,7 +40,7 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	_, port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
@@ -57,14 +57,14 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	err = observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", n)
+	err = obsreporttest.CheckValueViewReceiverReceivedSpans("oc_trace", n)
 	require.NoError(t, err, "When check recorded values: want nil got %v", err)
-	err = observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0)
+	err = obsreporttest.CheckValueViewReceiverDroppedSpans("oc_trace", 0)
 	require.NoError(t, err, "When check recorded values: want nil got %v", err)
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporterOld())
@@ -80,9 +80,9 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	err = observabilitytest.CheckValueViewReceiverReceivedSpans("oc_trace", 0)
+	err = obsreporttest.CheckValueViewReceiverReceivedSpans("oc_trace", 0)
 	require.NoError(t, err, "When check recorded values: want nil got %v", err)
-	err = observabilitytest.CheckValueViewReceiverDroppedSpans("oc_trace", 0)
+	err = obsreporttest.CheckValueViewReceiverDroppedSpans("oc_trace", 0)
 	require.NoError(t, err, "When check recorded values: want nil got %v", err)
 }
 

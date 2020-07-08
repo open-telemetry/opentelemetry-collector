@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver/ocmetrics"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver/octrace"
 )
@@ -137,7 +137,7 @@ func (ocr *Receiver) grpcServer() *grpc.Server {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		ocr.serverGRPC = observability.GRPCServerWithObservabilityEnabled(ocr.grpcServerOptions...)
+		ocr.serverGRPC = obsreport.GRPCServerWithObservabilityEnabled(ocr.grpcServerOptions...)
 	}
 
 	return ocr.serverGRPC

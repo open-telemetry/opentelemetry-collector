@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/observability"
 )
 
 const (
@@ -43,6 +42,12 @@ const (
 	// Key used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
+
+	// Key used to identify log records accepted by the Collector.
+	AcceptedLogRecordsKey = "accepted_log_records"
+	// Key used to identify log records refused (ie.: not ingested) by the
+	// Collector.
+	RefusedLogRecordsKey = "refused_log_records"
 )
 
 var (
@@ -160,7 +165,7 @@ func EndTraceDataReceiveOp(
 			numDroppedSpans = numReceivedSpans
 			numReceivedLegacy = 0
 		}
-		observability.RecordMetricsForTraceReceiver(
+		LegacyRecordMetricsForTraceReceiver(
 			receiverCtx, numReceivedLegacy, numDroppedSpans)
 	}
 
@@ -205,7 +210,7 @@ func EndMetricsReceiveOp(
 			numDroppedTimeSeries = numReceivedTimeSeries
 			numReceivedTimeSeries = 0
 		}
-		observability.RecordMetricsForMetricsReceiver(
+		LegacyRecordMetricsForMetricsReceiver(
 			receiverCtx, numReceivedTimeSeries, numDroppedTimeSeries)
 	}
 
@@ -233,7 +238,7 @@ func ReceiverContext(
 		if legacyName != "" {
 			name = legacyName
 		}
-		ctx = observability.ContextWithReceiverName(ctx, name)
+		ctx = LegacyContextWithReceiverName(ctx, name)
 	}
 
 	if useNew {

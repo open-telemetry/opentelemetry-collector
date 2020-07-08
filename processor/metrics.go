@@ -60,6 +60,16 @@ var (
 		"metric_batches_dropped",
 		"counts the number of metric batches dropped",
 		stats.UnitDimensionless)
+
+	StatDroppedLogRecordsCount = stats.Int64(
+		"log_records_dropped",
+		"counts the number of log records dropped",
+		stats.UnitDimensionless)
+
+	StatLogBatchesDroppedCount = stats.Int64(
+		"log_batches_dropped",
+		"counts the number of log batches dropped",
+		stats.UnitDimensionless)
 )
 
 // SpanCountStats represents span count stats grouped by service if DETAILED telemetry level is set,

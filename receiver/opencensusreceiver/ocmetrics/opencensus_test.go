@@ -36,7 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal"
-	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -352,7 +352,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (oci *
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
-	srv := observability.GRPCServerWithObservabilityEnabled()
+	srv := obsreport.GRPCServerWithObservabilityEnabled()
 	agentmetricspb.RegisterMetricsServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)

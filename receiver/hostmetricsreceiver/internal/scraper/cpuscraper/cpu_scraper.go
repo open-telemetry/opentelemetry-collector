@@ -20,7 +20,6 @@ import (
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
-	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -53,10 +52,7 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
-	_, span := trace.StartSpan(ctx, "cpuscraper.ScrapeMetrics")
-	defer span.End()
-
+func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	cpuTimes, err := cpu.Times(s.config.ReportPerCPU)
@@ -65,23 +61,23 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 	}
 
 	metrics.Resize(1)
-	initializeCPUSecondsMetric(metrics.At(0), s.startTime, cpuTimes)
+	initializeCPUTimeMetric(metrics.At(0), s.startTime, cpuTimes)
 	return metrics, nil
 }
 
-func initializeCPUSecondsMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
-	metricCPUSecondsDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeCPUTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
+	cpuTimeDescriptor.CopyTo(metric.MetricDescriptor())
 
 	ddps := metric.DoubleDataPoints()
 	ddps.Resize(len(cpuTimes) * cpuStatesLen)
 	for i, cpuTime := range cpuTimes {
-		appendCPUStateTimes(ddps, i*cpuStatesLen, startTime, cpuTime)
+		appendCPUTimeStateDataPoints(ddps, i*cpuStatesLen, startTime, cpuTime)
 	}
 }
 
 const gopsCPUTotal string = "cpu-total"
 
-func initializeCPUSecondsDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) {
+func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {

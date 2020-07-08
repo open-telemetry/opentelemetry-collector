@@ -147,7 +147,7 @@ install-tools:
 
 .PHONY: otelcol
 otelcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: run
 run:
@@ -202,7 +202,7 @@ binaries-linux_arm64:
 
 .PHONY: binaries-windows_amd64
 binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) binaries
 
 # Definitions for ProtoBuf generation.
 

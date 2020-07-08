@@ -17,7 +17,6 @@ Supported metric receivers (sorted alphabetically):
 - [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OpenTelemetry Receiver](otlpreceiver/README.md)
 - [Prometheus Receiver](prometheusreceiver/README.md)
-- [VM Metrics Receiver](vmmetricsreceiver/README.md)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more receivers that can be added to custom builds of the collector.

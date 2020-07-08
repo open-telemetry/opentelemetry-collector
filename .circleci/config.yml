@@ -61,7 +61,7 @@ commands:
           steps:
             - run:
                 name: Generate GitHub Issue
-                command: go run .circleci/reportgenerator/main.go ${TEST_RESULTS}
+                command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
 workflows:
@@ -76,21 +76,15 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - build:
+      - cross-compile:
           requires:
             - setup-and-lint
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - cross-compile:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - loadtest:
           requires:
-            - build
+            - cross-compile
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -112,6 +106,12 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - publish-stable:
           requires:
             - cross-compile
@@ -120,6 +120,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
           filters:
             branches:
               ignore: /.*/
@@ -133,6 +134,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
           filters:
             branches:
               only: master
@@ -164,17 +166,6 @@ jobs:
       - run:
           name: Lint
           command: make -j4 checklicense impi lint misspell
-
-  build:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Build collector for linux_amd64
-          command: make binaries
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
 
   cross-compile:
     executor: golang
@@ -305,3 +296,24 @@ jobs:
             popd
             export NODE_PATH=$HOME/node_modules
             bash .circleci/check-links/check-links.sh
+
+  windows-msi:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install Wix Toolset
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
+      - run:
+          name: Build MSI
+          command: |
+            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
+      - run:
+          name: Validate MSI
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin

@@ -28,9 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 const (
@@ -162,21 +161,21 @@ func newTraceDataPusherOld(droppedSpans int, retError error) traceDataPusherOld 
 }
 
 func checkRecordedMetricsForTraceExporterOld(t *testing.T, te component.TraceExporterOld, wantError error, droppedSpans int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	spans := make([]*tracepb.Span, 2)
 	td := consumerdata.TraceData{Spans: spans}
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
+	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, te.ConsumeTraceData(ctx, td))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*len(spans))
+	err := obsreporttest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*len(spans))
 	require.Nilf(t, err, "CheckValueViewExporterReceivedSpans: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
+	err = obsreporttest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
 	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 }
 
@@ -349,7 +348,7 @@ func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
 }
 
 func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExporter, wantError error, droppedSpans int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	const spansLen = 2
@@ -358,16 +357,16 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 	rs.Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(spansLen)
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeTraceReceiverName)
+	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, te.ConsumeTraces(ctx, td))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*spansLen)
+	err := obsreporttest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*spansLen)
 	require.Nilf(t, err, "CheckValueViewExporterReceivedSpans: Want nil Got %v", err)
 
-	err = observabilitytest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
+	err = obsreporttest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
 	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
 }
 

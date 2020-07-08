@@ -34,9 +34,9 @@ func TestScrapeMetrics(t *testing.T) {
 		assert.Equal(t, 3, metrics.Len())
 
 		// expect a single datapoint for 1m, 5m & 15m load metrics
-		assertMetricHasSingleDatapoint(t, metrics.At(0), metric1MLoadDescriptor)
-		assertMetricHasSingleDatapoint(t, metrics.At(1), metric5MLoadDescriptor)
-		assertMetricHasSingleDatapoint(t, metrics.At(2), metric15MLoadDescriptor)
+		assertMetricHasSingleDatapoint(t, metrics.At(0), loadAvg1MDescriptor)
+		assertMetricHasSingleDatapoint(t, metrics.At(1), loadAvg5mDescriptor)
+		assertMetricHasSingleDatapoint(t, metrics.At(2), loadAvg15mDescriptor)
 	})
 }
 

@@ -34,62 +34,52 @@ const (
 
 // descriptors
 
-var metricNetworkPacketsDescriptor = createMetricNetworkPacketsDescriptor()
-
-func createMetricNetworkPacketsDescriptor() pdata.MetricDescriptor {
+var networkPacketsDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/network/packets")
+	descriptor.SetName("system.network.packets")
 	descriptor.SetDescription("The number of packets transferred.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()
 
-var metricNetworkDroppedPacketsDescriptor = createMetricNetworkDroppedPacketsDescriptor()
-
-func createMetricNetworkDroppedPacketsDescriptor() pdata.MetricDescriptor {
+var networkDroppedPacketsDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/network/dropped_packets")
+	descriptor.SetName("system.network.dropped_packets")
 	descriptor.SetDescription("The number of packets dropped.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()
 
-var metricNetworkErrorsDescriptor = createMetricNetworkErrorsDescriptor()
-
-func createMetricNetworkErrorsDescriptor() pdata.MetricDescriptor {
+var networkErrorsDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/network/errors")
+	descriptor.SetName("system.network.errors")
 	descriptor.SetDescription("The number of errors encountered")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()
 
-var metricNetworkBytesDescriptor = createMetricNetworkBytesDescriptor()
-
-func createMetricNetworkBytesDescriptor() pdata.MetricDescriptor {
+var networkIODescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/network/bytes")
+	descriptor.SetName("system.network.io")
 	descriptor.SetDescription("The number of bytes transmitted and received")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
 	return descriptor
-}
+}()
 
-var metricNetworkTCPConnectionDescriptor = createMetricNetworkTCPConnectionDescriptor()
-
-func createMetricNetworkTCPConnectionDescriptor() pdata.MetricDescriptor {
+var networkTCPConnectionsDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/network/tcp_connections")
+	descriptor.SetName("system.network.tcp_connections")
 	descriptor.SetDescription("The number of tcp connections")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
-}
+}()
