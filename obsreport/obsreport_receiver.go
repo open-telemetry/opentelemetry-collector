@@ -42,6 +42,12 @@ const (
 	// Key used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
+
+	// Key used to identify log records accepted by the Collector.
+	AcceptedLogRecordsKey = "accepted_log_records"
+	// Key used to identify log records refused (ie.: not ingested) by the
+	// Collector.
+	RefusedLogRecordsKey = "refused_log_records"
 )
 
 var (

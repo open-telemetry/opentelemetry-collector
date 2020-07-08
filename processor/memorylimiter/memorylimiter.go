@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -54,6 +55,7 @@ var (
 type memoryLimiter struct {
 	traceConsumer   consumer.TraceConsumer
 	metricsConsumer consumer.MetricsConsumer
+	logConsumer     consumer.LogConsumer
 
 	memAllocLimit uint64
 	memSpikeLimit uint64
@@ -80,13 +82,14 @@ func newMemoryLimiter(
 	logger *zap.Logger,
 	traceConsumer consumer.TraceConsumer,
 	metricsConsumer consumer.MetricsConsumer,
-	cfg *Config) (DualTypeProcessor, error) {
+	logConsumer consumer.LogConsumer,
+	cfg *Config) (TripleTypeProcessor, error) {
 	const mibBytes = 1024 * 1024
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
 	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
 	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
 
-	if traceConsumer == nil && metricsConsumer == nil {
+	if traceConsumer == nil && metricsConsumer == nil && logConsumer == nil {
 		return nil, errNilNextConsumer
 	}
 	if cfg.CheckInterval <= 0 {
@@ -102,6 +105,7 @@ func newMemoryLimiter(
 	ml := &memoryLimiter{
 		traceConsumer:   traceConsumer,
 		metricsConsumer: metricsConsumer,
+		logConsumer:     logConsumer,
 		memAllocLimit:   memAllocLimit,
 		memSpikeLimit:   memSpikeLimit,
 		memCheckWait:    cfg.CheckInterval,
@@ -170,6 +174,32 @@ func (ml *memoryLimiter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) e
 	// this processor.
 	obsreport.ProcessorMetricsDataAccepted(ctx, numDataPoints)
 	return ml.metricsConsumer.ConsumeMetrics(ctx, md)
+}
+
+func (ml *memoryLimiter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+
+	ctx = obsreport.ProcessorContext(ctx, ml.procName)
+	numRecords := ld.LogRecordCount()
+	if ml.forcingDrop() {
+		stats.Record(
+			ctx,
+			processor.StatDroppedLogRecordsCount.M(int64(numRecords)),
+			processor.StatLogBatchesDroppedCount.M(1))
+
+		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
+		// 	it is necessary to check the pipeline to see if this is directly connected
+		// 	to a receiver (ie.: a receiver is on the call stack). For now it
+		// 	assumes that the pipeline is properly configured and a receiver is on the
+		// 	callstack.
+		obsreport.ProcessorLogRecordsRefused(ctx, numRecords)
+
+		return errForcedDrop
+	}
+
+	// Even if the next consumer returns error record the data as accepted by
+	// this processor.
+	obsreport.ProcessorMetricsDataAccepted(ctx, numRecords)
+	return ml.logConsumer.ConsumeLogs(ctx, ld)
 }
 
 func (ml *memoryLimiter) GetCapabilities() component.ProcessorCapabilities {

@@ -552,6 +552,27 @@ func Test_obsreport_ProcessorMetricViews(t *testing.T) {
 		})
 	}
 }
+
+func Test_obsreport_ProcessorLogRecords(t *testing.T) {
+	doneFn, err := setupViews()
+	require.NoError(t, err)
+	defer doneFn()
+
+	const acceptedRecords = 29
+	const refusedRecords = 11
+	const droppedRecords = 17
+
+	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
+	obsreport.ProcessorLogRecordsAccepted(processorCtx, acceptedRecords)
+	obsreport.ProcessorLogRecordsRefused(processorCtx, refusedRecords)
+	obsreport.ProcessorLogRecordsDropped(processorCtx, droppedRecords)
+
+	processorTags := processorViewTags(processor)
+	checkValueForSumView(t, "processor/accepted_log_records", processorTags, acceptedRecords)
+	checkValueForSumView(t, "processor/refused_log_records", processorTags, refusedRecords)
+	checkValueForSumView(t, "processor/dropped_log_records", processorTags, droppedRecords)
+}
+
 func setupViews() (doneFn func(), err error) {
 	views := obsreport.Configure(true, true)
 	err = view.Register(views...)
