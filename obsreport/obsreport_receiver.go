@@ -247,15 +247,9 @@ func ReceiverContext(
 		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyReceiver, name, tag.WithTTL(tag.TTLNoPropagation)))
 	}
 
-	if useNew {
-		mutators := make([]tag.Mutator, 0, 2)
-		mutators = append(mutators, tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)))
-		if transport != "" {
-			mutators = append(mutators, tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
-		}
-
-		ctx, _ = tag.New(ctx, mutators...)
-	}
+	ctx, _ = tag.New(ctx,
+		tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }
