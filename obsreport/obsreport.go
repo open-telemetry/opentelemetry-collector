@@ -113,6 +113,8 @@ func AllViews() (views []*view.View) {
 		mReceiverRefusedSpans,
 		mReceiverAcceptedMetricPoints,
 		mReceiverRefusedMetricPoints,
+		mReceiverAcceptedLogRecords,
+		mReceiverRefusedLogRecords,
 	}
 	tagKeys := []tag.Key{
 		tagKeyReceiver, tagKeyTransport,
@@ -125,6 +127,8 @@ func AllViews() (views []*view.View) {
 		mExporterFailedToSendSpans,
 		mExporterSentMetricPoints,
 		mExporterFailedToSendMetricPoints,
+		mExporterSentLogRecords,
+		mExporterFailedToSendLogRecords,
 	}
 	tagKeys = []tag.Key{tagKeyExporter}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)

@@ -19,8 +19,6 @@ package obsreport
 // of the service.
 
 import (
-	"context"
-
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -42,11 +40,11 @@ var (
 	mExporterDroppedLogRecords  = stats.Int64("otelcol/exporter/dropped_logs", "Counts the number of log records dropped by the exporter", "1")
 )
 
-// TagKeyReceiver defines tag key for Receiver.
-var TagKeyReceiver, _ = tag.NewKey("otelsvc_receiver")
+// LegacyTagKeyReceiver defines tag key for Receiver.
+var LegacyTagKeyReceiver, _ = tag.NewKey("otelsvc_receiver")
 
-// TagKeyExporter defines tag key for Exporter.
-var TagKeyExporter, _ = tag.NewKey("otelsvc_exporter")
+// LegacyTagKeyExporter defines tag key for Exporter.
+var LegacyTagKeyExporter, _ = tag.NewKey("otelsvc_exporter")
 
 // LegacyViewReceiverReceivedSpans defines the view for the receiver received spans metric.
 var LegacyViewReceiverReceivedSpans = &view.View{
@@ -54,7 +52,7 @@ var LegacyViewReceiverReceivedSpans = &view.View{
 	Description: mReceiverReceivedSpans.Description(),
 	Measure:     mReceiverReceivedSpans,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver},
 }
 
 // LegacyViewReceiverDroppedSpans defines the view for the receiver dropped spans metric.
@@ -63,7 +61,7 @@ var LegacyViewReceiverDroppedSpans = &view.View{
 	Description: mReceiverDroppedSpans.Description(),
 	Measure:     mReceiverDroppedSpans,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver},
 }
 
 // LegacyViewReceiverReceivedTimeSeries defines the view for the receiver received timeseries metric.
@@ -72,7 +70,7 @@ var LegacyViewReceiverReceivedTimeSeries = &view.View{
 	Description: mReceiverReceivedTimeSeries.Description(),
 	Measure:     mReceiverReceivedTimeSeries,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver},
 }
 
 // LegacyViewReceiverDroppedTimeSeries defines the view for the receiver dropped timeseries metric.
@@ -81,7 +79,7 @@ var LegacyViewReceiverDroppedTimeSeries = &view.View{
 	Description: mReceiverDroppedTimeSeries.Description(),
 	Measure:     mReceiverDroppedTimeSeries,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver},
 }
 
 // LegacyViewExporterReceivedSpans defines the view for the exporter received spans metric.
@@ -90,7 +88,7 @@ var LegacyViewExporterReceivedSpans = &view.View{
 	Description: mExporterReceivedSpans.Description(),
 	Measure:     mExporterReceivedSpans,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver, LegacyTagKeyExporter},
 }
 
 // LegacyViewExporterDroppedSpans defines the view for the exporter dropped spans metric.
@@ -99,7 +97,7 @@ var LegacyViewExporterDroppedSpans = &view.View{
 	Description: mExporterDroppedSpans.Description(),
 	Measure:     mExporterDroppedSpans,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver, LegacyTagKeyExporter},
 }
 
 // LegacyViewExporterReceivedTimeSeries defines the view for the exporter received timeseries metric.
@@ -108,7 +106,7 @@ var LegacyViewExporterReceivedTimeSeries = &view.View{
 	Description: mExporterReceivedTimeSeries.Description(),
 	Measure:     mExporterReceivedTimeSeries,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver, LegacyTagKeyExporter},
 }
 
 // LegacyViewExporterDroppedTimeSeries defines the view for the exporter dropped timeseries metric.
@@ -117,7 +115,7 @@ var LegacyViewExporterDroppedTimeSeries = &view.View{
 	Description: mExporterDroppedTimeSeries.Description(),
 	Measure:     mExporterDroppedTimeSeries,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver, LegacyTagKeyExporter},
 }
 
 // LegacyViewExporterReceivedLogRecords defines the view for the exporter received logs metric.
@@ -126,7 +124,7 @@ var LegacyViewExporterReceivedLogRecords = &view.View{
 	Description: mExporterReceivedLogRecords.Description(),
 	Measure:     mExporterReceivedLogRecords,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver, LegacyTagKeyExporter},
 }
 
 // LegacyViewExporterDroppedLogRecords defines the view for the exporter dropped logs metric.
@@ -135,7 +133,7 @@ var LegacyViewExporterDroppedLogRecords = &view.View{
 	Description: mExporterDroppedLogRecords.Description(),
 	Measure:     mExporterDroppedLogRecords,
 	Aggregation: view.Sum(),
-	TagKeys:     []tag.Key{TagKeyReceiver, TagKeyExporter},
+	TagKeys:     []tag.Key{LegacyTagKeyReceiver, LegacyTagKeyExporter},
 }
 
 // LegacyAllViews has the views for the metrics provided by the agent.
@@ -150,52 +148,6 @@ var LegacyAllViews = []*view.View{
 	LegacyViewExporterDroppedLogRecords,
 	LegacyViewExporterReceivedTimeSeries,
 	LegacyViewExporterDroppedTimeSeries,
-}
-
-// LegacyContextWithReceiverName adds the tag "receiver" and the name of the receiver as the value,
-// and returns the newly created context. For receivers that can receive multiple signals it is
-// recommended to encode the signal as suffix (e.g. "oc_trace" and "oc_metrics").
-func LegacyContextWithReceiverName(ctx context.Context, receiverName string) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(TagKeyReceiver, receiverName, tag.WithTTL(tag.TTLNoPropagation)))
-	return ctx
-}
-
-// LegacyRecordMetricsForTraceReceiver records the number of spans received and dropped by the receiver.
-// Use it with a context.Context generated using LegacyContextWithReceiverName().
-func LegacyRecordMetricsForTraceReceiver(ctxWithTraceReceiverName context.Context, receivedSpans int, droppedSpans int) {
-	stats.Record(ctxWithTraceReceiverName, mReceiverReceivedSpans.M(int64(receivedSpans)), mReceiverDroppedSpans.M(int64(droppedSpans)))
-}
-
-// LegacyRecordMetricsForMetricsReceiver records the number of timeseries received and dropped by the receiver.
-// Use it with a context.Context generated using LegacyContextWithReceiverName().
-func LegacyRecordMetricsForMetricsReceiver(ctxWithTraceReceiverName context.Context, receivedTimeSeries int, droppedTimeSeries int) {
-	stats.Record(ctxWithTraceReceiverName, mReceiverReceivedTimeSeries.M(int64(receivedTimeSeries)), mReceiverDroppedTimeSeries.M(int64(droppedTimeSeries)))
-}
-
-// LegacyContextWithExporterName adds the tag "exporter" and the name of the exporter as the value,
-// and returns the newly created context. For exporters that can export multiple signals it is
-// recommended to encode the signal as suffix (e.g. "oc_trace" and "oc_metrics").
-func LegacyContextWithExporterName(ctx context.Context, exporterName string) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(TagKeyExporter, exporterName, tag.WithTTL(tag.TTLNoPropagation)))
-	return ctx
-}
-
-// LegacyRecordMetricsForTraceExporter records the number of spans received and dropped by the exporter.
-// Use it with a context.Context generated using LegacyContextWithExporterName().
-func LegacyRecordMetricsForTraceExporter(ctx context.Context, receivedSpans int, droppedSpans int) {
-	stats.Record(ctx, mExporterReceivedSpans.M(int64(receivedSpans)), mExporterDroppedSpans.M(int64(droppedSpans)))
-}
-
-// LegacyRecordMetricsForMetricsExporter records the number of timeseries received and dropped by the exporter.
-// Use it with a context.Context generated using LegacyContextWithExporterName().
-func LegacyRecordMetricsForMetricsExporter(ctx context.Context, receivedTimeSeries int, droppedTimeSeries int) {
-	stats.Record(ctx, mExporterReceivedTimeSeries.M(int64(receivedTimeSeries)), mExporterDroppedTimeSeries.M(int64(droppedTimeSeries)))
-}
-
-// LegacyRecordMetricsForLogsExporter records the number of timeseries received and dropped by the exporter.
-// Use it with a context.Context generated using LegacyContextWithExporterName().
-func LegacyRecordMetricsForLogsExporter(ctx context.Context, receivedLogs int, droppedLogs int) {
-	stats.Record(ctx, mExporterReceivedLogRecords.M(int64(receivedLogs)), mExporterDroppedLogRecords.M(int64(droppedLogs)))
 }
 
 // GRPCServerWithObservabilityEnabled creates a gRPC server that at a bare minimum has

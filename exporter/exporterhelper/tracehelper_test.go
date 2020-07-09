@@ -28,12 +28,12 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 const (
-	fakeTraceReceiverName   = "fake_receiver_trace"
 	fakeTraceExporterType   = "fake_trace_exporter"
 	fakeTraceExporterName   = "fake_trace_exporter/with_name"
 	fakeTraceParentSpanName = "fake_trace_parent_span_name"
@@ -161,22 +161,23 @@ func newTraceDataPusherOld(droppedSpans int, retError error) traceDataPusherOld 
 }
 
 func checkRecordedMetricsForTraceExporterOld(t *testing.T, te component.TraceExporterOld, wantError error, droppedSpans int) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
 	spans := make([]*tracepb.Span, 2)
 	td := consumerdata.TraceData{Spans: spans}
-	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeTraceReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, te.ConsumeTraceData(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTraceData(context.Background(), td))
 	}
 
-	err := obsreporttest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*len(spans))
-	require.Nilf(t, err, "CheckValueViewExporterReceivedSpans: Want nil Got %v", err)
-
-	err = obsreporttest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
-	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	if wantError != nil {
+		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, 0, int64(numBatches*len(spans)))
+	} else {
+		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, int64(numBatches*len(spans)), 0)
+	}
 }
 
 func generateTraceTrafficOld(t *testing.T, te component.TraceExporterOld, numRequests int, wantError error) {
@@ -348,26 +349,22 @@ func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
 }
 
 func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExporter, wantError error, droppedSpans int) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
-	const spansLen = 2
-	td := pdata.NewTraces()
-	rs := td.ResourceSpans()
-	rs.Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(spansLen)
-	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeTraceReceiverName)
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, te.ConsumeTraces(ctx, td))
+		require.Equal(t, wantError, te.ConsumeTraces(context.Background(), td))
 	}
 
-	err := obsreporttest.CheckValueViewExporterReceivedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*spansLen)
-	require.Nilf(t, err, "CheckValueViewExporterReceivedSpans: Want nil Got %v", err)
-
-	err = obsreporttest.CheckValueViewExporterDroppedSpans(fakeTraceReceiverName, fakeTraceExporterName, numBatches*droppedSpans)
-	require.Nilf(t, err, "CheckValueViewExporterDroppedSpans: Want nil Got %v", err)
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	if wantError != nil {
+		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, 0, int64(numBatches*td.SpanCount()))
+	} else {
+		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, int64(numBatches*td.SpanCount()), 0)
+	}
 }
 
 func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {

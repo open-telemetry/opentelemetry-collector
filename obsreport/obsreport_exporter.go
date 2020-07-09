@@ -105,8 +105,7 @@ func EndTraceDataExportOp(
 	err error,
 ) {
 	if useLegacy {
-		LegacyRecordMetricsForTraceExporter(
-			exporterCtx, numExportedSpans, numDroppedSpans)
+		stats.Record(exporterCtx, mExporterReceivedSpans.M(int64(numExportedSpans)), mExporterDroppedSpans.M(int64(numDroppedSpans)))
 	}
 
 	endExportOp(
@@ -140,8 +139,7 @@ func EndMetricsExportOp(
 	err error,
 ) {
 	if useLegacy {
-		LegacyRecordMetricsForMetricsExporter(
-			exporterCtx, numExportedTimeSeries, numDroppedTimeSeries)
+		stats.Record(exporterCtx, mExporterReceivedTimeSeries.M(int64(numExportedTimeSeries)), mExporterDroppedTimeSeries.M(int64(numDroppedTimeSeries)))
 	}
 
 	endExportOp(
@@ -174,8 +172,7 @@ func EndLogsExportOp(
 	err error,
 ) {
 	if useLegacy {
-		LegacyRecordMetricsForLogsExporter(
-			exporterCtx, numExportedLogs, numDroppedLogs)
+		stats.Record(exporterCtx, mExporterReceivedLogRecords.M(int64(numExportedLogs)), mExporterDroppedLogRecords.M(int64(numDroppedLogs)))
 	}
 
 	endExportOp(
@@ -195,12 +192,11 @@ func ExporterContext(
 	exporter string,
 ) context.Context {
 	if useLegacy {
-		ctx = LegacyContextWithExporterName(ctx, exporter)
+		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
 	}
 
 	if useNew {
-		ctx, _ = tag.New(ctx, tag.Upsert(
-			tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
+		ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
 	}
 
 	return ctx
