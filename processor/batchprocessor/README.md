@@ -19,6 +19,9 @@ The following configuration options can be modified:
 batch will be sent.
 - `timeout` (default = 200ms): Time duration after which a batch will be sent
 regardless of size.
+- `enfoce_batch_size` (default = false): Ensures that batch size does not overflow `send_batch_size`.
+ Note that this setting might have affect performance because the processor might split large batches into smaller
+ units. It is currently implemented only for the trace pipeline.
 
 Examples:
 
