@@ -26,7 +26,8 @@ MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
 IMPI=impi
 GOSEC=gosec
-STATIC_CHECK=staticcheck
+# SA1019 ("Deprecated") check is disabled due to https://github.com/golang/protobuf/issues/1077
+STATIC_CHECK=staticcheck -checks=-SA1019
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
