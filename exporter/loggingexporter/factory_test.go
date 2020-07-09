@@ -49,3 +49,12 @@ func TestCreateTraceExporter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
+
+func TestCreateLogExporter(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.CreateLogExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+}
