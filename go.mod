@@ -24,7 +24,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.14.5
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/jaegertracing/jaeger v1.18.0
-	github.com/joshdk/go-junit v0.0.0-20200312181801-e5d93c0f31a8
+	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/mjibson/esc v0.2.0
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
@@ -52,7 +52,7 @@ require (
 	go.opencensus.io v0.22.3
 	go.uber.org/atomic v1.5.1
 	go.uber.org/zap v1.13.0
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20200408040146-ea54a3c99b9b
 	golang.org/x/text v0.3.2
@@ -63,3 +63,5 @@ require (
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
+
+replace github.com/openzipkin/zipkin-go => github.com/omnition/zipkin-go v0.2.2-envoy-workaround
