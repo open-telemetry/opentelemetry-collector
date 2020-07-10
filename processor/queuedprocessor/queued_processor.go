@@ -135,7 +135,7 @@ func (sp *queuedSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Trace
 		// record this as "refused" instead of "dropped".
 		sp.onItemDropped(item, fmt.Errorf("failed to add to the queue: %w", error(nil)))
 	} else {
-		obsreport.ProcessorTraceDataAccepted(ctx, item.spanCountStats.GetAllSpansCount())
+		obsreport.ProcessorTraceDataAccepted(ctx, td.SpanCount())
 	}
 	return nil
 }
