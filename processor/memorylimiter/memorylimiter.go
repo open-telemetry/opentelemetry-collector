@@ -155,11 +155,6 @@ func (ml *memoryLimiter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) e
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
 	_, numDataPoints := pdatautil.MetricAndDataPointCount(md)
 	if ml.forcingDrop() {
-		stats.Record(
-			ctx,
-			processor.StatDroppedMetricCount.M(int64(numDataPoints)),
-			processor.StatMetricBatchesDroppedCount.M(1))
-
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -181,11 +176,6 @@ func (ml *memoryLimiter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 	ctx = obsreport.ProcessorContext(ctx, ml.procName)
 	numRecords := ld.LogRecordCount()
 	if ml.forcingDrop() {
-		stats.Record(
-			ctx,
-			processor.StatDroppedLogRecordsCount.M(int64(numRecords)),
-			processor.StatLogBatchesDroppedCount.M(1))
-
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it

@@ -41,34 +41,10 @@ var (
 		"spans_dropped",
 		"counts the number of spans dropped",
 		stats.UnitDimensionless)
-	StatBadBatchDroppedSpanCount = stats.Int64(
-		"bad_batch_spans_dropped",
-		"counts the number of spans dropped due to being in bad batches",
-		stats.UnitDimensionless)
 
 	StatTraceBatchesDroppedCount = stats.Int64(
 		"trace_batches_dropped",
 		"counts the number of trace batches dropped",
-		stats.UnitDimensionless)
-
-	StatDroppedMetricCount = stats.Int64(
-		"metrics_dropped",
-		"counts the number of metrics dropped",
-		stats.UnitDimensionless)
-
-	StatMetricBatchesDroppedCount = stats.Int64(
-		"metric_batches_dropped",
-		"counts the number of metric batches dropped",
-		stats.UnitDimensionless)
-
-	StatDroppedLogRecordsCount = stats.Int64(
-		"log_records_dropped",
-		"counts the number of log records dropped",
-		stats.UnitDimensionless)
-
-	StatLogBatchesDroppedCount = stats.Int64(
-		"log_batches_dropped",
-		"counts the number of log batches dropped",
 		stats.UnitDimensionless)
 )
 
@@ -132,13 +108,6 @@ func MetricViews(level telemetry.Level) []*view.View {
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
-	droppedBadBatchesView := &view.View{
-		Name:        "bad_batches_dropped",
-		Measure:     StatBadBatchDroppedSpanCount,
-		Description: "The number of span batches with bad data that were dropped.",
-		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
-	}
 	receivedSpansView := &view.View{
 		Name:        StatReceivedSpanCount.Name(),
 		Measure:     StatReceivedSpanCount,
@@ -153,21 +122,12 @@ func MetricViews(level telemetry.Level) []*view.View {
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
-	droppedSpansFromBadBatchesView := &view.View{
-		Name:        StatBadBatchDroppedSpanCount.Name(),
-		Measure:     StatBadBatchDroppedSpanCount,
-		Description: "The number of spans dropped from span batches with bad data.",
-		TagKeys:     tagKeys,
-		Aggregation: view.Sum(),
-	}
 
 	legacyViews := []*view.View{
 		receivedBatchesView,
 		droppedBatchesView,
 		receivedSpansView,
 		droppedSpansView,
-		droppedBadBatchesView,
-		droppedSpansFromBadBatchesView,
 	}
 
 	return obsreport.ProcessorMetricViews("", legacyViews)
