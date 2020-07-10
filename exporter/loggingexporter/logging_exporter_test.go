@@ -57,3 +57,17 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }
+
+func TestLoggingLogExporterNoErrors(t *testing.T) {
+	lle, err := NewLogExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	require.NotNil(t, lle)
+	assert.NoError(t, err)
+
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyResourceLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyOneNilResourceLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataNoLogRecords()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyLogs()))
+
+	assert.NoError(t, lle.Shutdown(context.Background()))
+}

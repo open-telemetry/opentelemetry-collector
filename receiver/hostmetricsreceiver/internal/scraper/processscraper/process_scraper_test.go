@@ -75,8 +75,8 @@ func assertResourceAttributes(t *testing.T, resourceMetrics pdata.ResourceMetric
 }
 
 func assertCPUUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	cpuUsageMetric := getMetric(t, metricCPUUsageDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, metricCPUUsageDescriptor, cpuUsageMetric.MetricDescriptor())
+	cpuUsageMetric := getMetric(t, cpuTimeDescriptor, resourceMetrics)
+	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuUsageMetric.MetricDescriptor())
 	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 0, stateLabelName, userStateLabelValue)
 	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 1, stateLabelName, systemStateLabelValue)
 	if runtime.GOOS == "linux" {
@@ -85,13 +85,13 @@ func assertCPUUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetri
 }
 
 func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	memoryUsageMetric := getMetric(t, metricMemoryUsageDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, metricMemoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
+	memoryUsageMetric := getMetric(t, memoryUsageDescriptor, resourceMetrics)
+	internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
 }
 
 func assertDiskBytesMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	diskBytesMetric := getMetric(t, metricDiskBytesDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, metricDiskBytesDescriptor, diskBytesMetric.MetricDescriptor())
+	diskBytesMetric := getMetric(t, diskIODescriptor, resourceMetrics)
+	internal.AssertDescriptorEqual(t, diskIODescriptor, diskBytesMetric.MetricDescriptor())
 	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 1, directionLabelName, writeDirectionLabelValue)
 }

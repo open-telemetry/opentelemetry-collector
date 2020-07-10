@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -81,5 +82,18 @@ func TestSinkMetricsExporter(t *testing.T) {
 		want = append(want, pdatautil.MetricsFromInternalMetrics(md))
 	}
 	got := sink.AllMetrics()
+	assert.Equal(t, want, got)
+}
+
+func TestSinkLogExporter(t *testing.T) {
+	sink := new(SinkLogExporter)
+	md := testdata.GenerateLogDataOneLogNoResource()
+	want := make([]data.Logs, 0, 7)
+	for i := 0; i < 7; i++ {
+		err := sink.ConsumeLogs(context.Background(), md)
+		require.Nil(t, err)
+		want = append(want, md)
+	}
+	got := sink.AllLogs()
 	assert.Equal(t, want, got)
 }

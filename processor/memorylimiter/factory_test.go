@@ -52,6 +52,10 @@ func TestCreateProcessor(t *testing.T) {
 	assert.Nil(t, mp)
 	assert.Error(t, err, "created processor with invalid settings")
 
+	lp, err := factory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogExporter())
+	assert.Nil(t, lp)
+	assert.Error(t, err, "created processor with invalid settings")
+
 	// Create processor with a valid config.
 	pCfg := cfg.(*Config)
 	pCfg.MemoryLimitMiB = 5722
@@ -68,4 +72,9 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	assert.NoError(t, mp.Shutdown(context.Background()))
+
+	lp, err = factory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogExporter())
+	assert.NoError(t, err)
+	assert.NotNil(t, lp)
+	assert.NoError(t, lp.Shutdown(context.Background()))
 }

@@ -22,23 +22,23 @@ import (
 
 const fileSystemStatesLen = 3
 
-func appendFileSystemUsedStateDataPoints(idps pdata.Int64DataPointSlice, startIdx int, deviceUsage *deviceUsage) {
-	initializeFileSystemUsedDataPoint(idps.At(startIdx+0), deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.Used))
-	initializeFileSystemUsedDataPoint(idps.At(startIdx+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.Free))
-	initializeFileSystemUsedDataPoint(idps.At(startIdx+2), deviceUsage.deviceName, reservedLabelValue, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
+func appendFileSystemUsageStateDataPoints(idps pdata.Int64DataPointSlice, startIdx int, deviceUsage *deviceUsage) {
+	initializeFileSystemUsageDataPoint(idps.At(startIdx+0), deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.Used))
+	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.Free))
+	initializeFileSystemUsageDataPoint(idps.At(startIdx+2), deviceUsage.deviceName, reservedLabelValue, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
 }
 
 const systemSpecificMetricsLen = 1
 
 func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, deviceUsages []*deviceUsage) {
 	metric := metrics.At(startIdx)
-	metricFilesystemINodesUsedDescriptor.CopyTo(metric.MetricDescriptor())
+	fileSystemINodesUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2 * len(deviceUsages))
 	for idx, deviceUsage := range deviceUsages {
 		startIndex := 2 * idx
-		initializeFileSystemUsedDataPoint(idps.At(startIndex+0), deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.InodesUsed))
-		initializeFileSystemUsedDataPoint(idps.At(startIndex+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.InodesFree))
+		initializeFileSystemUsageDataPoint(idps.At(startIndex+0), deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.InodesUsed))
+		initializeFileSystemUsageDataPoint(idps.At(startIndex+1), deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.InodesFree))
 	}
 }

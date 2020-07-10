@@ -47,7 +47,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
-	"go.opentelemetry.io/collector/receiver/vmmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -63,7 +62,6 @@ func TestDefaultComponents(t *testing.T) {
 		"prometheus":  &prometheusreceiver.Factory{},
 		"opencensus":  &opencensusreceiver.Factory{},
 		"otlp":        &otlpreceiver.Factory{},
-		"vmmetrics":   &vmmetricsreceiver.Factory{},
 		"hostmetrics": hostmetricsreceiver.NewFactory(),
 	}
 	expectedProcessors := map[configmodels.Type]component.ProcessorFactoryBase{

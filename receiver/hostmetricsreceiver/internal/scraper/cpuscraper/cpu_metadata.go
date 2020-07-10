@@ -40,14 +40,12 @@ const (
 
 // descriptors
 
-var metricCPUSecondsDescriptor = createMetricCPUSecondsDescriptor()
-
-func createMetricCPUSecondsDescriptor() pdata.MetricDescriptor {
+var cpuTimeDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/cpu/usage")
+	descriptor.SetName("system.cpu.time")
 	descriptor.SetDescription("Total CPU seconds broken down by different states.")
 	descriptor.SetUnit("s")
 	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 	return descriptor
-}
+}()

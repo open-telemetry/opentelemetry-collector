@@ -20,13 +20,17 @@ package consumererror
 // permanent is an error that will be always returned if its source
 // receives the same inputs.
 type permanent struct {
-	error
+	err error
 }
 
 // Permanent wraps an error to indicate that it is a permanent error, i.e.: an
 // error that will be always returned if its source receives the same inputs.
 func Permanent(err error) error {
-	return permanent{err}
+	return permanent{err: err}
+}
+
+func (p permanent) Error() string {
+	return "Permanent error: " + p.err.Error()
 }
 
 // IsPermanent checks if an error was wrapped with the Permanent function, that

@@ -61,7 +61,7 @@ commands:
           steps:
             - run:
                 name: Generate GitHub Issue
-                command: go run .circleci/reportgenerator/main.go ${TEST_RESULTS}
+                command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
 workflows:
@@ -76,21 +76,15 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - build:
+      - cross-compile:
           requires:
             - setup-and-lint
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - cross-compile:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - loadtest:
           requires:
-            - build
+            - cross-compile
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -112,6 +106,12 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - publish-stable:
           requires:
             - cross-compile
@@ -120,6 +120,9 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
+            - deb-package
+            - rpm-package
           filters:
             branches:
               ignore: /.*/
@@ -133,12 +136,29 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
           filters:
             branches:
               only: master
             tags:
               ignore: /.*/
       - check-links:
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - build-package:
+          name: deb-package
+          package_type: deb
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - build-package:
+          name: rpm-package
+          package_type: rpm
+          requires:
+            - cross-compile
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -164,17 +184,6 @@ jobs:
       - run:
           name: Lint
           command: make -j4 checklicense impi lint misspell
-
-  build:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Build collector for linux_amd64
-          command: make binaries
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
 
   cross-compile:
     executor: golang
@@ -305,3 +314,59 @@ jobs:
             popd
             export NODE_PATH=$HOME/node_modules
             bash .circleci/check-links/check-links.sh
+
+  windows-msi:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install Wix Toolset
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
+      - run:
+          name: Build MSI
+          command: |
+            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
+      - run:
+          name: Validate MSI
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  build-package:
+    executor: golang
+    parameters:
+      package_type:
+        type: enum
+        enum: ["deb", "rpm"]
+    steps:
+      - checkout
+      - attach_to_workspace
+      - run:
+          name: Install fpm and dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+            sudo gem install --no-document fpm -v 1.11.0
+      - run:
+          name: Build << parameters.package_type >> amd64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./bin/"
+      - run:
+          name: Build << parameters.package_type >> arm64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./bin/"
+      - run:
+          name: Test << parameters.package_type >> package installation
+          command: |
+            if [[ "<< parameters.package_type >>" = "deb" ]]; then
+                sudo dpkg -i bin/otel-collector*amd64.deb
+            else
+                sudo rpm -ivh bin/otel-collector*x86_64.rpm
+            fi
+            test -f /usr/bin/otelcol || (echo "/usr/bin/otelcol not found!" && exit 1)
+            test -f /etc/otel-collector/config.yaml || (echo "/etc/otel-collector/config.yaml not found" && exit 1)
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin

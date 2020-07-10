@@ -35,7 +35,7 @@ import (
 	otlptracecol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -68,7 +68,7 @@ func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
 	rcv := &mockTraceReceiver{}
 
 	// Now run it as a gRPC server
-	rcv.srv = observability.GRPCServerWithObservabilityEnabled()
+	rcv.srv = obsreport.GRPCServerWithObservabilityEnabled()
 	otlptracecol.RegisterTraceServiceServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
@@ -99,7 +99,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	rcv := &mockLogsReceiver{}
 
 	// Now run it as a gRPC server
-	rcv.srv = observability.GRPCServerWithObservabilityEnabled()
+	rcv.srv = obsreport.GRPCServerWithObservabilityEnabled()
 	otlplogs.RegisterLogServiceServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)

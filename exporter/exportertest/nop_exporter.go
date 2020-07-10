@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 type nopExporterOld struct {
@@ -47,6 +48,7 @@ func (ne *nopExporterOld) Shutdown(context.Context) error {
 const (
 	nopTraceExporterName   = "nop_trace"
 	nopMetricsExporterName = "nop_metrics"
+	nopLogExporterName     = "nop_log"
 )
 
 // NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
@@ -82,6 +84,10 @@ func (ne *nopExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) err
 	return ne.retError
 }
 
+func (ne *nopExporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	return ne.retError
+}
+
 // Shutdown stops the exporter and is invoked during shutdown.
 func (ne *nopExporter) Shutdown(context.Context) error {
 	return nil
@@ -99,6 +105,14 @@ func NewNopTraceExporter() component.TraceExporter {
 func NewNopMetricsExporter() component.MetricsExporter {
 	ne := &nopExporter{
 		name: nopMetricsExporterName,
+	}
+	return ne
+}
+
+// NewNopLogExporterOld creates an LogExporter that just drops the received data.
+func NewNopLogExporter() component.LogExporter {
+	ne := &nopExporter{
+		name: nopLogExporterName,
 	}
 	return ne
 }

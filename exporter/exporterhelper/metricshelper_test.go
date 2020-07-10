@@ -29,13 +29,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/observability"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 const (
-	fakeMetricsReceiverName   = "fake_receiver"
 	fakeMetricsExporterType   = "fake_metrics_exporter"
 	fakeMetricsExporterName   = "fake_metrics_exporter/with_name"
 	fakeMetricsParentSpanName = "fake_metrics_parent_span_name"
@@ -257,21 +255,23 @@ func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
 }
 
 func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, droppedTimeSeries int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
 	md := testdata.GenerateMetricDataTwoMetrics()
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*md.MetricCount())
-	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
-
-	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
-	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
+	if wantError != nil {
+		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, 0, numPoints)
+	} else {
+		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, numPoints, 0)
+	}
 }
 
 func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numRequests int, wantError error) {
@@ -324,28 +324,31 @@ func newPushMetricsDataOld(droppedTimeSeries int, retError error) PushMetricsDat
 }
 
 func checkRecordedMetricsForMetricsExporterOld(t *testing.T, me component.MetricsExporterOld, wantError error, droppedTimeSeries int) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
+
 	metrics := []*metricspb.Metric{
 		{
-			Timeseries: make([]*metricspb.TimeSeries, 1),
+			Timeseries: []*metricspb.TimeSeries{{Points: []*metricspb.Point{{Value: &metricspb.Point_Int64Value{}}}}},
 		},
 		{
-			Timeseries: make([]*metricspb.TimeSeries, 1),
+			Timeseries: []*metricspb.TimeSeries{{Points: []*metricspb.Point{{Value: &metricspb.Point_Int64Value{}}}}},
 		},
 	}
 	md := consumerdata.MetricsData{Metrics: metrics}
-	ctx := observability.ContextWithReceiverName(context.Background(), fakeMetricsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeMetricsData(ctx, md))
+		require.Equal(t, wantError, me.ConsumeMetricsData(context.Background(), md))
 	}
 
-	err := observabilitytest.CheckValueViewExporterReceivedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*NumTimeSeries(md))
-	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
-
-	err = observabilitytest.CheckValueViewExporterDroppedTimeSeries(fakeMetricsReceiverName, fakeMetricsExporterName, numBatches*droppedTimeSeries)
-	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	numPoints := int64(numBatches * len(md.Metrics))
+	if wantError != nil {
+		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, 0, numPoints)
+	} else {
+		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, numPoints, 0)
+	}
 }
 
 func generateMetricsTrafficOld(t *testing.T, me component.MetricsExporterOld, numRequests int, wantError error) {

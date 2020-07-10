@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 type logDataBuffer struct {
@@ -209,6 +210,14 @@ func (b *logDataBuffer) logSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
 
 func (b *logDataBuffer) logDataPointLabels(labels pdata.StringMap) {
 	b.logStringMap("Data point labels", labels)
+}
+
+func (b *logDataBuffer) logLogRecord(lr pdata.LogRecord) {
+	b.logEntry("Timestamp: %d", lr.Timestamp())
+	b.logEntry("Severity: %s", lr.SeverityText())
+	b.logEntry("ShortName: %s", lr.ShortName())
+	b.logEntry("Body: %s", lr.Body())
+	b.logAttributeMap("Attributes", lr.Attributes())
 }
 
 func attributeValueToString(av pdata.AttributeValue) string {
@@ -401,4 +410,58 @@ func loggerSync(logger *zap.Logger) func(context.Context) error {
 		}
 		return err
 	}
+}
+
+// NewLogExporter creates an exporter.LogExporter that just drops the
+// received data and logs debugging messages.
+func NewLogExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogExporter, error) {
+	s := &loggingExporter{
+		debug:  level == "debug",
+		logger: logger,
+	}
+
+	return exporterhelper.NewLogsExporter(
+		config,
+		s.pushLogData,
+		exporterhelper.WithShutdown(loggerSync(logger)),
+	)
+}
+
+func (s *loggingExporter) pushLogData(
+	_ context.Context,
+	ld data.Logs,
+) (int, error) {
+	s.logger.Info("LogExporter", zap.Int("#logs", ld.LogRecordCount()))
+
+	if !s.debug {
+		return 0, nil
+	}
+
+	buf := logDataBuffer{}
+	rms := ld.ResourceLogs()
+	for i := 0; i < rms.Len(); i++ {
+		buf.logEntry("ResourceLog #%d", i)
+		rm := rms.At(i)
+		if rm.IsNil() {
+			buf.logEntry("* Nil ResourceLog")
+			continue
+		}
+		if !rm.Resource().IsNil() {
+			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
+		}
+		lrs := rm.Logs()
+		for j := 0; j < lrs.Len(); j++ {
+			buf.logEntry("LogRecord #%d", j)
+			lr := lrs.At(j)
+			if lr.IsNil() {
+				buf.logEntry("* Nil LogRecord")
+				continue
+			}
+			buf.logLogRecord(lr)
+		}
+	}
+
+	s.logger.Debug(buf.str.String())
+
+	return 0, nil
 }

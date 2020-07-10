@@ -20,38 +20,32 @@ import (
 
 // descriptors
 
-var metric1MLoadDescriptor = createMetric1MLoadDescriptor()
-
-func createMetric1MLoadDescriptor() pdata.MetricDescriptor {
+var loadAvg1MDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/load/1m")
+	descriptor.SetName("system.cpu.load_average.1m")
 	descriptor.SetDescription("Average CPU Load over 1 minute.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
-}
+}()
 
-var metric5MLoadDescriptor = createMetric5MLoadDescriptor()
-
-func createMetric5MLoadDescriptor() pdata.MetricDescriptor {
+var loadAvg5mDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/load/5m")
+	descriptor.SetName("system.cpu.load_average.5m")
 	descriptor.SetDescription("Average CPU Load over 5 minutes.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
-}
+}()
 
-var metric15MLoadDescriptor = createMetric15MLoadDescriptor()
-
-func createMetric15MLoadDescriptor() pdata.MetricDescriptor {
+var loadAvg15mDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/load/15m")
+	descriptor.SetName("system.cpu.load_average.15m")
 	descriptor.SetDescription("Average CPU Load over 15 minutes.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
-}
+}()
