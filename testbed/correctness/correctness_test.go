@@ -251,6 +251,10 @@ service:
 func TestMetricsGoldenData(t *testing.T) {
 	tests, err := loadPictOutputPipelineDefs("testdata/generated_pict_pairs_metrics_pipeline.txt")
 	assert.NoError(t, err)
+	// tests := []PipelineDef{{
+	// 	receiver: "otlp",
+	// 	exporter: "otlp",
+	// }}
 	for _, test := range tests {
 		test.testName = fmt.Sprintf("%s-%s", test.receiver, test.exporter)
 		test.dataSender = constructMetricsSender(t, test.receiver)
@@ -269,12 +273,13 @@ func testWithMetricsGoldenDataset(t *testing.T, sender testbed.DataSender, recei
 
 	configYaml := createConfigYaml(sender, receiver, nil, "metrics")
 	println(configYaml)
-
 	configCleanup, cfgErr := collector.PrepareConfig(configYaml)
 	assert.NoError(t, cfgErr)
 	defer configCleanup()
 
-	dataProvider := testbed.NewGoldenDataProvider("", "", "", 42)
+	dataProvider := testbed.NewGoldenDataProvider(
+		"", "", "../../internal/goldendataset/testdata/generated_pict_pairs_metrics.txt", 42,
+	)
 	validator := testbed.NewCorrectnessTestMetricValidator(dataProvider)
 
 	tc := testbed.NewTestCase(

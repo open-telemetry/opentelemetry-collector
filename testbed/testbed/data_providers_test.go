@@ -17,19 +17,39 @@ package testbed
 import (
 	"testing"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
+
+	"go.opentelemetry.io/collector/internal/data"
 )
 
+const metricsPictPairsFile = "../../internal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
+
 func TestGenerateMetrics(t *testing.T) {
-	p := NewGoldenDataProvider("", "", 42)
-	m, done := p.GenerateMetrics()
-	require.True(t, done)
-	require.NotNil(t, m)
+	dp := NewGoldenDataProvider("", "", metricsPictPairsFile, 42)
+	dp.SetLoadGeneratorCounters(atomic.NewUint64(0), atomic.NewUint64(0))
+	var ms []data.MetricData
+	for true {
+		m, done := dp.GenerateMetrics()
+		if done {
+			break
+		}
+		ms = append(ms, m)
+	}
+	require.Equal(t, len(dp.metricsGenerated), len(ms))
 }
 
 func TestGenerateMetricsOld(t *testing.T) {
-	p := NewGoldenDataProvider("", "", 42)
-	m, done := p.GenerateMetricsOld()
-	require.True(t, done)
-	require.NotNil(t, m)
+	dp := NewGoldenDataProvider("", "", metricsPictPairsFile, 42)
+	dp.SetLoadGeneratorCounters(atomic.NewUint64(0), atomic.NewUint64(0))
+	var ms [][]*metricspb.Metric
+	for {
+		m, done := dp.GenerateMetricsOld()
+		if done {
+			break
+		}
+		ms = append(ms, m)
+	}
+	require.Equal(t, len(dp.metricsGenerated), len(ms))
 }

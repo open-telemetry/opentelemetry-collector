@@ -360,7 +360,8 @@ func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
 			log.Printf("cannot generate metrics: %s", err)
 		}
 	}
-	if dp.metricsIndex >= len(dp.metricsGenerated) {
+	numMetricsGenerated := len(dp.metricsGenerated)
+	if dp.metricsIndex == numMetricsGenerated {
 		return data.MetricData{}, true
 	}
 	md := dp.metricsGenerated[dp.metricsIndex]
@@ -372,11 +373,14 @@ func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
 
 func (dp *GoldenDataProvider) GenerateMetricsOld() (out []*metricspb.Metric, done bool) {
 	md, done := dp.GenerateMetrics()
+	if done {
+		return nil, true
+	}
 	oc := internaldata.MetricDataToOC(md)
 	for _, metricsData := range oc {
 		out = append(out, metricsData.Metrics...)
 	}
-	return out, done
+	return out, false
 }
 
 func (dp *GoldenDataProvider) GetMetricsGenerated() []data.MetricData {
