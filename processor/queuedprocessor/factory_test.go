@@ -42,6 +42,6 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, err, "cannot create trace processor")
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, nil, cfg)
-	assert.Nil(t, mp)
-	assert.Error(t, err, "should not be able to create metric processor")
+	assert.NotNil(t, mp)
+	assert.NoError(t, err, "cannot create metrics processor")
 }
