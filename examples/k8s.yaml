@@ -127,7 +127,7 @@ data:
       zpages: {}
     exporters:
       zipkin:
-        url: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
+        endpoint: "http://somezipkin.target.com:9411/api/v2/spans" # Replace with a real endpoint.
       jaeger:
         endpoint: "somejaegergrpc.target.com:14250" # Replace with a real endpoint.
         insecure: true
