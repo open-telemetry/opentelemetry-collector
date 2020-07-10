@@ -72,13 +72,19 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
-      - setup-and-lint:
+      - setup-environment:
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - lint:
+          requires:
+            - setup-environment
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - cross-compile:
           requires:
-            - setup-and-lint
+            - setup-environment
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -90,19 +96,19 @@ workflows:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - test:
           requires:
-            - setup-and-lint
+            - setup-environment
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - gosec:
           requires:
-            - setup-and-lint
+            - setup-environment
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - coverage:
           requires:
-            - setup-and-lint
+            - setup-environment
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
@@ -164,7 +170,7 @@ workflows:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
 
 jobs:
-  setup-and-lint:
+  setup-environment:
     executor: golang
     steps:
       - checkout
@@ -181,6 +187,11 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: go/bin
+
+  lint:
+    executor: golang
+    steps:
+      - attach_to_workspace
       - run:
           name: Lint
           command: make -j4 checklicense impi lint misspell
