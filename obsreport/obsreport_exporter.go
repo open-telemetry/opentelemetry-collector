@@ -195,9 +195,7 @@ func ExporterContext(
 		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
 	}
 
-	if useNew {
-		ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
-	}
+	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }
