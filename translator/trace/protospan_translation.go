@@ -42,8 +42,9 @@ const (
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required
 // by other protocols.
 const (
-	ResourceNotSet  = "OTLPResourceNotSet"
-	ResourceNoAttrs = "OTLPResourceNoAttributes"
+	ResourceNotSet        = "OTLPResourceNotSet"
+	ResourceNoAttrs       = "OTLPResourceNoAttributes"
+	ResourceNoServiceName = "OTLPResourceNoServiceName"
 )
 
 // OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing
