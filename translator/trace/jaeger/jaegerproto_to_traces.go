@@ -90,13 +90,16 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 }
 
 func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
-	if process == nil {
+	if process == nil || process.ServiceName == tracetranslator.ResourceNotSet {
 		return
 	}
 
 	dest.InitEmpty()
 
 	serviceName := process.GetServiceName()
+	if serviceName == tracetranslator.ResourceNoAttrs {
+		return
+	}
 	tags := process.GetTags()
 	if serviceName == "" && tags == nil {
 		return
@@ -176,6 +179,7 @@ func jSpanToInternal(span *model.Span, dest pdata.Span) {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.StringVal()))
 		attrs.Delete(tracetranslator.TagSpanKind)
 	}
+	dest.SetTraceState(getTraceStateFromAttrs(attrs))
 
 	// drop the attributes slice if all of them were replaced during translation
 	if attrs.Len() == 0 {
@@ -206,27 +210,31 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 }
 
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
-	dest.InitEmpty()
 
 	statusCode := pdata.StatusCode(otlptrace.Status_Ok)
+	statusMessage := ""
+	statusExists := false
 
 	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
 			statusCode = pdata.StatusCode(otlptrace.Status_UnknownError)
 			attrs.Delete(tracetranslator.TagError)
+			statusExists = true
 		}
 	}
 
 	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
+		statusExists = true
 		if code, err := getStatusCodeFromAttr(codeAttr); err == nil {
 			statusCode = code
 			attrs.Delete(tracetranslator.TagStatusCode)
 		}
 		if msgAttr, ok := attrs.Get(tracetranslator.TagStatusMsg); ok {
-			dest.SetMessage(msgAttr.StringVal())
+			statusMessage = msgAttr.StringVal()
 			attrs.Delete(tracetranslator.TagStatusMsg)
 		}
 	} else if httpCodeAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusCode); ok {
+		statusExists = true
 		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 
 			// Do not set status code to OK in case it was set to Unknown based on "error" tag
@@ -235,12 +243,16 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 			}
 
 			if msgAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
-				dest.SetMessage(msgAttr.StringVal())
+				statusMessage = msgAttr.StringVal()
 			}
 		}
 	}
 
-	dest.SetCode(statusCode)
+	if statusExists {
+		dest.InitEmpty()
+		dest.SetCode(statusCode)
+		dest.SetMessage(statusMessage)
+	}
 }
 
 func getStatusCodeFromAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
@@ -283,6 +295,8 @@ func jSpanKindToInternal(spanKind string) pdata.SpanKind {
 		return pdata.SpanKindPRODUCER
 	case "consumer":
 		return pdata.SpanKindCONSUMER
+	case "internal":
+		return pdata.SpanKindINTERNAL
 	}
 	return pdata.SpanKindUNSPECIFIED
 }
@@ -305,8 +319,9 @@ func jLogsToSpanEvents(logs []model.Log, dest pdata.SpanEventSlice) {
 		attrs := event.Attributes()
 		attrs.InitEmptyWithCapacity(len(log.Fields))
 		jTagsToInternalAttributes(log.Fields, attrs)
-		if name, ok := attrs.Get("message"); ok {
+		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())
+			attrs.Delete(tracetranslator.TagMessage)
 		}
 	}
 }
@@ -334,4 +349,14 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 	if i < len(refs) {
 		dest.Resize(i)
 	}
+}
+
+func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
+	traceState := pdata.TraceStateEmpty
+	// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
+	if attr, ok := attrs.Get(tracetranslator.TagW3CTraceState); ok {
+		traceState = pdata.TraceState(attr.StringVal())
+		attrs.Delete(tracetranslator.TagW3CTraceState)
+	}
+	return traceState
 }

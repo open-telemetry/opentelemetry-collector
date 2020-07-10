@@ -166,8 +166,9 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
 		attrs := event.Attributes()
 		attrs.InitEmptyWithCapacity(len(log.Fields))
 		jThriftTagsToInternalAttributes(log.Fields, attrs)
-		if name, ok := attrs.Get("message"); ok {
+		if name, ok := attrs.Get(tracetranslator.TagMessage); ok {
 			event.SetName(name.StringVal())
+			attrs.Delete(tracetranslator.TagMessage)
 		}
 	}
 }

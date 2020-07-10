@@ -152,7 +152,8 @@ func generateThriftSpan() *jaeger.Span {
 	spanEndTs := unixNanoToMicroseconds(testSpanEndTimestamp)
 	eventTs := unixNanoToMicroseconds(testSpanEventTimestamp)
 	intAttrVal := int64(123)
-	eventAttrVal := "event-with-attr"
+	eventName := "event-with-attr"
+	eventStrAttrVal := "span-event-attr-val"
 	statusCode := int64(tracetranslator.OCCancelled)
 	statusMsg := "status-cancelled"
 	kind := string(tracetranslator.OpenTracingSpanKindClient)
@@ -169,9 +170,14 @@ func generateThriftSpan() *jaeger.Span {
 				Timestamp: eventTs,
 				Fields: []*jaeger.Tag{
 					{
-						Key:   "message",
+						Key:   tracetranslator.TagMessage,
 						VType: jaeger.TagType_STRING,
-						VStr:  &eventAttrVal,
+						VStr:  &eventName,
+					},
+					{
+						Key:   "span-event-attr",
+						VType: jaeger.TagType_STRING,
+						VStr:  &eventStrAttrVal,
 					},
 				},
 			},

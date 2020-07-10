@@ -113,6 +113,10 @@ type SpanKind otlptrace.Span_SpanKind
 func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
 
 const (
+	TraceStateEmpty TraceState = ""
+)
+
+const (
 	SpanKindUNSPECIFIED = SpanKind(0)
 	SpanKindINTERNAL    = SpanKind(otlptrace.Span_INTERNAL)
 	SpanKindSERVER      = SpanKind(otlptrace.Span_SERVER)
