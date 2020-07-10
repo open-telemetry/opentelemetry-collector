@@ -26,7 +26,7 @@ import (
 // Settings
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }

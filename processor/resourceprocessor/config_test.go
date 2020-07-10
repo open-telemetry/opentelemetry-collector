@@ -22,33 +22,35 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
 	factories.Processors[typeStr] = &Factory{}
 
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p1 := cfg.Processors["resource"]
-	assert.Equal(t, p1, factory.CreateDefaultConfig())
-
-	p2 := cfg.Processors["resource/2"]
-	assert.Equal(t, p2, &Config{
+	assert.Equal(t, cfg.Processors["resource"], &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: "resource",
-			NameVal: "resource/2",
+			NameVal: "resource",
 		},
-		ResourceType: "host",
-		Labels: map[string]string{
-			"cloud.zone":       "zone-1",
-			"k8s.cluster.name": "k8s-cluster",
-			"host.name":        "k8s-node",
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
+			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+			{Key: "redundant-attribute", Action: attraction.DELETE},
+		},
+	})
+
+	assert.Equal(t, cfg.Processors["resource/invalid"], &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource/invalid",
 		},
 	})
 }

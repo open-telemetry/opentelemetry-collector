@@ -16,14 +16,20 @@ package resourceprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
-	// ResourceType overrides the original resource type.
+
+	// AttributesActions specifies the list of actions to be applied on resource attributes.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
+	AttributesActions []attraction.ActionKeyValue `mapstructure:"attributes"`
+
+	// ResourceType field is deprecated. Set "opencensus.type" key in "attributes.upsert" map instead.
 	ResourceType string `mapstructure:"type"`
-	// Labels specify static labels to be added to resource.
-	// In case of a conflict the label will be overridden.
+
+	// Labels field is deprecated. Use "attributes.upsert" instead.
 	Labels map[string]string `mapstructure:"labels"`
 }

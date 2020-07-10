@@ -2,25 +2,26 @@
 
 Supported pipeline types: metrics, traces
 
-The resource processor can be used to override a resource.
+The resource processor can be used to apply changes on resource attributes.
 Please refer to [config.go](./config.go) for the config spec.
 
-The following configuration options are required:
-- `type`: Resource type to be applied. If specified, this value overrides the
-original resource type. Otherwise, the original resource type is kept.
-- `labels`: Map of key/value pairs that should be added to the resource.
+`attributes` represents actions that can be applied on resource attributes.
+See processor/attributesprocessor/README.md for more details on supported attributes actions.
 
 Examples:
 
 ```yaml
 processors:
   resource:
-    type: "host"
-    labels: {
-      "cloud.zone": "zone-1",
-      "k8s.cluster.name": "k8s-cluster",
-      "host.name": "k8s-node",
-    }
+    attributes:
+    - key: cloud.zone
+      value: "zone-1"
+      action: upsert
+    - key: k8s.cluster.name
+      from_attribute: k8s-cluster
+      action: insert
+    - key: redundant-attribute
+      action: delete
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
