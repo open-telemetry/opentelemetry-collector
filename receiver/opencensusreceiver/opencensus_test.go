@@ -517,13 +517,14 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				doneFn := obsreporttest.SetupRecordedMetricsTest()
+				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+				require.NoError(t, err)
 				defer doneFn()
 
 				sink := new(sinkTraceConsumer)
 
 				var opts []Option
-				ocr, err := New(ocReceiver, "tcp", addr, nil, nil, opts...)
+				ocr, err := New(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -552,12 +553,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
-				require.Nil(
-					t,
-					obsreporttest.CheckValueViewReceiverReceivedSpans(
-						exporter.receiverTag,
-						tt.expectedReceivedBatches),
-				)
+				obsreporttest.CheckReceiverTracesViews(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}
@@ -670,13 +666,14 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				doneFn := obsreporttest.SetupRecordedMetricsTest()
+				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+				require.NoError(t, err)
 				defer doneFn()
 
 				sink := new(sinkMetricsConsumer)
 
 				var opts []Option
-				ocr, err := New(ocReceiver, "tcp", addr, nil, nil, opts...)
+				ocr, err := New(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -705,12 +702,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
-				require.Nil(
-					t,
-					obsreporttest.CheckValueViewReceiverReceivedTimeSeries(
-						exporter.receiverTag,
-						tt.expectedReceivedBatches),
-				)
+				obsreporttest.CheckReceiverMetricsViews(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}

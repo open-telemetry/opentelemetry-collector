@@ -351,12 +351,13 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				doneFn := obsreporttest.SetupRecordedMetricsTest()
+				doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+				require.NoError(t, err)
 				defer doneFn()
 
 				sink := new(exportertest.SinkTraceExporter)
 
-				ocr := newGRPCReceiver(t, otlpReceiver, addr, sink, nil)
+				ocr := newGRPCReceiver(t, exporter.receiverTag, addr, sink, nil)
 				require.NotNil(t, ocr)
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				defer ocr.Shutdown(context.Background())
@@ -380,12 +381,8 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
-				require.Nil(
-					t,
-					obsreporttest.CheckValueViewReceiverReceivedSpans(
-						exporter.receiverTag,
-						tt.expectedReceivedBatches),
-				)
+
+				obsreporttest.CheckReceiverTracesViews(t, exporter.receiverTag, "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs))
 			})
 		}
 	}

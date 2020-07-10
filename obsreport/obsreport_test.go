@@ -19,8 +19,6 @@ package obsreport_test
 import (
 	"context"
 	"errors"
-	"reflect"
-	"sort"
 	"sync"
 	"testing"
 
@@ -46,17 +44,6 @@ const (
 
 var (
 	errFake = errors.New("errFake")
-
-	// Names used by the metrics and labels are hard coded here in order to avoid
-	// inadvertent changes: at this point changing metric names and labels should
-	// be treated as a breaking changing and requires a good justification.
-	// Changes to metric names or labels can break alerting, dashboards, etc
-	// that are used to monitor the Collector in production deployments.
-	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
-	receiverTag, _  = tag.NewKey("receiver")
-	transportTag, _ = tag.NewKey("transport")
-	exporterTag, _  = tag.NewKey("exporter")
-	processorTag, _ = tag.NewKey("processor")
 )
 
 type receiveTestParams struct {
@@ -110,8 +97,8 @@ func TestConfigure(t *testing.T) {
 	}
 }
 
-func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
-	doneFn, err := setupViews()
+func TestReceiveTraceDataOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -123,7 +110,7 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, legacyName)
+	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, "")
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
@@ -167,18 +154,17 @@ func Test_obsreport_ReceiveTraceDataOp(t *testing.T) {
 			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
 		}
 	}
-
 	// Check legacy metrics.
-	assert.NoError(t, obsreporttest.CheckValueViewReceiverReceivedSpans(legacyName, acceptedSpans))
-	assert.NoError(t, obsreporttest.CheckValueViewReceiverDroppedSpans(legacyName, refusedSpans))
+	legacyReceiverTags := []tag.Tag{{Key: obsreport.LegacyTagKeyReceiver, Value: receiver}}
+	obsreporttest.CheckValueForView(t, legacyReceiverTags, int64(acceptedSpans), obsreport.LegacyViewReceiverReceivedSpans.Name)
+	obsreporttest.CheckValueForView(t, legacyReceiverTags, int64(refusedSpans), obsreport.LegacyViewReceiverDroppedSpans.Name)
+
 	// Check new metrics.
-	receiverTags := receiverViewTags(receiver, transport)
-	checkValueForSumView(t, "receiver/accepted_spans", receiverTags, acceptedSpans)
-	checkValueForSumView(t, "receiver/refused_spans", receiverTags, refusedSpans)
+	obsreporttest.CheckReceiverTracesViews(t, receiver, transport, int64(acceptedSpans), int64(refusedSpans))
 }
 
-func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
-	doneFn, err := setupViews()
+func TestReceiveMetricsOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -190,7 +176,7 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, legacyName)
+	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, "")
 	params := []receiveTestParams{
 		{transport, errFake},
 		{"", nil},
@@ -241,16 +227,16 @@ func Test_obsreport_ReceiveMetricsOp(t *testing.T) {
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, obsreporttest.CheckValueViewReceiverReceivedTimeSeries(legacyName, receivedTimeSeries))
-	assert.NoError(t, obsreporttest.CheckValueViewReceiverDroppedTimeSeries(legacyName, droppedTimeSeries))
+	legacyReceiverTags := []tag.Tag{{Key: obsreport.LegacyTagKeyReceiver, Value: receiver}}
+	obsreporttest.CheckValueForView(t, legacyReceiverTags, int64(receivedTimeSeries), obsreport.LegacyViewReceiverReceivedTimeSeries.Name)
+	obsreporttest.CheckValueForView(t, legacyReceiverTags, int64(droppedTimeSeries), obsreport.LegacyViewReceiverDroppedTimeSeries.Name)
+
 	// Check new metrics.
-	receiverTags := receiverViewTags(receiver, transport)
-	checkValueForSumView(t, "receiver/accepted_metric_points", receiverTags, acceptedMetricPoints)
-	checkValueForSumView(t, "receiver/refused_metric_points", receiverTags, refusedMetricPoints)
+	obsreporttest.CheckReceiverMetricsViews(t, receiver, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints))
 }
 
-func Test_obsreport_ExportTraceDataOp(t *testing.T) {
-	doneFn, err := setupViews()
+func TestExportTraceDataOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -261,10 +247,6 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	parentCtx, parentSpan := trace.StartSpan(context.Background(),
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
-
-	// obsreporttest for exporters expects the context to flow the original
-	// receiver tags, adding that to parent span.
-	parentCtx = obsreport.LegacyContextWithReceiverName(parentCtx, receiver)
 
 	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
@@ -304,16 +286,16 @@ func Test_obsreport_ExportTraceDataOp(t *testing.T) {
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, obsreporttest.CheckValueViewExporterReceivedSpans(receiver, exporter, sentSpans+failedToSendSpans))
-	assert.NoError(t, obsreporttest.CheckValueViewExporterDroppedSpans(receiver, exporter, failedToSendSpans))
+	legacyExporterTags := []tag.Tag{{Key: obsreport.LegacyTagKeyExporter, Value: exporter}}
+	obsreporttest.CheckValueForView(t, legacyExporterTags, int64(sentSpans)+int64(failedToSendSpans), obsreport.LegacyViewExporterReceivedSpans.Name)
+	obsreporttest.CheckValueForView(t, legacyExporterTags, int64(failedToSendSpans), obsreport.LegacyViewExporterDroppedSpans.Name)
+
 	// Check new metrics.
-	exporterTags := exporterViewTags(exporter)
-	checkValueForSumView(t, "exporter/sent_spans", exporterTags, sentSpans)
-	checkValueForSumView(t, "exporter/send_failed_spans", exporterTags, failedToSendSpans)
+	obsreporttest.CheckExporterTracesViews(t, exporter, int64(sentSpans), int64(failedToSendSpans))
 }
 
-func Test_obsreport_ExportMetricsOp(t *testing.T) {
-	doneFn, err := setupViews()
+func TestExportMetricsOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -324,10 +306,6 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	parentCtx, parentSpan := trace.StartSpan(context.Background(),
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
-
-	// obsreporttest for exporters expects the context to flow the original
-	// receiver tags, adding that to parent span.
-	parentCtx = obsreport.LegacyContextWithReceiverName(parentCtx, receiver)
 
 	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
@@ -376,15 +354,15 @@ func Test_obsreport_ExportMetricsOp(t *testing.T) {
 	}
 
 	// Check legacy metrics.
-	assert.NoError(t, obsreporttest.CheckValueViewExporterReceivedTimeSeries(receiver, exporter, receivedTimeSeries))
-	assert.NoError(t, obsreporttest.CheckValueViewExporterDroppedTimeSeries(receiver, exporter, droppedTimeSeries))
+	legacyExporterTags := []tag.Tag{{Key: obsreport.LegacyTagKeyExporter, Value: exporter}}
+	obsreporttest.CheckValueForView(t, legacyExporterTags, int64(receivedTimeSeries), obsreport.LegacyViewExporterReceivedTimeSeries.Name)
+	obsreporttest.CheckValueForView(t, legacyExporterTags, int64(droppedTimeSeries), obsreport.LegacyViewExporterDroppedTimeSeries.Name)
+
 	// Check new metrics.
-	exporterTags := exporterViewTags(exporter)
-	checkValueForSumView(t, "exporter/sent_metric_points", exporterTags, sentPoints)
-	checkValueForSumView(t, "exporter/send_failed_metric_points", exporterTags, failedToSendPoints)
+	obsreporttest.CheckExporterMetricsViews(t, exporter, int64(sentPoints), int64(failedToSendPoints))
 }
 
-func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
+func TestReceiveWithLongLivedCtx(t *testing.T) {
 	ss := &spanStore{}
 	trace.RegisterExporter(ss)
 	defer trace.UnregisterExporter(ss)
@@ -453,8 +431,8 @@ func Test_obsreport_ReceiveWithLongLivedCtx(t *testing.T) {
 	}
 }
 
-func Test_obsreport_ProcessorTraceData(t *testing.T) {
-	doneFn, err := setupViews()
+func TestProcessorTraceData(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -468,14 +446,11 @@ func Test_obsreport_ProcessorTraceData(t *testing.T) {
 	obsreport.ProcessorTraceDataRefused(processorCtx, refusedSpans)
 	obsreport.ProcessorTraceDataDropped(processorCtx, droppedSpans)
 
-	processorTags := processorViewTags(processor)
-	checkValueForSumView(t, "processor/accepted_spans", processorTags, acceptedSpans)
-	checkValueForSumView(t, "processor/refused_spans", processorTags, refusedSpans)
-	checkValueForSumView(t, "processor/dropped_spans", processorTags, droppedSpans)
+	obsreporttest.CheckProcessorTracesViews(t, processor, acceptedSpans, refusedSpans, droppedSpans)
 }
 
-func Test_obsreport_ProcessorMetricsData(t *testing.T) {
-	doneFn, err := setupViews()
+func TestProcessorMetricsData(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -488,13 +463,10 @@ func Test_obsreport_ProcessorMetricsData(t *testing.T) {
 	obsreport.ProcessorMetricsDataRefused(processorCtx, refusedPoints)
 	obsreport.ProcessorMetricsDataDropped(processorCtx, droppedPoints)
 
-	processorTags := processorViewTags(processor)
-	checkValueForSumView(t, "processor/accepted_metric_points", processorTags, acceptedPoints)
-	checkValueForSumView(t, "processor/refused_metric_points", processorTags, refusedPoints)
-	checkValueForSumView(t, "processor/dropped_metric_points", processorTags, droppedPoints)
+	obsreporttest.CheckProcessorMetricsViews(t, processor, acceptedPoints, refusedPoints, droppedPoints)
 }
 
-func Test_obsreport_ProcessorMetricViews(t *testing.T) {
+func TestProcessorMetricViews(t *testing.T) {
 	measures := []stats.Measure{
 		stats.Int64("firstMeasure", "test firstMeasure", stats.UnitDimensionless),
 		stats.Int64("secondMeasure", "test secondMeasure", stats.UnitBytes),
@@ -553,8 +525,8 @@ func Test_obsreport_ProcessorMetricViews(t *testing.T) {
 	}
 }
 
-func Test_obsreport_ProcessorLogRecords(t *testing.T) {
-	doneFn, err := setupViews()
+func TestProcessorLogRecords(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
@@ -567,64 +539,7 @@ func Test_obsreport_ProcessorLogRecords(t *testing.T) {
 	obsreport.ProcessorLogRecordsRefused(processorCtx, refusedRecords)
 	obsreport.ProcessorLogRecordsDropped(processorCtx, droppedRecords)
 
-	processorTags := processorViewTags(processor)
-	checkValueForSumView(t, "processor/accepted_log_records", processorTags, acceptedRecords)
-	checkValueForSumView(t, "processor/refused_log_records", processorTags, refusedRecords)
-	checkValueForSumView(t, "processor/dropped_log_records", processorTags, droppedRecords)
-}
-
-func setupViews() (doneFn func(), err error) {
-	views := obsreport.Configure(true, true)
-	err = view.Register(views...)
-
-	return func() {
-		view.Unregister(views...)
-	}, err
-}
-
-func checkValueForSumView(t *testing.T, vName string, wantTags []tag.Tag, value int) {
-	// Make sure the tags slice is sorted by tag keys.
-	sortTags(wantTags)
-
-	rows, err := view.RetrieveData(vName)
-	require.NoError(t, err, "error retrieving view data for view %s", vName)
-
-	for _, row := range rows {
-		// Make sure the tags slice is sorted by tag keys.
-		sortTags(row.Tags)
-		if reflect.DeepEqual(wantTags, row.Tags) {
-			sum := row.Data.(*view.SumData)
-			assert.Equal(t, float64(value), sum.Value)
-			return
-		}
-	}
-
-	assert.Fail(t, "row not found", "no row matches %v in rows %v", wantTags, rows)
-}
-
-func receiverViewTags(receiver, transport string) []tag.Tag {
-	return []tag.Tag{
-		{Key: receiverTag, Value: receiver},
-		{Key: transportTag, Value: transport},
-	}
-}
-
-func exporterViewTags(exporter string) []tag.Tag {
-	return []tag.Tag{
-		{Key: exporterTag, Value: exporter},
-	}
-}
-
-func processorViewTags(processor string) []tag.Tag {
-	return []tag.Tag{
-		{Key: processorTag, Value: processor},
-	}
-}
-
-func sortTags(tags []tag.Tag) {
-	sort.SliceStable(tags, func(i, j int) bool {
-		return tags[i].Key.Name() < tags[j].Key.Name()
-	})
+	obsreporttest.CheckProcessorLogsViews(t, processor, acceptedRecords, refusedRecords, droppedRecords)
 }
 
 type spanStore struct {

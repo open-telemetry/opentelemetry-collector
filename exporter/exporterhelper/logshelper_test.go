@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	fakeLogsReceiverName   = "fake_receiver"
 	fakeLogsExporterType   = "fake_logs_exporter"
 	fakeLogsExporterName   = "fake_logs_exporter/with_name"
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
@@ -151,22 +150,23 @@ func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter, wantError error, droppedTimeSeries int) {
-	doneFn := obsreporttest.SetupRecordedMetricsTest()
+func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter, wantError error, droppedLogRecords int) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
 	defer doneFn()
 
 	ld := testdata.GenerateLogDataTwoLogsSameResource()
-	ctx := obsreport.LegacyContextWithReceiverName(context.Background(), fakeLogsReceiverName)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeLogs(ctx, ld))
+		require.Equal(t, wantError, me.ConsumeLogs(context.Background(), ld))
 	}
 
-	err := obsreporttest.CheckValueViewExporterReceivedLogRecords(fakeLogsReceiverName, fakeLogsExporterName, numBatches*ld.LogRecordCount())
-	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
-
-	err = obsreporttest.CheckValueViewExporterDroppedLogRecords(fakeLogsReceiverName, fakeLogsExporterName, numBatches*droppedTimeSeries)
-	require.Nilf(t, err, "CheckValueViewExporterTimeSeries: Want nil Got %v", err)
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	if wantError != nil {
+		obsreporttest.CheckExporterLogsViews(t, fakeLogsExporterName, 0, int64(numBatches*ld.LogRecordCount()))
+	} else {
+		obsreporttest.CheckExporterLogsViews(t, fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0)
+	}
 }
 
 func generateLogsTraffic(t *testing.T, me component.LogExporter, numRequests int, wantError error) {

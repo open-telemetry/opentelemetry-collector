@@ -163,6 +163,17 @@ func TestGetTagFromSpanKind(t *testing.T) {
 			},
 			ok: true,
 		},
+
+		{
+			name: "internal",
+			kind: pdata.SpanKindINTERNAL,
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindInternal),
+			},
+			ok: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -243,11 +254,25 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 
 		{
-			name: "one-span-no-resources",
-			td:   generateTraceDataOneSpanNoResource(),
+			name: "no-resource-attrs",
+			td:   generateTraceDataResourceOnlyWithNoAttrs(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoAttrs,
+				},
+			},
+			err: nil,
+		},
+
+		{
+			name: "one-span-no-resources",
+			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
+			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
-					generateProtoSpan(),
+					generateProtoSpanWithTraceState(),
 				},
 			},
 			err: nil,
@@ -256,6 +281,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "two-spans-child-parent",
 			td:   generateTraceDataTwoSpansChildParent(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
 					generateProtoChildSpanWithErrorTags(),
@@ -268,6 +296,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "two-spans-with-follower",
 			td:   generateTraceDataTwoSpansWithFollower(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
 					generateProtoFollowerSpan(),
