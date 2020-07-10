@@ -174,6 +174,9 @@ func (sp *queuedSpanProcessor) processItemFromQueue(item *queueItem) {
 		// throw away the batch
 		sp.onItemDropped(item, err)
 		return
+	} else if partialErr, isPartial := err.(consumererror.PartialError); isPartial {
+		item.td = partialErr.GetTraces()
+		item.spanCountStats = processor.NewSpanCountStats(item.td, sp.name)
 	}
 
 	// Immediately drop data on no retires configured.

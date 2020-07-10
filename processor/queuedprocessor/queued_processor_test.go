@@ -72,16 +72,49 @@ func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
 	require.Equal(t, 1, qp.queue.Size())
 }
 
+func TestQueueProcessorPartialError(t *testing.T) {
+	partialErr := consumererror.PartialTracesError(fmt.Errorf("some error"), testdata.GenerateTraceDataTwoSpansSameResource())
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	c := &waitGroupTraceConsumer{
+		consumeTraceDataError: partialErr,
+	}
+
+	cfg := generateDefaultConfig()
+	cfg.NumWorkers = 1
+	cfg.QueueSize = 2
+	cfg.RetryOnFailure = true
+	cfg.BackoffDelay = time.Millisecond * 50
+	qp := newQueuedSpanProcessor(component.ProcessorCreateParams{Logger: zap.NewNop()}, c, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+
+	c.Add(2)
+	require.Nil(t, qp.ConsumeTraces(context.Background(), td))
+	c.Wait()
+	exporterData := c.getData()
+	assert.Equal(t, 2, len(exporterData))
+	assert.Equal(t, td, exporterData[0])
+	assert.Equal(t, partialErr.(consumererror.PartialError).GetTraces(), exporterData[1])
+}
+
 type waitGroupTraceConsumer struct {
 	sync.WaitGroup
 	consumeTraceDataError error
+	mux                   sync.Mutex
+	data                  []pdata.Traces
 }
 
 var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
 
-func (c *waitGroupTraceConsumer) ConsumeTraces(_ context.Context, _ pdata.Traces) error {
+func (c *waitGroupTraceConsumer) ConsumeTraces(_ context.Context, data pdata.Traces) error {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	defer c.Done()
+	c.data = append(c.data, data)
 	return c.consumeTraceDataError
+}
+
+func (c *waitGroupTraceConsumer) getData() []pdata.Traces {
+	return c.data
 }
 
 func (c *waitGroupTraceConsumer) GetCapabilities() component.ProcessorCapabilities {
