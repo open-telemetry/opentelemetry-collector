@@ -33,129 +33,291 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/processor"
 )
 
-func TestQueuedProcessor_noEnqueueOnPermanentError(t *testing.T) {
-	ctx := context.Background()
+func TestTraceQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
 	td := testdata.GenerateTraceDataOneSpan()
 
-	c := &waitGroupTraceConsumer{
-		consumeTraceDataError: consumererror.Permanent(errors.New("bad data")),
-	}
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
 
 	cfg := generateDefaultConfig()
-	cfg.NumWorkers = 1
-	cfg.QueueSize = 2
 	cfg.RetryOnFailure = true
 	cfg.BackoffDelay = time.Hour
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	qp := newQueuedSpanProcessor(creationParams, c, cfg)
 
+	qp := newQueuedTracesProcessor(creationParams, mockP, cfg)
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
-	c.Add(1)
-	require.Nil(t, qp.ConsumeTraces(ctx, td))
-	c.Wait()
-	<-time.After(50 * time.Millisecond)
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
 
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeTraces(context.Background(), td))
+	})
+	mockP.awaitAsyncProcessing()
+	<-time.After(200 * time.Millisecond)
 	require.Zero(t, qp.queue.Size())
-
-	c.consumeTraceDataError = errors.New("transient error")
-	c.Add(1)
-	// This is asynchronous so it should just enqueue, no errors expected.
-	require.Nil(t, qp.ConsumeTraces(ctx, td))
-	c.Wait()
-	<-time.After(50 * time.Millisecond)
-
-	require.Equal(t, 1, qp.queue.Size())
+	obsreporttest.CheckProcessorTracesViews(t, cfg.Name(), 1, 0, 1)
 }
 
-func TestQueueProcessorPartialError(t *testing.T) {
-	partialErr := consumererror.PartialTracesError(fmt.Errorf("some error"), testdata.GenerateTraceDataTwoSpansSameResource())
+func TestTraceQueueProcessor_EnqueueOnNoRetry(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	td := testdata.GenerateTraceDataOneSpan()
+
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(errors.New("transient error"))
+
+	cfg := generateDefaultConfig()
+	cfg.RetryOnFailure = false
+	cfg.BackoffDelay = 0
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+
+	qp := newQueuedTracesProcessor(creationParams, mockP, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
+
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeTraces(context.Background(), td))
+	})
+	mockP.awaitAsyncProcessing()
+	<-time.After(200 * time.Millisecond)
+	require.Zero(t, qp.queue.Size())
+	obsreporttest.CheckProcessorTracesViews(t, cfg.Name(), 1, 0, 1)
+}
+
+func TestTraceQueueProcessor_PartialError(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	c := &waitGroupTraceConsumer{
-		consumeTraceDataError: partialErr,
-	}
+
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(partialErr)
 
 	cfg := generateDefaultConfig()
 	cfg.NumWorkers = 1
-	cfg.QueueSize = 2
 	cfg.RetryOnFailure = true
-	cfg.BackoffDelay = time.Millisecond * 50
-	qp := newQueuedSpanProcessor(component.ProcessorCreateParams{Logger: zap.NewNop()}, c, cfg)
+	cfg.BackoffDelay = time.Second
+
+	qp := newQueuedTracesProcessor(component.ProcessorCreateParams{Logger: zap.NewNop()}, mockP, cfg)
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
 
-	c.Add(2)
-	require.Nil(t, qp.ConsumeTraces(context.Background(), td))
-	c.Wait()
-	exporterData := c.getData()
-	assert.Equal(t, 2, len(exporterData))
-	assert.Equal(t, td, exporterData[0])
-	assert.Equal(t, partialErr.(consumererror.PartialError).GetTraces(), exporterData[1])
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeTraces(context.Background(), td))
+	})
+	mockP.awaitAsyncProcessing()
+	// There is a small race condition in this test, but expect to execute this in less than 1 second.
+	mockP.updateError(nil)
+	mockP.waitGroup.Add(1)
+	mockP.awaitAsyncProcessing()
+
+	mockP.checkNumBatches(t, 2)
+	mockP.checkNumSpans(t, 2+1)
+
+	obsreporttest.CheckProcessorTracesViews(t, cfg.Name(), 2, 0, 0)
 }
 
-type waitGroupTraceConsumer struct {
-	sync.WaitGroup
-	consumeTraceDataError error
-	mux                   sync.Mutex
-	data                  []pdata.Traces
+func TestTraceQueueProcessor_EnqueueOnError(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	td := testdata.GenerateTraceDataOneSpan()
+
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(errors.New("transient error"))
+
+	cfg := generateDefaultConfig()
+	cfg.NumWorkers = 1
+	cfg.QueueSize = 1
+	cfg.RetryOnFailure = true
+	cfg.BackoffDelay = time.Hour
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+
+	qp := newQueuedTracesProcessor(creationParams, mockP, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
+
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeTraces(context.Background(), td))
+	})
+	mockP.awaitAsyncProcessing()
+	<-time.After(200 * time.Millisecond)
+	require.Equal(t, 1, qp.queue.Size())
+
+	mockP.run(func() {
+		// The queue is full, cannot enqueue other item
+		require.Error(t, qp.ConsumeTraces(context.Background(), td))
+	})
+	obsreporttest.CheckProcessorTracesViews(t, cfg.Name(), 1, 1, 0)
 }
 
-var _ consumer.TraceConsumer = (*waitGroupTraceConsumer)(nil)
+func TestMetricsQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
 
-func (c *waitGroupTraceConsumer) ConsumeTraces(_ context.Context, data pdata.Traces) error {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	defer c.Done()
-	c.data = append(c.data, data)
-	return c.consumeTraceDataError
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
+
+	cfg := generateDefaultConfig()
+	cfg.RetryOnFailure = true
+	cfg.BackoffDelay = time.Hour
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+
+	qp := newQueuedMetricsProcessor(creationParams, mockP, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
+
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
+	})
+	mockP.awaitAsyncProcessing()
+	<-time.After(200 * time.Millisecond)
+	require.Zero(t, qp.queue.Size())
+	obsreporttest.CheckProcessorMetricsViews(t, cfg.Name(), 4, 0, 4)
 }
 
-func (c *waitGroupTraceConsumer) getData() []pdata.Traces {
-	return c.data
+func TestMetricsQueueProcessor_NoEnqueueOnNoRetry(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(errors.New("transient error"))
+
+	cfg := generateDefaultConfig()
+	cfg.RetryOnFailure = false
+	cfg.BackoffDelay = 0
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+
+	qp := newQueuedMetricsProcessor(creationParams, mockP, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
+
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
+	})
+	mockP.awaitAsyncProcessing()
+	<-time.After(200 * time.Millisecond)
+	require.Zero(t, qp.queue.Size())
+	obsreporttest.CheckProcessorMetricsViews(t, cfg.Name(), 4, 0, 4)
 }
 
-func (c *waitGroupTraceConsumer) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func TestMetricsQueueProcessor_EnqueueOnError(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+
+	mockP := newMockConcurrentSpanProcessor()
+	mockP.updateError(errors.New("transient error"))
+
+	cfg := generateDefaultConfig()
+	cfg.NumWorkers = 1
+	cfg.QueueSize = 1
+	cfg.RetryOnFailure = true
+	cfg.BackoffDelay = time.Hour
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+
+	qp := newQueuedMetricsProcessor(creationParams, mockP, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
+
+	mockP.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
+	})
+	mockP.awaitAsyncProcessing()
+	<-time.After(200 * time.Millisecond)
+	require.Equal(t, 1, qp.queue.Size())
+
+	mockP.run(func() {
+		// The queue is full, cannot enqueue other item
+		require.Error(t, qp.ConsumeMetrics(context.Background(), md))
+	})
+	obsreporttest.CheckProcessorMetricsViews(t, cfg.Name(), 4, 4, 0)
 }
 
-func findViewNamed(views []*view.View, name string) (*view.View, error) {
-	for _, v := range views {
-		if v.Name == name {
-			return v, nil
-		}
-	}
-	return nil, fmt.Errorf("view %s not found", name)
-}
+func TestTraceQueueProcessorHappyPath(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
 
-func TestQueueProcessorHappyPath(t *testing.T) {
 	views := processor.MetricViews(telemetry.Detailed)
-	view.Register(views...)
+	assert.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	mockProc := newMockConcurrentSpanProcessor()
+	mockP := newMockConcurrentSpanProcessor()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	qp := newQueuedSpanProcessor(creationParams, mockProc, generateDefaultConfig())
+	cfg := generateDefaultConfig()
+	qp := newQueuedTracesProcessor(creationParams, mockP, cfg)
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
-	goFn := func(td pdata.Traces) {
-		qp.ConsumeTraces(context.Background(), td)
-	}
+	t.Cleanup(func() {
+		mockP.stop()
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
 
 	wantBatches := 10
 	wantSpans := 20
 	for i := 0; i < wantBatches; i++ {
 		td := testdata.GenerateTraceDataTwoSpansSameResource()
-		fn := func() { goFn(td) }
-		mockProc.runConcurrently(fn)
+		mockP.run(func() {
+			require.NoError(t, qp.ConsumeTraces(context.Background(), td))
+		})
 	}
 
 	// Wait until all batches received
-	mockProc.awaitAsyncProcessing()
+	mockP.awaitAsyncProcessing()
 
-	require.Equal(t, wantBatches, int(mockProc.batchCount), "Incorrect batches count")
-	require.Equal(t, wantSpans, int(mockProc.spanCount), "Incorrect batches spans")
+	mockP.checkNumBatches(t, wantBatches)
+	mockP.checkNumSpans(t, wantSpans)
 
 	droppedView, err := findViewNamed(views, processor.StatDroppedSpanCount.Name())
 	require.NoError(t, err)
@@ -168,35 +330,122 @@ func TestQueueProcessorHappyPath(t *testing.T) {
 	data, err = view.RetrieveData(processor.StatTraceBatchesDroppedCount.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
+	obsreporttest.CheckProcessorTracesViews(t, cfg.Name(), int64(wantSpans), 0, 0)
+}
+
+func TestMetricsQueueProcessorHappyPath(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	mockP := newMockConcurrentSpanProcessor()
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	cfg := generateDefaultConfig()
+	qp := newQueuedMetricsProcessor(creationParams, mockP, cfg)
+	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, qp.Shutdown(context.Background()))
+	})
+
+	wantBatches := 10
+	wantMetricPoints := 2 * 20
+	for i := 0; i < wantBatches; i++ {
+		md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+		mockP.run(func() {
+			require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
+		})
+	}
+
+	// Wait until all batches received
+	mockP.awaitAsyncProcessing()
+
+	mockP.checkNumBatches(t, wantBatches)
+	mockP.checkNumPoints(t, wantMetricPoints)
+	obsreporttest.CheckProcessorMetricsViews(t, cfg.Name(), int64(wantMetricPoints), 0, 0)
 }
 
 type mockConcurrentSpanProcessor struct {
-	waitGroup  *sync.WaitGroup
-	batchCount int32
-	spanCount  int32
+	waitGroup         *sync.WaitGroup
+	mu                sync.Mutex
+	consumeError      error
+	batchCount        int64
+	spanCount         int64
+	metricPointsCount int64
+	stopped           int32
 }
 
 var _ consumer.TraceConsumer = (*mockConcurrentSpanProcessor)(nil)
+var _ consumer.MetricsConsumer = (*mockConcurrentSpanProcessor)(nil)
+
+func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {
+	return &mockConcurrentSpanProcessor{waitGroup: new(sync.WaitGroup)}
+}
 
 func (p *mockConcurrentSpanProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	atomic.AddInt32(&p.batchCount, 1)
-	atomic.AddInt32(&p.spanCount, int32(td.SpanCount()))
-	p.waitGroup.Done()
-	return nil
+	if atomic.LoadInt32(&p.stopped) == 1 {
+		return nil
+	}
+	atomic.AddInt64(&p.batchCount, 1)
+	atomic.AddInt64(&p.spanCount, int64(td.SpanCount()))
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	defer p.waitGroup.Done()
+	return p.consumeError
+}
+
+func (p *mockConcurrentSpanProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+	if atomic.LoadInt32(&p.stopped) == 1 {
+		return nil
+	}
+	atomic.AddInt64(&p.batchCount, 1)
+	_, mpc := pdatautil.MetricAndDataPointCount(md)
+	atomic.AddInt64(&p.metricPointsCount, int64(mpc))
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	defer p.waitGroup.Done()
+	return p.consumeError
 }
 
 func (p *mockConcurrentSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
-func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {
-	return &mockConcurrentSpanProcessor{waitGroup: new(sync.WaitGroup)}
+func (p *mockConcurrentSpanProcessor) checkNumBatches(t *testing.T, want int) {
+	assert.EqualValues(t, want, atomic.LoadInt64(&p.batchCount))
 }
-func (p *mockConcurrentSpanProcessor) runConcurrently(fn func()) {
+
+func (p *mockConcurrentSpanProcessor) checkNumSpans(t *testing.T, want int) {
+	assert.EqualValues(t, want, atomic.LoadInt64(&p.spanCount))
+}
+
+func (p *mockConcurrentSpanProcessor) checkNumPoints(t *testing.T, want int) {
+	assert.EqualValues(t, want, atomic.LoadInt64(&p.metricPointsCount))
+}
+
+func (p *mockConcurrentSpanProcessor) updateError(err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.consumeError = err
+}
+
+func (p *mockConcurrentSpanProcessor) run(fn func()) {
 	p.waitGroup.Add(1)
-	go fn()
+	fn()
 }
 
 func (p *mockConcurrentSpanProcessor) awaitAsyncProcessing() {
 	p.waitGroup.Wait()
+}
+
+func (p *mockConcurrentSpanProcessor) stop() {
+	atomic.StoreInt32(&p.stopped, 1)
+}
+
+func findViewNamed(views []*view.View, name string) (*view.View, error) {
+	for _, v := range views {
+		if v.Name == name {
+			return v, nil
+		}
+	}
+	return nil, fmt.Errorf("view %s not found", name)
 }

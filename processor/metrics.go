@@ -75,15 +75,13 @@ var (
 // SpanCountStats represents span count stats grouped by service if DETAILED telemetry level is set,
 // otherwise only overall span count is stored in serviceSpansCounts.
 type SpanCountStats struct {
-	processorName      string
 	serviceSpansCounts map[string]int
 	allSpansCount      int
 	isDetailed         bool
 }
 
-func NewSpanCountStats(td pdata.Traces, processorName string) *SpanCountStats {
+func NewSpanCountStats(td pdata.Traces) *SpanCountStats {
 	scm := &SpanCountStats{
-		processorName: processorName,
 		allSpansCount: td.SpanCount(),
 	}
 	if serviceTagsEnabled() {
@@ -209,17 +207,13 @@ func ServiceNameForResource(resource pdata.Resource) string {
 func RecordsSpanCountMetrics(ctx context.Context, scm *SpanCountStats, measure *stats.Int64Measure) {
 	if scm.isDetailed {
 		for serviceName, spanCount := range scm.serviceSpansCounts {
-			statsTags := []tag.Mutator{
-				tag.Insert(TagProcessorNameKey, scm.processorName),
-				tag.Insert(TagServiceNameKey, serviceName),
-			}
+			statsTags := []tag.Mutator{tag.Insert(TagServiceNameKey, serviceName)}
 			_ = stats.RecordWithTags(ctx, statsTags, measure.M(int64(spanCount)))
 		}
 		return
 	}
 
-	statsTags := []tag.Mutator{tag.Insert(TagProcessorNameKey, scm.processorName)}
-	_ = stats.RecordWithTags(ctx, statsTags, measure.M(int64(scm.allSpansCount)))
+	stats.Record(ctx, measure.M(int64(scm.allSpansCount)))
 }
 
 func serviceTagsEnabled() bool {
