@@ -368,8 +368,13 @@ func (pds *PrometheusDataSender) Flush() {
 
 func (pds *PrometheusDataSender) GenConfigYAMLStr() string {
 	format := `
-	prometheus:
-		endpoint: "%s"
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'testbed'
+          scrape_interval: 100ms
+          static_configs:
+            - targets: ['%s']
 `
 	return fmt.Sprintf(format, pds.endpoint())
 }

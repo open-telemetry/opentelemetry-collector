@@ -19,7 +19,29 @@ import (
 	"go.opentelemetry.io/collector/internal/data"
 )
 
-func GenerateMetrics(metricInputs *PICTMetricInputs) (data.MetricData, error) {
+var counter int64
+
+func GenerateMetrics(metricPairsFile string) ([]data.MetricData, error) {
+	pictData, err := loadPictOutputFile(metricPairsFile)
+	if err != nil {
+		return nil, err
+	}
+	var out []data.MetricData
+	for index, values := range pictData {
+		if index == 0 {
+			continue
+		}
+		metricInputs := PICTMetricInputs{
+			MetricType:       PICTMetricType(values[0]),
+			NumResourceAttrs: PICTNumResourceAttrs(values[1]),
+		}
+		md := GenerateMetric(metricInputs)
+		out = append(out, md)
+	}
+	return out, nil
+}
+
+func GenerateMetric(inputs PICTMetricInputs) data.MetricData {
 	md := data.NewMetricData()
 
 	rmSlice := md.ResourceMetrics()
@@ -32,7 +54,7 @@ func GenerateMetrics(metricInputs *PICTMetricInputs) (data.MetricData, error) {
 	attrs := rsrc.Attributes()
 
 	var count int
-	switch metricInputs.MetricInputs {
+	switch inputs.NumResourceAttrs {
 	case AttrsNone:
 		count = 0
 	case AttrsOne:
@@ -62,14 +84,38 @@ func GenerateMetrics(metricInputs *PICTMetricInputs) (data.MetricData, error) {
 	mDesc.InitEmpty()
 	mDesc.SetName("my-md-name")
 	mDesc.SetDescription("my-md-desc")
-	mDesc.SetType(pdata.MetricTypeInt64)
-	mDesc.SetUnit("s")
-	ptSlice := metric.Int64DataPoints()
-	ptSlice.Resize(1)
-	pt := ptSlice.At(0)
-	pt.SetValue(42)
-	pt.SetStartTime(pdata.TimestampUnixNano(uint64(128)))
-	lm := pt.LabelsMap()
-	lm.Insert("lblKey", "lblVal")
-	return md, nil
+	mDesc.SetUnit("x")
+
+	numPts := 10
+
+	startTime := uint64(42)
+	stepSize := uint64(100)
+
+	switch inputs.MetricType {
+	case MetricTypeDouble:
+		mDesc.SetType(pdata.MetricTypeDouble)
+		ptSlice := metric.DoubleDataPoints()
+		ptSlice.Resize(numPts)
+		for i := 0; i < numPts; i++ {
+			pt := ptSlice.At(i)
+			pt.SetValue(float64(i))
+			lm := pt.LabelsMap()
+			lm.Insert("point-label-key", "point-label-value")
+			counter++
+		}
+	case MetricTypeInt:
+		mDesc.SetType(pdata.MetricTypeInt64)
+		ptSlice := metric.Int64DataPoints()
+		ptSlice.Resize(numPts)
+		for i := 0; i < numPts; i++ {
+			pt := ptSlice.At(i)
+			pt.SetValue(counter)
+			ptTime := startTime + (stepSize * uint64(i))
+			pt.SetStartTime(pdata.TimestampUnixNano(ptTime))
+			lm := pt.LabelsMap()
+			lm.Insert("point-label-key", "point-label-value")
+			counter++
+		}
+	}
+	return md
 }

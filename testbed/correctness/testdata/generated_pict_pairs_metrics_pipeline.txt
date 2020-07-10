@@ -1,10 +1,5 @@
 Receiver	Exporter
-opencensus	prometheus
 opencensus	otlp
-otlp	prometheus
-prometheus	otlp
-otlp	opencensus
-prometheus	opencensus
-otlp	otlp
-prometheus	prometheus
 opencensus	opencensus
+otlp	otlp
+otlp	opencensus

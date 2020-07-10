@@ -1,2 +1,2 @@
-Receiver: opencensus, otlp, prometheus
-Exporter: opencensus, otlp, prometheus
+Receiver: opencensus, otlp
+Exporter: opencensus, otlp

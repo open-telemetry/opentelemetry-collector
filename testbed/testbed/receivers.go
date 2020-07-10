@@ -22,6 +22,8 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
+	config2 "github.com/prometheus/prometheus/discovery/config"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -196,14 +198,26 @@ func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
 func (p *PrometheusDataReceiver) Start(_ *MockTraceConsumer, mc *MockMetricConsumer) error {
 	factory := prometheusreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
+	addr := fmt.Sprintf("0.0.0.0:%d", p.Port)
+	println("Prometheus Receiver: addr: " + addr)
 	cfg.PrometheusConfig = &config.Config{
 		ScrapeConfigs: []*config.ScrapeConfig{{
 			JobName:        "testbed-job",
 			ScrapeInterval: model.Duration(100 * time.Millisecond),
+			ScrapeTimeout:  model.Duration(time.Second),
+			ServiceDiscoveryConfig: config2.ServiceDiscoveryConfig{
+				StaticConfigs: []*targetgroup.Group{{
+					Targets: []model.LabelSet{{
+						"__address__":      model.LabelValue(addr),
+						"__scheme__":       "http",
+						"__metrics_path__": "/metrics",
+					}},
+				}},
+			},
 		}},
 	}
 	var err error
-	p.receiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, mc)
+	p.receiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, mc)
 	if err != nil {
 		return err
 	}
@@ -214,6 +228,7 @@ func (p *PrometheusDataReceiver) Stop() error {
 	return p.receiver.Shutdown(context.Background())
 }
 
+// Generate exporter yaml
 func (p *PrometheusDataReceiver) GenConfigYAMLStr() string {
 	format := `
   prometheus:

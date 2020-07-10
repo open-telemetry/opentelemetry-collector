@@ -152,6 +152,7 @@ func testWithTracingGoldenDataset(
 	dataProvider := testbed.NewGoldenDataProvider(
 		"../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 		"../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		"",
 		161803)
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
@@ -248,12 +249,8 @@ service:
 }
 
 func TestMetricsGoldenData(t *testing.T) {
-	// tests, err := loadPictOutputPipelineDefs("testdata/generated_pict_pairs_metrics_pipeline.txt")
-	// assert.NoError(t, err)
-	tests := []PipelineDef{{
-		receiver: "opencensus",
-		exporter: "prometheus",
-	}}
+	tests, err := loadPictOutputPipelineDefs("testdata/generated_pict_pairs_metrics_pipeline.txt")
+	assert.NoError(t, err)
 	for _, test := range tests {
 		test.testName = fmt.Sprintf("%s-%s", test.receiver, test.exporter)
 		test.dataSender = constructMetricsSender(t, test.receiver)
@@ -271,11 +268,13 @@ func testWithMetricsGoldenDataset(t *testing.T, sender testbed.DataSender, recei
 	collector := testbed.NewInProcessCollector(factories, sender.GetCollectorPort())
 
 	configYaml := createConfigYaml(sender, receiver, nil, "metrics")
+	println(configYaml)
+
 	configCleanup, cfgErr := collector.PrepareConfig(configYaml)
 	assert.NoError(t, cfgErr)
 	defer configCleanup()
 
-	dataProvider := testbed.NewGoldenDataProvider("", "", 42)
+	dataProvider := testbed.NewGoldenDataProvider("", "", "", 42)
 	validator := testbed.NewCorrectnessTestMetricValidator(dataProvider)
 
 	tc := testbed.NewTestCase(
@@ -289,20 +288,35 @@ func testWithMetricsGoldenDataset(t *testing.T, sender testbed.DataSender, recei
 	)
 	defer tc.Stop()
 	tc.EnableRecording()
+	println("StartBackend")
 	tc.StartBackend()
+	println("StartAgent")
 	tc.StartAgent("--metrics-level=NONE")
+	println("StartLoad")
 	tc.StartLoad(testbed.LoadOptions{
 		DataItemsPerSecond: 1024,
 		ItemsPerBatch:      1,
 	})
 	duration := time.Second * 10
+
+	println("Sleep")
 	tc.Sleep(duration)
+	println("StopLoad")
 	tc.StopLoad()
+	println("WaitForN")
 	tc.WaitForN(
-		func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		func() bool {
+			sent := tc.LoadGenerator.DataItemsSent()
+			received := tc.MockBackend.DataItemsReceived()
+			out := sent == received
+			fmt.Printf("WaitForN: %v\n", out)
+			return out
+		},
 		duration,
 		"all data items received",
 	)
+	println("StopAgent")
 	tc.StopAgent()
+	println("ValidateData")
 	tc.ValidateData()
 }

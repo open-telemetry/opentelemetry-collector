@@ -124,7 +124,7 @@ func (mb *MockBackend) GetStats() string {
 
 // DataItemsReceived returns total number of received spans and metrics.
 func (mb *MockBackend) DataItemsReceived() uint64 {
-	return mb.tc.spansReceived.Load() + mb.mc.metricsReceived.Load()
+	return mb.tc.numSpansReceived.Load() + mb.mc.numMetricsReceived.Load()
 }
 
 // ClearReceivedItems clears the list of received traces and metrics. Note: counters
@@ -173,12 +173,12 @@ func (mb *MockBackend) ConsumeMetricOld(md consumerdata.MetricsData) {
 }
 
 type MockTraceConsumer struct {
-	spansReceived atomic.Uint64
-	backend       *MockBackend
+	numSpansReceived atomic.Uint64
+	backend          *MockBackend
 }
 
 func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	tc.spansReceived.Add(uint64(td.SpanCount()))
+	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
@@ -214,7 +214,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces)
 }
 
 func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	tc.spansReceived.Add(uint64(len(td.Spans)))
+	tc.numSpansReceived.Add(uint64(len(td.Spans)))
 
 	for _, span := range td.Spans {
 		var spanSeqnum int64
@@ -244,28 +244,20 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 }
 
 type MockMetricConsumer struct {
-	metricsReceived atomic.Uint64
-	backend         *MockBackend
+	numMetricsReceived atomic.Uint64
+	backend            *MockBackend
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	_, dataPoints := pdatautil.MetricAndDataPointCount(md)
-	mc.metricsReceived.Add(uint64(dataPoints))
+	mc.numMetricsReceived.Add(uint64(dataPoints))
 	mc.backend.ConsumeMetric(md)
 	return nil
 }
 
 func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	dataPoints := 0
-	for _, metric := range md.Metrics {
-		for _, ts := range metric.Timeseries {
-			dataPoints += len(ts.Points)
-		}
-	}
-
-	mc.metricsReceived.Add(uint64(dataPoints))
-
+	_, dataPoints := pdatautil.TimeseriesAndPointCount(md)
+	mc.numMetricsReceived.Add(uint64(dataPoints))
 	mc.backend.ConsumeMetricOld(md)
-
 	return nil
 }

@@ -1,0 +1,7 @@
+MetricType	NumAttrs
+Double	None
+Double	One
+Int	Many
+Int	One
+Double	Many
+Int	None

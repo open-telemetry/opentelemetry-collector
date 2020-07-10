@@ -27,8 +27,7 @@ import (
 //spans for for defined in the file specified by the spanPairsFile parameter. The random parameter injects the
 //random number generator to use in generating IDs and other random values.
 //The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
-func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
-	random io.Reader) ([]*otlptrace.ResourceSpans, error) {
+func GenerateResourceSpans(tracePairsFile string, spanPairsFile string, random io.Reader) ([]*otlptrace.ResourceSpans, error) {
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {
 		return nil, err

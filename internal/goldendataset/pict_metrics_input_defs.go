@@ -14,6 +14,13 @@
 
 package goldendataset
 
+type PICTMetricType string
+
+const (
+	MetricTypeInt    PICTMetricType = "Int"
+	MetricTypeDouble PICTMetricType = "Double"
+)
+
 type PICTNumResourceAttrs string
 
 const (
@@ -23,5 +30,6 @@ const (
 )
 
 type PICTMetricInputs struct {
-	MetricInputs PICTNumResourceAttrs
+	NumResourceAttrs PICTNumResourceAttrs
+	MetricType       PICTMetricType
 }
