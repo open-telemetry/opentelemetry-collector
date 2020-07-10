@@ -505,3 +505,17 @@ func TestWithPerRPCAuthBearerTokenFileInvalidFile(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, dialOpts)
 }
+
+func TestWithPerRPCAuthInvalidAuthType(t *testing.T) {
+	// test
+	gcs := &GRPCClientSettings{
+		PerRPCAuth: &PerRPCAuthConfig{
+			AuthType: "non-existing",
+		},
+	}
+	dialOpts, err := gcs.ToDialOptions()
+
+	// verify
+	assert.Error(t, err)
+	assert.Nil(t, dialOpts)
+}

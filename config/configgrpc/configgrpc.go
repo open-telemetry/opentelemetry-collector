@@ -87,7 +87,7 @@ type GRPCClientSettings struct {
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
 
-	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis
+	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
 	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
 }
 
@@ -96,7 +96,7 @@ type KeepaliveServerConfig struct {
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
 }
 
-// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained
+// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained.
 type PerRPCAuthConfig struct {
 	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
 	AuthType string `mapstructure:"type,omitempty"`
@@ -202,6 +202,8 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 			}
 
 			opts = append(opts, grpc.WithPerRPCCredentials(token))
+		} else {
+			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.Compression)
 		}
 	}
 
