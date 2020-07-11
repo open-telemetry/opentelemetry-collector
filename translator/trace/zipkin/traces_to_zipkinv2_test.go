@@ -15,13 +15,17 @@
 package zipkin
 
 import (
+	"io"
+	"math/rand"
 	"testing"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
@@ -48,5 +52,21 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 				assert.EqualValues(t, test.zs, zss)
 			}
 		})
+	}
+}
+
+func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
+	rscSpans, err := goldendataset.GenerateResourceSpans(
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		io.Reader(rand.New(rand.NewSource(2004))))
+	assert.NoError(t, err)
+	for _, rs := range rscSpans {
+		orig := make([]*otlptrace.ResourceSpans, 1)
+		orig[0] = rs
+		td := pdata.TracesFromOtlp(orig)
+		zipkinSpans, err := InternalTracesToZipkinSpans(td)
+		assert.NoError(t, err)
+		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
 	}
 }

@@ -15,6 +15,10 @@
 package zipkin
 
 import (
+	"encoding/json"
+	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
@@ -28,8 +32,8 @@ import (
 var sampled = true
 
 func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, error) {
-	resourceSpans := td.ResourceSpans()
 
+	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil
 	}
@@ -62,16 +66,18 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 		return nil, nil
 	}
 
-	localServiceName := resourceToZipkinEndpointServiceName(resource)
+	localServiceName, zTags := resourceToZipkinEndpointServiceNameAndAttributeMap(resource)
+
 	zSpans := make([]*zipkinmodel.SpanModel, 0, estSpanCount)
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
 		if ils.IsNil() {
 			continue
 		}
+		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToZipkinSpan(spans.At(j), localServiceName)
+			span, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
 			if err == nil {
 				zSpans = append(zSpans, span)
 			}
@@ -81,8 +87,26 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	return zSpans, nil
 }
 
-func spanToZipkinSpan(span pdata.Span, localServiceName string) (*zipkinmodel.SpanModel, error) {
-	zs := zipkinmodel.SpanModel{}
+func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, zTags map[string]string) {
+	if il.IsNil() {
+		return
+	}
+	if ilName := il.Name(); ilName != "" {
+		zTags[tracetranslator.TagInstrumentationName] = ilName
+	}
+	if ilVer := il.Version(); ilVer != "" {
+		zTags[tracetranslator.TagInstrumentationVersion] = ilVer
+	}
+}
+
+func spanToZipkinSpan(
+	span pdata.Span,
+	localServiceName string,
+	zTags map[string]string,
+) (*zipkinmodel.SpanModel, error) {
+
+	zs := &zipkinmodel.SpanModel{}
+
 	hi, lo, err := tracetranslator.BytesToUInt64TraceID(span.TraceID().Bytes())
 	if err != nil {
 		return nil, err
@@ -91,11 +115,17 @@ func spanToZipkinSpan(span pdata.Span, localServiceName string) (*zipkinmodel.Sp
 		High: hi,
 		Low:  lo,
 	}
+
 	idVal, err := tracetranslator.BytesToUInt64SpanID(span.SpanID().Bytes())
 	if err != nil {
 		return nil, err
 	}
 	zs.ID = zipkinmodel.ID(idVal)
+
+	if len(span.TraceState()) > 0 {
+		zTags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
+	}
+
 	if len(span.ParentSpanID().Bytes()) > 0 {
 		idVal, err := tracetranslator.BytesToUInt64SpanID(span.ParentSpanID().Bytes())
 		if err != nil {
@@ -104,6 +134,7 @@ func spanToZipkinSpan(span pdata.Span, localServiceName string) (*zipkinmodel.Sp
 		id := zipkinmodel.ID(idVal)
 		zs.ParentID = &id
 	}
+
 	zs.Sampled = &sampled
 	zs.Name = span.Name()
 	zs.Timestamp = internal.UnixNanoToTime(span.StartTime())
@@ -111,20 +142,147 @@ func spanToZipkinSpan(span pdata.Span, localServiceName string) (*zipkinmodel.Sp
 		zs.Duration = time.Duration(span.EndTime() - span.StartTime())
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
-	return &zs, nil
+	if span.Kind() == pdata.SpanKindINTERNAL {
+		zTags[tracetranslator.TagSpanKind] = "internal"
+	}
+
+	redundantKeys := make(map[string]bool, 8)
+	zs.LocalEndpoint = zipkinEndpointFromTags(zTags, localServiceName, false, redundantKeys)
+	zs.RemoteEndpoint = zipkinEndpointFromTags(zTags, localServiceName, true, redundantKeys)
+
+	removeRedundentTags(redundantKeys, zTags)
+
+	status := span.Status()
+	if !status.IsNil() {
+		zTags[tracetranslator.TagStatusCode] = status.Code().String()
+		if status.Message() != "" {
+			zTags[tracetranslator.TagStatusMsg] = status.Message()
+			if int32(status.Code()) > 0 {
+				zs.Err = fmt.Errorf("%s", status.Message())
+			}
+		}
+	}
+
+	if err := spanEventsToZipkinAnnotations(span.Events(), zs); err != nil {
+		return nil, err
+	}
+	if err := spanLinksToZipkinTags(span.Links(), zTags); err != nil {
+		return nil, err
+	}
+
+	zs.Tags = zTags
+
+	return zs, nil
 }
 
-func resourceToZipkinEndpointServiceName(resource pdata.Resource) string {
-	var serviceName string
-	if resource.IsNil() {
-		serviceName = tracetranslator.ResourceNotSet
+func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.SpanModel) error {
+	if events.Len() > 0 {
+		zAnnos := make([]zipkinmodel.Annotation, events.Len())
+		for i := 0; i < events.Len(); i++ {
+			event := events.At(i)
+			if event.IsNil() {
+				continue
+			}
+			rawMap := attributeMapToMap(event.Attributes())
+			jsonStr, err := json.Marshal(rawMap)
+			if err != nil {
+				return err
+			}
+			zAnnos[i] = zipkinmodel.Annotation{
+				Timestamp: internal.UnixNanoToTime(event.Timestamp()),
+				Value:     fmt.Sprintf("%s: %s %d", event.Name(), jsonStr, event.DroppedAttributesCount()),
+			}
+		}
+		zs.Annotations = zAnnos
 	}
+	return nil
+}
+
+func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) error {
+	for i := 0; i < links.Len(); i++ {
+		link := links.At(i)
+		if !link.IsNil() {
+			key := fmt.Sprintf("otlp.link.%d", i)
+			rawMap := attributeMapToMap(link.Attributes())
+			jsonStr, err := json.Marshal(rawMap)
+			if err != nil {
+				return err
+			}
+			zTags[key] = fmt.Sprintf("%s-%s, %s %s %d", link.TraceID().String(), link.SpanID().String(),
+				link.TraceState(), jsonStr, link.DroppedAttributesCount())
+		}
+	}
+	return nil
+}
+
+func attributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
+	rawMap := make(map[string]interface{})
+	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			rawMap[k] = v.StringVal()
+		case pdata.AttributeValueINT:
+			rawMap[k] = v.IntVal()
+		case pdata.AttributeValueDOUBLE:
+			rawMap[k] = v.DoubleVal()
+		case pdata.AttributeValueBOOL:
+			rawMap[k] = v.BoolVal()
+		case pdata.AttributeValueMAP:
+			rawMap[k] = attributeMapToMap(v.MapVal())
+		case pdata.AttributeValueNULL:
+			rawMap[k] = nil
+		}
+	})
+	return rawMap
+}
+
+func removeRedundentTags(redundantKeys map[string]bool, zTags map[string]string) {
+	for k, v := range redundantKeys {
+		if v {
+			delete(zTags, k)
+		}
+	}
+}
+
+func resourceToZipkinEndpointServiceNameAndAttributeMap(
+	resource pdata.Resource,
+) (serviceName string, zTags map[string]string) {
+
+	zTags = make(map[string]string)
+	if resource.IsNil() {
+		return tracetranslator.ResourceNotSet, zTags
+	}
+
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
-		serviceName = tracetranslator.ResourceNoAttrs
+		return tracetranslator.ResourceNoAttrs, zTags
 	}
-	if sn, ok := attrs.Get(conventions.AttributeServiceName); ok {
-		serviceName = sn.StringVal()
+
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+		zTags[k] = tracetranslator.AttributeValueToString(v, false)
+	})
+
+	serviceName = extractZipkinServiceName(zTags)
+	return serviceName, zTags
+}
+
+func extractZipkinServiceName(zTags map[string]string) string {
+	var serviceName string
+	if sn, ok := zTags[conventions.AttributeServiceName]; ok {
+		serviceName = sn
+		delete(zTags, conventions.AttributeServiceName)
+	} else if fn, ok := zTags[conventions.AttributeFaasName]; ok {
+		serviceName = fn
+		delete(zTags, conventions.AttributeFaasName)
+		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeFaasName
+	} else if fn, ok := zTags[conventions.AttributeK8sDeployment]; ok {
+		serviceName = fn
+		delete(zTags, conventions.AttributeK8sDeployment)
+		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeK8sDeployment
+	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
+		serviceName = fn
+		delete(zTags, conventions.AttributeProcessExecutableName)
+		zTags[tracetranslator.TagServiceNameSource] = conventions.AttributeProcessExecutableName
 	} else {
 		serviceName = tracetranslator.ResourceNoServiceName
 	}
@@ -144,4 +302,61 @@ func spanKindToZipkinKind(kind pdata.SpanKind) zipkinmodel.Kind {
 	default:
 		return zipkinmodel.Undetermined
 	}
+}
+
+func zipkinEndpointFromTags(
+	zTags map[string]string,
+	localServiceName string,
+	remoteEndpoint bool,
+	redundantKeys map[string]bool,
+) (endpoint *zipkinmodel.Endpoint) {
+
+	serviceName := localServiceName
+	if peerSvc, ok := zTags[conventions.AttributePeerService]; ok && remoteEndpoint {
+		serviceName = peerSvc
+		redundantKeys[conventions.AttributePeerService] = true
+	}
+
+	var ipKey, portKey string
+	if remoteEndpoint {
+		ipKey, portKey = conventions.AttributeNetPeerIP, conventions.AttributeNetPeerPort
+	} else {
+		ipKey, portKey = conventions.AttributeNetHostIP, conventions.AttributeNetHostPort
+	}
+
+	var ip net.IP
+	ipv6Selected := false
+	if ipStr, ok := zTags[ipKey]; ok {
+		ipv6Selected = isIPv6Address(ipStr)
+		ip = net.ParseIP(ipStr)
+		redundantKeys[ipKey] = true
+	}
+
+	var port uint64
+	if portStr, ok := zTags[portKey]; ok {
+		port, _ = strconv.ParseUint(portStr, 10, 16)
+		redundantKeys[portKey] = true
+	}
+
+	zEndpoint := &zipkinmodel.Endpoint{
+		ServiceName: serviceName,
+		Port:        uint16(port),
+	}
+	if ipv6Selected {
+		zEndpoint.IPv6 = ip
+	} else {
+		zEndpoint.IPv4 = ip
+	}
+
+	return zEndpoint
+}
+
+func isIPv6Address(ipStr string) bool {
+	for i := 0; i < len(ipStr); i++ {
+		switch ipStr[i] {
+		case ':':
+			return true
+		}
+	}
+	return false
 }
