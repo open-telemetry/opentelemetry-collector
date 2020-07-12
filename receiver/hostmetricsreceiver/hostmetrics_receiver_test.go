@@ -95,7 +95,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	config := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
 			loadscraper.TypeStr:       &loadscraper.Config{},
@@ -323,7 +323,7 @@ func Benchmark_ScrapeSwapMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
-func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
+func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 	cfg := &Config{
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
@@ -340,10 +340,10 @@ func Benchmark_ScrapeDefaultMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
-func Benchmark_ScrapeAllMetrics(b *testing.B) {
+func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 	cfg := &Config{
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{ReportPerCPU: true},
+			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
 			loadscraper.TypeStr:       &loadscraper.Config{},
