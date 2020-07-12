@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
@@ -39,6 +40,11 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	cfg.SendBatchSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchTracesProcessor(creationParams, sender, cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, batcher.Shutdown(context.Background()))
+	})
+
 	requestCount := 1000
 	spansPerRequest := 100
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, 5*time.Second)
@@ -50,12 +56,12 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		traceDataSlice = append(traceDataSlice, td.Clone())
-		go batcher.ConsumeTraces(context.Background(), td)
+		go assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	// Added to test logic that check for empty resources.
 	td := testdata.GenerateTraceDataEmpty()
-	go batcher.ConsumeTraces(context.Background(), td)
+	go assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	err := <-waitForCn
 	if err != nil {
@@ -76,7 +82,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 
 func TestBatchProcessorSentBySize(t *testing.T) {
 	views := MetricViews()
-	view.Register(views...)
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	sender := newTestSender()
@@ -86,6 +92,11 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	cfg.Timeout = 500 * time.Millisecond
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchTracesProcessor(creationParams, sender, cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, batcher.Shutdown(context.Background()))
+	})
+
 	requestCount := 100
 	spansPerRequest := 5
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, time.Second)
@@ -93,7 +104,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
-		go batcher.ConsumeTraces(context.Background(), td)
+		go assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	err := <-waitForCn
@@ -147,9 +158,14 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	start := time.Now()
 
 	batcher := newBatchTracesProcessor(creationParams, sender, cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, batcher.Shutdown(context.Background()))
+	})
+
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
-		go batcher.ConsumeTraces(context.Background(), td)
+		go assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
 	err := <-waitForCn
@@ -188,16 +204,17 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchTracesProcessor(creationParams, sender, &cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 10
 	spansPerRequest := 10
 	waitForCn := sender.waitFor(requestCount*spansPerRequest, 2*time.Second)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
-		batcher.ConsumeTraces(context.Background(), td)
+		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
-	batcher.Shutdown(context.Background())
+	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	// TODO (Issue 1070) - - To check return value when fixing tests.
 	<-waitForCn
@@ -361,6 +378,11 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, batcher.Shutdown(context.Background()))
+	})
+
 	waitForCn := tms.waitFor(requestCount*metricsPerRequest, 5*time.Second)
 	metricDataSlice := make([]data.MetricData, 0, requestCount)
 
@@ -372,12 +394,12 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 		}
 		metricDataSlice = append(metricDataSlice, md.Clone())
 		pd := pdatautil.MetricsFromInternalMetrics(md)
-		go batcher.ConsumeMetrics(context.Background(), pd)
+		go assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 
 	// Added to test case with empty resources sent.
 	md := testdata.GenerateMetricDataEmpty()
-	go batcher.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
+	go assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 
 	err := <-waitForCn
 	if err != nil {
@@ -400,7 +422,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	views := MetricViews()
-	view.Register(views...)
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data
@@ -418,12 +440,17 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, batcher.Shutdown(context.Background()))
+	})
+
 	waitForCn := tms.waitFor(requestCount*metricsPerRequest, time.Second)
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
 		pd := pdatautil.MetricsFromInternalMetrics(md)
-		go batcher.ConsumeMetrics(context.Background(), pd)
+		go assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 	err := <-waitForCn
 	if err != nil {
@@ -470,12 +497,17 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, batcher.Shutdown(context.Background()))
+	})
+
 	waitForCn := tms.waitFor(requestCount*metricsPerRequest, time.Second)
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
 		pd := pdatautil.MetricsFromInternalMetrics(md)
-		go batcher.ConsumeMetrics(context.Background(), pd)
+		go assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 	err := <-waitForCn
 	if err != nil {
@@ -514,15 +546,17 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, tms, &cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
 	waitForCn := tms.waitFor(requestCount*metricsPerRequest, 2*time.Second)
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
 		pd := pdatautil.MetricsFromInternalMetrics(md)
-		batcher.ConsumeMetrics(context.Background(), pd)
+		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 
-	batcher.Shutdown(context.Background())
+	require.NoError(t, batcher.Shutdown(context.Background()))
 
 	// TODO (Issue 1070) - To check return value when fixing tests.
 	<-waitForCn
