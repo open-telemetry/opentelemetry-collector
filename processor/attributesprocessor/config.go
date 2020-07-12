@@ -33,7 +33,7 @@ type Config struct {
 	filterspan.MatchConfig `mapstructure:",squash"`
 
 	// Specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	// This is a required field.
 	attraction.Settings `mapstructure:",squash"`
 }

@@ -17,41 +17,42 @@ package resourceprocessor
 import (
 	"context"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
 type resourceTraceProcessor struct {
-	resource     *resourcepb.Resource
-	capabilities component.ProcessorCapabilities
-	next         consumer.TraceConsumerOld
+	attrProc *attraction.AttrProc
+	next     consumer.TraceConsumer
 }
 
-func newResourceTraceProcessor(next consumer.TraceConsumerOld, cfg *Config) *resourceTraceProcessor {
-	resource := createResource(cfg)
+func newResourceTraceProcessor(next consumer.TraceConsumer, attrProc *attraction.AttrProc) *resourceTraceProcessor {
 	return &resourceTraceProcessor{
-		next:         next,
-		capabilities: component.ProcessorCapabilities{MutatesConsumedData: !isEmptyResource(resource)},
-		resource:     resource,
+		attrProc: attrProc,
+		next:     next,
 	}
 }
 
 // ConsumeTraceData implements the TraceProcessor interface
-func (rtp *resourceTraceProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	return rtp.next.ConsumeTraceData(ctx, consumerdata.TraceData{
-		Node:         td.Node,
-		Resource:     mergeResource(td.Resource, rtp.resource),
-		Spans:        td.Spans,
-		SourceFormat: td.SourceFormat,
-	})
+func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		resource := rss.At(i).Resource()
+		if resource.IsNil() {
+			resource.InitEmpty()
+		}
+		attrs := resource.Attributes()
+		rtp.attrProc.Process(attrs)
+	}
+	return rtp.next.ConsumeTraces(ctx, td)
 }
 
 // GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
 func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return rtp.capabilities
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
@@ -65,23 +66,20 @@ func (*resourceTraceProcessor) Shutdown(context.Context) error {
 }
 
 type resourceMetricProcessor struct {
-	resource     *resourcepb.Resource
-	capabilities component.ProcessorCapabilities
-	next         consumer.MetricsConsumerOld
+	attrProc *attraction.AttrProc
+	next     consumer.MetricsConsumer
 }
 
-func newResourceMetricProcessor(next consumer.MetricsConsumerOld, cfg *Config) *resourceMetricProcessor {
-	resource := createResource(cfg)
+func newResourceMetricProcessor(next consumer.MetricsConsumer, attrProc *attraction.AttrProc) *resourceMetricProcessor {
 	return &resourceMetricProcessor{
-		resource:     resource,
-		capabilities: component.ProcessorCapabilities{MutatesConsumedData: !isEmptyResource(resource)},
-		next:         next,
+		attrProc: attrProc,
+		next:     next,
 	}
 }
 
 // GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
 func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return rmp.capabilities
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
@@ -95,52 +93,18 @@ func (*resourceMetricProcessor) Shutdown(context.Context) error {
 }
 
 // ConsumeMetricsData implements the MetricsProcessor interface
-func (rmp *resourceMetricProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	return rmp.next.ConsumeMetricsData(ctx, consumerdata.MetricsData{
-		Node:     md.Node,
-		Resource: mergeResource(md.Resource, rmp.resource),
-		Metrics:  md.Metrics,
-	})
-}
-
-func createResource(cfg *Config) *resourcepb.Resource {
-	rpb := &resourcepb.Resource{
-		Type:   cfg.ResourceType,
-		Labels: map[string]string{},
-	}
-	for k, v := range cfg.Labels {
-		rpb.Labels[k] = v
-	}
-	return rpb
-}
-
-func mergeResource(to, from *resourcepb.Resource) *resourcepb.Resource {
-	if isEmptyResource(from) {
-		return to
-	}
-	if to == nil {
-		if from.Type == "" {
-			// Since resource without type would be invalid, we keep resource as nil
-			return nil
+func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	imd := pdatautil.MetricsToInternalMetrics(md)
+	rms := imd.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		resource := rms.At(i).Resource()
+		if resource.IsNil() {
+			resource.InitEmpty()
 		}
-		to = &resourcepb.Resource{Labels: map[string]string{}}
-	}
-	if from.Type != "" {
-		// Only change resource type if it was configured
-		to.Type = from.Type
-	}
-	if from.Labels != nil {
-		if to.Labels == nil {
-			to.Labels = make(map[string]string, len(from.Labels))
+		if resource.Attributes().Len() == 0 {
+			resource.Attributes().InitEmptyWithCapacity(1)
 		}
-
-		for k, v := range from.Labels {
-			to.Labels[k] = v
-		}
+		rmp.attrProc.Process(resource.Attributes())
 	}
-	return to
-}
-
-func isEmptyResource(resource *resourcepb.Resource) bool {
-	return resource.Type == "" && len(resource.Labels) == 0
+	return rmp.next.ConsumeMetrics(ctx, md)
 }

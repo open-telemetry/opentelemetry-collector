@@ -18,269 +18,175 @@ import (
 	"context"
 	"testing"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
 var (
+	processorSettings = configmodels.ProcessorSettings{
+		TypeVal: "resource",
+		NameVal: "resource",
+	}
+
 	cfg = &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "host",
-		Labels: map[string]string{
-			"cloud.zone":       "zone-1",
-			"k8s.cluster.name": "k8s-cluster",
-			"host.name":        "k8s-node",
-		},
-	}
-
-	emptyCfg = &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "",
-		Labels:       map[string]string{},
-	}
-
-	cfgWithEmptyResourceType = &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "",
-		Labels: map[string]string{
-			"cloud.zone":       "zone-1",
-			"k8s.cluster.name": "k8s-cluster",
-			"host.name":        "k8s-node",
-		},
-	}
-
-	resource = &resourcepb.Resource{
-		Type: "host",
-		Labels: map[string]string{
-			"cloud.zone":       "zone-1",
-			"k8s.cluster.name": "k8s-cluster",
-			"host.name":        "k8s-node",
-		},
-	}
-
-	resource2 = &resourcepb.Resource{
-		Type: "ht",
-		Labels: map[string]string{
-			"zone":    "zone-2",
-			"cluster": "cluster-2",
-			"host":    "node-2",
-		},
-	}
-
-	mergedResource = &resourcepb.Resource{
-		Type: "host",
-		Labels: map[string]string{
-			"cloud.zone":       "zone-1",
-			"k8s.cluster.name": "k8s-cluster",
-			"host.name":        "k8s-node",
-			"zone":             "zone-2",
-			"cluster":          "cluster-2",
-			"host":             "node-2",
+		ProcessorSettings: processorSettings,
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
+			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+			{Key: "redundant-attribute", Action: attraction.DELETE},
 		},
 	}
 )
 
-func TestResourceProcessor(t *testing.T) {
+func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	tests := []struct {
-		name                string
-		config              *Config
-		mutatesConsumedData bool
-		sourceResource      *resourcepb.Resource
-		wantResource        *resourcepb.Resource
+		name             string
+		config           *Config
+		sourceAttributes map[string]string
+		wantAttributes   map[string]string
 	}{
 		{
-			name:                "Config with empty resource type doesn't mutate resource type",
-			config:              cfgWithEmptyResourceType,
-			mutatesConsumedData: true,
-			sourceResource: &resourcepb.Resource{
-				Type: "original-type",
-				Labels: map[string]string{
-					"original-label": "original-value",
-					"cloud.zone":     "will-be-overridden",
-				},
-			},
-			wantResource: &resourcepb.Resource{
-				Type: "original-type",
-				Labels: map[string]string{
-					"original-label":   "original-value",
-					"cloud.zone":       "zone-1",
-					"k8s.cluster.name": "k8s-cluster",
-					"host.name":        "k8s-node",
-				},
+			name:             "config_with_attributes_applied_on_nil_resource",
+			config:           cfg,
+			sourceAttributes: nil,
+			wantAttributes: map[string]string{
+				"cloud.zone": "zone-1",
 			},
 		},
 		{
-			name:                "Config with empty resource type keeps nil resource",
-			config:              cfgWithEmptyResourceType,
-			mutatesConsumedData: true,
-			sourceResource:      nil,
-			wantResource:        nil,
+			name:             "config_with_attributes_applied_on_empty_resource",
+			config:           cfg,
+			sourceAttributes: map[string]string{},
+			wantAttributes: map[string]string{
+				"cloud.zone": "zone-1",
+			},
 		},
 		{
-			name:                "Consumed resource with nil labels",
-			config:              cfgWithEmptyResourceType,
-			mutatesConsumedData: true,
-			sourceResource: &resourcepb.Resource{
-				Type: "original-type",
+			name:   "config_attributes_applied_on_existing_resource_attributes",
+			config: cfg,
+			sourceAttributes: map[string]string{
+				"cloud.zone":          "to-be-replaced",
+				"k8s-cluster":         "test-cluster",
+				"redundant-attribute": "to-be-removed",
 			},
-			wantResource: &resourcepb.Resource{
-				Type: "original-type",
-				Labels: map[string]string{
-					"cloud.zone":       "zone-1",
-					"k8s.cluster.name": "k8s-cluster",
-					"host.name":        "k8s-node",
+			wantAttributes: map[string]string{
+				"cloud.zone":       "zone-1",
+				"k8s-cluster":      "test-cluster",
+				"k8s.cluster.name": "test-cluster",
+			},
+		},
+		{
+			name: "config_attributes_replacement",
+			config: &Config{
+				ProcessorSettings: processorSettings,
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+					{Key: "k8s-cluster", Action: attraction.DELETE},
 				},
+			},
+			sourceAttributes: map[string]string{
+				"k8s-cluster": "test-cluster",
+			},
+			wantAttributes: map[string]string{
+				"k8s.cluster.name": "test-cluster",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test trace consuner
+			// Test trace consumer
 			ttn := &testTraceConsumer{}
-			rtp := newResourceTraceProcessor(ttn, tt.config)
-			assert.Equal(t, tt.mutatesConsumedData, rtp.GetCapabilities().MutatesConsumedData)
-
-			err := rtp.ConsumeTraceData(context.Background(), consumerdata.TraceData{
-				Resource: tt.sourceResource,
-			})
+			attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: tt.config.AttributesActions})
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantResource, ttn.td.Resource)
+
+			rtp := newResourceTraceProcessor(ttn, attrProc)
+			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+
+			sourceTraceData := generateTraceData(tt.sourceAttributes)
+			wantTraceData := generateTraceData(tt.wantAttributes)
+			err = rtp.ConsumeTraces(context.Background(), sourceTraceData)
+			require.NoError(t, err)
+			assert.EqualValues(t, wantTraceData, ttn.td)
 
 			// Test metrics consumer
 			tmn := &testMetricsConsumer{}
-			rmp := newResourceMetricProcessor(tmn, tt.config)
-			assert.Equal(t, tt.mutatesConsumedData, rmp.GetCapabilities().MutatesConsumedData)
+			rmp := newResourceMetricProcessor(tmn, attrProc)
+			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
 
-			err = rmp.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
-				Resource: tt.sourceResource,
-			})
+			sourceMetricData := generateMetricData(tt.sourceAttributes)
+			wantMetricData := generateMetricData(tt.wantAttributes)
+			err = rmp.ConsumeMetrics(context.Background(), sourceMetricData)
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantResource, tmn.md.Resource)
+			assert.EqualValues(t, wantMetricData, tmn.md)
 		})
 	}
 }
 
-func TestTraceResourceProcessor(t *testing.T) {
-	want := consumerdata.TraceData{
-		Resource: resource,
+func generateTraceData(attributes map[string]string) pdata.Traces {
+	td := testdata.GenerateTraceDataOneSpanNoResource()
+	if attributes == nil {
+		return td
 	}
-	test := consumerdata.TraceData{}
-
-	ttn := &testTraceConsumer{}
-	rtp := newResourceTraceProcessor(ttn, cfg)
-	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
-
-	rtp.ConsumeTraceData(context.Background(), test)
-	assert.Equal(t, ttn.td, want)
+	resource := td.ResourceSpans().At(0).Resource()
+	resource.InitEmpty()
+	for k, v := range attributes {
+		resource.Attributes().InsertString(k, v)
+	}
+	resource.Attributes().Sort()
+	return td
 }
 
-func TestTraceResourceProcessorEmpty(t *testing.T) {
-	want := consumerdata.TraceData{
-		Resource: resource2,
+func generateMetricData(attributes map[string]string) pdata.Metrics {
+	md := testdata.GenerateMetricDataOneMetricNoResource()
+	if attributes == nil {
+		return pdatautil.MetricsFromInternalMetrics(md)
 	}
-	test := consumerdata.TraceData{
-		Resource: resource2,
+	resource := md.ResourceMetrics().At(0).Resource()
+	resource.InitEmpty()
+	for k, v := range attributes {
+		resource.Attributes().InsertString(k, v)
 	}
-
-	ttn := &testTraceConsumer{}
-	rtp := newResourceTraceProcessor(ttn, emptyCfg)
-	assert.False(t, rtp.GetCapabilities().MutatesConsumedData)
-
-	rtp.ConsumeTraceData(context.Background(), test)
-	assert.Equal(t, ttn.td, want)
-}
-
-func TestTraceResourceProcessorNonEmptyIncomingResource(t *testing.T) {
-	want := consumerdata.TraceData{
-		Resource: mergedResource,
-	}
-	test := consumerdata.TraceData{
-		Resource: resource2,
-	}
-	ttn := &testTraceConsumer{}
-	rtp := newResourceTraceProcessor(ttn, cfg)
-	rtp.ConsumeTraceData(context.Background(), test)
-	assert.Equal(t, ttn.td, want)
-}
-
-func TestMetricResourceProcessor(t *testing.T) {
-	want := consumerdata.MetricsData{
-		Resource: resource,
-	}
-	test := consumerdata.MetricsData{}
-
-	tmn := &testMetricsConsumer{}
-	rmp := newResourceMetricProcessor(tmn, cfg)
-	assert.True(t, rmp.GetCapabilities().MutatesConsumedData)
-
-	rmp.ConsumeMetricsData(context.Background(), test)
-	assert.Equal(t, tmn.md, want)
-}
-
-func TestMetricResourceProcessorEmpty(t *testing.T) {
-	want := consumerdata.MetricsData{
-		Resource: resource2,
-	}
-	test := consumerdata.MetricsData{
-		Resource: resource2,
-	}
-
-	tmn := &testMetricsConsumer{}
-	rmp := newResourceMetricProcessor(tmn, emptyCfg)
-	assert.False(t, rmp.GetCapabilities().MutatesConsumedData)
-
-	rmp.ConsumeMetricsData(context.Background(), test)
-	assert.Equal(t, tmn.md, want)
-}
-
-func TestMetricResourceProcessorNonEmptyIncomingResource(t *testing.T) {
-	want := consumerdata.MetricsData{
-		Resource: mergedResource,
-	}
-	test := consumerdata.MetricsData{
-		Resource: resource2,
-	}
-
-	tmn := &testMetricsConsumer{}
-	rmp := newResourceMetricProcessor(tmn, cfg)
-	rmp.ConsumeMetricsData(context.Background(), test)
-	assert.Equal(t, tmn.md, want)
-}
-
-func TestMergeResourceWithNilLabels(t *testing.T) {
-	resourceNilLabels := &resourcepb.Resource{Type: "host"}
-	assert.Nil(t, resourceNilLabels.Labels)
-	assert.Equal(t, mergeResource(nil, resourceNilLabels), &resourcepb.Resource{Type: "host", Labels: map[string]string{}})
+	resource.Attributes().Sort()
+	return pdatautil.MetricsFromInternalMetrics(md)
 }
 
 type testTraceConsumer struct {
-	td consumerdata.TraceData
+	td pdata.Traces
 }
 
-func (ttn *testTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (ttn *testTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	// sort attributes to be able to compare traces
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		sortResourceAttributes(td.ResourceSpans().At(i).Resource())
+	}
 	ttn.td = td
 	return nil
 }
 
 type testMetricsConsumer struct {
-	md consumerdata.MetricsData
+	md pdata.Metrics
 }
 
-func (tmn *testMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (tmn *testMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	// sort attributes to be able to compare traces
+	imd := pdatautil.MetricsToInternalMetrics(md)
+	for i := 0; i < imd.ResourceMetrics().Len(); i++ {
+		sortResourceAttributes(imd.ResourceMetrics().At(i).Resource())
+	}
 	tmn.md = md
 	return nil
+}
+
+func sortResourceAttributes(resource pdata.Resource) {
+	if resource.IsNil() {
+		return
+	}
+	resource.Attributes().Sort()
 }
