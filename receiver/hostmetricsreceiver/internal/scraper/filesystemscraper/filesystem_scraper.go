@@ -27,6 +27,10 @@ import (
 // scraper for FileSystem Metrics
 type scraper struct {
 	config *Config
+
+	// for mocking gopsutil disk.Partitions & disk.Usage
+	partitions func(bool) ([]disk.PartitionStat, error)
+	usage      func(string) (*disk.UsageStat, error)
 }
 
 type deviceUsage struct {
@@ -36,7 +40,7 @@ type deviceUsage struct {
 
 // newFileSystemScraper creates a FileSystem Scraper
 func newFileSystemScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, partitions: disk.Partitions, usage: disk.Usage}
 }
 
 // Initialize
@@ -54,7 +58,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	// omit logical (virtual) filesystems (not relevant for windows)
-	partitions, err := disk.Partitions( /*all=*/ false)
+	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
 		return metrics, err
 	}
@@ -62,7 +66,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	var errors []error
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
-		usage, err := disk.Usage(partition.Mountpoint)
+		usage, err := s.usage(partition.Mountpoint)
 		if err != nil {
 			errors = append(errors, err)
 			continue
