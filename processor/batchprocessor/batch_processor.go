@@ -16,6 +16,7 @@ package batchprocessor
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -45,9 +46,8 @@ type batchProcessor struct {
 	sendBatchSize uint32
 	timeout       time.Duration
 
-	timer *time.Timer
-	done  chan struct{}
-
+	timer   *time.Timer
+	done    chan struct{}
 	newItem chan interface{}
 	batch   batch
 }
@@ -76,8 +76,8 @@ func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batc
 
 		sendBatchSize: cfg.SendBatchSize,
 		timeout:       cfg.Timeout,
-		done:          make(chan struct{}),
-		newItem:       make(chan interface{}, 1),
+		done:          make(chan struct{}, 1),
+		newItem:       make(chan interface{}, runtime.NumCPU()),
 		batch:         batch,
 	}
 }
@@ -94,7 +94,8 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 
 // Shutdown is invoked during service shutdown.
 func (bp *batchProcessor) Shutdown(context.Context) error {
-	close(bp.done)
+	close(bp.newItem)
+	<-bp.done
 	return nil
 }
 
@@ -103,8 +104,18 @@ func (bp *batchProcessor) startProcessingCycle() {
 	for {
 		select {
 		case item := <-bp.newItem:
-			bp.batch.add(item)
+			if item == nil {
+				// This is the close of the channel
+				if bp.batch.itemCount() > 0 {
+					// TODO: Set a timeout on sendTraces or
+					// make it cancellable using the context that Shutdown gets as a parameter
+					bp.sendItems(statTimeoutTriggerSend)
+				}
+				close(bp.done)
+				return
+			}
 
+			bp.batch.add(item)
 			if bp.batch.itemCount() >= bp.sendBatchSize {
 				bp.timer.Stop()
 				bp.sendItems(statBatchSizeTriggerSend)
@@ -115,13 +126,6 @@ func (bp *batchProcessor) startProcessingCycle() {
 				bp.sendItems(statTimeoutTriggerSend)
 			}
 			bp.resetTimer()
-		case <-bp.done:
-			if bp.batch.itemCount() > 0 {
-				// TODO: Set a timeout on sendTraces or
-				// make it cancellable using the context that Shutdown gets as a parameter
-				bp.sendItems(statTimeoutTriggerSend)
-			}
-			return
 		}
 	}
 }
