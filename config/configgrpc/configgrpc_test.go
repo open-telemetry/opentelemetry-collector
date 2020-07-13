@@ -16,16 +16,12 @@ package configgrpc
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/config/confignet"
@@ -464,46 +460,6 @@ func TestWithPerRPCAuthBearerToken(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 2) // WithInsecure and WithPerRPCCredentials
-}
-
-func TestWithPerRPCAuthBearerTokenFile(t *testing.T) {
-	// prepare
-	token := []byte("the-bearer-token")
-	file, err := ioutil.TempFile("", "")
-	require.NoError(t, err)
-	defer os.Remove(file.Name())
-
-	_, err = file.Write(token)
-	require.NoError(t, err)
-	require.NoError(t, file.Close())
-
-	// test
-	gcs := &GRPCClientSettings{
-		PerRPCAuth: &PerRPCAuthConfig{
-			AuthType:    "bearer",
-			BearerToken: fmt.Sprintf("file://%s", file.Name()),
-		},
-	}
-	dialOpts, err := gcs.ToDialOptions()
-
-	// verify
-	assert.NoError(t, err)
-	assert.Len(t, dialOpts, 2) // WithInsecure and WithPerRPCCredentials
-}
-
-func TestWithPerRPCAuthBearerTokenFileInvalidFile(t *testing.T) {
-	// test
-	gcs := &GRPCClientSettings{
-		PerRPCAuth: &PerRPCAuthConfig{
-			AuthType:    "bearer",
-			BearerToken: fmt.Sprintf("file://%s", "a-token-file"),
-		},
-	}
-	dialOpts, err := gcs.ToDialOptions()
-
-	// verify
-	assert.Error(t, err)
-	assert.Nil(t, dialOpts)
 }
 
 func TestWithPerRPCAuthInvalidAuthType(t *testing.T) {

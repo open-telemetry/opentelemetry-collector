@@ -101,7 +101,7 @@ type PerRPCAuthConfig struct {
 	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
 	AuthType string `mapstructure:"type,omitempty"`
 
-	// BearerToken specifies the bearer token to use for every RPC. If the value starts with `file://`, reads the token from the specified file.
+	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken string `mapstructure:"bearer_token,omitempty"`
 }
 
@@ -194,13 +194,6 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		if strings.EqualFold(gcs.PerRPCAuth.AuthType, PerRPCAuthTypeBearer) {
 			sToken := gcs.PerRPCAuth.BearerToken
 			token := BearerToken(sToken)
-			if strings.HasPrefix(sToken, "file://") {
-				token, err = BearerTokenFromFile(sToken[7:])
-				if err != nil {
-					return nil, err
-				}
-			}
-
 			opts = append(opts, grpc.WithPerRPCCredentials(token))
 		} else {
 			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)

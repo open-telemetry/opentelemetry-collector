@@ -16,8 +16,6 @@ package configgrpc
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,28 +30,6 @@ func TestBearerToken(t *testing.T) {
 
 	// verify
 	assert.Equal(t, "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", metadata["authorization"])
-}
-
-func TestBearerTokenFileReaderRemoveSpaces(t *testing.T) {
-	// prepare
-	token := []byte("a\nbc def\n")
-	file, err := ioutil.TempFile("", "")
-	require.NoError(t, err)
-	defer os.Remove(file.Name())
-
-	_, err = file.Write(token)
-	require.NoError(t, err)
-	require.NoError(t, file.Close())
-
-	// test
-	result, err := BearerTokenFromFile(file.Name())
-	require.NoError(t, err)
-
-	metadata, err := result.GetRequestMetadata(context.Background())
-	require.NoError(t, err)
-
-	// verify
-	assert.Equal(t, "Bearer abcdef", metadata["authorization"])
 }
 
 func TestBearerTokenRequiresSecureTransport(t *testing.T) {

@@ -12,7 +12,7 @@ exporters:
     ca_file: /var/lib/mycert.pem
     per_rpc_auth:
       type: bearer
-      bearer_token: file:///var/run/secrets/kubernetes.io/serviceaccount/token
+      bearer_token: some-token
     headers:
       "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
       header1: 234

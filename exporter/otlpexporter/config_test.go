@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				PerRPCAuth: &configgrpc.PerRPCAuthConfig{
 					AuthType:    "bearer",
-					BearerToken: "file:///var/run/secrets/kubernetes.io/serviceaccount/token",
+					BearerToken: "some-token",
 				},
 			},
 		})
