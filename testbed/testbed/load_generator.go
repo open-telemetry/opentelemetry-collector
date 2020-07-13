@@ -63,6 +63,9 @@ type LoadOptions struct {
 
 	// Attributes to add to each generated data item. Can be empty.
 	Attributes map[string]string
+
+	// Parallel specifies how many goroutines to send from.
+	Parallel int
 }
 
 // NewLoadGenerator creates a load generator that sends data using specified sender.
@@ -95,7 +98,7 @@ func (lg *LoadGenerator) Start(options LoadOptions) {
 	lg.stopWait.Add(1)
 
 	// Begin generation
-	go lg.generate()
+	go lg.generate(options)
 }
 
 // Stop the load.
@@ -131,7 +134,7 @@ func (lg *LoadGenerator) IncDataItemsSent() {
 	lg.dataItemsSent.Inc()
 }
 
-func (lg *LoadGenerator) generate() {
+func (lg *LoadGenerator) generate(options LoadOptions) {
 	// Indicate that generation is done at the end
 	defer lg.stopWait.Done()
 
@@ -147,29 +150,45 @@ func (lg *LoadGenerator) generate() {
 		return
 	}
 
-	t := time.NewTicker(time.Second / time.Duration(lg.options.DataItemsPerSecond/lg.options.ItemsPerBatch))
-	defer t.Stop()
-	done := false
-	for !done {
-		select {
-		case <-t.C:
-			switch lg.sender.(type) {
-			case TraceDataSender:
-				lg.generateTrace()
-			case TraceDataSenderOld:
-				lg.generateTraceOld()
-			case MetricDataSender:
-				lg.generateMetrics()
-			case MetricDataSenderOld:
-				lg.generateMetricsOld()
-			default:
-				log.Printf("Invalid type of LoadGenerator sender")
-			}
+	numWorkers := 1
 
-		case <-lg.stopSignal:
-			done = true
-		}
+	if options.Parallel > 0 {
+		numWorkers = options.Parallel
 	}
+
+	var workers sync.WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		workers.Add(1)
+
+		go func() {
+			defer workers.Done()
+			t := time.NewTicker(time.Second / time.Duration(lg.options.DataItemsPerSecond/lg.options.ItemsPerBatch/numWorkers))
+			defer t.Stop()
+			for {
+				select {
+				case <-t.C:
+					switch lg.sender.(type) {
+					case TraceDataSender:
+						lg.generateTrace()
+					case TraceDataSenderOld:
+						lg.generateTraceOld()
+					case MetricDataSender:
+						lg.generateMetrics()
+					case MetricDataSenderOld:
+						lg.generateMetricsOld()
+					default:
+						log.Printf("Invalid type of LoadGenerator sender")
+					}
+				case <-lg.stopSignal:
+					return
+				}
+			}
+		}()
+	}
+
+	workers.Wait()
+
 	// Send all pending generated data.
 	lg.sender.Flush()
 }
