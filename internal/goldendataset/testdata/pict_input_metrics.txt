@@ -1,2 +1,4 @@
-MetricType: Double, Int
-NumAttrs: None, One, Many
+NumPtsPerMetric: OnePt, ManyPts
+MetricType: Double, MonotonicDouble, Int, MonotonicInt, Histogram, Summary
+NumLabels: NoLabels, OneLabel, ManyLabels
+NumResourceAttrs: NoAttrs, OneAttr, TwoAttrs

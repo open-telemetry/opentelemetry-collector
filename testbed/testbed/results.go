@@ -21,8 +21,6 @@ import (
 	"os"
 	"path"
 	"time"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // TestResultsSummary defines the interface to record results of one category of testing.
@@ -137,11 +135,6 @@ type TracingAssertionFailure struct {
 	expectedValue interface{}
 	actualValue   interface{}
 	sumCount      int
-}
-
-type MetricsAssertionFailure struct {
-	expected []pdata.Metrics
-	actual   []pdata.Metrics
 }
 
 func (af TracingAssertionFailure) String() string {

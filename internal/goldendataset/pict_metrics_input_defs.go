@@ -16,20 +16,41 @@ package goldendataset
 
 type PICTMetricType string
 
-const (
-	MetricTypeInt    PICTMetricType = "Int"
-	MetricTypeDouble PICTMetricType = "Double"
-)
-
-type PICTNumResourceAttrs string
-
-const (
-	AttrsNone PICTNumResourceAttrs = "None"
-	AttrsOne  PICTNumResourceAttrs = "One"
-	AttrsTwo  PICTNumResourceAttrs = "Two"
-)
-
 type PICTMetricInputs struct {
-	NumResourceAttrs PICTNumResourceAttrs
-	MetricType       PICTMetricType
+	NumPtsPerMetric PICTNumPtsPerMetric
+	MetricType      PICTMetricType
+	NumLabels       PICTNumLabels
+	NumAttrs        PICTNumResrouceAttrs
 }
+
+const (
+	MetricTypeInt             PICTMetricType = "Int"
+	MetricTypeMonotonicInt    PICTMetricType = "MonotonicInt"
+	MetricTypeDouble          PICTMetricType = "Double"
+	MetricTypeMonotonicDouble PICTMetricType = "MonotonicDouble"
+	MetricTypeHistogram       PICTMetricType = "Histogram"
+	MetricTypeSummary         PICTMetricType = "Summary"
+)
+
+type PICTNumLabels string
+
+const (
+	LabelsNone PICTNumLabels = "NoLabels"
+	LabelsOne  PICTNumLabels = "OneLabel"
+	LabelsMany PICTNumLabels = "ManyLabels"
+)
+
+type PICTNumPtsPerMetric string
+
+const (
+	NumPtsPerMetricOne  PICTNumPtsPerMetric = "OnePt"
+	NumPtsPerMetricMany PICTNumPtsPerMetric = "ManyPts"
+)
+
+type PICTNumResrouceAttrs string
+
+const (
+	AttrsNone PICTNumResrouceAttrs = "NoAttrs"
+	AttrsOne  PICTNumResrouceAttrs = "OneAttr"
+	AttrsTwo  PICTNumResrouceAttrs = "TwoAttrs"
+)

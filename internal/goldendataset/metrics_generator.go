@@ -15,11 +15,16 @@
 package goldendataset
 
 import (
+	"fmt"
+
+	"github.com/prometheus/common/log"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 )
 
-var counter int64
+var metricCounter int
+var ptCounter int
 
 func GenerateMetrics(metricPairsFile string) ([]data.MetricData, error) {
 	pictData, err := loadPictOutputFile(metricPairsFile)
@@ -27,13 +32,14 @@ func GenerateMetrics(metricPairsFile string) ([]data.MetricData, error) {
 		return nil, err
 	}
 	var out []data.MetricData
-	for index, values := range pictData {
-		if index == 0 {
+	for i, values := range pictData {
+		if i == 0 {
 			continue
 		}
 		metricInputs := PICTMetricInputs{
-			MetricType:       PICTMetricType(values[0]),
-			NumResourceAttrs: PICTNumResourceAttrs(values[1]),
+			NumPtsPerMetric: PICTNumPtsPerMetric(values[0]),
+			MetricType:      PICTMetricType(values[1]),
+			NumLabels:       PICTNumLabels(values[2]),
 		}
 		md := GenerateMetric(metricInputs)
 		out = append(out, md)
@@ -43,34 +49,30 @@ func GenerateMetrics(metricPairsFile string) ([]data.MetricData, error) {
 
 func GenerateMetric(inputs PICTMetricInputs) data.MetricData {
 	md := data.NewMetricData()
-
 	rmSlice := md.ResourceMetrics()
 	rmSlice.Resize(1)
-
 	rm := rmSlice.At(0)
-
 	rsrc := rm.Resource()
 	rsrc.InitEmpty()
 	attrs := rsrc.Attributes()
 
-	var count int
-	switch inputs.NumResourceAttrs {
+	var numResourceAttrs int
+	switch inputs.NumAttrs {
 	case AttrsNone:
-		count = 0
+		numResourceAttrs = 0
 	case AttrsOne:
-		count = 1
+		numResourceAttrs = 1
 	case AttrsTwo:
-		count = 2
+		numResourceAttrs = 2
 	}
 
-	for i := 0; i < count; i++ {
+	for i := 0; i < numResourceAttrs; i++ {
 		attrs.Insert("my-name", pdata.NewAttributeValueString("resourceName"))
 	}
 
 	ilmSlice := rm.InstrumentationLibraryMetrics()
 	ilmSlice.Resize(1)
 	ilm := ilmSlice.At(0)
-
 	il := ilm.InstrumentationLibrary()
 	il.InitEmpty()
 	il.SetName("my-il-name")
@@ -80,42 +82,125 @@ func GenerateMetric(inputs PICTMetricInputs) data.MetricData {
 	metricSlice.Resize(1)
 	metric := metricSlice.At(0)
 	metric.InitEmpty()
+
 	mDesc := metric.MetricDescriptor()
 	mDesc.InitEmpty()
-	mDesc.SetName("my-md-name")
-	mDesc.SetDescription("my-md-desc")
+	mDesc.SetName(fmt.Sprintf("metric-%d", metricCounter))
+	mDesc.SetDescription("my-description")
+	metricCounter++
+
 	mDesc.SetUnit("x")
 
-	numPts := 10
+	numPts := 0
+	switch inputs.NumPtsPerMetric {
+	case NumPtsPerMetricOne:
+		numPts = 1
+	case NumPtsPerMetricMany:
+		numPts = 1024
+	default:
+		log.Error("invalid value for inputs.NumPtsPerMetric: " + inputs.NumPtsPerMetric)
+	}
 
 	startTime := uint64(42)
 	stepSize := uint64(100)
 
 	switch inputs.MetricType {
+	case MetricTypeMonotonicDouble:
+		mDesc.SetType(pdata.MetricTypeMonotonicDouble)
+		populateDoublePts(metric, numPts, startTime, stepSize, inputs.NumLabels)
 	case MetricTypeDouble:
 		mDesc.SetType(pdata.MetricTypeDouble)
-		ptSlice := metric.DoubleDataPoints()
-		ptSlice.Resize(numPts)
-		for i := 0; i < numPts; i++ {
-			pt := ptSlice.At(i)
-			pt.SetValue(float64(i))
-			lm := pt.LabelsMap()
-			lm.Insert("point-label-key", "point-label-value")
-			counter++
-		}
+		populateDoublePts(metric, numPts, startTime, stepSize, inputs.NumLabels)
+	case MetricTypeMonotonicInt:
+		mDesc.SetType(pdata.MetricTypeMonotonicInt64)
+		populateIntPts(metric, numPts, startTime, stepSize, inputs.NumLabels)
 	case MetricTypeInt:
 		mDesc.SetType(pdata.MetricTypeInt64)
-		ptSlice := metric.Int64DataPoints()
-		ptSlice.Resize(numPts)
+		populateIntPts(metric, numPts, startTime, stepSize, inputs.NumLabels)
+	case MetricTypeSummary:
+		mDesc.SetType(pdata.MetricTypeSummary)
+		pts := metric.SummaryDataPoints()
+		pts.Resize(numPts)
 		for i := 0; i < numPts; i++ {
-			pt := ptSlice.At(i)
-			pt.SetValue(counter)
-			ptTime := startTime + (stepSize * uint64(i))
-			pt.SetStartTime(pdata.TimestampUnixNano(ptTime))
-			lm := pt.LabelsMap()
-			lm.Insert("point-label-key", "point-label-value")
-			counter++
+			pt := pts.At(i)
+			pt.InitEmpty()
+			pt.SetStartTime(pdata.TimestampUnixNano(startTime))
+			pt.SetTimestamp(getTimestamp(startTime, stepSize, 1))
+			pt.SetCount(uint64(10 + i))
+			pt.SetSum(float64(100 + i))
+			insertLabels(pt.LabelsMap(), inputs.NumLabels)
+		}
+	case MetricTypeHistogram:
+		mDesc.SetType(pdata.MetricTypeHistogram)
+		pts := metric.HistogramDataPoints()
+		pts.Resize(numPts)
+		for i := 0; i < numPts; i++ {
+			pt := pts.At(i)
+			pt.SetStartTime(pdata.TimestampUnixNano(startTime))
+			ts := getTimestamp(startTime, stepSize, i)
+			pt.SetTimestamp(ts)
+			insertLabels(pt.LabelsMap(), inputs.NumLabels)
+			buckets := pt.Buckets()
+			numBuckets := 4
+			buckets.Resize(numBuckets)
+			for j := 0; j < numBuckets; j++ {
+				bucket := buckets.At(j)
+				bucket.SetCount(uint64(j))
+				ex := bucket.Exemplar()
+				ex.InitEmpty()
+				ex.SetTimestamp(ts)
+				ex.SetValue(1.0)
+			}
+			ptCounter++
 		}
 	}
 	return md
+}
+
+func populateIntPts(metric pdata.Metric, numPts int, startTime uint64, stepSize uint64, numLabels PICTNumLabels) {
+	pts := metric.Int64DataPoints()
+	pts.Resize(numPts)
+	for i := 0; i < numPts; i++ {
+		pt := pts.At(i)
+		pt.SetValue(int64(ptCounter))
+		pt.SetStartTime(pdata.TimestampUnixNano(startTime))
+		pt.SetTimestamp(getTimestamp(startTime, stepSize, i))
+		insertLabels(pt.LabelsMap(), numLabels)
+		ptCounter++
+	}
+}
+
+func populateDoublePts(metric pdata.Metric, numPts int, startTime uint64, stepSize uint64, numLabels PICTNumLabels) {
+	pts := metric.DoubleDataPoints()
+	pts.Resize(numPts)
+	for i := 0; i < numPts; i++ {
+		pt := pts.At(i)
+		pt.SetValue(float64(i))
+		pt.SetStartTime(pdata.TimestampUnixNano(startTime))
+		pt.SetTimestamp(getTimestamp(startTime, stepSize, i))
+		insertLabels(pt.LabelsMap(), numLabels)
+		ptCounter++
+	}
+}
+
+func insertLabels(lm pdata.StringMap, pictNumLabels PICTNumLabels) {
+	numLabels := 0
+	switch pictNumLabels {
+	case LabelsNone:
+	case LabelsOne:
+		numLabels = 1
+	case LabelsMany:
+		numLabels = 16
+	default:
+		log.Error("unrecognized value for PICTNumLabels: " + pictNumLabels)
+	}
+	for i := 0; i < numLabels; i++ {
+		k := fmt.Sprintf("label-key-%d", i)
+		v := fmt.Sprintf("label-value-%d", i)
+		lm.Insert(k, v)
+	}
+}
+
+func getTimestamp(startTime uint64, stepSize uint64, i int) pdata.TimestampUnixNano {
+	return pdata.TimestampUnixNano(startTime + (stepSize * uint64(i)))
 }
