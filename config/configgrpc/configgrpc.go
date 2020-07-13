@@ -203,7 +203,7 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 
 			opts = append(opts, grpc.WithPerRPCCredentials(token))
 		} else {
-			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.Compression)
+			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)
 		}
 	}
 
