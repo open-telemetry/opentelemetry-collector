@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//+build linux windows
+
 package processscraper
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"strings"
 	"testing"
@@ -107,7 +110,7 @@ func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.Resour
 		}
 	}
 
-	require.Failf(t, "no metric with name %s was returned", descriptor.Name())
+	require.Fail(t, fmt.Sprintf("no metric with name %s was returned", descriptor.Name()))
 	return pdata.NewMetric()
 }
 

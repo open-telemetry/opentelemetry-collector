@@ -22,9 +22,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const cpuStatesLen = 2
+const cpuStatesLen = 0
 
 func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.At(0), startTime, cpuTime.User, userStateLabelValue)
-	initializeCPUTimeDataPoint(ddps.At(1), startTime, cpuTime.System, systemStateLabelValue)
+}
+
+func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+	return nil, nil
+}
+
+func getProcessCommand(proc processHandle) (*commandMetadata, error) {
+	return nil, nil
 }
