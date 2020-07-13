@@ -1,6 +1,6 @@
 # Queued Retry Processor
 
-Supported pipeline types: traces
+Supported pipeline types: metrics, traces
 
 The queued retry processor uses a bounded queue to relay batches from the receiver
 or previous processor to the next processor. Received data is enqueued immediately
