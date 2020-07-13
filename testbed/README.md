@@ -45,3 +45,93 @@ For instance, if using the existing end-to-end test, the general pipeline can be
 * `TestResultsSummary` - Records itemized test case results plus a summary of one category of testing.
   * `PerformanceResults` - Implementation of `TestResultsSummary` with fields suitable for reporting performance test results.
   * `CorrectnessResults` - Implementation of `TestResultsSummary` with fields suitable for reporting data translation correctness test results.
+
+## Step-by-Step Instruction for development
+
+Generally, when designing a test for new exporter and receiver components, by taking use of existing implementation of testbed, developers should mainly focus on designing and implementing the components with yellow background in the diagram above:
+
+* `DataSender` - This part should provide below interfaces for testing purpose:
+
+  * `Start()` - Start sender and connect to the configured endpoint. Must be called before sending data.
+  * `Flush()` - Send any accumulated data.
+  * `GetCollectorPort()` - Return the port to which this sender will send data.
+  * `GenConfigYAMLStr()` - Generate a config string to place in receiver part of collector config so that it can receive data from this sender.
+  * `ProtocolName()` - Return protocol name to use in collector config pipeline.
+
+* `DataReceiver` - This part should provide below interfaces for testing purpose:
+
+  * `Start()` - Start receiver.
+  * `Stop()` - Stop receiver.
+  * `GenConfigYAMLStr()` - Generate a config string to place in exporter part of collector config so that it can send data to this receiver.
+  * `ProtocolName()` - Return protocol name to use in collector config pipeline.
+
+* `Testing` - This part may vary from what kind of testing developers would like to do. In existing implementation, we can refer to [End-to-End testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/tests/e2e_test.go), [Metrics testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/tests/metric_test.go), [Traces testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/tests/trace_test.go) and [Correctness testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/correctness/correctness_test.go). For instance, if developers would like to design a trace test for a new exporter and receiver:
+
+  * ```go
+    func TestTrace10kSPS(t *testing.T) {
+    	tests := []struct {
+    		name         string
+    		sender       testbed.DataSender
+    		receiver     testbed.DataReceiver
+    		resourceSpec testbed.ResourceSpec
+    	}{
+    		{
+    			"NewExporterOrReceiver",
+    			testbed.NewXXXDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+    			testbed.NewXXXDataReceiver(testbed.GetAvailablePort(t)),
+    			testbed.ResourceSpec{
+    				ExpectedMaxCPU: XX,
+    				ExpectedMaxRAM: XX,
+    			},
+    		},
+    		...
+    	}
+    
+    	processors := map[string]string{
+    		"batch": `
+      batch:
+    `,
+    	}
+    
+    	for _, test := range tests {
+    		t.Run(test.name, func(t *testing.T) {
+    			Scenario10kItemsPerSecond(
+    				t,
+    				test.sender,
+    				test.receiver,
+    				test.resourceSpec,
+    				performanceResultsSummary,
+    				processors,
+    			)
+    		})
+    	}
+    }
+    ```
+
+## Run Tests and Get Results
+
+Here providing some examples of how to run and get the results of testing.
+
+1. Under the [collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib) repo, by running following command:
+
+```
+  cd /testbed/tests
+  TESTBED_CONFIG=local.yaml go test -v
+```
+
+​	Then get the result:
+
+![collector-contrib tests result](./CCRepo_result.png)
+
+2. Under [Collector/testbed/](https://github.com/EdZou/opentelemetry-collector/tree/master/testbed) repo, here taking correctness tests as an example, by running:
+
+```
+  cd correctness
+  source ~/.bash_profile # remember you should enable your envir var here
+  ./runtests.sh 
+```
+
+Then get the result:
+
+![collector correctness tests result](./correctness_result.png)
+
