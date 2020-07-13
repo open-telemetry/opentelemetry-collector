@@ -28,11 +28,14 @@ import (
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
+
+	// for mocking gopsutil cpu.Times
+	times func(bool) ([]cpu.TimesStat, error)
 }
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, times: cpu.Times}
 }
 
 // Initialize
@@ -55,7 +58,7 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	cpuTimes, err := cpu.Times(s.config.ReportPerCPU)
+	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
 		return metrics, err
 	}
