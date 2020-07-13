@@ -7,22 +7,30 @@ REPO_DIR="$( cd "$SCRIPT_DIR/../../../../../" && pwd )"
 VERSION="${1:-}"
 ARCH="${2:-"amd64"}"
 OUTPUT_DIR="${3:-"$REPO_DIR/bin/"}"
-OTELCOL_PATH="$REPO_DIR/bin/otelcol_linux_amd64"
+OTELCOL_PATH="$REPO_DIR/bin/otelcol_linux_$ARCH"
 CONFIG_PATH="$REPO_DIR/examples/otel-local-config.yaml"
+
+. $SCRIPT_DIR/../common.sh
 
 if [[ -z "$VERSION" ]]; then
     latest_tag="$( git describe --abbrev=0 --match v[0-9]* )"
     VERSION="${latest_tag}~post"
 fi
 
-fpm -s dir -t rpm -n otel-collector -v ${VERSION#v} -f -p "$OUTPUT_DIR" \
-    --vendor "OpenTelemetry Community" \
-    --maintainer "OpenTelemetry Community <cncf-opentelemetry-community@lists.cncf.io>" \
-    --description "OpenTelemetry Collector" \
-    --license "Apache 2.0" \
-    --rpm-summary "OpenTelemetry Collector" \
-    --url "https://github.com/open-telemetry/opentelemetry-collector" \
+fpm -s dir -t rpm -n $PKG_NAME -v ${VERSION#v} -f -p "$OUTPUT_DIR" \
+    --vendor "$PKG_VENDOR" \
+    --maintainer "$PKG_MAINTAINER" \
+    --description "$PKG_DESCRIPTION" \
+    --license "$PKG_LICENSE" \
+    --url "$PKG_URL" \
     --architecture "$ARCH" \
     --config-files /etc/otel-collector/config.yaml \
-    $OTELCOL_PATH=/usr/bin/otelcol \
+    --rpm-summary "$PKG_DESCRIPTION" \
+    --rpm-user "$PKG_USER" \
+    --rpm-group "$PKG_GROUP" \
+    --before-install "$PREINSTALL_PATH" \
+    --after-install "$POSTINSTALL_PATH" \
+    --pre-uninstall "$PREUNINSTALL_PATH" \
+    $OTELCOL_PATH=/usr/bin/$PROCESS_NAME \
+    $SERVICE_PATH=/lib/systemd/system/$SERVICE_NAME.service \
     $CONFIG_PATH=/etc/otel-collector/config.yaml
