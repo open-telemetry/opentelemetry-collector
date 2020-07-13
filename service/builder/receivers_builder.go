@@ -397,7 +397,7 @@ func createMetricsReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumerBase,
 ) (component.MetricsReceiver, error) {
-	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
+	if factory, ok := factoryBase.(component.MetricsReceiverFactory); ok {
 		creationParams := component.ReceiverCreateParams{Logger: logger}
 
 		// If both receiver and consumer are of the new type (can manipulate on internal data structure),

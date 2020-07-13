@@ -1,0 +1,13 @@
+receivers:
+  metricsonlyreceiver:
+processors:
+  nop:
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [metricsonlyreceiver]
+      processors: [nop] # trace pipeline requires a processor
+      exporters: [exampleexporter]

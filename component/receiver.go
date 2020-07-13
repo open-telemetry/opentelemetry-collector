@@ -125,6 +125,21 @@ type ReceiverFactory interface {
 		cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
+// MetricsReceiverFactory can create MetricsReceiver.
+type MetricsReceiverFactory interface {
+	ReceiverFactoryBase
+
+	// CreateMetricsReceiver creates a metrics receiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// error will be returned instead.
+	CreateMetricsReceiver(
+		ctx context.Context,
+		params ReceiverCreateParams,
+		cfg configmodels.Receiver,
+		nextConsumer consumer.MetricsConsumer,
+	) (MetricsReceiver, error)
+}
+
 // LogReceiverFactory can create a LogReceiver.
 type LogReceiverFactory interface {
 	ReceiverFactoryBase

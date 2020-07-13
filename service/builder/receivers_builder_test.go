@@ -416,6 +416,32 @@ func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	assert.NotNil(t, receiver)
 }
 
+func TestReceiversBuilder_MetricsOnlyFactory(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.NoError(t, err)
+
+	npf := &processortest.NopProcessorFactory{}
+	factories.Processors[npf.Type()] = npf
+
+	newStyleReceiver := &metricsOnlyReceiverFactory{}
+	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver
+
+	cfg, err := config.LoadConfigFile(t, "testdata/metrics_only_receiver_factory.yaml", factories)
+	require.Nil(t, err)
+
+	// Build the pipeline
+	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	assert.NoError(t, err)
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	assert.NoError(t, err)
+	receivers, err := NewReceiversBuilder(zap.NewNop(), cfg, pipelineProcessors, factories.Receivers).Build()
+	assert.NoError(t, err)
+	assert.NotNil(t, receivers)
+
+	receiver := receivers[cfg.Receivers["metricsonlyreceiver"]].receiver
+	assert.NotNil(t, receiver)
+}
+
 // badReceiverFactory is a factory that returns no error but returns a nil object.
 type badReceiverFactory struct{}
 
@@ -469,6 +495,29 @@ func (b *newStyleReceiverFactory) CreateTraceReceiver(
 }
 
 func (b *newStyleReceiverFactory) CreateMetricsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
+	return &config.ExampleReceiverProducer{}, nil
+}
+
+type metricsOnlyReceiverFactory struct{}
+
+func (b *metricsOnlyReceiverFactory) Type() configmodels.Type {
+	return "metricsonlyreceiver"
+}
+
+func (b *metricsOnlyReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+	return &configmodels.ReceiverSettings{}
+}
+
+func (b *metricsOnlyReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return nil
+}
+
+func (b *metricsOnlyReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
