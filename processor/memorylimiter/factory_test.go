@@ -52,7 +52,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.Nil(t, mp)
 	assert.Error(t, err, "created processor with invalid settings")
 
-	lp, err := factory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogExporter())
+	lp, err := factory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
 	assert.Nil(t, lp)
 	assert.Error(t, err, "created processor with invalid settings")
 
@@ -73,7 +73,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, mp)
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	lp, err = factory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogExporter())
+	lp, err = factory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.NoError(t, lp.Shutdown(context.Background()))

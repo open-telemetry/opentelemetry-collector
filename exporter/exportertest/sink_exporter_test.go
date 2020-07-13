@@ -15,6 +15,7 @@ package exportertest
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -31,69 +33,129 @@ import (
 
 func TestSinkTraceExporterOld(t *testing.T) {
 	sink := new(SinkTraceExporterOld)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	td := consumerdata.TraceData{
 		Spans: make([]*tracepb.Span, 7),
 	}
 	want := make([]consumerdata.TraceData, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeTraceData(context.Background(), td)
-		require.Nil(t, err)
+		require.NoError(t, sink.ConsumeTraceData(context.Background(), td))
 		want = append(want, td)
 	}
-	got := sink.AllTraces()
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, sink.AllTraces())
+	require.NoError(t, sink.Shutdown(context.Background()))
+}
+
+func TestSinkTraceExporterOld_Error(t *testing.T) {
+	sink := new(SinkTraceExporterOld)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
+	sink.SetConsumeTraceError(errors.New("my error"))
+	td := consumerdata.TraceData{
+		Spans: make([]*tracepb.Span, 7),
+	}
+	require.Error(t, sink.ConsumeTraceData(context.Background(), td))
+	assert.Len(t, sink.AllTraces(), 0)
+	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
 func TestSinkTraceExporter(t *testing.T) {
 	sink := new(SinkTraceExporter)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	td := testdata.GenerateTraceDataOneSpan()
 	want := make([]pdata.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeTraces(context.Background(), td)
-		require.Nil(t, err)
+		require.NoError(t, sink.ConsumeTraces(context.Background(), td))
 		want = append(want, td)
 	}
-	got := sink.AllTraces()
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, sink.AllTraces())
+	assert.Equal(t, len(want), sink.SpansCount())
+	require.NoError(t, sink.Shutdown(context.Background()))
+}
+
+func TestSinkTraceExporter_Error(t *testing.T) {
+	sink := new(SinkTraceExporter)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
+	sink.SetConsumeTraceError(errors.New("my error"))
+	td := testdata.GenerateTraceDataOneSpan()
+	require.Error(t, sink.ConsumeTraces(context.Background(), td))
+	assert.Len(t, sink.AllTraces(), 0)
+	assert.Equal(t, 0, sink.SpansCount())
+	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
 func TestSinkMetricsExporterOld(t *testing.T) {
 	sink := new(SinkMetricsExporterOld)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, 7),
 	}
 	want := make([]consumerdata.MetricsData, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeMetricsData(context.Background(), md)
-		require.Nil(t, err)
+		require.NoError(t, sink.ConsumeMetricsData(context.Background(), md))
 		want = append(want, md)
 	}
-	got := sink.AllMetrics()
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, sink.AllMetrics())
+	require.NoError(t, sink.Shutdown(context.Background()))
+}
+
+func TestSinkMetricsExporterOld_Error(t *testing.T) {
+	sink := new(SinkMetricsExporterOld)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
+	sink.SetConsumeMetricsError(errors.New("my error"))
+	md := consumerdata.MetricsData{
+		Metrics: make([]*metricspb.Metric, 7),
+	}
+	require.Error(t, sink.ConsumeMetricsData(context.Background(), md))
+	assert.Len(t, sink.AllMetrics(), 0)
+	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
 func TestSinkMetricsExporter(t *testing.T) {
 	sink := new(SinkMetricsExporter)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	md := testdata.GenerateMetricDataOneMetric()
 	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
-		require.Nil(t, err)
+		require.NoError(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 		want = append(want, pdatautil.MetricsFromInternalMetrics(md))
 	}
-	got := sink.AllMetrics()
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, sink.AllMetrics())
+	assert.Equal(t, len(want), sink.MetricsCount())
+	require.NoError(t, sink.Shutdown(context.Background()))
+}
+
+func TestSinkMetricsExporter_Error(t *testing.T) {
+	sink := new(SinkMetricsExporter)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
+	sink.SetConsumeMetricsError(errors.New("my error"))
+	md := testdata.GenerateMetricDataOneMetric()
+	require.Error(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.Len(t, sink.AllMetrics(), 0)
+	assert.Equal(t, 0, sink.MetricsCount())
+	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
 func TestSinkLogExporter(t *testing.T) {
 	sink := new(SinkLogExporter)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	md := testdata.GenerateLogDataOneLogNoResource()
 	want := make([]data.Logs, 0, 7)
 	for i := 0; i < 7; i++ {
-		err := sink.ConsumeLogs(context.Background(), md)
-		require.Nil(t, err)
+		require.NoError(t, sink.ConsumeLogs(context.Background(), md))
 		want = append(want, md)
 	}
-	got := sink.AllLogs()
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, sink.AllLogs())
+	assert.Equal(t, len(want), sink.LogRecordsCount())
+	require.NoError(t, sink.Shutdown(context.Background()))
+}
+
+func TestSinkLogExporter_Error(t *testing.T) {
+	sink := new(SinkLogExporter)
+	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
+	sink.SetConsumeLogError(errors.New("my error"))
+	ld := testdata.GenerateLogDataOneLogNoResource()
+	require.Error(t, sink.ConsumeLogs(context.Background(), ld))
+	assert.Len(t, sink.AllLogs(), 0)
+	assert.Equal(t, 0, sink.LogRecordsCount())
+	require.NoError(t, sink.Shutdown(context.Background()))
 }
