@@ -129,6 +129,7 @@ func Scenario10kItemsPerSecond(
 	options := testbed.LoadOptions{
 		DataItemsPerSecond: 10_000,
 		ItemsPerBatch:      100,
+		Parallel:           4,
 	}
 	agentProc := &testbed.ChildProcess{}
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors)
