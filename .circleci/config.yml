@@ -348,7 +348,8 @@ jobs:
           paths: project/bin
 
   build-package:
-    executor: golang
+    machine:
+      image: ubuntu-1604:202007-01
     parameters:
       package_type:
         type: enum
@@ -361,7 +362,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
-            sudo gem install --no-document fpm -v 1.11.0
+            gem install --no-document fpm -v 1.11.0
       - run:
           name: Build << parameters.package_type >> amd64 package
           command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./bin/"
@@ -369,15 +370,13 @@ jobs:
           name: Build << parameters.package_type >> arm64 package
           command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./bin/"
       - run:
-          name: Test << parameters.package_type >> package installation
+          name: Test << parameters.package_type >> package
           command: |
             if [[ "<< parameters.package_type >>" = "deb" ]]; then
-                sudo dpkg -i bin/otel-collector*amd64.deb
+                ./internal/buildscripts/packaging/fpm/test.sh bin/otel-collector*amd64.deb
             else
-                sudo rpm -ivh bin/otel-collector*x86_64.rpm
+                ./internal/buildscripts/packaging/fpm/test.sh bin/otel-collector*x86_64.rpm
             fi
-            test -f /usr/bin/otelcol || (echo "/usr/bin/otelcol not found!" && exit 1)
-            test -f /etc/otel-collector/config.yaml || (echo "/etc/otel-collector/config.yaml not found" && exit 1)
       - persist_to_workspace:
           root: ~/
           paths: project/bin
