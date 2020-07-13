@@ -15,7 +15,7 @@
 package filterprocessor
 
 import (
-	"go.uber.org/zap"
+	"context"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -48,20 +48,22 @@ func (f Factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+func (f *Factory) CreateTraceProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
 	c configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
-	oCfg := cfg.(*Config)
+func (f *Factory) CreateMetricsProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.MetricsConsumer,
+	c configmodels.Processor,
+) (component.MetricsProcessor, error) {
+	oCfg := c.(*Config)
 	return newFilterMetricProcessor(nextConsumer, oCfg)
 }

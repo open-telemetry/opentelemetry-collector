@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 )
@@ -65,21 +66,20 @@ func TestLoadConfig(t *testing.T) {
 		},
 		CollectionInterval: 30 * time.Second,
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr: &cpuscraper.Config{
-				ReportPerCPU: true,
-			},
+			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr:    &networkscraper.Config{},
+			processesscraper.TypeStr:  &processesscraper.Config{},
+			swapscraper.TypeStr:       &swapscraper.Config{},
 			processscraper.TypeStr: &processscraper.Config{
 				Include: processscraper.MatchConfig{
 					Names:  []string{"test1", "test2"},
 					Config: filterset.Config{MatchType: "regexp"},
 				},
 			},
-			swapscraper.TypeStr: &swapscraper.Config{},
 		},
 	}
 

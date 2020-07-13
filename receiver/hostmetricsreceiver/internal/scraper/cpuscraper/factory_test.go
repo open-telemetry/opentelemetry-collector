@@ -26,7 +26,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.IsType(t, &Config{}, cfg)
-	assert.Equal(t, false, cfg.(*Config).ReportPerCPU)
 }
 
 func TestCreateMetricsScraper(t *testing.T) {

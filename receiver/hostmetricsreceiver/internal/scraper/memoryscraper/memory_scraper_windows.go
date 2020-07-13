@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cpuscraper
+// +build windows
 
-import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+package memoryscraper
 
-// Config relating to CPU Metric Scraper.
-type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+import (
+	"github.com/shirou/gopsutil/mem"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
+)
+
+const memStatesLen = 2
+
+func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
+	initializeMemoryUsageDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.At(1), freeStateLabelValue, int64(memInfo.Available))
 }

@@ -152,7 +152,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
 			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 60,
+				ExpectedMaxCPU: 70,
 				ExpectedMaxRAM: 198,
 			},
 			processorsConfig,

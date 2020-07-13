@@ -12,11 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cpuscraper
+package consumererror
 
-import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+import (
+	"fmt"
+	"testing"
 
-// Config relating to CPU Metric Scraper.
-type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/internal/data/testdata"
+)
+
+func TestPartialError(t *testing.T) {
+	td := testdata.GenerateTraceDataOneSpan()
+	err := fmt.Errorf("some error")
+	partialErr := PartialTracesError(err, td)
+	assert.Equal(t, err.Error(), partialErr.Error())
+	assert.Equal(t, td, partialErr.(PartialError).failed)
 }

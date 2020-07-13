@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package attributesprocessor
+package attraction
 
 import (
 	// #nosec
@@ -34,11 +34,11 @@ var (
 	byteFalse = [1]byte{0}
 )
 
-// SHA1AttributeHasher hashes an AttributeValue using SHA1 and returns a
+// sha1Hasher hashes an AttributeValue using SHA1 and returns a
 // hashed version of the attribute. In practice, this would mostly be used
 // for string attributes but we support all types for completeness/correctness
 // and eliminate any surprises.
-func SHA1AttributeHasher(attr pdata.AttributeValue) {
+func sha1Hasher(attr pdata.AttributeValue) {
 	var val []byte
 	switch attr.Type() {
 	case pdata.AttributeValueSTRING:

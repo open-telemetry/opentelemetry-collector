@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"testing"
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -69,19 +71,27 @@ func TestCreateProcessors(t *testing.T) {
 
 		factory := &Factory{}
 		factories.Processors[typeStr] = factory
-		config, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.Nil(t, err)
 
-		for name, cfg := range config.Processors {
+		for name, cfg := range cfg.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
 				factory := &Factory{}
 
-				tp, tErr := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+				tp, tErr := factory.CreateTraceProcessor(
+					context.Background(),
+					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					nil,
+					cfg)
 				// Not implemented error
 				assert.NotNil(t, tErr)
 				assert.Nil(t, tp)
 
-				mp, mErr := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+				mp, mErr := factory.CreateMetricsProcessor(
+					context.Background(),
+					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					nil,
+					cfg)
 				assert.Equal(t, test.succeed, mp != (*filterMetricProcessor)(nil))
 				assert.Equal(t, test.succeed, mErr == nil)
 			})

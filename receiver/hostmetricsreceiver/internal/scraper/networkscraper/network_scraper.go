@@ -16,7 +16,6 @@ package networkscraper
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/host"
@@ -30,11 +29,15 @@ import (
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
+
+	// for mocking gopsutil net.IOCounters & net.Connections
+	ioCounters  func(bool) ([]net.IOCountersStat, error)
+	connections func(string) ([]net.ConnectionStat, error)
 }
 
 // newNetworkScraper creates a set of Network related metrics
 func newNetworkScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, ioCounters: net.IOCounters, connections: net.Connections}
 }
 
 // Initialize
@@ -59,12 +62,12 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 
 	var errors []error
 
-	err := scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
+	err := s.scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
 	if err != nil {
 		errors = append(errors, err)
 	}
 
-	err = scrapeAndAppendNetworkTCPConnectionsMetric(metrics)
+	err = s.scrapeAndAppendNetworkTCPConnectionsMetric(metrics)
 	if err != nil {
 		errors = append(errors, err)
 	}
@@ -76,9 +79,9 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
+func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
 	// get total stats only
-	networkStatsSlice, err := net.IOCounters( /*perNetworkInterfaceController=*/ false)
+	networkStatsSlice, err := s.ioCounters( /*perNetworkInterfaceController=*/ false)
 	if err != nil {
 		return err
 	}
@@ -111,13 +114,13 @@ func initializeNetworkDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.
 	dataPoint.SetValue(value)
 }
 
-func scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.MetricSlice) error {
-	connections, err := net.Connections("tcp")
+func (s *scraper) scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.MetricSlice) error {
+	connections, err := s.connections("tcp")
 	if err != nil {
 		return err
 	}
 
-	connectionStatusCounts := getConnectionStatusCounts(connections)
+	connectionStatusCounts := getTCPConnectionStatusCounts(connections)
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + 1)
@@ -125,12 +128,26 @@ func scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.MetricSlice) error
 	return nil
 }
 
-func getConnectionStatusCounts(connections []net.ConnectionStat) map[string]int64 {
-	connectionStatuses := make(map[string]int64, len(connections))
-	for _, connection := range connections {
-		connectionStatuses[strings.ToLower(connection.Status)]++
+func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]int64 {
+	var tcpStatuses = map[string]int64{
+		"CLOSE_WAIT":   0,
+		"CLOSED":       0,
+		"CLOSING":      0,
+		"DELETE":       0,
+		"ESTABLISHED":  0,
+		"FIN_WAIT_1":   0,
+		"FIN_WAIT_2":   0,
+		"LAST_ACK":     0,
+		"LISTEN":       0,
+		"SYN_SENT":     0,
+		"SYN_RECEIVED": 0,
+		"TIME_WAIT":    0,
 	}
-	return connectionStatuses
+
+	for _, connection := range connections {
+		tcpStatuses[connection.Status]++
+	}
+	return tcpStatuses
 }
 
 func initializeNetworkTCPConnectionsMetric(metric pdata.Metric, connectionStateCounts map[string]int64) {

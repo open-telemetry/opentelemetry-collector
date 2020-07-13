@@ -47,114 +47,76 @@ type batchProcessor struct {
 
 	timer *time.Timer
 	done  chan struct{}
+
+	newItem chan interface{}
+	batch   batch
 }
 
-type batchTraceProcessor struct {
-	batchProcessor
+type batch interface {
+	// export the current batch
+	export(ctx context.Context) error
 
-	traceConsumer consumer.TraceConsumer
+	// itemCount returns the size of the current batch
+	itemCount() uint32
 
-	batchTraces  *batchTraces
-	newTraceItem chan pdata.Traces
+	// reset the current batch structure with zero/empty values.
+	reset()
+
+	// add item to the current batch
+	add(item interface{})
 }
 
-type batchMetricProcessor struct {
-	batchProcessor
+var _ consumer.TraceConsumer = (*batchProcessor)(nil)
+var _ consumer.MetricsConsumer = (*batchProcessor)(nil)
 
-	metricsConsumer consumer.MetricsConsumer
+func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch) *batchProcessor {
+	return &batchProcessor{
+		name:   cfg.Name(),
+		logger: params.Logger,
 
-	batchMetrics  *batchMetrics
-	newMetricItem chan pdata.Metrics
-}
-
-var _ consumer.TraceConsumer = (*batchTraceProcessor)(nil)
-var _ consumer.MetricsConsumer = (*batchMetricProcessor)(nil)
-
-// newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TraceConsumer, cfg *Config) *batchTraceProcessor {
-	p := &batchTraceProcessor{
-		batchProcessor: batchProcessor{
-			name:   cfg.Name(),
-			logger: params.Logger,
-
-			sendBatchSize: cfg.SendBatchSize,
-			timeout:       cfg.Timeout,
-			done:          make(chan struct{}),
-		},
-		traceConsumer: trace,
-
-		batchTraces:  newBatchTraces(),
-		newTraceItem: make(chan pdata.Traces, 1),
+		sendBatchSize: cfg.SendBatchSize,
+		timeout:       cfg.Timeout,
+		done:          make(chan struct{}),
+		newItem:       make(chan interface{}, 1),
+		batch:         batch,
 	}
-
-	go p.startProcessingCycle()
-
-	return p
 }
 
-// newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.MetricsConsumer, cfg *Config) *batchMetricProcessor {
-	p := &batchMetricProcessor{
-		batchProcessor: batchProcessor{
-			name:   cfg.Name(),
-			logger: params.Logger,
-
-			sendBatchSize: cfg.SendBatchSize,
-			timeout:       cfg.Timeout,
-			done:          make(chan struct{}),
-		},
-		metricsConsumer: metrics,
-
-		batchMetrics:  newBatchMetrics(),
-		newMetricItem: make(chan pdata.Metrics, 1),
-	}
-
-	go p.startProcessingCycle()
-
-	return p
-}
-
-// ConsumeTraces implements batcher as a SpanProcessor and takes the provided spans and adds them to
-// batches.
-func (bp *batchTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	bp.newTraceItem <- td
-	return nil
-}
-
-func (bp *batchTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
+func (bp *batchProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
-func (bp *batchTraceProcessor) Start(ctx context.Context, host component.Host) error {
+func (bp *batchProcessor) Start(context.Context, component.Host) error {
+	go bp.startProcessingCycle()
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (bp *batchTraceProcessor) Shutdown(context.Context) error {
+func (bp *batchProcessor) Shutdown(context.Context) error {
 	close(bp.done)
 	return nil
 }
 
-func (bp *batchTraceProcessor) startProcessingCycle() {
+func (bp *batchProcessor) startProcessingCycle() {
 	bp.timer = time.NewTimer(bp.timeout)
 	for {
 		select {
-		case td := <-bp.newTraceItem:
-			bp.batchTraces.add(td)
+		case item := <-bp.newItem:
+			bp.batch.add(item)
 
-			if bp.batchTraces.getSpanCount() >= bp.sendBatchSize {
+			if bp.batch.itemCount() >= bp.sendBatchSize {
 				bp.timer.Stop()
 				bp.sendItems(statBatchSizeTriggerSend)
 				bp.resetTimer()
 			}
 		case <-bp.timer.C:
-			if bp.batchTraces.hasData() {
+			if bp.batch.itemCount() > 0 {
 				bp.sendItems(statTimeoutTriggerSend)
 			}
 			bp.resetTimer()
 		case <-bp.done:
-			if bp.batchTraces.hasData() {
+			if bp.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
 				bp.sendItems(statTimeoutTriggerSend)
@@ -164,166 +126,115 @@ func (bp *batchTraceProcessor) startProcessingCycle() {
 	}
 }
 
-func (bp *batchTraceProcessor) resetTimer() {
+func (bp *batchProcessor) resetTimer() {
 	bp.timer.Reset(bp.timeout)
 }
 
-func (bp *batchTraceProcessor) sendItems(measure *stats.Int64Measure) {
+func (bp *batchProcessor) sendItems(measure *stats.Int64Measure) {
 	// Add that it came form the trace pipeline?
 	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
-	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
-	_ = stats.RecordWithTags(context.Background(), statsTags, statBatchSendSize.M(int64(bp.batchTraces.getSpanCount())))
+	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
 
-	if err := bp.traceConsumer.ConsumeTraces(context.Background(), bp.batchTraces.getTraceData()); err != nil {
+	if err := bp.batch.export(context.Background()); err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
 	}
-	bp.batchTraces.reset()
+	bp.batch.reset()
 }
 
-func (bp *batchMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+// ConsumeTraces implements TraceProcessor
+func (bp *batchProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+	bp.newItem <- td
+	return nil
+}
+
+// ConsumeTraces implements MetricsProcessor
+func (bp *batchProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// First thing is convert into a different internal format
-	bp.newMetricItem <- md
+	bp.newItem <- md
 	return nil
 }
 
-func (bp *batchMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+// newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
+func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TraceConsumer, cfg *Config) *batchProcessor {
+	return newBatchProcessor(params, cfg, newBatchTraces(trace))
 }
 
-// Start is invoked during service startup.
-func (bp *batchMetricProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (bp *batchMetricProcessor) Shutdown(context.Context) error {
-	close(bp.done)
-	return nil
-}
-
-func (bp *batchMetricProcessor) startProcessingCycle() {
-	bp.timer = time.NewTimer(bp.timeout)
-	for {
-		select {
-		case md := <-bp.newMetricItem:
-			bp.batchMetrics.add(md)
-			if bp.batchMetrics.getItemCount() >= bp.sendBatchSize {
-				bp.timer.Stop()
-				bp.sendItems(statBatchSizeTriggerSend)
-				bp.resetTimer()
-			}
-		case <-bp.timer.C:
-			if bp.batchMetrics.hasData() {
-				bp.sendItems(statTimeoutTriggerSend)
-			}
-			bp.resetTimer()
-		case <-bp.done:
-			if bp.batchMetrics.hasData() {
-				bp.sendItems(statTimeoutTriggerSend)
-			}
-			return
-		}
-	}
-}
-
-func (bp *batchMetricProcessor) resetTimer() {
-	bp.timer.Reset(bp.timeout)
-}
-func (bp *batchMetricProcessor) sendItems(measure *stats.Int64Measure) {
-	// Add that it came from the metrics pipeline
-	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
-	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1))
-	_ = stats.RecordWithTags(context.Background(), statsTags, statBatchSendSize.M(int64(bp.batchMetrics.metricData.MetricCount())))
-
-	_ = bp.metricsConsumer.ConsumeMetrics(context.Background(), bp.batchMetrics.getData())
-	bp.batchMetrics.reset()
+// newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
+func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.MetricsConsumer, cfg *Config) *batchProcessor {
+	return newBatchProcessor(params, cfg, newBatchMetrics(metrics))
 }
 
 type batchTraces struct {
-	traceData          pdata.Traces
-	resourceSpansCount uint32
-	spanCount          uint32
+	nextConsumer consumer.TraceConsumer
+	traceData    pdata.Traces
+	spanCount    uint32
 }
 
-func newBatchTraces() *batchTraces {
-	b := &batchTraces{}
+func newBatchTraces(nextConsumer consumer.TraceConsumer) *batchTraces {
+	b := &batchTraces{nextConsumer: nextConsumer}
 	b.reset()
 	return b
 }
 
 // add updates current batchTraces by adding new TraceData object
-func (b *batchTraces) add(td pdata.Traces) {
-	newResourceSpansCount := td.ResourceSpans().Len()
-	if newResourceSpansCount == 0 {
+func (bt *batchTraces) add(item interface{}) {
+	td := item.(pdata.Traces)
+	newSpanCount := td.SpanCount()
+	if newSpanCount == 0 {
 		return
 	}
 
-	b.resourceSpansCount = b.resourceSpansCount + uint32(newResourceSpansCount)
-	b.spanCount = b.spanCount + uint32(td.SpanCount())
-	td.ResourceSpans().MoveAndAppendTo(b.traceData.ResourceSpans())
+	bt.spanCount += uint32(newSpanCount)
+	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 }
 
-func (b *batchTraces) getTraceData() pdata.Traces {
-	return b.traceData
+func (bt *batchTraces) export(ctx context.Context) error {
+	return bt.nextConsumer.ConsumeTraces(ctx, bt.traceData)
 }
 
-func (b *batchTraces) getSpanCount() uint32 {
-	return b.spanCount
-}
-
-func (b *batchTraces) hasData() bool {
-	return b.traceData.ResourceSpans().Len() > 0
+func (bt *batchTraces) itemCount() uint32 {
+	return bt.spanCount
 }
 
 // resets the current batchTraces structure with zero values
-func (b *batchTraces) reset() {
-	// TODO: Use b.resourceSpansCount to preset capacity of b.traceData.ResourceSpans
-	// once internal data API provides such functionality
-	b.traceData = pdata.NewTraces()
-
-	b.spanCount = 0
-	b.resourceSpansCount = 0
+func (bt *batchTraces) reset() {
+	bt.traceData = pdata.NewTraces()
+	bt.spanCount = 0
 }
 
 type batchMetrics struct {
-	metricData    data.MetricData
-	resourceCount uint32
-	itemCount     uint32
+	nextConsumer consumer.MetricsConsumer
+	metricData   data.MetricData
+	metricCount  uint32
 }
 
-func newBatchMetrics() *batchMetrics {
-	b := &batchMetrics{}
+func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
+	b := &batchMetrics{nextConsumer: nextConsumer}
 	b.reset()
 	return b
 }
 
-func (bm *batchMetrics) getData() pdata.Metrics {
-	return pdatautil.MetricsFromInternalMetrics(bm.metricData)
+func (bm *batchMetrics) export(ctx context.Context) error {
+	return bm.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(bm.metricData))
 }
 
-func (bm *batchMetrics) getItemCount() uint32 {
-	return bm.itemCount
-}
-
-func (bm *batchMetrics) hasData() bool {
-	return bm.metricData.ResourceMetrics().Len() > 0
+func (bm *batchMetrics) itemCount() uint32 {
+	return bm.metricCount
 }
 
 // resets the current batchMetrics structure with zero/empty values.
 func (bm *batchMetrics) reset() {
 	bm.metricData = data.NewMetricData()
-	bm.itemCount = 0
-	bm.resourceCount = 0
+	bm.metricCount = 0
 }
 
-func (bm *batchMetrics) add(pm pdata.Metrics) {
-	md := pdatautil.MetricsToInternalMetrics(pm)
+func (bm *batchMetrics) add(item interface{}) {
+	md := pdatautil.MetricsToInternalMetrics(item.(pdata.Metrics))
 
-	newResourceCount := md.ResourceMetrics().Len()
-	if newResourceCount == 0 {
+	newMetricsCount := md.MetricCount()
+	if newMetricsCount == 0 {
 		return
 	}
-	bm.resourceCount = bm.resourceCount + uint32(newResourceCount)
-	bm.itemCount = bm.itemCount + uint32(md.MetricCount())
+	bm.metricCount += uint32(newMetricsCount)
 	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
 }
