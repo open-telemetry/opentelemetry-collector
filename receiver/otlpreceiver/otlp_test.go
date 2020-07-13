@@ -409,8 +409,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Creation of the receiver for GRPC.
-	factory := &Factory{}
-	_, err := factory.createReceiver(cfg)
+	_, err := createReceiver(cfg)
 	assert.EqualError(t, err,
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
@@ -433,13 +432,13 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Start for HTTP.
-	r := newReceiver(t, &Factory{}, cfg, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newReceiver(t, NewFactory(), cfg, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
 
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SetName(name)
 	cfg.GRPC.NetAddr.Endpoint = endpoint
@@ -448,7 +447,7 @@ func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Tra
 }
 
 func newHTTPReceiver(t *testing.T, name string, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SetName(name)
 	cfg.HTTP.Endpoint = endpoint
@@ -456,17 +455,17 @@ func newHTTPReceiver(t *testing.T, name string, endpoint string, tc consumer.Tra
 	return newReceiver(t, factory, cfg, tc, mc)
 }
 
-func newReceiver(t *testing.T, factory *Factory, cfg *Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
-	r, err := factory.createReceiver(cfg)
+func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *Receiver {
+	r, err := createReceiver(cfg)
 	require.NoError(t, err)
 	if tc != nil {
 		params := component.ReceiverCreateParams{}
-		_, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+		_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
 		params := component.ReceiverCreateParams{}
-		_, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+		_, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r

@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -38,17 +39,17 @@ const (
 	protocolsFieldName = "protocols"
 )
 
-// Factory is the Factory for receiver.
-type Factory struct {
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithTraceReceiver(createTraceReceiver),
+		receiverhelper.WithMetricsReceiver(createMetricsReceiver),
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
-// Type gets the type of the Receiver config created by this Factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+// createDefaultConfig creates the default configuration for receiver.
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -70,61 +71,56 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CustomUnmarshaler is used to add defaults for named but empty protocols
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(componentViperSection *viper.Viper, intoCfg interface{}) error {
-		if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
-			return fmt.Errorf("empty config for OTLP receiver")
-		}
-		// first load the config normally
-		err := componentViperSection.UnmarshalExact(intoCfg)
-		if err != nil {
-			return err
-		}
-		receiverCfg, ok := intoCfg.(*Config)
-		if !ok {
-			return fmt.Errorf("config type not *otlpreceiver.Config")
-		}
-
-		// next manually search for protocols in viper, if a protocol is not present it means it is disable.
-		protocols := componentViperSection.GetStringMap(protocolsFieldName)
-
-		// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
-		// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
-		// include only known protocols.
-		knownProtocols := 0
-		if _, ok := protocols[protoGRPC]; !ok {
-			receiverCfg.GRPC = nil
-		} else {
-			knownProtocols++
-		}
-
-		if _, ok := protocols[protoHTTP]; !ok {
-			receiverCfg.HTTP = nil
-		} else {
-			knownProtocols++
-		}
-
-		if len(protocols) != knownProtocols {
-			return fmt.Errorf("unknown protocols in the OTLP receiver")
-		}
-
-		if receiverCfg.GRPC == nil && receiverCfg.HTTP == nil {
-			return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
-		}
-
-		return nil
+// customUnmarshaler is used to add defaults for named but empty protocols
+func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
+		return fmt.Errorf("empty config for OTLP receiver")
 	}
+	// first load the config normally
+	err := componentViperSection.UnmarshalExact(intoCfg)
+	if err != nil {
+		return err
+	}
+
+	receiverCfg := intoCfg.(*Config)
+	// next manually search for protocols in viper, if a protocol is not present it means it is disable.
+	protocols := componentViperSection.GetStringMap(protocolsFieldName)
+
+	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
+	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
+	// include only known protocols.
+	knownProtocols := 0
+	if _, ok := protocols[protoGRPC]; !ok {
+		receiverCfg.GRPC = nil
+	} else {
+		knownProtocols++
+	}
+
+	if _, ok := protocols[protoHTTP]; !ok {
+		receiverCfg.HTTP = nil
+	} else {
+		knownProtocols++
+	}
+
+	if len(protocols) != knownProtocols {
+		return fmt.Errorf("unknown protocols in the OTLP receiver")
+	}
+
+	if receiverCfg.GRPC == nil && receiverCfg.HTTP == nil {
+		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
+	}
+
+	return nil
 }
 
 // CreateTraceReceiver creates a  trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
+func createTraceReceiver(
 	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
-	r, err := f.createReceiver(cfg)
+	r, err := createReceiver(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -135,13 +131,13 @@ func (f *Factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
+func createMetricsReceiver(
 	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	r, err := f.createReceiver(cfg)
+	r, err := createReceiver(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +147,7 @@ func (f *Factory) CreateMetricsReceiver(
 	return r, nil
 }
 
-func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
+func createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

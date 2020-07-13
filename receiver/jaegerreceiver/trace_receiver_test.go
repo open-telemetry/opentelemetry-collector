@@ -574,7 +574,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	port, err := randomAvailablePort()
 	require.NoError(t, err)
 	hostEndpoint := fmt.Sprintf("localhost:%d", port)
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.RemoteSampling = &RemoteSamplingConfig{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
