@@ -98,7 +98,7 @@ func (lg *LoadGenerator) Start(options LoadOptions) {
 	lg.stopWait.Add(1)
 
 	// Begin generation
-	go lg.generate(options)
+	go lg.generate()
 }
 
 // Stop the load.
@@ -134,7 +134,7 @@ func (lg *LoadGenerator) IncDataItemsSent() {
 	lg.dataItemsSent.Inc()
 }
 
-func (lg *LoadGenerator) generate(options LoadOptions) {
+func (lg *LoadGenerator) generate() {
 	// Indicate that generation is done at the end
 	defer lg.stopWait.Done()
 
@@ -152,8 +152,8 @@ func (lg *LoadGenerator) generate(options LoadOptions) {
 
 	numWorkers := 1
 
-	if options.Parallel > 0 {
-		numWorkers = options.Parallel
+	if lg.options.Parallel > 0 {
+		numWorkers = lg.options.Parallel
 	}
 
 	var workers sync.WaitGroup
