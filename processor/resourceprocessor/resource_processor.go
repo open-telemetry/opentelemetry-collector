@@ -106,5 +106,5 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata
 		}
 		rmp.attrProc.Process(resource.Attributes())
 	}
-	return rmp.next.ConsumeMetrics(ctx, md)
+	return rmp.next.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(imd))
 }
