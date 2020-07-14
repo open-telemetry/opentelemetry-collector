@@ -43,9 +43,9 @@ func TestScrapeMetrics(t *testing.T) {
 	assert.Equal(t, expectedMetrics, metrics.Len())
 
 	assertSwapUsageMetricValid(t, metrics.At(0))
-	assertPagingMetricValid(t, metrics.At(1))
+	assertPagingMetricValid(t, metrics.At(1), 0)
 	if runtime.GOOS != "windows" {
-		assertPageFaultsMetricValid(t, metrics.At(2))
+		assertPageFaultsMetricValid(t, metrics.At(2), 0)
 	}
 }
 
@@ -78,8 +78,11 @@ func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) 
 	}
 }
 
-func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric) {
+func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, swapPagingDescriptor, pagingMetric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, pagingMetric, startTime)
+	}
 
 	// expect an in & out datapoint, for both major and minor paging types (windows does not currently support minor paging data)
 	expectedDataPoints := 4
@@ -100,9 +103,12 @@ func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric) {
 	}
 }
 
-func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric) {
-	// expect a single datapoint for the page faults metric with minor type
+func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, swapPageFaultsDescriptor, pageFaultsMetric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, pageFaultsMetric, startTime)
+	}
+
 	assert.Equal(t, 1, pageFaultsMetric.Int64DataPoints().Len())
 	internal.AssertInt64MetricLabelHasValue(t, pageFaultsMetric, 0, typeLabelName, minorTypeLabelValue)
 }
