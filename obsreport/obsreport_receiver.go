@@ -141,7 +141,7 @@ func WithLongLivedCtx() StartReceiveOption {
 	}
 }
 
-// StartTraceDataReceiveOp is called when a \request is received from a client.
+// StartTraceDataReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartTraceDataReceiveOp(
