@@ -74,6 +74,48 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	}
 }
 
+func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
+	sink := &exportertest.SinkTraceExporter{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 128
+	cfg.SendBatchMaxSize = 128
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchTracesProcessor(creationParams, sink, cfg)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	requestCount := 1000
+	spansPerRequest := 150
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+		}
+		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+	}
+
+	// Added to test logic that check for empty resources.
+	td := testdata.GenerateTraceDataEmpty()
+	batcher.ConsumeTraces(context.Background(), td)
+
+	// wait for all spans to be reported
+	for {
+		if sink.SpansCount() == requestCount*spansPerRequest {
+			break
+		}
+		<-time.After(cfg.Timeout)
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	for i := 0; i < len(sink.AllTraces())-1; i++ {
+		assert.Equal(t, cfg.SendBatchSize, uint32(sink.AllTraces()[i].SpanCount()))
+	}
+	// the last batch has the remaining size
+	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
+}
+
 func TestBatchProcessorSentBySize(t *testing.T) {
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))

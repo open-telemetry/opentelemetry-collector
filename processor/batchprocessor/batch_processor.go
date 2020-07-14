@@ -43,8 +43,9 @@ type batchProcessor struct {
 	name   string
 	logger *zap.Logger
 
-	sendBatchSize uint32
-	timeout       time.Duration
+	sendBatchSize    uint32
+	timeout          time.Duration
+	sendBatchMaxSize uint32
 
 	timer   *time.Timer
 	done    chan struct{}
@@ -74,11 +75,12 @@ func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batc
 		name:   cfg.Name(),
 		logger: params.Logger,
 
-		sendBatchSize: cfg.SendBatchSize,
-		timeout:       cfg.Timeout,
-		done:          make(chan struct{}, 1),
-		newItem:       make(chan interface{}, runtime.NumCPU()),
-		batch:         batch,
+		sendBatchSize:    cfg.SendBatchSize,
+		sendBatchMaxSize: cfg.SendBatchMaxSize,
+		timeout:          cfg.Timeout,
+		done:             make(chan struct{}, 1),
+		newItem:          make(chan interface{}, runtime.NumCPU()),
+		batch:            batch,
 	}
 }
 
@@ -113,6 +115,18 @@ func (bp *batchProcessor) startProcessingCycle() {
 				}
 				close(bp.done)
 				return
+			}
+			if bp.sendBatchMaxSize > 0 {
+				if td, ok := item.(pdata.Traces); ok {
+					itemCount := bp.batch.itemCount()
+					if itemCount+uint32(td.SpanCount()) > bp.sendBatchMaxSize {
+						tdRemainSize := splitTrace(int(bp.sendBatchSize-itemCount), td)
+						item = tdRemainSize
+						go func() {
+							bp.newItem <- td
+						}()
+					}
+				}
 			}
 
 			bp.batch.add(item)
