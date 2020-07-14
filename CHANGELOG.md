@@ -24,13 +24,13 @@
 - Update memory state labels for non-Linux OSs (#1325)
 - Ensure tcp connection value is provided for all states, even when count is 0 (#1329)
 - Set `batch` processor channel size to num cpus (#1330)
+- Add `send_batch_max_size` config parameter to `batch` processor enforcing hard limit on batch size (#1310)
 
 ## 🧰 Bug fixes 🧰
 
 - Fixed OTLP waitForReady, not set from config (#1254)
 - Fixed all translation diffs between OTLP and Jaeger (#1222)
 - Disabled `process` scraper for any non Linux/Windows OS (#1328)
-- Fix overflowing batch size in `batch` processor (#1310)
 
 ## v0.5.0 Beta
 
