@@ -131,7 +131,7 @@ func TestSendTraceData(t *testing.T) {
 		},
 	}
 
-	factory := &Factory{}
+	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
 	require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		},
 	}
 
-	factory := &Factory{}
+	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
 	require.NoError(t, err)
@@ -257,7 +257,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 
-	factory := &Factory{}
+	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
 	require.NoError(t, err)
@@ -336,7 +336,7 @@ func TestSendLogData(t *testing.T) {
 		},
 	}
 
-	factory := &Factory{}
+	factory := NewFactory().(component.LogExporterFactory)
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateLogExporter(context.Background(), creationParams, &config)
 	require.NoError(t, err)

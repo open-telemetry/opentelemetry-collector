@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -31,17 +32,17 @@ const (
 	defaultSamplingThereafter = 500
 )
 
-// Factory is the factory for logging exporter.
-type Factory struct {
+// NewFactory creates a factory for Logging exporter
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(createLogExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -53,11 +54,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
+func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
 	cfg := config.(*Config)
 
-	exporterLogger, err := f.createLogger(cfg)
+	exporterLogger, err := createLogger(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,37 @@ func (f *Factory) CreateTraceExporter(_ context.Context, _ component.ExporterCre
 	return lexp, nil
 }
 
-func (f *Factory) createLogger(cfg *Config) (*zap.Logger, error) {
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
+	cfg := config.(*Config)
+
+	exporterLogger, err := createLogger(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	lexp, err := NewMetricsExporter(config, cfg.LogLevel, exporterLogger)
+	if err != nil {
+		return nil, err
+	}
+	return lexp, nil
+}
+
+func createLogExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogExporter, error) {
+	cfg := config.(*Config)
+
+	exporterLogger, err := createLogger(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	lexp, err := NewLogExporter(config, cfg.LogLevel, exporterLogger)
+	if err != nil {
+		return nil, err
+	}
+	return lexp, nil
+}
+
+func createLogger(cfg *Config) (*zap.Logger, error) {
 	var level zapcore.Level
 	err := (&level).UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
@@ -91,37 +121,3 @@ func (f *Factory) createLogger(cfg *Config) (*zap.Logger, error) {
 	}
 	return logginglogger, nil
 }
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
-	cfg := config.(*Config)
-
-	exporterLogger, err := f.createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	lexp, err := NewMetricsExporter(config, cfg.LogLevel, exporterLogger)
-	if err != nil {
-		return nil, err
-	}
-	return lexp, nil
-}
-
-// CreateLogExporter creates a log exporter based on this config.
-func (f *Factory) CreateLogExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogExporter, error) {
-	cfg := config.(*Config)
-
-	exporterLogger, err := f.createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	lexp, err := NewLogExporter(config, cfg.LogLevel, exporterLogger)
-	if err != nil {
-		return nil, err
-	}
-	return lexp, nil
-}
-
-var _ component.LogExporterFactory = (*Factory)(nil)

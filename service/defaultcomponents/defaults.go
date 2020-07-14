@@ -78,11 +78,11 @@ func Components() (
 	exporters, err := component.MakeExporterFactoryMap(
 		&opencensusexporter.Factory{},
 		&prometheusexporter.Factory{},
-		&loggingexporter.Factory{},
+		loggingexporter.NewFactory(),
 		&zipkinexporter.Factory{},
-		&jaegerexporter.Factory{},
+		jaegerexporter.NewFactory(),
 		&fileexporter.Factory{},
-		&otlpexporter.Factory{},
+		otlpexporter.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
