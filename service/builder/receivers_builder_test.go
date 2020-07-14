@@ -96,7 +96,7 @@ func testReceivers(
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
@@ -268,7 +268,7 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	assert.NoError(t, err)
@@ -369,7 +369,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
 
 	zpkFactory := &zipkinreceiver.Factory{}

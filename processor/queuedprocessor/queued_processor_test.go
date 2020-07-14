@@ -50,7 +50,7 @@ func TestTraceQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.RetryOnFailure = true
 	cfg.BackoffDelay = time.Hour
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
@@ -82,7 +82,7 @@ func TestTraceQueueProcessor_EnqueueOnNoRetry(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.RetryOnFailure = false
 	cfg.BackoffDelay = 0
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
@@ -115,7 +115,7 @@ func TestTraceQueueProcessor_PartialError(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(partialErr)
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.NumWorkers = 1
 	cfg.RetryOnFailure = true
 	cfg.BackoffDelay = time.Second
@@ -153,7 +153,7 @@ func TestTraceQueueProcessor_EnqueueOnError(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.NumWorkers = 1
 	cfg.QueueSize = 1
 	cfg.RetryOnFailure = true
@@ -192,7 +192,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.RetryOnFailure = true
 	cfg.BackoffDelay = time.Hour
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
@@ -224,7 +224,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnNoRetry(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.RetryOnFailure = false
 	cfg.BackoffDelay = 0
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
@@ -256,7 +256,7 @@ func TestMetricsQueueProcessor_EnqueueOnError(t *testing.T) {
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
 
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.NumWorkers = 1
 	cfg.QueueSize = 1
 	cfg.RetryOnFailure = true
@@ -296,7 +296,7 @@ func TestTraceQueueProcessorHappyPath(t *testing.T) {
 
 	mockP := newMockConcurrentSpanProcessor()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	qp := newQueuedTracesProcessor(creationParams, mockP, cfg)
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -340,7 +340,7 @@ func TestMetricsQueueProcessorHappyPath(t *testing.T) {
 
 	mockP := newMockConcurrentSpanProcessor()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	qp := newQueuedMetricsProcessor(creationParams, mockP, cfg)
 	require.NoError(t, qp.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {

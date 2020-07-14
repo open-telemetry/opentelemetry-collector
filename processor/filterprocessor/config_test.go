@@ -46,7 +46,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Processors[configmodels.Type(typeStr)] = factory
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_strict.yaml"), factories)
 
@@ -146,7 +146,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_regexp.yaml"), factories)
 

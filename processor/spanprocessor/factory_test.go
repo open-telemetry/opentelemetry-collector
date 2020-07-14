@@ -31,12 +31,12 @@ import (
 )
 
 func TestFactory_Type(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	assert.Equal(t, factory.Type(), configmodels.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 
@@ -47,7 +47,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateTraceProcessor(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
@@ -63,7 +63,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 // TestFactory_CreateTraceProcessor_InvalidConfig ensures the default configuration
 // returns an error.
 func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 
 	testcases := []struct {
 		name string
@@ -100,7 +100,7 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 }
 
 func TestFactory_CreateMetricProcessor(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	mp, err := factory.CreateMetricsProcessor(

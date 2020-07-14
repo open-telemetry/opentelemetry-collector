@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -31,43 +32,16 @@ const (
 	defaultTimeout       = 200 * time.Millisecond
 )
 
-// Factory is the factory for batch processor.
-type Factory struct {
+// NewFactory returns a new factory for the Batch processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraceProcessor(createTraceProcessor),
+		processorhelper.WithMetricsProcessor(createMetricsProcessor))
 }
 
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	return generateDefaultConfig()
-}
-
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	c configmodels.Processor,
-) (component.TraceProcessor, error) {
-	cfg := c.(*Config)
-	return newBatchTracesProcessor(params, nextConsumer, cfg), nil
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
-	c configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	cfg := c.(*Config)
-	return newBatchMetricsProcessor(params, nextConsumer, cfg), nil
-}
-
-func generateDefaultConfig() *Config {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -76,4 +50,24 @@ func generateDefaultConfig() *Config {
 		SendBatchSize: defaultSendBatchSize,
 		Timeout:       defaultTimeout,
 	}
+}
+
+func createTraceProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.TraceConsumer,
+) (component.TraceProcessor, error) {
+	oCfg := cfg.(*Config)
+	return newBatchTracesProcessor(params, nextConsumer, oCfg), nil
+}
+
+func createMetricsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsProcessor, error) {
+	oCfg := cfg.(*Config)
+	return newBatchMetricsProcessor(params, nextConsumer, oCfg), nil
 }

@@ -30,14 +30,14 @@ import (
 )
 
 func TestType(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	pType := factory.Type()
 
 	assert.Equal(t, pType, configmodels.Type("filter"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
@@ -69,14 +69,14 @@ func TestCreateProcessors(t *testing.T) {
 		factories, err := config.ExampleComponents()
 		assert.Nil(t, err)
 
-		factory := &Factory{}
+		factory := NewFactory()
 		factories.Processors[typeStr] = factory
 		cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.Nil(t, err)
 
 		for name, cfg := range cfg.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				factory := &Factory{}
+				factory := NewFactory()
 
 				tp, tErr := factory.CreateTraceProcessor(
 					context.Background(),

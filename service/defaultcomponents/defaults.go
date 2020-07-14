@@ -89,15 +89,15 @@ func Components() (
 	}
 
 	processors, err := component.MakeProcessorFactoryMap(
-		&attributesprocessor.Factory{},
-		&resourceprocessor.Factory{},
-		&queuedprocessor.Factory{},
-		&batchprocessor.Factory{},
-		&memorylimiter.Factory{},
+		attributesprocessor.NewFactory(),
+		resourceprocessor.NewFactory(),
+		queuedprocessor.NewFactory(),
+		batchprocessor.NewFactory(),
+		memorylimiter.NewFactory(),
 		&tailsamplingprocessor.Factory{},
 		&probabilisticsamplerprocessor.Factory{},
-		&spanprocessor.Factory{},
-		&filterprocessor.Factory{},
+		spanprocessor.NewFactory(),
+		filterprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

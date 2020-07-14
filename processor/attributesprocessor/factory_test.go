@@ -30,12 +30,12 @@ import (
 )
 
 func TestFactory_Type(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	assert.Equal(t, factory.Type(), configmodels.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
@@ -47,7 +47,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	assert.Error(t, err)
@@ -55,7 +55,7 @@ func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
 }
 
 func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	// Missing key
@@ -68,7 +68,7 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 }
 
 func TestFactoryCreateTraceProcessor(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{
@@ -95,7 +95,7 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 }
 
 func TestFactory_CreateMetricsProcessor(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	mp, err := factory.CreateMetricsProcessor(

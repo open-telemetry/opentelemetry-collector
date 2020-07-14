@@ -30,15 +30,15 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, config)
+	assert.NotNil(t, cfg)
 
-	p0 := config.Processors["span/custom"]
+	p0 := cfg.Processors["span/custom"]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p1 := config.Processors["span/no-separator"]
+	p1 := cfg.Processors["span/no-separator"]
 	assert.Equal(t, p1, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p2 := config.Processors["span/to_attributes"]
+	p2 := cfg.Processors["span/to_attributes"]
 	assert.Equal(t, p2, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p3 := config.Processors["span/includeexclude"]
+	p3 := cfg.Processors["span/includeexclude"]
 	assert.Equal(t, p3, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,

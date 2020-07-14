@@ -19,11 +19,11 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -31,18 +31,16 @@ const (
 	typeStr = "attributes"
 )
 
-// Factory is the factory for Attributes processor.
-type Factory struct {
+// NewFactory returns a new factory for the Attributes processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraceProcessor(createTraceProcessor))
 }
 
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for the processor.
 // Note: This isn't a valid configuration because the processor would do no work.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -51,14 +49,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
+func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
-
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {
 		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", cfg.Name())
@@ -76,14 +72,4 @@ func (f *Factory) CreateTraceProcessor(
 		return nil, err
 	}
 	return newTraceProcessor(nextConsumer, attrProc, include, exclude)
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateParams,
-	_ consumer.MetricsConsumer,
-	_ configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }

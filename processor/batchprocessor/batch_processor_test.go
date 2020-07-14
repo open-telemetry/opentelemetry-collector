@@ -36,7 +36,7 @@ import (
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
 	sink := &exportertest.SinkTraceExporter{}
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchTracesProcessor(creationParams, sink, cfg)
@@ -80,7 +80,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	defer view.Unregister(views...)
 
 	sink := &exportertest.SinkTraceExporter{}
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
@@ -128,7 +128,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
 	sink := &exportertest.SinkTraceExporter{}
-	cfg := generateDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 100 * time.Millisecond
