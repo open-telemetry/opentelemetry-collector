@@ -78,13 +78,13 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	sink := &exportertest.SinkTraceExporter{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	cfg.EnforceBatchSize = true
+	cfg.SendBatchMaxSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchTracesProcessor(creationParams, sink, cfg)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 1000
-	spansPerRequest := 100
+	spansPerRequest := 150
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
 		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()

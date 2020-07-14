@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	timeout := time.Second * 10
 	sendBatchSize := uint32(10000)
+	sendBatchMaxSize := uint32(11000)
 
 	assert.Equal(t, p1,
 		&Config{
@@ -51,7 +52,8 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "batch",
 				NameVal: "batch/2",
 			},
-			SendBatchSize: sendBatchSize,
-			Timeout:       timeout,
+			SendBatchSize:    sendBatchSize,
+			SendBatchMaxSize: sendBatchMaxSize,
+			Timeout:          timeout,
 		})
 }

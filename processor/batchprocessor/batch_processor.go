@@ -45,7 +45,7 @@ type batchProcessor struct {
 
 	sendBatchSize    uint32
 	timeout          time.Duration
-	enforceBatchSize bool
+	sendBatchMaxSize uint32
 
 	timer   *time.Timer
 	done    chan struct{}
@@ -76,7 +76,7 @@ func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batc
 		logger: params.Logger,
 
 		sendBatchSize:    cfg.SendBatchSize,
-		enforceBatchSize: cfg.EnforceBatchSize,
+		sendBatchMaxSize: cfg.SendBatchMaxSize,
 		timeout:          cfg.Timeout,
 		done:             make(chan struct{}, 1),
 		newItem:          make(chan interface{}, runtime.NumCPU()),
@@ -116,15 +116,15 @@ func (bp *batchProcessor) startProcessingCycle() {
 				close(bp.done)
 				return
 			}
-			if bp.enforceBatchSize {
+			if bp.sendBatchMaxSize > 0 {
 				if td, ok := item.(pdata.Traces); ok {
 					itemCount := bp.batch.itemCount()
-					if itemCount+uint32(td.SpanCount()) > bp.sendBatchSize {
+					if itemCount+uint32(td.SpanCount()) > bp.sendBatchMaxSize {
 						tdRemainSize := splitTrace(int(bp.sendBatchSize-itemCount), td)
+						item = tdRemainSize
 						go func() {
 							bp.newItem <- td
 						}()
-						item = tdRemainSize
 					}
 				}
 			}

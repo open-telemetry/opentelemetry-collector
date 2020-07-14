@@ -6,7 +6,7 @@ processors:
   batch/2:
     timeout: 10s
     send_batch_size: 10000
-    enforce_batch_size: false
+    send_batch_max_size: 11000
 
 exporters:
   exampleexporter:
