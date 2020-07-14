@@ -35,9 +35,9 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraceProcessor(createTraceProcessor),
-		processorhelper.WithMetricsProcessor(createMetricsProcessor),
-		processorhelper.WithLogProcessor(createLogProcessor))
+		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogProcessor))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice

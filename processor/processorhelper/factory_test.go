@@ -52,9 +52,9 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig,
-		WithTraceProcessor(createTraceProcessor),
-		WithMetricsProcessor(createMetricsProcessor),
-		WithLogProcessor(createLogProcessor))
+		WithTraces(createTraceProcessor),
+		WithMetrics(createMetricsProcessor),
+		WithLogs(createLogProcessor))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
 

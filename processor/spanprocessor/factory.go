@@ -40,7 +40,7 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraceProcessor(createTraceProcessor))
+		processorhelper.WithTraces(createTraceProcessor))
 }
 
 func createDefaultConfig() configmodels.Processor {

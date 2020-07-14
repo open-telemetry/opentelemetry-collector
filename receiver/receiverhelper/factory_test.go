@@ -50,8 +50,8 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	factory := NewFactory(
 		typeStr,
 		defaultConfig,
-		WithTraceReceiver(createTraceReceiver),
-		WithMetricsReceiver(createMetricsReceiver),
+		WithTraces(createTraceReceiver),
+		WithMetrics(createMetricsReceiver),
 		WithCustomUnmarshaler(customUnmarshaler))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())

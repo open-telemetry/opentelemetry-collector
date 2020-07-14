@@ -56,7 +56,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraceReceiver(createTraceReceiver),
+		receiverhelper.WithTraces(createTraceReceiver),
 		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 

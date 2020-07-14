@@ -43,8 +43,8 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraceReceiver(createTraceReceiver),
-		receiverhelper.WithMetricsReceiver(createMetricsReceiver),
+		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithMetrics(createMetricsReceiver),
 		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 

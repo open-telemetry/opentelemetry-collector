@@ -38,8 +38,8 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraceProcessor(createTraceProcessor),
-		processorhelper.WithMetricsProcessor(createMetricsProcessor))
+		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
