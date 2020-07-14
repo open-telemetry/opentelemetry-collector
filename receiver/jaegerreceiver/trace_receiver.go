@@ -257,20 +257,12 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 	return err
 }
 
-func consumeTraces(ctx context.Context, batches []*jaeger.Batch, consumer consumer.TraceConsumer) (int, error) {
-	var consumerErrors []error
-	numSpans := 0
-	for _, batch := range batches {
-		numSpans += len(batch.Spans)
-
-		td := jaegertranslator.ThriftBatchToInternalTraces(batch)
-		err := consumer.ConsumeTraces(ctx, td)
-		if err != nil {
-			consumerErrors = append(consumerErrors, err)
-		}
+func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.TraceConsumer) (int, error) {
+	if batch == nil {
+		return 0, nil
 	}
-
-	return numSpans, componenterror.CombineErrors(consumerErrors)
+	td := jaegertranslator.ThriftBatchToInternalTraces(batch)
+	return len(batch.Spans), consumer.ConsumeTraces(ctx, td)
 }
 
 var _ agent.Agent = (*agentHandler)(nil)
@@ -295,11 +287,8 @@ func (h *agentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		h.ctx, h.name, h.transport)
 
-	td := jaegertranslator.ThriftBatchToInternalTraces(batch)
-
-	err := h.nextConsumer.ConsumeTraces(ctx, td)
-	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, len(batch.Spans), err)
-
+	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
+	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 	return err
 }
 
@@ -477,7 +466,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	numSpans, err := consumeTraces(ctx, []*jaeger.Batch{batch}, jr.nextConsumer)
+	numSpans, err := consumeTraces(ctx, batch, jr.nextConsumer)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Cannot submit Jaeger batch: %v", err), http.StatusInternalServerError)
 	} else {

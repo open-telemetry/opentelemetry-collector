@@ -621,3 +621,23 @@ func randomAvailablePort() (int, error) {
 	defer listener.Close()
 	return listener.Addr().(*net.TCPAddr).Port, nil
 }
+
+func TestConsumeThriftTrace(t *testing.T) {
+	tests := []struct {
+		batch    *tJaeger.Batch
+		numSpans int
+	}{
+		{
+			batch: nil,
+		},
+		{
+			batch:    &tJaeger.Batch{Spans: []*tJaeger.Span{{}}},
+			numSpans: 1,
+		},
+	}
+	for _, test := range tests {
+		numSpans, err := consumeTraces(context.Background(), test.batch, exportertest.NewNopTraceExporter())
+		require.NoError(t, err)
+		assert.Equal(t, test.numSpans, numSpans)
+	}
+}
