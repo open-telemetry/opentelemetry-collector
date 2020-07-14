@@ -143,6 +143,8 @@ workflows:
             - coverage
             - windows-test
             - windows-msi
+            - deb-package
+            - rpm-package
           filters:
             branches:
               only: master
@@ -345,7 +347,7 @@ jobs:
           command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - persist_to_workspace:
           root: ~/
-          paths: project/bin
+          paths: project/bin/*.msi
 
   build-package:
     machine:
@@ -379,4 +381,4 @@ jobs:
             fi
       - persist_to_workspace:
           root: ~/
-          paths: project/bin
+          paths: project/bin/*.<< parameters.package_type >>
