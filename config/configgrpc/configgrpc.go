@@ -87,7 +87,7 @@ type GRPCClientSettings struct {
 	Headers map[string]string `mapstructure:"headers"`
 
 	// Sets the balancer as RoundRobin in grpclb_policy to discover the servers. Default is pick_first
-    // https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
+	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	useRoundRobin bool `mapstructure:"useRoundRobin"`
 }
 
