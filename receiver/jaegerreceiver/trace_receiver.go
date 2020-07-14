@@ -193,7 +193,7 @@ func (jr *jReceiver) collectorHTTPEnabled() bool {
 	return jr.config != nil && jr.config.CollectorHTTPPort > 0
 }
 
-func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
+func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
@@ -272,20 +272,19 @@ var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 type agentHandler struct {
 	name         string
 	transport    string
-	ctx          context.Context
 	nextConsumer consumer.TraceConsumer
 }
 
 // EmitZipkinBatch is unsupported agent's
-func (h *agentHandler) EmitZipkinBatch(ctx context.Context, spans []*zipkincore.Span) (err error) {
+func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
 	panic("unsupported receiver")
 }
 
 // EmitBatch implements thrift-gen/agent/Agent and it forwards
 // Jaeger spans received by the Jaeger agent processor.
-func (h *agentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) error {
-	ctx := obsreport.StartTraceDataReceiveOp(
-		h.ctx, h.name, h.transport)
+func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
+	ctx = obsreport.ReceiverContext(ctx, h.name, h.transport, agentReceiverTagValue)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, h.name, h.transport)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
 	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
@@ -337,8 +336,6 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			name:         jr.instanceName,
 			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
-			ctx: obsreport.ReceiverContext(
-				context.Background(), jr.instanceName, agentTransportBinary, agentReceiverTagValue),
 		}
 		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
 		if err != nil {
@@ -352,8 +349,6 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			name:         jr.instanceName,
 			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
-			ctx: obsreport.ReceiverContext(
-				context.Background(), jr.instanceName, agentTransportCompact, agentReceiverTagValue),
 		}
 		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory(), h)
 		if err != nil {
