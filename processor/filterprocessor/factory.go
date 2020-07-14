@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -28,17 +28,15 @@ const (
 	typeStr = "filter"
 )
 
-// Factory is the factory for filter processor.
-type Factory struct {
+// NewFactory returns a new factory for the Filter processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithMetricsProcessor(createMetricsProcessor))
 }
 
-// Type gets the type of the Option config created by this factory.
-func (f Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -47,23 +45,12 @@ func (f Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	c configmodels.Processor,
-) (component.TraceProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
+func createMetricsProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
-	c configmodels.Processor,
 ) (component.MetricsProcessor, error) {
-	oCfg := c.(*Config)
+	oCfg := cfg.(*Config)
 	return newFilterMetricProcessor(nextConsumer, oCfg)
 }

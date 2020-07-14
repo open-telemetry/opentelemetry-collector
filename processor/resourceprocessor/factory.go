@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -32,18 +33,17 @@ const (
 	typeStr = "resource"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
+// NewFactory returns a new factory for the Resource processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraceProcessor(createTraceProcessor),
+		processorhelper.WithMetricsProcessor(createMetricsProcessor))
 }
 
-// Type gets the type of the Option config created by this factory.
-func (*Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
 // Note: This isn't a valid configuration because the processor would do no work.
-func (*Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -52,13 +52,11 @@ func (*Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (*Factory) CreateTraceProcessor(
-	ctx context.Context,
+func createTraceProcessor(
+	_ context.Context,
 	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessor, error) {
+	nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, err
@@ -66,13 +64,11 @@ func (*Factory) CreateTraceProcessor(
 	return newResourceTraceProcessor(nextConsumer, attrProc), nil
 }
 
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (*Factory) CreateMetricsProcessor(
-	ctx context.Context,
+func createMetricsProcessor(
+	_ context.Context,
 	params component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
-) (component.MetricsProcessor, error) {
+	nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, err

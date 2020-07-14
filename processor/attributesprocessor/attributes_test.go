@@ -135,7 +135,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 			output: testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
 		},
 	}
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Settings.Actions = []attraction.ActionKeyValue{
@@ -195,7 +195,7 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		},
 	}
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{
@@ -265,7 +265,7 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		},
 	}
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{
@@ -333,7 +333,7 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		},
 	}
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{
@@ -396,7 +396,7 @@ func TestAttributes_Hash(t *testing.T) {
 		},
 	}
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{
@@ -441,7 +441,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		},
 	}
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{

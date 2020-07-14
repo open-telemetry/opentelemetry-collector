@@ -28,14 +28,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.NotNil(t, cfg)
 }
 
 func TestCreateProcessor(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: "resource",
@@ -56,7 +56,7 @@ func TestCreateProcessor(t *testing.T) {
 }
 
 func TestInvalidEmptyActions(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
@@ -67,7 +67,7 @@ func TestInvalidEmptyActions(t *testing.T) {
 }
 
 func TestInvalidAttributeActions(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: "resource",

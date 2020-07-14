@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -28,43 +29,16 @@ const (
 	typeStr = "queued_retry"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
+// NewFactory returns a new factory for the Queued processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraceProcessor(createTraceProcessor),
+		processorhelper.WithMetricsProcessor(createMetricsProcessor))
 }
 
-// Type gets the type of the Option config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	return generateDefaultConfig()
-}
-
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	_ context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor,
-) (component.TraceProcessor, error) {
-	oCfg := cfg.(*Config)
-	return newQueuedTracesProcessor(params, nextConsumer, oCfg), nil
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	oCfg := cfg.(*Config)
-	return newQueuedMetricsProcessor(params, nextConsumer, oCfg), nil
-}
-
-func generateDefaultConfig() *Config {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -75,4 +49,22 @@ func generateDefaultConfig() *Config {
 		RetryOnFailure: true,
 		BackoffDelay:   time.Second * 5,
 	}
+}
+
+func createTraceProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.TraceConsumer,
+) (component.TraceProcessor, error) {
+	return newQueuedTracesProcessor(params, nextConsumer, cfg.(*Config)), nil
+}
+
+func createMetricsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsProcessor, error) {
+	return newQueuedMetricsProcessor(params, nextConsumer, cfg.(*Config)), nil
 }
