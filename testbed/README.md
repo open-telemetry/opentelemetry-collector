@@ -46,9 +46,9 @@ For instance, if using the existing end-to-end test, the general pipeline can be
   * `PerformanceResults` - Implementation of `TestResultsSummary` with fields suitable for reporting performance test results.
   * `CorrectnessResults` - Implementation of `TestResultsSummary` with fields suitable for reporting data translation correctness test results.
 
-## Step-by-Step Instruction for development
+## Adding New Receiver and/or Exporters to the testbed
 
-Generally, when designing a test for new exporter and receiver components, by taking use of existing implementation of testbed, developers should mainly focus on designing and implementing the components with yellow background in the diagram above:
+Generally, when designing a test for new exporter and receiver components, developers should mainly focus on designing and implementing the components with yellow background in the diagram above as the other components are implemented by the testbed framework:
 
 * `DataSender` - This part should provide below interfaces for testing purpose:
 
