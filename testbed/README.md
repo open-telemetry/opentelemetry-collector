@@ -13,9 +13,9 @@ a global instance of `testbed.TestResultsSummary` to it.
 Each test case within the suite should create a `testbed.TestCase` and supply implementations of each of the various
 interfaces the `NewTestCase` function takes as parameters.
 
-Within `testbed.TestCase`, it uses `LoadGenerator` and `MockBackend` to further encapsulate pluggable components. `LoadGenerator` further encapsulates `DataProvider` and `DataSender` in order to generate and send  data.  `MockBackend` further encapsulate `DataReceiver` and provide comsume functionality.
+`testbed.TestCase` uses `LoadGenerator` and `MockBackend` to further encapsulate pluggable components. `LoadGenerator` further encapsulates `DataProvider` and `DataSender` in order to generate and send  data.  `MockBackend` further encapsulate `DataReceiver` and provide comsume functionality.
 
-For instance, if using the existing end-to-end test, the general pipeline can be (Note that MockBackend does not really have a consumer instance, only to make it intuitive, this diagram draws a separate module):
+For instance, if using the existing end-to-end test, the general pipeline can be (Note that MockBackend does not really have a consumer instance, only to make it intuitive, this diagram draws it a separate module):
 
 ![e2e diagram](./e2e_diagram.jpeg)
 
