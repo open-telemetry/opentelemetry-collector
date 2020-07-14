@@ -30,13 +30,8 @@ import (
 type PushMetricsDataOld func(ctx context.Context, td consumerdata.MetricsData) (droppedTimeSeries int, err error)
 
 type metricsExporterOld struct {
-	exporterFullName string
-	pushMetricsData  PushMetricsDataOld
-	shutdown         Shutdown
-}
-
-func (me *metricsExporterOld) Start(ctx context.Context, host component.Host) error {
-	return nil
+	baseExporter
+	pushMetricsData PushMetricsDataOld
 }
 
 func (me *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
@@ -45,13 +40,8 @@ func (me *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consume
 	return err
 }
 
-// Shutdown stops the exporter and is invoked during shutdown.
-func (me *metricsExporterOld) Shutdown(ctx context.Context) error {
-	return me.shutdown(ctx)
-}
-
 // NewMetricsExporterOld creates an MetricsExporter that can record metrics and can wrap every request with a Span.
-// If no options are passed it just adds the exporter format as a tag in the Context.
+// If no internalOptions are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
 func NewMetricsExporterOld(config configmodels.Exporter, pushMetricsData PushMetricsDataOld, options ...ExporterOption) (component.MetricsExporterOld, error) {
 	if config == nil {
@@ -62,19 +52,11 @@ func NewMetricsExporterOld(config configmodels.Exporter, pushMetricsData PushMet
 		return nil, errNilPushMetricsData
 	}
 
-	opts := newExporterOptions(options...)
-
 	pushMetricsData = pushMetricsWithObservabilityOld(pushMetricsData, config.Name())
 
-	// The default shutdown method always returns nil.
-	if opts.shutdown == nil {
-		opts.shutdown = func(context.Context) error { return nil }
-	}
-
 	return &metricsExporterOld{
-		exporterFullName: config.Name(),
-		pushMetricsData:  pushMetricsData,
-		shutdown:         opts.shutdown,
+		baseExporter:    newBaseExporter(config.Name(), options...),
+		pushMetricsData: pushMetricsData,
 	}, nil
 }
 
@@ -107,13 +89,8 @@ func NumTimeSeries(md consumerdata.MetricsData) int {
 type PushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 
 type metricsExporter struct {
-	exporterFullName string
-	pushMetricsData  PushMetricsData
-	shutdown         Shutdown
-}
-
-func (me *metricsExporter) Start(ctx context.Context, host component.Host) error {
-	return nil
+	baseExporter
+	pushMetricsData PushMetricsData
 }
 
 func (me *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -122,13 +99,8 @@ func (me *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics)
 	return err
 }
 
-// Shutdown stops the exporter and is invoked during shutdown.
-func (me *metricsExporter) Shutdown(ctx context.Context) error {
-	return me.shutdown(ctx)
-}
-
 // NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
-// If no options are passed it just adds the exporter format as a tag in the Context.
+// If no internalOptions are passed it just adds the exporter format as a tag in the Context.
 // TODO: Add support for retries.
 func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (component.MetricsExporter, error) {
 	if config == nil {
@@ -139,19 +111,11 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 		return nil, errNilPushMetricsData
 	}
 
-	opts := newExporterOptions(options...)
-
 	pushMetricsData = pushMetricsWithObservability(pushMetricsData, config.Name())
 
-	// The default shutdown method always returns nil.
-	if opts.shutdown == nil {
-		opts.shutdown = func(context.Context) error { return nil }
-	}
-
 	return &metricsExporter{
-		exporterFullName: config.Name(),
-		pushMetricsData:  pushMetricsData,
-		shutdown:         opts.shutdown,
+		baseExporter:    newBaseExporter(config.Name(), options...),
+		pushMetricsData: pushMetricsData,
 	}, nil
 }
 

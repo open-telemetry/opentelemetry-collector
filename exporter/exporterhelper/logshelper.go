@@ -28,24 +28,14 @@ import (
 type PushLogsData func(ctx context.Context, md data.Logs) (droppedTimeSeries int, err error)
 
 type logsExporter struct {
-	exporterFullName string
-	pushLogsData     PushLogsData
-	shutdown         Shutdown
-}
-
-func (me *logsExporter) Start(ctx context.Context, host component.Host) error {
-	return nil
+	baseExporter
+	pushLogsData PushLogsData
 }
 
 func (me *logsExporter) ConsumeLogs(ctx context.Context, md data.Logs) error {
 	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
 	_, err := me.pushLogsData(exporterCtx, md)
 	return err
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (me *logsExporter) Shutdown(ctx context.Context) error {
-	return me.shutdown(ctx)
 }
 
 // NewLogsExporter creates an LogsExporter that can record logs and can wrap every request with a Span.
@@ -59,19 +49,11 @@ func NewLogsExporter(config configmodels.Exporter, pushLogsData PushLogsData, op
 		return nil, errNilPushLogsData
 	}
 
-	opts := newExporterOptions(options...)
-
 	pushLogsData = pushLogsWithObservability(pushLogsData, config.Name())
 
-	// The default shutdown method always returns nil.
-	if opts.shutdown == nil {
-		opts.shutdown = func(context.Context) error { return nil }
-	}
-
 	return &logsExporter{
-		exporterFullName: config.Name(),
-		pushLogsData:     pushLogsData,
-		shutdown:         opts.shutdown,
+		baseExporter: newBaseExporter(config.Name(), options...),
+		pushLogsData: pushLogsData,
 	}, nil
 }
 
