@@ -34,6 +34,7 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+	RoundRobin             = "round_robin"
 )
 
 var (
@@ -84,6 +85,10 @@ type GRPCClientSettings struct {
 
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
+
+	// Sets the balancer as RoundRobin in grpclb_policy to discover the servers. Default is pick_first
+    // https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
+	useRoundRobin bool `mapstructure:"useRoundRobin"`
 }
 
 type KeepaliveServerConfig struct {
@@ -175,7 +180,10 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		})
 		opts = append(opts, keepAliveOption)
 	}
-
+	
+	if gcs.useRoundRobin {
+		opts = append(opts, grpc.WithBalancerName(RoundRobin))
+	}
 	return opts, nil
 }
 

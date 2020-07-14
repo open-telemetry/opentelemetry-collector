@@ -59,6 +59,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
+		useRoundRobin:	 true,
 	}
 	opts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
