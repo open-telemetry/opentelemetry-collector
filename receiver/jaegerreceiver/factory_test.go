@@ -34,20 +34,20 @@ import (
 )
 
 func TestTypeStr(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 
 	assert.Equal(t, "jaeger", string(factory.Type()))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -68,7 +68,7 @@ func TestCreateReceiver(t *testing.T) {
 
 // default ports retrieved from https://www.jaegertracing.io/docs/1.16/deployment/
 func TestCreateDefaultGRPCEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -85,7 +85,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 }
 
 func TestCreateTLSGPRCEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -107,7 +107,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 }
 
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
@@ -121,7 +121,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftBinary = &configprotocol.ProtocolServerSettings{
@@ -135,7 +135,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 }
 
 func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
@@ -149,7 +149,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 }
 
 func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -166,7 +166,7 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 }
 
 func TestAgentRemoteSamplingEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -188,7 +188,7 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 }
 
 func TestCreateNoPort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
@@ -200,7 +200,7 @@ func TestCreateNoPort(t *testing.T) {
 }
 
 func TestCreateLargePort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
@@ -212,7 +212,7 @@ func TestCreateLargePort(t *testing.T) {
 }
 
 func TestCreateInvalidHost(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -228,7 +228,7 @@ func TestCreateInvalidHost(t *testing.T) {
 }
 
 func TestCreateNoProtocols(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols = Protocols{}
@@ -238,7 +238,7 @@ func TestCreateNoProtocols(t *testing.T) {
 }
 
 func TestThriftBinaryBadPort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftBinary = &configprotocol.ProtocolServerSettings{
@@ -250,7 +250,7 @@ func TestThriftBinaryBadPort(t *testing.T) {
 }
 
 func TestThriftCompactBadPort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
@@ -263,7 +263,7 @@ func TestThriftCompactBadPort(t *testing.T) {
 }
 
 func TestRemoteSamplingConfigPropagation(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -293,7 +293,7 @@ func TestRemoteSamplingConfigPropagation(t *testing.T) {
 }
 
 func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -312,7 +312,7 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 }
 
 func TestCustomUnmarshalErrors(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 
 	f := factory.CustomUnmarshaler()
 	assert.NotNil(t, f, "custom unmarshal function should not be nil")

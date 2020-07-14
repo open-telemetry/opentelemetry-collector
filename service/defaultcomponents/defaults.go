@@ -64,11 +64,11 @@ func Components() (
 	}
 
 	receivers, err := component.MakeReceiverFactoryMap(
-		&jaegerreceiver.Factory{},
+		jaegerreceiver.NewFactory(),
 		&zipkinreceiver.Factory{},
 		&prometheusreceiver.Factory{},
 		&opencensusreceiver.Factory{},
-		&otlpreceiver.Factory{},
+		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 	)
 	if err != nil {

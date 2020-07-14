@@ -25,13 +25,13 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -52,74 +52,68 @@ const (
 	defaultAgentRemoteSamplingHTTPPort = 5778
 )
 
-// Factory is the factory for Jaeger receiver.
-type Factory struct {
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithTraceReceiver(createTraceReceiver),
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
-// Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CustomUnmarshaler is used to add defaults for named but empty protocols
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(componentViperSection *viper.Viper, intoCfg interface{}) error {
-		if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
-			return fmt.Errorf("empty config for Jaeger receiver")
-		}
-
-		componentViperSection.SetConfigType("yaml")
-
-		// UnmarshalExact will not set struct properties to nil even if no key is provided,
-		// so set the protocol structs to nil where the keys were omitted.
-		err := componentViperSection.UnmarshalExact(intoCfg)
-		if err != nil {
-			return err
-		}
-
-		receiverCfg, ok := intoCfg.(*Config)
-		if !ok {
-			return fmt.Errorf("config type not *jaegerreceiver.Config")
-		}
-
-		protocols := componentViperSection.GetStringMap(protocolsFieldName)
-		if len(protocols) == 0 {
-			return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
-		}
-
-		knownProtocols := 0
-		if _, ok := protocols[protoGRPC]; !ok {
-			receiverCfg.GRPC = nil
-		} else {
-			knownProtocols++
-		}
-		if _, ok := protocols[protoThriftHTTP]; !ok {
-			receiverCfg.ThriftHTTP = nil
-		} else {
-			knownProtocols++
-		}
-		if _, ok := protocols[protoThriftBinary]; !ok {
-			receiverCfg.ThriftBinary = nil
-		} else {
-			knownProtocols++
-		}
-		if _, ok := protocols[protoThriftCompact]; !ok {
-			receiverCfg.ThriftCompact = nil
-		} else {
-			knownProtocols++
-		}
-		// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
-		// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
-		// include only known protocols.
-		if len(protocols) != knownProtocols {
-			return fmt.Errorf("unknown protocols in the Jaeger receiver")
-		}
-		return nil
+// customUnmarshaler is used to add defaults for named but empty protocols
+func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
+		return fmt.Errorf("empty config for Jaeger receiver")
 	}
+
+	componentViperSection.SetConfigType("yaml")
+
+	// UnmarshalExact will not set struct properties to nil even if no key is provided,
+	// so set the protocol structs to nil where the keys were omitted.
+	err := componentViperSection.UnmarshalExact(intoCfg)
+	if err != nil {
+		return err
+	}
+
+	receiverCfg := intoCfg.(*Config)
+
+	protocols := componentViperSection.GetStringMap(protocolsFieldName)
+	if len(protocols) == 0 {
+		return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
+	}
+
+	knownProtocols := 0
+	if _, ok := protocols[protoGRPC]; !ok {
+		receiverCfg.GRPC = nil
+	} else {
+		knownProtocols++
+	}
+	if _, ok := protocols[protoThriftHTTP]; !ok {
+		receiverCfg.ThriftHTTP = nil
+	} else {
+		knownProtocols++
+	}
+	if _, ok := protocols[protoThriftBinary]; !ok {
+		receiverCfg.ThriftBinary = nil
+	} else {
+		knownProtocols++
+	}
+	if _, ok := protocols[protoThriftCompact]; !ok {
+		receiverCfg.ThriftCompact = nil
+	} else {
+		knownProtocols++
+	}
+	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
+	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
+	// include only known protocols.
+	if len(protocols) != knownProtocols {
+		return fmt.Errorf("unknown protocols in the Jaeger receiver")
+	}
+	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -145,9 +139,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
+// createTraceReceiver creates a trace receiver based on provided config.
+func createTraceReceiver(
+	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
@@ -239,16 +233,6 @@ func (f *Factory) CreateTraceReceiver(
 
 	// Create the receiver.
 	return New(rCfg.Name(), &config, nextConsumer, params)
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
-	_ context.Context,
-	_ component.ReceiverCreateParams,
-	_ configmodels.Receiver,
-	_ consumer.MetricsConsumer,
-) (component.MetricsReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // extract the port number from string in "address:port" format. If the
