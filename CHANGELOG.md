@@ -20,7 +20,7 @@
 - Added log support for `memorylimiter` processor (#1291) and `logging` exporter (#1298)
 - Always add tags for `observability`, other metrics may use them (#1312)
 - Added metrics support (#1313) and allow partial retries in `queued_retry` processor (#1297)
-- Migrate `resource` processor to the new OTLP-based internal data model (#1315)
+- Update `resource` processor: introduce `attributes` config parameter to specify actions on attributes similar to `attributes` processor, old config interface is deprecated (#1315)
 - Update memory state labels for non-Linux OSs (#1325)
 - Ensure tcp connection value is provided for all states, even when count is 0 (#1329)
 - Set `batch` processor channel size to num cpus (#1330)
