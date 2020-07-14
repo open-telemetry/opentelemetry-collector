@@ -33,15 +33,15 @@ func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) Factor
 	}
 }
 
-// WithTraceReceiver overrides the default "error not supported" implementation for CreateTraceReceiver.
-func WithTraceReceiver(createTraceReceiver CreateTraceReceiver) FactoryOption {
+// WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
+func WithTraces(createTraceReceiver CreateTraceReceiver) FactoryOption {
 	return func(o *factory) {
 		o.createTraceReceiver = createTraceReceiver
 	}
 }
 
-// WithTraceReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver.
-func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiver) FactoryOption {
+// WithMetrics overrides the default "error not supported" implementation for CreateMetricsReceiver.
+func WithMetrics(createMetricsReceiver CreateMetricsReceiver) FactoryOption {
 	return func(o *factory) {
 		o.createMetricsReceiver = createMetricsReceiver
 	}
@@ -51,10 +51,10 @@ func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiver) FactoryOpt
 type CreateDefaultConfig func() configmodels.Receiver
 
 // CreateTraceReceiver is the equivalent of component.ReceiverFactory.CreateTraceReceiver()
-type CreateTraceReceiver func(ctx context.Context, params component.ReceiverCreateParams, config configmodels.Receiver, nextConsumer consumer.TraceConsumer) (component.TraceReceiver, error)
+type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.TraceConsumer) (component.TraceReceiver, error)
 
 // CreateMetricsReceiver is the equivalent of component.ReceiverFactory.CreateMetricsReceiver()
-type CreateMetricsReceiver func(ctx context.Context, params component.ReceiverCreateParams, config configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error)
+type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (component.MetricsReceiver, error)
 
 // factory is the factory for Jaeger gRPC exporter.
 type factory struct {

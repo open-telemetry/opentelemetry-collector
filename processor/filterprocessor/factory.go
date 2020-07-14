@@ -33,7 +33,7 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithMetricsProcessor(createMetricsProcessor))
+		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
 func createDefaultConfig() configmodels.Processor {
