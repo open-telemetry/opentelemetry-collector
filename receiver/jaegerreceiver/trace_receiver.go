@@ -287,11 +287,8 @@ func (h *agentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		h.ctx, h.name, h.transport)
 
-	td := jaegertranslator.ThriftBatchToInternalTraces(batch)
-
-	err := h.nextConsumer.ConsumeTraces(ctx, td)
-	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, len(batch.Spans), err)
-
+	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
+	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
 	return err
 }
 
