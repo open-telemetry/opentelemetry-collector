@@ -29,23 +29,24 @@ type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
 
-	// for mocking gopsutil disk.IOCounters
+	// for mocking
+	bootTime   func() (uint64, error)
 	ioCounters func(names ...string) (map[string]disk.IOCountersStat, error)
 }
 
 // newDiskScraper creates a Disk Scraper
 func newDiskScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, ioCounters: disk.IOCounters}
+	return &scraper{config: cfg, bootTime: host.BootTime, ioCounters: disk.IOCounters}
 }
 
 // Initialize
 func (s *scraper) Initialize(_ context.Context) error {
-	bootTime, err := host.BootTime()
+	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
 	return nil
 }
 

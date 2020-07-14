@@ -29,10 +29,13 @@ import (
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name            string
-		ioCountersFunc  func(bool) ([]net.IOCountersStat, error)
-		connectionsFunc func(string) ([]net.ConnectionStat, error)
-		expectedErr     string
+		name              string
+		bootTimeFunc      func() (uint64, error)
+		ioCountersFunc    func(bool) ([]net.IOCountersStat, error)
+		connectionsFunc   func(string) ([]net.ConnectionStat, error)
+		expectedStartTime pdata.TimestampUnixNano
+		initializationErr string
+		expectedErr       string
 	}
 
 	testCases := []testCase{
@@ -40,20 +43,33 @@ func TestScrapeMetrics(t *testing.T) {
 			name: "Standard",
 		},
 		{
+			name:              "Validate Start Time",
+			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			expectedStartTime: 100 * 1e9,
+		},
+		{
+			name:              "Boot Time Error",
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
+		},
+		{
 			name:           "IOCounters Error",
-			ioCountersFunc: func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			ioCountersFunc: func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
+			expectedErr:    "err2",
 		},
 		{
 			name:            "Connections Error",
-			connectionsFunc: func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err2") },
-			expectedErr:     "err2",
+			connectionsFunc: func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
+			expectedErr:     "err3",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newNetworkScraper(context.Background(), &Config{})
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
 			if test.ioCountersFunc != nil {
 				scraper.ioCounters = test.ioCountersFunc
 			}
@@ -62,6 +78,10 @@ func TestScrapeMetrics(t *testing.T) {
 			}
 
 			err := scraper.Initialize(context.Background())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
 			require.NoError(t, err, "Failed to initialize network scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
@@ -74,18 +94,21 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 5, metrics.Len())
 
-			assertNetworkIOMetricValid(t, metrics.At(0), networkPacketsDescriptor)
-			assertNetworkIOMetricValid(t, metrics.At(1), networkDroppedPacketsDescriptor)
-			assertNetworkIOMetricValid(t, metrics.At(2), networkErrorsDescriptor)
-			assertNetworkIOMetricValid(t, metrics.At(3), networkIODescriptor)
+			assertNetworkIOMetricValid(t, metrics.At(0), networkPacketsDescriptor, test.expectedStartTime)
+			assertNetworkIOMetricValid(t, metrics.At(1), networkDroppedPacketsDescriptor, test.expectedStartTime)
+			assertNetworkIOMetricValid(t, metrics.At(2), networkErrorsDescriptor, test.expectedStartTime)
+			assertNetworkIOMetricValid(t, metrics.At(3), networkIODescriptor, test.expectedStartTime)
 
 			assertNetworkTCPConnectionsMetricValid(t, metrics.At(4))
 		})
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
+	}
 	assert.Equal(t, 2, metric.Int64DataPoints().Len())
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, transmitDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)

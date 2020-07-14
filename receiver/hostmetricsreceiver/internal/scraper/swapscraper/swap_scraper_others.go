@@ -32,24 +32,25 @@ type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
 
-	// for mocking gopsutil mem.VirtualMemory & mem.SwapMemory
+	// for mocking
+	bootTime      func() (uint64, error)
 	virtualMemory func() (*mem.VirtualMemoryStat, error)
 	swapMemory    func() (*mem.SwapMemoryStat, error)
 }
 
 // newSwapScraper creates a Swap Scraper
 func newSwapScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory, swapMemory: mem.SwapMemory}
+	return &scraper{config: cfg, bootTime: host.BootTime, virtualMemory: mem.VirtualMemory, swapMemory: mem.SwapMemory}
 }
 
 // Initialize
 func (s *scraper) Initialize(_ context.Context) error {
-	bootTime, err := host.BootTime()
+	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
 	return nil
 }
 

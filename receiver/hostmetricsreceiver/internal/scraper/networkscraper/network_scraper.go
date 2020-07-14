@@ -30,24 +30,25 @@ type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
 
-	// for mocking gopsutil net.IOCounters & net.Connections
+	// for mocking
+	bootTime    func() (uint64, error)
 	ioCounters  func(bool) ([]net.IOCountersStat, error)
 	connections func(string) ([]net.ConnectionStat, error)
 }
 
 // newNetworkScraper creates a set of Network related metrics
 func newNetworkScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, ioCounters: net.IOCounters, connections: net.Connections}
+	return &scraper{config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
 }
 
 // Initialize
 func (s *scraper) Initialize(_ context.Context) error {
-	bootTime, err := host.BootTime()
+	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
 	return nil
 }
 
