@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -57,23 +58,61 @@ func (f *Factory) CreateTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
-	return NewTraceExporter(ctx, params, cfg)
+	oce, err := newExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewTraceExporter(
+		cfg,
+		oce.pushTraceData,
+		exporterhelper.WithShutdown(oce.shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	return NewMetricsExporter(ctx, params, cfg)
+	oce, err := newExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewMetricsExporter(
+		cfg,
+		oce.pushMetricsData,
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }
 
 // CreateLogExporter creates a log exporter based on this config.
 func (f *Factory) CreateLogExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.LogExporter, error) {
-	return NewLogExporter(ctx, params, cfg)
+	oce, err := newExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	oexp, err := exporterhelper.NewLogsExporter(
+		cfg,
+		oce.pushLogData,
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }
