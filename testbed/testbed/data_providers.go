@@ -355,7 +355,7 @@ func (dp *GoldenDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
 func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
 	if dp.metricsGenerated == nil {
 		var err error
-		dp.metricsGenerated, err = goldendataset.GenerateMetrics(dp.metricPairsFile)
+		dp.metricsGenerated, err = goldendataset.GenerateMetricDatas(dp.metricPairsFile)
 		if err != nil {
 			log.Printf("cannot generate metrics: %s", err)
 		}

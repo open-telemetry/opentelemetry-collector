@@ -21,7 +21,7 @@ import (
 )
 
 func TestGenerateMetrics(t *testing.T) {
-	metrics, err := GenerateMetrics("testdata/generated_pict_pairs_metrics.txt")
+	metrics, err := GenerateMetricDatas("testdata/generated_pict_pairs_metrics.txt")
 	require.Nil(t, err)
-	require.Equal(t, 6, len(metrics))
+	require.Equal(t, 19, len(metrics))
 }

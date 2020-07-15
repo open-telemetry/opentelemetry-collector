@@ -23,10 +23,7 @@ import (
 	"go.opentelemetry.io/collector/internal/data"
 )
 
-var metricCounter int
-var ptCounter int
-
-func GenerateMetrics(metricPairsFile string) ([]data.MetricData, error) {
+func GenerateMetricDatas(metricPairsFile string) ([]data.MetricData, error) {
 	pictData, err := loadPictOutputFile(metricPairsFile)
 	if err != nil {
 		return nil, err
@@ -39,162 +36,223 @@ func GenerateMetrics(metricPairsFile string) ([]data.MetricData, error) {
 		metricInputs := PICTMetricInputs{
 			NumPtsPerMetric: PICTNumPtsPerMetric(values[0]),
 			MetricType:      PICTMetricType(values[1]),
-			NumLabels:       PICTNumLabels(values[2]),
+			NumLabels:       PICTNumPtLabels(values[2]),
 		}
-		md := GenerateMetric(metricInputs)
+		md := GenerateMetricData(metricInputs)
 		out = append(out, md)
 	}
 	return out, nil
 }
 
-func GenerateMetric(inputs PICTMetricInputs) data.MetricData {
-	md := data.NewMetricData()
-	rmSlice := md.ResourceMetrics()
-	rmSlice.Resize(1)
-	rm := rmSlice.At(0)
-	rsrc := rm.Resource()
-	rsrc.InitEmpty()
-	attrs := rsrc.Attributes()
-
-	var numResourceAttrs int
+func GenerateMetricData(inputs PICTMetricInputs) data.MetricData {
+	cfg := DefaultCfg()
 	switch inputs.NumAttrs {
 	case AttrsNone:
-		numResourceAttrs = 0
+		cfg.numResourceAttrs = 0
 	case AttrsOne:
-		numResourceAttrs = 1
+		cfg.numResourceAttrs = 1
 	case AttrsTwo:
-		numResourceAttrs = 2
+		cfg.numResourceAttrs = 2
 	}
 
-	for i := 0; i < numResourceAttrs; i++ {
-		attrs.Insert("my-name", pdata.NewAttributeValueString("resourceName"))
-	}
-
-	ilmSlice := rm.InstrumentationLibraryMetrics()
-	ilmSlice.Resize(1)
-	ilm := ilmSlice.At(0)
-	il := ilm.InstrumentationLibrary()
-	il.InitEmpty()
-	il.SetName("my-il-name")
-	il.SetVersion("my-il-version")
-
-	metricSlice := ilm.Metrics()
-	metricSlice.Resize(1)
-	metric := metricSlice.At(0)
-	metric.InitEmpty()
-
-	mDesc := metric.MetricDescriptor()
-	mDesc.InitEmpty()
-	mDesc.SetName(fmt.Sprintf("metric-%d", metricCounter))
-	mDesc.SetDescription("my-description")
-	metricCounter++
-
-	mDesc.SetUnit("x")
-
-	numPts := 0
 	switch inputs.NumPtsPerMetric {
 	case NumPtsPerMetricOne:
-		numPts = 1
+		cfg.NumPts = 1
 	case NumPtsPerMetricMany:
-		numPts = 1024
+		cfg.NumPts = 1024
 	default:
 		log.Error("invalid value for inputs.NumPtsPerMetric: " + inputs.NumPtsPerMetric)
 	}
 
-	startTime := uint64(42)
-	stepSize := uint64(100)
-
 	switch inputs.MetricType {
-	case MetricTypeMonotonicDouble:
-		mDesc.SetType(pdata.MetricTypeMonotonicDouble)
-		populateDoublePts(metric, numPts, startTime, stepSize, inputs.NumLabels)
-	case MetricTypeDouble:
-		mDesc.SetType(pdata.MetricTypeDouble)
-		populateDoublePts(metric, numPts, startTime, stepSize, inputs.NumLabels)
-	case MetricTypeMonotonicInt:
-		mDesc.SetType(pdata.MetricTypeMonotonicInt64)
-		populateIntPts(metric, numPts, startTime, stepSize, inputs.NumLabels)
 	case MetricTypeInt:
-		mDesc.SetType(pdata.MetricTypeInt64)
-		populateIntPts(metric, numPts, startTime, stepSize, inputs.NumLabels)
-	case MetricTypeSummary:
-		mDesc.SetType(pdata.MetricTypeSummary)
-		pts := metric.SummaryDataPoints()
-		pts.Resize(numPts)
-		for i := 0; i < numPts; i++ {
-			pt := pts.At(i)
-			pt.InitEmpty()
-			pt.SetStartTime(pdata.TimestampUnixNano(startTime))
-			pt.SetTimestamp(getTimestamp(startTime, stepSize, 1))
-			pt.SetCount(uint64(10 + i))
-			pt.SetSum(float64(100 + i))
-			insertLabels(pt.LabelsMap(), inputs.NumLabels)
-		}
+		cfg.MetricType = pdata.MetricTypeInt64
+	case MetricTypeMonotonicInt:
+		cfg.MetricType = pdata.MetricTypeMonotonicInt64
+	case MetricTypeDouble:
+		cfg.MetricType = pdata.MetricTypeDouble
+	case MetricTypeMonotonicDouble:
+		cfg.MetricType = pdata.MetricTypeMonotonicDouble
 	case MetricTypeHistogram:
-		mDesc.SetType(pdata.MetricTypeHistogram)
-		pts := metric.HistogramDataPoints()
-		pts.Resize(numPts)
-		for i := 0; i < numPts; i++ {
-			pt := pts.At(i)
-			pt.SetStartTime(pdata.TimestampUnixNano(startTime))
-			ts := getTimestamp(startTime, stepSize, i)
-			pt.SetTimestamp(ts)
-			insertLabels(pt.LabelsMap(), inputs.NumLabels)
-			buckets := pt.Buckets()
-			numBuckets := 4
-			buckets.Resize(numBuckets)
-			for j := 0; j < numBuckets; j++ {
-				bucket := buckets.At(j)
-				bucket.SetCount(uint64(j))
-				ex := bucket.Exemplar()
-				ex.InitEmpty()
-				ex.SetTimestamp(ts)
-				ex.SetValue(1.0)
-			}
-			ptCounter++
+		cfg.MetricType = pdata.MetricTypeHistogram
+	case MetricTypeSummary:
+		cfg.MetricType = pdata.MetricTypeSummary
+	}
+
+	switch inputs.NumLabels {
+	case LabelsNone:
+		cfg.numPtLabels = 0
+	case LabelsOne:
+		cfg.numPtLabels = 1
+	case LabelsMany:
+		cfg.numPtLabels = 16
+	default:
+		log.Error("unrecognized value for PICTNumPtLabels: " + inputs.NumLabels)
+	}
+
+	return GenerateMetricsFromCfg(cfg)
+}
+
+type MetricCfg struct {
+	NumPts             int
+	PtVal              int64
+	MetricType         pdata.MetricType
+	numResourceMetrics int
+	numResourceAttrs   int
+	numIlm             int
+	numMetrics         int
+	name               string
+	desc               string
+	unit               string
+	numBuckets         int
+	numPtLabels        int
+	startTime          uint64
+	stepSize           uint64
+}
+
+func DefaultCfg() MetricCfg {
+	return MetricCfg{
+		numResourceMetrics: 1,
+		numResourceAttrs:   1,
+		numIlm:             1,
+		numMetrics:         1,
+		name:               "my-name",
+		desc:               "my-desc",
+		unit:               "my-units",
+		NumPts:             1,
+		PtVal:              1,
+		MetricType:         pdata.MetricTypeInt64,
+		numBuckets:         1,
+		numPtLabels:        1,
+		startTime:          1000000,
+		stepSize:           100000,
+	}
+}
+
+func GenerateDefaultData() data.MetricData {
+	return GenerateMetricsFromCfg(DefaultCfg())
+}
+
+func GenerateMetricsFromCfg(cfg MetricCfg) data.MetricData {
+	md := data.NewMetricData()
+	rmSlice := md.ResourceMetrics()
+	rmSlice.Resize(cfg.numResourceMetrics)
+	for i := 0; i < cfg.numResourceMetrics; i++ {
+		rm := rmSlice.At(i)
+		resource := rm.Resource()
+		resource.InitEmpty()
+		for j := 0; j < cfg.numResourceAttrs; j++ {
+			resource.Attributes().Insert(
+				fmt.Sprintf("name-%d", j),
+				pdata.NewAttributeValueString(fmt.Sprintf("val-%d", j)),
+			)
 		}
+		populateIlm(rm, cfg)
 	}
 	return md
 }
 
-func populateIntPts(metric pdata.Metric, numPts int, startTime uint64, stepSize uint64, numLabels PICTNumLabels) {
+func populateIlm(rm pdata.ResourceMetrics, cfg MetricCfg) {
+	ilmSlice := rm.InstrumentationLibraryMetrics()
+	ilmSlice.Resize(cfg.numIlm)
+	for i := 0; i < cfg.numIlm; i++ {
+		ilm := ilmSlice.At(i)
+		populateMetrics(ilm, cfg)
+	}
+}
+
+func populateMetrics(ilm pdata.InstrumentationLibraryMetrics, cfg MetricCfg) {
+	metricSlice := ilm.Metrics()
+	for i := 0; i < cfg.numMetrics; i++ {
+		metricSlice.Resize(cfg.numMetrics)
+		metric := metricSlice.At(i)
+		metric.InitEmpty()
+		populateMetricDesc(metric, cfg)
+		switch cfg.MetricType {
+		case pdata.MetricTypeInt64, pdata.MetricTypeMonotonicInt64:
+			populateIntPoints(metric, cfg)
+		case pdata.MetricTypeDouble, pdata.MetricTypeMonotonicDouble:
+			populateDblPoints(metric, cfg)
+		case pdata.MetricTypeHistogram:
+			populateHistogramPoints(metric, cfg)
+		case pdata.MetricTypeSummary:
+			populateSummaryPoints(metric, cfg)
+		}
+	}
+}
+
+func populateMetricDesc(metric pdata.Metric, cfg MetricCfg) {
+	mDesc := metric.MetricDescriptor()
+	mDesc.InitEmpty()
+	mDesc.SetName(cfg.name)
+	mDesc.SetDescription(cfg.desc)
+	mDesc.SetUnit(cfg.unit)
+	mDesc.SetType(cfg.MetricType)
+}
+
+func populateIntPoints(metric pdata.Metric, cfg MetricCfg) {
 	pts := metric.Int64DataPoints()
-	pts.Resize(numPts)
-	for i := 0; i < numPts; i++ {
+	pts.Resize(cfg.NumPts)
+	for i := 0; i < cfg.NumPts; i++ {
 		pt := pts.At(i)
-		pt.SetValue(int64(ptCounter))
-		pt.SetStartTime(pdata.TimestampUnixNano(startTime))
-		pt.SetTimestamp(getTimestamp(startTime, stepSize, i))
-		insertLabels(pt.LabelsMap(), numLabels)
-		ptCounter++
+		pt.SetStartTime(pdata.TimestampUnixNano(cfg.startTime))
+		pt.SetTimestamp(getTimestamp(cfg.startTime, cfg.stepSize, i))
+		pt.SetValue(cfg.PtVal + int64(i))
+		populatePtLabels(pt.LabelsMap(), cfg)
 	}
 }
 
-func populateDoublePts(metric pdata.Metric, numPts int, startTime uint64, stepSize uint64, numLabels PICTNumLabels) {
+func populateDblPoints(metric pdata.Metric, cfg MetricCfg) {
 	pts := metric.DoubleDataPoints()
-	pts.Resize(numPts)
-	for i := 0; i < numPts; i++ {
+	pts.Resize(cfg.NumPts)
+	for i := 0; i < cfg.NumPts; i++ {
+		v := cfg.PtVal + int64(i)
 		pt := pts.At(i)
-		pt.SetValue(float64(i))
-		pt.SetStartTime(pdata.TimestampUnixNano(startTime))
-		pt.SetTimestamp(getTimestamp(startTime, stepSize, i))
-		insertLabels(pt.LabelsMap(), numLabels)
-		ptCounter++
+		pt.SetStartTime(pdata.TimestampUnixNano(cfg.startTime))
+		pt.SetTimestamp(getTimestamp(cfg.startTime, cfg.stepSize, i))
+		pt.SetValue(float64(v))
+		populatePtLabels(pt.LabelsMap(), cfg)
 	}
 }
 
-func insertLabels(lm pdata.StringMap, pictNumLabels PICTNumLabels) {
-	numLabels := 0
-	switch pictNumLabels {
-	case LabelsNone:
-	case LabelsOne:
-		numLabels = 1
-	case LabelsMany:
-		numLabels = 16
-	default:
-		log.Error("unrecognized value for PICTNumLabels: " + pictNumLabels)
+func populateHistogramPoints(metric pdata.Metric, cfg MetricCfg) {
+	pts := metric.HistogramDataPoints()
+	pts.Resize(cfg.NumPts)
+	for i := 0; i < cfg.NumPts; i++ {
+		pt := pts.At(i)
+		pt.SetStartTime(pdata.TimestampUnixNano(cfg.startTime))
+		pt.SetTimestamp(getTimestamp(cfg.startTime, cfg.stepSize, i))
+		pt.SetCount(uint64(i)) // fixme?
+		pt.SetSum(float64(i))
+		pt.SetExplicitBounds([]float64{float64(i)})
+		populatePtLabels(pt.LabelsMap(), cfg)
+		buckets := pt.Buckets()
+		buckets.Resize(cfg.numBuckets)
+		for j := 0; j < cfg.numBuckets; j++ {
+			bucket := buckets.At(j)
+			bucket.SetCount(uint64(j))
+			ex := bucket.Exemplar()
+			ex.InitEmpty()
+			ex.SetValue(float64(cfg.PtVal))
+		}
 	}
-	for i := 0; i < numLabels; i++ {
+}
+
+func populateSummaryPoints(metric pdata.Metric, cfg MetricCfg) {
+	pts := metric.SummaryDataPoints()
+	pts.Resize(cfg.NumPts)
+	for i := 0; i < cfg.NumPts; i++ {
+		pt := pts.At(i)
+		pt.SetStartTime(pdata.TimestampUnixNano(cfg.startTime))
+		pt.SetTimestamp(getTimestamp(cfg.startTime, cfg.stepSize, i))
+		pt.SetCount(uint64(i))
+		pt.SetSum(float64(cfg.PtVal))
+		populatePtLabels(pt.LabelsMap(), cfg)
+	}
+}
+
+func populatePtLabels(lm pdata.StringMap, m MetricCfg) {
+	for i := 0; i < m.numPtLabels; i++ {
 		k := fmt.Sprintf("label-key-%d", i)
 		v := fmt.Sprintf("label-value-%d", i)
 		lm.Insert(k, v)

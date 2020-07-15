@@ -19,7 +19,7 @@ type PICTMetricType string
 type PICTMetricInputs struct {
 	NumPtsPerMetric PICTNumPtsPerMetric
 	MetricType      PICTMetricType
-	NumLabels       PICTNumLabels
+	NumLabels       PICTNumPtLabels
 	NumAttrs        PICTNumResrouceAttrs
 }
 
@@ -32,12 +32,12 @@ const (
 	MetricTypeSummary         PICTMetricType = "Summary"
 )
 
-type PICTNumLabels string
+type PICTNumPtLabels string
 
 const (
-	LabelsNone PICTNumLabels = "NoLabels"
-	LabelsOne  PICTNumLabels = "OneLabel"
-	LabelsMany PICTNumLabels = "ManyLabels"
+	LabelsNone PICTNumPtLabels = "NoLabels"
+	LabelsOne  PICTNumPtLabels = "OneLabel"
+	LabelsMany PICTNumPtLabels = "ManyLabels"
 )
 
 type PICTNumPtsPerMetric string
