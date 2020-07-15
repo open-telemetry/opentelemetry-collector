@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
-	goproto "github.com/golang/protobuf/proto"
+	goproto "github.com/golang/protobuf/proto" //nolint:staticcheck
 	otlptrace_goproto "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 
