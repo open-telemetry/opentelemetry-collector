@@ -144,7 +144,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err:  "Invalid BalancerName: test",
+			err:  "invalid balancer_name: test",
 			settings: GRPCClientSettings{
 				Headers: map[string]string{
 					"test": "test",
