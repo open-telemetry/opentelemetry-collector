@@ -29,6 +29,8 @@ The following settings can be optionally configured:
 - `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.
 See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).
 
+Example:
+
 ```yaml
 exporters:
   otlp:
