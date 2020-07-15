@@ -184,7 +184,7 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, grpc.WithBalancerName(gcs.BalancerName))
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 	return opts, nil
 }
