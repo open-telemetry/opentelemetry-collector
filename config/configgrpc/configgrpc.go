@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
@@ -42,6 +43,10 @@ var (
 		CompressionGzip: gzip.Name,
 	}
 )
+
+// Allowed balancer names to be set in grpclb_policy to discover the servers
+var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
+
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -180,23 +185,22 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	}
 	
 	if gcs.BalancerName != "" {
-		err = validateBalancerName(gcs.BalancerName)
-		if err != nil {
-			return nil, err
+		valid := validateBalancerName(gcs.BalancerName)
+		if !valid {
+			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
 		}
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 	return opts, nil
 }
 
-func validateBalancerName(balancerName string) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-		   err = fmt.Errorf("invalid balancer_name: %s", balancerName)
-		}
-	}()
-	grpc.WithBalancerName(balancerName)
-	return
+func validateBalancerName(balancerName string) (bool) {
+    for _, item := range allowedBalancerNames {
+        if item == balancerName {
+            return true
+        }
+    }
+    return false
 }
 
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
