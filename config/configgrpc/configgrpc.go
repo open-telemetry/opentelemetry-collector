@@ -35,6 +35,8 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+
+	PerRPCAuthTypeBearer = "bearer"
 )
 
 var (
@@ -89,6 +91,9 @@ type GRPCClientSettings struct {
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
 
+	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
+	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
+
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
@@ -97,6 +102,15 @@ type GRPCClientSettings struct {
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+}
+
+// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained.
+type PerRPCAuthConfig struct {
+	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
+	AuthType string `mapstructure:"type,omitempty"`
+
+	// BearerToken specifies the bearer token to use for every RPC.
+	BearerToken string `mapstructure:"bearer_token,omitempty"`
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -183,6 +197,16 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		opts = append(opts, keepAliveOption)
 	}
 
+	if gcs.PerRPCAuth != nil {
+		if strings.EqualFold(gcs.PerRPCAuth.AuthType, PerRPCAuthTypeBearer) {
+			sToken := gcs.PerRPCAuth.BearerToken
+			token := BearerToken(sToken)
+			opts = append(opts, grpc.WithPerRPCCredentials(token))
+		} else {
+			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)
+		}
+	}
+
 	if gcs.BalancerName != "" {
 		valid := validateBalancerName(gcs.BalancerName)
 		if !valid {
@@ -190,6 +214,7 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		}
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
+
 	return opts, nil
 }
 

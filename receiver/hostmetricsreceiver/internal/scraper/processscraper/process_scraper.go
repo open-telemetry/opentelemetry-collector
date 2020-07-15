@@ -35,12 +35,14 @@ type scraper struct {
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
+	// for mocking
+	bootTime          func() (uint64, error)
 	getProcessHandles func() (processHandles, error)
 }
 
 // newProcessScraper creates a Process Scraper
 func newProcessScraper(cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, getProcessHandles: getProcessHandlesInternal}
+	scraper := &scraper{config: cfg, bootTime: host.BootTime, getProcessHandles: getProcessHandlesInternal}
 
 	var err error
 
@@ -63,12 +65,12 @@ func newProcessScraper(cfg *Config) (*scraper, error) {
 
 // Initialize
 func (s *scraper) Initialize(_ context.Context) error {
-	bootTime, err := host.BootTime()
+	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
 	return nil
 }
 

@@ -29,23 +29,24 @@ type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
 
-	// for mocking gopsutil cpu.Times
-	times func(bool) ([]cpu.TimesStat, error)
+	// for mocking
+	bootTime func() (uint64, error)
+	times    func(bool) ([]cpu.TimesStat, error)
 }
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, times: cpu.Times}
+	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times}
 }
 
 // Initialize
 func (s *scraper) Initialize(_ context.Context) error {
-	bootTime, err := host.BootTime()
+	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
 	return nil
 }
 

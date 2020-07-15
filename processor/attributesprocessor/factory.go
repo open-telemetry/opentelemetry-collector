@@ -36,7 +36,7 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraceProcessor(createTraceProcessor))
+		processorhelper.WithTraces(createTraceProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.

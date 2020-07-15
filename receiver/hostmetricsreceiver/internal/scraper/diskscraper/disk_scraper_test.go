@@ -30,9 +30,12 @@ import (
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name           string
-		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
-		expectedErr    string
+		name              string
+		bootTimeFunc      func() (uint64, error)
+		ioCountersFunc    func(names ...string) (map[string]disk.IOCountersStat, error)
+		expectedStartTime pdata.TimestampUnixNano
+		initializationErr string
+		expectedErr       string
 	}
 
 	testCases := []testCase{
@@ -40,20 +43,37 @@ func TestScrapeMetrics(t *testing.T) {
 			name: "Standard",
 		},
 		{
+			name:              "Validate Start Time",
+			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			expectedStartTime: 100 * 1e9,
+		},
+		{
+			name:              "Boot Time Error",
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
+		},
+		{
 			name:           "Error",
-			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err2") },
+			expectedErr:    "err2",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newDiskScraper(context.Background(), &Config{})
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
 			if test.ioCountersFunc != nil {
 				scraper.ioCounters = test.ioCountersFunc
 			}
 
 			err := scraper.Initialize(context.Background())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
@@ -66,19 +86,22 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.GreaterOrEqual(t, metrics.Len(), 3)
 
-			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor)
-			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor)
-			assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor)
+			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor, test.expectedStartTime)
+			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor, test.expectedStartTime)
+			assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, test.expectedStartTime)
 
 			if runtime.GOOS == "Linux" {
-				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor)
+				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor, test.expectedStartTime)
 			}
 		})
 	}
 }
 
-func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor) {
+func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
+	}
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)

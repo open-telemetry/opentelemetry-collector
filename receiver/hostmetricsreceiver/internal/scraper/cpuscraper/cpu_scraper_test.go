@@ -30,9 +30,12 @@ import (
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name        string
-		timesFunc   func(bool) ([]cpu.TimesStat, error)
-		expectedErr string
+		name              string
+		bootTimeFunc      func() (uint64, error)
+		timesFunc         func(bool) ([]cpu.TimesStat, error)
+		expectedStartTime pdata.TimestampUnixNano
+		initializationErr string
+		expectedErr       string
 	}
 
 	testCases := []testCase{
@@ -40,20 +43,37 @@ func TestScrapeMetrics(t *testing.T) {
 			name: "Standard",
 		},
 		{
-			name:        "Error",
-			timesFunc:   func(bool) ([]cpu.TimesStat, error) { return nil, errors.New("err1") },
-			expectedErr: "err1",
+			name:              "Validate Start Time",
+			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			expectedStartTime: 100 * 1e9,
+		},
+		{
+			name:              "Boot Time Error",
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
+		},
+		{
+			name:        "Times Error",
+			timesFunc:   func(bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
+			expectedErr: "err2",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newCPUScraper(context.Background(), &Config{})
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
 			if test.timesFunc != nil {
 				scraper.times = test.timesFunc
 			}
 
 			err := scraper.Initialize(context.Background())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
@@ -66,7 +86,7 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertCPUMetricValid(t, metrics.At(0), cpuTimeDescriptor)
+			assertCPUMetricValid(t, metrics.At(0), cpuTimeDescriptor, test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
@@ -75,8 +95,11 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertDoubleMetricStartTimeEquals(t, metric, startTime)
+	}
 	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 4*runtime.NumCPU())
 	internal.AssertDoubleMetricLabelExists(t, metric, 0, cpuLabelName)
 	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, stateLabelName, userStateLabelValue)
