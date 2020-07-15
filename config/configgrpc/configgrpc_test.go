@@ -59,7 +59,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
-		BalancerName:	 "round_robin",
+		BalancerName:    "round_robin",
 	}
 	opts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
@@ -144,7 +144,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
-			err:  "invalid balancer_name: test",
+			err: "invalid balancer_name: test",
 			settings: GRPCClientSettings{
 				Headers: map[string]string{
 					"test": "test",
@@ -162,7 +162,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				ReadBufferSize:  1024,
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
-				BalancerName:	 "test",
+				BalancerName:    "test",
 			},
 		},
 	}
