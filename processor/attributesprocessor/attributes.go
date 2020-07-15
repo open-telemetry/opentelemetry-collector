@@ -17,9 +17,6 @@ package attributesprocessor
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
@@ -27,29 +24,24 @@ import (
 )
 
 type attributesProcessor struct {
-	nextConsumer consumer.TraceConsumer
-	attrProc     *attraction.AttrProc
-	include      filterspan.Matcher
-	exclude      filterspan.Matcher
+	attrProc *attraction.AttrProc
+	include  filterspan.Matcher
+	exclude  filterspan.Matcher
 }
 
 // newTraceProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newTraceProcessor(nextConsumer consumer.TraceConsumer, attrProc *attraction.AttrProc, include, exclude filterspan.Matcher) (component.TraceProcessor, error) {
-	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+func newAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filterspan.Matcher) *attributesProcessor {
+	return &attributesProcessor{
+		attrProc: attrProc,
+		include:  include,
+		exclude:  exclude,
 	}
-	ap := &attributesProcessor{
-		nextConsumer: nextConsumer,
-		attrProc:     attrProc,
-		include:      include,
-		exclude:      exclude,
-	}
-	return ap, nil
 }
 
-func (a *attributesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ProcessTraces implements the TProcessor
+func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -79,21 +71,7 @@ func (a *attributesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces
 			}
 		}
 	}
-	return a.nextConsumer.ConsumeTraces(ctx, td)
-}
-
-func (a *attributesProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (a *attributesProcessor) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (a *attributesProcessor) Shutdown(context.Context) error {
-	return nil
+	return td, nil
 }
 
 // skipSpan determines if a span should be processed.

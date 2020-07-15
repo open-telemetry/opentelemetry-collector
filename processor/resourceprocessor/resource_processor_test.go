@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -103,10 +104,10 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test trace consumer
 			ttn := &testTraceConsumer{}
-			attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: tt.config.AttributesActions})
-			require.NoError(t, err)
 
-			rtp := newResourceTraceProcessor(ttn, attrProc)
+			factory := NewFactory()
+			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, ttn, tt.config)
+			require.NoError(t, err)
 			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceTraceData := generateTraceData(tt.sourceAttributes)
@@ -117,7 +118,8 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := &testMetricsConsumer{}
-			rmp := newResourceMetricProcessor(tmn, attrProc)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tmn, tt.config)
+			require.NoError(t, err)
 			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceMetricData := generateMetricData(tt.sourceAttributes)

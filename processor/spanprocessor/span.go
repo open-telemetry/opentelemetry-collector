@@ -21,23 +21,17 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/processor"
 )
 
 type spanProcessor struct {
-	nextConsumer     consumer.TraceConsumer
 	config           Config
 	toAttributeRules []toAttributeRule
 	include          filterspan.Matcher
 	exclude          filterspan.Matcher
 }
-
-var _ component.TraceProcessor = (*spanProcessor)(nil)
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
 type toAttributeRule struct {
@@ -49,11 +43,7 @@ type toAttributeRule struct {
 }
 
 // newSpanProcessor returns the span processor.
-func newSpanProcessor(nextConsumer consumer.TraceConsumer, config Config) (*spanProcessor, error) {
-	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
-	}
-
+func newSpanProcessor(config Config) (*spanProcessor, error) {
 	include, err := filterspan.NewMatcher(config.Include)
 	if err != nil {
 		return nil, err
@@ -64,10 +54,9 @@ func newSpanProcessor(nextConsumer consumer.TraceConsumer, config Config) (*span
 	}
 
 	sp := &spanProcessor{
-		nextConsumer: nextConsumer,
-		config:       config,
-		include:      include,
-		exclude:      exclude,
+		config:  config,
+		include: include,
+		exclude: exclude,
 	}
 
 	// Compile ToAttributes regexp and extract attributes names.
@@ -91,7 +80,7 @@ func newSpanProcessor(nextConsumer consumer.TraceConsumer, config Config) (*span
 	return sp, nil
 }
 
-func (sp *spanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (sp *spanProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -120,21 +109,7 @@ func (sp *spanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) err
 			}
 		}
 	}
-	return sp.nextConsumer.ConsumeTraces(ctx, td)
-}
-
-func (sp *spanProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (sp *spanProcessor) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (sp *spanProcessor) Shutdown(context.Context) error {
-	return nil
+	return td, nil
 }
 
 func (sp *spanProcessor) processFromAttributes(span pdata.Span) {

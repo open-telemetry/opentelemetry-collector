@@ -29,6 +29,8 @@ const (
 	typeStr = "span"
 )
 
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
@@ -67,5 +69,13 @@ func createTraceProcessor(
 		return nil, errMissingRequiredField
 	}
 
-	return newSpanProcessor(nextConsumer, *oCfg)
+	sp, err := newSpanProcessor(*oCfg)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextConsumer,
+		sp,
+		processorhelper.WithCapabilities(processorCapabilities))
 }

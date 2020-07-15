@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestType(t *testing.T) {
@@ -81,7 +82,7 @@ func TestCreateProcessors(t *testing.T) {
 				tp, tErr := factory.CreateTraceProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					nil,
+					exportertest.NewNopTraceExporter(),
 					cfg)
 				// Not implemented error
 				assert.NotNil(t, tErr)
@@ -90,9 +91,9 @@ func TestCreateProcessors(t *testing.T) {
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					nil,
+					exportertest.NewNopMetricsExporter(),
 					cfg)
-				assert.Equal(t, test.succeed, mp != (*filterMetricProcessor)(nil))
+				assert.Equal(t, test.succeed, mp != nil)
 				assert.Equal(t, test.succeed, mErr == nil)
 			})
 		}

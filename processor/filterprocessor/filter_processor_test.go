@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -199,7 +200,8 @@ func TestFilterMetricProcessor(t *testing.T) {
 					Exclude: test.exc,
 				},
 			}
-			fmp, err := newFilterMetricProcessor(next, cfg)
+			factory := NewFactory()
+			fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, next, cfg)
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
@@ -282,7 +284,8 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 				Exclude: test.exc,
 			},
 		}
-		fmp, err := newFilterMetricProcessor(next, cfg)
+		factory := NewFactory()
+		fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, next, cfg)
 		assert.NotNil(b, fmp)
 		assert.Nil(b, err)
 

@@ -31,6 +31,8 @@ const (
 	typeStr = "attributes"
 )
 
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
@@ -71,5 +73,10 @@ func createTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newTraceProcessor(nextConsumer, attrProc, include, exclude)
+
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextConsumer,
+		newAttributesProcessor(attrProc, include, exclude),
+		processorhelper.WithCapabilities(processorCapabilities))
 }

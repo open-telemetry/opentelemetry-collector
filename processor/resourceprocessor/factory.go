@@ -33,6 +33,8 @@ const (
 	typeStr = "resource"
 )
 
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+
 // NewFactory returns a new factory for the Resource processor.
 func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
@@ -61,7 +63,11 @@ func createTraceProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newResourceTraceProcessor(nextConsumer, attrProc), nil
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextConsumer,
+		&resourceProcessor{attrProc: attrProc},
+		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createMetricsProcessor(
@@ -73,7 +79,11 @@ func createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newResourceMetricProcessor(nextConsumer, attrProc), nil
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		&resourceProcessor{attrProc: attrProc},
+		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createAttrProcessor(cfg *Config, logger *zap.Logger) (*attraction.AttrProc, error) {

@@ -28,6 +28,8 @@ const (
 	typeStr = "filter"
 )
 
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: false}
+
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
@@ -51,6 +53,13 @@ func createMetricsProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	oCfg := cfg.(*Config)
-	return newFilterMetricProcessor(nextConsumer, oCfg)
+	fp, err := newFilterMetricProcessor(cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		fp,
+		processorhelper.WithCapabilities(processorCapabilities))
 }
