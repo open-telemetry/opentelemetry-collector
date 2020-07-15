@@ -53,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["jaeger/2"]
 	assert.Equal(t, "jaeger/2", e1.(*Config).Name())
 	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
+	assert.Equal(t, "round_robin", e1.(*Config).GRPCClientSettings.BalancerName)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	te, err := factory.CreateTraceExporter(context.Background(), params, e1)
 	require.NoError(t, err)
