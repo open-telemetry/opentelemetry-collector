@@ -25,6 +25,7 @@
 - Ensure tcp connection value is provided for all states, even when count is 0 (#1329)
 - Set `batch` processor channel size to num cpus (#1330)
 - Add `send_batch_max_size` config parameter to `batch` processor enforcing hard limit on batch size (#1310)
+- Add support for including a per-RPC authentication to gRPC settings (#1250)
 
 ## 🧰 Bug fixes 🧰
 
