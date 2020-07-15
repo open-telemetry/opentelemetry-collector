@@ -194,14 +194,6 @@ func initializeCPUTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixN
 	appendCPUTimeStateDataPoints(ddps, startTime, times)
 }
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.TimestampUnixNano, value float64, stateLabel string) {
-	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(stateLabelName, stateLabel)
-	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-	dataPoint.SetValue(value)
-}
-
 func scrapeAndAppendMemoryUsageMetric(metrics pdata.MetricSlice, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
