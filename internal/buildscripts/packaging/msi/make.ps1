@@ -39,7 +39,7 @@ function New-MSI(
 ) {
     candle -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-collector.wxs
     light opentelemetry-collector.wixobj
-    Move-Item -Force opentelemetry-collector.msi bin/opentelemetry-collector.msi
+    Move-Item -Force opentelemetry-collector.msi dist/opentelemetry-collector.msi
 }
 
 function Confirm-MSI {
@@ -47,7 +47,7 @@ function Confirm-MSI {
     $env:Path += ";C:\Windows\System32"
 
     # install msi, validate service is installed & running
-    Start-Process -Wait msiexec "/i `"$pwd\bin\opentelemetry-collector.msi`" /qn"
+    Start-Process -Wait msiexec "/i `"$pwd\dist\opentelemetry-collector.msi`" /qn"
     sc.exe query state=all | findstr "otelcol" | Out-Null
     if ($LASTEXITCODE -ne 0) { Throw "otelcol service failed to install" }
 
@@ -58,7 +58,7 @@ function Confirm-MSI {
     Start-Service otelcol
 
     # uninstall msi, validate service is uninstalled
-    Start-Process -Wait msiexec "/x `"$pwd\bin\opentelemetry-collector.msi`" /qn"
+    Start-Process -Wait msiexec "/x `"$pwd\dist\opentelemetry-collector.msi`" /qn"
     sc.exe query state=all | findstr "otelcol" | Out-Null
     if ($LASTEXITCODE -ne 1) { Throw "otelcol service failed to uninstall" }
 }

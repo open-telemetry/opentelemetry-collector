@@ -9,6 +9,33 @@ executors:
       - image: cimg/go:1.14
 
 commands:
+  verify_dist_files_exist:
+    parameters:
+      files:
+        type: string
+        default: |
+            bin/otelcol_darwin_amd64
+            bin/otelcol_linux_arm64
+            bin/otelcol_linux_amd64
+            bin/otelcol_windows_amd64.exe
+            dist/otel-collector-*arm64.rpm
+            dist/otel-collector_*amd64.deb
+            dist/otel-collector-*x86_64.rpm
+            dist/otel-collector_*arm64.deb
+            dist/opentelemetry-collector.msi
+    steps:
+      - run:
+          name: Check if files exist
+          command: |
+            files="<< parameters.files >>"
+            for f in $files; do
+              if [[ ! -f $f ]]
+              then
+                  echo "$f does not exist."
+                  exit 1 
+              fi
+            done
+
   attach_to_workspace:
     steps:
       - attach_workspace:
@@ -118,6 +145,17 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - publish-check:
+          requires:
+            - cross-compile
+            - loadtest
+            - test
+            - gosec
+            - coverage
+            - windows-test
+            - windows-msi
+            - deb-package
+            - rpm-package
       - publish-stable:
           requires:
             - cross-compile
@@ -268,27 +306,50 @@ jobs:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
 
-  publish-stable:
+  publish-check:
     docker:
       - image: cimg/go:1.14
     steps:
       - attach_to_workspace
       - setup_remote_docker
+      - verify_dist_files_exist
+      - run:
+          name: Check passed
+          command: echo "publish check passed meaning release CI jobs should work as expected"
+          when: on_success
+      - run:
+          name: Check failed
+          command: echo "publish check failed. This means release CI jobs will likely fail as well"
+          when: on_fail
+
+  publish-stable:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - verify_dist_files_exist
+      - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector
           tag: ${CIRCLE_TAG:1}
       - run:
+          name: Prepare release artifacts
+          command: |
+            cp bin/* dist/
+            mv dist/opentelemetry-collector.msi dist/otel-collector.msi
+      - run:
           name: Calculate checksums
-          command: cd bin && shasum -a 256 * > checksums.txt
+          command: cd dist && shasum -a 256 * > checksums.txt
       - run:
           name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
 
   publish-dev:
     docker:
       - image: cimg/go:1.14
     steps:
       - attach_to_workspace
+      - verify_dist_files_exist
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-dev
@@ -335,6 +396,8 @@ jobs:
     steps:
       - attach_to_workspace
       - run:
+          command: mkdir -p dist
+      - run:
           name: Install Wix Toolset
           command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
       - run:
@@ -347,7 +410,7 @@ jobs:
           command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - persist_to_workspace:
           root: ~/
-          paths: project/bin/*.msi
+          paths: project/dist/*.msi
 
   build-package:
     machine:
@@ -367,18 +430,18 @@ jobs:
             gem install --no-document fpm -v 1.11.0
       - run:
           name: Build << parameters.package_type >> amd64 package
-          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./bin/"
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./dist/"
       - run:
           name: Build << parameters.package_type >> arm64 package
-          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./bin/"
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./dist/"
       - run:
           name: Test << parameters.package_type >> package
           command: |
             if [[ "<< parameters.package_type >>" = "deb" ]]; then
-                ./internal/buildscripts/packaging/fpm/test.sh bin/otel-collector*amd64.deb
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*amd64.deb
             else
-                ./internal/buildscripts/packaging/fpm/test.sh bin/otel-collector*x86_64.rpm
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*x86_64.rpm
             fi
       - persist_to_workspace:
           root: ~/
-          paths: project/bin/*.<< parameters.package_type >>
+          paths: project/dist

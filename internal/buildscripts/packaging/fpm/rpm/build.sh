@@ -6,9 +6,11 @@ SCRIPT_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
 REPO_DIR="$( cd "$SCRIPT_DIR/../../../../../" && pwd )"
 VERSION="${1:-}"
 ARCH="${2:-"amd64"}"
-OUTPUT_DIR="${3:-"$REPO_DIR/bin/"}"
+OUTPUT_DIR="${3:-"$REPO_DIR/dist/"}"
 OTELCOL_PATH="$REPO_DIR/bin/otelcol_linux_$ARCH"
 CONFIG_PATH="$REPO_DIR/examples/otel-local-config.yaml"
+
+mkdir -p $OUTPUT_DIR
 
 . $SCRIPT_DIR/../common.sh
 

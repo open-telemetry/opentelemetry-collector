@@ -3,7 +3,7 @@
 Build the otel-collector deb package with [fpm](https://github.com/jordansissel/fpm).
 
 To build the deb package, run `make deb-package` from the repo root directory. The deb package will be written to
-`bin/otel-collector_<version>_<arch>.deb`.
+`dist/otel-collector_<version>_<arch>.deb`.
 
 By default, `<arch>` is `amd64` and `<version>` is the latest git tag with `-post` appended, e.g. `1.2.3-post`.
 To override these defaults, set the `ARCH` and `VERSION` environment variables, e.g.
