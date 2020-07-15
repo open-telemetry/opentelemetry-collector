@@ -73,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthType:    "bearer",
 					BearerToken: "some-token",
 				},
+				BalancerName: "round_robin",
 			},
 		})
 }

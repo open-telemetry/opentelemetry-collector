@@ -18,6 +18,8 @@ connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#W
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 - `server_name_override`: If set to a non empty string, it will override the virtual host name 
 of authority (e.g. :authority header field) in requests (typically used for testing).
+- `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.
+See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).
 
 Example:
 

@@ -21,6 +21,7 @@ exporters:
       time: 20s
       timeout: 30s
       permit_without_stream: true
+    balancer_name: "round_robin"
 
 service:
   pipelines:

@@ -60,10 +60,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
 		PerRPCAuth:      nil,
+		BalancerName:    "round_robin",
 	}
 	opts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
-	assert.Len(t, opts, 5)
+	assert.Len(t, opts, 6)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
@@ -143,10 +144,34 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Keepalive: nil,
 			},
 		},
+		{
+			err: "invalid balancer_name: test",
+			settings: GRPCClientSettings{
+				Headers: map[string]string{
+					"test": "test",
+				},
+				Endpoint:    "localhost:1234",
+				Compression: "gzip",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				Keepalive: &KeepaliveClientConfig{
+					Time:                time.Second,
+					Timeout:             time.Second,
+					PermitWithoutStream: true,
+				},
+				ReadBufferSize:  1024,
+				WriteBufferSize: 1024,
+				WaitForReady:    true,
+				BalancerName:    "test",
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToDialOptions()
+			opts, err := test.settings.ToDialOptions()
+			assert.Nil(t, opts)
+			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
 		})
 	}
