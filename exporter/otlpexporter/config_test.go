@@ -69,6 +69,10 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:             30 * time.Second,
 				},
 				WriteBufferSize: 512 * 1024,
+				PerRPCAuth: &configgrpc.PerRPCAuthConfig{
+					AuthType:    "bearer",
+					BearerToken: "some-token",
+				},
 			},
 		})
 }

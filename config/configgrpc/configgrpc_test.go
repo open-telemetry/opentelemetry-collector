@@ -59,6 +59,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		WaitForReady:    true,
+		PerRPCAuth:      nil,
 	}
 	opts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
@@ -158,6 +159,7 @@ func TestUseSecure(t *testing.T) {
 		Compression: "",
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
+		PerRPCAuth:  nil,
 	}
 	dialOpts, err := gcs.ToDialOptions()
 	assert.NoError(t, err)
@@ -442,4 +444,34 @@ type grpcTraceServer struct{}
 
 func (gts *grpcTraceServer) Export(context.Context, *otelcol.ExportTraceServiceRequest) (*otelcol.ExportTraceServiceResponse, error) {
 	return &otelcol.ExportTraceServiceResponse{}, nil
+}
+
+func TestWithPerRPCAuthBearerToken(t *testing.T) {
+	// prepare
+	// test
+	gcs := &GRPCClientSettings{
+		PerRPCAuth: &PerRPCAuthConfig{
+			AuthType:    "bearer",
+			BearerToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+		},
+	}
+	dialOpts, err := gcs.ToDialOptions()
+
+	// verify
+	assert.NoError(t, err)
+	assert.Len(t, dialOpts, 2) // WithInsecure and WithPerRPCCredentials
+}
+
+func TestWithPerRPCAuthInvalidAuthType(t *testing.T) {
+	// test
+	gcs := &GRPCClientSettings{
+		PerRPCAuth: &PerRPCAuthConfig{
+			AuthType: "non-existing",
+		},
+	}
+	dialOpts, err := gcs.ToDialOptions()
+
+	// verify
+	assert.Error(t, err)
+	assert.Nil(t, dialOpts)
 }
