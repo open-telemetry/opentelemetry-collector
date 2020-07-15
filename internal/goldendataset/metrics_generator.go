@@ -17,8 +17,6 @@ package goldendataset
 import (
 	"fmt"
 
-	"github.com/prometheus/common/log"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 )
@@ -60,8 +58,6 @@ func GenerateMetricData(inputs PICTMetricInputs) data.MetricData {
 		cfg.NumPts = 1
 	case NumPtsPerMetricMany:
 		cfg.NumPts = 1024
-	default:
-		log.Error("invalid value for inputs.NumPtsPerMetric: " + inputs.NumPtsPerMetric)
 	}
 
 	switch inputs.MetricType {
@@ -86,8 +82,6 @@ func GenerateMetricData(inputs PICTMetricInputs) data.MetricData {
 		cfg.numPtLabels = 1
 	case LabelsMany:
 		cfg.numPtLabels = 16
-	default:
-		log.Error("unrecognized value for PICTNumPtLabels: " + inputs.NumLabels)
 	}
 
 	return GenerateMetricsFromCfg(cfg)
