@@ -53,6 +53,7 @@ require (
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
 	golang.org/x/text v0.3.3
 	golang.org/x/tools v0.0.0-20200707222132-065b96d36cf8 // indirect
+	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.3.0
