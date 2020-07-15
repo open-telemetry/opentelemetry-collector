@@ -17,13 +17,7 @@ package exporterhelper
 import (
 	"context"
 
-	"go.opencensus.io/trace"
-
 	"go.opentelemetry.io/collector/component"
-)
-
-var (
-	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
 // Start specifies the function invoked when the exporter is being started.

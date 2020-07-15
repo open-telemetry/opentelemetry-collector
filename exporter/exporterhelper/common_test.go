@@ -19,16 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
-
-func TestErrorToStatus(t *testing.T) {
-	require.Equal(t, okStatus, errToStatus(nil))
-	require.Equal(t, trace.Status{Code: trace.StatusCodeUnknown, Message: "my_error"}, errToStatus(errors.New("my_error")))
-}
 
 func TestBaseExporter(t *testing.T) {
 	be := newBaseExporter("test")
@@ -43,11 +37,4 @@ func TestBaseExporterWithOptions(t *testing.T) {
 		WithShutdown(func(ctx context.Context) error { return errors.New("my error") }))
 	require.Error(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Error(t, be.Shutdown(context.Background()))
-}
-
-func errToStatus(err error) trace.Status {
-	if err != nil {
-		return trace.Status{Code: trace.StatusCodeUnknown, Message: err.Error()}
-	}
-	return okStatus
 }
