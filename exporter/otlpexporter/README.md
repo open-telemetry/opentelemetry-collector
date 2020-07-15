@@ -26,9 +26,8 @@ The following settings can be optionally configured:
 - `insecure`: whether to enable client transport security for the exporter's
   gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-- `useRoundRobin`(default = false): Sets the balancer as RoundRobin in grpclb_policy to discover the servers.
+- `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.
 See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).
-Example:
 
 ```yaml
 exporters:
