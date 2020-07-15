@@ -247,8 +247,7 @@ func diffExemplar(
 	expected pdata.HistogramBucketExemplar,
 	actual pdata.HistogramBucketExemplar,
 ) []*MetricDiff {
-	diffs = diff(diffs, expected.Value(), actual.Value(), "HistogramBucketExemplar Value")
-	return diffs
+	return diff(diffs, expected.Value(), actual.Value(), "HistogramBucketExemplar Value")
 }
 
 func diffInt64Pts(

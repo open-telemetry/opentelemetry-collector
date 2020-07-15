@@ -18,12 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	config2 "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -181,64 +175,6 @@ func (jr *JaegerDataReceiver) GenConfigYAMLStr() string {
 
 func (jr *JaegerDataReceiver) ProtocolName() string {
 	return "jaeger"
-}
-
-// Prometheus
-type PrometheusDataReceiver struct {
-	DataReceiverBase
-	receiver component.MetricsReceiver
-}
-
-var _ DataReceiver = (*PrometheusDataReceiver)(nil)
-
-func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
-	return &PrometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
-}
-
-func (p *PrometheusDataReceiver) Start(_ *MockTraceConsumer, mc *MockMetricConsumer) error {
-	factory := prometheusreceiver.Factory{}
-	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	addr := fmt.Sprintf("0.0.0.0:%d", p.Port)
-	println("Prometheus Receiver: addr: " + addr)
-	cfg.PrometheusConfig = &config.Config{
-		ScrapeConfigs: []*config.ScrapeConfig{{
-			JobName:        "testbed-job",
-			ScrapeInterval: model.Duration(100 * time.Millisecond),
-			ScrapeTimeout:  model.Duration(time.Second),
-			ServiceDiscoveryConfig: config2.ServiceDiscoveryConfig{
-				StaticConfigs: []*targetgroup.Group{{
-					Targets: []model.LabelSet{{
-						"__address__":      model.LabelValue(addr),
-						"__scheme__":       "http",
-						"__metrics_path__": "/metrics",
-					}},
-				}},
-			},
-		}},
-	}
-	var err error
-	p.receiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, mc)
-	if err != nil {
-		return err
-	}
-	return p.receiver.Start(context.Background(), p)
-}
-
-func (p *PrometheusDataReceiver) Stop() error {
-	return p.receiver.Shutdown(context.Background())
-}
-
-// Generate exporter yaml
-func (p *PrometheusDataReceiver) GenConfigYAMLStr() string {
-	format := `
-  prometheus:
-    endpoint: "localhost:%d"
-`
-	return fmt.Sprintf(format, p.Port)
-}
-
-func (p *PrometheusDataReceiver) ProtocolName() string {
-	return "prometheus"
 }
 
 // OTLPDataReceiver implements OTLP format receiver.
