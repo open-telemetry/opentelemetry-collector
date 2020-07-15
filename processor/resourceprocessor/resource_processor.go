@@ -17,27 +17,17 @@ package resourceprocessor
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
-type resourceTraceProcessor struct {
+type resourceProcessor struct {
 	attrProc *attraction.AttrProc
-	next     consumer.TraceConsumer
 }
 
-func newResourceTraceProcessor(next consumer.TraceConsumer, attrProc *attraction.AttrProc) *resourceTraceProcessor {
-	return &resourceTraceProcessor{
-		attrProc: attrProc,
-		next:     next,
-	}
-}
-
-// ConsumeTraceData implements the TraceProcessor interface
-func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ProcessTraces implements the TProcessor interface
+func (rp *resourceProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		resource := rss.At(i).Resource()
@@ -45,55 +35,13 @@ func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.T
 			resource.InitEmpty()
 		}
 		attrs := resource.Attributes()
-		rtp.attrProc.Process(attrs)
+		rp.attrProc.Process(attrs)
 	}
-	return rtp.next.ConsumeTraces(ctx, td)
+	return td, nil
 }
 
-// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
-func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (*resourceTraceProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (*resourceTraceProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-type resourceMetricProcessor struct {
-	attrProc *attraction.AttrProc
-	next     consumer.MetricsConsumer
-}
-
-func newResourceMetricProcessor(next consumer.MetricsConsumer, attrProc *attraction.AttrProc) *resourceMetricProcessor {
-	return &resourceMetricProcessor{
-		attrProc: attrProc,
-		next:     next,
-	}
-}
-
-// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
-func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (*resourceMetricProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (*resourceMetricProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-// ConsumeMetricsData implements the MetricsProcessor interface
-func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+// ProcessMetrics implements the MProcessor interface
+func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	imd := pdatautil.MetricsToInternalMetrics(md)
 	rms := imd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -104,7 +52,7 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata
 		if resource.Attributes().Len() == 0 {
 			resource.Attributes().InitEmptyWithCapacity(1)
 		}
-		rmp.attrProc.Process(resource.Attributes())
+		rp.attrProc.Process(resource.Attributes())
 	}
-	return rmp.next.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(imd))
+	return md, nil
 }

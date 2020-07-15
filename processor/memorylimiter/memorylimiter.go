@@ -24,8 +24,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
@@ -40,8 +38,6 @@ var (
 
 	// Construction errors
 
-	errNilNextConsumer = errors.New("nil nextConsumer")
-
 	errCheckIntervalOutOfRange = errors.New(
 		"checkInterval must be greater than zero")
 
@@ -53,10 +49,6 @@ var (
 )
 
 type memoryLimiter struct {
-	traceConsumer   consumer.TraceConsumer
-	metricsConsumer consumer.MetricsConsumer
-	logConsumer     consumer.LogConsumer
-
 	memAllocLimit uint64
 	memSpikeLimit uint64
 	memCheckWait  time.Duration
@@ -78,20 +70,12 @@ type memoryLimiter struct {
 }
 
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiter(
-	logger *zap.Logger,
-	traceConsumer consumer.TraceConsumer,
-	metricsConsumer consumer.MetricsConsumer,
-	logConsumer consumer.LogConsumer,
-	cfg *Config) (TripleTypeProcessor, error) {
+func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	const mibBytes = 1024 * 1024
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
 	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
 	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
 
-	if traceConsumer == nil && metricsConsumer == nil && logConsumer == nil {
-		return nil, errNilNextConsumer
-	}
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
@@ -103,17 +87,14 @@ func newMemoryLimiter(
 	}
 
 	ml := &memoryLimiter{
-		traceConsumer:   traceConsumer,
-		metricsConsumer: metricsConsumer,
-		logConsumer:     logConsumer,
-		memAllocLimit:   memAllocLimit,
-		memSpikeLimit:   memSpikeLimit,
-		memCheckWait:    cfg.CheckInterval,
-		ballastSize:     ballastSize,
-		ticker:          time.NewTicker(cfg.CheckInterval),
-		readMemStatsFn:  runtime.ReadMemStats,
-		procName:        cfg.Name(),
-		logger:          logger,
+		memAllocLimit:  memAllocLimit,
+		memSpikeLimit:  memSpikeLimit,
+		memCheckWait:   cfg.CheckInterval,
+		ballastSize:    ballastSize,
+		ticker:         time.NewTicker(cfg.CheckInterval),
+		readMemStatsFn: runtime.ReadMemStats,
+		procName:       cfg.Name(),
+		logger:         logger,
 	}
 
 	ml.startMonitoring()
@@ -121,12 +102,13 @@ func newMemoryLimiter(
 	return ml, nil
 }
 
-func (ml *memoryLimiter) ConsumeTraces(
-	ctx context.Context,
-	td pdata.Traces,
-) error {
+func (ml *memoryLimiter) shutdown(context.Context) error {
+	ml.ticker.Stop()
+	return nil
+}
 
-	ctx = obsreport.ProcessorContext(ctx, ml.procName)
+// ProcessTraces implements the TProcessor interface
+func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	numSpans := td.SpanCount()
 	if ml.forcingDrop() {
 		stats.Record(
@@ -141,18 +123,17 @@ func (ml *memoryLimiter) ConsumeTraces(
 		// 	callstack.
 		obsreport.ProcessorTraceDataRefused(ctx, numSpans)
 
-		return errForcedDrop
+		return td, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	obsreport.ProcessorTraceDataAccepted(ctx, numSpans)
-	return ml.traceConsumer.ConsumeTraces(ctx, td)
+	return td, nil
 }
 
-func (ml *memoryLimiter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-
-	ctx = obsreport.ProcessorContext(ctx, ml.procName)
+// ProcessMetrics implements the MProcessor interface
+func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	_, numDataPoints := pdatautil.MetricAndDataPointCount(md)
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -162,18 +143,17 @@ func (ml *memoryLimiter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) e
 		// 	callstack.
 		obsreport.ProcessorMetricsDataRefused(ctx, numDataPoints)
 
-		return errForcedDrop
+		return md, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	obsreport.ProcessorMetricsDataAccepted(ctx, numDataPoints)
-	return ml.metricsConsumer.ConsumeMetrics(ctx, md)
+	return md, nil
 }
 
-func (ml *memoryLimiter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
-
-	ctx = obsreport.ProcessorContext(ctx, ml.procName)
+// ProcessLogs implements the LProcessor interface
+func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld data.Logs) (data.Logs, error) {
 	numRecords := ld.LogRecordCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -183,26 +163,13 @@ func (ml *memoryLimiter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 		// 	callstack.
 		obsreport.ProcessorLogRecordsRefused(ctx, numRecords)
 
-		return errForcedDrop
+		return ld, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorMetricsDataAccepted(ctx, numRecords)
-	return ml.logConsumer.ConsumeLogs(ctx, ld)
-}
-
-func (ml *memoryLimiter) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
-}
-
-func (ml *memoryLimiter) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (ml *memoryLimiter) Shutdown(context.Context) error {
-	ml.ticker.Stop()
-	return nil
+	obsreport.ProcessorLogRecordsAccepted(ctx, numRecords)
+	return ld, nil
 }
 
 func (ml *memoryLimiter) readMemStats(ms *runtime.MemStats) {

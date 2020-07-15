@@ -21,13 +21,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestNew(t *testing.T) {
@@ -43,10 +46,6 @@ func TestNew(t *testing.T) {
 		args    args
 		wantErr error
 	}{
-		{
-			name:    "nil_nextConsumer",
-			wantErr: errNilNextConsumer,
-		},
 		{
 			name: "zero_checkInterval",
 			args: args{
@@ -87,13 +86,13 @@ func TestNew(t *testing.T) {
 			cfg.CheckInterval = tt.args.checkInterval
 			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
 			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
-			got, err := newMemoryLimiter(zap.NewNop(), tt.args.nextConsumer, nil, nil, cfg)
+			got, err := newMemoryLimiter(zap.NewNop(), cfg)
 			if err != tt.wantErr {
 				t.Errorf("newMemoryLimiter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != nil {
-				assert.NoError(t, got.Shutdown(context.Background()))
+				assert.NoError(t, got.shutdown(context.Background()))
 			}
 		})
 	}
@@ -103,14 +102,24 @@ func TestNew(t *testing.T) {
 // check expected side effects.
 func TestMetricsMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkMetricsExporter)
 	ml := &memoryLimiter{
-		metricsConsumer: sink,
-		memAllocLimit:   1024,
+		memAllocLimit: 1024,
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
 	}
+	mp, err := processorhelper.NewMetricsProcessor(
+		&Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+		},
+		exportertest.NewNopMetricsExporter(),
+		ml,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(ml.shutdown))
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	md := data.NewMetricData()
@@ -118,12 +127,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit.
 	currentMemAlloc = 800
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Check ballast effect
 	ml.ballastSize = 1000
@@ -131,12 +140,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memAllocLimit even accountiing for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Restore ballast to default.
 	ml.ballastSize = 0
@@ -147,12 +156,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 }
 
@@ -160,14 +169,24 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 // check expected side effects.
 func TestTraceMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkTraceExporter)
 	ml := &memoryLimiter{
-		traceConsumer: sink,
 		memAllocLimit: 1024,
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
 	}
+	tp, err := processorhelper.NewTraceProcessor(
+		&Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+		},
+		exportertest.NewNopTraceExporter(),
+		ml,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(ml.shutdown))
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	td := pdata.NewTraces()
@@ -175,12 +194,12 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit.
 	currentMemAlloc = 800
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeTraces(ctx, td))
+	assert.NoError(t, tp.ConsumeTraces(ctx, td))
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeTraces(ctx, td))
+	assert.Equal(t, errForcedDrop, tp.ConsumeTraces(ctx, td))
 
 	// Check ballast effect
 	ml.ballastSize = 1000
@@ -188,12 +207,12 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeTraces(ctx, td))
+	assert.NoError(t, tp.ConsumeTraces(ctx, td))
 
 	// Above memAllocLimit even accountiing for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeTraces(ctx, td))
+	assert.Equal(t, errForcedDrop, tp.ConsumeTraces(ctx, td))
 
 	// Restore ballast to default.
 	ml.ballastSize = 0
@@ -204,12 +223,12 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeTraces(ctx, td))
+	assert.NoError(t, tp.ConsumeTraces(ctx, td))
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeTraces(ctx, td))
+	assert.Equal(t, errForcedDrop, tp.ConsumeTraces(ctx, td))
 
 }
 
@@ -217,14 +236,24 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 // check expected side effects.
 func TestLogMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
-	sink := new(exportertest.SinkLogExporter)
 	ml := &memoryLimiter{
-		logConsumer:   sink,
 		memAllocLimit: 1024,
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
 	}
+	lp, err := processorhelper.NewLogProcessor(
+		&Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+		},
+		exportertest.NewNopLogsExporter(),
+		ml,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(ml.shutdown))
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	ld := data.NewLogs()
@@ -232,12 +261,12 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit.
 	currentMemAlloc = 800
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeLogs(ctx, ld))
+	assert.NoError(t, lp.ConsumeLogs(ctx, ld))
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeLogs(ctx, ld))
+	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
 
 	// Check ballast effect
 	ml.ballastSize = 1000
@@ -245,12 +274,12 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeLogs(ctx, ld))
+	assert.NoError(t, lp.ConsumeLogs(ctx, ld))
 
 	// Above memAllocLimit even accountiing for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeLogs(ctx, ld))
+	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
 
 	// Restore ballast to default.
 	ml.ballastSize = 0
@@ -261,10 +290,10 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.memCheck()
-	assert.NoError(t, ml.ConsumeLogs(ctx, ld))
+	assert.NoError(t, lp.ConsumeLogs(ctx, ld))
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, ml.ConsumeLogs(ctx, ld))
+	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
 }
