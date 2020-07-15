@@ -38,9 +38,6 @@ func MetricViews(level telemetry.Level) []*view.View {
 	}
 
 	tagKeys := processor.MetricTagKeys(level)
-	if tagKeys == nil {
-		return nil
-	}
 
 	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
 

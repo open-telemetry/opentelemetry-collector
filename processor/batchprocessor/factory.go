@@ -60,10 +60,8 @@ func createTraceProcessor(
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
-	level, err := telemetry.GetLevel()
-	if err != nil {
-		return nil, err
-	}
+	// error can be ignored, level is parsed at the service startup
+	level, _ := telemetry.GetLevel()
 	return newBatchTracesProcessor(params, nextConsumer, oCfg, level), nil
 }
 
@@ -74,9 +72,6 @@ func createMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
-	level, err := telemetry.GetLevel()
-	if err != nil {
-		return nil, err
-	}
+	level, _ := telemetry.GetLevel()
 	return newBatchMetricsProcessor(params, nextConsumer, oCfg, level), nil
 }
