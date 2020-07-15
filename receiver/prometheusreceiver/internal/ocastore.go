@@ -39,9 +39,9 @@ const (
 var idSeq int64
 var noop = &noopAppender{}
 
-// OcaStore is an interface combines io.Closer and prometheus' scrape.Appendable
+// OcaStore is an interface combines io.Closer and prometheus' storage.Appendable
 type OcaStore interface {
-	scrape.Appendable
+	storage.Appendable
 	io.Closer
 	SetScrapeManager(*scrape.Manager)
 }
@@ -59,7 +59,7 @@ type ocaStore struct {
 	receiverName       string
 }
 
-// NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
+// NewOcaStore returns an ocaStore instance, which can be acted as prometheus' storage.Appendable
 func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumerOld, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
 	return &ocaStore{
 		running:            runningStateInit,
