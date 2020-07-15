@@ -54,6 +54,47 @@ const (
 	AttributeCloudZone             = "cloud.zone"
 )
 
+// GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
+func GetResourceSemanticConventionAttributeNames() []string {
+	return []string{
+		AttributeServiceName,
+		AttributeServiceNamespace,
+		AttributeServiceInstance,
+		AttributeServiceVersion,
+		AttributeTelemetrySDKName,
+		AttributeTelemetrySDKLanguage,
+		AttributeTelemetrySDKVersion,
+		AttributeContainerName,
+		AttributeContainerImage,
+		AttributeContainerTag,
+		AttributeFaasName,
+		AttributeFaasID,
+		AttributeFaasVersion,
+		AttributeFaasInstance,
+		AttributeK8sCluster,
+		AttributeK8sNamespace,
+		AttributeK8sPod,
+		AttributeK8sDeployment,
+		AttributeHostHostname,
+		AttributeHostID,
+		AttributeHostName,
+		AttributeHostType,
+		AttributeHostImageName,
+		AttributeHostImageID,
+		AttributeHostImageVersion,
+		AttributeProcessPID,
+		AttributeProcessExecutableName,
+		AttributeProcessExecutablePath,
+		AttributeProcessCommand,
+		AttributeProcessCommandLine,
+		AttributeProcessOwner,
+		AttributeCloudProvider,
+		AttributeCloudAccount,
+		AttributeCloudRegion,
+		AttributeCloudZone,
+	}
+}
+
 // OpenTelemetry Semantic Convention values for general Span attribute names.
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md
 const (

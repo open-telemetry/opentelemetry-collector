@@ -31,6 +31,8 @@ import (
 
 var sampled = true
 
+// InternalTracesToZipkinSpans translates internal trace data into Zipkin v2 spans.
+// Returns a slice of Zipkin SpanModel's.
 func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, error) {
 
 	resourceSpans := td.ResourceSpans()
