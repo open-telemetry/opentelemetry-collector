@@ -17,18 +17,20 @@ package internal
 var logFile = &File{
 	Name: "log",
 	imports: []string{
-		`logsproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
+		`otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`logsproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
+		`otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
 	},
 	structs: []baseStruct{
 		resourceLogsSlice,
 		resourceLogs,
+		instrumentationLibraryLogsSlice,
+		instrumentationLibraryLogs,
 		logSlice,
 		logRecord,
 	},
@@ -42,9 +44,28 @@ var resourceLogsSlice = &sliceStruct{
 var resourceLogs = &messageStruct{
 	structName:     "ResourceLogs",
 	description:    "// ResourceLogs is a collection of logs from a Resource.",
-	originFullName: "logsproto.ResourceLogs",
+	originFullName: "otlplogs.ResourceLogs",
 	fields: []baseField{
 		resourceField,
+		&sliceField{
+			fieldMame:       "InstrumentationLibraryLogs",
+			originFieldName: "InstrumentationLibraryLogs",
+			returnSlice:     instrumentationLibraryLogsSlice,
+		},
+	},
+}
+
+var instrumentationLibraryLogsSlice = &sliceStruct{
+	structName: "InstrumentationLibraryLogsSlice",
+	element:    instrumentationLibraryLogs,
+}
+
+var instrumentationLibraryLogs = &messageStruct{
+	structName:     "InstrumentationLibraryLogs",
+	description:    "// InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.",
+	originFullName: "otlplogs.InstrumentationLibraryLogs",
+	fields: []baseField{
+		instrumentationLibraryField,
 		&sliceField{
 			fieldMame:       "Logs",
 			originFieldName: "Logs",
@@ -61,11 +82,11 @@ var logSlice = &sliceStruct{
 var logRecord = &messageStruct{
 	structName:     "LogRecord",
 	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
-	originFullName: "logsproto.LogRecord",
+	originFullName: "otlplogs.LogRecord",
 	fields: []baseField{
 		&primitiveTypedField{
 			fieldMame:       "Timestamp",
-			originFieldName: "TimestampUnixNano",
+			originFieldName: "TimeUnixNano",
 			returnType:      "TimestampUnixNano",
 			rawType:         "uint64",
 			defaultVal:      "TimestampUnixNano(0)",
@@ -91,26 +112,26 @@ var logRecord = &messageStruct{
 		&primitiveTypedField{
 			fieldMame:       "SeverityNumber",
 			originFieldName: "SeverityNumber",
-			returnType:      "logsproto.SeverityNumber",
-			rawType:         "logsproto.SeverityNumber",
-			defaultVal:      `logsproto.SeverityNumber_UNDEFINED_SEVERITY_NUMBER`,
-			testVal:         `logsproto.SeverityNumber_INFO`,
+			returnType:      "otlplogs.SeverityNumber",
+			rawType:         "otlplogs.SeverityNumber",
+			defaultVal:      `otlplogs.SeverityNumber_UNDEFINED_SEVERITY_NUMBER`,
+			testVal:         `otlplogs.SeverityNumber_INFO`,
 		},
 		&primitiveField{
-			fieldMame:       "ShortName",
-			originFieldName: "ShortName",
+			fieldMame:       "Name",
+			originFieldName: "Name",
 			returnType:      "string",
 			defaultVal:      `""`,
 			testVal:         `"test_name"`,
 		},
-		&primitiveField{
-			fieldMame:       "Body",
-			originFieldName: "Body",
-			returnType:      "string",
-			defaultVal:      `""`,
-			testVal:         `"test log message"`,
-		},
+		bodyField,
 		attributes,
 		droppedAttributesCount,
 	},
+}
+
+var bodyField = &messageField{
+	fieldName:       "Body",
+	originFieldName: "Body",
+	returnMessage:   anyValue,
 }

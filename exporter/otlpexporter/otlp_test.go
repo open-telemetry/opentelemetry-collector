@@ -32,8 +32,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
@@ -81,18 +81,20 @@ type mockLogsReceiver struct {
 	srv                 *grpc.Server
 	requestCount        int32
 	totalLogRecordCount int32
-	lastRequest         *otlplogs.ExportLogServiceRequest
+	lastRequest         *otlplogs.ExportLogsServiceRequest
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, req *otlplogs.ExportLogServiceRequest) (*otlplogs.ExportLogServiceResponse, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, req *otlplogs.ExportLogsServiceRequest) (*otlplogs.ExportLogsServiceResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	recordCount := 0
 	for _, rs := range req.ResourceLogs {
-		recordCount += len(rs.Logs)
+		for _, il := range rs.InstrumentationLibraryLogs {
+			recordCount += len(il.Logs)
+		}
 	}
 	atomic.AddInt32(&r.totalLogRecordCount, int32(recordCount))
 	r.lastRequest = req
-	return &otlplogs.ExportLogServiceResponse{}, nil
+	return &otlplogs.ExportLogsServiceResponse{}, nil
 }
 
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
@@ -100,7 +102,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 	// Now run it as a gRPC server
 	rcv.srv = obsreport.GRPCServerWithObservabilityEnabled()
-	otlplogs.RegisterLogServiceServer(rcv.srv, rcv)
+	otlplogs.RegisterLogsServiceServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -365,7 +367,7 @@ func TestSendLogData(t *testing.T) {
 	// A request with 2 log entries.
 	td = testdata.GenerateLogDataTwoLogsSameResource()
 
-	expectedOTLPReq := &otlplogs.ExportLogServiceRequest{
+	expectedOTLPReq := &otlplogs.ExportLogsServiceRequest{
 		ResourceLogs: testdata.GenerateLogOtlpSameResourceTwoLogs(),
 	}
 

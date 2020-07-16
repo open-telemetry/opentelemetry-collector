@@ -17,7 +17,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	logsproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 // This file defines in-memory data structures to represent logs.
@@ -29,32 +29,32 @@ import (
 // Must use NewLogs functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Logs struct {
-	orig *[]*logsproto.ResourceLogs
+	orig *[]*otlplogs.ResourceLogs
 }
 
 // LogsFromProto creates the internal Logs representation from the ProtoBuf.
-func LogsFromProto(orig []*logsproto.ResourceLogs) Logs {
+func LogsFromProto(orig []*otlplogs.ResourceLogs) Logs {
 	return Logs{&orig}
 }
 
 // LogsToProto converts the internal Logs to the ProtoBuf.
-func LogsToProto(ld Logs) []*logsproto.ResourceLogs {
+func LogsToProto(ld Logs) []*otlplogs.ResourceLogs {
 	return *ld.orig
 }
 
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
-	orig := []*logsproto.ResourceLogs(nil)
+	orig := []*otlplogs.ResourceLogs(nil)
 	return Logs{&orig}
 }
 
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
 	otlp := LogsToProto(ld)
-	resourceSpansClones := make([]*logsproto.ResourceLogs, 0, len(otlp))
+	resourceSpansClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
 	for _, resourceSpans := range otlp {
 		resourceSpansClones = append(resourceSpansClones,
-			proto.Clone(resourceSpans).(*logsproto.ResourceLogs))
+			proto.Clone(resourceSpans).(*otlplogs.ResourceLogs))
 	}
 	return LogsFromProto(resourceSpansClones)
 }
@@ -68,7 +68,15 @@ func (ld Logs) LogRecordCount() int {
 		if rs.IsNil() {
 			continue
 		}
-		logCount += rs.Logs().Len()
+
+		ill := rs.InstrumentationLibraryLogs()
+		for i := 0; i < ill.Len(); i++ {
+			logs := ill.At(i)
+			if logs.IsNil() {
+				continue
+			}
+			logCount += logs.Logs().Len()
+		}
 	}
 	return logCount
 }
