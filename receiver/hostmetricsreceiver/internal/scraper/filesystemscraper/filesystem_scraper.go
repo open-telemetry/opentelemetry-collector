@@ -16,17 +16,21 @@ package filesystemscraper
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 // scraper for FileSystem Metrics
 type scraper struct {
-	config *Config
+	config    *Config
+	includeFS filterset.FilterSet
+	excludeFS filterset.FilterSet
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
 	partitions func(bool) ([]disk.PartitionStat, error)
@@ -39,8 +43,26 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, partitions: disk.Partitions, usage: disk.Usage}
+func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
+	scraper := &scraper{config: cfg, partitions: disk.Partitions, usage: disk.Usage}
+
+	var err error
+
+	if len(cfg.Include.Devices) > 0 {
+		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Devices, &cfg.Include.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device include filters: %w", err)
+		}
+	}
+
+	if len(cfg.Exclude.Devices) > 0 {
+		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Devices, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device exclude filters: %w", err)
+		}
+	}
+
+	return scraper, nil
 }
 
 // Initialize
@@ -75,11 +97,19 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		usages = append(usages, &deviceUsage{partition.Device, usage})
 	}
 
-	if len(usages) > 0 {
+	// filter devices by name
+	filteredUsages := make([]*deviceUsage, 0, len(usages))
+	for _, usage := range usages {
+		if s.includeDevice(usage.deviceName) {
+			filteredUsages = append(filteredUsages, usage)
+		}
+	}
+
+	if len(filteredUsages) > 0 {
 		metrics.Resize(1 + systemSpecificMetricsLen)
 
-		initializeFileSystemUsageMetric(metrics.At(0), usages)
-		appendSystemSpecificMetrics(metrics, 1, usages)
+		initializeFileSystemUsageMetric(metrics.At(0), filteredUsages)
+		appendSystemSpecificMetrics(metrics, 1, filteredUsages)
 	}
 
 	if len(errors) > 0 {
@@ -105,4 +135,9 @@ func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, deviceLa
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func (s *scraper) includeDevice(deviceName string) bool {
+	return (s.includeFS == nil || s.includeFS.Matches(deviceName)) &&
+		(s.excludeFS == nil || !s.excludeFS.Matches(deviceName))
 }
