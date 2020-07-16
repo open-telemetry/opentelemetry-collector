@@ -16,11 +16,13 @@ package diskscraper
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/windows/pdh"
 )
 
@@ -33,10 +35,11 @@ const (
 
 // scraper for Disk Metrics
 type scraper struct {
-	config *Config
-
+	config         *Config
 	startTime      pdata.TimestampUnixNano
 	prevScrapeTime time.Time
+	includeFS      filterset.FilterSet
+	excludeFS      filterset.FilterSet
 
 	diskReadBytesPerSecCounter  pdh.PerfCounterScraper
 	diskWriteBytesPerSecCounter pdh.PerfCounterScraper
@@ -65,12 +68,30 @@ type value struct {
 }
 
 // newDiskScraper creates a Disk Scraper
-func newDiskScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{
+func newDiskScraper(_ context.Context, cfg *Config) (*scraper, error) {
+	scraper := &scraper{
 		config:            cfg,
 		cumulativeDiskIO:  map[string]*value{},
 		cumulativeDiskOps: map[string]*value{},
 	}
+
+	var err error
+
+	if len(cfg.Include.Devices) > 0 {
+		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Devices, &cfg.Include.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device include filters: %w", err)
+		}
+	}
+
+	if len(cfg.Exclude.Devices) > 0 {
+		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Devices, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device exclude filters: %w", err)
+		}
+	}
+
+	return scraper, nil
 }
 
 // Initialize
@@ -173,11 +194,19 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, duratio
 	}
 
 	for _, diskReadBytesPerSec := range diskReadBytesPerSecValues {
-		s.cumulativeDiskIO.getOrAdd(diskReadBytesPerSec.InstanceName).read += (diskReadBytesPerSec.Value * durationSinceLastScraped)
+		if s.includeDevice(diskReadBytesPerSec.InstanceName) {
+			s.cumulativeDiskIO.getOrAdd(diskReadBytesPerSec.InstanceName).read += (diskReadBytesPerSec.Value * durationSinceLastScraped)
+		}
 	}
 
 	for _, diskWriteBytesPerSec := range diskWriteBytesPerSecValues {
-		s.cumulativeDiskIO.getOrAdd(diskWriteBytesPerSec.InstanceName).write += (diskWriteBytesPerSec.Value * durationSinceLastScraped)
+		if s.includeDevice(diskWriteBytesPerSec.InstanceName) {
+			s.cumulativeDiskIO.getOrAdd(diskWriteBytesPerSec.InstanceName).write += (diskWriteBytesPerSec.Value * durationSinceLastScraped)
+		}
+	}
+
+	if len(s.cumulativeDiskIO) == 0 {
+		return nil
 	}
 
 	idx := metrics.Len()
@@ -212,11 +241,19 @@ func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics pdata.MetricSlice, durati
 	}
 
 	for _, diskReadsPerSec := range diskReadsPerSecValues {
-		s.cumulativeDiskOps.getOrAdd(diskReadsPerSec.InstanceName).read += (diskReadsPerSec.Value * durationSinceLastScraped)
+		if s.includeDevice(diskReadsPerSec.InstanceName) {
+			s.cumulativeDiskOps.getOrAdd(diskReadsPerSec.InstanceName).read += (diskReadsPerSec.Value * durationSinceLastScraped)
+		}
 	}
 
 	for _, diskWritesPerSec := range diskWritesPerSecValues {
-		s.cumulativeDiskOps.getOrAdd(diskWritesPerSec.InstanceName).write += (diskWritesPerSec.Value * durationSinceLastScraped)
+		if s.includeDevice(diskWritesPerSec.InstanceName) {
+			s.cumulativeDiskOps.getOrAdd(diskWritesPerSec.InstanceName).write += (diskWritesPerSec.Value * durationSinceLastScraped)
+		}
+	}
+
+	if len(s.cumulativeDiskIO) == 0 {
+		return nil
 	}
 
 	idx := metrics.Len()
@@ -246,4 +283,9 @@ func initializeDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.Timesta
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func (s *scraper) includeDevice(deviceName string) bool {
+	return (s.includeFS == nil || s.includeFS.Matches(deviceName)) &&
+		(s.excludeFS == nil || !s.excludeFS.Matches(deviceName))
 }

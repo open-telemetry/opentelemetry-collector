@@ -23,30 +23,75 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 func TestScrapeMetrics(t *testing.T) {
-	scraper := newDiskScraper(context.Background(), &Config{})
-
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-	assert.GreaterOrEqual(t, metrics.Len(), 2)
-
-	assertDiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
-	assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
-
-	if runtime.GOOS != "windows" {
-		assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
+	type testCase struct {
+		name          string
+		config        Config
+		expectMetrics bool
+		newErrRegex   string
 	}
 
-	if runtime.GOOS == "linux" {
-		assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
+	testCases := []testCase{
+		{
+			name:          "Standard",
+			expectMetrics: true,
+		},
+		{
+			name:          "Include Filter that matches nothing",
+			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			expectMetrics: false,
+		},
+		{
+			name:        "Invalid Include Filter",
+			config:      Config{Include: MatchConfig{Devices: []string{"test"}}},
+			newErrRegex: "^error creating device include filters:",
+		},
+		{
+			name:        "Invalid Exclude Filter",
+			config:      Config{Exclude: MatchConfig{Devices: []string{"test"}}},
+			newErrRegex: "^error creating device exclude filters:",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper, err := newDiskScraper(context.Background(), &test.config)
+			if test.newErrRegex != "" {
+				require.Error(t, err)
+				require.Regexp(t, test.newErrRegex, err)
+				return
+			}
+			require.NoError(t, err, "Failed to create disk scraper: %v", err)
+
+			err = scraper.Initialize(context.Background())
+			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			metrics, err := scraper.ScrapeMetrics(context.Background())
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			if !test.expectMetrics {
+				assert.Equal(t, 0, metrics.Len())
+				return
+			}
+
+			assert.GreaterOrEqual(t, metrics.Len(), 2)
+
+			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
+			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
+
+			if runtime.GOOS != "windows" {
+				assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
+			}
+
+			if runtime.GOOS == "linux" {
+				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
+			}
+		})
 	}
 }
 

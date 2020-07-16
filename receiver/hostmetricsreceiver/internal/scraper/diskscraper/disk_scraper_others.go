@@ -18,18 +18,22 @@ package diskscraper
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 // scraper for Disk Metrics
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
+	includeFS filterset.FilterSet
+	excludeFS filterset.FilterSet
 
 	// for mocking
 	bootTime   func() (uint64, error)
@@ -37,8 +41,26 @@ type scraper struct {
 }
 
 // newDiskScraper creates a Disk Scraper
-func newDiskScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, ioCounters: disk.IOCounters}
+func newDiskScraper(_ context.Context, cfg *Config) (*scraper, error) {
+	scraper := &scraper{config: cfg, bootTime: host.BootTime, ioCounters: disk.IOCounters}
+
+	var err error
+
+	if len(cfg.Include.Devices) > 0 {
+		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Devices, &cfg.Include.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device include filters: %w", err)
+		}
+	}
+
+	if len(cfg.Exclude.Devices) > 0 {
+		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Devices, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device exclude filters: %w", err)
+		}
+	}
+
+	return scraper, nil
 }
 
 // Initialize
@@ -66,11 +88,17 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		return metrics, err
 	}
 
-	metrics.Resize(3 + systemSpecificMetricsLen)
-	initializeDiskIOMetric(metrics.At(0), s.startTime, ioCounters)
-	initializeDiskOpsMetric(metrics.At(1), s.startTime, ioCounters)
-	initializeDiskTimeMetric(metrics.At(2), s.startTime, ioCounters)
-	appendSystemSpecificMetrics(metrics, 3, s.startTime, ioCounters)
+	// filter devices by name
+	ioCounters = s.filterByDevice(ioCounters)
+
+	if len(ioCounters) > 0 {
+		metrics.Resize(3 + systemSpecificMetricsLen)
+		initializeDiskIOMetric(metrics.At(0), s.startTime, ioCounters)
+		initializeDiskOpsMetric(metrics.At(1), s.startTime, ioCounters)
+		initializeDiskTimeMetric(metrics.At(2), s.startTime, ioCounters)
+		appendSystemSpecificMetrics(metrics, 3, s.startTime, ioCounters)
+	}
+
 	return metrics, nil
 }
 
@@ -123,4 +151,22 @@ func initializeDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.Timesta
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func (s *scraper) filterByDevice(ioCounters map[string]disk.IOCountersStat) map[string]disk.IOCountersStat {
+	if s.includeFS == nil && s.excludeFS == nil {
+		return ioCounters
+	}
+
+	for device := range ioCounters {
+		if !s.includeDevice(device) {
+			delete(ioCounters, device)
+		}
+	}
+	return ioCounters
+}
+
+func (s *scraper) includeDevice(deviceName string) bool {
+	return (s.includeFS == nil || s.includeFS.Matches(deviceName)) &&
+		(s.excludeFS == nil || !s.excludeFS.Matches(deviceName))
 }
