@@ -14,14 +14,14 @@
 
 package pdata
 
-import logsproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+import otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 
-// NewResourceLogsSliceFromOrig creates ResourceLogsSlice from logsproto.ResourceLogs.
+// NewResourceLogsSliceFromOrig creates ResourceLogsSlice from otlplogs.ResourceLogs.
 // This function simply makes generated newResourceLogsSlice() function publicly
 // available for internal.data.Log to call. We intentionally placed data.Log in the
 // internal package so that it is not available publicly while it is experimental.
-// Once the expriment is over data.Log should move to this package (pdata) and
+// Once the experiment is over data.Log should move to this package (pdata) and
 // NewResourceLogsSliceFromOrig function will no longer be needed.
-func NewResourceLogsSliceFromOrig(orig *[]*logsproto.ResourceLogs) ResourceLogsSlice {
+func NewResourceLogsSliceFromOrig(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
 	return ResourceLogsSlice{orig}
 }

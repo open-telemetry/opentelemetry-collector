@@ -22,13 +22,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	logsproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 func TestResourceLogsSlice(t *testing.T) {
 	es := NewResourceLogsSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newResourceLogsSlice(&[]*logsproto.ResourceLogs{})
+	es = newResourceLogsSlice(&[]*otlplogs.ResourceLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
@@ -89,14 +89,14 @@ func TestResourceLogsSlice_Resize(t *testing.T) {
 	emptyVal.InitEmpty()
 	// Test Resize less elements.
 	const resizeSmallLen = 4
-	expectedEs := make(map[*logsproto.ResourceLogs]bool, resizeSmallLen)
+	expectedEs := make(map[*otlplogs.ResourceLogs]bool, resizeSmallLen)
 	for i := 0; i < resizeSmallLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
 	assert.EqualValues(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*logsproto.ResourceLogs]bool, resizeSmallLen)
+	foundEs := make(map[*otlplogs.ResourceLogs]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
 		foundEs[*(es.At(i).orig)] = true
 	}
@@ -105,14 +105,14 @@ func TestResourceLogsSlice_Resize(t *testing.T) {
 	// Test Resize more elements.
 	const resizeLargeLen = 7
 	oldLen := es.Len()
-	expectedEs = make(map[*logsproto.ResourceLogs]bool, oldLen)
+	expectedEs = make(map[*otlplogs.ResourceLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
 	assert.EqualValues(t, resizeLargeLen, es.Len())
-	foundEs = make(map[*logsproto.ResourceLogs]bool, oldLen)
+	foundEs = make(map[*otlplogs.ResourceLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[*(es.At(i).orig)] = true
 	}
@@ -168,8 +168,160 @@ func TestResourceLogs_Resource(t *testing.T) {
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
-func TestResourceLogs_Logs(t *testing.T) {
+func TestResourceLogs_InstrumentationLibraryLogs(t *testing.T) {
 	ms := NewResourceLogs()
+	ms.InitEmpty()
+	assert.EqualValues(t, NewInstrumentationLibraryLogsSlice(), ms.InstrumentationLibraryLogs())
+	fillTestInstrumentationLibraryLogsSlice(ms.InstrumentationLibraryLogs())
+	testValInstrumentationLibraryLogs := generateTestInstrumentationLibraryLogsSlice()
+	assert.EqualValues(t, testValInstrumentationLibraryLogs, ms.InstrumentationLibraryLogs())
+}
+
+func TestInstrumentationLibraryLogsSlice(t *testing.T) {
+	es := NewInstrumentationLibraryLogsSlice()
+	assert.EqualValues(t, 0, es.Len())
+	es = newInstrumentationLibraryLogsSlice(&[]*otlplogs.InstrumentationLibraryLogs{})
+	assert.EqualValues(t, 0, es.Len())
+
+	es.Resize(7)
+	emptyVal := NewInstrumentationLibraryLogs()
+	emptyVal.InitEmpty()
+	testVal := generateTestInstrumentationLibraryLogs()
+	assert.EqualValues(t, 7, es.Len())
+	for i := 0; i < es.Len(); i++ {
+		assert.EqualValues(t, emptyVal, es.At(i))
+		fillTestInstrumentationLibraryLogs(es.At(i))
+		assert.EqualValues(t, testVal, es.At(i))
+	}
+}
+
+func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
+	// Test MoveAndAppendTo to empty
+	expectedSlice := generateTestInstrumentationLibraryLogsSlice()
+	dest := NewInstrumentationLibraryLogsSlice()
+	src := generateTestInstrumentationLibraryLogsSlice()
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo empty slice
+	src.MoveAndAppendTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test MoveAndAppendTo not empty slice
+	generateTestInstrumentationLibraryLogsSlice().MoveAndAppendTo(dest)
+	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
+}
+
+func TestInstrumentationLibraryLogsSlice_CopyTo(t *testing.T) {
+	dest := NewInstrumentationLibraryLogsSlice()
+	// Test CopyTo to empty
+	NewInstrumentationLibraryLogsSlice().CopyTo(dest)
+	assert.EqualValues(t, NewInstrumentationLibraryLogsSlice(), dest)
+
+	// Test CopyTo larger slice
+	generateTestInstrumentationLibraryLogsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+
+	// Test CopyTo same size slice
+	generateTestInstrumentationLibraryLogsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+}
+
+func TestInstrumentationLibraryLogsSlice_Resize(t *testing.T) {
+	es := generateTestInstrumentationLibraryLogsSlice()
+	emptyVal := NewInstrumentationLibraryLogs()
+	emptyVal.InitEmpty()
+	// Test Resize less elements.
+	const resizeSmallLen = 4
+	expectedEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, resizeSmallLen)
+	for i := 0; i < resizeSmallLen; i++ {
+		expectedEs[*(es.At(i).orig)] = true
+	}
+	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
+	es.Resize(resizeSmallLen)
+	assert.EqualValues(t, resizeSmallLen, es.Len())
+	foundEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, resizeSmallLen)
+	for i := 0; i < es.Len(); i++ {
+		foundEs[*(es.At(i).orig)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+
+	// Test Resize more elements.
+	const resizeLargeLen = 7
+	oldLen := es.Len()
+	expectedEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		expectedEs[*(es.At(i).orig)] = true
+	}
+	assert.EqualValues(t, oldLen, len(expectedEs))
+	es.Resize(resizeLargeLen)
+	assert.EqualValues(t, resizeLargeLen, es.Len())
+	foundEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
+	for i := 0; i < oldLen; i++ {
+		foundEs[*(es.At(i).orig)] = true
+	}
+	assert.EqualValues(t, expectedEs, foundEs)
+	for i := oldLen; i < resizeLargeLen; i++ {
+		assert.EqualValues(t, emptyVal, es.At(i))
+	}
+
+	// Test Resize 0 elements.
+	es.Resize(0)
+	assert.EqualValues(t, NewInstrumentationLibraryLogsSlice(), es)
+}
+
+func TestInstrumentationLibraryLogsSlice_Append(t *testing.T) {
+	es := generateTestInstrumentationLibraryLogsSlice()
+	emptyVal := NewInstrumentationLibraryLogs()
+	emptyVal.InitEmpty()
+
+	es.Append(&emptyVal)
+	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+
+	emptyVal2:= NewInstrumentationLibraryLogs()
+	emptyVal2.InitEmpty()
+
+	es.Append(&emptyVal2)
+	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+
+	assert.Equal(t, 9, es.Len())
+}
+
+func TestInstrumentationLibraryLogs_InitEmpty(t *testing.T) {
+	ms := NewInstrumentationLibraryLogs()
+	assert.True(t, ms.IsNil())
+	ms.InitEmpty()
+	assert.False(t, ms.IsNil())
+}
+
+func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
+	ms := NewInstrumentationLibraryLogs()
+	NewInstrumentationLibraryLogs().CopyTo(ms)
+	assert.True(t, ms.IsNil())
+	generateTestInstrumentationLibraryLogs().CopyTo(ms)
+	assert.EqualValues(t, generateTestInstrumentationLibraryLogs(), ms)
+}
+
+func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
+	ms := NewInstrumentationLibraryLogs()
+	ms.InitEmpty()
+	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	ms.InstrumentationLibrary().InitEmpty()
+	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
+	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+}
+
+func TestInstrumentationLibraryLogs_Logs(t *testing.T) {
+	ms := NewInstrumentationLibraryLogs()
 	ms.InitEmpty()
 	assert.EqualValues(t, NewLogSlice(), ms.Logs())
 	fillTestLogSlice(ms.Logs())
@@ -180,7 +332,7 @@ func TestResourceLogs_Logs(t *testing.T) {
 func TestLogSlice(t *testing.T) {
 	es := NewLogSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newLogSlice(&[]*logsproto.LogRecord{})
+	es = newLogSlice(&[]*otlplogs.LogRecord{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
@@ -241,14 +393,14 @@ func TestLogSlice_Resize(t *testing.T) {
 	emptyVal.InitEmpty()
 	// Test Resize less elements.
 	const resizeSmallLen = 4
-	expectedEs := make(map[*logsproto.LogRecord]bool, resizeSmallLen)
+	expectedEs := make(map[*otlplogs.LogRecord]bool, resizeSmallLen)
 	for i := 0; i < resizeSmallLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
 	assert.EqualValues(t, resizeSmallLen, es.Len())
-	foundEs := make(map[*logsproto.LogRecord]bool, resizeSmallLen)
+	foundEs := make(map[*otlplogs.LogRecord]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
 		foundEs[*(es.At(i).orig)] = true
 	}
@@ -257,14 +409,14 @@ func TestLogSlice_Resize(t *testing.T) {
 	// Test Resize more elements.
 	const resizeLargeLen = 7
 	oldLen := es.Len()
-	expectedEs = make(map[*logsproto.LogRecord]bool, oldLen)
+	expectedEs = make(map[*otlplogs.LogRecord]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
 	assert.EqualValues(t, resizeLargeLen, es.Len())
-	foundEs = make(map[*logsproto.LogRecord]bool, oldLen)
+	foundEs = make(map[*otlplogs.LogRecord]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[*(es.At(i).orig)] = true
 	}
@@ -358,28 +510,29 @@ func TestLogRecord_SeverityText(t *testing.T) {
 func TestLogRecord_SeverityNumber(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, logsproto.SeverityNumber_UNDEFINED_SEVERITY_NUMBER, ms.SeverityNumber())
-	testValSeverityNumber := logsproto.SeverityNumber_INFO
+	assert.EqualValues(t, otlplogs.SeverityNumber_UNDEFINED_SEVERITY_NUMBER, ms.SeverityNumber())
+	testValSeverityNumber := otlplogs.SeverityNumber_INFO
 	ms.SetSeverityNumber(testValSeverityNumber)
 	assert.EqualValues(t, testValSeverityNumber, ms.SeverityNumber())
 }
 
-func TestLogRecord_ShortName(t *testing.T) {
+func TestLogRecord_Name(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, "", ms.ShortName())
-	testValShortName := "test_name"
-	ms.SetShortName(testValShortName)
-	assert.EqualValues(t, testValShortName, ms.ShortName())
+	assert.EqualValues(t, "", ms.Name())
+	testValName := "test_name"
+	ms.SetName(testValName)
+	assert.EqualValues(t, testValName, ms.Name())
 }
 
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, "", ms.Body())
-	testValBody := "test log message"
-	ms.SetBody(testValBody)
-	assert.EqualValues(t, testValBody, ms.Body())
+	assert.EqualValues(t, true, ms.Body().IsNil())
+	ms.Body().InitEmpty()
+	assert.EqualValues(t, false, ms.Body().IsNil())
+	fillTestAttributeValue(ms.Body())
+	assert.EqualValues(t, generateTestAttributeValue(), ms.Body())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
@@ -423,6 +576,32 @@ func generateTestResourceLogs() ResourceLogs {
 func fillTestResourceLogs(tv ResourceLogs) {
 	tv.Resource().InitEmpty()
 	fillTestResource(tv.Resource())
+	fillTestInstrumentationLibraryLogsSlice(tv.InstrumentationLibraryLogs())
+}
+
+func generateTestInstrumentationLibraryLogsSlice() InstrumentationLibraryLogsSlice {
+	tv := NewInstrumentationLibraryLogsSlice()
+	fillTestInstrumentationLibraryLogsSlice(tv)
+	return tv
+}
+
+func fillTestInstrumentationLibraryLogsSlice(tv InstrumentationLibraryLogsSlice) {
+	tv.Resize(7)
+	for i := 0; i < tv.Len(); i++ {
+		fillTestInstrumentationLibraryLogs(tv.At(i))
+	}
+}
+
+func generateTestInstrumentationLibraryLogs() InstrumentationLibraryLogs {
+	tv := NewInstrumentationLibraryLogs()
+	tv.InitEmpty()
+	fillTestInstrumentationLibraryLogs(tv)
+	return tv
+}
+
+func fillTestInstrumentationLibraryLogs(tv InstrumentationLibraryLogs) {
+	tv.InstrumentationLibrary().InitEmpty()
+	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	fillTestLogSlice(tv.Logs())
 }
 
@@ -452,9 +631,10 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetFlags(uint32(0x01))
 	tv.SetSeverityText("INFO")
-	tv.SetSeverityNumber(logsproto.SeverityNumber_INFO)
-	tv.SetShortName("test_name")
-	tv.SetBody("test log message")
+	tv.SetSeverityNumber(otlplogs.SeverityNumber_INFO)
+	tv.SetName("test_name")
+	tv.Body().InitEmpty()
+	fillTestAttributeValue(tv.Body())
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 }

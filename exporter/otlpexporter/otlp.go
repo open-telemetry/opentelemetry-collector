@@ -33,9 +33,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 type exporterImp struct {
@@ -49,7 +49,7 @@ type exporterImp struct {
 type sender interface {
 	exportTrace(ctx context.Context, request *otlptrace.ExportTraceServiceRequest) error
 	exportMetrics(ctx context.Context, request *otlpmetrics.ExportMetricsServiceRequest) error
-	exportLogs(ctx context.Context, request *otlplogs.ExportLogServiceRequest) error
+	exportLogs(ctx context.Context, request *otlplogs.ExportLogsServiceRequest) error
 	stop() error
 }
 
@@ -112,7 +112,7 @@ func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) (in
 }
 
 func (e *exporterImp) pushLogData(ctx context.Context, logs data.Logs) (int, error) {
-	request := &otlplogs.ExportLogServiceRequest{
+	request := &otlplogs.ExportLogsServiceRequest{
 		ResourceLogs: data.LogsToProto(logs),
 	}
 	err := e.w.exportLogs(ctx, request)
@@ -127,7 +127,7 @@ type grpcSender struct {
 	// gRPC clients and connection.
 	traceExporter  otlptrace.TraceServiceClient
 	metricExporter otlpmetrics.MetricsServiceClient
-	logExporter    otlplogs.LogServiceClient
+	logExporter    otlplogs.LogsServiceClient
 	grpcClientConn *grpc.ClientConn
 	metadata       metadata.MD
 	waitForReady   bool
@@ -147,7 +147,7 @@ func newGrpcSender(config *Config) (sender, error) {
 	gs := &grpcSender{
 		traceExporter:  otlptrace.NewTraceServiceClient(clientConn),
 		metricExporter: otlpmetrics.NewMetricsServiceClient(clientConn),
-		logExporter:    otlplogs.NewLogServiceClient(clientConn),
+		logExporter:    otlplogs.NewLogsServiceClient(clientConn),
 		grpcClientConn: clientConn,
 		metadata:       metadata.New(config.GRPCClientSettings.Headers),
 		waitForReady:   config.GRPCClientSettings.WaitForReady,
@@ -173,7 +173,7 @@ func (gs *grpcSender) exportMetrics(ctx context.Context, request *otlpmetrics.Ex
 	})
 }
 
-func (gs *grpcSender) exportLogs(ctx context.Context, request *otlplogs.ExportLogServiceRequest) error {
+func (gs *grpcSender) exportLogs(ctx context.Context, request *otlplogs.ExportLogsServiceRequest) error {
 	return exportRequest(gs.enhanceContext(ctx), func(ctx context.Context) error {
 		_, err := gs.logExporter.Export(ctx, request, grpc.WaitForReady(gs.waitForReady))
 		return err

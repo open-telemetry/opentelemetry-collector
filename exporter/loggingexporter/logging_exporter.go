@@ -215,8 +215,8 @@ func (b *logDataBuffer) logDataPointLabels(labels pdata.StringMap) {
 func (b *logDataBuffer) logLogRecord(lr pdata.LogRecord) {
 	b.logEntry("Timestamp: %d", lr.Timestamp())
 	b.logEntry("Severity: %s", lr.SeverityText())
-	b.logEntry("ShortName: %s", lr.ShortName())
-	b.logEntry("Body: %s", lr.Body())
+	b.logEntry("ShortName: %s", lr.Name())
+	b.logEntry("Body: %s", attributeValueToString(lr.Body()))
 	b.logAttributeMap("Attributes", lr.Attributes())
 }
 
@@ -438,26 +438,40 @@ func (s *loggingExporter) pushLogData(
 	}
 
 	buf := logDataBuffer{}
-	rms := ld.ResourceLogs()
-	for i := 0; i < rms.Len(); i++ {
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
 		buf.logEntry("ResourceLog #%d", i)
-		rm := rms.At(i)
-		if rm.IsNil() {
+		rl := rls.At(i)
+		if rl.IsNil() {
 			buf.logEntry("* Nil ResourceLog")
 			continue
 		}
-		if !rm.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
+		if !rl.Resource().IsNil() {
+			buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
 		}
-		lrs := rm.Logs()
-		for j := 0; j < lrs.Len(); j++ {
-			buf.logEntry("LogRecord #%d", j)
-			lr := lrs.At(j)
-			if lr.IsNil() {
-				buf.logEntry("* Nil LogRecord")
+
+		ills := rl.InstrumentationLibraryLogs()
+		for j := 0; j < ills.Len(); j++ {
+			buf.logEntry("InstrumentationLibraryLogs #%d", j)
+			ils := ills.At(j)
+			if ils.IsNil() {
+				buf.logEntry("* Nil InstrumentationLibraryLogs")
 				continue
 			}
-			buf.logLogRecord(lr)
+			if !ils.InstrumentationLibrary().IsNil() {
+				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
+			}
+
+			logs := ils.Logs()
+			for j := 0; j < logs.Len(); j++ {
+				buf.logEntry("LogRecord #%d", j)
+				lr := logs.At(j)
+				if lr.IsNil() {
+					buf.logEntry("* Nil LogRecord")
+					continue
+				}
+				buf.logLogRecord(lr)
+			}
 		}
 	}
 
