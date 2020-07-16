@@ -6,16 +6,15 @@ maximum load stress tests.
 
 ## Usage
 
-For each type of tests that should have a summary report create a new directory and then a test suite function
-which utilizes `*testing.M`. This function should delegate all functionality to `testbed.DoTestMain` supplying
-a global instance of `testbed.TestResultsSummary` to it.
+For each type of tests that should have a summary report create a new directory and then a test suite function which utilizes `*testing.M`. This function should delegate all functionality to `testbed.DoTestMain` supplying a global instance of `testbed.TestResultsSummary` to it.
 
-Each test case within the suite should create a `testbed.TestCase` and supply implementations of each of the various
-interfaces the `NewTestCase` function takes as parameters.
+Each test case within the suite should create a `testbed.TestCase` and supply implementations of each of the various interfaces the `NewTestCase` function takes as parameters.
 
-`testbed.TestCase` uses `LoadGenerator` and `MockBackend` to further encapsulate pluggable components. `LoadGenerator` further encapsulates `DataProvider` and `DataSender` in order to generate and send  data.  `MockBackend` further encapsulate `DataReceiver` and provide comsume functionality.
+## DataFlow
 
-For instance, if using the existing end-to-end test, the general pipeline can be (Note that MockBackend does not really have a consumer instance, only to make it intuitive, this diagram draws it a separate module):
+`testbed.TestCase` uses `LoadGenerator` and `MockBackend` to further encapsulate pluggable components. `LoadGenerator` further encapsulates `DataProvider` and `DataSender` in order to generate and send data.  `MockBackend` further encapsulate `DataReceiver` and provide consume functionality.
+
+For instance, if using the existing end-to-end test, the general dataflow can be (Note that MockBackend does not really have a consumer instance, only to make it intuitive, this diagram draws it a separate module):
 
 ![e2e diagram](./e2e_diagram.jpeg)
 
