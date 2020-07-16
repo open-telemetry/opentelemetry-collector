@@ -156,6 +156,7 @@ install-tools:
 
 .PHONY: otelcol
 otelcol:
+	go generate ./...
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: run

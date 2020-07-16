@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	. "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrapeMetrics(t *testing.T) {
@@ -86,7 +87,7 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertCPUMetricValid(t, metrics.At(0), cpuTimeDescriptor, test.expectedStartTime)
+			assertCPUMetricValid(t, metrics.At(0), Metrics.SystemCPUTime, test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
@@ -103,16 +104,16 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 		internal.AssertDoubleMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertDoubleMetricLabelExists(t, metric, 0, cpuLabelName)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, stateLabelName, userStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, stateLabelName, systemStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, stateLabelName, idleStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, stateLabelName, interruptStateLabelValue)
+	internal.AssertDoubleMetricLabelExists(t, metric, 0, Labels.Cpu)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, Labels.State, LabelState.User)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, Labels.State, LabelState.System)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, Labels.State, LabelState.Idle)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, Labels.State, LabelState.Interrupt)
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, stateLabelName, niceStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, stateLabelName, softIRQStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, stateLabelName, stealStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, stateLabelName, waitStateLabelValue)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, Labels.State, LabelState.Nice)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, Labels.State, LabelState.Softirq)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, Labels.State, LabelState.Steal)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, Labels.State, LabelState.Wait)
 }
