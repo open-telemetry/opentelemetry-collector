@@ -11,11 +11,14 @@ receivers:
       filesystem:
       memory:
       network:
+        include:
+          interfaces: ["test1"]
+          match_type: "strict"
       processes:
       swap:
       process:
         include:
-          names: ["test1", "test2"]
+          names: ["test2", "test3"]
           match_type: "regexp"
 
 processors:
