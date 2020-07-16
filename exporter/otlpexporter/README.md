@@ -28,6 +28,16 @@ The following settings can be optionally configured:
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 - `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.
 See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).
+- `timeout` (default = 5s): Is the timeout for each operation.
+- `retry_settings`
+  - `disabled` (default = false)
+  - `initial_backoff` (default = 5s): Time to wait after the first failure before retrying; ignored if retry_on_failure is false
+  - `max_backoff` (default = 30s): Is the upper bound on backoff; ignored if retry_on_failure is false
+  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if retry_on_failure is false
+- `queued_settings`
+  - `disabled` (default = true)
+  - `num_workers` (default = 10): Number of workers that dequeue batches
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data
 
 Example:
 

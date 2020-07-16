@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -45,6 +46,13 @@ var (
 		NameVal: fakeTraceExporterName,
 	}
 )
+
+func TestTracesRequest(t *testing.T) {
+	mr := newTracesRequest(context.Background(), testdata.GenerateTraceDataOneSpan(), nil)
+
+	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataEmpty())
+	assert.EqualValues(t, newTracesRequest(context.Background(), testdata.GenerateTraceDataEmpty(), nil), mr.onPartialError(partialErr.(consumererror.PartialError)))
+}
 
 // TODO https://go.opentelemetry.io/collector/issues/266
 // Migrate tests to use testify/assert instead of t.Fatal pattern.
