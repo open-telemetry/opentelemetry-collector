@@ -45,6 +45,10 @@ func (f *Factory) CreateMetricsScraper(
 	_ *zap.Logger,
 	config internal.Config,
 ) (internal.Scraper, error) {
-	cfg := config.(*Config)
-	return obsreportscraper.WrapScraper(newDiskScraper(ctx, cfg), TypeStr), nil
+	scraper, err := newDiskScraper(ctx, config.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
+	return obsreportscraper.WrapScraper(scraper, TypeStr), nil
 }

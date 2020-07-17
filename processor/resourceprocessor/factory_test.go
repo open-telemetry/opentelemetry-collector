@@ -15,30 +15,103 @@
 package resourceprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.NotNil(t, cfg)
 }
 
 func TestCreateProcessor(t *testing.T) {
-	var factory Factory
-	cfg := factory.CreateDefaultConfig()
+	factory := NewFactory()
+	cfg := &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource",
+		},
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
+		},
+	}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopMetricsExporter(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
+}
+
+func TestInvalidEmptyActions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	assert.Error(t, err)
+
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopMetricsExporter(), cfg)
+	assert.Error(t, err)
+}
+
+func TestInvalidAttributeActions(t *testing.T) {
+	factory := NewFactory()
+	cfg := &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource",
+		},
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "k", Value: "v", Action: "invalid-action"},
+		},
+	}
+
+	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	assert.Error(t, err)
+
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	assert.Error(t, err)
+}
+
+func TestDeprecatedConfig(t *testing.T) {
+	cfg := &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource",
+		},
+		ResourceType: "host",
+		Labels: map[string]string{
+			"cloud.zone": "zone-1",
+		},
+	}
+
+	handleDeprecatedFields(cfg, zap.NewNop())
+
+	assert.EqualValues(t, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resource",
+			NameVal: "resource",
+		},
+		ResourceType: "host",
+		Labels: map[string]string{
+			"cloud.zone": "zone-1",
+		},
+		AttributesActions: []attraction.ActionKeyValue{
+			{Key: "opencensus.resourcetype", Value: "host", Action: attraction.UPSERT},
+			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
+		},
+	}, cfg)
 }

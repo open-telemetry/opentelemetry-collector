@@ -145,7 +145,7 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 }
 
 func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer) error {
-	factory := jaegerreceiver.Factory{}
+	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
 	cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
@@ -196,7 +196,7 @@ func NewOTLPDataReceiver(port int) *OTLPDataReceiver {
 }
 
 func (or *OTLPDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
-	factory := otlpreceiver.Factory{}
+	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(or.ProtocolName())
 	cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}

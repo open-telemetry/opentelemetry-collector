@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	logsproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 func TestLogRecordCount(t *testing.T) {
@@ -29,28 +29,42 @@ func TestLogRecordCount(t *testing.T) {
 	md.ResourceLogs().Resize(1)
 	assert.EqualValues(t, 0, md.LogRecordCount())
 
-	md.ResourceLogs().At(0).Logs().Resize(1)
+	md.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	assert.EqualValues(t, 0, md.LogRecordCount())
+
+	md.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
 	assert.EqualValues(t, 1, md.LogRecordCount())
 
 	rms := md.ResourceLogs()
 	rms.Resize(3)
-	rms.At(0).Logs().Resize(1)
-	rms.At(1).Logs().Resize(1)
-	rms.At(2).Logs().Resize(4)
+	rms.At(0).InstrumentationLibraryLogs().Resize(1)
+	rms.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	rms.At(1).InstrumentationLibraryLogs().Resize(1)
+	rms.At(2).InstrumentationLibraryLogs().Resize(1)
+	rms.At(2).InstrumentationLibraryLogs().At(0).Logs().Resize(5)
 	assert.EqualValues(t, 6, md.LogRecordCount())
 }
 
 func TestLogRecordCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, LogsFromProto([]*logsproto.ResourceLogs{nil, {}}).LogRecordCount())
-	assert.EqualValues(t, 2, LogsFromProto([]*logsproto.ResourceLogs{
+	assert.EqualValues(t, 0, LogsFromProto([]*otlplogs.ResourceLogs{nil, {}}).LogRecordCount())
+	assert.EqualValues(t, 0, LogsFromProto([]*otlplogs.ResourceLogs{
 		{
-			Logs: []*logsproto.LogRecord{nil, {}},
+			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{nil, {}},
+		},
+	}).LogRecordCount())
+	assert.EqualValues(t, 2, LogsFromProto([]*otlplogs.ResourceLogs{
+		{
+			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+				{
+					Logs: []*otlplogs.LogRecord{nil, {}},
+				},
+			},
 		},
 	}).LogRecordCount())
 }
 
 func TestToFromLogProto(t *testing.T) {
-	otlp := []*logsproto.ResourceLogs(nil)
+	otlp := []*otlplogs.ResourceLogs(nil)
 	td := LogsFromProto(otlp)
 	assert.EqualValues(t, NewLogs(), td)
 	assert.EqualValues(t, otlp, LogsToProto(td))

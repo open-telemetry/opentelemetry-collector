@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -69,6 +69,11 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:             30 * time.Second,
 				},
 				WriteBufferSize: 512 * 1024,
+				PerRPCAuth: &configgrpc.PerRPCAuthConfig{
+					AuthType:    "bearer",
+					BearerToken: "some-token",
+				},
+				BalancerName: "round_robin",
 			},
 		})
 }

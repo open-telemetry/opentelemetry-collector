@@ -27,7 +27,7 @@ Select a good issue from the links below (ordered by difficulty/complexity):
 Comment on the issue that you want to work on so we can assign it to you and
 clarify anything related to it.
 
-If you would like to work on something that is not listed as an issue 
+If you would like to work on something that is not listed as an issue
 (e.g. a new feature or enhancement) please first read our [vision](docs/vision.md) and
 [roadmap](docs/roadmap.md) to make sure your proposal aligns with the goals of the
 Collector, then create an issue and describe your proposal. It is best to do this
@@ -94,7 +94,7 @@ $ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-service.
 
 Run tests, fmt and lint:
 
-```shell 
+```shell
 $ make install-tools # Only first time.
 $ make
 ```
@@ -150,9 +150,9 @@ exit cleanly with a process exit code.
 ### Propagate Errors to the Caller
 
 Do not crash or exit outside the `main()` function, e.g. via `log.Fatal` or `os.Exit`,
-even during startup. Instead, return detailed errors to be handled appropriately 
+even during startup. Instead, return detailed errors to be handled appropriately
 by the caller. The code in packages other than `main` may be imported and used by
-third-party applications, and they should have full control over error handling 
+third-party applications, and they should have full control over error handling
 and process termination.
 
 ### Do not Crash after Startup
@@ -248,3 +248,7 @@ tests and try to keep them as short as possible.
 
 If you implement a new component add end-to-end tests for the component using
 the automated [Testbed](testbed/README.md).
+
+## Release
+
+See [release](docs/release.md) for details.

@@ -20,75 +20,78 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/fileexporter"
-	"go.opentelemetry.io/collector/exporter/jaegerexporter"
-	"go.opentelemetry.io/collector/exporter/loggingexporter"
-	"go.opentelemetry.io/collector/exporter/opencensusexporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/exporter/prometheusexporter"
-	"go.opentelemetry.io/collector/exporter/zipkinexporter"
-	"go.opentelemetry.io/collector/extension/healthcheckextension"
-	"go.opentelemetry.io/collector/extension/pprofextension"
-	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/filterprocessor"
-	"go.opentelemetry.io/collector/processor/memorylimiter"
-	"go.opentelemetry.io/collector/processor/queuedprocessor"
-	"go.opentelemetry.io/collector/processor/resourceprocessor"
-	"go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
-	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
-	"go.opentelemetry.io/collector/processor/spanprocessor"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
-	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
-	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
 func TestDefaultComponents(t *testing.T) {
-	expectedExtensions := map[configmodels.Type]component.ExtensionFactory{
-		"health_check": &healthcheckextension.Factory{},
-		"pprof":        &pprofextension.Factory{},
-		"zpages":       &zpagesextension.Factory{},
+	expectedExtensions := []configmodels.Type{
+		"health_check",
+		"pprof",
+		"zpages",
 	}
-	expectedReceivers := map[configmodels.Type]component.ReceiverFactoryBase{
-		"jaeger":      &jaegerreceiver.Factory{},
-		"zipkin":      &zipkinreceiver.Factory{},
-		"prometheus":  &prometheusreceiver.Factory{},
-		"opencensus":  &opencensusreceiver.Factory{},
-		"otlp":        &otlpreceiver.Factory{},
-		"hostmetrics": hostmetricsreceiver.NewFactory(),
+	expectedReceivers := []configmodels.Type{
+		"jaeger",
+		"zipkin",
+		"prometheus",
+		"opencensus",
+		"otlp",
+		"hostmetrics",
 	}
-	expectedProcessors := map[configmodels.Type]component.ProcessorFactoryBase{
-		"attributes":            &attributesprocessor.Factory{},
-		"resource":              &resourceprocessor.Factory{},
-		"queued_retry":          &queuedprocessor.Factory{},
-		"batch":                 &batchprocessor.Factory{},
-		"memory_limiter":        &memorylimiter.Factory{},
-		"tail_sampling":         &tailsamplingprocessor.Factory{},
-		"probabilistic_sampler": &probabilisticsamplerprocessor.Factory{},
-		"span":                  &spanprocessor.Factory{},
-		"filter":                &filterprocessor.Factory{},
+	expectedProcessors := []configmodels.Type{
+		"attributes",
+		"resource",
+		"queued_retry",
+		"batch",
+		"memory_limiter",
+		"tail_sampling",
+		"probabilistic_sampler",
+		"span",
+		"filter",
 	}
-	expectedExporters := map[configmodels.Type]component.ExporterFactoryBase{
-		"opencensus": &opencensusexporter.Factory{},
-		"prometheus": &prometheusexporter.Factory{},
-		"logging":    &loggingexporter.Factory{},
-		"zipkin":     &zipkinexporter.Factory{},
-		"jaeger":     &jaegerexporter.Factory{},
-		"file":       &fileexporter.Factory{},
-		"otlp":       &otlpexporter.Factory{},
+	expectedExporters := []configmodels.Type{
+		"opencensus",
+		"prometheus",
+		"logging",
+		"zipkin",
+		"jaeger",
+		"file",
+		"otlp",
 	}
 
 	factories, err := Components()
 	assert.NoError(t, err)
-	assert.Equal(t, expectedExtensions, factories.Extensions)
-	assert.Equal(t, expectedReceivers, factories.Receivers)
-	assert.Equal(t, expectedProcessors, factories.Processors)
-	assert.Equal(t, expectedExporters, factories.Exporters)
+
+	exts := factories.Extensions
+	assert.Equal(t, len(expectedExtensions), len(exts))
+	for _, k := range expectedExtensions {
+		v, ok := exts[k]
+		assert.True(t, ok)
+		assert.Equal(t, k, v.Type())
+	}
+
+	recvs := factories.Receivers
+	assert.Equal(t, len(expectedReceivers), len(recvs))
+	for _, k := range expectedReceivers {
+		v, ok := recvs[k]
+		require.True(t, ok)
+		assert.Equal(t, k, v.Type())
+	}
+
+	procs := factories.Processors
+	assert.Equal(t, len(expectedProcessors), len(procs))
+	for _, k := range expectedProcessors {
+		v, ok := procs[k]
+		require.True(t, ok)
+		assert.Equal(t, k, v.Type())
+	}
+
+	exps := factories.Exporters
+	assert.Equal(t, len(expectedExporters), len(exps))
+	for _, k := range expectedExporters {
+		v, ok := exps[k]
+		require.True(t, ok)
+		assert.Equal(t, k, v.Type())
+	}
 }

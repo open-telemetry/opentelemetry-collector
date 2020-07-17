@@ -225,10 +225,13 @@ func (e *Exporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 			return err
 		}
 
-		for _, log := range rl.Logs {
-			if log != nil {
-				if err := jw.MarshalArrayItem(log); err != nil {
-					return err
+		for _, ill := range rl.InstrumentationLibraryLogs {
+			// TODO: output ill.InstrumentationLibrary
+			for _, log := range ill.Logs {
+				if log != nil {
+					if err := jw.MarshalArrayItem(log); err != nil {
+						return err
+					}
 				}
 			}
 		}

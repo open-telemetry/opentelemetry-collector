@@ -14,9 +14,24 @@
 
 package diskscraper
 
-import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+import (
+	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+)
 
 // Config relating to Disk Metric Scraper.
 type Config struct {
 	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Include specifies a filter on the devices that should be included from the generated metrics.
+	// Exclude specifies a filter on the devices that should be excluded from the generated metrics.
+	// If neither `include` or `exclude` are set, metrics will be generated for all devices.
+	Include MatchConfig `mapstructure:"include"`
+	Exclude MatchConfig `mapstructure:"exclude"`
+}
+
+type MatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+
+	Devices []string `mapstructure:"devices"`
 }

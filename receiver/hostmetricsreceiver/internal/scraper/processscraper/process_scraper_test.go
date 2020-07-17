@@ -17,6 +17,7 @@ package processscraper
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"strings"
 	"testing"
@@ -33,8 +34,20 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
+func skipTestOnUnsupportedOS(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		t.Skipf("skipping test on %v", runtime.GOOS)
+	}
+}
+
 func TestScrapeMetrics(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	const bootTime = 100
+	const expectedStartTime = 100 * 1e9
+
 	scraper, err := newProcessScraper(&Config{})
+	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 	err = scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -57,9 +70,9 @@ func TestScrapeMetrics(t *testing.T) {
 
 	require.Greater(t, resourceMetrics.Len(), 1)
 	assertResourceAttributes(t, resourceMetrics)
-	assertCPUUsageMetricValid(t, resourceMetrics)
+	assertCPUTimeMetricValid(t, resourceMetrics, expectedStartTime)
 	assertMemoryUsageMetricValid(t, resourceMetrics)
-	assertDiskBytesMetricValid(t, resourceMetrics)
+	assertDiskIOMetricValid(t, resourceMetrics, expectedStartTime)
 }
 
 func assertResourceAttributes(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -74,13 +87,16 @@ func assertResourceAttributes(t *testing.T, resourceMetrics pdata.ResourceMetric
 	}
 }
 
-func assertCPUUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	cpuUsageMetric := getMetric(t, cpuTimeDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuUsageMetric.MetricDescriptor())
-	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 0, stateLabelName, userStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 1, stateLabelName, systemStateLabelValue)
+func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+	cpuTimeMetric := getMetric(t, cpuTimeDescriptor, resourceMetrics)
+	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertDoubleMetricStartTimeEquals(t, cpuTimeMetric, startTime)
+	}
+	internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
+	internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
 	if runtime.GOOS == "linux" {
-		internal.AssertDoubleMetricLabelHasValue(t, cpuUsageMetric, 2, stateLabelName, waitStateLabelValue)
+		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, waitStateLabelValue)
 	}
 }
 
@@ -89,11 +105,14 @@ func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMe
 	internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
 }
 
-func assertDiskBytesMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	diskBytesMetric := getMetric(t, diskIODescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, diskIODescriptor, diskBytesMetric.MetricDescriptor())
-	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 0, directionLabelName, readDirectionLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, diskBytesMetric, 1, directionLabelName, writeDirectionLabelValue)
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+	diskIOMetric := getMetric(t, diskIODescriptor, resourceMetrics)
+	internal.AssertDescriptorEqual(t, diskIODescriptor, diskIOMetric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, diskIOMetric, startTime)
+	}
+	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 0, directionLabelName, readDirectionLabelValue)
+	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
 func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.ResourceMetricsSlice) pdata.Metric {
@@ -107,7 +126,7 @@ func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.Resour
 		}
 	}
 
-	require.Failf(t, "no metric with name %s was returned", descriptor.Name())
+	require.Fail(t, fmt.Sprintf("no metric with name %s was returned", descriptor.Name()))
 	return pdata.NewMetric()
 }
 
@@ -118,6 +137,8 @@ func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
 }
 
 func TestScrapeMetrics_NewError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	_, err := newProcessScraper(&Config{Include: MatchConfig{Names: []string{"test"}}})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
@@ -128,6 +149,8 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 }
 
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	scraper, err := newProcessScraper(&Config{})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
@@ -214,6 +237,8 @@ func newDefaultHandleMock() *processHandleMock {
 }
 
 func TestScrapeMetrics_Filtered(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	type testCase struct {
 		name          string
 		names         []string
@@ -305,6 +330,8 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 }
 
 func TestScrapeMetrics_ProcessErrors(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	type testCase struct {
 		name            string
 		osFilter        string

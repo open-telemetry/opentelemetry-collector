@@ -29,4 +29,8 @@ type Config struct {
 
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
 	SendBatchSize uint32 `mapstructure:"send_batch_size,omitempty"`
+
+	// SendBatchMaxSize is the maximum size of a batch. Larger batches are split into smaller units.
+	// Default value is 0, that means no maximum size.
+	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size,omitempty"`
 }

@@ -206,7 +206,7 @@ func TestMutualTLS(t *testing.T) {
 	defer server.GracefulStop()
 
 	// Create gRPC trace exporter
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: serverAddr.String(),

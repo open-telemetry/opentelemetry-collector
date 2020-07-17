@@ -16,9 +16,11 @@ package memoryscraper
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -26,51 +28,65 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, pdata.MetricSlice)
-
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
-		// expect 1 metric
-		assert.Equal(t, 1, metrics.Len())
-
-		// for memory used metric, expect a datapoint for each state label, including at least 2 states, one of which is 'Used'
-		memoryUsageMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
-		assert.GreaterOrEqual(t, memoryUsageMetric.Int64DataPoints().Len(), 2)
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 0, stateLabelName, usedStateLabelValue)
-	})
-}
-
-func TestScrapeMetrics_Linux(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		return
+	type testCase struct {
+		name              string
+		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
+		expectedErr       string
 	}
 
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
-		// expect 1 metric
-		assert.Equal(t, 1, metrics.Len())
+	testCases := []testCase{
+		{
+			name: "Standard",
+		},
+		{
+			name:              "Error",
+			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
+			expectedErr:       "err1",
+		},
+	}
 
-		// for memory used metric, expect a datapoint for all 6 state labels
-		memoryUsageMetric := metrics.At(0)
-		internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
-		assert.Equal(t, 6, memoryUsageMetric.Int64DataPoints().Len())
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 0, stateLabelName, usedStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 1, stateLabelName, freeStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 2, stateLabelName, bufferedStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 3, stateLabelName, cachedStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 4, stateLabelName, slabReclaimableStateLabelValue)
-		internal.AssertInt64MetricLabelHasValue(t, memoryUsageMetric, 5, stateLabelName, slabUnreclaimableStateLabelValue)
-	})
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper := newMemoryScraper(context.Background(), &Config{})
+			if test.virtualMemoryFunc != nil {
+				scraper.virtualMemory = test.virtualMemoryFunc
+			}
+
+			err := scraper.Initialize(context.Background())
+			require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			metrics, err := scraper.ScrapeMetrics(context.Background())
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			assert.Equal(t, 1, metrics.Len())
+
+			assertMemoryUsageMetricValid(t, metrics.At(0), memoryUsageDescriptor)
+
+			if runtime.GOOS == "linux" {
+				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+			} else if runtime.GOOS != "windows" {
+				internal.AssertInt64MetricLabelHasValue(t, metrics.At(0), 2, stateLabelName, inactiveStateLabelValue)
+			}
+		})
+	}
 }
 
-func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := newMemoryScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
+	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 0, stateLabelName, usedStateLabelValue)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 1, stateLabelName, freeStateLabelValue)
+}
 
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-	assertFn(t, metrics)
+func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
+	internal.AssertInt64MetricLabelHasValue(t, metric, 2, stateLabelName, bufferedStateLabelValue)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 3, stateLabelName, cachedStateLabelValue)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 4, stateLabelName, slabReclaimableStateLabelValue)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 5, stateLabelName, slabUnreclaimableStateLabelValue)
 }

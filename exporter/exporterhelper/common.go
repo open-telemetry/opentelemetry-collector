@@ -18,36 +18,70 @@ import (
 	"context"
 
 	"go.opencensus.io/trace"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 var (
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
+// Start specifies the function invoked when the exporter is being started.
+type Start func(context.Context, component.Host) error
+
 // Shutdown specifies the function invoked when the exporter is being shutdown.
 type Shutdown func(context.Context) error
 
-// ExporterOptions contains options concerning how an Exporter is configured.
-type ExporterOptions struct {
-	shutdown Shutdown
-}
-
-// ExporterOption apply changes to ExporterOptions.
-type ExporterOption func(*ExporterOptions)
+// ExporterOption apply changes to internalOptions.
+type ExporterOption func(*baseExporter)
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown Shutdown) ExporterOption {
-	return func(o *ExporterOptions) {
+	return func(o *baseExporter) {
 		o.shutdown = shutdown
 	}
 }
 
-// Construct the ExporterOptions from multiple ExporterOption.
-func newExporterOptions(options ...ExporterOption) ExporterOptions {
-	var opts ExporterOptions
-	for _, op := range options {
-		op(&opts)
+// WithStart overrides the default Start function for an exporter.
+// The default shutdown function does nothing and always returns nil.
+func WithStart(start Start) ExporterOption {
+	return func(o *baseExporter) {
+		o.start = start
 	}
-	return opts
+}
+
+// internalOptions contains internalOptions concerning how an Exporter is configured.
+type baseExporter struct {
+	exporterFullName string
+	start            Start
+	shutdown         Shutdown
+}
+
+// Construct the internalOptions from multiple ExporterOption.
+func newBaseExporter(exporterFullName string, options ...ExporterOption) baseExporter {
+	be := baseExporter{
+		exporterFullName: exporterFullName,
+	}
+
+	for _, op := range options {
+		op(&be)
+	}
+
+	return be
+}
+
+func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
+	if be.start != nil {
+		return be.start(ctx, host)
+	}
+	return nil
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (be *baseExporter) Shutdown(ctx context.Context) error {
+	if be.shutdown != nil {
+		return be.shutdown(ctx)
+	}
+	return nil
 }

@@ -34,14 +34,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	config := cfg.(*Config)
@@ -59,7 +59,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
@@ -144,7 +144,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricReceiver(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,

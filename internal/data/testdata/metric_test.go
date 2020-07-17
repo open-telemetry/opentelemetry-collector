@@ -73,6 +73,11 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			otlp: generateMetricOtlpOneMetric(),
 		},
 		{
+			name: "two-metrics",
+			td:   GenerateMetricDataTwoMetrics(),
+			otlp: GenerateMetricOtlpTwoMetrics(),
+		},
+		{
 			name: "one-metric-one-nil",
 			td:   GenerateMetricDataOneMetricOneNil(),
 			otlp: generateMetricOtlpOneMetricOneNil(),

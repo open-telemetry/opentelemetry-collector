@@ -19,9 +19,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -29,25 +29,23 @@ const (
 	typeStr = "span"
 )
 
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
-// TODO https://go.opentelemetry.io/collector/issues/215
+// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
 var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\"")
 
-// Factory is the factory for the Span processor.
-type Factory struct {
+// NewFactory returns a new factory for the Span processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraces(createTraceProcessor))
 }
 
-var _ component.ProcessorFactory = (*Factory)(nil)
-
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -56,12 +54,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
+func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
+	cfg configmodels.Processor,
 	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor) (component.TraceProcessor, error) {
+) (component.TraceProcessor, error) {
 
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.
@@ -71,15 +69,13 @@ func (f *Factory) CreateTraceProcessor(
 		return nil, errMissingRequiredField
 	}
 
-	return newSpanProcessor(nextConsumer, *oCfg)
-}
-
-// CreateMetricsProcessor creates a metric processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateParams,
-	_ consumer.MetricsConsumer,
-	_ configmodels.Processor) (component.MetricsProcessor, error) {
-	// Span Processor does not support Metrics.
-	return nil, configerror.ErrDataTypeIsNotSupported
+	sp, err := newSpanProcessor(*oCfg)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextConsumer,
+		sp,
+		processorhelper.WithCapabilities(processorCapabilities))
 }

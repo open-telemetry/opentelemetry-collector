@@ -10,6 +10,8 @@ exporters:
     insecure: true
   jaeger/2:
     endpoint: "a.new.target:1234"
+    balancer_name: "round_robin"
+
 
 service:
   pipelines:

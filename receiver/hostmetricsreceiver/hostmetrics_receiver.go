@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
@@ -58,7 +57,7 @@ func newHostMetricsReceiver(
 	for key, cfg := range config.Scrapers {
 		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, logger, key, cfg, factories)
 		if err != nil {
-			errors.Wrapf(err, "failed to create scraper for key %q", key)
+			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
 		}
 
 		if ok {
@@ -68,7 +67,7 @@ func newHostMetricsReceiver(
 
 		resourceMetricsScraper, ok, err := createResourceMetricsScraper(ctx, logger, key, cfg, resourceFactories)
 		if err != nil {
-			errors.Wrapf(err, "failed to create resource scraper for key %q", key)
+			return nil, fmt.Errorf("failed to create resource scraper for key %q: %w", key, err)
 		}
 
 		if ok {

@@ -90,6 +90,10 @@ type AttributeValue struct {
 	orig **otlpcommon.AnyValue
 }
 
+func newAttributeValue(orig **otlpcommon.AnyValue) AttributeValue {
+	return AttributeValue{orig}
+}
+
 // NewAttributeValueNull creates a new AttributeValue with a null value.
 func NewAttributeValueNull() AttributeValue {
 	orig := &otlpcommon.AnyValue{}
@@ -139,6 +143,15 @@ func NewAttributeValueSlice(len int) []AttributeValue {
 		wrappers[i].orig = &origPtrs[i]
 	}
 	return wrappers
+}
+
+func (a AttributeValue) InitEmpty() {
+	*a.orig = &otlpcommon.AnyValue{}
+}
+
+// IsNil returns true if the underlying data are nil.
+func (a AttributeValue) IsNil() bool {
+	return *a.orig == nil
 }
 
 // Type returns the type of the value for this AttributeValue.
@@ -294,6 +307,13 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = (*a.orig).Value
 	}
+}
+
+func (a AttributeValue) CopyTo(dest AttributeValue) {
+	if *a.orig != nil && dest.IsNil() {
+		dest.InitEmpty()
+	}
+	a.copyTo(*dest.orig)
 }
 
 // Equal checks for equality, it returns true if the objects are equal otherwise false.

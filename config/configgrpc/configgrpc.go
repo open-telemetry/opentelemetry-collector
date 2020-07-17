@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
@@ -34,6 +35,8 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+
+	PerRPCAuthTypeBearer = "bearer"
 )
 
 var (
@@ -42,6 +45,9 @@ var (
 		CompressionGzip: gzip.Name,
 	}
 )
+
+// Allowed balancer names to be set in grpclb_policy to discover the servers
+var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -84,11 +90,27 @@ type GRPCClientSettings struct {
 
 	// The headers associated with gRPC requests.
 	Headers map[string]string `mapstructure:"headers"`
+
+	// PerRPCAuth parameter configures the client to send authentication data on a per-RPC basis.
+	PerRPCAuth *PerRPCAuthConfig `mapstructure:"per_rpc_auth"`
+
+	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first
+	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
+	BalancerName string `mapstructure:"balancer_name"`
 }
 
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+}
+
+// PerRPCAuthConfig specifies how the Per-RPC authentication data should be obtained.
+type PerRPCAuthConfig struct {
+	// AuthType represents the authentication type to use. Currently, only 'bearer' is supported.
+	AuthType string `mapstructure:"type,omitempty"`
+
+	// BearerToken specifies the bearer token to use for every RPC.
+	BearerToken string `mapstructure:"bearer_token,omitempty"`
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
@@ -140,7 +162,6 @@ type GRPCServerSettings struct {
 // ToServerOption maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
 func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	opts := []grpc.DialOption{}
-
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
 			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
@@ -176,7 +197,34 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		opts = append(opts, keepAliveOption)
 	}
 
+	if gcs.PerRPCAuth != nil {
+		if strings.EqualFold(gcs.PerRPCAuth.AuthType, PerRPCAuthTypeBearer) {
+			sToken := gcs.PerRPCAuth.BearerToken
+			token := BearerToken(sToken)
+			opts = append(opts, grpc.WithPerRPCCredentials(token))
+		} else {
+			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)
+		}
+	}
+
+	if gcs.BalancerName != "" {
+		valid := validateBalancerName(gcs.BalancerName)
+		if !valid {
+			return nil, fmt.Errorf("invalid balancer_name: %s", gcs.BalancerName)
+		}
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
+	}
+
 	return opts, nil
+}
+
+func validateBalancerName(balancerName string) bool {
+	for _, item := range allowedBalancerNames {
+		if item == balancerName {
+			return true
+		}
+	}
+	return false
 }
 
 func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {

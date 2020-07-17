@@ -177,14 +177,18 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logA",
-				},
-				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logB",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logA",
+						},
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logB",
+						},
+					},
 				},
 			},
 		},
@@ -197,10 +201,14 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logC",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logC",
+						},
+					},
 				},
 			},
 		},
@@ -226,12 +234,12 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 			"logs": []interface{}{
 				map[string]interface{}{
-					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"shortName":         "logA",
+					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"name":         "logA",
 				},
 				map[string]interface{}{
-					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"shortName":         "logB",
+					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"name":         "logB",
 				},
 			},
 		}, j)
@@ -252,8 +260,8 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 			"logs": []interface{}{
 				map[string]interface{}{
-					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"shortName":         "logC",
+					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"name":         "logC",
 				},
 			},
 		}, j)
@@ -272,14 +280,18 @@ func TestFileLogsExporterErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logA",
-				},
-				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logB",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logA",
+						},
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logB",
+						},
+					},
 				},
 			},
 		},
@@ -292,10 +304,14 @@ func TestFileLogsExporterErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logC",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logC",
+						},
+					},
 				},
 			},
 		},

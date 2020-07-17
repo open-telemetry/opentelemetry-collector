@@ -64,11 +64,11 @@ func Components() (
 	}
 
 	receivers, err := component.MakeReceiverFactoryMap(
-		&jaegerreceiver.Factory{},
+		jaegerreceiver.NewFactory(),
 		&zipkinreceiver.Factory{},
 		&prometheusreceiver.Factory{},
 		&opencensusreceiver.Factory{},
-		&otlpreceiver.Factory{},
+		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 	)
 	if err != nil {
@@ -78,26 +78,26 @@ func Components() (
 	exporters, err := component.MakeExporterFactoryMap(
 		&opencensusexporter.Factory{},
 		&prometheusexporter.Factory{},
-		&loggingexporter.Factory{},
+		loggingexporter.NewFactory(),
 		&zipkinexporter.Factory{},
-		&jaegerexporter.Factory{},
+		jaegerexporter.NewFactory(),
 		&fileexporter.Factory{},
-		&otlpexporter.Factory{},
+		otlpexporter.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
 	processors, err := component.MakeProcessorFactoryMap(
-		&attributesprocessor.Factory{},
-		&resourceprocessor.Factory{},
-		&queuedprocessor.Factory{},
-		&batchprocessor.Factory{},
-		&memorylimiter.Factory{},
+		attributesprocessor.NewFactory(),
+		resourceprocessor.NewFactory(),
+		queuedprocessor.NewFactory(),
+		batchprocessor.NewFactory(),
+		memorylimiter.NewFactory(),
 		&tailsamplingprocessor.Factory{},
 		&probabilisticsamplerprocessor.Factory{},
-		&spanprocessor.Factory{},
-		&filterprocessor.Factory{},
+		spanprocessor.NewFactory(),
+		filterprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

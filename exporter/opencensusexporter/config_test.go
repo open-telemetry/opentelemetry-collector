@@ -68,6 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:             30,
 				},
 				WriteBufferSize: 512 * 1024,
+				BalancerName:    "round_robin",
 			},
 			NumWorkers:        123,
 			ReconnectionDelay: 15,

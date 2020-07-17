@@ -15,12 +15,12 @@
 package filterprocessor
 
 import (
-	"go.uber.org/zap"
+	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -28,17 +28,17 @@ const (
 	typeStr = "filter"
 )
 
-// Factory is the factory for filter processor.
-type Factory struct {
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: false}
+
+// NewFactory returns a new factory for the Filter processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
-// Type gets the type of the Option config created by this factory.
-func (f Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -47,21 +47,19 @@ func (f Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
-	c configmodels.Processor,
-) (component.TraceProcessorOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
+func createMetricsProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
-	oCfg := cfg.(*Config)
-	return newFilterMetricProcessor(nextConsumer, oCfg)
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsProcessor, error) {
+	fp, err := newFilterMetricProcessor(cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		fp,
+		processorhelper.WithCapabilities(processorCapabilities))
 }

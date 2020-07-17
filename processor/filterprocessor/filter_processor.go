@@ -19,22 +19,18 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 )
 
 type filterMetricProcessor struct {
 	cfg     *Config
-	next    consumer.MetricsConsumerOld
 	include *filtermetric.Matcher
 	exclude *filtermetric.Matcher
 }
 
-var _ component.MetricsProcessorOld = (*filterMetricProcessor)(nil)
-
-func newFilterMetricProcessor(next consumer.MetricsConsumerOld, cfg *Config) (*filterMetricProcessor, error) {
+func newFilterMetricProcessor(cfg *Config) (*filterMetricProcessor, error) {
 	inc, err := createMatcher(cfg.Metrics.Include)
 	if err != nil {
 		return nil, err
@@ -47,7 +43,6 @@ func newFilterMetricProcessor(next consumer.MetricsConsumerOld, cfg *Config) (*f
 
 	return &filterMetricProcessor{
 		cfg:     cfg,
-		next:    next,
 		include: inc,
 		exclude: exc,
 	}, nil
@@ -67,40 +62,22 @@ func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, err
 	return &matcher, nil
 }
 
-// GetCapabilities returns the Capabilities assocciated with the resource processor.
-func (fmp *filterMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
-}
-
-// Start is invoked during service startup.
-func (*filterMetricProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (*filterMetricProcessor) Shutdown(ctx context.Context) error {
-	return nil
-}
-
-// ConsumeMetricsData implements the MetricsProcessor interface
-func (fmp *filterMetricProcessor) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	return fmp.next.ConsumeMetricsData(ctx, consumerdata.MetricsData{
-		Node:     md.Node,
-		Resource: md.Resource,
-		Metrics:  fmp.filterMetrics(md.Metrics),
-	})
-}
-
-// filterMetrics filters the given spans based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) filterMetrics(metrics []*metricspb.Metric) []*metricspb.Metric {
-	keep := make([]*metricspb.Metric, 0, len(metrics))
-	for _, m := range metrics {
-		if fmp.shouldKeepMetric(m) {
-			keep = append(keep, m)
+// ProcessMetrics filters the given spans based off the filterMetricProcessor's filters.
+func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	mds := pdatautil.MetricsToMetricsData(md)
+	for i := range mds {
+		if len(mds[i].Metrics) == 0 {
+			continue
 		}
+		keep := make([]*metricspb.Metric, 0, len(mds[i].Metrics))
+		for _, m := range mds[i].Metrics {
+			if fmp.shouldKeepMetric(m) {
+				keep = append(keep, m)
+			}
+		}
+		mds[i].Metrics = keep
 	}
-
-	return keep
+	return pdatautil.MetricsFromMetricsData(mds), nil
 }
 
 // shouldKeepMetric determines whether a metric should be kept based off the filterMetricProcessor's filters.

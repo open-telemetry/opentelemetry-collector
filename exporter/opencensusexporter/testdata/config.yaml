@@ -16,6 +16,7 @@ exporters:
       header1: 234
       another: "somevalue"
     reconnection_delay: 15
+    balancer_name: "round_robin"
     keepalive:
       time: 20
       timeout: 30
