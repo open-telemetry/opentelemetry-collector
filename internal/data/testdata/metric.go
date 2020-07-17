@@ -41,7 +41,7 @@ const (
 	TestCounterIntMetricName          = "counter-int"
 	TestCumulativeHistogramMetricName = "cumulative-histogram"
 	TestSummaryMetricName             = "summary"
-	NumMetricTests                    = 13
+	NumMetricTests                    = 14
 )
 
 func GenerateMetricDataEmpty() data.MetricData {
@@ -157,6 +157,21 @@ func GenerateMetricDataOneMetric() data.MetricData {
 	return md
 }
 
+func generateMetricOtlpOneMetric() []*otlpmetrics.ResourceMetrics {
+	return []*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateOtlpResource1(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlpmetrics.Metric{
+						generateOtlpCounterIntMetric(),
+					},
+				},
+			},
+		},
+	}
+}
+
 func GenerateMetricDataOneMetricOneDataPoint() data.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
@@ -174,13 +189,14 @@ func GenerateMetricDataTwoMetrics() data.MetricData {
 	return md
 }
 
-func generateMetricOtlpOneMetric() []*otlpmetrics.ResourceMetrics {
+func GenerateMetricOtlpTwoMetrics() []*otlpmetrics.ResourceMetrics {
 	return []*otlpmetrics.ResourceMetrics{
 		{
 			Resource: generateOtlpResource1(),
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
 					Metrics: []*otlpmetrics.Metric{
+						generateOtlpCounterIntMetric(),
 						generateOtlpCounterIntMetric(),
 					},
 				},
