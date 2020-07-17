@@ -32,25 +32,31 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	otlptracecol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
+	otlptraces "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
 
+type mockReceiver struct {
+	srv          *grpc.Server
+	requestCount int32
+	totalItems   int32
+	metadata     metadata.MD
+}
+
 type mockTraceReceiver struct {
-	srv            *grpc.Server
-	requestCount   int32
-	totalSpanCount int32
-	lastRequest    *otlptracecol.ExportTraceServiceRequest
-	metadata       metadata.MD
+	mockReceiver
+	lastRequest *otlptraces.ExportTraceServiceRequest
 }
 
 func (r *mockTraceReceiver) Export(
 	ctx context.Context,
-	req *otlptracecol.ExportTraceServiceRequest,
-) (*otlptracecol.ExportTraceServiceResponse, error) {
+	req *otlptraces.ExportTraceServiceRequest,
+) (*otlptraces.ExportTraceServiceResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	spanCount := 0
 	for _, rs := range req.ResourceSpans {
@@ -58,18 +64,21 @@ func (r *mockTraceReceiver) Export(
 			spanCount += len(ils.Spans)
 		}
 	}
-	atomic.AddInt32(&r.totalSpanCount, int32(spanCount))
+	atomic.AddInt32(&r.totalItems, int32(spanCount))
 	r.lastRequest = req
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return &otlptracecol.ExportTraceServiceResponse{}, nil
+	return &otlptraces.ExportTraceServiceResponse{}, nil
 }
 
 func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
-	rcv := &mockTraceReceiver{}
+	rcv := &mockTraceReceiver{
+		mockReceiver: mockReceiver{
+			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+		},
+	}
 
 	// Now run it as a gRPC server
-	rcv.srv = obsreport.GRPCServerWithObservabilityEnabled()
-	otlptracecol.RegisterTraceServiceServer(rcv.srv, rcv)
+	otlptraces.RegisterTraceServiceServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -78,13 +87,14 @@ func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
 }
 
 type mockLogsReceiver struct {
-	srv                 *grpc.Server
-	requestCount        int32
-	totalLogRecordCount int32
-	lastRequest         *otlplogs.ExportLogsServiceRequest
+	mockReceiver
+	lastRequest *otlplogs.ExportLogsServiceRequest
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, req *otlplogs.ExportLogsServiceRequest) (*otlplogs.ExportLogsServiceResponse, error) {
+func (r *mockLogsReceiver) Export(
+	ctx context.Context,
+	req *otlplogs.ExportLogsServiceRequest,
+) (*otlplogs.ExportLogsServiceResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	recordCount := 0
 	for _, rs := range req.ResourceLogs {
@@ -92,16 +102,20 @@ func (r *mockLogsReceiver) Export(ctx context.Context, req *otlplogs.ExportLogsS
 			recordCount += len(il.Logs)
 		}
 	}
-	atomic.AddInt32(&r.totalLogRecordCount, int32(recordCount))
+	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.lastRequest = req
+	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlplogs.ExportLogsServiceResponse{}, nil
 }
 
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
-	rcv := &mockLogsReceiver{}
+	rcv := &mockLogsReceiver{
+		mockReceiver: mockReceiver{
+			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+		},
+	}
 
 	// Now run it as a gRPC server
-	rcv.srv = obsreport.GRPCServerWithObservabilityEnabled()
 	otlplogs.RegisterLogsServiceServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
@@ -110,7 +124,47 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	return rcv
 }
 
-func TestSendTraceData(t *testing.T) {
+type mockMetricsReceiver struct {
+	mockReceiver
+	lastRequest *otlpmetrics.ExportMetricsServiceRequest
+}
+
+func (r *mockMetricsReceiver) Export(
+	ctx context.Context,
+	req *otlpmetrics.ExportMetricsServiceRequest,
+) (*otlpmetrics.ExportMetricsServiceResponse, error) {
+	atomic.AddInt32(&r.requestCount, 1)
+	recordCount := 0
+	for _, rs := range req.ResourceMetrics {
+		for _, il := range rs.InstrumentationLibraryMetrics {
+			for _, m := range il.Metrics {
+				recordCount += len(m.DoubleDataPoints) + len(m.Int64DataPoints) + len(m.HistogramDataPoints) + len(m.SummaryDataPoints)
+			}
+		}
+	}
+	atomic.AddInt32(&r.totalItems, int32(recordCount))
+	r.lastRequest = req
+	r.metadata, _ = metadata.FromIncomingContext(ctx)
+	return &otlpmetrics.ExportMetricsServiceResponse{}, nil
+}
+
+func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
+	rcv := &mockMetricsReceiver{
+		mockReceiver: mockReceiver{
+			srv: obsreport.GRPCServerWithObservabilityEnabled(),
+		},
+	}
+
+	// Now run it as a gRPC server
+	otlpmetrics.RegisterMetricsServiceServer(rcv.srv, rcv)
+	go func() {
+		_ = rcv.srv.Serve(ln)
+	}()
+
+	return rcv
+}
+
+func TestSendTraces(t *testing.T) {
 	// Start an OTLP-compatible receiver.
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
@@ -119,21 +173,19 @@ func TestSendTraceData(t *testing.T) {
 	defer rcv.srv.GracefulStop()
 
 	// Start an OTLP exporter and point to the receiver.
-	config := Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: ln.Addr().String(),
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure: true,
-			},
-			Headers: map[string]string{
-				"header": "header-value",
-			},
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
+		Headers: map[string]string{
+			"header": "header-value",
 		},
 	}
-
-	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
+	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -157,12 +209,12 @@ func TestSendTraceData(t *testing.T) {
 	}, "receive a request")
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, rcv.totalSpanCount)
+	assert.EqualValues(t, 0, rcv.totalItems)
 
 	// A trace with 2 spans.
 	td = testdata.GenerateTraceDataTwoSpansSameResource()
 
-	expectedOTLPReq := &otlptracecol.ExportTraceServiceRequest{
+	expectedOTLPReq := &otlptraces.ExportTraceServiceRequest{
 		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
 	}
 
@@ -177,7 +229,80 @@ func TestSendTraceData(t *testing.T) {
 	expectedHeader := []string{"header-value"}
 
 	// Verify received span.
-	assert.EqualValues(t, 2, rcv.totalSpanCount)
+	assert.EqualValues(t, 2, rcv.totalItems)
+	assert.EqualValues(t, 2, rcv.requestCount)
+	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+
+	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
+}
+
+func TestSendMetrics(t *testing.T) {
+	// Start an OTLP-compatible receiver.
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	rcv := otlpMetricsReceiverOnGRPCServer(ln)
+	// Also closes the connection.
+	defer rcv.srv.GracefulStop()
+
+	// Start an OTLP exporter and point to the receiver.
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
+		Headers: map[string]string{
+			"header": "header-value",
+		},
+	}
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+
+	assert.NoError(t, exp.Start(context.Background(), host))
+
+	// Ensure that initially there is no data in the receiver.
+	assert.EqualValues(t, 0, rcv.requestCount)
+
+	// Send empty trace.
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
+	// Wait until it is received.
+	testutil.WaitFor(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 0
+	}, "receive a request")
+
+	// Ensure it was received empty.
+	assert.EqualValues(t, 0, rcv.totalItems)
+
+	// A trace with 2 spans.
+	md = pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+
+	expectedOTLPReq := &otlpmetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: testdata.GenerateMetricOtlpTwoMetrics(),
+	}
+
+	err = exp.ConsumeMetrics(context.Background(), md)
+	assert.NoError(t, err)
+
+	// Wait until it is received.
+	testutil.WaitFor(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 1
+	}, "receive a request")
+
+	expectedHeader := []string{"header-value"}
+
+	// Verify received metrics.
+	assert.EqualValues(t, 2, rcv.requestCount)
+	assert.EqualValues(t, 4, rcv.totalItems)
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 
 	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
@@ -189,18 +314,16 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	// Start an OTLP exporter and point to the receiver.
-	config := Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: ln.Addr().String(),
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure: true,
-			},
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
 		},
 	}
-
-	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
+	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -248,18 +371,16 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	// Start an OTLP exporter and point to the receiver.
-	config := Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: ln.Addr().String(),
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure: true,
-			},
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
 		},
 	}
-
-	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, &config)
+	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -309,12 +430,12 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 		return atomic.LoadInt32(&rcv.requestCount) > 0
 	}, "receive a request")
 
-	expectedOTLPReq := &otlptracecol.ExportTraceServiceRequest{
+	expectedOTLPReq := &otlptraces.ExportTraceServiceRequest{
 		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
 	}
 
 	// Verify received span.
-	assert.EqualValues(t, 2, rcv.totalSpanCount)
+	assert.EqualValues(t, 2, rcv.totalItems)
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 }
 
@@ -327,18 +448,16 @@ func TestSendLogData(t *testing.T) {
 	defer rcv.srv.GracefulStop()
 
 	// Start an OTLP exporter and point to the receiver.
-	config := Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: ln.Addr().String(),
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure: true,
-			},
+	factory := NewFactory().(component.LogExporterFactory)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
 		},
 	}
-
-	factory := NewFactory().(component.LogExporterFactory)
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateLogExporter(context.Background(), creationParams, &config)
+	exp, err := factory.CreateLogExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -362,7 +481,7 @@ func TestSendLogData(t *testing.T) {
 	}, "receive a request")
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, rcv.totalLogRecordCount)
+	assert.EqualValues(t, 0, rcv.totalItems)
 
 	// A request with 2 log entries.
 	td = testdata.GenerateLogDataTwoLogsSameResource()
@@ -379,7 +498,8 @@ func TestSendLogData(t *testing.T) {
 		return atomic.LoadInt32(&rcv.requestCount) > 1
 	}, "receive a request")
 
-	// Verify received span.
-	assert.EqualValues(t, 2, rcv.totalLogRecordCount)
+	// Verify received logs.
+	assert.EqualValues(t, 2, rcv.requestCount)
+	assert.EqualValues(t, 2, rcv.totalItems)
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 }
