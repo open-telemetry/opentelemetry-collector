@@ -41,8 +41,7 @@ func (mexp *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consu
 	return err
 }
 
-// NewMetricsExporterOld creates an MetricsExporter that can record metrics and can wrap every request with a Span.
-// If no internalOptions are passed it just adds the nextSender format as a tag in the Context.
+// NewMetricsExporterOld creates an MetricsExporter that records observability metrics and wraps every request with a Span.
 // TODO: Add support for retries.
 func NewMetricsExporterOld(cfg configmodels.Exporter, pushMetricsData PushMetricsDataOld, options ...ExporterOption) (component.MetricsExporterOld, error) {
 	if cfg == nil {
@@ -129,8 +128,7 @@ func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metric
 	return err
 }
 
-// NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
-// If no internalOptions are passed it just adds the nextSender format as a tag in the Context.
+// NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(cfg configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (component.MetricsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
@@ -141,12 +139,12 @@ func NewMetricsExporter(cfg configmodels.Exporter, pushMetricsData PushMetricsDa
 	}
 
 	be := newBaseExporter(cfg, options...)
-
-	// Record metrics on the consumer.
-	be.qSender.nextSender = &metricsSenderWithObservability{
-		exporterName: cfg.Name(),
-		sender:       be.qSender.nextSender,
-	}
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &metricsSenderWithObservability{
+			exporterName: cfg.Name(),
+			nextSender:   nextSender,
+		}
+	})
 
 	return &metricsExporter{
 		baseExporter: be,
@@ -156,15 +154,15 @@ func NewMetricsExporter(cfg configmodels.Exporter, pushMetricsData PushMetricsDa
 
 type metricsSenderWithObservability struct {
 	exporterName string
-	sender       requestSender
+	nextSender   requestSender
 }
 
 func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
 	req.setContext(obsreport.StartMetricsExportOp(req.context(), mewo.exporterName))
-	numDroppedMetrics, err := mewo.sender.send(req)
+	numDroppedMetrics, err := mewo.nextSender.send(req)
 
-	// TODO: this is not ideal: req should come from the next function itself.
-	// 	temporarily loading req from internal format. Once full switch is done
+	// TODO: this is not ideal: it should come from the next function itself.
+	// 	temporarily loading it from internal format. Once full switch is done
 	// 	to new metrics will remove this.
 	mReq := req.(*metricsRequest)
 	numReceivedMetrics, numPoints := pdatautil.MetricAndDataPointCount(mReq.md)

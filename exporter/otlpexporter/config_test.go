@@ -54,15 +54,15 @@ func TestLoadConfig(t *testing.T) {
 				Timeout: 10 * time.Second,
 			},
 			RetrySettings: exporterhelper.RetrySettings{
-				Disabled:       false,
-				InitialBackoff: 10 * time.Second,
-				MaxBackoff:     1 * time.Minute,
-				MaxElapsedTime: 10 * time.Minute,
+				Disabled:        false,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
 			},
-			QueuedSettings: exporterhelper.QueuedSettings{
-				Disabled:   false,
-				NumWorkers: 2,
-				QueueSize:  10,
+			QueueSettings: exporterhelper.QueueSettings{
+				Disabled:     false,
+				NumConsumers: 2,
+				QueueSize:    10,
 			},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
 				Headers: map[string]string{

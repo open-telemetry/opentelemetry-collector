@@ -25,21 +25,26 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-// QueuedSettings defines configuration for queueing batches before sending to the nextSender.
-type QueuedSettings struct {
-	// Disabled indicates whether to not enqueue batches before sending to the nextSender.
+// QueueSettings defines configuration for queueing batches before sending to the consumerSender.
+type QueueSettings struct {
+	// Disabled indicates whether to not enqueue batches before sending to the consumerSender.
 	Disabled bool `mapstructure:"disabled"`
-	// NumWorkers is the number of consumers from the queue.
-	NumWorkers int `mapstructure:"num_workers"`
+	// NumConsumers is the number of consumers from the queue.
+	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-func CreateDefaultQueuedSettings() QueuedSettings {
-	return QueuedSettings{
-		Disabled:   false,
-		NumWorkers: 10,
-		QueueSize:  5000,
+// CreateDefaultQueueSettings returns the default settings for QueueSettings.
+func CreateDefaultQueueSettings() QueueSettings {
+	return QueueSettings{
+		Disabled:     false,
+		NumConsumers: 10,
+		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
+		// This is a pretty decent value for production.
+		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
+		// multiply that by the number of requests per seconds.
+		QueueSize: 5000,
 	}
 }
 
@@ -48,54 +53,64 @@ func CreateDefaultQueuedSettings() QueuedSettings {
 type RetrySettings struct {
 	// Disabled indicates whether to not retry sending batches in case of export failure.
 	Disabled bool `mapstructure:"disabled"`
-	// InitialBackoff the time to wait after the first failure before retrying
-	InitialBackoff time.Duration `mapstructure:"initial_backoff"`
-	// MaxBackoff is the upper bound on backoff.
-	MaxBackoff time.Duration `mapstructure:"max_backoff"`
-	// MaxElapsedTime is the maximum amount of time spent trying to send a batch.
+	// InitialInterval the time to wait after the first failure before retrying.
+	InitialInterval time.Duration `mapstructure:"initial_interval"`
+	// MaxInterval is the upper bound on backoff interval. Once this value is reached the delay between
+	// consecutive retries will always be `MaxInterval`.
+	MaxInterval time.Duration `mapstructure:"max_interval"`
+	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
+	// Once this value is reached, the data is discarded.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
 
+// CreateDefaultRetrySettings returns the default settings for RetrySettings.
 func CreateDefaultRetrySettings() RetrySettings {
 	return RetrySettings{
-		Disabled:       false,
-		InitialBackoff: 5 * time.Second,
-		MaxBackoff:     30 * time.Second,
-		MaxElapsedTime: 5 * time.Minute,
+		Disabled:        false,
+		InitialInterval: 5 * time.Second,
+		MaxInterval:     30 * time.Second,
+		MaxElapsedTime:  5 * time.Minute,
 	}
 }
 
-type queuedSender struct {
-	cfg        *QueuedSettings
-	nextSender requestSender
-	queue      *queue.BoundedQueue
+type queuedRetrySender struct {
+	cfg            QueueSettings
+	consumerSender requestSender
+	queue          *queue.BoundedQueue
+	retryStopCh    chan struct{}
 }
 
 var errorRefused = errors.New("failed to add to the queue")
 
-func newQueuedSender(cfg *QueuedSettings, nextSender requestSender) *queuedSender {
-	return &queuedSender{
-		cfg:        cfg,
-		nextSender: nextSender,
-		queue:      queue.NewBoundedQueue(cfg.QueueSize, func(item interface{}) {}),
+func newQueuedRetrySender(qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender) *queuedRetrySender {
+	retryStopCh := make(chan struct{})
+	return &queuedRetrySender{
+		cfg: qCfg,
+		consumerSender: &retrySender{
+			cfg:        rCfg,
+			nextSender: nextSender,
+			stopCh:     retryStopCh,
+		},
+		queue:       queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		retryStopCh: retryStopCh,
 	}
 }
 
 // start is invoked during service startup.
-func (sp *queuedSender) start() {
-	sp.queue.StartConsumers(sp.cfg.NumWorkers, func(item interface{}) {
+func (qrs *queuedRetrySender) start() {
+	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		value := item.(request)
-		_, _ = sp.nextSender.send(value)
+		_, _ = qrs.consumerSender.send(value)
 	})
 }
 
-// ExportTraces implements the TExporter interface
-func (sp *queuedSender) send(req request) (int, error) {
-	if sp.cfg.Disabled {
-		return sp.nextSender.send(req)
+// send implements the requestSender interface
+func (qrs *queuedRetrySender) send(req request) (int, error) {
+	if qrs.cfg.Disabled {
+		return qrs.consumerSender.send(req)
 	}
 
-	if !sp.queue.Produce(req) {
+	if !qrs.queue.Produce(req) {
 		return req.count(), errorRefused
 	}
 
@@ -103,8 +118,13 @@ func (sp *queuedSender) send(req request) (int, error) {
 }
 
 // shutdown is invoked during service shutdown.
-func (sp *queuedSender) shutdown() {
-	sp.queue.Stop()
+func (qrs *queuedRetrySender) shutdown() {
+	// First stop the retry goroutines, so that unblocks the queue workers.
+	close(qrs.retryStopCh)
+
+	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
+	// try once every request.
+	qrs.queue.Stop()
 }
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
@@ -121,30 +141,23 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	cfg        *RetrySettings
+	cfg        RetrySettings
 	nextSender requestSender
 	stopCh     chan struct{}
 }
 
-func newRetrySender(cfg *RetrySettings, nextSender requestSender) *retrySender {
-	return &retrySender{
-		cfg:        cfg,
-		nextSender: nextSender,
-		stopCh:     make(chan struct{}),
-	}
-}
-
-func (re *retrySender) send(req request) (int, error) {
-	if re.cfg.Disabled {
-		return re.nextSender.send(req)
+// send implements the requestSender interface
+func (rs *retrySender) send(req request) (int, error) {
+	if rs.cfg.Disabled {
+		return rs.nextSender.send(req)
 	}
 
 	expBackoff := backoff.NewExponentialBackOff()
-	expBackoff.InitialInterval = re.cfg.InitialBackoff
-	expBackoff.MaxInterval = re.cfg.MaxBackoff
-	expBackoff.MaxElapsedTime = re.cfg.MaxElapsedTime
+	expBackoff.InitialInterval = rs.cfg.InitialInterval
+	expBackoff.MaxInterval = rs.cfg.MaxInterval
+	expBackoff.MaxElapsedTime = rs.cfg.MaxElapsedTime
 	for {
-		droppedItems, err := re.nextSender.send(req)
+		droppedItems, err := rs.nextSender.send(req)
 
 		if err == nil {
 			return droppedItems, nil
@@ -175,16 +188,11 @@ func (re *retrySender) send(req request) (int, error) {
 		select {
 		case <-req.context().Done():
 			return req.count(), fmt.Errorf("request is cancelled or timed out %w", err)
-		case <-re.stopCh:
+		case <-rs.stopCh:
 			return req.count(), fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}
-}
-
-// shutdown is invoked during service shutdown.
-func (re *retrySender) shutdown() {
-	close(re.stopCh)
 }
 
 // max returns the larger of x or y.

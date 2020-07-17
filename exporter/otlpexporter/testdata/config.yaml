@@ -11,14 +11,14 @@ exporters:
     compression: "on"
     ca_file: /var/lib/mycert.pem
     timeout: 10s
-    queued_settings:
+    sending_queue:
       disabled: false
-      num_workers: 2
+      num_consumers: 2
       queue_size: 10
-    retry_settings:
+    retry_on_failure:
       disabled: false
-      initial_backoff: 10s
-      max_backoff: 60s
+      initial_interval: 10s
+      max_interval: 60s
       max_elapsed_time: 10m
     per_rpc_auth:
       type: bearer

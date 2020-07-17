@@ -66,7 +66,7 @@ func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 	return err
 }
 
-// NewLogsExporter creates an LogsExporter that can record logs and can wrap every request with a Span.
+// NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
@@ -77,12 +77,12 @@ func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, optio
 	}
 
 	be := newBaseExporter(cfg, options...)
-
-	// Record metrics on the consumer.
-	be.qSender.nextSender = &logsExporterWithObservability{
-		exporterName: cfg.Name(),
-		sender:       be.qSender.nextSender,
-	}
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &logsExporterWithObservability{
+			exporterName: cfg.Name(),
+			nextSender:   nextSender,
+		}
+	})
 
 	return &logsExporter{
 		baseExporter: be,
@@ -92,12 +92,12 @@ func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, optio
 
 type logsExporterWithObservability struct {
 	exporterName string
-	sender       requestSender
+	nextSender   requestSender
 }
 
 func (lewo *logsExporterWithObservability) send(req request) (int, error) {
 	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName))
-	numDroppedLogs, err := lewo.sender.send(req)
+	numDroppedLogs, err := lewo.nextSender.send(req)
 	obsreport.EndLogsExportOp(req.context(), req.count(), numDroppedLogs, err)
 	return numDroppedLogs, err
 }

@@ -29,7 +29,6 @@ import (
 // returns the number of dropped spans.
 type traceDataPusherOld func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
 
-// traceExporterOld implements the nextSender with additional helper internalOptions.
 type traceExporterOld struct {
 	*baseExporter
 	dataPusher traceDataPusherOld
@@ -41,9 +40,7 @@ func (texp *traceExporterOld) ConsumeTraceData(ctx context.Context, td consumerd
 	return err
 }
 
-// NewTraceExporterOld creates an TraceExporterOld that can record metrics and can wrap every
-// request with a Span. If no internalOptions are passed it just adds the nextSender format as a
-// tag in the Context.
+// NewTraceExporterOld creates an TraceExporterOld that records observability metrics and wraps every request with a Span.
 func NewTraceExporterOld(
 	cfg configmodels.Exporter,
 	dataPusher traceDataPusherOld,
@@ -125,8 +122,7 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	return err
 }
 
-// NewTraceExporter creates a TraceExporter that can record metrics and can wrap
-// every request with a Span.
+// NewTraceExporter creates a TraceExporter that records observability metrics and wraps every request with a Span.
 func NewTraceExporter(
 	cfg configmodels.Exporter,
 	dataPusher traceDataPusher,
@@ -142,12 +138,12 @@ func NewTraceExporter(
 	}
 
 	be := newBaseExporter(cfg, options...)
-
-	// Record metrics on the consumer.
-	be.qSender.nextSender = &tracesExporterWithObservability{
-		exporterName: cfg.Name(),
-		sender:       be.qSender.nextSender,
-	}
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &tracesExporterWithObservability{
+			exporterName: cfg.Name(),
+			nextSender:   nextSender,
+		}
+	})
 
 	return &traceExporter{
 		baseExporter: be,
@@ -157,16 +153,16 @@ func NewTraceExporter(
 
 type tracesExporterWithObservability struct {
 	exporterName string
-	sender       requestSender
+	nextSender   requestSender
 }
 
 func (tewo *tracesExporterWithObservability) send(req request) (int, error) {
 	req.setContext(obsreport.StartTraceDataExportOp(req.context(), tewo.exporterName))
 	// Forward the data to the next consumer (this pusher is the next).
-	droppedSpans, err := tewo.sender.send(req)
+	droppedSpans, err := tewo.nextSender.send(req)
 
-	// TODO: this is not ideal: req should come from the next function itself.
-	// 	temporarily loading req from internal format. Once full switch is done
+	// TODO: this is not ideal: it should come from the next function itself.
+	// 	temporarily loading it from internal format. Once full switch is done
 	// 	to new metrics will remove this.
 	obsreport.EndTraceDataExportOp(req.context(), req.count(), droppedSpans, err)
 	return droppedSpans, err
