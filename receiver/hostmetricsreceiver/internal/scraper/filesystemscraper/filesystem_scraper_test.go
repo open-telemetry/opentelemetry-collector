@@ -31,19 +31,32 @@ import (
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name           string
-		config         Config
-		partitionsFunc func(bool) ([]disk.PartitionStat, error)
-		usageFunc      func(string) (*disk.UsageStat, error)
-		expectMetrics  bool
-		newErrRegex    string
-		expectedErr    string
+		name                     string
+		config                   Config
+		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
+		usageFunc                func(string) (*disk.UsageStat, error)
+		expectMetrics            bool
+		expectedDeviceDataPoints int
+		newErrRegex              string
+		expectedErr              string
 	}
 
 	testCases := []testCase{
 		{
 			name:          "Standard",
 			expectMetrics: true,
+		},
+		{
+			name:   "Include single process filter",
+			config: Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}}},
+			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
+			},
+			usageFunc: func(string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
 		},
 		{
 			name:          "Include Filter that matches nothing",
@@ -107,19 +120,23 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.GreaterOrEqual(t, metrics.Len(), 1)
 
-			assertFileSystemUsageMetricValid(t, metrics.At(0), fileSystemUsageDescriptor)
+			assertFileSystemUsageMetricValid(t, metrics.At(0), fileSystemUsageDescriptor, test.expectedDeviceDataPoints*fileSystemStatesLen)
 
 			if isUnix() {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
-				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor)
+				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor, test.expectedDeviceDataPoints*2)
 			}
 		})
 	}
 }
 
-func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
+func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, expectedDeviceDataPoints int) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
-	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
+	if expectedDeviceDataPoints > 0 {
+		assert.Equal(t, expectedDeviceDataPoints, metric.Int64DataPoints().Len())
+	} else {
+		assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), fileSystemStatesLen)
+	}
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, stateLabelName, usedLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
 }
