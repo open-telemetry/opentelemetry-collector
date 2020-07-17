@@ -27,14 +27,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
@@ -43,7 +43,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
 

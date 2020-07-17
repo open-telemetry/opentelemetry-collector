@@ -31,14 +31,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
@@ -159,7 +159,7 @@ func TestCreateTraceExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &Factory{}
+			factory := NewFactory()
 			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 			consumer, err := factory.CreateTraceExporter(context.Background(), creationParams, &tt.config)
 
@@ -181,12 +181,12 @@ func TestCreateTraceExporter(t *testing.T) {
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateLogExporter(context.Background(), creationParams, cfg)
+	oexp, err := factory.(component.LogExporterFactory).CreateLogExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }
