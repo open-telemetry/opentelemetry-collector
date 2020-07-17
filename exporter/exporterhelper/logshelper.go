@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -27,21 +28,47 @@ import (
 // the number of dropped logs.
 type PushLogsData func(ctx context.Context, md data.Logs) (droppedTimeSeries int, err error)
 
+type logsRequest struct {
+	baseRequest
+	ld     data.Logs
+	pusher PushLogsData
+}
+
+func newLogsRequest(ctx context.Context, ld data.Logs, pusher PushLogsData) request {
+	return &logsRequest{
+		baseRequest: baseRequest{ctx: ctx},
+		ld:          ld,
+		pusher:      pusher,
+	}
+}
+
+func (req *logsRequest) onPartialError(partialErr consumererror.PartialError) request {
+	// TODO: Implement this
+	return req
+}
+
+func (req *logsRequest) export(ctx context.Context) (int, error) {
+	return req.pusher(ctx, req.ld)
+}
+
+func (req *logsRequest) count() int {
+	return req.ld.LogRecordCount()
+}
+
 type logsExporter struct {
-	baseExporter
+	*baseExporter
 	pushLogsData PushLogsData
 }
 
-func (me *logsExporter) ConsumeLogs(ctx context.Context, md data.Logs) error {
-	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
-	_, err := me.pushLogsData(exporterCtx, md)
+func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+	exporterCtx := obsreport.ExporterContext(ctx, lexp.cfg.Name())
+	_, err := lexp.sender.send(newLogsRequest(exporterCtx, ld, lexp.pushLogsData))
 	return err
 }
 
-// NewLogsExporter creates an LogsExporter that can record logs and can wrap every request with a Span.
-// TODO: Add support for retries.
-func NewLogsExporter(config configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogExporter, error) {
-	if config == nil {
+// NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
+func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogExporter, error) {
+	if cfg == nil {
 		return nil, errNilConfig
 	}
 
@@ -49,22 +76,28 @@ func NewLogsExporter(config configmodels.Exporter, pushLogsData PushLogsData, op
 		return nil, errNilPushLogsData
 	}
 
-	pushLogsData = pushLogsWithObservability(pushLogsData, config.Name())
+	be := newBaseExporter(cfg, options...)
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &logsExporterWithObservability{
+			exporterName: cfg.Name(),
+			nextSender:   nextSender,
+		}
+	})
 
 	return &logsExporter{
-		baseExporter: newBaseExporter(config.Name(), options...),
+		baseExporter: be,
 		pushLogsData: pushLogsData,
 	}, nil
 }
 
-func pushLogsWithObservability(next PushLogsData, exporterName string) PushLogsData {
-	return func(ctx context.Context, ld data.Logs) (int, error) {
-		ctx = obsreport.StartLogsExportOp(ctx, exporterName)
-		numDroppedLogs, err := next(ctx, ld)
+type logsExporterWithObservability struct {
+	exporterName string
+	nextSender   requestSender
+}
 
-		numLogs := ld.LogRecordCount()
-
-		obsreport.EndLogsExportOp(ctx, numLogs, numDroppedLogs, err)
-		return numLogs, err
-	}
+func (lewo *logsExporterWithObservability) send(req request) (int, error) {
+	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName))
+	numDroppedLogs, err := lewo.nextSender.send(req)
+	obsreport.EndLogsExportOp(req.context(), req.count(), numDroppedLogs, err)
+	return numDroppedLogs, err
 }

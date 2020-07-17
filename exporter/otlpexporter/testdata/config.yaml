@@ -10,6 +10,16 @@ exporters:
     endpoint: "1.2.3.4:1234"
     compression: "on"
     ca_file: /var/lib/mycert.pem
+    timeout: 10s
+    sending_queue:
+      disabled: false
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      disabled: false
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
     per_rpc_auth:
       type: bearer
       bearer_token: some-token

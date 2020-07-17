@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -48,6 +49,20 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "otlp/2",
 				TypeVal: "otlp",
+			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Disabled:        false,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			QueueSettings: exporterhelper.QueueSettings{
+				Disabled:     false,
+				NumConsumers: 2,
+				QueueSize:    10,
 			},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
 				Headers: map[string]string{

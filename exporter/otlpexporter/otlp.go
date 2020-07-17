@@ -18,20 +18,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
@@ -41,9 +40,7 @@ import (
 type exporterImp struct {
 	// Input configuration.
 	config *Config
-
-	stopOnce sync.Once
-	w        sender
+	w      sender
 }
 
 type sender interface {
@@ -54,8 +51,7 @@ type sender interface {
 }
 
 var (
-	errTimeout    = errors.New("timeout")
-	errFatalError = errors.New("fatal error sending to server")
+	errPermanentError = consumererror.Permanent(errors.New("fatal error sending to server"))
 )
 
 // Crete new exporter and start it. The exporter will begin connecting but
@@ -78,12 +74,7 @@ func newExporter(cfg configmodels.Exporter) (*exporterImp, error) {
 }
 
 func (e *exporterImp) shutdown(context.Context) error {
-	err := componenterror.ErrAlreadyStopped
-	e.stopOnce.Do(func() {
-		// Close the connection.
-		err = e.w.stop()
-	})
-	return err
+	return e.w.stop()
 }
 
 func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
@@ -160,24 +151,18 @@ func (gs *grpcSender) stop() error {
 }
 
 func (gs *grpcSender) exportTrace(ctx context.Context, request *otlptrace.ExportTraceServiceRequest) error {
-	return exportRequest(gs.enhanceContext(ctx), func(ctx context.Context) error {
-		_, err := gs.traceExporter.Export(ctx, request, grpc.WaitForReady(gs.waitForReady))
-		return err
-	})
+	_, err := gs.traceExporter.Export(gs.enhanceContext(ctx), request, grpc.WaitForReady(gs.waitForReady))
+	return processError(err)
 }
 
 func (gs *grpcSender) exportMetrics(ctx context.Context, request *otlpmetrics.ExportMetricsServiceRequest) error {
-	return exportRequest(gs.enhanceContext(ctx), func(ctx context.Context) error {
-		_, err := gs.metricExporter.Export(ctx, request, grpc.WaitForReady(gs.waitForReady))
-		return err
-	})
+	_, err := gs.metricExporter.Export(gs.enhanceContext(ctx), request, grpc.WaitForReady(gs.waitForReady))
+	return processError(err)
 }
 
 func (gs *grpcSender) exportLogs(ctx context.Context, request *otlplogs.ExportLogsServiceRequest) error {
-	return exportRequest(gs.enhanceContext(ctx), func(ctx context.Context) error {
-		_, err := gs.logExporter.Export(ctx, request, grpc.WaitForReady(gs.waitForReady))
-		return err
-	})
+	_, err := gs.logExporter.Export(gs.enhanceContext(ctx), request, grpc.WaitForReady(gs.waitForReady))
+	return processError(err)
 }
 
 func (gs *grpcSender) enhanceContext(ctx context.Context) context.Context {
@@ -190,63 +175,36 @@ func (gs *grpcSender) enhanceContext(ctx context.Context) context.Context {
 // Send a trace or metrics request to the server. "perform" function is expected to make
 // the actual gRPC unary call that sends the request. This function implements the
 // common OTLP logic around request handling such as retries and throttling.
-func exportRequest(ctx context.Context, perform func(ctx context.Context) error) error {
-
-	expBackoff := backoff.NewExponentialBackOff()
-
-	// Spend max 15 mins on this operation. This is just a reasonable number that
-	// gives plenty of time for typical quick transient errors to resolve.
-	expBackoff.MaxElapsedTime = time.Minute * 15
-
-	for {
-		// Send to server.
-		err := perform(ctx)
-
-		if err == nil {
-			// Request is successful, we are done.
-			return nil
-		}
-
-		// We have an error, check gRPC status code.
-
-		status := status.Convert(err)
-
-		statusCode := status.Code()
-		if statusCode == codes.OK {
-			// Not really an error, still success.
-			return nil
-		}
-
-		// Now, this is this a real error.
-
-		if !shouldRetry(statusCode) {
-			// It is not a retryable error, we should not retry.
-			return errFatalError
-		}
-
-		// Need to retry.
-
-		// Check if server returned throttling information.
-		waitDuration := getThrottleDuration(status)
-		if waitDuration == 0 {
-			// No explicit throttle duration. Use exponential backoff strategy.
-			waitDuration = expBackoff.NextBackOff()
-			if waitDuration == backoff.Stop {
-				// We run out of max time allocated to this operation.
-				return errTimeout
-			}
-		}
-
-		// Wait until one of the conditions below triggers.
-		select {
-		case <-ctx.Done():
-			// This request is cancelled or timed out.
-			return errTimeout
-
-		case <-time.After(waitDuration):
-			// Time to try again.
-		}
+func processError(err error) error {
+	if err == nil {
+		// Request is successful, we are done.
+		return nil
 	}
+
+	// We have an error, check gRPC status code.
+
+	st := status.Convert(err)
+	if st.Code() == codes.OK {
+		// Not really an error, still success.
+		return nil
+	}
+
+	// Now, this is this a real error.
+
+	if !shouldRetry(st.Code()) {
+		// It is not a retryable error, we should not retry.
+		return errPermanentError
+	}
+
+	// Need to retry.
+
+	// Check if server returned throttling information.
+	throttleDuration := getThrottleDuration(st)
+	if throttleDuration != 0 {
+		return exporterhelper.NewThrottleRetry(err, throttleDuration)
+	}
+
+	return err
 }
 
 func shouldRetry(code codes.Code) bool {

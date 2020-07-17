@@ -39,11 +39,17 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
+	// TODO: Enable the queued settings.
+	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs.Disabled = true
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:   qs,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -61,9 +67,13 @@ func createTraceExporter(
 	if err != nil {
 		return nil, err
 	}
+	oCfg := cfg.(*Config)
 	oexp, err := exporterhelper.NewTraceExporter(
 		cfg,
 		oce.pushTraceData,
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown))
 	if err != nil {
 		return nil, err
@@ -81,9 +91,13 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
+	oCfg := cfg.(*Config)
 	oexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		oce.pushMetricsData,
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
 	if err != nil {
@@ -102,9 +116,13 @@ func createLogExporter(
 	if err != nil {
 		return nil, err
 	}
+	oCfg := cfg.(*Config)
 	oexp, err := exporterhelper.NewLogsExporter(
 		cfg,
 		oce.pushLogData,
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
 	if err != nil {

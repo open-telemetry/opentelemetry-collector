@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
@@ -30,21 +31,20 @@ import (
 type PushMetricsDataOld func(ctx context.Context, td consumerdata.MetricsData) (droppedTimeSeries int, err error)
 
 type metricsExporterOld struct {
-	baseExporter
+	*baseExporter
 	pushMetricsData PushMetricsDataOld
 }
 
-func (me *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
-	_, err := me.pushMetricsData(exporterCtx, md)
+func (mexp *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
+	_, err := mexp.pushMetricsData(exporterCtx, md)
 	return err
 }
 
-// NewMetricsExporterOld creates an MetricsExporter that can record metrics and can wrap every request with a Span.
-// If no internalOptions are passed it just adds the exporter format as a tag in the Context.
+// NewMetricsExporterOld creates an MetricsExporter that records observability metrics and wraps every request with a Span.
 // TODO: Add support for retries.
-func NewMetricsExporterOld(config configmodels.Exporter, pushMetricsData PushMetricsDataOld, options ...ExporterOption) (component.MetricsExporterOld, error) {
-	if config == nil {
+func NewMetricsExporterOld(cfg configmodels.Exporter, pushMetricsData PushMetricsDataOld, options ...ExporterOption) (component.MetricsExporterOld, error) {
+	if cfg == nil {
 		return nil, errNilConfig
 	}
 
@@ -52,10 +52,10 @@ func NewMetricsExporterOld(config configmodels.Exporter, pushMetricsData PushMet
 		return nil, errNilPushMetricsData
 	}
 
-	pushMetricsData = pushMetricsWithObservabilityOld(pushMetricsData, config.Name())
+	pushMetricsData = pushMetricsWithObservabilityOld(pushMetricsData, cfg.Name())
 
 	return &metricsExporterOld{
-		baseExporter:    newBaseExporter(config.Name(), options...),
+		baseExporter:    newBaseExporter(cfg, options...),
 		pushMetricsData: pushMetricsData,
 	}, nil
 }
@@ -88,22 +88,49 @@ func NumTimeSeries(md consumerdata.MetricsData) int {
 // the number of dropped metrics.
 type PushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 
-type metricsExporter struct {
-	baseExporter
-	pushMetricsData PushMetricsData
+type metricsRequest struct {
+	baseRequest
+	md     pdata.Metrics
+	pusher PushMetricsData
 }
 
-func (me *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	exporterCtx := obsreport.ExporterContext(ctx, me.exporterFullName)
-	_, err := me.pushMetricsData(exporterCtx, md)
+func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetricsData) request {
+	return &metricsRequest{
+		baseRequest: baseRequest{ctx: ctx},
+		md:          md,
+		pusher:      pusher,
+	}
+}
+
+func (req *metricsRequest) onPartialError(consumererror.PartialError) request {
+	// TODO: implement this.
+	return req
+}
+
+func (req *metricsRequest) export(ctx context.Context) (int, error) {
+	return req.pusher(ctx, req.md)
+}
+
+func (req *metricsRequest) count() int {
+	_, numPoints := pdatautil.MetricAndDataPointCount(req.md)
+	return numPoints
+}
+
+type metricsExporter struct {
+	*baseExporter
+	pusher PushMetricsData
+}
+
+func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
+	req := newMetricsRequest(exporterCtx, md, mexp.pusher)
+	_, err := mexp.sender.send(req)
 	return err
 }
 
-// NewMetricsExporter creates an MetricsExporter that can record metrics and can wrap every request with a Span.
-// If no internalOptions are passed it just adds the exporter format as a tag in the Context.
-// TODO: Add support for retries.
-func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (component.MetricsExporter, error) {
-	if config == nil {
+// NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
+func NewMetricsExporter(cfg configmodels.Exporter, pushMetricsData PushMetricsData, options ...ExporterOption) (component.MetricsExporter, error) {
+	if cfg == nil {
 		return nil, errNilConfig
 	}
 
@@ -111,25 +138,35 @@ func NewMetricsExporter(config configmodels.Exporter, pushMetricsData PushMetric
 		return nil, errNilPushMetricsData
 	}
 
-	pushMetricsData = pushMetricsWithObservability(pushMetricsData, config.Name())
+	be := newBaseExporter(cfg, options...)
+	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
+		return &metricsSenderWithObservability{
+			exporterName: cfg.Name(),
+			nextSender:   nextSender,
+		}
+	})
 
 	return &metricsExporter{
-		baseExporter:    newBaseExporter(config.Name(), options...),
-		pushMetricsData: pushMetricsData,
+		baseExporter: be,
+		pusher:       pushMetricsData,
 	}, nil
 }
 
-func pushMetricsWithObservability(next PushMetricsData, exporterName string) PushMetricsData {
-	return func(ctx context.Context, md pdata.Metrics) (int, error) {
-		ctx = obsreport.StartMetricsExportOp(ctx, exporterName)
-		numDroppedMetrics, err := next(ctx, md)
+type metricsSenderWithObservability struct {
+	exporterName string
+	nextSender   requestSender
+}
 
-		// TODO: this is not ideal: it should come from the next function itself.
-		// 	temporarily loading it from internal format. Once full switch is done
-		// 	to new metrics will remove this.
-		numReceivedMetrics, numPoints := pdatautil.MetricAndDataPointCount(md)
+func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
+	req.setContext(obsreport.StartMetricsExportOp(req.context(), mewo.exporterName))
+	numDroppedMetrics, err := mewo.nextSender.send(req)
 
-		obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedMetrics, numDroppedMetrics, err)
-		return numReceivedMetrics, err
-	}
+	// TODO: this is not ideal: it should come from the next function itself.
+	// 	temporarily loading it from internal format. Once full switch is done
+	// 	to new metrics will remove this.
+	mReq := req.(*metricsRequest)
+	numReceivedMetrics, numPoints := pdatautil.MetricAndDataPointCount(mReq.md)
+
+	obsreport.EndMetricsExportOp(req.context(), numPoints, numReceivedMetrics, numDroppedMetrics, err)
+	return numReceivedMetrics, err
 }

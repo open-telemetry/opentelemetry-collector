@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
@@ -45,6 +46,14 @@ var (
 		NameVal: fakeMetricsExporterName,
 	}
 )
+
+func TestMetricsRequest(t *testing.T) {
+	mr := newMetricsRequest(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()), nil)
+
+	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
+	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
+	assert.Equal(t, 0, mr.count())
+}
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
 	me, err := NewMetricsExporter(nil, newPushMetricsData(0, nil))
