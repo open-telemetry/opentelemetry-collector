@@ -59,7 +59,9 @@ func TestScrapeMetrics_Others(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newDiskScraper(context.Background(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), &Config{})
+			require.NoError(t, err, "Failed to create disk scraper: %v", err)
+
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -67,7 +69,7 @@ func TestScrapeMetrics_Others(t *testing.T) {
 				scraper.ioCounters = test.ioCountersFunc
 			}
 
-			err := scraper.Initialize(context.Background())
+			err = scraper.Initialize(context.Background())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return

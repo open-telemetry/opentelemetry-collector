@@ -62,9 +62,10 @@ func TestScrapeMetrics_Error(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newDiskScraper(context.Background(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), &Config{})
+			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			err := scraper.Initialize(context.Background())
+			err = scraper.Initialize(context.Background())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 

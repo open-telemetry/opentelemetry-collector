@@ -37,3 +37,12 @@ func TestCreateMetricsScraper(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
 }
+
+func TestCreateMetricsScraper_Error(t *testing.T) {
+	factory := &Factory{}
+	cfg := &Config{Include: MatchConfig{Devices: []string{""}}}
+
+	_, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
+
+	assert.Error(t, err)
+}
