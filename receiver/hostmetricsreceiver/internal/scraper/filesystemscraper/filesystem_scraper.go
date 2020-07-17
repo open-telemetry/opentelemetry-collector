@@ -98,18 +98,13 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	}
 
 	// filter devices by name
-	filteredUsages := make([]*deviceUsage, 0, len(usages))
-	for _, usage := range usages {
-		if s.includeDevice(usage.deviceName) {
-			filteredUsages = append(filteredUsages, usage)
-		}
-	}
+	usages = s.filterByDevice(usages)
 
-	if len(filteredUsages) > 0 {
+	if len(usages) > 0 {
 		metrics.Resize(1 + systemSpecificMetricsLen)
 
-		initializeFileSystemUsageMetric(metrics.At(0), filteredUsages)
-		appendSystemSpecificMetrics(metrics, 1, filteredUsages)
+		initializeFileSystemUsageMetric(metrics.At(0), usages)
+		appendSystemSpecificMetrics(metrics, 1, usages)
 	}
 
 	if len(errors) > 0 {
@@ -135,6 +130,20 @@ func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, deviceLa
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func (s *scraper) filterByDevice(usages []*deviceUsage) []*deviceUsage {
+	if s.includeFS == nil && s.excludeFS == nil {
+		return usages
+	}
+
+	filteredUsages := make([]*deviceUsage, 0, len(usages))
+	for _, usage := range usages {
+		if s.includeDevice(usage.deviceName) {
+			filteredUsages = append(filteredUsages, usage)
+		}
+	}
+	return filteredUsages
 }
 
 func (s *scraper) includeDevice(deviceName string) bool {
