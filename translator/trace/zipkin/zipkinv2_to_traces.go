@@ -21,6 +21,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -45,8 +46,8 @@ func (b byOTLPTypes) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
-// V2BatchToTraces translates Zipkin v2 spans into internal trace data.
-func V2BatchToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
+// V2SpansToTraces translates Zipkin v2 spans into internal trace data.
+func V2SpansToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
@@ -56,12 +57,18 @@ func V2BatchToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error)
 
 	rss := traceData.ResourceSpans()
 	prevServiceName := ""
+	prevInstrLibName := ""
 	rsCount := rss.Len()
+	ilsCount := 0
+	spanCount := 0
 	var curRscSpans pdata.ResourceSpans
+	var curILSpans pdata.InstrumentationLibrarySpans
+	var curSpans pdata.SpanSlice
 	for _, zspan := range zipkinSpans {
 		if zspan == nil {
 			continue
 		}
+		tags := copySpanTags(zspan.Tags)
 		localServiceName := extractLocalServiceName(zspan)
 		if localServiceName != prevServiceName {
 			prevServiceName = localServiceName
@@ -69,14 +76,101 @@ func V2BatchToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error)
 			curRscSpans = rss.At(rsCount)
 			curRscSpans.InitEmpty()
 			rsCount++
-			populateResourceFromZipkinSpan(zspan, localServiceName, curRscSpans.Resource())
+			populateResourceFromZipkinSpan(tags, localServiceName, curRscSpans.Resource())
+			prevInstrLibName = ""
+			ilsCount = 0
 		}
+		instrLibName := extractInstrumentationLibrary(zspan)
+		if instrLibName != prevInstrLibName || ilsCount == 0 {
+			prevInstrLibName = instrLibName
+			curRscSpans.InstrumentationLibrarySpans().Resize(ilsCount + 1)
+			curILSpans = curRscSpans.InstrumentationLibrarySpans().At(ilsCount)
+			curILSpans.InitEmpty()
+			ilsCount++
+			populateILFromZipkinSpan(tags, instrLibName, curILSpans.InstrumentationLibrary())
+			spanCount = 0
+			curSpans = curILSpans.Spans()
+		}
+		curSpans.Resize(spanCount + 1)
+		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount))
+		if err != nil {
+			return traceData, err
+		}
+		spanCount++
 	}
 
 	return traceData, nil
 }
 
-func populateResourceFromZipkinSpan(zspan *zipkinmodel.SpanModel, localServiceName string, resource pdata.Resource) {
+func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span) error {
+	dest.InitEmpty()
+
+	dest.SetTraceID(pdata.TraceID(tracetranslator.UInt64ToByteTraceID(zspan.TraceID.High, zspan.TraceID.Low)))
+	dest.SetSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(zspan.ID))))
+	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
+		dest.SetTraceState(pdata.TraceState(value))
+	}
+	parentID := zspan.ParentID
+	if parentID != nil && *parentID != zspan.ID {
+		dest.SetParentSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(*parentID))))
+	}
+
+	dest.SetName(zspan.Name)
+	startNano := zspan.Timestamp.UnixNano()
+	dest.SetStartTime(pdata.TimestampUnixNano(startNano))
+	if zspan.Duration.Nanoseconds() > 0 {
+		dest.SetEndTime(pdata.TimestampUnixNano(startNano + zspan.Duration.Nanoseconds()))
+	}
+	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
+
+	populateSpanStatus(tags, dest.Status())
+	attrs := dest.Attributes()
+	attrs.InitEmptyWithCapacity(len(tags))
+	if err := zTagsToInternalAttrs(zspan, tags, attrs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
+	if value, ok := tags[tracetranslator.TagStatusCode]; ok {
+		status.InitEmpty()
+		status.SetCode(pdata.StatusCode(otlptrace.Status_StatusCode_value[value]))
+		delete(tags, tracetranslator.TagStatusCode)
+		if value, ok := tags[tracetranslator.TagStatusMsg]; ok {
+			status.SetMessage(value)
+			delete(tags, tracetranslator.TagStatusMsg)
+		}
+	}
+}
+
+func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.SpanKind {
+	switch kind {
+	case zipkinmodel.Client:
+		return pdata.SpanKindCLIENT
+	case zipkinmodel.Server:
+		return pdata.SpanKindSERVER
+	case zipkinmodel.Producer:
+		return pdata.SpanKindPRODUCER
+	case zipkinmodel.Consumer:
+		return pdata.SpanKindCONSUMER
+	default:
+		if value, ok := tags[tracetranslator.TagSpanKind]; ok {
+			delete(tags, tracetranslator.TagSpanKind)
+			if value == "internal" {
+				return pdata.SpanKindINTERNAL
+			}
+		}
+		return pdata.SpanKindUNSPECIFIED
+	}
+}
+
+func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap) error {
+	return nil
+}
+
+func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
 	if tracetranslator.ResourceNotSet == localServiceName {
 		return
 	}
@@ -86,7 +180,6 @@ func populateResourceFromZipkinSpan(zspan *zipkinmodel.SpanModel, localServiceNa
 		return
 	}
 
-	tags := zspan.Tags
 	if len(tags) == 0 {
 		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
 		return
@@ -98,13 +191,37 @@ func populateResourceFromZipkinSpan(zspan *zipkinmodel.SpanModel, localServiceNa
 	} else {
 		resource.Attributes().InsertString(snSource, localServiceName)
 	}
+	delete(tags, tracetranslator.TagServiceNameSource)
 
 	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
-		value, ok := tags[key]
-		if ok {
-			resource.Attributes().InsertString(key, value)
+		if value, ok := tags[key]; ok {
+			resource.Attributes().UpsertString(key, value)
+			delete(tags, key)
 		}
 	}
+}
+
+func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pdata.InstrumentationLibrary) {
+	if instrLibName == "" {
+		return
+	}
+	library.InitEmpty()
+	if value, ok := tags[tracetranslator.TagInstrumentationName]; ok {
+		library.SetName(value)
+		delete(tags, tracetranslator.TagInstrumentationName)
+	}
+	if value, ok := tags[tracetranslator.TagInstrumentationVersion]; ok {
+		library.SetVersion(value)
+		delete(tags, tracetranslator.TagInstrumentationVersion)
+	}
+}
+
+func copySpanTags(tags map[string]string) map[string]string {
+	dest := make(map[string]string, len(tags))
+	for key, val := range tags {
+		dest[key] = val
+	}
+	return dest
 }
 
 func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {

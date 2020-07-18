@@ -68,5 +68,9 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		zipkinSpans, err := InternalTracesToZipkinSpans(td)
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
+		tdFromZS, zErr := V2SpansToTraces(zipkinSpans)
+		assert.NoError(t, zErr)
+		assert.NotNil(t, tdFromZS)
+		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
 	}
 }
