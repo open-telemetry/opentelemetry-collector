@@ -66,17 +66,17 @@ func TestHistogramFunctions(t *testing.T) {
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
 	require.Equal(t, 5, pt.Buckets().Len())
 
-	addHistogramVal(pt, 1)
+	addHistogramVal(pt, 1, 0)
 	require.EqualValues(t, 1, pt.Count())
 	require.EqualValues(t, 1, pt.Sum())
 	require.EqualValues(t, 1, pt.Buckets().At(0).Count())
 
-	addHistogramVal(pt, 2)
+	addHistogramVal(pt, 2, 0)
 	require.EqualValues(t, 2, pt.Count())
 	require.EqualValues(t, 3, pt.Sum())
 	require.EqualValues(t, 1, pt.Buckets().At(1).Count())
 
-	addHistogramVal(pt, 2)
+	addHistogramVal(pt, 2, 0)
 	require.EqualValues(t, 3, pt.Count())
 	require.EqualValues(t, 5, pt.Sum())
 	require.EqualValues(t, 2, pt.Buckets().At(1).Count())
@@ -92,6 +92,23 @@ func TestGenHistogram(t *testing.T) {
 	require.Equal(t, 5, buckets.Len())
 	middleBucket := buckets.At(2)
 	require.EqualValues(t, 2, middleBucket.Count())
+	ex := pt.Buckets().At(0).Exemplar()
+	ex.Value()
+	require.EqualValues(t, 1, ex.Value())
+}
+
+func TestSummaryFunctions(t *testing.T) {
+	pt := pdata.NewSummaryDataPoint()
+	pt.InitEmpty()
+	setSummaryPercentiles(pt, 0, 50, 95)
+	addSummaryValue(pt, 55, 0)
+	addSummaryValue(pt, 70, 1)
+	addSummaryValue(pt, 90, 2)
+	require.EqualValues(t, 3, pt.Count())
+	v := pt.ValueAtPercentiles().At(2).Value()
+	require.EqualValues(t, 1, v)
+	pctile := pt.ValueAtPercentiles().At(2).Percentile()
+	require.EqualValues(t, 95, pctile)
 }
 
 func TestGenSummary(t *testing.T) {
@@ -102,8 +119,8 @@ func TestGenSummary(t *testing.T) {
 	pts := metric.SummaryDataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	require.EqualValues(t, 1, pt.Count())
-	require.EqualValues(t, 1, pt.Sum())
+	require.EqualValues(t, 3, pt.Count())
+	require.EqualValues(t, 215, pt.Sum())
 }
 
 func TestGenDouble(t *testing.T) {
