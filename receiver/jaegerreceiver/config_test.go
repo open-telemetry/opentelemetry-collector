@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -60,10 +59,10 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: ":3456",
 				},
-				ThriftCompact: &configprotocol.ProtocolServerSettings{
+				ThriftCompact: &confignet.TCPAddr{
 					Endpoint: "0.0.0.0:456",
 				},
-				ThriftBinary: &configprotocol.ProtocolServerSettings{
+				ThriftBinary: &confignet.TCPAddr{
 					Endpoint: "0.0.0.0:789",
 				},
 			},
@@ -93,10 +92,10 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPBindEndpoint,
 				},
-				ThriftCompact: &configprotocol.ProtocolServerSettings{
+				ThriftCompact: &confignet.TCPAddr{
 					Endpoint: defaultThriftCompactBindEndpoint,
 				},
-				ThriftBinary: &configprotocol.ProtocolServerSettings{
+				ThriftBinary: &confignet.TCPAddr{
 					Endpoint: defaultThriftBinaryBindEndpoint,
 				},
 			},
@@ -116,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 						Transport: "tcp",
 					},
 				},
-				ThriftCompact: &configprotocol.ProtocolServerSettings{
+				ThriftCompact: &confignet.TCPAddr{
 					Endpoint: defaultThriftCompactBindEndpoint,
 				},
 			},
