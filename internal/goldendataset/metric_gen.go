@@ -29,9 +29,9 @@ type MetricCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pdata.MetricType
 	// The number of instrumentation library metrics per resource
-	NumIlmPerResource int
+	NumILMPerResource int
 	// The size of the MetricSlice and number of Metrics
-	NumMetrics int
+	NumMetricsPerILM int
 	// The number of labels on the LabelsMap associated with each point
 	NumPtLabels int
 	// The number of points to generate per Metric
@@ -49,8 +49,8 @@ type MetricCfg struct {
 func DefaultCfg() MetricCfg {
 	return MetricCfg{
 		MetricDescriptorType: pdata.MetricTypeInt64,
-		NumIlmPerResource:    1,
-		NumMetrics:           1,
+		NumILMPerResource:    1,
+		NumMetricsPerILM:     1,
 		NumPtLabels:          1,
 		NumPts:               1,
 		NumResourceAttrs:     1,
@@ -85,8 +85,8 @@ func MetricDataFromCfg(cfg MetricCfg) data.MetricData {
 
 func populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(cfg.NumIlmPerResource)
-	for i := 0; i < cfg.NumIlmPerResource; i++ {
+	ilms.Resize(cfg.NumILMPerResource)
+	for i := 0; i < cfg.NumILMPerResource; i++ {
 		ilm := ilms.At(i)
 		populateMetrics(cfg, ilm)
 	}
@@ -94,8 +94,8 @@ func populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
 
 func populateMetrics(cfg MetricCfg, ilm pdata.InstrumentationLibraryMetrics) {
 	metrics := ilm.Metrics()
-	metrics.Resize(cfg.NumMetrics)
-	for i := 0; i < cfg.NumMetrics; i++ {
+	metrics.Resize(cfg.NumMetricsPerILM)
+	for i := 0; i < cfg.NumMetricsPerILM; i++ {
 		metric := metrics.At(i)
 		metric.InitEmpty()
 		populateMetricDesc(cfg, metric)
