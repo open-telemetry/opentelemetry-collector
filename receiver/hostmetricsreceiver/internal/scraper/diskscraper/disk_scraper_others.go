@@ -110,8 +110,8 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime pdata.TimestampUnixNa
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadBytes))
-		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteBytes))
+		initializeInt64DataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadBytes))
+		initializeInt64DataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteBytes))
 		idx += 2
 	}
 }
@@ -124,8 +124,8 @@ func initializeDiskOpsMetric(metric pdata.Metric, startTime pdata.TimestampUnixN
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadCount))
-		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteCount))
+		initializeInt64DataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadCount))
+		initializeInt64DataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteCount))
 		idx += 2
 	}
 }
@@ -138,13 +138,22 @@ func initializeDiskTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnix
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.ReadTime))
-		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.WriteTime))
+		initializeDoubleDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, float64(ioCounter.ReadTime)/1e3)
+		initializeDoubleDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, float64(ioCounter.WriteTime)1e3)
 		idx += 2
 	}
 }
 
-func initializeDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
+func initializeInt64DataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
+	labelsMap := dataPoint.LabelsMap()
+	labelsMap.Insert(deviceLabelName, deviceLabel)
+	labelsMap.Insert(directionLabelName, directionLabel)
+	dataPoint.SetStartTime(startTime)
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
+
+func initializeDoubleDataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(directionLabelName, directionLabel)

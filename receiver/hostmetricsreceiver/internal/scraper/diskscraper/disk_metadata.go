@@ -59,8 +59,18 @@ var diskTimeDescriptor = func() pdata.MetricDescriptor {
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.time")
 	descriptor.SetDescription("Time spent in disk operations.")
-	descriptor.SetUnit("ms")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetUnit("s")
+	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
+	return descriptor
+}()
+
+var diskAvgOperationTimeDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.disk.operation_time")
+	descriptor.SetDescription("Average time an I/O-operation took to complete.")
+	descriptor.SetUnit("s")
+	descriptor.SetType(pdata.MetricTypeDouble)
 	return descriptor
 }()
 
