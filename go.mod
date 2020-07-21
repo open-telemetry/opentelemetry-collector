@@ -8,7 +8,7 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/apache/thrift v0.13.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/googleapis v1.3.0 // indirect
