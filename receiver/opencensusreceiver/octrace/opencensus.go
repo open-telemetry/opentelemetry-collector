@@ -38,6 +38,7 @@ const (
 
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
+	agenttracepb.UnimplementedTraceServiceServer
 	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 }
