@@ -372,6 +372,10 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 	return exporterhelper.NewTraceExporter(
 		config,
 		s.pushTraceData,
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }
@@ -387,29 +391,12 @@ func NewMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 	return exporterhelper.NewMetricsExporter(
 		config,
 		s.pushMetricsData,
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
-}
-
-func loggerSync(logger *zap.Logger) func(context.Context) error {
-	return func(context.Context) error {
-		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
-		// respectively:
-		//
-		// - sync /dev/stdout: invalid argument
-		// - sync /dev/stdout: inappropriate ioctl for device
-		//
-		// Since these are not actionable ignore them.
-		err := logger.Sync()
-		if osErr, ok := err.(*os.PathError); ok {
-			wrappedErr := osErr.Unwrap()
-			switch wrappedErr {
-			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
-				err = nil
-			}
-		}
-		return err
-	}
 }
 
 // NewLogExporter creates an exporter.LogExporter that just drops the
@@ -423,6 +410,10 @@ func NewLogExporter(config configmodels.Exporter, level string, logger *zap.Logg
 	return exporterhelper.NewLogsExporter(
 		config,
 		s.pushLogData,
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }
@@ -478,4 +469,25 @@ func (s *loggingExporter) pushLogData(
 	s.logger.Debug(buf.str.String())
 
 	return 0, nil
+}
+
+func loggerSync(logger *zap.Logger) func(context.Context) error {
+	return func(context.Context) error {
+		// Currently Sync() on stdout and stderr return errors on Linux and macOS,
+		// respectively:
+		//
+		// - sync /dev/stdout: invalid argument
+		// - sync /dev/stdout: inappropriate ioctl for device
+		//
+		// Since these are not actionable ignore them.
+		err := logger.Sync()
+		if osErr, ok := err.(*os.PathError); ok {
+			wrappedErr := osErr.Unwrap()
+			switch wrappedErr {
+			case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
+				err = nil
+			}
+		}
+		return err
+	}
 }
