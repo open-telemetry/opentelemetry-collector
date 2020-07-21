@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -124,7 +123,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftBinary = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftBinary = &confignet.TCPAddr{
 		Endpoint: defaultThriftBinaryBindEndpoint,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -138,7 +137,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftCompact = &confignet.TCPAddr{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -153,7 +152,7 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+	rCfg.Protocols.ThriftCompact = &confignet.TCPAddr{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{}
@@ -171,7 +170,7 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	endpoint := "localhost:1234"
-	rCfg.Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+	rCfg.Protocols.ThriftCompact = &confignet.TCPAddr{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
@@ -241,7 +240,7 @@ func TestThriftBinaryBadPort(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftBinary = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftBinary = &confignet.TCPAddr{
 		Endpoint: "localhost:65536",
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -253,7 +252,7 @@ func TestThriftCompactBadPort(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+	cfg.(*Config).Protocols.ThriftCompact = &confignet.TCPAddr{
 		Endpoint: "localhost:65536",
 	}
 
@@ -299,7 +298,7 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 
 	// Remove all default protocols
 	rCfg.Protocols = Protocols{}
-	rCfg.Protocols.ThriftCompact = &configprotocol.ProtocolServerSettings{
+	rCfg.Protocols.ThriftCompact = &confignet.TCPAddr{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{

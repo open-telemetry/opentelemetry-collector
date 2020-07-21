@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -129,10 +128,10 @@ func createDefaultConfig() configmodels.Receiver {
 			ThriftHTTP: &confighttp.HTTPServerSettings{
 				Endpoint: defaultHTTPBindEndpoint,
 			},
-			ThriftBinary: &configprotocol.ProtocolServerSettings{
+			ThriftBinary: &confignet.TCPAddr{
 				Endpoint: defaultThriftBinaryBindEndpoint,
 			},
-			ThriftCompact: &configprotocol.ProtocolServerSettings{
+			ThriftCompact: &confignet.TCPAddr{
 				Endpoint: defaultThriftCompactBindEndpoint,
 			},
 		},

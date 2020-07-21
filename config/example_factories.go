@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal/data"
@@ -34,7 +34,7 @@ import (
 type ExampleReceiver struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// Configures the receiver server protocol.
-	configprotocol.ProtocolServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confignet.TCPAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	ExtraSetting     string            `mapstructure:"extra"`
 	ExtraMapSetting  map[string]string `mapstructure:"extra_map"`
@@ -68,7 +68,7 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: f.Type(),
 			NameVal: string(f.Type()),
 		},
-		ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:1000",
 		},
 		ExtraSetting:     "some string",
