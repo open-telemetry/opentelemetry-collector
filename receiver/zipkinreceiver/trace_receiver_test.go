@@ -32,11 +32,14 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/google/go-cmp/cmp"
 	zipkin2 "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -133,7 +136,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 			Name: "frontend",
 		},
 	}
-	assert.Equal(t, wantNode, req.Node)
+	assert.True(t, proto.Equal(wantNode, req.Node))
 
 	nonNilSpans := 0
 	for _, span := range req.Spans {
@@ -310,7 +313,9 @@ func TestConversionRoundtrip(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, wantProtoRequests, ereqs)
+	if diff := cmp.Diff(wantProtoRequests, ereqs, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
 
 	// Now the last phase is to transmit them over the wire and then compare the JSONs
 
