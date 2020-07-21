@@ -62,7 +62,8 @@ var standardMetrics = []string{
 
 var resourceMetrics = []string{
 	"process.cpu.time",
-	"process.memory.usage",
+	"process.memory.physical_usage",
+	"process.memory.virtual_usage",
 	"process.disk.io",
 }
 

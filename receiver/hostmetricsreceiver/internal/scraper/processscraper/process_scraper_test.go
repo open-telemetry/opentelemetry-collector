@@ -71,7 +71,8 @@ func TestScrapeMetrics(t *testing.T) {
 	require.Greater(t, resourceMetrics.Len(), 1)
 	assertResourceAttributes(t, resourceMetrics)
 	assertCPUTimeMetricValid(t, resourceMetrics, expectedStartTime)
-	assertMemoryUsageMetricValid(t, resourceMetrics)
+	assertMemoryUsageMetricValid(t, physicalMemoryUsageDescriptor, resourceMetrics)
+	assertMemoryUsageMetricValid(t, virtualMemoryUsageDescriptor, resourceMetrics)
 	assertDiskIOMetricValid(t, resourceMetrics, expectedStartTime)
 }
 
@@ -100,9 +101,9 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	memoryUsageMetric := getMetric(t, memoryUsageDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, memoryUsageDescriptor, memoryUsageMetric.MetricDescriptor())
+func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.MetricDescriptor, resourceMetrics pdata.ResourceMetricsSlice) {
+	memoryUsageMetric := getMetric(t, descriptor, resourceMetrics)
+	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric.MetricDescriptor())
 }
 
 func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
@@ -443,12 +444,16 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(expectedErrors ...error) int {
+func getExpectedLengthOfReturnedMetrics(timeError, memError, diskError error) int {
 	expectedLen := 0
-	for _, expectedErr := range expectedErrors {
-		if expectedErr == nil {
-			expectedLen++
-		}
+	if timeError == nil {
+		expectedLen++
+	}
+	if memError == nil {
+		expectedLen += 2
+	}
+	if diskError == nil {
+		expectedLen++
 	}
 	return expectedLen
 }
