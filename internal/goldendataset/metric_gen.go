@@ -40,6 +40,8 @@ type MetricCfg struct {
 	NumResourceAttrs int
 	// The number of ResourceMetrics for the single MetricData generated
 	NumResourceMetrics int
+	// The base value for each point
+	PtVal int
 	// The start time for each point
 	StartTime uint64
 	// The duration of the steps between each generated point starting at StartTime
@@ -55,6 +57,7 @@ func DefaultCfg() MetricCfg {
 		NumPts:               1,
 		NumResourceAttrs:     1,
 		NumResourceMetrics:   1,
+		PtVal:                1,
 		StartTime:            940000000000000000,
 		StepSize:             42,
 	}
@@ -128,7 +131,7 @@ func populateIntPoints(cfg MetricCfg, metric pdata.Metric) {
 		pt := pts.At(i)
 		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
-		pt.SetValue(1 + int64(i))
+		pt.SetValue(int64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
 }
@@ -140,7 +143,7 @@ func populateDblPoints(cfg MetricCfg, metric pdata.Metric) {
 		pt := pts.At(i)
 		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
-		pt.SetValue(float64(1 + i))
+		pt.SetValue(float64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
 }
@@ -156,8 +159,9 @@ func populateHistogramPoints(cfg MetricCfg, metric pdata.Metric) {
 		populatePtLabels(cfg, pt.LabelsMap())
 		setHistogramBounds(pt, 1, 2, 3, 4, 5)
 		addHistogramVal(pt, 1, ts)
-		addHistogramVal(pt, 3, ts)
-		addHistogramVal(pt, 3, ts)
+		for i := 0; i < cfg.PtVal; i++ {
+			addHistogramVal(pt, 3, ts)
+		}
 		addHistogramVal(pt, 5, ts)
 	}
 }
@@ -195,7 +199,9 @@ func populateSummaryPoints(cfg MetricCfg, metric pdata.Metric) {
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		setSummaryPercentiles(pt, 0, 50, 95)
 		addSummaryValue(pt, 55, 0)
-		addSummaryValue(pt, 70, 1)
+		for i := 0; i < cfg.PtVal; i++ {
+			addSummaryValue(pt, 70, 1)
+		}
 		addSummaryValue(pt, 90, 2)
 		populatePtLabels(cfg, pt.LabelsMap())
 	}

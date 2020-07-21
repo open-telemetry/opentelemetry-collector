@@ -85,6 +85,7 @@ func TestHistogramFunctions(t *testing.T) {
 func TestGenHistogram(t *testing.T) {
 	cfg := DefaultCfg()
 	cfg.MetricDescriptorType = pdata.MetricTypeHistogram
+	cfg.PtVal = 2
 	md := MetricDataFromCfg(cfg)
 	pts := getMetric(md).HistogramDataPoints()
 	pt := pts.At(0)
