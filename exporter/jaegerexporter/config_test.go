@@ -18,6 +18,7 @@ import (
 	"context"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,20 +43,36 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters["jaeger"]
-
-	// Endpoint doesn't have a default value so set it directly.
-	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.Endpoint = "some.target:55678"
-	defaultCfg.GRPCClientSettings.Endpoint = defaultCfg.Endpoint
-	defaultCfg.GRPCClientSettings.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-	assert.Equal(t, defaultCfg, e0)
+	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
 	e1 := cfg.Exporters["jaeger/2"]
-	assert.Equal(t, "jaeger/2", e1.(*Config).Name())
-	assert.Equal(t, "a.new.target:1234", e1.(*Config).Endpoint)
-	assert.Equal(t, "round_robin", e1.(*Config).GRPCClientSettings.BalancerName)
+	assert.Equal(t, e1,
+		&Config{
+			ExporterSettings: configmodels.ExporterSettings{
+				NameVal: "jaeger/2",
+				TypeVal: "jaeger",
+			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Disabled:        false,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			QueueSettings: exporterhelper.QueueSettings{
+				Disabled:     false,
+				NumConsumers: 2,
+				QueueSize:    10,
+			},
+			GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Endpoint:        "a.new.target:1234",
+				WriteBufferSize: 512 * 1024,
+				BalancerName:    "round_robin",
+			},
+		})
+
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	te, err := factory.CreateTraceExporter(context.Background(), params, e1)
 	require.NoError(t, err)

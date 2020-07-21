@@ -29,17 +29,17 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-// New returns a new Jaeger gRPC exporter.
+// newTraceExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func New(config *Config) (component.TraceExporter, error) {
+func newTraceExporter(cfg *Config) (component.TraceExporter, error) {
 
-	opts, err := config.GRPCClientSettings.ToDialOptions()
+	opts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := grpc.Dial(config.GRPCClientSettings.Endpoint, opts...)
+	client, err := grpc.Dial(cfg.GRPCClientSettings.Endpoint, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +47,16 @@ func New(config *Config) (component.TraceExporter, error) {
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
 		client:       collectorServiceClient,
-		metadata:     metadata.New(config.GRPCClientSettings.Headers),
-		waitForReady: config.WaitForReady,
+		metadata:     metadata.New(cfg.GRPCClientSettings.Headers),
+		waitForReady: cfg.WaitForReady,
 	}
 
-	exp, err := exporterhelper.NewTraceExporter(config, s.pushTraceData)
+	exp, err := exporterhelper.NewTraceExporter(
+		cfg, s.pushTraceData,
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+	)
 
 	return exp, err
 }

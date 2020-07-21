@@ -6,12 +6,19 @@ processors:
 
 exporters:
   jaeger:
-    endpoint: "some.target:55678"
-    insecure: true
   jaeger/2:
     endpoint: "a.new.target:1234"
     balancer_name: "round_robin"
-
+    timeout: 10s
+    sending_queue:
+      disabled: false
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      disabled: false
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
 
 service:
   pipelines:

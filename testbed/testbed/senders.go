@@ -141,6 +141,8 @@ func NewJaegerGRPCDataSender(host string, port int) *JaegerGRPCDataSender {
 func (je *JaegerGRPCDataSender) Start() error {
 	factory := jaegerexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerexporter.Config)
+	// Disable retries, we should push data and if error just log it.
+	cfg.RetrySettings.Disabled = true
 	cfg.Endpoint = fmt.Sprintf("%s:%d", je.Host, je.Port)
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
