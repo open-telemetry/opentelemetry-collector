@@ -35,7 +35,7 @@ type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams,
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
 type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.MetricsConsumer) (component.MetricsProcessor, error)
 
-// CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
+// CreateLogsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
 type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (component.LogsProcessor, error)
 
 // factory is the factory for Jaeger gRPC exporter.
@@ -49,21 +49,21 @@ type factory struct {
 
 var _ component.LogsProcessorFactory = new(factory)
 
-// WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
+// WithTraces overrides the default "error not supported" implementation for CreateTraceProcessor.
 func WithTraces(createTraceProcessor CreateTraceProcessor) FactoryOption {
 	return func(o *factory) {
 		o.createTraceProcessor = createTraceProcessor
 	}
 }
 
-// WithMetrics overrides the default "error not supported" implementation for CreateMetricsReceiver.
+// WithMetrics overrides the default "error not supported" implementation for CreateMetricsProcessor.
 func WithMetrics(createMetricsProcessor CreateMetricsProcessor) FactoryOption {
 	return func(o *factory) {
 		o.createMetricsProcessor = createMetricsProcessor
 	}
 }
 
-// WithLogs overrides the default "error not supported" implementation for CreateLogsReceiver.
+// WithLogs overrides the default "error not supported" implementation for CreateLogsProcessor.
 func WithLogs(createLogsProcessor CreateLogsProcessor) FactoryOption {
 	return func(o *factory) {
 		o.createLogsProcessor = createLogsProcessor
