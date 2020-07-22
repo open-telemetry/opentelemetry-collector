@@ -33,7 +33,7 @@ const (
 type Factory struct {
 }
 
-var _ component.LogReceiverFactory = (*Factory)(nil)
+var _ component.LogsReceiverFactory = (*Factory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *Factory) Type() configmodels.Type {
@@ -55,13 +55,13 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateLogReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateLogReceiver(
+// CreateLogsReceiver creates a trace receiver based on provided config.
+func (f *Factory) CreateLogsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.LogConsumer,
-) (component.LogReceiver, error) {
+	consumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
 
 	rCfg := cfg.(*Config)
 	return New(ctx, params.Logger, rCfg, consumer)

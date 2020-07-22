@@ -38,7 +38,7 @@ type Receiver struct {
 	cancel    context.CancelFunc
 }
 
-func New(ctx context.Context, logger *zap.Logger, conf *Config, next consumer.LogConsumer) (component.LogReceiver, error) {
+func New(ctx context.Context, logger *zap.Logger, conf *Config, next consumer.LogsConsumer) (component.LogsReceiver, error) {
 	eventCh := make(chan Event, eventChannelLength)
 
 	collector := newCollector(eventCh, next, logger)

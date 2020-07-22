@@ -67,7 +67,7 @@ func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 }
 
 // NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
-func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogExporter, error) {
+func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}

@@ -34,8 +34,8 @@ type CreateTraceExporter func(context.Context, component.ExporterCreateParams, c
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
 type CreateMetricsExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.MetricsExporter, error)
 
-// CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateLogExporter()
-type CreateLogExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogExporter, error)
+// CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
+type CreateLogsExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogsExporter, error)
 
 // factory is the factory for Jaeger gRPC exporter.
 type factory struct {
@@ -43,10 +43,10 @@ type factory struct {
 	createDefaultConfig   CreateDefaultConfig
 	createTraceExporter   CreateTraceExporter
 	createMetricsExporter CreateMetricsExporter
-	createLogExporter     CreateLogExporter
+	createLogsExporter    CreateLogsExporter
 }
 
-var _ component.LogExporterFactory = new(factory)
+var _ component.LogsExporterFactory = new(factory)
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
 func WithTraces(createTraceExporter CreateTraceExporter) FactoryOption {
@@ -62,10 +62,10 @@ func WithMetrics(createMetricsExporter CreateMetricsExporter) FactoryOption {
 	}
 }
 
-// WithLogs overrides the default "error not supported" implementation for CreateLogReceiver.
-func WithLogs(createLogExporter CreateLogExporter) FactoryOption {
+// WithLogs overrides the default "error not supported" implementation for CreateLogsReceiver.
+func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
 	return func(o *factory) {
-		o.createLogExporter = createLogExporter
+		o.createLogsExporter = createLogsExporter
 	}
 }
 
@@ -116,14 +116,14 @@ func (f *factory) CreateMetricsExporter(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// CreateLogExporter creates a metrics processor based on this config.
-func (f *factory) CreateLogExporter(
+// CreateLogsExporter creates a metrics processor based on this config.
+func (f *factory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.LogExporter, error) {
-	if f.createLogExporter != nil {
-		return f.createLogExporter(ctx, params, cfg)
+) (component.LogsExporter, error) {
+	if f.createLogsExporter != nil {
+		return f.createLogsExporter(ctx, params, cfg)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

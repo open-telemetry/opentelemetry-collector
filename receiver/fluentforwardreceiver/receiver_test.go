@@ -38,10 +38,10 @@ import (
 	"go.opentelemetry.io/collector/testutil/logtest"
 )
 
-func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogExporter, *observer.ObservedLogs, context.CancelFunc) {
+func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter, *observer.ObservedLogs, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	next := &exportertest.SinkLogExporter{}
+	next := &exportertest.SinkLogsExporter{}
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
@@ -365,7 +365,7 @@ func TestUnixEndpoint(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	next := &exportertest.SinkLogExporter{}
+	next := &exportertest.SinkLogsExporter{}
 
 	tmpdir, err := ioutil.TempDir("", "fluent-socket")
 	require.NoError(t, err)

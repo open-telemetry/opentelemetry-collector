@@ -25,8 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -36,15 +35,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-type mockLogConsumer struct {
-}
-
-var _ (consumer.LogConsumer) = (*mockLogConsumer)(nil)
-
-func (m *mockLogConsumer) ConsumeLogs(ctx context.Context, md data.Logs) error {
-	return nil
-}
-
 func TestCreateReceiver(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -52,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	require.Equal(t, configmodels.Type("fluentforward"), factory.Type())
 
-	tReceiver, err := factory.CreateLogReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, &mockLogConsumer{})
+	tReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

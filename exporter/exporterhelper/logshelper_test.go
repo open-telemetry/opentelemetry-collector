@@ -158,7 +158,7 @@ func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter, wantError error, droppedLogRecords int) {
+func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter, wantError error, droppedLogRecords int) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
@@ -177,7 +177,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter,
 	}
 }
 
-func generateLogsTraffic(t *testing.T, me component.LogExporter, numRequests int, wantError error) {
+func generateLogsTraffic(t *testing.T, me component.LogsExporter, numRequests int, wantError error) {
 	ld := testdata.GenerateLogDataOneLog()
 	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
@@ -186,7 +186,7 @@ func generateLogsTraffic(t *testing.T, me component.LogExporter, numRequests int
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, me component.LogExporter, wantError error, numLogRecords int64) {
+func checkWrapSpanForLogsExporter(t *testing.T, me component.LogsExporter, wantError error, numLogRecords int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)

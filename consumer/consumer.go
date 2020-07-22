@@ -62,9 +62,9 @@ type TraceConsumer interface {
 	ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }
 
-// LogConsumer is an interface that receives data.Logs, processes it
+// LogsConsumer is an interface that receives data.Logs, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type LogConsumer interface {
+type LogsConsumer interface {
 	// ConsumeLogs receives data.Logs for processing.
 	ConsumeLogs(ctx context.Context, ld data.Logs) error
 }

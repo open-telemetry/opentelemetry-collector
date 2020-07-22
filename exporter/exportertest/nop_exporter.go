@@ -48,7 +48,7 @@ func (ne *nopExporterOld) Shutdown(context.Context) error {
 const (
 	nopTraceExporterName   = "nop_trace"
 	nopMetricsExporterName = "nop_metrics"
-	nopLogExporterName     = "nop_log"
+	nopLogsExporterName    = "nop_log"
 )
 
 // NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
@@ -109,10 +109,10 @@ func NewNopMetricsExporter() component.MetricsExporter {
 	return ne
 }
 
-// NewNopLogExporterOld creates an LogExporter that just drops the received data.
-func NewNopLogsExporter() component.LogExporter {
+// NewNopLogsExporterOld creates an LogsExporter that just drops the received data.
+func NewNopLogsExporter() component.LogsExporter {
 	ne := &nopExporter{
-		name: nopLogExporterName,
+		name: nopLogsExporterName,
 	}
 	return ne
 }

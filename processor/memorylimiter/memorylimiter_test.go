@@ -242,7 +242,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			ms.Alloc = currentMemAlloc
 		},
 	}
-	lp, err := processorhelper.NewLogProcessor(
+	lp, err := processorhelper.NewLogsProcessor(
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: typeStr,

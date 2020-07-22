@@ -37,7 +37,7 @@ func NewFactory() component.ProcessorFactory {
 		createDefaultConfig,
 		processorhelper.WithTraces(createTraceProcessor),
 		processorhelper.WithMetrics(createMetricsProcessor),
-		processorhelper.WithLogs(createLogProcessor))
+		processorhelper.WithLogs(createLogsProcessor))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -87,17 +87,17 @@ func createMetricsProcessor(
 		processorhelper.WithShutdown(ml.shutdown))
 }
 
-func createLogProcessor(
+func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
-) (component.LogProcessor, error) {
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
 	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogProcessor(
+	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
 		ml,

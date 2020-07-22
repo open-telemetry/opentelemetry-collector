@@ -135,8 +135,8 @@ func TestSinkMetricsExporter_Error(t *testing.T) {
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
-func TestSinkLogExporter(t *testing.T) {
-	sink := new(SinkLogExporter)
+func TestSinkLogsExporter(t *testing.T) {
+	sink := new(SinkLogsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	md := testdata.GenerateLogDataOneLogNoResource()
 	want := make([]data.Logs, 0, 7)
@@ -149,8 +149,8 @@ func TestSinkLogExporter(t *testing.T) {
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
-func TestSinkLogExporter_Error(t *testing.T) {
-	sink := new(SinkLogExporter)
+func TestSinkLogsExporter_Error(t *testing.T) {
+	sink := new(SinkLogsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	sink.SetConsumeLogError(errors.New("my error"))
 	ld := testdata.GenerateLogDataOneLogNoResource()

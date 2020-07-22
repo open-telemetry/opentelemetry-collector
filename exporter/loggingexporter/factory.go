@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		exporterhelper.WithTraces(createTraceExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogExporter))
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -84,7 +84,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 	return lexp, nil
 }
 
-func createLogExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogExporter, error) {
+func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)
@@ -92,7 +92,7 @@ func createLogExporter(_ context.Context, _ component.ExporterCreateParams, conf
 		return nil, err
 	}
 
-	lexp, err := NewLogExporter(config, cfg.LogLevel, exporterLogger)
+	lexp, err := NewLogsExporter(config, cfg.LogLevel, exporterLogger)
 	if err != nil {
 		return nil, err
 	}
