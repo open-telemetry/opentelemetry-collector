@@ -1,6 +1,6 @@
 # Zipkin Exporter
  
-Exports trace data to a [Zipkin](https://zipkin.io/) back-end.
+Exports trace data to a Zipkin back-end.
 
 The following settings are required:
 
