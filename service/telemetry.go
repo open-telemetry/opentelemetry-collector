@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
+	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -67,6 +68,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
 	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
+	views = append(views, fluentobserv.Views(level)...)
 	tel.views = views
 	if err = view.Register(views...); err != nil {
 		return err
