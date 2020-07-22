@@ -23,12 +23,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
@@ -59,7 +60,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 	const jobnamevar = "JOBNAME"
 	os.Setenv(jobnamevar, jobname)
 
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
@@ -79,7 +80,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
@@ -96,7 +97,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 // configuration as a subkey, ensure that invalid configuration
 // within the subkey will also raise an error.
 func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}

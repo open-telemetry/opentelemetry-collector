@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/version"
@@ -56,7 +57,7 @@ type OtelcolRunner interface {
 // same process as the test executor.
 type InProcessCollector struct {
 	logger       *zap.Logger
-	factories    config.Factories
+	factories    component.Factories
 	receiverPort int
 	config       *configmodels.Config
 	svc          *service.Application
@@ -65,7 +66,7 @@ type InProcessCollector struct {
 }
 
 // NewInProcessCollector crewtes a new InProcessCollector using the supplied component factories.
-func NewInProcessCollector(factories config.Factories, receiverPort int) *InProcessCollector {
+func NewInProcessCollector(factories component.Factories, receiverPort int) *InProcessCollector {
 	return &InProcessCollector{
 		factories:    factories,
 		receiverPort: receiverPort,
@@ -105,7 +106,7 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
 			return ipp.config, nil
 		},
 		Factories: ipp.factories,

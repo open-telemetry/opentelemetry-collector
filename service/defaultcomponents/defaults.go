@@ -18,7 +18,6 @@ package defaultcomponents
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -50,7 +49,7 @@ import (
 // Components returns the default set of components used by the
 // OpenTelemetry collector.
 func Components() (
-	config.Factories,
+	component.Factories,
 	error,
 ) {
 	errs := []error{}
@@ -105,7 +104,7 @@ func Components() (
 		errs = append(errs, err)
 	}
 
-	factories := config.Factories{
+	factories := component.Factories{
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,
