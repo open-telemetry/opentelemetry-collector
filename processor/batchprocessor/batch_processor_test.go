@@ -81,7 +81,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	batcher := newBatchTracesProcessor(creationParams, sink, cfg)
+	batcher := newBatchTracesProcessor(creationParams, sink, cfg, telemetry.Basic)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	requestCount := 1000
