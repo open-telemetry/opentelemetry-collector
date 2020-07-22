@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/testdata"
-	"go.opentelemetry.io/collector/testutil/logtest"
+	"go.opentelemetry.io/collector/testutil/logstest"
 )
 
 func TestMessageEventConversion(t *testing.T) {
@@ -37,8 +37,8 @@ func TestMessageEventConversion(t *testing.T) {
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
 
-	expected := logtest.Logs(
-		logtest.Log{
+	expected := logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593031012000000000,
 			Body:      pdata.NewAttributeValueString("..."),
 			Attributes: map[string]pdata.AttributeValue{
@@ -99,8 +99,8 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 5000000000000,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{

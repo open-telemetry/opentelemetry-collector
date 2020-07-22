@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/testdata"
-	"go.opentelemetry.io/collector/testutil/logtest"
+	"go.opentelemetry.io/collector/testutil/logstest"
 )
 
 func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter, *observer.ObservedLogs, context.CancelFunc) {
@@ -121,7 +121,7 @@ func TestMessageEvent(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Sort()
-	require.EqualValues(t, logtest.Logs(logtest.Log{
+	require.EqualValues(t, logstest.Logs(logstest.Log{
 		Timestamp: 1593031012000000000,
 		Body:      pdata.NewAttributeValueString("..."),
 		Attributes: map[string]pdata.AttributeValue{
@@ -156,8 +156,8 @@ func TestForwardEvent(t *testing.T) {
 	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	ls.At(0).Attributes().Sort()
 	ls.At(1).Attributes().Sort()
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593032377776693638,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -170,7 +170,7 @@ func TestForwardEvent(t *testing.T) {
 				"fluent.tag": pdata.NewAttributeValueString("mem.0"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032378756829346,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -240,8 +240,8 @@ func TestForwardPackedEvent(t *testing.T) {
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593032517024597622,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -252,7 +252,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032517028573686,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -260,7 +260,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032517028815948,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -268,7 +268,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032517031174229,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -277,7 +277,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032522187382822,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -312,8 +312,8 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593032426012197420,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -324,7 +324,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032426013724933,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -332,7 +332,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032426020510455,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -340,7 +340,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032426024346580,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -349,7 +349,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032434346935532,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
