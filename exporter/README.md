@@ -9,6 +9,7 @@ Supported trace exporters (sorted alphabetically):
 - [OpenCensus](opencensusexporter/README.md)
 - [OTLP](otlpexporter/README.md)
 - [Zipkin](zipkinexporter/README.md)
+- [Kafka](kafkaexporter/README.md)
 
 Supported metric exporters (sorted alphabetically):
 
