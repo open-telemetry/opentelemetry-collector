@@ -40,6 +40,7 @@ func TestDefaultComponents(t *testing.T) {
 		"otlp",
 		"hostmetrics",
 		"fluentforward",
+		"kafka",
 	}
 	expectedProcessors := []configmodels.Type{
 		"attributes",
