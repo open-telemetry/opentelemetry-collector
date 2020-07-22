@@ -54,5 +54,5 @@ func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics)
 		}
 		rp.attrProc.Process(resource.Attributes())
 	}
-	return md, nil
+	return pdatautil.MetricsFromInternalMetrics(imd), nil
 }
