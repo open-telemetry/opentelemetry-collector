@@ -24,8 +24,8 @@ import (
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 )
 
 // The regular expression for valid config field tag.
@@ -33,7 +33,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 
 // ValidateConfigFromFactories checks if all configurations for the given factories
 // are satisfying the patterns used by the collector.
-func ValidateConfigFromFactories(factories config.Factories) error {
+func ValidateConfigFromFactories(factories component.Factories) error {
 	var errs []error
 	var configs []interface{}
 

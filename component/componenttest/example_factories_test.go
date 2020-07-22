@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package componenttest
 
 import (
 	"context"
@@ -20,13 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 func TestExampleExporterConsumer(t *testing.T) {
 	exp := &ExampleExporterConsumer{}
-	host := componenttest.NewNopHost()
+	host := NewNopHost()
 	assert.Equal(t, false, exp.ExporterStarted)
 	err := exp.Start(context.Background(), host)
 	assert.NoError(t, err)
@@ -50,7 +49,7 @@ func TestExampleExporterConsumer(t *testing.T) {
 
 func TestExampleReceiverProducer(t *testing.T) {
 	rcv := &ExampleReceiverProducer{}
-	host := componenttest.NewNopHost()
+	host := NewNopHost()
 	assert.Equal(t, false, rcv.Started)
 	err := rcv.Start(context.Background(), host)
 	assert.NoError(t, err)

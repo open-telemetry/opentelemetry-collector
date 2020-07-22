@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -67,7 +68,7 @@ func TestCreateProcessors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		factories, err := config.ExampleComponents()
+		factories, err := componenttest.ExampleComponents()
 		assert.Nil(t, err)
 
 		factory := NewFactory()

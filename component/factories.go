@@ -20,6 +20,22 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
+// Factories struct holds in a single type all component factories that
+// can be handled by the Config.
+type Factories struct {
+	// Receivers maps receiver type names in the config to the respective factory.
+	Receivers map[configmodels.Type]ReceiverFactoryBase
+
+	// Processors maps processor type names in the config to the respective factory.
+	Processors map[configmodels.Type]ProcessorFactoryBase
+
+	// Exporters maps exporter type names in the config to the respective factory.
+	Exporters map[configmodels.Type]ExporterFactoryBase
+
+	// Extensions maps extension type names in the config to the respective factory.
+	Extensions map[configmodels.Type]ExtensionFactory
+}
+
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package componenttest
 
 import (
 	"context"
@@ -79,8 +79,8 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *ExampleReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
+	_ context.Context,
+	_ *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
@@ -110,7 +110,7 @@ func (f *ExampleReceiverFactory) createReceiver(cfg configmodels.Receiver) *Exam
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *ExampleReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (f *ExampleReceiverFactory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -122,8 +122,8 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(ctx context.Context, logg
 }
 
 func (f *ExampleReceiverFactory) CreateLogsReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
+	_ context.Context,
+	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsReceiver, error) {
@@ -143,7 +143,7 @@ type ExampleReceiverProducer struct {
 }
 
 // Start tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) Start(ctx context.Context, host component.Host) error {
+func (erp *ExampleReceiverProducer) Start(_ context.Context, _ component.Host) error {
 	erp.Started = true
 	return nil
 }
@@ -230,17 +230,17 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver 
 
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	_ context.Context,
+	_ *zap.Logger,
+	_ configmodels.Receiver,
+	_ consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, _ configmodels.Receiver, _ consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
@@ -278,19 +278,19 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
+func (f *ExampleExporterFactory) CreateTraceExporter(_ *zap.Logger, _ configmodels.Exporter) (component.TraceExporterOld, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *ExampleExporterFactory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
 func (f *ExampleExporterFactory) CreateLogsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ configmodels.Exporter,
 ) (component.LogsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
@@ -307,24 +307,24 @@ type ExampleExporterConsumer struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (exp *ExampleExporterConsumer) Start(ctx context.Context, host component.Host) error {
+func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) error {
 	exp.ExporterStarted = true
 	return nil
 }
 
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
-func (exp *ExampleExporterConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (exp *ExampleExporterConsumer) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
 // ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
-func (exp *ExampleExporterConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (exp *ExampleExporterConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }
 
-func (exp *ExampleExporterConsumer) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (exp *ExampleExporterConsumer) ConsumeLogs(_ context.Context, ld data.Logs) error {
 	exp.Logs = append(exp.Logs, ld)
 	return nil
 }
@@ -373,26 +373,26 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
-	cfg configmodels.Processor,
+	_ *zap.Logger,
+	_ consumer.TraceConsumerOld,
+	_ configmodels.Processor,
 ) (component.TraceProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
+	_ *zap.Logger,
+	_ consumer.MetricsConsumerOld,
+	_ configmodels.Processor,
 ) (component.MetricsProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func (f *ExampleProcessorFactory) CreateLogsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	_ configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
 	return &ExampleProcessor{nextConsumer}, nil
@@ -402,11 +402,11 @@ type ExampleProcessor struct {
 	nextConsumer consumer.LogsConsumer
 }
 
-func (ep *ExampleProcessor) Start(ctx context.Context, host component.Host) error {
+func (ep *ExampleProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (ep *ExampleProcessor) Shutdown(ctx context.Context) error {
+func (ep *ExampleProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -430,9 +430,9 @@ type ExampleExtensionCfg struct {
 type ExampleExtension struct {
 }
 
-func (e *ExampleExtension) Start(ctx context.Context, host component.Host) error { return nil }
+func (e *ExampleExtension) Start(_ context.Context, _ component.Host) error { return nil }
 
-func (e *ExampleExtension) Shutdown(ctx context.Context) error { return nil }
+func (e *ExampleExtension) Shutdown(_ context.Context) error { return nil }
 
 // ExampleExtensionFactory is factory for ExampleExtensionCfg.
 type ExampleExtensionFactory struct {
@@ -467,7 +467,7 @@ func (f *ExampleExtensionFactory) CreateExtension(_ context.Context, _ component
 
 // ExampleComponents registers example factories. This is only used by tests.
 func ExampleComponents() (
-	factories Factories,
+	factories component.Factories,
 	err error,
 ) {
 	if factories.Extensions, err = component.MakeExtensionFactoryMap(&ExampleExtensionFactory{}); err != nil {

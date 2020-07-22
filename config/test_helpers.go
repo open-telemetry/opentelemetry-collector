@@ -21,11 +21,12 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // LoadConfigFile loads a config from file.
-func LoadConfigFile(t *testing.T, fileName string, factories Factories) (*configmodels.Config, error) {
+func LoadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
 	// Open the file for reading.
 	file, err := os.Open(filepath.Clean(fileName))
 	if err != nil {

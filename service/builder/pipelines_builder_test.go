@@ -63,12 +63,12 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 	}
 }
 
-func createExampleFactories() config.Factories {
-	exampleReceiverFactory := &config.ExampleReceiverFactory{}
-	exampleProcessorFactory := &config.ExampleProcessorFactory{}
-	exampleExporterFactory := &config.ExampleExporterFactory{}
+func createExampleFactories() component.Factories {
+	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
+	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
+	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
 
-	factories := config.Factories{
+	factories := component.Factories{
 		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
@@ -85,9 +85,9 @@ func createExampleFactories() config.Factories {
 
 func createExampleConfig(dataType string) *configmodels.Config {
 
-	exampleReceiverFactory := &config.ExampleReceiverFactory{}
-	exampleProcessorFactory := &config.ExampleProcessorFactory{}
-	exampleExporterFactory := &config.ExampleExporterFactory{}
+	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
+	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
+	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
 
 	cfg := &configmodels.Config{
 		Receivers: map[string]configmodels.Receiver{
@@ -177,9 +177,9 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			// Send Logs via processor and verify that all exporters of the pipeline receive it.
 
 			// First check that there are no logs in the exporters yet.
-			var exporterConsumers []*config.ExampleExporterConsumer
+			var exporterConsumers []*componenttest.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				consumer := exporter.le.(*config.ExampleExporterConsumer)
+				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
 				exporterConsumers = append(exporterConsumers, consumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
@@ -286,7 +286,7 @@ func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, act
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
@@ -323,9 +323,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Send TraceData via processor and verify that all exporters of the pipeline receive it.
 
 	// First check that there are no traces in the exporters yet.
-	var exporterConsumers []*config.ExampleExporterConsumer
+	var exporterConsumers []*componenttest.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		consumer := exporter.te.(*config.ExampleExporterConsumer)
+		consumer := exporter.te.(*componenttest.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, consumer)
 		require.Equal(t, len(consumer.Traces), 0)
 	}
@@ -346,7 +346,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 }
 
 func TestPipelinesBuilder_Error(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
@@ -370,7 +370,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 }
 
 func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	bf := &badProcessorFactory{}

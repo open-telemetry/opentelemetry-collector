@@ -20,13 +20,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/processor/attraction"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factories.Processors[typeStr] = NewFactory()

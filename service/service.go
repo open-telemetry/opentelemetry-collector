@@ -78,7 +78,7 @@ type Application struct {
 	builtExtensions builder.Extensions
 	stateChannel    chan State
 
-	factories config.Factories
+	factories component.Factories
 	config    *configmodels.Config
 
 	// stopTestChan is used to terminate the application in end to end tests.
@@ -115,7 +115,7 @@ type ApplicationStartInfo struct {
 // Parameters holds configuration for creating a new Application.
 type Parameters struct {
 	// Factories component factories.
-	Factories config.Factories
+	Factories component.Factories
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo ApplicationStartInfo
 	// ConfigFactory that creates the configuration.
@@ -127,10 +127,10 @@ type Parameters struct {
 }
 
 // ConfigFactory creates config.
-type ConfigFactory func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error)
+type ConfigFactory func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
-func FileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")
