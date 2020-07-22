@@ -24,14 +24,15 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 )
 
-func msgpWriterWithLimit(l int) *msgp.Writer {
+func msgpWriterWithLimit(t *testing.T, l int) *msgp.Writer {
 	// NewWriterSize forces size to be at least 18 bytes so just use that as
 	// the floor and write nulls to those first 18 bytes to make the limit
 	// truly l.
 	w := msgp.NewWriterSize(&testutil.LimitedWriter{
 		MaxLen: l,
 	}, 18+l)
-	w.Write(bytes.Repeat([]byte{0x00}, 18))
+	_, err := w.Write(bytes.Repeat([]byte{0x00}, 18))
+	require.NoError(t, err)
 	return w
 }
 
@@ -40,12 +41,12 @@ func TestAckEncoding(t *testing.T) {
 		Ack: "test",
 	}
 
-	err := a.EncodeMsg(msgpWriterWithLimit(1000))
+	err := a.EncodeMsg(msgpWriterWithLimit(t, 1000))
 	require.Nil(t, err)
 
-	err = a.EncodeMsg(msgpWriterWithLimit(4))
+	err = a.EncodeMsg(msgpWriterWithLimit(t, 4))
 	require.NotNil(t, err)
 
-	err = a.EncodeMsg(msgpWriterWithLimit(7))
+	err = a.EncodeMsg(msgpWriterWithLimit(t, 7))
 	require.NotNil(t, err)
 }
