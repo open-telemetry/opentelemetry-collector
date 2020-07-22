@@ -19,6 +19,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -27,10 +28,15 @@ var (
 	statBatchSizeTriggerSend = stats.Int64("batch_size_trigger_send", "Number of times the batch was sent due to a size trigger", stats.UnitDimensionless)
 	statTimeoutTriggerSend   = stats.Int64("timeout_trigger_send", "Number of times the batch was sent due to a timeout trigger", stats.UnitDimensionless)
 	statBatchSendSize        = stats.Int64("batch_send_size", "Number of units in the batch", stats.UnitDimensionless)
+	statBatchSendSizeBytes   = stats.Int64("batch_send_size_bytes", "Number of bytes in batch that was sent", stats.UnitBytes)
 )
 
 // MetricViews returns the metrics views related to batching
-func MetricViews() []*view.View {
+func MetricViews(level telemetry.Level) []*view.View {
+	if level == telemetry.None {
+		return nil
+	}
+
 	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
 
 	countBatchSizeTriggerSendView := &view.View{
@@ -57,10 +63,21 @@ func MetricViews() []*view.View {
 		Aggregation: view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000),
 	}
 
+	distributionBatchSendSizeBytesView := &view.View{
+		Name:        statBatchSendSizeBytes.Name(),
+		Measure:     statBatchSendSizeBytes,
+		Description: statBatchSendSizeBytes.Description(),
+		TagKeys:     processorTagKeys,
+		Aggregation: view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+			100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_00, 900_000,
+			1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000),
+	}
+
 	legacyViews := []*view.View{
 		countBatchSizeTriggerSendView,
 		countTimeoutTriggerSendView,
 		distributionBatchSendSizeView,
+		distributionBatchSendSizeBytesView,
 	}
 
 	return obsreport.ProcessorMetricViews(typeStr, legacyViews)

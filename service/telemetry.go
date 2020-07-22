@@ -64,7 +64,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, obsreport.Configure(telemetry.UseLegacyMetrics(), telemetry.UseNewMetrics())...)
 	views = append(views, processor.MetricViews(level)...)
 	views = append(views, queuedprocessor.MetricViews(level)...)
-	views = append(views, batchprocessor.MetricViews()...)
+	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
 	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
