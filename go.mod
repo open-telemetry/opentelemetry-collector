@@ -31,6 +31,7 @@ require (
 	github.com/ory/go-acc v0.2.5
 	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.3
+	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1
 	github.com/prometheus/common v0.10.0
@@ -45,6 +46,7 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
+	github.com/tinylib/msgp v1.1.2
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	go.opencensus.io v0.22.4
 	go.uber.org/atomic v1.6.0

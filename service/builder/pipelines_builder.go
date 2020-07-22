@@ -35,7 +35,7 @@ type builtPipeline struct {
 	logger  *zap.Logger
 	firstTC consumer.TraceConsumerBase
 	firstMC consumer.MetricsConsumerBase
-	firstLC consumer.LogConsumer
+	firstLC consumer.LogsConsumer
 
 	// MutatesConsumedData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
@@ -127,7 +127,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 	// First create a consumer junction point that fans out the data to all exporters.
 	var tc consumer.TraceConsumerBase
 	var mc consumer.MetricsConsumerBase
-	var lc consumer.LogConsumer
+	var lc consumer.LogsConsumer
 
 	switch pipelineCfg.InputType {
 	case configmodels.TracesDataType:
@@ -156,7 +156,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
+		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogsProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessorBase
@@ -176,8 +176,8 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			mc = proc
 
 		case configmodels.LogsDataType:
-			var proc component.LogProcessor
-			proc, err = createLogProcessor(factory, componentLogger, procCfg, lc)
+			var proc component.LogsProcessor
+			proc, err = createLogsProcessor(factory, componentLogger, procCfg, lc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -263,7 +263,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 
 func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 	exporterNames []string,
-) consumer.LogConsumer {
+) consumer.LogsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
@@ -271,7 +271,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 		return builtExporters[0].le
 	}
 
-	exporters := make([]consumer.LogConsumer, len(builtExporters))
+	exporters := make([]consumer.LogsConsumer, len(builtExporters))
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.le)
 	}
@@ -356,19 +356,19 @@ func createMetricsProcessor(
 	return factoryOld.CreateMetricsProcessor(logger, metricsConverter, cfg)
 }
 
-// createLogProcessor creates a log processor using given factory and next consumer.
-func createLogProcessor(
+// createLogsProcessor creates a log processor using given factory and next consumer.
+func createLogsProcessor(
 	factoryBase component.ProcessorFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
-) (component.LogProcessor, error) {
-	factory, ok := factoryBase.(component.LogProcessorFactory)
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	factory, ok := factoryBase.(component.LogsProcessorFactory)
 	if !ok {
 		return nil, fmt.Errorf("processor %q does support data type %q",
 			cfg.Name(), configmodels.LogsDataType)
 	}
 	creationParams := component.ProcessorCreateParams{Logger: logger}
 	ctx := context.Background()
-	return factory.CreateLogProcessor(ctx, creationParams, cfg, nextConsumer)
+	return factory.CreateLogsProcessor(ctx, creationParams, cfg, nextConsumer)
 }

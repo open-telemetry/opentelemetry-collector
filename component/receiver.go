@@ -49,10 +49,10 @@ type MetricsReceiver interface {
 	Receiver
 }
 
-// A LogReceiver is a "log data"-to-"internal format" converter.
+// A LogsReceiver is a "log data"-to-"internal format" converter.
 // Its purpose is to translate data from the wild into internal data format.
-// LogReceiver feeds a consumer.LogConsumer with data.
-type LogReceiver interface {
+// LogsReceiver feeds a consumer.LogsConsumer with data.
+type LogsReceiver interface {
 	Receiver
 }
 
@@ -125,17 +125,17 @@ type ReceiverFactory interface {
 		cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (MetricsReceiver, error)
 }
 
-// LogReceiverFactory can create a LogReceiver.
-type LogReceiverFactory interface {
+// LogsReceiverFactory can create a LogsReceiver.
+type LogsReceiverFactory interface {
 	ReceiverFactoryBase
 
-	// CreateLogReceiver creates a log receiver based on this config.
+	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// error will be returned instead.
-	CreateLogReceiver(
+	CreateLogsReceiver(
 		ctx context.Context,
 		params ReceiverCreateParams,
 		cfg configmodels.Receiver,
-		nextConsumer consumer.LogConsumer,
-	) (LogReceiver, error)
+		nextConsumer consumer.LogsConsumer,
+	) (LogsReceiver, error)
 }

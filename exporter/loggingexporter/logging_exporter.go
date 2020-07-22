@@ -399,9 +399,9 @@ func NewMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 	)
 }
 
-// NewLogExporter creates an exporter.LogExporter that just drops the
+// NewLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func NewLogExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogExporter, error) {
+func NewLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
 	s := &loggingExporter{
 		debug:  level == "debug",
 		logger: logger,
@@ -422,7 +422,7 @@ func (s *loggingExporter) pushLogData(
 	_ context.Context,
 	ld data.Logs,
 ) (int, error) {
-	s.logger.Info("LogExporter", zap.Int("#logs", ld.LogRecordCount()))
+	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !s.debug {
 		return 0, nil

@@ -130,8 +130,8 @@ func TestNewMetricsExporter_ProcessMetricsError(t *testing.T) {
 	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
 }
 
-func TestNewLogExporter(t *testing.T) {
-	me, err := NewLogProcessor(testCfg, exportertest.NewNopLogsExporter(), newTestLProcessor(nil))
+func TestNewLogsExporter(t *testing.T) {
+	me, err := NewLogsProcessor(testCfg, exportertest.NewNopLogsExporter(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -139,17 +139,17 @@ func TestNewLogExporter(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
-func TestNewLogExporter_NilRequiredFields(t *testing.T) {
-	_, err := NewLogProcessor(testCfg, exportertest.NewNopLogsExporter(), nil)
+func TestNewLogsExporter_NilRequiredFields(t *testing.T) {
+	_, err := NewLogsProcessor(testCfg, exportertest.NewNopLogsExporter(), nil)
 	assert.Error(t, err)
 
-	_, err = NewLogProcessor(testCfg, nil, newTestLProcessor(nil))
+	_, err = NewLogsProcessor(testCfg, nil, newTestLProcessor(nil))
 	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
 }
 
-func TestNewLogExporter_ProcessLogError(t *testing.T) {
+func TestNewLogsExporter_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogProcessor(testCfg, exportertest.NewNopLogsExporter(), newTestLProcessor(want))
+	me, err := NewLogsProcessor(testCfg, exportertest.NewNopLogsExporter(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
 }

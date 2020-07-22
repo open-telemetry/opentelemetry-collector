@@ -50,11 +50,11 @@ func TestCreateTraceExporter(t *testing.T) {
 	assert.NotNil(t, te)
 }
 
-func TestCreateLogExporter(t *testing.T) {
-	factory := NewFactory().(component.LogExporterFactory)
+func TestCreateLogsExporter(t *testing.T) {
+	factory := NewFactory().(component.LogsExporterFactory)
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateLogExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	te, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

@@ -38,6 +38,7 @@ func TestDefaultComponents(t *testing.T) {
 		"opencensus",
 		"otlp",
 		"hostmetrics",
+		"fluentforward",
 	}
 	expectedProcessors := []configmodels.Type{
 		"attributes",

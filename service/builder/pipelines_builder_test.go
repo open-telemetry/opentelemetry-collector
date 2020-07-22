@@ -186,7 +186,7 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 
 			// Send one custom data.
 			log := idata.Logs{}
-			processor.firstLC.(consumer.LogConsumer).ConsumeLogs(context.Background(), log)
+			processor.firstLC.(consumer.LogsConsumer).ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.
 			for _, consumer := range exporterConsumers {

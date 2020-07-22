@@ -217,13 +217,13 @@ func (tfc traceCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pda
 }
 
 // NewLogCloningFanOutConnector wraps multiple trace consumers in a single one.
-func NewLogCloningFanOutConnector(lcs []consumer.LogConsumer) consumer.LogConsumer {
+func NewLogCloningFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	return LogCloningFanOutConnector(lcs)
 }
 
-type LogCloningFanOutConnector []consumer.LogConsumer
+type LogCloningFanOutConnector []consumer.LogsConsumer
 
-var _ consumer.LogConsumer = (*LogCloningFanOutConnector)(nil)
+var _ consumer.LogsConsumer = (*LogCloningFanOutConnector)(nil)
 
 // ConsumeLogs exports the span data to all  consumers wrapped by the current one.
 func (lfc LogCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld data.Logs) error {
