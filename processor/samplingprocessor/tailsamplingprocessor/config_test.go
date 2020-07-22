@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := &Factory{}
 	factories.Processors[factory.Type()] = factory
 
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "tail_sampling_config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "tail_sampling_config.yaml"), factories)
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
