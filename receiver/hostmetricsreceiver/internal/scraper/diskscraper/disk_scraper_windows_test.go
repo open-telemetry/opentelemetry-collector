@@ -36,6 +36,7 @@ func TestScrapeMetrics_Error(t *testing.T) {
 		diskWritesPerSecCounterReturnValue     interface{}
 		avgDiskSecsPerReadCounterReturnValue   interface{}
 		avgDiskSecsPerWriteCounterReturnValue  interface{}
+		avgDiskQueueLengthCounterReturnValue   interface{}
 		expectedErr                            string
 	}
 
@@ -70,6 +71,11 @@ func TestScrapeMetrics_Error(t *testing.T) {
 			avgDiskSecsPerWriteCounterReturnValue: errors.New("err1"),
 			expectedErr:                           "err1",
 		},
+		{
+			name:                                 "avgDiskQueueLengthError",
+			avgDiskQueueLengthCounterReturnValue: errors.New("err1"),
+			expectedErr:                          "err1",
+		},
 	}
 
 	for _, test := range testCases {
@@ -87,6 +93,7 @@ func TestScrapeMetrics_Error(t *testing.T) {
 			scraper.diskWritesPerSecCounter = pdh.NewMockPerfCounter(test.diskWritesPerSecCounterReturnValue)
 			scraper.avgDiskSecsPerReadCounter = pdh.NewMockPerfCounter(test.avgDiskSecsPerReadCounterReturnValue)
 			scraper.avgDiskSecsPerWriteCounter = pdh.NewMockPerfCounter(test.avgDiskSecsPerWriteCounterReturnValue)
+			scraper.avgDiskQueueLengthCounter = pdh.NewMockPerfCounter(test.avgDiskQueueLengthCounterReturnValue)
 
 			_, err = scraper.ScrapeMetrics(context.Background())
 			assert.EqualError(t, err, test.expectedErr)

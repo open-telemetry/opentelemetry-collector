@@ -64,6 +64,16 @@ var diskTimeDescriptor = func() pdata.MetricDescriptor {
 	return descriptor
 }()
 
+var diskPendingOperationsDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("system.disk.pending_operations")
+	descriptor.SetDescription("The queue size of pending I/O operations. On Windows, this is the average queue size over the collection interval.")
+	descriptor.SetUnit("1")
+	descriptor.SetType(pdata.MetricTypeInt64)
+	return descriptor
+}()
+
 var diskMergedDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()

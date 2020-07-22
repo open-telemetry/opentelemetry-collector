@@ -92,11 +92,12 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	ioCounters = s.filterByDevice(ioCounters)
 
 	if len(ioCounters) > 0 {
-		metrics.Resize(3 + systemSpecificMetricsLen)
+		metrics.Resize(4 + systemSpecificMetricsLen)
 		initializeDiskIOMetric(metrics.At(0), s.startTime, ioCounters)
 		initializeDiskOpsMetric(metrics.At(1), s.startTime, ioCounters)
 		initializeDiskTimeMetric(metrics.At(2), s.startTime, ioCounters)
-		appendSystemSpecificMetrics(metrics, 3, s.startTime, ioCounters)
+		initializeDiskPendingOperationsMetric(metrics.At(3), ioCounters)
+		appendSystemSpecificMetrics(metrics, 4, s.startTime, ioCounters)
 	}
 
 	return metrics, nil
@@ -144,6 +145,19 @@ func initializeDiskTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnix
 	}
 }
 
+func initializeDiskPendingOperationsMetric(metric pdata.Metric, ioCounters map[string]disk.IOCountersStat) {
+	diskPendingOperationsDescriptor.CopyTo(metric.MetricDescriptor())
+
+	idps := metric.Int64DataPoints()
+	idps.Resize(len(ioCounters))
+
+	idx := 0
+	for device, ioCounter := range ioCounters {
+		initializeDiskPendingDataPoint(idps.At(idx), device, int64(ioCounter.IopsInProgress))
+		idx++
+	}
+}
+
 func initializeInt64DataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
@@ -158,6 +172,13 @@ func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(directionLabelName, directionLabel)
 	dataPoint.SetStartTime(startTime)
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
+
+func initializeDiskPendingDataPoint(dataPoint pdata.Int64DataPoint, deviceLabel string, value int64) {
+	labelsMap := dataPoint.LabelsMap()
+	labelsMap.Insert(deviceLabelName, deviceLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
 }

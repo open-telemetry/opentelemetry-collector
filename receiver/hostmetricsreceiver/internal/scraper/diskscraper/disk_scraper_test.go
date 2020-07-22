@@ -79,14 +79,15 @@ func TestScrapeMetrics(t *testing.T) {
 				return
 			}
 
-			assert.GreaterOrEqual(t, metrics.Len(), 3)
+			assert.GreaterOrEqual(t, metrics.Len(), 4)
 
 			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
 			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
 			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
+			assertDiskPendingOperationsMetricValid(t, metrics.At(3))
 
 			if runtime.GOOS == "linux" {
-				assertInt64DiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
+				assertInt64DiskMetricValid(t, metrics.At(4), diskMergedDescriptor, 0)
 			}
 		})
 	}
@@ -98,6 +99,7 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
+	internal.AssertInt64MetricLabelExists(t, metric, 0, deviceLabelName)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
 }
@@ -108,6 +110,13 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 2)
+	internal.AssertDoubleMetricLabelExists(t, metric, 0, deviceLabelName)
 	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertDoubleMetricLabelHasValue(t, metric, metric.DoubleDataPoints().Len()-1, directionLabelName, writeDirectionLabelValue)
+}
+
+func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, diskPendingOperationsDescriptor, metric.MetricDescriptor())
+	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 1)
+	internal.AssertInt64MetricLabelExists(t, metric, 0, deviceLabelName)
 }
