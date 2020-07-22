@@ -58,7 +58,7 @@ func TestDifferentValues(t *testing.T) {
 func TestDifferentNumPts(t *testing.T) {
 	expected := goldendataset.DefaultMetricData()
 	cfg := goldendataset.DefaultCfg()
-	cfg.NumPts = 2
+	cfg.NumPtsPerMetric = 2
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Equal(t, 1, len(diffs))
