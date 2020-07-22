@@ -56,11 +56,21 @@ var cpuTimeDescriptor = func() pdata.MetricDescriptor {
 	return descriptor
 }()
 
-var memoryUsageDescriptor = func() pdata.MetricDescriptor {
+var physicalMemoryUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("process.memory.usage")
-	descriptor.SetDescription("Bytes of memory in use.")
+	descriptor.SetName("process.memory.physical_usage")
+	descriptor.SetDescription("The amount of physical memory in use.")
+	descriptor.SetUnit("bytes")
+	descriptor.SetType(pdata.MetricTypeInt64)
+	return descriptor
+}()
+
+var virtualMemoryUsageDescriptor = func() pdata.MetricDescriptor {
+	descriptor := pdata.NewMetricDescriptor()
+	descriptor.InitEmpty()
+	descriptor.SetName("process.memory.virtual_usage")
+	descriptor.SetDescription("Virtual memory size.")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
