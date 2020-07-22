@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -56,12 +57,16 @@ func AssertDoubleMetricLabelExists(t *testing.T, metric pdata.Metric, index int,
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
 }
 
-func AssertInt64MetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.Int64DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertInt64MetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	idps := metric.Int64DataPoints()
+	for i := 0; i < idps.Len(); i++ {
+		require.Equal(t, startTime, idps.At(i).StartTime())
+	}
 }
 
-func AssertDoubleMetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertDoubleMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	ddps := metric.DoubleDataPoints()
+	for i := 0; i < ddps.Len(); i++ {
+		require.Equal(t, startTime, ddps.At(i).StartTime())
+	}
 }

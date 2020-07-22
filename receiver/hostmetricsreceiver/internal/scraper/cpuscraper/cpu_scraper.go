@@ -28,21 +28,25 @@ import (
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
+
+	// for mocking
+	bootTime func() (uint64, error)
+	times    func(bool) ([]cpu.TimesStat, error)
 }
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times}
 }
 
 // Initialize
 func (s *scraper) Initialize(_ context.Context) error {
-	bootTime, err := host.BootTime()
+	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
 	return nil
 }
 
@@ -55,7 +59,7 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	cpuTimes, err := cpu.Times(s.config.ReportPerCPU)
+	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
 		return metrics, err
 	}

@@ -16,17 +16,25 @@ package filesystemscraper
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 // scraper for FileSystem Metrics
 type scraper struct {
-	config *Config
+	config    *Config
+	includeFS filterset.FilterSet
+	excludeFS filterset.FilterSet
+
+	// for mocking gopsutil disk.Partitions & disk.Usage
+	partitions func(bool) ([]disk.PartitionStat, error)
+	usage      func(string) (*disk.UsageStat, error)
 }
 
 type deviceUsage struct {
@@ -35,8 +43,26 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg}
+func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
+	scraper := &scraper{config: cfg, partitions: disk.Partitions, usage: disk.Usage}
+
+	var err error
+
+	if len(cfg.Include.Devices) > 0 {
+		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Devices, &cfg.Include.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device include filters: %w", err)
+		}
+	}
+
+	if len(cfg.Exclude.Devices) > 0 {
+		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Devices, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating device exclude filters: %w", err)
+		}
+	}
+
+	return scraper, nil
 }
 
 // Initialize
@@ -54,7 +80,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	// omit logical (virtual) filesystems (not relevant for windows)
-	partitions, err := disk.Partitions( /*all=*/ false)
+	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
 		return metrics, err
 	}
@@ -62,7 +88,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	var errors []error
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
-		usage, err := disk.Usage(partition.Mountpoint)
+		usage, err := s.usage(partition.Mountpoint)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -70,6 +96,9 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 
 		usages = append(usages, &deviceUsage{partition.Device, usage})
 	}
+
+	// filter devices by name
+	usages = s.filterByDevice(usages)
 
 	if len(usages) > 0 {
 		metrics.Resize(1 + systemSpecificMetricsLen)
@@ -101,4 +130,23 @@ func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, deviceLa
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func (s *scraper) filterByDevice(usages []*deviceUsage) []*deviceUsage {
+	if s.includeFS == nil && s.excludeFS == nil {
+		return usages
+	}
+
+	filteredUsages := make([]*deviceUsage, 0, len(usages))
+	for _, usage := range usages {
+		if s.includeDevice(usage.deviceName) {
+			filteredUsages = append(filteredUsages, usage)
+		}
+	}
+	return filteredUsages
+}
+
+func (s *scraper) includeDevice(deviceName string) bool {
+	return (s.includeFS == nil || s.includeFS.Matches(deviceName)) &&
+		(s.excludeFS == nil || !s.excludeFS.Matches(deviceName))
 }

@@ -17,11 +17,10 @@ package memorylimiter
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -29,82 +28,79 @@ const (
 	typeStr = "memory_limiter"
 )
 
-// Factory is the factory for Attribute Key processor.
-type Factory struct {
-}
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: false}
 
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
+// NewFactory returns a new factory for the Memory Limiter processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
 // that the default configuration is expected to fail for this processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
-	return generateDefaultConfig()
-}
-
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	_ context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor,
-) (component.TraceProcessor, error) {
-	return f.createProcessor(params.Logger, nextConsumer, nil, nil, cfg)
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	return f.createProcessor(params.Logger, nil, nextConsumer, nil, cfg)
-}
-
-// CreateLogsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateLogProcessor(
-	_ context.Context,
-	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
-) (component.LogProcessor, error) {
-	return f.createProcessor(params.Logger, nil, nil, nextConsumer, cfg)
-}
-
-var _ component.LogProcessorFactory = new(Factory)
-
-type TripleTypeProcessor interface {
-	consumer.TraceConsumer
-	consumer.MetricsConsumer
-	consumer.LogConsumer
-	component.Processor
-}
-
-func (f *Factory) createProcessor(
-	logger *zap.Logger,
-	traceConsumer consumer.TraceConsumer,
-	metricConsumer consumer.MetricsConsumer,
-	logConsumer consumer.LogConsumer,
-	cfg configmodels.Processor,
-) (TripleTypeProcessor, error) {
-	pCfg := cfg.(*Config)
-	return newMemoryLimiter(
-		logger,
-		traceConsumer,
-		metricConsumer,
-		logConsumer,
-		pCfg,
-	)
-}
-
-func generateDefaultConfig() *Config {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
 	}
+}
+
+func createTraceProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.TraceConsumer,
+) (component.TraceProcessor, error) {
+	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextConsumer,
+		ml,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(ml.shutdown))
+}
+
+func createMetricsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsProcessor, error) {
+	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		ml,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(ml.shutdown))
+}
+
+func createLogsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewLogsProcessor(
+		cfg,
+		nextConsumer,
+		ml,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(ml.shutdown))
 }

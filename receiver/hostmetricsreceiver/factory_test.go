@@ -31,14 +31,14 @@ import (
 var creationParams = component.ReceiverCreateParams{Logger: zap.NewNop()}
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nil)
@@ -55,7 +55,7 @@ func TestCreateReceiver(t *testing.T) {
 func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	const errorKey string = "error"
 
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := &Config{Scrapers: map[string]internal.Config{errorKey: &mockConfig{}}}
 
 	_, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)

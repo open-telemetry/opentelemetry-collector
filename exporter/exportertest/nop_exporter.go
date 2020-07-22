@@ -28,15 +28,15 @@ type nopExporterOld struct {
 	retError error
 }
 
-func (ne *nopExporterOld) Start(ctx context.Context, host component.Host) error {
+func (ne *nopExporterOld) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (ne *nopExporterOld) ConsumeTraceData(_ context.Context, _ consumerdata.TraceData) error {
+func (ne *nopExporterOld) ConsumeTraceData(context.Context, consumerdata.TraceData) error {
 	return ne.retError
 }
 
-func (ne *nopExporterOld) ConsumeMetricsData(_ context.Context, _ consumerdata.MetricsData) error {
+func (ne *nopExporterOld) ConsumeMetricsData(context.Context, consumerdata.MetricsData) error {
 	return ne.retError
 }
 
@@ -48,7 +48,7 @@ func (ne *nopExporterOld) Shutdown(context.Context) error {
 const (
 	nopTraceExporterName   = "nop_trace"
 	nopMetricsExporterName = "nop_metrics"
-	nopLogExporterName     = "nop_log"
+	nopLogsExporterName    = "nop_log"
 )
 
 // NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
@@ -72,19 +72,19 @@ type nopExporter struct {
 	retError error
 }
 
-func (ne *nopExporter) Start(ctx context.Context, host component.Host) error {
+func (ne *nopExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (ne *nopExporter) ConsumeTraces(_ context.Context, _ pdata.Traces) error {
+func (ne *nopExporter) ConsumeTraces(context.Context, pdata.Traces) error {
 	return ne.retError
 }
 
-func (ne *nopExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (ne *nopExporter) ConsumeMetrics(context.Context, pdata.Metrics) error {
 	return ne.retError
 }
 
-func (ne *nopExporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (ne *nopExporter) ConsumeLogs(context.Context, data.Logs) error {
 	return ne.retError
 }
 
@@ -109,10 +109,10 @@ func NewNopMetricsExporter() component.MetricsExporter {
 	return ne
 }
 
-// NewNopLogExporterOld creates an LogExporter that just drops the received data.
-func NewNopLogExporter() component.LogExporter {
+// NewNopLogsExporterOld creates an LogsExporter that just drops the received data.
+func NewNopLogsExporter() component.LogsExporter {
 	ne := &nopExporter{
-		name: nopLogExporterName,
+		name: nopLogsExporterName,
 	}
 	return ne
 }

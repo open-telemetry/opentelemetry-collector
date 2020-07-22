@@ -60,3 +60,10 @@ func TestNopMetricsExporter(t *testing.T) {
 	require.NoError(t, nme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(data.NewMetricData())))
 	require.NoError(t, nme.Shutdown(context.Background()))
 }
+
+func TestNopLogsExporter(t *testing.T) {
+	nme := NewNopLogsExporter()
+	require.NoError(t, nme.Start(context.Background(), nil))
+	require.NoError(t, nme.ConsumeLogs(context.Background(), data.NewLogs()))
+	require.NoError(t, nme.Shutdown(context.Background()))
+}

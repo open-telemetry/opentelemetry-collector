@@ -14,10 +14,8 @@
 package fileexporter
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -33,26 +31,11 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	"go.opentelemetry.io/collector/testutil"
 )
 
-type mockFile struct {
-	buf    bytes.Buffer
-	maxLen int
-}
-
-func (mf *mockFile) Write(p []byte) (n int, err error) {
-	if mf.maxLen != 0 && len(p)+mf.buf.Len() > mf.maxLen {
-		return 0, errors.New("buffer would be filled by write")
-	}
-	return mf.buf.Write(p)
-}
-
-func (mf *mockFile) Close() error {
-	return nil
-}
-
 func TestFileTraceExporterNoErrors(t *testing.T) {
-	mf := &mockFile{}
+	mf := &testutil.LimitedWriter{}
 	lte := &Exporter{file: mf}
 	require.NotNil(t, lte)
 
@@ -78,7 +61,7 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
 	var j map[string]interface{}
-	assert.NoError(t, json.Unmarshal(mf.buf.Bytes(), &j))
+	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
 
 	assert.EqualValues(t, j,
 		map[string]interface{}{
@@ -102,7 +85,7 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
-	mf := &mockFile{}
+	mf := &testutil.LimitedWriter{}
 	lme := &Exporter{file: mf}
 	require.NotNil(t, lme)
 
@@ -132,7 +115,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
 	var j map[string]interface{}
-	assert.NoError(t, json.Unmarshal(mf.buf.Bytes(), &j))
+	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
 
 	assert.EqualValues(t, j,
 		map[string]interface{}{
@@ -162,7 +145,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
-	mf := &mockFile{}
+	mf := &testutil.LimitedWriter{}
 	exporter := &Exporter{file: mf}
 	require.NotNil(t, exporter)
 
@@ -177,14 +160,18 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logA",
-				},
-				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logB",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logA",
+						},
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logB",
+						},
+					},
 				},
 			},
 		},
@@ -197,10 +184,14 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logC",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logC",
+						},
+					},
 				},
 			},
 		},
@@ -208,7 +199,7 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, exporter.ConsumeLogs(context.Background(), data.LogsFromProto(ld)))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
-	decoder := json.NewDecoder(&mf.buf)
+	decoder := json.NewDecoder(mf)
 	var j map[string]interface{}
 	assert.NoError(t, decoder.Decode(&j))
 
@@ -226,12 +217,12 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 			"logs": []interface{}{
 				map[string]interface{}{
-					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"shortName":         "logA",
+					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"name":         "logA",
 				},
 				map[string]interface{}{
-					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"shortName":         "logB",
+					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"name":         "logB",
 				},
 			},
 		}, j)
@@ -252,8 +243,8 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 			"logs": []interface{}{
 				map[string]interface{}{
-					"timestampUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"shortName":         "logC",
+					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
+					"name":         "logC",
 				},
 			},
 		}, j)
@@ -272,14 +263,18 @@ func TestFileLogsExporterErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logA",
-				},
-				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logB",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logA",
+						},
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logB",
+						},
+					},
 				},
 			},
 		},
@@ -292,10 +287,14 @@ func TestFileLogsExporterErrors(t *testing.T) {
 					},
 				},
 			},
-			Logs: []*logspb.LogRecord{
+			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 				{
-					TimestampUnixNano: uint64(now.UnixNano()),
-					ShortName:         "logC",
+					Logs: []*logspb.LogRecord{
+						{
+							TimeUnixNano: uint64(now.UnixNano()),
+							Name:         "logC",
+						},
+					},
 				},
 			},
 		},
@@ -326,8 +325,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	for i := range cases {
 		maxLen := cases[i].MaxLen
 		t.Run(cases[i].Name, func(t *testing.T) {
-			mf := &mockFile{
-				maxLen: maxLen,
+			mf := &testutil.LimitedWriter{
+				MaxLen: maxLen,
 			}
 			exporter := &Exporter{file: mf}
 			require.NotNil(t, exporter)

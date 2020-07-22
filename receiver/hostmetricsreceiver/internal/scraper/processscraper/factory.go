@@ -16,6 +16,8 @@ package processscraper
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.uber.org/zap"
 
@@ -45,6 +47,10 @@ func (f *Factory) CreateMetricsScraper(
 	_ *zap.Logger,
 	config internal.Config,
 ) (internal.ResourceScraper, error) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		return nil, errors.New("process scraper only available on Linux or Windows")
+	}
+
 	cfg := config.(*Config)
 	ps, err := newProcessScraper(cfg)
 	if err != nil {

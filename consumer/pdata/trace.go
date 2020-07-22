@@ -79,6 +79,18 @@ func (td Traces) SpanCount() int {
 	return spanCount
 }
 
+// Size returns size in bytes.
+func (td Traces) Size() int {
+	size := 0
+	for i := 0; i < len(*td.orig); i++ {
+		if (*td.orig)[i] == nil {
+			continue
+		}
+		size += (*td.orig)[i].Size()
+	}
+	return size
+}
+
 func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(td.orig)
 }

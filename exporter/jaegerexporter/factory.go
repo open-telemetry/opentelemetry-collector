@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -29,22 +29,26 @@ const (
 	typeStr = "jaeger"
 )
 
-// Factory is the factory for Jaeger gRPC exporter.
-type Factory struct {
+// NewFactory creates a factory for Jaeger exporter
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
+	// TODO: Enable the queued settings.
+	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs.Disabled = true
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:   qs,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
@@ -52,8 +56,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
+func createTraceExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	config configmodels.Exporter,
@@ -68,19 +71,10 @@ func (f *Factory) CreateTraceExporter(
 		return nil, err
 	}
 
-	exp, err := New(expCfg)
+	exp, err := newTraceExporter(expCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return exp, nil
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(
-	_ context.Context,
-	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
-) (component.MetricsExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }

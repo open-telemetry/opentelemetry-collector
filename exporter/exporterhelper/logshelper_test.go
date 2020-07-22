@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -42,6 +43,13 @@ var (
 		NameVal: fakeLogsExporterName,
 	}
 )
+
+func TestLogsRequest(t *testing.T) {
+	mr := newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil)
+
+	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
+	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
+}
 
 func TestLogsExporter_InvalidName(t *testing.T) {
 	me, err := NewLogsExporter(nil, newPushLogsData(0, nil))
@@ -150,7 +158,7 @@ func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter, wantError error, droppedLogRecords int) {
+func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter, wantError error, droppedLogRecords int) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
@@ -169,7 +177,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogExporter,
 	}
 }
 
-func generateLogsTraffic(t *testing.T, me component.LogExporter, numRequests int, wantError error) {
+func generateLogsTraffic(t *testing.T, me component.LogsExporter, numRequests int, wantError error) {
 	ld := testdata.GenerateLogDataOneLog()
 	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
@@ -178,7 +186,7 @@ func generateLogsTraffic(t *testing.T, me component.LogExporter, numRequests int
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, me component.LogExporter, wantError error, numMetricPoints int64) {
+func checkWrapSpanForLogsExporter(t *testing.T, me component.LogsExporter, wantError error, numLogRecords int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
@@ -201,13 +209,13 @@ func checkWrapSpanForLogsExporter(t *testing.T, me component.LogExporter, wantEr
 		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
 		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
 
-		sentMetricPoints := numMetricPoints
-		var failedToSendMetricPoints int64
+		sentLogRecords := numLogRecords
+		var failedToSendLogRecords int64
 		if wantError != nil {
-			sentMetricPoints = 0
-			failedToSendMetricPoints = numMetricPoints
+			sentLogRecords = 0
+			failedToSendLogRecords = numLogRecords
 		}
-		require.Equalf(t, sentMetricPoints, sd.Attributes[obsreport.SentLogRecordsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsreport.FailedToSendLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, sentLogRecords, sd.Attributes[obsreport.SentLogRecordsKey], "SpanData %v", sd)
+		require.Equalf(t, failedToSendLogRecords, sd.Attributes[obsreport.FailedToSendLogRecordsKey], "SpanData %v", sd)
 	}
 }

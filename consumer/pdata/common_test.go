@@ -1061,6 +1061,16 @@ func BenchmarkStringMap_RangeOverMap(b *testing.B) {
 	}
 }
 
+func fillTestAttributeValue(dest AttributeValue) {
+	dest.SetStringVal("v")
+}
+
+func generateTestAttributeValue() AttributeValue {
+	av := NewAttributeValueNull()
+	fillTestAttributeValue(av)
+	return av
+}
+
 func generateTestStringMap() StringMap {
 	sm := NewStringMap()
 	fillTestStringMap(sm)

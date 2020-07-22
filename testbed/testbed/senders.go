@@ -139,8 +139,10 @@ func NewJaegerGRPCDataSender(host string, port int) *JaegerGRPCDataSender {
 }
 
 func (je *JaegerGRPCDataSender) Start() error {
-	factory := jaegerexporter.Factory{}
+	factory := jaegerexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerexporter.Config)
+	// Disable retries, we should push data and if error just log it.
+	cfg.RetrySettings.Disabled = true
 	cfg.Endpoint = fmt.Sprintf("%s:%d", je.Host, je.Port)
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
@@ -289,7 +291,7 @@ func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 }
 
 func (ote *OTLPTraceDataSender) Start() error {
-	factory := otlpexporter.Factory{}
+	factory := otlpexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("%s:%d", ote.Host, ote.Port)
 	cfg.TLSSetting = configtls.TLSClientSetting{
@@ -339,7 +341,7 @@ func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 }
 
 func (ome *OTLPMetricsDataSender) Start() error {
-	factory := otlpexporter.Factory{}
+	factory := otlpexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("%s:%d", ome.host, ome.port)
 	cfg.TLSSetting = configtls.TLSClientSetting{

@@ -29,19 +29,19 @@ import (
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 	require.NoError(t, err)
 
-	config, err := config.LoadConfigFile(
+	cfg, err := config.LoadConfigFile(
 		t,
 		path.Join(".", "testdata", "config.yaml"),
 		factories)
 
 	require.Nil(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
-	p0 := config.Processors["memory_limiter"]
+	p0 := cfg.Processors["memory_limiter"]
 	assert.Equal(t, p0,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	p1 := config.Processors["memory_limiter/with-settings"]
+	p1 := cfg.Processors["memory_limiter/with-settings"]
 	assert.Equal(t, p1,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{

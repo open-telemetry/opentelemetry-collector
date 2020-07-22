@@ -11,6 +11,6 @@ WORKDIR /repo
 ENV PACKAGE="deb"
 ENV VERSION=""
 ENV ARCH="amd64"
-ENV OUTPUT_DIR="/repo/bin/"
+ENV OUTPUT_DIR="/repo/dist/"
 
 CMD ./internal/buildscripts/packaging/fpm/$PACKAGE/build.sh "$VERSION" "$ARCH" "$OUTPUT_DIR"

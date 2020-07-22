@@ -16,69 +16,90 @@ package diskscraper
 
 import (
 	"context"
-	"errors"
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name           string
-		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
-		expectedErr    string
+		name          string
+		config        Config
+		expectMetrics bool
+		newErrRegex   string
 	}
 
 	testCases := []testCase{
 		{
-			name: "Standard",
+			name:          "Standard",
+			expectMetrics: true,
 		},
 		{
-			name:           "Error",
-			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			name:          "Include Filter that matches nothing",
+			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			expectMetrics: false,
+		},
+		{
+			name:        "Invalid Include Filter",
+			config:      Config{Include: MatchConfig{Devices: []string{"test"}}},
+			newErrRegex: "^error creating device include filters:",
+		},
+		{
+			name:        "Invalid Exclude Filter",
+			config:      Config{Exclude: MatchConfig{Devices: []string{"test"}}},
+			newErrRegex: "^error creating device exclude filters:",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newDiskScraper(context.Background(), &Config{})
-			if test.ioCountersFunc != nil {
-				scraper.ioCounters = test.ioCountersFunc
+			scraper, err := newDiskScraper(context.Background(), &test.config)
+			if test.newErrRegex != "" {
+				require.Error(t, err)
+				require.Regexp(t, test.newErrRegex, err)
+				return
 			}
+			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			err := scraper.Initialize(context.Background())
+			err = scraper.Initialize(context.Background())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
 			metrics, err := scraper.ScrapeMetrics(context.Background())
-			if test.expectedErr != "" {
-				assert.EqualError(t, err, test.expectedErr)
-				return
-			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.GreaterOrEqual(t, metrics.Len(), 3)
+			if !test.expectMetrics {
+				assert.Equal(t, 0, metrics.Len())
+				return
+			}
 
-			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor)
-			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor)
-			assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor)
+			assert.GreaterOrEqual(t, metrics.Len(), 2)
 
-			if runtime.GOOS == "Linux" {
-				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor)
+			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
+			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
+
+			if runtime.GOOS != "windows" {
+				assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
+			}
+
+			if runtime.GOOS == "linux" {
+				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
 			}
 		})
 	}
 }
 
-func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor) {
+func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
+	}
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)

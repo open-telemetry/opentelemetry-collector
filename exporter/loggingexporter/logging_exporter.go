@@ -215,8 +215,8 @@ func (b *logDataBuffer) logDataPointLabels(labels pdata.StringMap) {
 func (b *logDataBuffer) logLogRecord(lr pdata.LogRecord) {
 	b.logEntry("Timestamp: %d", lr.Timestamp())
 	b.logEntry("Severity: %s", lr.SeverityText())
-	b.logEntry("ShortName: %s", lr.ShortName())
-	b.logEntry("Body: %s", lr.Body())
+	b.logEntry("ShortName: %s", lr.Name())
+	b.logEntry("Body: %s", attributeValueToString(lr.Body()))
 	b.logAttributeMap("Attributes", lr.Attributes())
 }
 
@@ -372,6 +372,10 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 	return exporterhelper.NewTraceExporter(
 		config,
 		s.pushTraceData,
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }
@@ -387,8 +391,84 @@ func NewMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 	return exporterhelper.NewMetricsExporter(
 		config,
 		s.pushMetricsData,
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
+}
+
+// NewLogsExporter creates an exporter.LogsExporter that just drops the
+// received data and logs debugging messages.
+func NewLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
+	s := &loggingExporter{
+		debug:  level == "debug",
+		logger: logger,
+	}
+
+	return exporterhelper.NewLogsExporter(
+		config,
+		s.pushLogData,
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
+		exporterhelper.WithShutdown(loggerSync(logger)),
+	)
+}
+
+func (s *loggingExporter) pushLogData(
+	_ context.Context,
+	ld data.Logs,
+) (int, error) {
+	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
+
+	if !s.debug {
+		return 0, nil
+	}
+
+	buf := logDataBuffer{}
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		buf.logEntry("ResourceLog #%d", i)
+		rl := rls.At(i)
+		if rl.IsNil() {
+			buf.logEntry("* Nil ResourceLog")
+			continue
+		}
+		if !rl.Resource().IsNil() {
+			buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
+		}
+
+		ills := rl.InstrumentationLibraryLogs()
+		for j := 0; j < ills.Len(); j++ {
+			buf.logEntry("InstrumentationLibraryLogs #%d", j)
+			ils := ills.At(j)
+			if ils.IsNil() {
+				buf.logEntry("* Nil InstrumentationLibraryLogs")
+				continue
+			}
+			if !ils.InstrumentationLibrary().IsNil() {
+				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
+			}
+
+			logs := ils.Logs()
+			for j := 0; j < logs.Len(); j++ {
+				buf.logEntry("LogRecord #%d", j)
+				lr := logs.At(j)
+				if lr.IsNil() {
+					buf.logEntry("* Nil LogRecord")
+					continue
+				}
+				buf.logLogRecord(lr)
+			}
+		}
+	}
+
+	s.logger.Debug(buf.str.String())
+
+	return 0, nil
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
@@ -410,58 +490,4 @@ func loggerSync(logger *zap.Logger) func(context.Context) error {
 		}
 		return err
 	}
-}
-
-// NewLogExporter creates an exporter.LogExporter that just drops the
-// received data and logs debugging messages.
-func NewLogExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogExporter, error) {
-	s := &loggingExporter{
-		debug:  level == "debug",
-		logger: logger,
-	}
-
-	return exporterhelper.NewLogsExporter(
-		config,
-		s.pushLogData,
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
-}
-
-func (s *loggingExporter) pushLogData(
-	_ context.Context,
-	ld data.Logs,
-) (int, error) {
-	s.logger.Info("LogExporter", zap.Int("#logs", ld.LogRecordCount()))
-
-	if !s.debug {
-		return 0, nil
-	}
-
-	buf := logDataBuffer{}
-	rms := ld.ResourceLogs()
-	for i := 0; i < rms.Len(); i++ {
-		buf.logEntry("ResourceLog #%d", i)
-		rm := rms.At(i)
-		if rm.IsNil() {
-			buf.logEntry("* Nil ResourceLog")
-			continue
-		}
-		if !rm.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
-		}
-		lrs := rm.Logs()
-		for j := 0; j < lrs.Len(); j++ {
-			buf.logEntry("LogRecord #%d", j)
-			lr := lrs.At(j)
-			if lr.IsNil() {
-				buf.logEntry("* Nil LogRecord")
-				continue
-			}
-			buf.logLogRecord(lr)
-		}
-	}
-
-	s.logger.Debug(buf.str.String())
-
-	return 0, nil
 }

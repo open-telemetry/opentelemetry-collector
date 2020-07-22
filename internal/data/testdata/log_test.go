@@ -112,13 +112,13 @@ func TestToFromOtlpLogWithNils(t *testing.T) {
 
 	md = GenerateLogDataOneEmptyOneNilLogRecord()
 	rs := md.ResourceLogs().At(0)
-	assert.EqualValues(t, 2, rs.Logs().Len())
-	assert.False(t, rs.Logs().At(0).IsNil())
-	assert.True(t, rs.Logs().At(1).IsNil())
+	assert.EqualValues(t, 2, rs.InstrumentationLibraryLogs().At(0).Logs().Len())
+	assert.False(t, rs.InstrumentationLibraryLogs().At(0).Logs().At(0).IsNil())
+	assert.True(t, rs.InstrumentationLibraryLogs().At(0).Logs().At(1).IsNil())
 
 	md = GenerateLogDataOneLogOneNil()
 	rl0 := md.ResourceLogs().At(0)
-	assert.EqualValues(t, 2, rl0.Logs().Len())
-	assert.False(t, rl0.Logs().At(0).IsNil())
-	assert.True(t, rl0.Logs().At(1).IsNil())
+	assert.EqualValues(t, 2, rl0.InstrumentationLibraryLogs().At(0).Logs().Len())
+	assert.False(t, rl0.InstrumentationLibraryLogs().At(0).Logs().At(0).IsNil())
+	assert.True(t, rl0.InstrumentationLibraryLogs().At(0).Logs().At(1).IsNil())
 }

@@ -6,12 +6,12 @@ receivers:
     collection_interval: 30s
     scrapers:
       cpu:
-        report_per_cpu: true
       disk:
       load:
       filesystem:
       memory:
       network:
+      processes:
       swap:
       process:
         include:

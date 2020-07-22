@@ -32,7 +32,7 @@ type builtExporter struct {
 	logger *zap.Logger
 	te     component.TraceExporterBase
 	me     component.MetricsExporterBase
-	le     component.LogExporter
+	le     component.LogsExporter
 }
 
 // Start the exporter.
@@ -158,7 +158,7 @@ func NewExportersBuilder(
 	config *configmodels.Config,
 	factories map[configmodels.Type]component.ExporterFactoryBase,
 ) *ExportersBuilder {
-	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogExporter)), config, factories}
+	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), config, factories}
 }
 
 // BuildExporters exporters from config.
@@ -277,7 +277,7 @@ func (eb *ExportersBuilder) buildExporter(
 			exporter.me = me
 
 		case configmodels.LogsDataType:
-			le, err := createLogExporter(factory, logger, config)
+			le, err := createLogsExporter(factory, logger, config)
 			if err != nil {
 				if err == configerror.ErrDataTypeIsNotSupported {
 					// Could not create because this exporter does not support this data type.
@@ -354,17 +354,17 @@ func createMetricsExporter(factoryBase component.ExporterFactoryBase,
 	return factoryBase.(component.ExporterFactoryOld).CreateMetricsExporter(logger, cfg)
 }
 
-// createLogExporter creates a data exporter based on provided factory type.
-func createLogExporter(
+// createLogsExporter creates a data exporter based on provided factory type.
+func createLogsExporter(
 	factoryBase component.ExporterFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Exporter,
-) (component.LogExporter, error) {
-	factory, ok := factoryBase.(component.LogExporterFactory)
+) (component.LogsExporter, error) {
+	factory, ok := factoryBase.(component.LogsExporterFactory)
 	if !ok {
 		return nil, fmt.Errorf("exporter %q does not support data type %q", factoryBase.Type(), configmodels.LogsDataType)
 	}
 	creationParams := component.ExporterCreateParams{Logger: logger}
 	ctx := context.Background()
-	return factory.CreateLogExporter(ctx, creationParams, cfg)
+	return factory.CreateLogsExporter(ctx, creationParams, cfg)
 }

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -27,22 +28,28 @@ const (
 	typeStr = "otlp"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
+// NewFactory creates a factory for OTLP exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
+	// TODO: Enable the queued settings.
+	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs.Disabled = true
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:   qs,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -51,29 +58,76 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+func createTraceExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
-	return NewTraceExporter(ctx, params, cfg)
+	oce, err := newExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	oexp, err := exporterhelper.NewTraceExporter(
+		cfg,
+		oce.pushTraceData,
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithShutdown(oce.shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+func createMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	return NewMetricsExporter(ctx, params, cfg)
+	oce, err := newExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	oexp, err := exporterhelper.NewMetricsExporter(
+		cfg,
+		oce.pushMetricsData,
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }
 
-// CreateLogExporter creates a log exporter based on this config.
-func (f *Factory) CreateLogExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+func createLogsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.LogExporter, error) {
-	return NewLogExporter(ctx, params, cfg)
+) (component.LogsExporter, error) {
+	oce, err := newExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	oexp, err := exporterhelper.NewLogsExporter(
+		cfg,
+		oce.pushLogData,
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return oexp, nil
 }

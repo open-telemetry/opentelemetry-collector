@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
+// +build !linux,!windows
 
 package memoryscraper
 
@@ -22,11 +22,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const availableStateLabelValue = "available"
-
-const memStatesLen = 2
+const memStatesLen = 3
 
 func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
 	initializeMemoryUsageDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.At(1), availableStateLabelValue, int64(memInfo.Available))
+	initializeMemoryUsageDataPoint(idps.At(1), freeStateLabelValue, int64(memInfo.Free))
+	initializeMemoryUsageDataPoint(idps.At(2), inactiveStateLabelValue, int64(memInfo.Inactive))
 }

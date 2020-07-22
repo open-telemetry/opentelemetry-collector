@@ -67,38 +67,6 @@ const (
   }
 `
 
-	mockedConsumedResourceWithoutTypeJSON = `
-  {
-    "resource": {
-      "attributes": [
-        {
-          "key": "label-key",
-          "value": { "stringValue": "label-value" }
-        }
-      ]
-    },
-    "instrumentation_library_metrics": [
-      {
-        "metrics": [
-          {
-            "metric_descriptor": {
-              "name": "metric-name",
-              "description": "metric-description",
-              "unit": "metric-unit",
-              "type": 1
-            },
-            "int64_data_points": [
-              {
-                "value": 0
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-`
-
 	mockedConsumedResourceNilJSON = `
   {
     "instrumentation_library_metrics": [
@@ -153,77 +121,57 @@ type resourceProcessorTestCase struct {
 	resourceProcessorConfig  string
 	mockedConsumedMetricData data.MetricData
 	expectedMetricData       data.MetricData
-	isNilResource            bool
 }
 
 func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 
 	tests := []resourceProcessorTestCase{
 		{
-			name: "Override consumed resource labels and type",
+			name: "update_and_rename_existing_attributes",
 			resourceProcessorConfig: `
   resource:
-    type: vm
-    labels: {
-      "additional-label-key": "additional-label-value",
-    }
+    attributes:
+    - key: label-key
+      value: new-label-value
+      action: update
+    - key: resource-type
+      from_attribute: opencensus.resourcetype
+      action: upsert
+    - key: opencensus.resourcetype
+      action: delete
 `,
 			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithTypeJSON),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: &otlpresource.Resource{
 					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:   "opencensus.resourcetype",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "vm"}},
+							Key:   "resource-type",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
 						},
 						{
 							Key:   "label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "label-value"}},
-						},
-						{
-							Key:   "additional-label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "new-label-value"}},
 						},
 					},
 				},
 			}),
 		},
 		{
-			name: "Return nil if consumed resource is nil and type is empty",
+			name: "set_attribute_on_nil_resource",
 			resourceProcessorConfig: `
   resource:
-    labels: {
-      "additional-label-key": "additional-label-value",
-    }
+    attributes:
+    - key: additional-label-key
+      value: additional-label-value
+      action: insert
+
 `,
 			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceNilJSON),
-			isNilResource:            true,
-		},
-		{
-			name: "Return nil if consumed resource and resource in config is nil",
-			resourceProcessorConfig: `
-  resource:
-`,
-			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceNilJSON),
-			isNilResource:            true,
-		},
-		{
-			name: "Return resource without type",
-			resourceProcessorConfig: `
-  resource:
-    labels: {
-      "additional-label-key": "additional-label-value",
-    }
-`,
-			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithoutTypeJSON),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+
 				Resource: &otlpresource.Resource{
 					Attributes: []*otlpcommon.KeyValue{
 						{
-							Key:   "label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "label-value"}},
-						},
-						{
 							Key:   "additional-label-key",
 							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
@@ -232,12 +180,13 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			}),
 		},
 		{
-			name: "Consumed resource with nil labels",
+			name: "set_attribute_on_empty_resource",
 			resourceProcessorConfig: `
   resource:
-    labels: {
-      "additional-label-key": "additional-label-value",
-    }
+    attributes:
+    - key: additional-label-key
+      value: additional-label-value
+      action: insert
 `,
 			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithoutAttributesJSON),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
@@ -332,12 +281,6 @@ func TestMetricResourceProcessor(t *testing.T) {
 			m := tc.MockBackend.ReceivedMetrics[0]
 			rm := pdatautil.MetricsToInternalMetrics(m).ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
-
-			// If a resource is not expected to be returned by the processor, return.
-			if test.isNilResource {
-				require.True(t, rm.At(0).Resource().IsNil())
-				return
-			}
 
 			require.Equal(t,
 				attributesToMap(test.expectedMetricData.ResourceMetrics().At(0).Resource().Attributes()),

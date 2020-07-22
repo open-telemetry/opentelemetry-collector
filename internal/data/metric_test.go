@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -51,6 +52,32 @@ func TestMetricCount(t *testing.T) {
 	rms.At(2).InstrumentationLibraryMetrics().Resize(1)
 	rms.At(2).InstrumentationLibraryMetrics().At(0).Metrics().Resize(5)
 	assert.EqualValues(t, 6, md.MetricCount())
+}
+
+func TestMetricSize(t *testing.T) {
+	md := NewMetricData()
+	assert.Equal(t, 0, md.Size())
+	rms := md.ResourceMetrics()
+	rms.Resize(1)
+	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
+	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleDataPoints().Resize(1)
+	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleDataPoints().At(0).SetValue(16.6)
+	otlp := MetricDataToOtlp(md)
+	size := 0
+	sizeBytes := 0
+	for _, rmerics := range otlp {
+		size += rmerics.Size()
+		bts, err := rmerics.Marshal()
+		require.NoError(t, err)
+		sizeBytes += len(bts)
+	}
+	assert.Equal(t, size, md.Size())
+	assert.Equal(t, sizeBytes, md.Size())
+}
+
+func TestSizeWithNils(t *testing.T) {
+	assert.Equal(t, 0, MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).Size())
 }
 
 func TestMetricCountWithNils(t *testing.T) {

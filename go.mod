@@ -28,9 +28,10 @@ require (
 	github.com/open-telemetry/opentelemetry-proto v0.4.0
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
-	github.com/ory/go-acc v0.2.1
+	github.com/ory/go-acc v0.2.5
 	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.3
+	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1
 	github.com/prometheus/common v0.10.0
@@ -45,14 +46,16 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
+	github.com/tinylib/msgp v1.1.2
 	github.com/uber/jaeger-lib v2.2.0+incompatible
-	go.opencensus.io v0.22.3
+	go.opencensus.io v0.22.4
 	go.uber.org/atomic v1.6.0
-	go.uber.org/zap v1.13.0
+	go.uber.org/zap v1.15.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980
 	golang.org/x/text v0.3.3
 	golang.org/x/tools v0.0.0-20200707222132-065b96d36cf8 // indirect
+	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.3.0

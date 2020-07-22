@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"testing"
@@ -22,20 +23,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestType(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	pType := factory.Type()
 
 	assert.Equal(t, pType, configmodels.Type("filter"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
@@ -67,22 +70,30 @@ func TestCreateProcessors(t *testing.T) {
 		factories, err := config.ExampleComponents()
 		assert.Nil(t, err)
 
-		factory := &Factory{}
+		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		config, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.Nil(t, err)
 
-		for name, cfg := range config.Processors {
+		for name, cfg := range cfg.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				factory := &Factory{}
+				factory := NewFactory()
 
-				tp, tErr := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+				tp, tErr := factory.CreateTraceProcessor(
+					context.Background(),
+					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					exportertest.NewNopTraceExporter(),
+					cfg)
 				// Not implemented error
 				assert.NotNil(t, tErr)
 				assert.Nil(t, tp)
 
-				mp, mErr := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
-				assert.Equal(t, test.succeed, mp != (*filterMetricProcessor)(nil))
+				mp, mErr := factory.CreateMetricsProcessor(
+					context.Background(),
+					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					exportertest.NewNopMetricsExporter(),
+					cfg)
+				assert.Equal(t, test.succeed, mp != nil)
 				assert.Equal(t, test.succeed, mErr == nil)
 			})
 		}

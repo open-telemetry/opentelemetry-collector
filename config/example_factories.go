@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configprotocol"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal/data"
@@ -34,7 +34,7 @@ import (
 type ExampleReceiver struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// Configures the receiver server protocol.
-	configprotocol.ProtocolServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confignet.TCPAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	ExtraSetting     string            `mapstructure:"extra"`
 	ExtraMapSetting  map[string]string `mapstructure:"extra_map"`
@@ -68,7 +68,7 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: f.Type(),
 			NameVal: string(f.Type()),
 		},
-		ProtocolServerSettings: configprotocol.ProtocolServerSettings{
+		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:1000",
 		},
 		ExtraSetting:     "some string",
@@ -121,12 +121,12 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(ctx context.Context, logg
 	return receiver, nil
 }
 
-func (f *ExampleReceiverFactory) CreateLogReceiver(
+func (f *ExampleReceiverFactory) CreateLogsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.LogConsumer,
-) (component.LogReceiver, error) {
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
 	receiver := f.createReceiver(cfg)
 	receiver.LogConsumer = nextConsumer
 
@@ -139,7 +139,7 @@ type ExampleReceiverProducer struct {
 	Stopped         bool
 	TraceConsumer   consumer.TraceConsumerOld
 	MetricsConsumer consumer.MetricsConsumerOld
-	LogConsumer     consumer.LogConsumer
+	LogConsumer     consumer.LogsConsumer
 }
 
 // Start tells the receiver to start its processing.
@@ -287,11 +287,11 @@ func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg c
 	return &ExampleExporterConsumer{}, nil
 }
 
-func (f *ExampleExporterFactory) CreateLogExporter(
+func (f *ExampleExporterFactory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.LogExporter, error) {
+) (component.LogsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
@@ -389,17 +389,17 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-func (f *ExampleProcessorFactory) CreateLogProcessor(
+func (f *ExampleProcessorFactory) CreateLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
-) (component.LogProcessor, error) {
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
 	return &ExampleProcessor{nextConsumer}, nil
 }
 
 type ExampleProcessor struct {
-	nextConsumer consumer.LogConsumer
+	nextConsumer consumer.LogsConsumer
 }
 
 func (ep *ExampleProcessor) Start(ctx context.Context, host component.Host) error {

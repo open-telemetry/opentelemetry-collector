@@ -27,6 +27,7 @@ const stateLabelName = "state"
 const (
 	bufferedStateLabelValue          = "buffered"
 	cachedStateLabelValue            = "cached"
+	inactiveStateLabelValue          = "inactive"
 	freeStateLabelValue              = "free"
 	slabReclaimableStateLabelValue   = "slab_reclaimable"
 	slabUnreclaimableStateLabelValue = "slab_unreclaimable"

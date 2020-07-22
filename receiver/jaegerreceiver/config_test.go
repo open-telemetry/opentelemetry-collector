@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -34,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -60,10 +59,10 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: ":3456",
 				},
-				ThriftCompact: &configprotocol.ProtocolServerSettings{
+				ThriftCompact: &confignet.TCPAddr{
 					Endpoint: "0.0.0.0:456",
 				},
-				ThriftBinary: &configprotocol.ProtocolServerSettings{
+				ThriftBinary: &confignet.TCPAddr{
 					Endpoint: "0.0.0.0:789",
 				},
 			},
@@ -93,10 +92,10 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPBindEndpoint,
 				},
-				ThriftCompact: &configprotocol.ProtocolServerSettings{
+				ThriftCompact: &confignet.TCPAddr{
 					Endpoint: defaultThriftCompactBindEndpoint,
 				},
-				ThriftBinary: &configprotocol.ProtocolServerSettings{
+				ThriftBinary: &confignet.TCPAddr{
 					Endpoint: defaultThriftBinaryBindEndpoint,
 				},
 			},
@@ -116,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 						Transport: "tcp",
 					},
 				},
-				ThriftCompact: &configprotocol.ProtocolServerSettings{
+				ThriftCompact: &confignet.TCPAddr{
 					Endpoint: defaultThriftCompactBindEndpoint,
 				},
 			},
@@ -154,7 +153,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading settings for receiver type \"jaeger\": unknown protocols in the Jaeger receiver")

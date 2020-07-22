@@ -26,13 +26,14 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -48,6 +49,20 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "otlp/2",
 				TypeVal: "otlp",
+			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Disabled:        false,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			QueueSettings: exporterhelper.QueueSettings{
+				Disabled:     false,
+				NumConsumers: 2,
+				QueueSize:    10,
 			},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
 				Headers: map[string]string{
@@ -69,6 +84,11 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:             30 * time.Second,
 				},
 				WriteBufferSize: 512 * 1024,
+				PerRPCAuth: &configgrpc.PerRPCAuthConfig{
+					AuthType:    "bearer",
+					BearerToken: "some-token",
+				},
+				BalancerName: "round_robin",
 			},
 		})
 }
