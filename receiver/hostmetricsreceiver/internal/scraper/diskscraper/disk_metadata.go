@@ -64,16 +64,6 @@ var diskTimeDescriptor = func() pdata.MetricDescriptor {
 	return descriptor
 }()
 
-var diskAvgOperationTimeDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.disk.operation_time")
-	descriptor.SetDescription("Average time an I/O-operation took to complete.")
-	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeDouble)
-	return descriptor
-}()
-
 var diskMergedDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()

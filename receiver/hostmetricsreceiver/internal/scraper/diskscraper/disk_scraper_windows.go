@@ -230,13 +230,13 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, duratio
 
 	for _, diskReadBytesPerSec := range diskReadBytesPerSecValues {
 		if s.includeDevice(diskReadBytesPerSec.InstanceName) {
-			s.cumulativeDiskIO.getOrAdd(diskReadBytesPerSec.InstanceName).read += (diskReadBytesPerSec.Value * durationSinceLastScraped)
+			s.cumulativeDiskIO.getOrAdd(diskReadBytesPerSec.InstanceName).read += diskReadBytesPerSec.Value * durationSinceLastScraped
 		}
 	}
 
 	for _, diskWriteBytesPerSec := range diskWriteBytesPerSecValues {
 		if s.includeDevice(diskWriteBytesPerSec.InstanceName) {
-			s.cumulativeDiskIO.getOrAdd(diskWriteBytesPerSec.InstanceName).write += (diskWriteBytesPerSec.Value * durationSinceLastScraped)
+			s.cumulativeDiskIO.getOrAdd(diskWriteBytesPerSec.InstanceName).write += diskWriteBytesPerSec.Value * durationSinceLastScraped
 		}
 	}
 
@@ -246,7 +246,7 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, duratio
 
 	idx := metrics.Len()
 	metrics.Resize(idx + 1)
-	initializeDiskCumulativeInt64Metric(metrics.At(idx), diskIODescriptor, s.startTime, s.cumulativeDiskIO)
+	initializeDiskInt64Metric(metrics.At(idx), diskIODescriptor, s.startTime, s.cumulativeDiskIO)
 	return nil
 }
 
@@ -276,26 +276,26 @@ func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics pdata.MetricSlice, durati
 	for _, diskReadsPerSec := range diskReadsPerSecValues {
 		device := diskReadsPerSec.InstanceName
 		if !s.includeDevice(device) {
-			delete(avgDiskSecsPerReadMap, device)
 			continue
 		}
 
-		s.cumulativeDiskOps.getOrAdd(device).read += (diskReadsPerSec.Value * durationSinceLastScraped)
+		deltaReadOperations := diskReadsPerSec.Value * durationSinceLastScraped
+		s.cumulativeDiskOps.getOrAdd(device).read += deltaReadOperations
 		if avgDiskSecsPerRead, ok := avgDiskSecsPerReadMap[device]; ok {
-			s.cumulativeDiskTime.getOrAdd(device).read += (diskReadsPerSec.Value * avgDiskSecsPerRead)
+			s.cumulativeDiskTime.getOrAdd(device).read += deltaReadOperations * avgDiskSecsPerRead
 		}
 	}
 
 	for _, diskWritesPerSec := range diskWritesPerSecValues {
 		device := diskWritesPerSec.InstanceName
 		if !s.includeDevice(device) {
-			delete(avgDiskSecsPerWriteMap, device)
 			continue
 		}
 
-		s.cumulativeDiskOps.getOrAdd(device).write += (diskWritesPerSec.Value * durationSinceLastScraped)
+		deltaWriteOperations := diskWritesPerSec.Value * durationSinceLastScraped
+		s.cumulativeDiskOps.getOrAdd(device).write += deltaWriteOperations
 		if avgDiskSecsPerWrite, ok := avgDiskSecsPerWriteMap[device]; ok {
-			s.cumulativeDiskTime.getOrAdd(device).write += (diskWritesPerSec.Value * avgDiskSecsPerWrite)
+			s.cumulativeDiskTime.getOrAdd(device).write += deltaWriteOperations * avgDiskSecsPerWrite
 		}
 	}
 
@@ -303,26 +303,20 @@ func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics pdata.MetricSlice, durati
 
 	if len(s.cumulativeDiskIO) > 0 {
 		metrics.Resize(idx + 1)
-		initializeDiskCumulativeInt64Metric(metrics.At(idx), diskOpsDescriptor, s.startTime, s.cumulativeDiskOps)
+		initializeDiskInt64Metric(metrics.At(idx), diskOpsDescriptor, s.startTime, s.cumulativeDiskOps)
 		idx++
 	}
 
 	if len(s.cumulativeDiskTime) > 0 {
 		metrics.Resize(idx + 1)
-		initializeDiskCumulativeDoubleMetric(metrics.At(idx), diskTimeDescriptor, s.startTime, s.cumulativeDiskTime)
-		idx++
-	}
-
-	if len(avgDiskSecsPerReadMap) > 0 || len(avgDiskSecsPerWriteMap) > 0 {
-		metrics.Resize(idx + 1)
-		initializeDiskAvgOperationTimeMetric(metrics.At(idx), s.startTime, avgDiskSecsPerReadMap, avgDiskSecsPerWriteMap)
+		initializeDiskDoubleMetric(metrics.At(idx), diskTimeDescriptor, s.startTime, s.cumulativeDiskTime)
 		idx++
 	}
 
 	return nil
 }
 
-func initializeDiskCumulativeInt64Metric(metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano, ops cumulativeDiskValues) {
+func initializeDiskInt64Metric(metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano, ops cumulativeDiskValues) {
 	descriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
@@ -336,7 +330,7 @@ func initializeDiskCumulativeInt64Metric(metric pdata.Metric, descriptor pdata.M
 	}
 }
 
-func initializeDiskCumulativeDoubleMetric(metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano, ops cumulativeDiskValues) {
+func initializeDiskDoubleMetric(metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano, ops cumulativeDiskValues) {
 	descriptor.CopyTo(metric.MetricDescriptor())
 
 	ddps := metric.DoubleDataPoints()
@@ -347,25 +341,6 @@ func initializeDiskCumulativeDoubleMetric(metric pdata.Metric, descriptor pdata.
 		initializeDoubleDataPoint(ddps.At(idx+0), startTime, device, readDirectionLabelValue, value.read)
 		initializeDoubleDataPoint(ddps.At(idx+1), startTime, device, writeDirectionLabelValue, value.write)
 		idx += 2
-	}
-}
-
-func initializeDiskAvgOperationTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, avgSecsPerReadValues map[string]float64, avgSecsPerWriteValues map[string]float64) {
-	diskAvgOperationTimeDescriptor.CopyTo(metric.MetricDescriptor())
-
-	ddps := metric.DoubleDataPoints()
-	ddps.Resize(len(avgSecsPerReadValues) + len(avgSecsPerWriteValues))
-
-	idx := 0
-
-	for device, value := range avgSecsPerReadValues {
-		initializeDoubleDataPoint(ddps.At(idx), startTime, device, readDirectionLabelValue, value)
-		idx++
-	}
-
-	for device, value := range avgSecsPerWriteValues {
-		initializeDoubleDataPoint(ddps.At(idx), startTime, device, writeDirectionLabelValue, value)
-		idx++
 	}
 }
 

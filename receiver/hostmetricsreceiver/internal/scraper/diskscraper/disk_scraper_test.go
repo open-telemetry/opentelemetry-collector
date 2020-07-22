@@ -85,10 +85,6 @@ func TestScrapeMetrics(t *testing.T) {
 			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
 			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
 
-			if runtime.GOOS == "windows" {
-				assertDoubleDiskMetricValid(t, metrics.At(3), diskAvgOperationTimeDescriptor, 0)
-			}
-
 			if runtime.GOOS == "linux" {
 				assertInt64DiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
 			}

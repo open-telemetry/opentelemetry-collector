@@ -73,7 +73,6 @@ var systemSpecificMetrics = map[string][]string{
 	"freebsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
 	"openbsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
 	"solaris": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
-	"windows": {"system.disk.operation_time"},
 }
 
 var factories = map[string]internal.ScraperFactory{
