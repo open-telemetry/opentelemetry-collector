@@ -73,6 +73,10 @@ const (
 	OpenTracingSpanKindInternal    OpenTracingSpanKind = "internal"
 )
 
+const (
+	SpanLinkDataFormat = "%s|%s|%s|%s|%d"
+)
+
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
 func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 	switch attr.Type() {

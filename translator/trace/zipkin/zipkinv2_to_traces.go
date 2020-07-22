@@ -15,7 +15,11 @@
 package zipkin
 
 import (
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
@@ -124,6 +128,10 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())
+	if err := zTagsToSpanLinks(tags, dest.Links()); err != nil {
+		return err
+	}
+
 	attrs := dest.Attributes()
 	attrs.InitEmptyWithCapacity(len(tags))
 	if err := zTagsToInternalAttrs(zspan, tags, attrs); err != nil {
@@ -166,8 +174,108 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.S
 	}
 }
 
-func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap) error {
+func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
+	index := 0
+	for i := 0; i < 128; i++ {
+		key := fmt.Sprintf("otlp.link.%d", i)
+		val, ok := tags[key]
+		if !ok {
+			return nil
+		}
+		delete(tags, key)
+
+		parts := strings.Split(val, "|")
+		partCnt := len(parts)
+		if partCnt < 5 {
+			continue
+		}
+		dest.Resize(index + 1)
+		link := dest.At(index)
+		index++
+		link.InitEmpty()
+		rawTrace, errTrace := hex.DecodeString(parts[0])
+		if errTrace != nil {
+			return errTrace
+		}
+		link.SetTraceID(pdata.NewTraceID(rawTrace))
+		rawSpan, errSpan := hex.DecodeString(parts[1])
+		if errSpan != nil {
+			return errSpan
+		}
+		link.SetSpanID(pdata.NewSpanID(rawSpan))
+		link.SetTraceState(pdata.TraceState(parts[2]))
+
+		var jsonStr string
+		if partCnt == 5 {
+			jsonStr = parts[3]
+		} else {
+			jsonParts := parts[3 : partCnt-2]
+			jsonStr = strings.Join(jsonParts, "|")
+		}
+		var attrs map[string]string
+		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
+			return err
+		}
+		if err := tagsToAttributeMap(attrs, link.Attributes()); err != nil {
+			return err
+		}
+
+		dropped, errDropped := strconv.ParseUint(parts[partCnt-1], 10, 32)
+		if errDropped != nil {
+			return errDropped
+		}
+		link.SetDroppedAttributesCount(uint32(dropped))
+	}
 	return nil
+}
+
+func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap) error {
+	parseErr := tagsToAttributeMap(tags, dest)
+	if zspan.LocalEndpoint != nil {
+		if zspan.LocalEndpoint.IPv4 != nil {
+			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
+		}
+		if zspan.LocalEndpoint.IPv6 != nil {
+			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
+		}
+		if zspan.LocalEndpoint.Port > 0 {
+			dest.UpsertInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
+		}
+	}
+	if zspan.RemoteEndpoint != nil {
+		if zspan.RemoteEndpoint.ServiceName != "" {
+			dest.InsertString(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
+		}
+		if zspan.RemoteEndpoint.IPv4 != nil {
+			dest.InsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
+		}
+		if zspan.RemoteEndpoint.IPv6 != nil {
+			dest.InsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
+		}
+		if zspan.RemoteEndpoint.Port > 0 {
+			dest.UpsertInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
+		}
+	}
+	return parseErr
+}
+
+func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
+	var parseErr error
+	attrsInt := getIntAttributes()
+	for key, val := range tags {
+		_, ok := attrsInt[key]
+		if ok {
+			val, err := strconv.ParseInt(val, 10, 64)
+			if err == nil {
+				dest.InsertInt(key, val)
+			} else {
+				parseErr = err
+			}
+		} else {
+			dest.InsertString(key, val)
+		}
+	}
+	return parseErr
 }
 
 func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
@@ -236,4 +344,22 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 		return ""
 	}
 	return zspan.Tags[tracetranslator.TagInstrumentationName]
+}
+
+func getIntAttributes() map[string]struct{} {
+	attrs := make(map[string]struct{})
+	attrs[conventions.AttributeNetHostPort] = struct{}{}
+	attrs[conventions.AttributeNetPeerPort] = struct{}{}
+	attrs[conventions.AttributeHTTPHostPort] = struct{}{}
+	attrs[conventions.AttributeHTTPRequestContentLength] = struct{}{}
+	attrs[conventions.AttributeHTTPRequestContentLengthUncompressed] = struct{}{}
+	attrs[conventions.AttributeHTTPResponseContentLength] = struct{}{}
+	attrs[conventions.AttributeHTTPResponseContentLengthUncompressed] = struct{}{}
+	attrs[conventions.AttributeMessageID] = struct{}{}
+	attrs[conventions.AttributeMessageCompressedSize] = struct{}{}
+	attrs[conventions.AttributeMessageUncompressedSize] = struct{}{}
+	attrs[conventions.AttributeMessagingConversationID] = struct{}{}
+	attrs[conventions.AttributeMessagingPayloadSize] = struct{}{}
+	attrs[conventions.AttributeMessagingPayloadCompressedSize] = struct{}{}
+	return attrs
 }
