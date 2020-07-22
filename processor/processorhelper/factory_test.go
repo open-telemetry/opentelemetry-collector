@@ -43,8 +43,8 @@ func TestNewTrace(t *testing.T) {
 	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, defaultCfg)
 	assert.Error(t, err)
 
-	lfactory := factory.(component.LogProcessorFactory)
-	_, err = lfactory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	lfactory := factory.(component.LogsProcessorFactory)
+	_, err = lfactory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
 	assert.Error(t, err)
 }
 
@@ -54,7 +54,7 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 		defaultConfig,
 		WithTraces(createTraceProcessor),
 		WithMetrics(createMetricsProcessor),
-		WithLogs(createLogProcessor))
+		WithLogs(createLogsProcessor))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
 
@@ -64,8 +64,8 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, defaultCfg)
 	assert.NoError(t, err)
 
-	lfactory := factory.(component.LogProcessorFactory)
-	_, err = lfactory.CreateLogProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	lfactory := factory.(component.LogsProcessorFactory)
+	_, err = lfactory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
@@ -81,6 +81,6 @@ func createMetricsProcessor(context.Context, component.ProcessorCreateParams, co
 	return nil, nil
 }
 
-func createLogProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogConsumer) (component.LogProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (component.LogsProcessor, error) {
 	return nil, nil
 }

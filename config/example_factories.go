@@ -121,12 +121,12 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(ctx context.Context, logg
 	return receiver, nil
 }
 
-func (f *ExampleReceiverFactory) CreateLogReceiver(
+func (f *ExampleReceiverFactory) CreateLogsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.LogConsumer,
-) (component.LogReceiver, error) {
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
 	receiver := f.createReceiver(cfg)
 	receiver.LogConsumer = nextConsumer
 
@@ -139,7 +139,7 @@ type ExampleReceiverProducer struct {
 	Stopped         bool
 	TraceConsumer   consumer.TraceConsumerOld
 	MetricsConsumer consumer.MetricsConsumerOld
-	LogConsumer     consumer.LogConsumer
+	LogConsumer     consumer.LogsConsumer
 }
 
 // Start tells the receiver to start its processing.
@@ -287,11 +287,11 @@ func (f *ExampleExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg c
 	return &ExampleExporterConsumer{}, nil
 }
 
-func (f *ExampleExporterFactory) CreateLogExporter(
+func (f *ExampleExporterFactory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.LogExporter, error) {
+) (component.LogsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
@@ -389,17 +389,17 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-func (f *ExampleProcessorFactory) CreateLogProcessor(
+func (f *ExampleProcessorFactory) CreateLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
-) (component.LogProcessor, error) {
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
 	return &ExampleProcessor{nextConsumer}, nil
 }
 
 type ExampleProcessor struct {
-	nextConsumer consumer.LogConsumer
+	nextConsumer consumer.LogsConsumer
 }
 
 func (ep *ExampleProcessor) Start(ctx context.Context, host component.Host) error {

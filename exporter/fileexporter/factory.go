@@ -58,16 +58,16 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.
 	return f.createExporter(config)
 }
 
-// CreateLogExporter creates a log exporter based on this config.
-func (f *Factory) CreateLogExporter(
+// CreateLogsExporter creates a log exporter based on this config.
+func (f *Factory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.LogExporter, error) {
+) (component.LogsExporter, error) {
 	return f.createExporter(cfg)
 }
 
-var _ component.LogExporterFactory = (*Factory)(nil)
+var _ component.LogsExporterFactory = (*Factory)(nil)
 
 func (f *Factory) createExporter(config configmodels.Exporter) (*Exporter, error) {
 	cfg := config.(*Config)

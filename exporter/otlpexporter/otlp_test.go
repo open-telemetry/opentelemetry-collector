@@ -448,7 +448,7 @@ func TestSendLogData(t *testing.T) {
 	defer rcv.srv.GracefulStop()
 
 	// Start an OTLP exporter and point to the receiver.
-	factory := NewFactory().(component.LogExporterFactory)
+	factory := NewFactory().(component.LogsExporterFactory)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),
@@ -457,7 +457,7 @@ func TestSendLogData(t *testing.T) {
 		},
 	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateLogExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {

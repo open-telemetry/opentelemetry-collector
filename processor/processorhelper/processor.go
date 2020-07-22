@@ -47,7 +47,7 @@ type MProcessor interface {
 	ProcessMetrics(context.Context, pdata.Metrics) (pdata.Metrics, error)
 }
 
-// LProcessor is a helper interface that allows avoiding implementing all functions in LogProcessor by using NewLogProcessor.
+// LProcessor is a helper interface that allows avoiding implementing all functions in LogsProcessor by using NewLogsProcessor.
 type LProcessor interface {
 	// ProcessLogs is a helper function that processes the incoming data and returns the data to be sent to the next component.
 	// If error is returned then returned data are ignored. It MUST not call the next component.
@@ -204,7 +204,7 @@ func NewMetricsProcessor(
 type logProcessor struct {
 	baseProcessor
 	processor    LProcessor
-	nextConsumer consumer.LogConsumer
+	nextConsumer consumer.LogsConsumer
 }
 
 func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld data.Logs) error {
@@ -217,14 +217,14 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 	return lp.nextConsumer.ConsumeLogs(ctx, ld)
 }
 
-// NewLogProcessor creates a LogProcessor that ensure context propagation and the right tags are set.
+// NewLogsProcessor creates a LogsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
-func NewLogProcessor(
+func NewLogsProcessor(
 	config configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
+	nextConsumer consumer.LogsConsumer,
 	processor LProcessor,
 	options ...Option,
-) (component.LogProcessor, error) {
+) (component.LogsProcessor, error) {
 	if processor == nil {
 		return nil, errors.New("nil processor")
 	}

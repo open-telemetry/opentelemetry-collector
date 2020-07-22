@@ -35,8 +35,8 @@ type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams,
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
 type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.MetricsConsumer) (component.MetricsProcessor, error)
 
-// CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateLogProcessor()
-type CreateLogProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogConsumer) (component.LogProcessor, error)
+// CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
+type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (component.LogsProcessor, error)
 
 // factory is the factory for Jaeger gRPC exporter.
 type factory struct {
@@ -44,10 +44,10 @@ type factory struct {
 	createDefaultConfig    CreateDefaultConfig
 	createTraceProcessor   CreateTraceProcessor
 	createMetricsProcessor CreateMetricsProcessor
-	createLogProcessor     CreateLogProcessor
+	createLogsProcessor    CreateLogsProcessor
 }
 
-var _ component.LogProcessorFactory = new(factory)
+var _ component.LogsProcessorFactory = new(factory)
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
 func WithTraces(createTraceProcessor CreateTraceProcessor) FactoryOption {
@@ -63,10 +63,10 @@ func WithMetrics(createMetricsProcessor CreateMetricsProcessor) FactoryOption {
 	}
 }
 
-// WithLogs overrides the default "error not supported" implementation for CreateLogReceiver.
-func WithLogs(createLogProcessor CreateLogProcessor) FactoryOption {
+// WithLogs overrides the default "error not supported" implementation for CreateLogsReceiver.
+func WithLogs(createLogsProcessor CreateLogsProcessor) FactoryOption {
 	return func(o *factory) {
-		o.createLogProcessor = createLogProcessor
+		o.createLogsProcessor = createLogsProcessor
 	}
 }
 
@@ -119,15 +119,15 @@ func (f *factory) CreateMetricsProcessor(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// CreateLogProcessor creates a metrics processor based on this config.
-func (f *factory) CreateLogProcessor(
+// CreateLogsProcessor creates a metrics processor based on this config.
+func (f *factory) CreateLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogConsumer,
-) (component.LogProcessor, error) {
-	if f.createLogProcessor != nil {
-		return f.createLogProcessor(ctx, params, cfg, nextConsumer)
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	if f.createLogsProcessor != nil {
+		return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

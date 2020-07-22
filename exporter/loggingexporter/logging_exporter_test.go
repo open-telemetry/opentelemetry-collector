@@ -58,8 +58,8 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }
 
-func TestLoggingLogExporterNoErrors(t *testing.T) {
-	lle, err := NewLogExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+func TestLoggingLogsExporterNoErrors(t *testing.T) {
+	lle, err := NewLogsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
