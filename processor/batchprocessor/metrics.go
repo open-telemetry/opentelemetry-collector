@@ -37,8 +37,6 @@ func MetricViews(level telemetry.Level) []*view.View {
 		return nil
 	}
 
-	tagKeys := processor.MetricTagKeys(level)
-
 	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
 
 	countBatchSizeTriggerSendView := &view.View{
@@ -69,7 +67,7 @@ func MetricViews(level telemetry.Level) []*view.View {
 		Name:        statBatchSendSizeBytes.Name(),
 		Measure:     statBatchSendSizeBytes,
 		Description: statBatchSendSizeBytes.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     processorTagKeys,
 		Aggregation: view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
 			100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_00, 900_000,
 			1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000),
