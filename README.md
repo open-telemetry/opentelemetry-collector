@@ -67,7 +67,7 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
-- [Nail Islamov](https://github.com/rghetia), Google
+- [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
