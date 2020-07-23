@@ -30,7 +30,6 @@ require (
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.5
-	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.3
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
