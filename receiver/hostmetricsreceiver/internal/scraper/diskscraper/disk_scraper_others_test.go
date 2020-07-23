@@ -88,9 +88,10 @@ func TestScrapeMetrics_Others(t *testing.T) {
 			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, test.expectedStartTime)
 			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, test.expectedStartTime)
 			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, test.expectedStartTime)
+			assertDiskPendingOperationsMetricValid(t, metrics.At(3))
 
 			if runtime.GOOS == "linux" {
-				assertInt64DiskMetricValid(t, metrics.At(3), diskMergedDescriptor, test.expectedStartTime)
+				assertInt64DiskMetricValid(t, metrics.At(4), diskMergedDescriptor, test.expectedStartTime)
 			}
 		})
 	}
