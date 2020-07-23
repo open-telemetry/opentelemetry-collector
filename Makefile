@@ -153,6 +153,7 @@ install-tools:
 	go install github.com/securego/gosec/cmd/gosec
 	go install github.com/tcnksm/ghr
 	go install honnef.co/go/tools/cmd/staticcheck
+	go install github.com/jondot/goweight
 
 .PHONY: otelcol
 otelcol:

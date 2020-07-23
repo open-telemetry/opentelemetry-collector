@@ -241,6 +241,30 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - goweight:
+          requires:
+            - cross-compile
+          name: goweight-otelcol_linux_amd64
+          goos: linux
+          goarch: amd64
+      - goweight:
+          requires:
+            - cross-compile
+          name: goweight-otelcol_linux_arm64
+          goos: linux
+          goarch: arm64
+      - goweight:
+          requires:
+            - cross-compile
+          name: goweight-otelcol_darwin_amd64
+          goos: darwin
+          goarch: amd64
+      - goweight:
+          requires:
+            - cross-compile
+          name: goweight-otelcol_windows_amd64
+          goos: windows
+          goarch: amd64
   contrib-test:
     jobs:
       - setup-environment:
@@ -516,3 +540,44 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: project/dist
+
+  goweight:
+    executor: golang
+    parameters:
+      goos:
+        type: enum
+        enum: ["darwin", "linux", "windows"]
+      goarch:
+        type: enum
+        enum: ["amd64", "arm64"]
+    steps:
+      - attach_to_workspace
+      - restore_cache:
+          key: v1-goweight-otelcol-<< parameters.goos >>-<< parameters.goarch >>
+      - run:
+          name: Download latest goweight artifact from master if cache not restored
+          environment:
+            GOOS: << parameters.goos >>
+            GOARCH: << parameters.goarch >>
+          command: |
+            if [[ -s ~/goweight/${CIRCLE_JOB}.json ]]; then
+                echo "${CIRCLE_JOB} cache already restored"
+                exit 0
+            fi
+            bash .circleci/goweight/get-master-goweight.sh || true
+      - run:
+          name: Run goweight for otelcol_<< parameters.goos >>_<< parameters.goarch >>
+          environment:
+            GOOS: << parameters.goos >>
+            GOARCH: << parameters.goarch >>
+          command: bash .circleci/goweight/run-goweight.sh
+      - store_artifacts:
+          path: ~/goweight
+      - when:
+          condition:
+            equal: [master, << pipeline.git.branch >>]
+          steps:
+            - save_cache:
+                key: v1-goweight-otelcol-<< parameters.goos >>-<< parameters.goarch >>
+                paths:
+                  - ~/goweight
