@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
-
 package otlpreceiver
 
 import (
@@ -26,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -190,7 +188,7 @@ func TestProtoHttp(t *testing.T) {
 	traceProto := collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: wantOtlp,
 	}
-	traceBytes, err := proto.Marshal(&traceProto)
+	traceBytes, err := traceProto.Marshal()
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -206,8 +204,8 @@ func TestProtoHttp(t *testing.T) {
 	require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
 	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
-	tmp := collectortrace.ExportTraceServiceResponse{}
-	err = proto.Unmarshal(respBytes, &tmp)
+	tmp := &collectortrace.ExportTraceServiceResponse{}
+	err = tmp.Unmarshal(respBytes)
 	require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
 	gotOtlp := pdata.TracesToOtlp(tSink.AllTraces()[0])
@@ -223,8 +221,8 @@ func TestProtoHttp(t *testing.T) {
 	// https://github.com/stretchr/testify/issues/758
 	if !proto.Equal(got, want) {
 		t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
-			proto.MarshalTextString(got),
-			proto.MarshalTextString(want))
+			got.String(),
+			want.String())
 	}
 
 }

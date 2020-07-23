@@ -21,8 +21,8 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/jsonpb" //lint:ignore SA1019 golang/protobuf/jsonpb is deprecated
-	"github.com/golang/protobuf/proto"  //lint:ignore SA1019 golang/protobuf/proto is deprecated
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"

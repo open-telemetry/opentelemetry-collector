@@ -15,7 +15,7 @@
 package data
 
 import (
-	"github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
+	"github.com/gogo/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
