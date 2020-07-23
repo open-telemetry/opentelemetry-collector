@@ -20,8 +20,8 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -111,8 +111,7 @@ func BenchmarkOcResourceNodeMarshal(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		buf := proto.Buffer{}
-		if err := buf.Marshal(oc); err != nil {
+		if _, err := proto.Marshal(oc); err != nil {
 			b.Fail()
 		}
 	}

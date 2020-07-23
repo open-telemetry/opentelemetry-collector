@@ -20,7 +20,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/proto"
+	googleproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -119,15 +119,15 @@ func MetricAndDataPointCount(md pdata.Metrics) (int, int) {
 // CloneMetricsDataOld copied from processors.cloneMetricsDataOld
 func CloneMetricsDataOld(md consumerdata.MetricsData) consumerdata.MetricsData {
 	clone := consumerdata.MetricsData{
-		Node:     proto.Clone(md.Node).(*commonpb.Node),
-		Resource: proto.Clone(md.Resource).(*resourcepb.Resource),
+		Node:     googleproto.Clone(md.Node).(*commonpb.Node),
+		Resource: googleproto.Clone(md.Resource).(*resourcepb.Resource),
 	}
 
 	if md.Metrics != nil {
 		clone.Metrics = make([]*metricspb.Metric, 0, len(md.Metrics))
 
 		for _, metric := range md.Metrics {
-			metricClone := proto.Clone(metric).(*metricspb.Metric)
+			metricClone := googleproto.Clone(metric).(*metricspb.Metric)
 			clone.Metrics = append(clone.Metrics, metricClone)
 		}
 	}

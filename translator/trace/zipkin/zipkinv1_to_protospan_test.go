@@ -26,9 +26,11 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal"
@@ -212,7 +214,9 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	assert.EqualValues(t, got, want)
+	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
 }
 
 func sortTraceByNodeName(trace []consumerdata.TraceData) {

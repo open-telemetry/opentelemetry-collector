@@ -108,3 +108,8 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
+    # Exclude some staticcheck messages
+    - linters:
+      - staticcheck
+      # See https://github.com/golang/protobuf/issues/1077
+      text: "SA1019:"

@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"google.golang.org/protobuf/proto"
 )
 
 func Test_transaction(t *testing.T) {

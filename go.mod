@@ -8,15 +8,16 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/apache/thrift v0.13.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/client9/misspell v0.3.4
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.4.2
 	github.com/golangci/golangci-lint v1.28.1
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
+	github.com/google/go-cmp v0.4.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
@@ -29,7 +30,6 @@ require (
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.5
-	github.com/ory/x v0.0.109 // indirect
 	github.com/pavius/impi v0.0.3
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
@@ -58,6 +58,7 @@ require (
 	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 	google.golang.org/grpc v1.29.1
+	google.golang.org/protobuf v1.23.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4
 )
