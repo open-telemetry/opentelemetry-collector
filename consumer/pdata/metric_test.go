@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
-	goproto "github.com/golang/protobuf/proto"
+	goproto "github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
 	otlpmetrics_goproto "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 

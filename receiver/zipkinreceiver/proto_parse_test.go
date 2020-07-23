@@ -21,7 +21,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
 	"github.com/google/go-cmp/cmp"
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
 	"github.com/stretchr/testify/require"
