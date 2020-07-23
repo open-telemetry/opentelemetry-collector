@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/golang/protobuf/jsonpb" //lint:ignore SA1019 golang/protobuf/proto is deprecated
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdatautil"
