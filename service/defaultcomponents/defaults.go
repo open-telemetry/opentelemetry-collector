@@ -65,7 +65,7 @@ func Components() (
 
 	receivers, err := component.MakeReceiverFactoryMap(
 		jaegerreceiver.NewFactory(),
-		&fluentforwardreceiver.Factory{},
+		fluentforwardreceiver.NewFactory(),
 		&zipkinreceiver.Factory{},
 		&prometheusreceiver.Factory{},
 		&opencensusreceiver.Factory{},

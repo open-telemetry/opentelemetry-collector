@@ -29,14 +29,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory().(component.LogsReceiverFactory)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ListenAddress = "localhost:0" // Endpoint is required, not going to be used here.
 
