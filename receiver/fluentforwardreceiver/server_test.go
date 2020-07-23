@@ -35,7 +35,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		{
 			"basic",
 			func() []byte {
-				b := []byte{}
+				var b []byte
 
 				b = msgp.AppendArrayHeader(b, 3)
 				b = msgp.AppendString(b, "my-tag")
@@ -48,7 +48,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		{
 			"str8-tag",
 			func() []byte {
-				b := []byte{}
+				var b []byte
 
 				b = msgp.AppendArrayHeader(b, 3)
 				b = msgp.AppendString(b, strings.Repeat("a", 128))
@@ -61,7 +61,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		{
 			"str16-tag",
 			func() []byte {
-				b := []byte{}
+				var b []byte
 
 				b = msgp.AppendArrayHeader(b, 3)
 				b = msgp.AppendString(b, strings.Repeat("a", 1024))
@@ -74,7 +74,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		{
 			"str32-tag",
 			func() []byte {
-				b := []byte{}
+				var b []byte
 
 				b = msgp.AppendArrayHeader(b, 3)
 				b = msgp.AppendString(b, strings.Repeat("a", 66000))
@@ -87,7 +87,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		{
 			"non-string-tag",
 			func() []byte {
-				b := []byte{}
+				var b []byte
 
 				b = msgp.AppendArrayHeader(b, 3)
 				b = msgp.AppendInt(b, 10)
@@ -100,7 +100,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		{
 			"float-second-elm",
 			func() []byte {
-				b := []byte{}
+				var b []byte
 
 				b = msgp.AppendArrayHeader(b, 3)
 				b = msgp.AppendString(b, "my-tag")

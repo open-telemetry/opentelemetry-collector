@@ -51,8 +51,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 
 	receiver, err := New(ctx, logger, conf, next)
 	require.NoError(t, err)
-
-	receiver.Start(ctx, nil)
+	require.NoError(t, receiver.Start(ctx, nil))
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*Receiver).listener.Addr().String())
@@ -62,7 +61,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 
 	go func() {
 		<-ctx.Done()
-		receiver.Shutdown(ctx)
+		require.NoError(t, receiver.Shutdown(ctx))
 	}()
 
 	return connect, next, logObserver, cancel
@@ -70,7 +69,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
 	one := make([]byte, 1)
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
 	_, err := conn.Read(one)
 	// If this is a timeout, then the connection didn't actually close like
 	// expected.
@@ -111,8 +110,7 @@ func TestMessageEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -144,8 +142,7 @@ func TestForwardEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -193,7 +190,7 @@ func TestEventAcknowledgment(t *testing.T) {
 
 	const chunkValue = "abcdef01234576789"
 
-	b := []byte{}
+	var b []byte
 
 	// Make a message event with the chunk option
 	b = msgp.AppendArrayHeader(b, 4)
@@ -209,7 +206,7 @@ func TestEventAcknowledgment(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(b), n)
 
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
 	resp := map[string]interface{}{}
 	err = msgp.NewReader(conn).ReadMapStrIntf(resp)
 	require.NoError(t, err)
@@ -227,8 +224,7 @@ func TestForwardPackedEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -299,8 +295,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -378,8 +373,7 @@ func TestUnixEndpoint(t *testing.T) {
 
 	receiver, err := New(ctx, zap.NewNop(), conf, next)
 	require.NoError(t, err)
-
-	receiver.Start(ctx, nil)
+	require.NoError(t, receiver.Start(ctx, nil))
 
 	conn, err := net.Dial("unix", receiver.(*Receiver).listener.Addr().String())
 	require.NoError(t, err)
@@ -393,11 +387,10 @@ func TestUnixEndpoint(t *testing.T) {
 		converted = next.AllLogs()
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
-
 }
 
 func makeSampleEvent(tag string) []byte {
-	b := []byte{}
+	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
 	b = msgp.AppendString(b, tag)
@@ -426,7 +419,7 @@ func TestHighVolume(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, len(eventBytes), n)
 			}
-			conn.Close()
+			require.NoError(t, conn.Close())
 			wg.Done()
 		}(i)
 	}

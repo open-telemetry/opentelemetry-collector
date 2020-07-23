@@ -41,7 +41,7 @@ func TestUDPHeartbeat(t *testing.T) {
 	require.Equal(t, 1, n)
 
 	buf := make([]byte, 1)
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
 	n, err = conn.Read(buf)
 	require.Nil(t, err)
 	require.Equal(t, 1, n)
