@@ -33,8 +33,8 @@ func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startT
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeDataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.MergedReadCount))
-		initializeDataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.MergedWriteCount))
+		initializeInt64DataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.MergedReadCount))
+		initializeInt64DataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.MergedWriteCount))
 		idx += 2
 	}
 }

@@ -79,23 +79,20 @@ func TestScrapeMetrics(t *testing.T) {
 				return
 			}
 
-			assert.GreaterOrEqual(t, metrics.Len(), 2)
+			assert.GreaterOrEqual(t, metrics.Len(), 3)
 
-			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
-			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
-
-			if runtime.GOOS != "windows" {
-				assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
-			}
+			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
+			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
+			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
 
 			if runtime.GOOS == "linux" {
-				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
+				assertInt64DiskMetricValid(t, metrics.At(3), diskMergedDescriptor, 0)
 			}
 		})
 	}
 }
 
-func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
@@ -103,4 +100,14 @@ func assertDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
+}
+
+func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
+	}
+	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 2)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, metric.DoubleDataPoints().Len()-1, directionLabelName, writeDirectionLabelValue)
 }

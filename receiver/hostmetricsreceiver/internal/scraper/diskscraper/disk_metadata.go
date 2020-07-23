@@ -59,8 +59,8 @@ var diskTimeDescriptor = func() pdata.MetricDescriptor {
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.time")
 	descriptor.SetDescription("Time spent in disk operations.")
-	descriptor.SetUnit("ms")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetUnit("s")
+	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 	return descriptor
 }()
 

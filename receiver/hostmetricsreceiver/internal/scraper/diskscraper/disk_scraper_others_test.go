@@ -85,12 +85,12 @@ func TestScrapeMetrics_Others(t *testing.T) {
 
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assertDiskMetricValid(t, metrics.At(0), diskIODescriptor, test.expectedStartTime)
-			assertDiskMetricValid(t, metrics.At(1), diskOpsDescriptor, test.expectedStartTime)
-			assertDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, test.expectedStartTime)
+			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, test.expectedStartTime)
+			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, test.expectedStartTime)
+			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
-				assertDiskMetricValid(t, metrics.At(3), diskMergedDescriptor, test.expectedStartTime)
+				assertInt64DiskMetricValid(t, metrics.At(3), diskMergedDescriptor, test.expectedStartTime)
 			}
 		})
 	}
