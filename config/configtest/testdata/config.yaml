@@ -1,10 +1,28 @@
-# Yaml configuration tests
+receivers:
+    examplereceiver:
+    examplereceiver/myreceiver:
+        endpoint: "localhost:12345"
+        extra: "some string"
 
-test/fullyaml:
-    topvalue: toplevelvalue
-    nested:
-        nestedvalue: nestedvalue
-    nestedvalue: squashedvalue
-test/partialyaml:
-    topvalue: toplevelvalue
-    nestedvalue: squashedvalue
+processors:
+    exampleprocessor:
+
+exporters:
+    exampleexporter/myexporter:
+        extra: "some export string 2"
+    exampleexporter:
+
+extensions:
+    exampleextension/0:
+    exampleextension/disabled:
+        extra: "not present in the service"
+    exampleextension/1:
+        extra: "some string"
+
+service:
+    extensions: [exampleextension/0, exampleextension/1]
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [exampleprocessor]
+            exporters: [exampleexporter]

@@ -29,8 +29,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	idata "go.opentelemetry.io/collector/internal/data"
@@ -290,7 +290,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	assert.NoError(t, err)
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	// Load the config
 	require.Nil(t, err)
 
@@ -350,7 +350,7 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	assert.NoError(t, err)
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
@@ -376,7 +376,7 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	bf := &badProcessorFactory{}
 	factories.Processors[bf.Type()] = bf
 
-	cfg, err := config.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
 	require.Nil(t, err)
 
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()

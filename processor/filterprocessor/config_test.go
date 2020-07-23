@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	fsregexp "go.opentelemetry.io/collector/internal/processor/filterset/regexp"
@@ -49,7 +49,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[configmodels.Type(typeStr)] = factory
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_strict.yaml"), factories)
+	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_strict.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, config)
@@ -149,7 +149,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_regexp.yaml"), factories)
+	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_regexp.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, config)

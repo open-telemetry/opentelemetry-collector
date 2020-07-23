@@ -22,11 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -156,15 +156,15 @@ func TestFailedLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading settings for receiver type \"jaeger\": unknown protocols in the Jaeger receiver")
 
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading settings for receiver type \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading settings for receiver type \"jaeger\": must specify at least one protocol when using the Jaeger receiver")
 
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading settings for receiver type \"jaeger\": empty config for Jaeger receiver")
 }

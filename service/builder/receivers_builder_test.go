@@ -25,8 +25,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	idata "go.opentelemetry.io/collector/internal/data"
@@ -98,7 +98,7 @@ func testReceivers(
 
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline
@@ -270,7 +270,7 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	assert.NoError(t, err)
 
 	// Make examplereceiver to "unsupport" trace data type.
@@ -337,7 +337,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	bf := &badReceiverFactory{}
 	factories.Receivers[bf.Type()] = bf
 
-	cfg, err := config.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline
@@ -374,7 +374,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 
 	zpkFactory := &zipkinreceiver.Factory{}
 	factories.Receivers[zpkFactory.Type()] = zpkFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
 	assert.NoError(t, err)
 
 	// Build the pipeline
@@ -400,7 +400,7 @@ func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	newStyleReceiver := &newStyleReceiverFactory{}
 	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver
 
-	cfg, err := config.LoadConfigFile(t, "testdata/new_style_receiver_factory.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/new_style_receiver_factory.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline

@@ -17,11 +17,14 @@ package config
 import (
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -32,7 +35,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
+	config, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
@@ -200,7 +203,7 @@ func TestSimpleConfig(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Load the config
-			config, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
+			config, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
 			require.NoError(t, err, "Unable to load config")
 
 			// Verify extensions.
@@ -302,7 +305,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
+	config, err := loadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
@@ -410,7 +413,7 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load the config
-	config, err := LoadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
+	config, err := loadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify receivers
@@ -504,7 +507,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	assert.NoError(t, err)
 
 	for _, test := range testCases {
-		_, err := LoadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
+		_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
 		if err == nil {
 			t.Errorf("expected error but succeeded on invalid config case: %s", test.name)
 		} else if test.expected != 0 {
@@ -546,4 +549,27 @@ func TestLoadEmptyConfig(t *testing.T) {
 	// Load the config from viper using the given factories.
 	_, err = Load(v, factories)
 	assert.NoError(t, err)
+}
+
+func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
+	// Open the file for reading.
+	file, err := os.Open(filepath.Clean(fileName))
+	require.NoErrorf(t, err, "unable to open the file %v", fileName)
+	require.NotNil(t, file)
+
+	defer func() {
+		require.NoErrorf(t, file.Close(), "unable to close the file %v", fileName)
+	}()
+
+	// Read yaml config from file
+	v := NewViper()
+	v.SetConfigType("yaml")
+	require.NoErrorf(t, v.ReadConfig(file), "unable to read the file %v", fileName)
+
+	// Load the config from viper using the given factories.
+	cfg, err := Load(v, factories)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, ValidateConfig(cfg, zap.NewNop())
 }
