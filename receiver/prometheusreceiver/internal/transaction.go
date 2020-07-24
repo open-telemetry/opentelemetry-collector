@@ -48,7 +48,6 @@ const (
 var errMetricNameNotFound = errors.New("metricName not found from labels")
 var errTransactionAborted = errors.New("transaction aborted")
 var errNoJobInstance = errors.New("job or instance cannot be found from labels")
-var errRefOutOfRange = errors.New("labels ref is out of range")
 
 // A transaction is corresponding to an individual scrape operation or stale report.
 // That said, whenever prometheus receiver scrapped a target metric endpoint a page of raw metrics is returned,
