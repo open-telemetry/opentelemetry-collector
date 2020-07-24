@@ -146,7 +146,7 @@ func (tr *transaction) Commit() error {
 	}
 
 	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
-	metrics, numTimeseries, droppedTimeseries, err := tr.metricBuilder.Build()
+	metrics, numTimeseries, _, err := tr.metricBuilder.Build()
 	if err != nil {
 		// Only error by Build() is errNoDataToBuild, with numTimeseries and
 		// droppedTimeseries set to zero.
@@ -166,16 +166,13 @@ func (tr *transaction) Commit() error {
 		// AdjustStartTime - startTime has to be non-zero in this case.
 		if tr.metricBuilder.startTime == 0.0 {
 			metrics = []*metricspb.Metric{}
-			droppedTimeseries = numTimeseries
 		} else {
 			adjustStartTime(tr.metricBuilder.startTime, metrics)
 		}
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
 		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
-		dropped := 0
-		metrics, dropped = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
-		droppedTimeseries += dropped
+		metrics, _ = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 	}
 
 	numPoints := 0
