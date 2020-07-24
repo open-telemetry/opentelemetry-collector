@@ -6,10 +6,12 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
+	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/apache/thrift v0.13.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/client9/misspell v0.3.4
+	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.1
@@ -22,6 +24,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
+	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/jaegertracing/jaeger v1.18.2-0.20200707061226-97d2319ff2be
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
@@ -31,16 +34,16 @@ require (
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.5
 	github.com/pavius/impi v0.0.3
-	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.10.0
 	github.com/prometheus/procfs v0.1.3
-	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
+	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
 	github.com/shirou/gopsutil v0.0.0-20200517204708-c89193f22d93 // c89193f22d9359848988f32aee972122bb2abdc2
 	github.com/soheilhy/cmux v0.1.4
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0
@@ -56,9 +59,9 @@ require (
 	golang.org/x/text v0.3.3
 	golang.org/x/tools v0.0.0-20200707222132-065b96d36cf8 // indirect
 	google.golang.org/api v0.29.0 // indirect
-	google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
+	google.golang.org/genproto v0.0.0-20200603110839-e855014d5736
 	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.23.0
+	google.golang.org/protobuf v1.24.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4
 )
