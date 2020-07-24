@@ -22,14 +22,14 @@ of authority (e.g. :authority header field) in requests (typically used for test
 See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 - `retry_on_failure`
-  - `disabled` (default = false)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `disabled` is `true`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `disabled` is `true`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `disabled` is `true`
+  - `enabled` (default = true)
+  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
+  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
+  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue`
-  - `disabled` (default = true)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `disabled` is `true`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `disabled` is `true`;
+  - `enabled` (default = false)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `disabled` is `false`;
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
