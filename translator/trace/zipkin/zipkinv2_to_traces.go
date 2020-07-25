@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,6 +30,42 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
+
+var floatRegex, _ = regexp.Compile(`^-?\d+\.\d+$`)
+
+var intAttributes = getIntAttributes()
+
+func getIntAttributes() map[string]struct{} {
+	attrs := make(map[string]struct{})
+	attrs[conventions.AttributeNetHostPort] = struct{}{}
+	attrs[conventions.AttributeNetPeerPort] = struct{}{}
+	attrs[conventions.AttributeHTTPHostPort] = struct{}{}
+	attrs[conventions.AttributeHTTPFlavor] = struct{}{}
+	attrs[conventions.AttributeHTTPRequestContentLength] = struct{}{}
+	attrs[conventions.AttributeHTTPRequestContentLengthUncompressed] = struct{}{}
+	attrs[conventions.AttributeHTTPResponseContentLength] = struct{}{}
+	attrs[conventions.AttributeHTTPResponseContentLengthUncompressed] = struct{}{}
+	attrs[conventions.AttributeMessageID] = struct{}{}
+	attrs[conventions.AttributeMessageCompressedSize] = struct{}{}
+	attrs[conventions.AttributeMessageUncompressedSize] = struct{}{}
+	attrs[conventions.AttributeMessagingConversationID] = struct{}{}
+	attrs[conventions.AttributeMessagingPayloadSize] = struct{}{}
+	attrs[conventions.AttributeMessagingPayloadCompressedSize] = struct{}{}
+	return attrs
+}
+
+var nonSpanAttributes = getNonSpanAttributes()
+
+func getNonSpanAttributes() map[string]struct{} {
+	attrs := make(map[string]struct{})
+	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
+		attrs[key] = struct{}{}
+	}
+	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
+	attrs[tracetranslator.TagInstrumentationName] = struct{}{}
+	attrs[tracetranslator.TagInstrumentationVersion] = struct{}{}
+	return attrs
+}
 
 // Custome Sort on
 type byOTLPTypes []*zipkinmodel.SpanModel
@@ -138,7 +175,8 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 		return err
 	}
 
-	return nil
+	err := populateSpanEvents(zspan, dest.Events())
+	return err
 }
 
 func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
@@ -212,11 +250,11 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 			jsonParts := parts[3 : partCnt-2]
 			jsonStr = strings.Join(jsonParts, "|")
 		}
-		var attrs map[string]string
+		var attrs map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
-		if err := tagsToAttributeMap(attrs, link.Attributes()); err != nil {
+		if err := jsonMapToAttributeMap(attrs, link.Attributes()); err != nil {
 			return err
 		}
 
@@ -225,6 +263,59 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 			return errDropped
 		}
 		link.SetDroppedAttributesCount(uint32(dropped))
+	}
+	return nil
+}
+
+func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlice) error {
+	events.Resize(len(zspan.Annotations))
+	for ix, anno := range zspan.Annotations {
+		event := events.At(ix)
+		startNano := anno.Timestamp.UnixNano()
+		event.SetTimestamp(pdata.TimestampUnixNano(startNano))
+
+		parts := strings.Split(anno.Value, "|")
+		partCnt := len(parts)
+		if partCnt < 3 {
+			continue
+		}
+		event.SetName(parts[0])
+
+		var jsonStr string
+		if partCnt == 3 {
+			jsonStr = parts[1]
+		} else {
+			jsonParts := parts[1 : partCnt-2]
+			jsonStr = strings.Join(jsonParts, "|")
+		}
+		var attrs map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
+			return err
+		}
+		if err := jsonMapToAttributeMap(attrs, event.Attributes()); err != nil {
+			return err
+		}
+
+		dropped, errDropped := strconv.ParseUint(parts[partCnt-1], 10, 32)
+		if errDropped != nil {
+			return errDropped
+		}
+		event.SetDroppedAttributesCount(uint32(dropped))
+	}
+	return nil
+}
+
+func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) error {
+	for key, val := range attrs {
+		if s, ok := val.(string); ok {
+			dest.InsertString(key, s)
+		} else if i, ok := val.(int64); ok {
+			dest.InsertInt(key, i)
+		} else if d, ok := val.(float64); ok {
+			dest.InsertDouble(key, d)
+		} else if b, ok := val.(bool); ok {
+			dest.InsertBool(key, b)
+		}
 	}
 	return nil
 }
@@ -261,13 +352,21 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 
 func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
 	var parseErr error
-	attrsInt := getIntAttributes()
 	for key, val := range tags {
-		_, ok := attrsInt[key]
-		if ok {
-			val, err := strconv.ParseInt(val, 10, 64)
+		if _, ok := nonSpanAttributes[key]; ok {
+			continue
+		}
+		if _, ok := intAttributes[key]; ok {
+			i, err := strconv.ParseInt(val, 10, 64)
 			if err == nil {
-				dest.InsertInt(key, val)
+				dest.InsertInt(key, i)
+			} else {
+				parseErr = err
+			}
+		} else if floatRegex.MatchString(val) {
+			d, err := strconv.ParseFloat(val, 64)
+			if err == nil {
+				dest.InsertDouble(key, d)
 			} else {
 				parseErr = err
 			}
@@ -344,22 +443,4 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 		return ""
 	}
 	return zspan.Tags[tracetranslator.TagInstrumentationName]
-}
-
-func getIntAttributes() map[string]struct{} {
-	attrs := make(map[string]struct{})
-	attrs[conventions.AttributeNetHostPort] = struct{}{}
-	attrs[conventions.AttributeNetPeerPort] = struct{}{}
-	attrs[conventions.AttributeHTTPHostPort] = struct{}{}
-	attrs[conventions.AttributeHTTPRequestContentLength] = struct{}{}
-	attrs[conventions.AttributeHTTPRequestContentLengthUncompressed] = struct{}{}
-	attrs[conventions.AttributeHTTPResponseContentLength] = struct{}{}
-	attrs[conventions.AttributeHTTPResponseContentLengthUncompressed] = struct{}{}
-	attrs[conventions.AttributeMessageID] = struct{}{}
-	attrs[conventions.AttributeMessageCompressedSize] = struct{}{}
-	attrs[conventions.AttributeMessageUncompressedSize] = struct{}{}
-	attrs[conventions.AttributeMessagingConversationID] = struct{}{}
-	attrs[conventions.AttributeMessagingPayloadSize] = struct{}{}
-	attrs[conventions.AttributeMessagingPayloadCompressedSize] = struct{}{}
-	return attrs
 }

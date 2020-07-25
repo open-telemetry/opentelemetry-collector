@@ -74,7 +74,8 @@ const (
 )
 
 const (
-	SpanLinkDataFormat = "%s|%s|%s|%s|%d"
+	SpanLinkDataFormat  = "%s|%s|%s|%s|%d"
+	SpanEventDataFormat = "%s|%s|%d"
 )
 
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation

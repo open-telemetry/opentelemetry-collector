@@ -192,7 +192,8 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 			}
 			zAnnos[i] = zipkinmodel.Annotation{
 				Timestamp: internal.UnixNanoToTime(event.Timestamp()),
-				Value:     fmt.Sprintf("%s: %s %d", event.Name(), jsonStr, event.DroppedAttributesCount()),
+				Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
+					event.DroppedAttributesCount()),
 			}
 		}
 		zs.Annotations = zAnnos
