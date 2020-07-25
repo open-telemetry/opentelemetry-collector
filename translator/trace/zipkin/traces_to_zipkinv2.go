@@ -185,15 +185,22 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 			if event.IsNil() {
 				continue
 			}
-			rawMap := attributeMapToMap(event.Attributes())
-			jsonStr, err := json.Marshal(rawMap)
-			if err != nil {
-				return err
-			}
-			zAnnos[i] = zipkinmodel.Annotation{
-				Timestamp: internal.UnixNanoToTime(event.Timestamp()),
-				Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
-					event.DroppedAttributesCount()),
+			if event.Attributes().Len() == 0 && event.DroppedAttributesCount() == 0 {
+				zAnnos[i] = zipkinmodel.Annotation{
+					Timestamp: internal.UnixNanoToTime(event.Timestamp()),
+					Value:     event.Name(),
+				}
+			} else {
+				rawMap := attributeMapToMap(event.Attributes())
+				jsonStr, err := json.Marshal(rawMap)
+				if err != nil {
+					return err
+				}
+				zAnnos[i] = zipkinmodel.Annotation{
+					Timestamp: internal.UnixNanoToTime(event.Timestamp()),
+					Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
+						event.DroppedAttributesCount()),
+				}
 			}
 		}
 		zs.Annotations = zAnnos

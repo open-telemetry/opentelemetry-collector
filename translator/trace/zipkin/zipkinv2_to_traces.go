@@ -276,10 +276,10 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlic
 
 		parts := strings.Split(anno.Value, "|")
 		partCnt := len(parts)
+		event.SetName(parts[0])
 		if partCnt < 3 {
 			continue
 		}
-		event.SetName(parts[0])
 
 		var jsonStr string
 		if partCnt == 3 {
