@@ -67,7 +67,7 @@ func getNonSpanAttributes() map[string]struct{} {
 	return attrs
 }
 
-// Custome Sort on
+// Custom Sort on
 type byOTLPTypes []*zipkinmodel.SpanModel
 
 func (b byOTLPTypes) Len() int {
