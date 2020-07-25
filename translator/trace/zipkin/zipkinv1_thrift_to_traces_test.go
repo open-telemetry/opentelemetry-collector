@@ -32,7 +32,7 @@ func TestV1ThriftToTraces(t *testing.T) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	got, err := V1ThriftBatchToTraces(ztSpans)
+	got, err := V1ThriftBatchToInternalTraces(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 
 	assert.Equal(t, 4, len(got))

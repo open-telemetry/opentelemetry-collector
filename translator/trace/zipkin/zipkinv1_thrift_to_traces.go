@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func V1ThriftBatchToTraces(zSpans []*zipkincore.Span) ([]pdata.Traces, error) {
+func V1ThriftBatchToInternalTraces(zSpans []*zipkincore.Span) ([]pdata.Traces, error) {
 	ocTraces, err := V1ThriftBatchToOCProto(zSpans)
 	if err != nil {
 		return make([]pdata.Traces, 0), err

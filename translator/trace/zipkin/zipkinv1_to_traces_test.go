@@ -26,7 +26,7 @@ func TestSingleJSONV1BatchToTraces(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	got, err := V1JSONBatchToTraces(blob)
+	got, err := V1JSONBatchToInternalTraces(blob)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 	assert.Equal(t, 4, len(got))

@@ -40,7 +40,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td, err := V2SpansToTraces(test.zs)
+			td, err := V2SpansToInternalTraces(test.zs)
 			assert.EqualValues(t, test.err, err)
 			assert.Equal(t, len(test.zs), td.SpanCount())
 			assert.EqualValues(t, test.td, td)

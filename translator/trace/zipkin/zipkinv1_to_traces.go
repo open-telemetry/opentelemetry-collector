@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func V1JSONBatchToTraces(blob []byte) ([]pdata.Traces, error) {
+func V1JSONBatchToInternalTraces(blob []byte) ([]pdata.Traces, error) {
 	ocTraces, err := V1JSONBatchToOCProto(blob)
 	if err != nil {
 		return make([]pdata.Traces, 0), err

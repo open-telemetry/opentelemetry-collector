@@ -87,8 +87,8 @@ func (b byOTLPTypes) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
-// V2SpansToTraces translates Zipkin v2 spans into internal trace data.
-func V2SpansToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
+// V2SpansToInternalTraces translates Zipkin v2 spans into internal trace data.
+func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil

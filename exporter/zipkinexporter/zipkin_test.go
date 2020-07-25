@@ -75,7 +75,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	mzr := newMockZipkinReporter(cst.URL)
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnectorOld([]consumer.TraceConsumerOld{tes})
+	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -316,7 +316,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	mzr.serializer = zipkinproto.SpanSerializer{}
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnectorOld([]consumer.TraceConsumerOld{tes})
+	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	port := testutil.GetAvailablePort(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{

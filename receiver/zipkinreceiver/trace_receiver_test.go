@@ -30,8 +30,6 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	zipkin2 "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
@@ -44,12 +42,11 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const zipkinReceiver = "zipkin_receiver_test"
@@ -57,7 +54,7 @@ const zipkinReceiver = "zipkin_receiver_test"
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
-		nextConsumer consumer.TraceConsumerOld
+		nextConsumer consumer.TraceConsumer
 	}
 	tests := []struct {
 		name    string
@@ -72,7 +69,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: exportertest.NewNopTraceExporterOld(),
+				nextConsumer: exportertest.NewNopTraceExporter(),
 			},
 		},
 	}
@@ -111,7 +108,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := New(cfg, exportertest.NewNopTraceExporterOld())
+	traceReceiver, err := New(cfg, exportertest.NewNopTraceExporter())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -125,24 +122,14 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
-	require.Len(t, reqs, 1, "Expecting only one request since all spans share same node/localEndpoint: %v", len(reqs))
+	require.Equal(t, reqs.ResourceSpans().Len(), 1, "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
-	req := reqs[0]
-	wantNode := &commonpb.Node{
-		ServiceInfo: &commonpb.ServiceInfo{
-			Name: "frontend",
-		},
-	}
-	assert.Equal(t, wantNode, req.Node)
+	req := reqs.ResourceSpans().At(0)
+	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
+	assert.Equal(t, "frontend", sn.StringVal())
 
-	nonNilSpans := 0
-	for _, span := range req.Spans {
-		if span != nil {
-			nonNilSpans++
-		}
-	}
 	// Expecting 9 non-nil spans
-	require.Equal(t, 9, nonNilSpans, "Incorrect non-nil spans count")
+	require.Equal(t, 9, reqs.SpanCount(), "Incorrect non-nil spans count")
 }
 
 func TestConversionRoundtrip(t *testing.T) {
@@ -217,100 +204,11 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporterOld()}
+	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 
-	wantProtoRequests := []consumerdata.TraceData{
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "frontend"},
-			},
-
-			Spans: []*tracepb.Span{
-				{
-					TraceId:      []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb, 0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x85},
-					ParentSpanId: []byte{0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x85},
-					SpanId:       []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb},
-					Kind:         tracepb.Span_CLIENT,
-					Name:         &tracepb.TruncatableString{Value: "get"},
-					StartTime:    internal.TimeToTimestamp(time.Unix(int64(1472470996199000)/1e6, 1e3*(int64(1472470996199000)%1e6))),
-					EndTime:      internal.TimeToTimestamp(time.Unix(int64(1472470996199000+207000)/1e6, 1e3*(int64(1472470996199000+207000)%1e6))),
-					TimeEvents: &tracepb.Span_TimeEvents{
-						TimeEvent: []*tracepb.Span_TimeEvent{
-							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996238000)/1e6, 1e3*(int64(1472470996238000)%1e6))),
-								Value: &tracepb.Span_TimeEvent_Annotation_{
-									Annotation: &tracepb.Span_TimeEvent_Annotation{
-										Description: &tracepb.TruncatableString{Value: "foo"},
-									},
-								},
-							},
-							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996403000)/1e6, 1e3*(int64(1472470996403000)%1e6))),
-								Value: &tracepb.Span_TimeEvent_Annotation_{
-									Annotation: &tracepb.Span_TimeEvent_Annotation{
-										Description: &tracepb.TruncatableString{Value: "bar"},
-									},
-								},
-							},
-						},
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							zipkin.LocalEndpointIPv6:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
-							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "backend"}}},
-							zipkin.RemoteEndpointIPv4:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
-							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
-							"http.path":                      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
-							"clnt/finagle.version":           {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
-						},
-					},
-				},
-				{
-					TraceId:      []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb, 0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x85},
-					SpanId:       []byte{0x4d, 0x1e, 0x00, 0xc0, 0xdb, 0x90, 0x10, 0xdb},
-					ParentSpanId: []byte{0x86, 0x15, 0x4a, 0x4b, 0xa6, 0xe9, 0x13, 0x86},
-					Kind:         tracepb.Span_SERVER,
-					Name:         &tracepb.TruncatableString{Value: "put"},
-					StartTime:    internal.TimeToTimestamp(time.Unix(int64(1472470996199000)/1e6, 1e3*(int64(1472470996199000)%1e6))),
-					EndTime:      internal.TimeToTimestamp(time.Unix(int64(1472470996199000+207000)/1e6, 1e3*(int64(1472470996199000+207000)%1e6))),
-					TimeEvents: &tracepb.Span_TimeEvents{
-						TimeEvent: []*tracepb.Span_TimeEvent{
-							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996238000)/1e6, 1e3*(int64(1472470996238000)%1e6))),
-								Value: &tracepb.Span_TimeEvent_Annotation_{
-									Annotation: &tracepb.Span_TimeEvent_Annotation{
-										Description: &tracepb.TruncatableString{Value: "foo"},
-									},
-								},
-							},
-							{
-								Time: internal.TimeToTimestamp(time.Unix(int64(1472470996403000)/1e6, 1e3*(int64(1472470996403000)%1e6))),
-								Value: &tracepb.Span_TimeEvent_Annotation_{
-									Annotation: &tracepb.Span_TimeEvent_Annotation{
-										Description: &tracepb.TruncatableString{Value: "bar"},
-									},
-								},
-							},
-						},
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							zipkin.LocalEndpointIPv6:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "7::80:807f"}}},
-							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "frontend"}}},
-							zipkin.RemoteEndpointIPv4:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.99.101"}}},
-							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "9000"}}},
-							"http.path":                      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "/api"}}},
-							"clnt/finagle.version":           {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6.45.0"}}},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	require.Equal(t, wantProtoRequests, ereqs)
+	require.Equal(t, 2, ereqs.SpanCount())
 
 	// Now the last phase is to transmit them over the wire and then compare the JSONs
 
@@ -330,9 +228,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	require.NotNil(t, ze)
 	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))
 
-	for _, treq := range ereqs {
-		require.NoError(t, ze.ConsumeTraceData(context.Background(), treq))
-	}
+	require.NoError(t, ze.ConsumeTraces(context.Background(), ereqs))
 
 	// Shutdown the exporter so it can flush any remaining data.
 	assert.NoError(t, ze.Shutdown(context.Background()))
@@ -365,7 +261,7 @@ func TestStartTraceReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporterOld)
+			sink := new(exportertest.SinkTraceExporter)
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
 					NameVal: zipkinReceiver,
@@ -462,7 +358,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			r.Header.Add("content-encoding", test.encoding)
 
 			next := &zipkinMockTraceConsumer{
-				ch: make(chan consumerdata.TraceData, 10),
+				ch: make(chan pdata.Traces, 10),
 			}
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
@@ -499,7 +395,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	next := &zipkinMockTraceConsumer{
-		ch: make(chan consumerdata.TraceData, 10),
+		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -528,7 +424,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	next := &zipkinMockTraceConsumer{
-		ch:  make(chan consumerdata.TraceData, 10),
+		ch:  make(chan pdata.Traces, 10),
 		err: errors.New("consumer error"),
 	}
 	cfg := &Config{
@@ -602,11 +498,11 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 }
 
 type zipkinMockTraceConsumer struct {
-	ch  chan consumerdata.TraceData
+	ch  chan pdata.Traces
 	err error
 }
 
-func (m *zipkinMockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (m *zipkinMockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err
 }

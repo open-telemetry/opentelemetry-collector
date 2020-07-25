@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 type mockTraceConsumer struct {
 }
 
-func (m *mockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return nil
 }
 
