@@ -240,7 +240,27 @@ func TestConversionRoundtrip(t *testing.T) {
 	accumulatedJSONMsgs := strings.Replace(buf.String(), "][", ",", -1)
 	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
 	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
-	assert.Equal(t, wj, gj)
+	// translation to OTLP sorts spans so do a span-by-span comparison
+	gj = gj[1 : len(gj)-1]
+	wj = wj[1 : len(wj)-1]
+	gjSpans := strings.Split(gj, "{\"annotations\":")
+	wjSpans := strings.Split(wj, "{\"annotations\":")
+	assert.Equal(t, len(wjSpans), len(gjSpans))
+	for _, wjspan := range wjSpans {
+		if len(wjspan) > 3 && wjspan[len(wjspan)-1:] == "," {
+			wjspan = wjspan[0 : len(wjspan)-1]
+		}
+		matchFound := false
+		for _, gjspan := range gjSpans {
+			if len(gjspan) > 3 && gjspan[len(gjspan)-1:] == "," {
+				gjspan = gjspan[0 : len(gjspan)-1]
+			}
+			if wjspan == gjspan {
+				matchFound = true
+			}
+		}
+		assert.True(t, matchFound, fmt.Sprintf("no match found for {\"annotations\":%s", wjspan))
+	}
 }
 
 func TestStartTraceReception(t *testing.T) {

@@ -107,6 +107,8 @@ func spanToZipkinSpan(
 	zTags map[string]string,
 ) (*zipkinmodel.SpanModel, error) {
 
+	tags := aggregateSpanTags(span, zTags)
+
 	zs := &zipkinmodel.SpanModel{}
 
 	hi, lo, err := tracetranslator.BytesToUInt64TraceID(span.TraceID().Bytes())
@@ -125,7 +127,7 @@ func spanToZipkinSpan(
 	zs.ID = zipkinmodel.ID(idVal)
 
 	if len(span.TraceState()) > 0 {
-		zTags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
+		tags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
 	}
 
 	if len(span.ParentSpanID().Bytes()) > 0 {
@@ -145,20 +147,20 @@ func spanToZipkinSpan(
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
 	if span.Kind() == pdata.SpanKindINTERNAL {
-		zTags[tracetranslator.TagSpanKind] = "internal"
+		tags[tracetranslator.TagSpanKind] = "internal"
 	}
 
 	redundantKeys := make(map[string]bool, 8)
-	zs.LocalEndpoint = zipkinEndpointFromTags(zTags, localServiceName, false, redundantKeys)
-	zs.RemoteEndpoint = zipkinEndpointFromTags(zTags, localServiceName, true, redundantKeys)
+	zs.LocalEndpoint = zipkinEndpointFromTags(tags, localServiceName, false, redundantKeys)
+	zs.RemoteEndpoint = zipkinEndpointFromTags(tags, localServiceName, true, redundantKeys)
 
-	removeRedundentTags(redundantKeys, zTags)
+	removeRedundentTags(redundantKeys, tags)
 
 	status := span.Status()
 	if !status.IsNil() {
-		zTags[tracetranslator.TagStatusCode] = status.Code().String()
+		tags[tracetranslator.TagStatusCode] = status.Code().String()
 		if status.Message() != "" {
-			zTags[tracetranslator.TagStatusMsg] = status.Message()
+			tags[tracetranslator.TagStatusMsg] = status.Message()
 			if int32(status.Code()) > 0 {
 				zs.Err = fmt.Errorf("%s", status.Message())
 			}
@@ -168,13 +170,25 @@ func spanToZipkinSpan(
 	if err := spanEventsToZipkinAnnotations(span.Events(), zs); err != nil {
 		return nil, err
 	}
-	if err := spanLinksToZipkinTags(span.Links(), zTags); err != nil {
+	if err := spanLinksToZipkinTags(span.Links(), tags); err != nil {
 		return nil, err
 	}
 
-	zs.Tags = zTags
+	zs.Tags = tags
 
 	return zs, nil
+}
+
+func aggregateSpanTags(span pdata.Span, zTags map[string]string) map[string]string {
+	tags := make(map[string]string)
+	for key, val := range zTags {
+		tags[key] = val
+	}
+	spanTags := attributeMapToStringMap(span.Attributes())
+	for key, val := range spanTags {
+		tags[key] = val
+	}
+	return tags
 }
 
 func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.SpanModel) error {
@@ -241,6 +255,29 @@ func attributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 			rawMap[k] = attributeMapToMap(v.MapVal())
 		case pdata.AttributeValueNULL:
 			rawMap[k] = nil
+		}
+	})
+	return rawMap
+}
+
+func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
+	rawMap := make(map[string]string)
+	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			rawMap[k] = v.StringVal()
+		case pdata.AttributeValueINT:
+			rawMap[k] = strconv.FormatInt(v.IntVal(), 10)
+		case pdata.AttributeValueDOUBLE:
+			rawMap[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+		case pdata.AttributeValueBOOL:
+			rawMap[k] = strconv.FormatBool(v.BoolVal())
+		case pdata.AttributeValueMAP:
+			if jsonStr, jErr := json.Marshal(attributeMapToMap(v.MapVal())); jErr == nil {
+				rawMap[k] = string(jsonStr)
+			}
+		case pdata.AttributeValueNULL:
+			rawMap[k] = ""
 		}
 	})
 	return rawMap
