@@ -35,7 +35,7 @@ type MetricCfg struct {
 	// The number of labels on the LabelsMap associated with each point
 	NumPtLabels int
 	// The number of points to generate per Metric
-	NumPts int
+	NumPtsPerMetric int
 	// The number of Attributes to insert into each Resource's AttributesMap
 	NumResourceAttrs int
 	// The number of ResourceMetrics for the single MetricData generated
@@ -54,7 +54,7 @@ func DefaultCfg() MetricCfg {
 		NumILMPerResource:    1,
 		NumMetricsPerILM:     1,
 		NumPtLabels:          1,
-		NumPts:               1,
+		NumPtsPerMetric:      1,
 		NumResourceAttrs:     1,
 		NumResourceMetrics:   1,
 		PtVal:                1,
@@ -126,8 +126,8 @@ func populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
 
 func populateIntPoints(cfg MetricCfg, metric pdata.Metric) {
 	pts := metric.Int64DataPoints()
-	pts.Resize(cfg.NumPts)
-	for i := 0; i < cfg.NumPts; i++ {
+	pts.Resize(cfg.NumPtsPerMetric)
+	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
 		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
@@ -138,8 +138,8 @@ func populateIntPoints(cfg MetricCfg, metric pdata.Metric) {
 
 func populateDblPoints(cfg MetricCfg, metric pdata.Metric) {
 	pts := metric.DoubleDataPoints()
-	pts.Resize(cfg.NumPts)
-	for i := 0; i < cfg.NumPts; i++ {
+	pts.Resize(cfg.NumPtsPerMetric)
+	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
 		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
@@ -150,8 +150,8 @@ func populateDblPoints(cfg MetricCfg, metric pdata.Metric) {
 
 func populateHistogramPoints(cfg MetricCfg, metric pdata.Metric) {
 	pts := metric.HistogramDataPoints()
-	pts.Resize(cfg.NumPts)
-	for i := 0; i < cfg.NumPts; i++ {
+	pts.Resize(cfg.NumPtsPerMetric)
+	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
 		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
@@ -192,8 +192,8 @@ func addHistogramVal(hdp pdata.HistogramDataPoint, val float64, ts pdata.Timesta
 
 func populateSummaryPoints(cfg MetricCfg, metric pdata.Metric) {
 	pts := metric.SummaryDataPoints()
-	pts.Resize(cfg.NumPts)
-	for i := 0; i < cfg.NumPts; i++ {
+	pts.Resize(cfg.NumPtsPerMetric)
+	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
 		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
