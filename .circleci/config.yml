@@ -91,6 +91,27 @@ commands:
                 command: go run cmd/issuegenerator/main.go ${TEST_RESULTS}
                 when: on_fail
 
+  install_fluentbit:
+    steps:
+      - run: |
+          sudo chmod 0777 -R /opt
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - "cimg-fluentbit-{{ arch }}-1.5.3"
+      - run: |
+          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
+
+          if [[ -f /opt/td-agent-bit/bin/td-agent-bit ]]; then
+            exit 0
+          fi
+
+          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
+          sudo dpkg -i ./td-agent-bit*.deb
+      - save_cache:
+          key: cimg-fluentbit-{{ arch }}-1.5.3
+          paths:
+            - /opt/td-agent-bit
+
 workflows:
   version: 2
   build-and-test:
@@ -280,6 +301,7 @@ jobs:
     resource_class: medium+
     steps:
       - attach_to_workspace
+      - install_fluentbit
       - run:
           name: Loadtest
           command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
