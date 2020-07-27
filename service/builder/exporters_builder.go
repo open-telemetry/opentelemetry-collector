@@ -107,10 +107,7 @@ func (exps Exporters) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {

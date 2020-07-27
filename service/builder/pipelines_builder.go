@@ -76,10 +76,7 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 		bp.logger.Info("Pipeline is shutdown.")
 	}
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 // PipelinesBuilder builds pipelines from config.

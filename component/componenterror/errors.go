@@ -36,14 +36,18 @@ var (
 // CombineErrors converts a list of errors into one error.
 func CombineErrors(errs []error) error {
 	numErrors := len(errs)
+	if numErrors == 0 {
+		// No errors
+		return nil
+	}
+
 	if numErrors == 1 {
 		return errs[0]
-	} else if numErrors > 1 {
-		errMsgs := make([]string, 0, numErrors)
-		for _, err := range errs {
-			errMsgs = append(errMsgs, err.Error())
-		}
-		return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 	}
-	return nil
+
+	errMsgs := make([]string, 0, numErrors)
+	for _, err := range errs {
+		errMsgs = append(errMsgs, err.Error())
+	}
+	return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 }
