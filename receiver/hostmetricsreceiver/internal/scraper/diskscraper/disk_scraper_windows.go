@@ -37,8 +37,7 @@ const (
 	logicalAvgDiskSecsPerReadPath  = `\LogicalDisk(*)\Avg. Disk sec/Read`
 	logicalAvgDiskSecsPerWritePath = `\LogicalDisk(*)\Avg. Disk sec/Write`
 
-	// TODO
-	// logicalAvgDiskQueueLengthPath = `\LogicalDisk(*)\Avg. Disk Queue Length`
+	logicalDiskQueueLengthPath = `\LogicalDisk(*)\Current Disk Queue Length`
 )
 
 // scraper for Disk Metrics
@@ -53,9 +52,9 @@ type scraper struct {
 	diskWriteBytesPerSecCounter pdh.PerfCounterScraper
 	diskReadsPerSecCounter      pdh.PerfCounterScraper
 	diskWritesPerSecCounter     pdh.PerfCounterScraper
-
-	avgDiskSecsPerReadCounter  pdh.PerfCounterScraper
-	avgDiskSecsPerWriteCounter pdh.PerfCounterScraper
+	avgDiskSecsPerReadCounter   pdh.PerfCounterScraper
+	avgDiskSecsPerWriteCounter  pdh.PerfCounterScraper
+	diskQueueLengthCounter      pdh.PerfCounterScraper
 
 	cumulativeDiskIO   cumulativeDiskValues
 	cumulativeDiskOps  cumulativeDiskValues
@@ -144,6 +143,11 @@ func (s *scraper) Initialize(_ context.Context) error {
 		return err
 	}
 
+	s.diskQueueLengthCounter, err = pdh.NewPerfCounter(logicalDiskQueueLengthPath, true)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -187,6 +191,12 @@ func (s *scraper) Close(_ context.Context) error {
 		}
 	}
 
+	if s.diskQueueLengthCounter != nil && !reflect.ValueOf(s.diskQueueLengthCounter).IsNil() {
+		if err := s.diskQueueLengthCounter.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
 	return componenterror.CombineErrors(errors)
 }
 
@@ -206,6 +216,11 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	}
 
 	err = s.scrapeAndAppendDiskOpsMetric(metrics, durationSinceLastScraped)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	err = s.scrapeAndAppendDiskPendingOperationsMetric(metrics)
 	if err != nil {
 		errors = append(errors, err)
 	}
@@ -316,6 +331,23 @@ func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics pdata.MetricSlice, durati
 	return nil
 }
 
+func (s *scraper) scrapeAndAppendDiskPendingOperationsMetric(metrics pdata.MetricSlice) error {
+	diskQueueLengthValues, err := s.diskQueueLengthCounter.ScrapeData()
+	if err != nil {
+		return err
+	}
+
+	filteredDiskQueueLengthValues := s.filterByDevice(diskQueueLengthValues)
+	if len(filteredDiskQueueLengthValues) == 0 {
+		return nil
+	}
+
+	idx := metrics.Len()
+	metrics.Resize(idx + 1)
+	initializeDiskPendingOperationsMetric(metrics.At(idx), filteredDiskQueueLengthValues)
+	return nil
+}
+
 func initializeDiskInt64Metric(metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano, ops cumulativeDiskValues) {
 	descriptor.CopyTo(metric.MetricDescriptor())
 
@@ -344,6 +376,17 @@ func initializeDiskDoubleMetric(metric pdata.Metric, descriptor pdata.MetricDesc
 	}
 }
 
+func initializeDiskPendingOperationsMetric(metric pdata.Metric, avgDiskQueueLengthValues []win_perf_counters.CounterValue) {
+	diskPendingOperationsDescriptor.CopyTo(metric.MetricDescriptor())
+
+	idps := metric.Int64DataPoints()
+	idps.Resize(len(avgDiskQueueLengthValues))
+
+	for idx, avgDiskQueueLengthValue := range avgDiskQueueLengthValues {
+		initializeDiskPendingDataPoint(idps.At(idx), avgDiskQueueLengthValue.InstanceName, int64(avgDiskQueueLengthValue.Value))
+	}
+}
+
 func initializeInt64DataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
@@ -360,6 +403,27 @@ func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime pdata.
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 	dataPoint.SetValue(value)
+}
+
+func initializeDiskPendingDataPoint(dataPoint pdata.Int64DataPoint, deviceLabel string, value int64) {
+	labelsMap := dataPoint.LabelsMap()
+	labelsMap.Insert(deviceLabelName, deviceLabel)
+	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetValue(value)
+}
+
+func (s *scraper) filterByDevice(values []win_perf_counters.CounterValue) []win_perf_counters.CounterValue {
+	if s.includeFS == nil && s.excludeFS == nil {
+		return values
+	}
+
+	filteredValues := make([]win_perf_counters.CounterValue, 0, len(values))
+	for _, value := range values {
+		if s.includeDevice(value.InstanceName) {
+			filteredValues = append(filteredValues, value)
+		}
+	}
+	return filteredValues
 }
 
 func (s *scraper) includeDevice(deviceName string) bool {
