@@ -200,12 +200,10 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	var err = componenterror.ErrAlreadyStarted
 	jr.startOnce.Do(func() {
 		if err = jr.startAgent(host); err != nil && err != componenterror.ErrAlreadyStarted {
-			jr.stopTraceReceptionLocked()
 			return
 		}
 
 		if err = jr.startCollector(host); err != nil && err != componenterror.ErrAlreadyStarted {
-			jr.stopTraceReceptionLocked()
 			return
 		}
 
@@ -215,15 +213,10 @@ func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 func (jr *jReceiver) Shutdown(context.Context) error {
-	jr.mu.Lock()
-	defer jr.mu.Unlock()
-
-	return jr.stopTraceReceptionLocked()
-}
-
-func (jr *jReceiver) stopTraceReceptionLocked() error {
 	var err = componenterror.ErrAlreadyStopped
 	jr.stopOnce.Do(func() {
+		jr.mu.Lock()
+		defer jr.mu.Unlock()
 		var errs []error
 
 		if jr.agentServer != nil {
@@ -246,11 +239,6 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 			jr.grpc.Stop()
 			jr.grpc = nil
 		}
-		if len(errs) == 0 {
-			err = nil
-			return
-		}
-		// Otherwise combine all these errors
 		err = componenterror.CombineErrors(errs)
 	})
 
