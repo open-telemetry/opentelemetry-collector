@@ -71,10 +71,7 @@ func (exts Extensions) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 func (exts Extensions) NotifyPipelineReady() error {
@@ -102,11 +99,7 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 		}
 	}
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 func (exts Extensions) ToMap() map[configmodels.Extension]component.ServiceExtension {

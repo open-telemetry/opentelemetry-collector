@@ -111,11 +111,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.ResourceMetricsSlice, 
 		}
 	}
 
-	if len(errs) > 0 {
-		return rms, componenterror.CombineErrors(errs)
-	}
-
-	return rms, nil
+	return rms, componenterror.CombineErrors(errs)
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -167,11 +163,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	if len(errs) > 0 {
-		return metadata, componenterror.CombineErrors(errs)
-	}
-
-	return metadata, nil
+	return metadata, componenterror.CombineErrors(errs)
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, handle processHandle) error {

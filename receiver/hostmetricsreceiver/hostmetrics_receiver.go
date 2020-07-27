@@ -199,11 +199,7 @@ func (hmr *receiver) scrapeAndAppendHostMetrics(ctx context.Context, metricData 
 		scraperMetrics.MoveAndAppendTo(metrics)
 	}
 
-	if len(errors) > 0 {
-		return componenterror.CombineErrors(errors)
-	}
-
-	return nil
+	return componenterror.CombineErrors(errors)
 }
 
 func (hmr *receiver) scrapeAndAppendResourceMetrics(ctx context.Context, metricData data.MetricData) error {
@@ -223,11 +219,7 @@ func (hmr *receiver) scrapeAndAppendResourceMetrics(ctx context.Context, metricD
 		scraperResourceMetrics.MoveAndAppendTo(rm)
 	}
 
-	if len(errors) > 0 {
-		return componenterror.CombineErrors(errors)
-	}
-
-	return nil
+	return componenterror.CombineErrors(errors)
 }
 
 func (hmr *receiver) closeScrapers(ctx context.Context) error {

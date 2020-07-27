@@ -73,11 +73,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	if len(errors) > 0 {
-		return metrics, componenterror.CombineErrors(errors)
-	}
-
-	return metrics, nil
+	return metrics, componenterror.CombineErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
