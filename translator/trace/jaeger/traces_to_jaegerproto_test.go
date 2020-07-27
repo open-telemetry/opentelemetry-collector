@@ -81,10 +81,10 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 		VType: model.ValueType_BOOL,
 	}
 
-	got, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_Ok))
+	_, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_Ok))
 	assert.False(t, ok)
 
-	got, ok = getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_UnknownError))
+	got, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_UnknownError))
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 

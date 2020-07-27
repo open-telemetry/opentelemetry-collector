@@ -21,12 +21,8 @@ import (
 // labels
 
 const (
-	cmdlineLabelName   = "command_line"
 	directionLabelName = "direction"
-	pidLabelName       = "pid"
-	processLabelName   = "process"
 	stateLabelName     = "state"
-	usernameLabelName  = "username"
 )
 
 // direction label values

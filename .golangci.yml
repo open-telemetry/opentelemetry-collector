@@ -91,7 +91,8 @@ linters-settings:
       - kilometres
 
 linters:
-  disable-all: true
+  disable:
+    - errcheck
   enable:
     - gofmt
     - goimports
@@ -108,6 +109,13 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
+    - path: otlp_test.go
+      linters:
+        # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
+        - structcheck
+    - path: opencensus_test.go
+      linters:
+        - unused
     # Exclude some staticcheck messages
     - linters:
       - staticcheck
