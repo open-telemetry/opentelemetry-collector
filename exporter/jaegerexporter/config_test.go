@@ -57,13 +57,13 @@ func TestLoadConfig(t *testing.T) {
 				Timeout: 10 * time.Second,
 			},
 			RetrySettings: exporterhelper.RetrySettings{
-				Disabled:        false,
+				Enabled:         true,
 				InitialInterval: 10 * time.Second,
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			QueueSettings: exporterhelper.QueueSettings{
-				Disabled:     false,
+				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
 			},

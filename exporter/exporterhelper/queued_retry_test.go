@@ -37,7 +37,6 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 
 	qCfg := CreateDefaultQueueSettings()
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 30 * time.Second
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -63,7 +62,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 
 	qCfg := CreateDefaultQueueSettings()
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = true
+	rCfg.Enabled = false
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -90,7 +89,6 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 30 * time.Second
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	ocs := &observabilityConsumerSender{nextSender: be.qrSender.consumerSender}
@@ -127,7 +125,6 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 30 * time.Minute
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	ocs := &observabilityConsumerSender{nextSender: be.qrSender.consumerSender}
@@ -168,7 +165,6 @@ func TestQueuedRetry_PreserveCancellation(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 30 * time.Second
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	ocs := &observabilityConsumerSender{nextSender: be.qrSender.consumerSender}
@@ -209,7 +205,6 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 100 * time.Millisecond
 	rCfg.MaxElapsedTime = 1 * time.Second
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
@@ -248,7 +243,6 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 100 * time.Millisecond
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	ocs := &observabilityConsumerSender{nextSender: be.qrSender.consumerSender}
@@ -289,7 +283,6 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
 	rCfg := CreateDefaultRetrySettings()
-	rCfg.Disabled = false
 	rCfg.InitialInterval = 2 * time.Second
 	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
 	ocs := &observabilityConsumerSender{nextSender: be.qrSender.consumerSender}

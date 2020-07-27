@@ -27,8 +27,8 @@ import (
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
-	// Disabled indicates whether to not enqueue batches before sending to the consumerSender.
-	Disabled bool `mapstructure:"disabled"`
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
 	// NumConsumers is the number of consumers from the queue.
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
@@ -38,7 +38,7 @@ type QueueSettings struct {
 // CreateDefaultQueueSettings returns the default settings for QueueSettings.
 func CreateDefaultQueueSettings() QueueSettings {
 	return QueueSettings{
-		Disabled:     false,
+		Enabled:      true,
 		NumConsumers: 10,
 		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
 		// This is a pretty decent value for production.
@@ -51,8 +51,8 @@ func CreateDefaultQueueSettings() QueueSettings {
 // RetrySettings defines configuration for retrying batches in case of export failure.
 // The current supported strategy is exponential backoff.
 type RetrySettings struct {
-	// Disabled indicates whether to not retry sending batches in case of export failure.
-	Disabled bool `mapstructure:"disabled"`
+	// Enabled indicates whether to not retry sending batches in case of export failure.
+	Enabled bool `mapstructure:"enabled"`
 	// InitialInterval the time to wait after the first failure before retrying.
 	InitialInterval time.Duration `mapstructure:"initial_interval"`
 	// MaxInterval is the upper bound on backoff interval. Once this value is reached the delay between
@@ -66,7 +66,7 @@ type RetrySettings struct {
 // CreateDefaultRetrySettings returns the default settings for RetrySettings.
 func CreateDefaultRetrySettings() RetrySettings {
 	return RetrySettings{
-		Disabled:        false,
+		Enabled:         true,
 		InitialInterval: 5 * time.Second,
 		MaxInterval:     30 * time.Second,
 		MaxElapsedTime:  5 * time.Minute,
@@ -106,7 +106,7 @@ func (qrs *queuedRetrySender) start() {
 
 // send implements the requestSender interface
 func (qrs *queuedRetrySender) send(req request) (int, error) {
-	if qrs.cfg.Disabled {
+	if !qrs.cfg.Enabled {
 		return qrs.consumerSender.send(req)
 	}
 
@@ -148,7 +148,7 @@ type retrySender struct {
 
 // send implements the requestSender interface
 func (rs *retrySender) send(req request) (int, error) {
-	if rs.cfg.Disabled {
+	if !rs.cfg.Enabled {
 		return rs.nextSender.send(req)
 	}
 
