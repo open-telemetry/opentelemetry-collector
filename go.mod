@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
-	contrib.go.opencensus.io/exporter/ocagent v0.6.0
+	contrib.go.opencensus.io/exporter/ocagent v0.7.0
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/apache/thrift v0.13.0
