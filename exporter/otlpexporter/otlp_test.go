@@ -321,6 +321,9 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
+		// Need to wait for every request blocking until either request timeouts or succeed.
+		// Do not rely on external retry logic here, if that is intended set InitialInterval to 100ms.
+		WaitForReady: true,
 	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
@@ -421,7 +424,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Resend the request, this should succeed.
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	assert.NoError(t, exp.ConsumeTraces(ctx, td))
 	cancel()
 

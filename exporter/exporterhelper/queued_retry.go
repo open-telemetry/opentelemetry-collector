@@ -152,10 +152,17 @@ func (rs *retrySender) send(req request) (int, error) {
 		return rs.nextSender.send(req)
 	}
 
-	expBackoff := backoff.NewExponentialBackOff()
-	expBackoff.InitialInterval = rs.cfg.InitialInterval
-	expBackoff.MaxInterval = rs.cfg.MaxInterval
-	expBackoff.MaxElapsedTime = rs.cfg.MaxElapsedTime
+	// Cannot use NewExponentialBackOff because if update the InitialInterval
+	// need to reset again, and an unnecessary clock Now is called.
+	expBackoff := backoff.ExponentialBackOff{
+		InitialInterval:     rs.cfg.InitialInterval,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+		MaxInterval:         rs.cfg.MaxInterval,
+		MaxElapsedTime:      rs.cfg.MaxElapsedTime,
+		Clock:               backoff.SystemClock,
+	}
+	expBackoff.Reset()
 	for {
 		droppedItems, err := rs.nextSender.send(req)
 
