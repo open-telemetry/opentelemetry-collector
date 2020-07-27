@@ -27,8 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/trace"
 )
@@ -42,6 +44,7 @@ type Receiver struct {
 
 	traceReceiver   *trace.Receiver
 	metricsReceiver *metrics.Receiver
+	logReceiver     *logs.Receiver
 
 	stopOnce        sync.Once
 	startServerOnce sync.Once
@@ -73,7 +76,7 @@ func New(cfg *Config) (*Receiver, error) {
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	if r.traceReceiver == nil && r.metricsReceiver == nil {
+	if r.traceReceiver == nil && r.metricsReceiver == nil && r.logReceiver == nil {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
@@ -149,6 +152,20 @@ func (r *Receiver) registerMetricsConsumer(ctx context.Context, mc consumer.Metr
 	}
 	if r.gatewayMux != nil {
 		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, r.gatewayMux, r.metricsReceiver)
+	}
+	return nil
+}
+
+func (r *Receiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
+	if tc == nil {
+		return componenterror.ErrNilNextConsumer
+	}
+	r.logReceiver = logs.New(r.cfg.Name(), tc)
+	if r.serverGRPC != nil {
+		collectorlog.RegisterLogsServiceServer(r.serverGRPC, r.logReceiver)
+	}
+	if r.gatewayMux != nil {
+		return collectorlog.RegisterLogsServiceHandlerServer(ctx, r.gatewayMux, r.logReceiver)
 	}
 	return nil
 }

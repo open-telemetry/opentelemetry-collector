@@ -45,6 +45,7 @@ func NewFactory() component.ReceiverFactory {
 		createDefaultConfig,
 		receiverhelper.WithTraces(createTraceReceiver),
 		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithLogs(createLogReceiver),
 		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
@@ -142,6 +143,23 @@ func createMetricsReceiver(
 		return nil, err
 	}
 	if err = r.registerMetricsConsumer(ctx, consumer); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// CreateLogReceiver creates a log receiver based on provided config.
+func createLogReceiver(
+	ctx context.Context,
+	_ component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	consumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	r, err := createReceiver(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if err = r.registerLogsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
