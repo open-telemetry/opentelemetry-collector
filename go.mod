@@ -59,7 +59,7 @@ require (
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200603110839-e855014d5736
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.30.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4
