@@ -11,6 +11,8 @@ The following settings can be optionally configured:
 
 - `defaultservicename` (default = <missing service name>): What to name services missing this information.
 - `timeout` (default = 5s): How long to wait until the connection is close.
+- `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
+- `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 
 Example:
 
