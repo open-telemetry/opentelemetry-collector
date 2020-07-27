@@ -152,8 +152,8 @@ func (rs *retrySender) send(req request) (int, error) {
 		return rs.nextSender.send(req)
 	}
 
-	// Cannot use NewExponentialBackOff because if update the InitialInterval
-	// need to reset again, and an unnecessary clock Now is called.
+	// Do not use NewExponentialBackOff since it calls Reset and the code here must
+	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
 		InitialInterval:     rs.cfg.InitialInterval,
 		RandomizationFactor: backoff.DefaultRandomizationFactor,
