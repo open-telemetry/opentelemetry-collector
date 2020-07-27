@@ -72,15 +72,15 @@ type GRPCClientSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
-	// The keepalive parameters for client gRPC. See grpc.WithKeepaliveParams
+	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
 
-	// The WriteBufferSize for client gRPC. See grpc.WithReadBufferSize
+	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize
 	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
-	// The WriteBufferSize for client gRPC. See grpc.WithWriteBufferSize
+	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize
 	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
@@ -147,11 +147,11 @@ type GRPCServerSettings struct {
 	// It has effect only for streaming RPCs.
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
 
-	// The WriteBufferSize for client gRPC. See grpc.ReadBufferSize
+	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
 	ReadBufferSize int `mapstructure:"read_buffer_size"`
 
-	// The WriteBufferSize for client gRPC. See grpc.WriteBufferSize
+	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
