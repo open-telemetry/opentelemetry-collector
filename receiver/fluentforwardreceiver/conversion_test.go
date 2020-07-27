@@ -16,6 +16,7 @@ package fluentforwardreceiver
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -122,4 +123,92 @@ func TestAttributeTypeConversion(t *testing.T) {
 			},
 		},
 	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)
+}
+
+func TestEventMode(t *testing.T) {
+	require.Equal(t, "unknown", UnknownMode.String())
+	require.Equal(t, "message", MessageMode.String())
+	require.Equal(t, "forward", ForwardMode.String())
+	require.Equal(t, "packedforward", PackedForwardMode.String())
+
+	const TestMode EventMode = 6
+	require.Panics(t, func() { _ = TestMode.String() })
+}
+
+func TestTimeFromTimestampBadType(t *testing.T) {
+	_, err := timeFromTimestamp("bad")
+	require.NotNil(t, err)
+}
+
+func TestMessageEventConversionWithErrors(t *testing.T) {
+	b := []byte{}
+
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "a")
+	b = msgp.AppendFloat64(b, 5.0)
+
+	for i := 0; i < len(b)-1; i++ {
+		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
+			reader := msgp.NewReader(bytes.NewReader(b[:i]))
+
+			var event MessageEventLogRecord
+			err := event.DecodeMsg(reader)
+			require.NotNil(t, err)
+		})
+	}
+
+	t.Run("Invalid timestamp type uint", func(t *testing.T) {
+		in := make([]byte, len(b))
+		copy(in, b)
+		in[8] = 0xcd
+		reader := msgp.NewReader(bytes.NewReader(in))
+
+		var event MessageEventLogRecord
+		err := event.DecodeMsg(reader)
+		require.NotNil(t, err)
+	})
+}
+
+func TestForwardEventConversionWithErrors(t *testing.T) {
+	b := testdata.ParseHexDump("forward-event")
+
+	for i := 0; i < len(b)-1; i++ {
+		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
+			reader := msgp.NewReader(bytes.NewReader(b[:i]))
+
+			var event ForwardEventLogRecords
+			err := event.DecodeMsg(reader)
+			require.NotNil(t, err)
+		})
+	}
+}
+
+func TestPackedForwardEventConversionWithErrors(t *testing.T) {
+	b := testdata.ParseHexDump("forward-packed-compressed")
+
+	for i := 0; i < len(b)-1; i++ {
+		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
+			reader := msgp.NewReader(bytes.NewReader(b[:i]))
+
+			var event PackedForwardEventLogRecords
+			err := event.DecodeMsg(reader)
+			require.NotNil(t, err)
+		})
+	}
+
+	t.Run("Invalid gzip header", func(t *testing.T) {
+		in := make([]byte, len(b))
+		copy(in, b)
+		in[0x71] = 0xff
+		reader := msgp.NewReader(bytes.NewReader(in))
+
+		var event PackedForwardEventLogRecords
+		err := event.DecodeMsg(reader)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "gzip")
+		print(err.Error())
+	})
 }
