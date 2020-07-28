@@ -28,6 +28,8 @@ import (
 type MetricCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pdata.MetricType
+	// A prefix for every metric name
+	MetricNamePrefix string
 	// The number of instrumentation library metrics per resource
 	NumILMPerResource int
 	// The size of the MetricSlice and number of Metrics
@@ -48,9 +50,12 @@ type MetricCfg struct {
 	StepSize uint64
 }
 
+// DefaultCfg produces a MetricCfg with default values. These should be good enough to produce sane
+// (but boring) metrics, and can be used as a starting point for making alterations.
 func DefaultCfg() MetricCfg {
 	return MetricCfg{
 		MetricDescriptorType: pdata.MetricTypeInt64,
+		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
 		NumMetricsPerILM:     1,
 		NumPtLabels:          1,
@@ -63,11 +68,25 @@ func DefaultCfg() MetricCfg {
 	}
 }
 
+// DefaultMetricData produces MetricData with a default config.
 func DefaultMetricData() data.MetricData {
 	return MetricDataFromCfg(DefaultCfg())
 }
 
+// MetricDataFromCfg produces MetricData with the passed-in config.
 func MetricDataFromCfg(cfg MetricCfg) data.MetricData {
+	return newMetricGenerator().genMetricDataFromCfg(cfg)
+}
+
+type metricGenerator struct {
+	metricID int
+}
+
+func newMetricGenerator() *metricGenerator {
+	return &metricGenerator{}
+}
+
+func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) data.MetricData {
 	md := data.NewMetricData()
 	rms := md.ResourceMetrics()
 	rms.Resize(cfg.NumResourceMetrics)
@@ -81,27 +100,27 @@ func MetricDataFromCfg(cfg MetricCfg) data.MetricData {
 				pdata.NewAttributeValueString(fmt.Sprintf("resource-attr-val-%d", j)),
 			)
 		}
-		populateIlm(cfg, rm)
+		g.populateIlm(cfg, rm)
 	}
 	return md
 }
 
-func populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
+func (g *metricGenerator) populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilms.Resize(cfg.NumILMPerResource)
 	for i := 0; i < cfg.NumILMPerResource; i++ {
 		ilm := ilms.At(i)
-		populateMetrics(cfg, ilm)
+		g.populateMetrics(cfg, ilm)
 	}
 }
 
-func populateMetrics(cfg MetricCfg, ilm pdata.InstrumentationLibraryMetrics) {
+func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.InstrumentationLibraryMetrics) {
 	metrics := ilm.Metrics()
 	metrics.Resize(cfg.NumMetricsPerILM)
 	for i := 0; i < cfg.NumMetricsPerILM; i++ {
 		metric := metrics.At(i)
 		metric.InitEmpty()
-		populateMetricDesc(cfg, metric)
+		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
 		case pdata.MetricTypeInt64, pdata.MetricTypeMonotonicInt64:
 			populateIntPoints(cfg, metric)
@@ -115,10 +134,11 @@ func populateMetrics(cfg MetricCfg, ilm pdata.InstrumentationLibraryMetrics) {
 	}
 }
 
-func populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
+func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
 	desc := metric.MetricDescriptor()
 	desc.InitEmpty()
-	desc.SetName("my-md-name")
+	desc.SetName(fmt.Sprintf("%smetric_%d", cfg.MetricNamePrefix, g.metricID))
+	g.metricID++
 	desc.SetDescription("my-md-description")
 	desc.SetUnit("my-md-units")
 	desc.SetType(cfg.MetricDescriptorType)
