@@ -18,20 +18,17 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/Shopify/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
-
-const exporterName = "test"
 
 func TestNewExporter_wrong_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0"}
@@ -41,69 +38,56 @@ func TestNewExporter_wrong_version(t *testing.T) {
 }
 
 func TestTraceDataPusher(t *testing.T) {
-	views := MetricViews()
-	view.Register(views...)
-	defer view.Unregister(views...)
 	c := sarama.NewConfig()
-	c.Producer.Return.Successes = true
-	c.Producer.Return.Errors = true
-	producer := mocks.NewAsyncProducer(t, c)
-	producer.ExpectInputAndSucceed()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaProducer{
-		asyncProducer: producer,
-		marshaller:    &protoMarshaller{},
+		producer:   producer,
+		marshaller: &protoMarshaller{},
 	}
-	p.processSendResults(exporterName)
 	defer p.Close(context.Background())
 	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
 	assert.Equal(t, 0, droppedSpans)
-
-	// wait for success and error goroutines to finish
-	time.Sleep(time.Millisecond * 500)
-	viewData, err := view.RetrieveData(statSendSuccess.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData := viewData[0].Data.(*view.SumData)
-	assert.Equal(t, float64(1), distData.Value)
 }
 
 func TestTraceDataPusher_err(t *testing.T) {
-	views := MetricViews()
-	view.Register(views...)
-	defer view.Unregister(views...)
 	c := sarama.NewConfig()
-	c.Producer.Return.Successes = true
-	c.Producer.Return.Errors = true
-	producer := mocks.NewAsyncProducer(t, c)
-	producer.ExpectInputAndFail(fmt.Errorf("failed to send"))
+	producer := mocks.NewSyncProducer(t, c)
+	expErr := fmt.Errorf("failed to send")
+	producer.ExpectSendMessageAndFail(expErr)
 
 	p := kafkaProducer{
-		asyncProducer: producer,
-		marshaller:    &protoMarshaller{},
-		logger:        zap.NewNop(),
+		producer:   producer,
+		marshaller: &protoMarshaller{},
+		logger:     zap.NewNop(),
 	}
-	p.processSendResults(exporterName)
 	defer p.Close(context.Background())
-	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
-	require.NoError(t, err)
-	assert.Equal(t, 0, droppedSpans)
-
-	// wait for success and error goroutines to finish
-	time.Sleep(time.Millisecond * 500)
-	viewData, err := view.RetrieveData(statSendErr.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData := viewData[0].Data.(*view.SumData)
-	assert.Equal(t, float64(1), distData.Value)
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	assert.EqualError(t, err, expErr.Error())
+	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
 
-func TestTraceDataPusher_remove(t *testing.T) {
-	c := sarama.NewConfig()
-	c.Producer.Return.Successes = true
-	c.Producer.Return.Errors = true
-	c.Net.Proxy.Enable = true
-	producer := mocks.NewAsyncProducer(t, c)
-	producer.ExpectInputAndFail(fmt.Errorf("failed to send"))
+func TestTraceDataPusher_marshall_error(t *testing.T) {
+	expErr := fmt.Errorf("failed to marshall")
+	p := kafkaProducer{
+		marshaller: &errorMarshaller{err: expErr},
+		logger:     zap.NewNop(),
+	}
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	assert.Contains(t, err.Error(), expErr.Error())
+	assert.Equal(t, td.SpanCount(), droppedSpans)
+}
+
+type errorMarshaller struct {
+	err error
+}
+
+var _ marshaller = (*errorMarshaller)(nil)
+
+func (e errorMarshaller) Marshal(pdata.Traces) ([]byte, error) {
+	return nil, e.err
 }

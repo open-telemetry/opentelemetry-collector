@@ -18,8 +18,6 @@ import (
 	"context"
 
 	"github.com/Shopify/sarama"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,18 +27,17 @@ import (
 
 // kafkaProducer uses sarama to produce messages to Kafka.
 type kafkaProducer struct {
-	asyncProducer sarama.AsyncProducer
-	topic         string
-	marshaller    marshaller
-	logger        *zap.Logger
+	producer   sarama.SyncProducer
+	topic      string
+	marshaller marshaller
+	logger     *zap.Logger
 }
 
 // newExporter creates Kafka exporter.
 func newExporter(config Config, params component.ExporterCreateParams) (*kafkaProducer, error) {
 	c := sarama.NewConfig()
-	// deliver confirmations to the success channel
+	// These setting are required by the sarama implementation.
 	c.Producer.Return.Successes = true
-	// deliver errors to the error channel
 	c.Producer.Return.Errors = true
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
@@ -49,34 +46,16 @@ func newExporter(config Config, params component.ExporterCreateParams) (*kafkaPr
 		}
 		c.Version = version
 	}
-	producer, err := sarama.NewAsyncProducer(config.Brokers, c)
+	producer, err := sarama.NewSyncProducer(config.Brokers, c)
 	if err != nil {
 		return nil, err
 	}
-	kp := &kafkaProducer{
-		asyncProducer: producer,
-		topic:         config.Topic,
-		marshaller:    &protoMarshaller{},
-		logger:        params.Logger,
-	}
-	kp.processSendResults(config.Name())
-	return kp, nil
-}
-
-func (e *kafkaProducer) processSendResults(name string) {
-	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, name)}
-	go func() {
-		for range e.asyncProducer.Successes() {
-			_ = stats.RecordWithTags(context.Background(), statsTags, statSendSuccess.M(1))
-		}
-	}()
-	go func() {
-		for err := range e.asyncProducer.Errors() {
-			e.logger.Error("Sending a message to Kafka failed", zap.Error(err.Err))
-			statsTags := []tag.Mutator{tag.Insert(tagInstanceName, name)}
-			_ = stats.RecordWithTags(context.Background(), statsTags, statSendErr.M(1))
-		}
-	}()
+	return &kafkaProducer{
+		producer:   producer,
+		topic:      config.Topic,
+		marshaller: &protoMarshaller{},
+		logger:     params.Logger,
+	}, nil
 }
 
 func (e *kafkaProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
@@ -84,13 +63,17 @@ func (e *kafkaProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int
 	if err != nil {
 		return td.SpanCount(), consumererror.Permanent(err)
 	}
-	e.asyncProducer.Input() <- &sarama.ProducerMessage{
+	m := &sarama.ProducerMessage{
 		Topic: e.topic,
 		Value: sarama.ByteEncoder(bts),
+	}
+	_, _, err = e.producer.SendMessage(m)
+	if err != nil {
+		return td.SpanCount(), err
 	}
 	return 0, nil
 }
 
 func (e *kafkaProducer) Close(context.Context) error {
-	return e.asyncProducer.Close()
+	return e.producer.Close()
 }

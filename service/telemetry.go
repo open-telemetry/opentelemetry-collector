@@ -25,7 +25,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
@@ -67,7 +66,6 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, queuedprocessor.MetricViews(level)...)
 	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
-	views = append(views, kafkaexporter.MetricViews()...)
 	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
 	views = append(views, fluentobserv.Views(level)...)
