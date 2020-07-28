@@ -159,7 +159,7 @@ func createTraceReceiver(
 		var err error
 		config.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to extract port for GRPC: %w", err)
 		}
 
 		config.CollectorGRPCOptions, err = rCfg.Protocols.GRPC.ToServerOption()
@@ -172,7 +172,7 @@ func createTraceReceiver(
 		var err error
 		config.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.Endpoint)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to extract port for ThriftHTTP: %w", err)
 		}
 	}
 
@@ -180,7 +180,7 @@ func createTraceReceiver(
 		var err error
 		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftBinary.Endpoint)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to extract port for ThriftBinary: %w", err)
 		}
 	}
 
@@ -188,7 +188,7 @@ func createTraceReceiver(
 		var err error
 		config.AgentCompactThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftCompact.Endpoint)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to extract port for ThriftCompact: %w", err)
 		}
 	}
 
@@ -220,7 +220,7 @@ func createTraceReceiver(
 
 	if (rCfg.Protocols.GRPC == nil && rCfg.Protocols.ThriftHTTP == nil && rCfg.Protocols.ThriftBinary == nil && rCfg.Protocols.ThriftCompact == nil) ||
 		(config.CollectorGRPCPort == 0 && config.CollectorHTTPPort == 0 && config.CollectorThriftPort == 0 && config.AgentBinaryThriftPort == 0 && config.AgentCompactThriftPort == 0) {
-		err := fmt.Errorf("either %v, %v, %v, or %v protocol endpoint with non-zero port must be enabled for %s receiver",
+		err := fmt.Errorf("either GRPC(%v), ThriftHTTP(%v), ThriftCompact(%v), or ThriftBinary(%v) protocol endpoint with non-zero port must be enabled for %s receiver",
 			rCfg.Protocols.GRPC,
 			rCfg.Protocols.ThriftHTTP,
 			rCfg.Protocols.ThriftCompact,
