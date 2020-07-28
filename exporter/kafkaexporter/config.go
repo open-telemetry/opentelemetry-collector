@@ -55,7 +55,7 @@ type Metadata struct {
 // Retry defines retry configuration for Metadata.
 type Retry struct {
 	// The total number of times to retry a metadata request when the
-	// cluster is in the middle of a leader election (default 3).
+	// cluster is in the middle of a leader election or at startup (default 3).
 	Max int `mapstructure:"max"`
 	// How long to wait for leader election to occur before retrying
 	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
