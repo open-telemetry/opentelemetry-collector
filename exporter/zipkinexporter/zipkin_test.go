@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -126,9 +127,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		    {"timestamp": 1472470996403000,"value": "bar"}
 		  ],
 		  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
-		}]
-		`, `
-		[{
+		},
+		{
 		  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
 		  "parentId": "86154a4ba6e91386",
 		  "id": "4d1e00c0db9010db",
@@ -284,8 +284,9 @@ func TestZipkinExporter_invalidFormat(t *testing.T) {
 		},
 		Format: "foobar",
 	}
-	f := &Factory{}
-	_, err := f.CreateTraceExporter(zap.NewNop(), config)
+	f := NewFactory()
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := f.CreateTraceExporter(context.Background(), params, config)
 	require.Error(t, err)
 }
 

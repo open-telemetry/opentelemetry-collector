@@ -66,7 +66,7 @@ func Components() (
 	receivers, err := component.MakeReceiverFactoryMap(
 		jaegerreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
-		&zipkinreceiver.Factory{},
+		zipkinreceiver.NewFactory(),
 		&prometheusreceiver.Factory{},
 		&opencensusreceiver.Factory{},
 		otlpreceiver.NewFactory(),
@@ -80,7 +80,7 @@ func Components() (
 		&opencensusexporter.Factory{},
 		&prometheusexporter.Factory{},
 		loggingexporter.NewFactory(),
-		&zipkinexporter.Factory{},
+		zipkinexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
 		&fileexporter.Factory{},
 		otlpexporter.NewFactory(),

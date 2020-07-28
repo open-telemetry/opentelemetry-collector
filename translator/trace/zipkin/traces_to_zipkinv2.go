@@ -152,7 +152,7 @@ func spanToZipkinSpan(
 
 	redundantKeys := make(map[string]bool, 8)
 	zs.LocalEndpoint = zipkinEndpointFromTags(tags, localServiceName, false, redundantKeys)
-	zs.RemoteEndpoint = zipkinEndpointFromTags(tags, localServiceName, true, redundantKeys)
+	zs.RemoteEndpoint = zipkinEndpointFromTags(tags, "", true, redundantKeys)
 
 	removeRedundentTags(redundantKeys, tags)
 
@@ -383,6 +383,10 @@ func zipkinEndpointFromTags(
 	if portStr, ok := zTags[portKey]; ok {
 		port, _ = strconv.ParseUint(portStr, 10, 16)
 		redundantKeys[portKey] = true
+	}
+
+	if serviceName == "" && ip == nil {
+		return nil
 	}
 
 	zEndpoint := &zipkinmodel.Endpoint{

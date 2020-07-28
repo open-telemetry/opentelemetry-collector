@@ -372,7 +372,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
 
-	zpkFactory := &zipkinreceiver.Factory{}
+	zpkFactory := zipkinreceiver.NewFactory()
 	factories.Receivers[zpkFactory.Type()] = zpkFactory
 	cfg, err := configtest.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
 	assert.NoError(t, err)

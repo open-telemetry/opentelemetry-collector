@@ -250,12 +250,13 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 }
 
 func (zr *ZipkinDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer) error {
-	factory := zipkinreceiver.Factory{}
+	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.SetName(zr.ProtocolName())
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
 	var err error
-	zr.receiver, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, tc)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	zr.receiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
 
 	if err != nil {
 		return err

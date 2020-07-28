@@ -35,8 +35,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -129,13 +127,6 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	req := reqs.ResourceSpans().At(0)
 	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
 	assert.Equal(t, "frontend", sn.StringVal())
-	req := reqs[0]
-	wantNode := &commonpb.Node{
-		ServiceInfo: &commonpb.ServiceInfo{
-			Name: "frontend",
-		},
-	}
-	assert.True(t, proto.Equal(wantNode, req.Node))
 
 	// Expecting 9 non-nil spans
 	require.Equal(t, 9, reqs.SpanCount(), "Incorrect non-nil spans count")
@@ -229,10 +220,11 @@ func TestConversionRoundtrip(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	factory := &zipkinexporter.Factory{}
+	factory := zipkinexporter.NewFactory()
 	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	config.Endpoint = backend.URL
-	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	ze, err := factory.CreateTraceExporter(context.Background(), params, config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
 	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))

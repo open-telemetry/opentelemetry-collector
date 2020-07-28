@@ -15,15 +15,14 @@
 package zipkinexporter
 
 import (
+	"context"
 	"errors"
 	"time"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -37,17 +36,16 @@ const (
 	defaultServiceName string = "<missing service name>"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
-}
-
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
+// NewFactory creates a factory for Zipkin exporter
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -62,7 +60,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporter, error) {
+func createTraceExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.TraceExporter, error) {
 	zc := config.(*Config)
 
 	if zc.Endpoint == "" {
@@ -71,9 +73,4 @@ func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporte
 	}
 
 	return newTraceExporter(zc)
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }
