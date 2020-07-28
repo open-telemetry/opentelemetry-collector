@@ -16,6 +16,7 @@ package kafkaexporter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -23,9 +24,12 @@ import (
 )
 
 const (
-	typeStr       = "kafka"
-	defaultTopic  = "otlp_spans"
-	defaultBroker = "localhost:9092"
+	typeStr                 = "kafka"
+	defaultTopic            = "otlp_spans"
+	defaultBroker           = "localhost:9092"
+	defaultMetadataMaxRetry = 3
+	defaultMetadataBackoff  = time.Millisecond * 250
+	defaultMedataFull       = true
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -44,6 +48,13 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		Brokers: []string{defaultBroker},
 		Topic:   defaultTopic,
+		Metadata: Metadata{
+			Full: defaultMedataFull,
+			Retry: Retry{
+				Max:     defaultMetadataMaxRetry,
+				BackOff: defaultMetadataBackoff,
+			},
+		},
 	}
 }
 

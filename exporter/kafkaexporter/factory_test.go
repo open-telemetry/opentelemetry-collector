@@ -37,6 +37,18 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
+	// this disables contacting the broker so we can successfully create the exporter
+	cfg.Metadata.Full = false
+	r, err := createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestCreateTracesExporter_err(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Brokers = []string{"invalid:9092"}
+	cfg.ProtocolVersion = "2.0.0"
+	// we get the error because the exporter
 	r, err := createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
 	require.Error(t, err)
 	assert.Nil(t, r)

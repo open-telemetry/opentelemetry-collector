@@ -14,7 +14,11 @@
 
 package kafkaexporter
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import (
+	"time"
+
+	"go.opentelemetry.io/collector/config/configmodels"
+)
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
@@ -25,6 +29,35 @@ type Config struct {
 	ProtocolVersion string `mapstructure:"protocol_version"`
 	// The name of the kafka topic to export to (default "otlp_spans")
 	Topic string `mapstructure:"topic"`
+
+	// Metadata is the namespace for metadata management properties used by the
+	// Client, and shared by the Producer/Consumer.
+	Metadata Metadata `mapstructure:"metadata"`
+
 	// TODO authentication
 	// TODO batch settings
+}
+
+// Metadata defines configuration for retrieving metadata from the broker.
+type Metadata struct {
+	// Whether to maintain a full set of metadata for all topics, or just
+	// the minimal set that has been necessary so far. The full set is simpler
+	// and usually more convenient, but can take up a substantial amount of
+	// memory if you have many topics and partitions. Defaults to true.
+	Full bool `mapstructure:"full"`
+
+	// Retry configuration.
+	// This configuration is useful to avoid race conditions when broker
+	// is starting at the same time as collector.
+	Retry Retry `mapstructure:"retry"`
+}
+
+// Retry defines retry configuration for Metadata.
+type Retry struct {
+	// The total number of times to retry a metadata request when the
+	// cluster is in the middle of a leader election (default 3).
+	Max int `mapstructure:"max"`
+	// How long to wait for leader election to occur before retrying
+	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
+	BackOff time.Duration `mapstructure:"backoff"`
 }

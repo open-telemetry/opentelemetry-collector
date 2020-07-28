@@ -44,5 +44,12 @@ func TestLoadConfig(t *testing.T) {
 		},
 		Topic:   "spans",
 		Brokers: []string{"foo:123", "bar:456"},
+		Metadata: Metadata{
+			Full: false,
+			Retry: Retry{
+				Max:     15,
+				BackOff: defaultMetadataBackoff,
+			},
+		},
 	}, c)
 }

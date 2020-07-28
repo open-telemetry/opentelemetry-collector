@@ -39,6 +39,11 @@ func newExporter(config Config, params component.ExporterCreateParams) (*kafkaPr
 	// These setting are required by the sarama implementation.
 	c.Producer.Return.Successes = true
 	c.Producer.Return.Errors = true
+	// Waits for only the local commit to succeed before responding.
+	c.Producer.RequiredAcks = sarama.WaitForLocal
+	c.Metadata.Full = config.Metadata.Full
+	c.Metadata.Retry.Max = config.Metadata.Retry.Max
+	c.Metadata.Retry.Backoff = config.Metadata.Retry.BackOff
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
