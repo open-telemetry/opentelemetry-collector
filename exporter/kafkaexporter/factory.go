@@ -29,7 +29,7 @@ const (
 	defaultBroker           = "localhost:9092"
 	defaultMetadataMaxRetry = 3
 	defaultMetadataBackoff  = time.Millisecond * 250
-	defaultMedataFull       = true
+	defaultMetadataFull     = true
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -49,7 +49,7 @@ func createDefaultConfig() configmodels.Exporter {
 		Brokers: []string{defaultBroker},
 		Topic:   defaultTopic,
 		Metadata: Metadata{
-			Full: defaultMedataFull,
+			Full: defaultMetadataFull,
 			Retry: Retry{
 				Max:     defaultMetadataMaxRetry,
 				BackOff: defaultMetadataBackoff,
