@@ -11,6 +11,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/client9/misspell v0.3.4
+	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/googleapis v1.3.0 // indirect
