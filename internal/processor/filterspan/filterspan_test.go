@@ -21,7 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -64,14 +66,24 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			errorString: "error creating service name filters: unrecognized match_type: '', valid types are: [regexp strict]",
 		},
 		{
-			name: "regexp_match_type_for_attributes",
+			name: "regexp_match_type_for_int_attribute",
 			property: MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				Attributes: []Attribute{
-					{Key: "key", Value: "value"},
+					{Key: "key", Value: 1},
 				},
 			},
-			errorString: `match_type=regexp is not supported for "attributes"`,
+			errorString: `error creating attribute filters: match_type=regexp for "key" only supports STRING, but found INT`,
+		},
+		{
+			name: "unknown_attribute_value",
+			property: MatchProperties{
+				Config: *createConfig(filterset.Strict),
+				Attributes: []Attribute{
+					{Key: "key", Value: []string{}},
+				},
+			},
+			errorString: `error creating attribute filters: error unsupported value type "[]string"`,
 		},
 		{
 			name: "invalid_regexp_pattern",
@@ -90,6 +102,23 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			errorString: "error creating span name filters: error parsing regexp: missing closing ]: `[`",
 		},
 		{
+			name: "invalid_regexp_pattern3",
+			property: MatchProperties{
+				Config:     *createConfig(filterset.Regexp),
+				SpanNames:  []string{"["},
+				Attributes: []Attribute{{Key: "key", Value: "["}},
+			},
+			errorString: "error creating attribute filters: error parsing regexp: missing closing ]: `[`",
+		},
+		{
+			name: "invalid_regexp_pattern4",
+			property: MatchProperties{
+				Config:    *createConfig(filterset.Regexp),
+				Resources: []Attribute{{Key: "key", Value: "["}},
+			},
+			errorString: "error creating resource filters: error parsing regexp: missing closing ]: `[`",
+		},
+		{
 			name: "empty_key_name_in_attributes_list",
 			property: MatchProperties{
 				Config:   *createConfig(filterset.Strict),
@@ -100,15 +129,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 					},
 				},
 			},
-			errorString: "error creating processor. Can't have empty key in the list of attributes",
+			errorString: "error creating attribute filters: error creating processor. Can't have empty key in the list of attributes",
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			output, err := NewMatcher(&tc.property)
 			assert.Nil(t, output)
-			require.NotNil(t, err)
-			assert.Equal(t, tc.errorString, err.Error())
+			assert.EqualError(t, err, tc.errorString)
 		})
 	}
 }
@@ -159,7 +187,7 @@ func TestSpan_Matching_False(t *testing.T) {
 		},
 
 		{
-			name: "wrong_property_value",
+			name: "wrong_attribute_value",
 			properties: &MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{},
@@ -172,13 +200,39 @@ func TestSpan_Matching_False(t *testing.T) {
 			},
 		},
 		{
-			name: "incompatible_property_value",
+			name: "wrong_resource_value",
+			properties: &MatchProperties{
+				Config:   *createConfig(filterset.Strict),
+				Services: []string{},
+				Resources: []Attribute{
+					{
+						Key:   "keyInt",
+						Value: 1234,
+					},
+				},
+			},
+		},
+		{
+			name: "incompatible_attribute_value",
 			properties: &MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{},
 				Attributes: []Attribute{
 					{
 						Key:   "keyInt",
+						Value: "123",
+					},
+				},
+			},
+		},
+		{
+			name: "unsupported_attribute_value",
+			properties: &MatchProperties{
+				Config:   *createConfig(filterset.Regexp),
+				Services: []string{},
+				Attributes: []Attribute{
+					{
+						Key:   "keyMap",
 						Value: "123",
 					},
 				},
@@ -202,16 +256,26 @@ func TestSpan_Matching_False(t *testing.T) {
 	span := pdata.NewSpan()
 	span.InitEmpty()
 	span.SetName("spanName")
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{"keyInt": pdata.NewAttributeValueInt(123)})
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"keyInt": pdata.NewAttributeValueInt(123),
+		"keyMap": pdata.NewAttributeValueMap(),
+	})
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
 			assert.Nil(t, err)
 			assert.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchSpan(span, "wrongSvc"))
+			assert.False(t, matcher.MatchSpan(span, resource("wrongSvc")))
 		})
 	}
+}
+
+func resource(service string) pdata.Resource {
+	r := pdata.NewResource()
+	r.InitEmpty()
+	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString(service)})
+	return r
 }
 
 func TestSpan_MatchingCornerCases(t *testing.T) {
@@ -232,7 +296,7 @@ func TestSpan_MatchingCornerCases(t *testing.T) {
 
 	emptySpan := pdata.NewSpan()
 	emptySpan.InitEmpty()
-	assert.False(t, mp.MatchSpan(emptySpan, "svcA"))
+	assert.False(t, mp.MatchSpan(emptySpan, resource("svcA")))
 }
 
 func TestSpan_MissingServiceName(t *testing.T) {
@@ -247,7 +311,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 
 	emptySpan := pdata.NewSpan()
 	emptySpan.InitEmpty()
-	assert.False(t, mp.MatchSpan(emptySpan, ""))
+	assert.False(t, mp.MatchSpan(emptySpan, resource("")))
 }
 
 func TestSpan_Matching_True(t *testing.T) {
@@ -293,7 +357,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			},
 		},
 		{
-			name: "property_exact_value_match",
+			name: "attribute_exact_value_match",
 			properties: &MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{},
@@ -313,6 +377,43 @@ func TestSpan_Matching_True(t *testing.T) {
 					{
 						Key:   "keyBool",
 						Value: true,
+					},
+				},
+			},
+		},
+		{
+			name: "attribute_regex_value_match",
+			properties: &MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				Attributes: []Attribute{
+					{
+						Key:   "keyString",
+						Value: "arith.*",
+					},
+					{
+						Key:   "keyInt",
+						Value: "12.*",
+					},
+					{
+						Key:   "keyDouble",
+						Value: "324.*",
+					},
+					{
+						Key:   "keyBool",
+						Value: "tr.*",
+					},
+				},
+			},
+		},
+		{
+			name: "resource_exact_value_match",
+			properties: &MatchProperties{
+				Config:   *createConfig(filterset.Strict),
+				Services: []string{},
+				Resources: []Attribute{
+					{
+						Key:   "keyString",
+						Value: "arithmetic",
 					},
 				},
 			},
@@ -360,6 +461,13 @@ func TestSpan_Matching_True(t *testing.T) {
 		"keyExists": pdata.NewAttributeValueString("present"),
 	})
 
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
+		"keyString":                      pdata.NewAttributeValueString("arithmetic"),
+	})
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mp, err := NewMatcher(tc.properties)
@@ -367,8 +475,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			assert.NotNil(t, mp)
 
 			assert.NotNil(t, span)
-			// assert.True(t, mp.MatchSpan(span, "svcA"))
-
+			assert.True(t, mp.MatchSpan(span, resource))
 		})
 	}
 }
@@ -445,4 +552,16 @@ func TestSpan_validateMatchesConfigurationForAttributes(t *testing.T) {
 func newAttributeValueInt(v int64) *pdata.AttributeValue {
 	attr := pdata.NewAttributeValueInt(v)
 	return &attr
+}
+
+func TestServiceNameForResource(t *testing.T) {
+	td := testdata.GenerateTraceDataOneSpanNoResource()
+	require.Equal(t, serviceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-resource>")
+
+	td = testdata.GenerateTraceDataOneSpan()
+	resource := td.ResourceSpans().At(0).Resource()
+	require.Equal(t, serviceNameForResource(resource), "<nil-service-name>")
+
+	resource.Attributes().InsertString(conventions.AttributeServiceName, "test-service")
+	require.Equal(t, serviceNameForResource(resource), "test-service")
 }

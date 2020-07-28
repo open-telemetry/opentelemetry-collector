@@ -76,6 +76,11 @@ type MatchProperties struct {
 	// This is an optional field.
 	Services []string `mapstructure:"services"`
 
+	// Resources specify the list of items to match the resources against.
+	// A match occurs if the span's service name matches at least one item in this list.
+	// This is an optional field.
+	Resources []Attribute `mapstructure:"resource"`
+
 	// SpanNames specify the list of items to match span name against.
 	// A match occurs if the span name matches at least one item in this list.
 	// This is an optional field.
@@ -87,9 +92,6 @@ type MatchProperties struct {
 	// This is an optional field.
 	Attributes []Attribute `mapstructure:"attributes"`
 }
-
-// MatchTypeFieldName is the mapstructure field name for MatchProperties.Attributes field.
-const AttributesFieldName = "attributes"
 
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {

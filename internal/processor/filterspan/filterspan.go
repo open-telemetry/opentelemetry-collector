@@ -17,10 +17,12 @@ package filterspan
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 var (
@@ -28,6 +30,8 @@ var (
 	errAtLeastOneMatchFieldNeeded = errors.New(
 		`error creating processor. At least one ` +
 			`of "services", "span_names" or "attributes" field must be specified"`)
+
+	errUnexpectedAttributeType = errors.New("unexpected attribute type")
 )
 
 // TODO: Modify Matcher to invoke both the include and exclude properties so
@@ -35,7 +39,7 @@ var (
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
 type Matcher interface {
-	MatchSpan(span pdata.Span, serviceName string) bool
+	MatchSpan(span pdata.Span, resource pdata.Resource) bool
 }
 
 // propertiesMatcher allows matching a span against various span properties.
@@ -48,6 +52,8 @@ type propertiesMatcher struct {
 
 	// The attribute values are stored in the internal format.
 	Attributes attributesMatcher
+
+	Resources attributesMatcher
 }
 
 type attributesMatcher []attributeMatcher
@@ -55,8 +61,9 @@ type attributesMatcher []attributeMatcher
 // attributeMatcher is a attribute key/value pair to match to.
 type attributeMatcher struct {
 	Key string
-	// If nil only check for key existence.
+	// If both AttributeValue and StringFilter are nil only check for key existence.
 	AttributeValue *pdata.AttributeValue
+	StringFilter   filterset.FilterSet
 }
 
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
@@ -65,7 +72,7 @@ func NewMatcher(mp *MatchProperties) (Matcher, error) {
 		return nil, nil
 	}
 
-	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 {
+	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 && len(mp.Resources) == 0 {
 		return nil, errAtLeastOneMatchFieldNeeded
 	}
 
@@ -73,9 +80,17 @@ func NewMatcher(mp *MatchProperties) (Matcher, error) {
 
 	var am attributesMatcher
 	if len(mp.Attributes) > 0 {
-		am, err = newAttributesMatcher(mp)
+		am, err = newAttributesMatcher(mp.Config, mp.Attributes)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating attribute filters: %v", err)
+		}
+	}
+
+	var rm attributesMatcher
+	if len(mp.Resources) > 0 {
+		rm, err = newAttributesMatcher(mp.Config, mp.Resources)
+		if err != nil {
+			return nil, fmt.Errorf("error creating resource filters: %v", err)
 		}
 	}
 
@@ -99,21 +114,14 @@ func NewMatcher(mp *MatchProperties) (Matcher, error) {
 		serviceFilters: serviceFS,
 		nameFilters:    nameFS,
 		Attributes:     am,
+		Resources:      rm,
 	}, nil
 }
 
-func newAttributesMatcher(mp *MatchProperties) (attributesMatcher, error) {
-	// attribute matching is only supported with strict matching
-	if mp.Config.MatchType != filterset.Strict {
-		return nil, fmt.Errorf(
-			"%s=%s is not supported for %q",
-			filterset.MatchTypeFieldName, filterset.Regexp, AttributesFieldName,
-		)
-	}
-
+func newAttributesMatcher(config filterset.Config, attributes []Attribute) (attributesMatcher, error) {
 	// Convert attribute values from mp representation to in-memory representation.
 	var rawAttributes []attributeMatcher
-	for _, attribute := range mp.Attributes {
+	for _, attribute := range attributes {
 
 		if attribute.Key == "" {
 			return nil, errors.New("error creating processor. Can't have empty key in the list of attributes")
@@ -127,12 +135,52 @@ func newAttributesMatcher(mp *MatchProperties) (attributesMatcher, error) {
 			if err != nil {
 				return nil, err
 			}
-			entry.AttributeValue = &val
+
+			if config.MatchType == filterset.Regexp {
+				if val.Type() != pdata.AttributeValueSTRING {
+					return nil, fmt.Errorf(
+						"%s=%s for %q only supports STRING, but found %s",
+						filterset.MatchTypeFieldName, filterset.Regexp, attribute.Key, val.Type(),
+					)
+				}
+
+				filter, err := filterset.CreateFilterSet([]string{val.StringVal()}, &config)
+				if err != nil {
+					return nil, err
+				}
+				entry.StringFilter = filter
+			} else {
+				entry.AttributeValue = &val
+			}
 		}
 
 		rawAttributes = append(rawAttributes, entry)
 	}
 	return rawAttributes, nil
+}
+
+// SkipSpan determines if a span should be processed.
+// True is returned when a span should be skipped.
+// False is returned when a span should not be skipped.
+// The logic determining if a span should be processed is set
+// in the attribute configuration with the include and exclude settings.
+// Include properties are checked before exclude settings are checked.
+func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.Resource) bool {
+	if include != nil {
+		// A false returned in this case means the span should not be processed.
+		if i := include.MatchSpan(span, resource); !i {
+			return true
+		}
+	}
+
+	if exclude != nil {
+		// A true returned in this case means the span should not be processed.
+		if e := exclude.MatchSpan(span, resource); e {
+			return true
+		}
+	}
+
+	return false
 }
 
 // MatchSpan matches a span and service to a set of properties.
@@ -142,18 +190,38 @@ func newAttributesMatcher(mp *MatchProperties) (attributesMatcher, error) {
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *propertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
+func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource) bool {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
-	if mp.serviceFilters != nil && !mp.serviceFilters.Matches(serviceName) {
-		return false
+	if mp.serviceFilters != nil {
+		serviceName := serviceNameForResource(resource)
+		if !mp.serviceFilters.Matches(serviceName) {
+			return false
+		}
 	}
 
 	if mp.nameFilters != nil && !mp.nameFilters.Matches(span.Name()) {
 		return false
 	}
 
-	// Service name and span name matched. Now match attributes.
+	if mp.Resources != nil && !mp.Resources.match(span) {
+		return false
+	}
+
 	return mp.Attributes.match(span)
+}
+
+// serviceNameForResource gets the service name for a specified Resource.
+func serviceNameForResource(resource pdata.Resource) string {
+	if resource.IsNil() {
+		return "<nil-resource>"
+	}
+
+	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
+	if !found {
+		return "<nil-service-name>"
+	}
+
+	return service.StringVal()
 }
 
 // match attributes specification against a span.
@@ -177,14 +245,31 @@ func (ma attributesMatcher) match(span pdata.Span) bool {
 			return false
 		}
 
-		// This is for the case of checking that the key existed.
-		if property.AttributeValue == nil {
-			continue
-		}
-
-		if !attr.Equal(*property.AttributeValue) {
-			return false
+		if property.StringFilter != nil {
+			value, err := attributeStringValue(attr)
+			if err != nil || !property.StringFilter.Matches(value) {
+				return false
+			}
+		} else if property.AttributeValue != nil {
+			if !attr.Equal(*property.AttributeValue) {
+				return false
+			}
 		}
 	}
 	return true
+}
+
+func attributeStringValue(attr pdata.AttributeValue) (string, error) {
+	switch attr.Type() {
+	case pdata.AttributeValueSTRING:
+		return attr.StringVal(), nil
+	case pdata.AttributeValueBOOL:
+		return strconv.FormatBool(attr.BoolVal()), nil
+	case pdata.AttributeValueDOUBLE:
+		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64), nil
+	case pdata.AttributeValueINT:
+		return strconv.FormatInt(attr.IntVal(), 10), nil
+	default:
+		return "", errUnexpectedAttributeType
+	}
 }
