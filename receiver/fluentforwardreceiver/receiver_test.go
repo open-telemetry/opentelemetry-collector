@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/testdata"
-	"go.opentelemetry.io/collector/testutil/logtest"
+	"go.opentelemetry.io/collector/testutil/logstest"
 )
 
 func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter, *observer.ObservedLogs, context.CancelFunc) {
@@ -51,8 +51,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 
 	receiver, err := New(ctx, logger, conf, next)
 	require.NoError(t, err)
-
-	receiver.Start(ctx, nil)
+	require.NoError(t, receiver.Start(ctx, nil))
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*Receiver).listener.Addr().String())
@@ -62,7 +61,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 
 	go func() {
 		<-ctx.Done()
-		receiver.Shutdown(ctx)
+		require.NoError(t, receiver.Shutdown(ctx))
 	}()
 
 	return connect, next, logObserver, cancel
@@ -70,7 +69,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
 	one := make([]byte, 1)
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
 	_, err := conn.Read(one)
 	// If this is a timeout, then the connection didn't actually close like
 	// expected.
@@ -111,8 +110,7 @@ func TestMessageEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -121,7 +119,7 @@ func TestMessageEvent(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Sort()
-	require.EqualValues(t, logtest.Logs(logtest.Log{
+	require.EqualValues(t, logstest.Logs(logstest.Log{
 		Timestamp: 1593031012000000000,
 		Body:      pdata.NewAttributeValueString("..."),
 		Attributes: map[string]pdata.AttributeValue{
@@ -144,8 +142,7 @@ func TestForwardEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -156,8 +153,8 @@ func TestForwardEvent(t *testing.T) {
 	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	ls.At(0).Attributes().Sort()
 	ls.At(1).Attributes().Sort()
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593032377776693638,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -170,7 +167,7 @@ func TestForwardEvent(t *testing.T) {
 				"fluent.tag": pdata.NewAttributeValueString("mem.0"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032378756829346,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -193,7 +190,7 @@ func TestEventAcknowledgment(t *testing.T) {
 
 	const chunkValue = "abcdef01234576789"
 
-	b := []byte{}
+	var b []byte
 
 	// Make a message event with the chunk option
 	b = msgp.AppendArrayHeader(b, 4)
@@ -209,7 +206,7 @@ func TestEventAcknowledgment(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(b), n)
 
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
 	resp := map[string]interface{}{}
 	err = msgp.NewReader(conn).ReadMapStrIntf(resp)
 	require.NoError(t, err)
@@ -227,8 +224,7 @@ func TestForwardPackedEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -240,8 +236,8 @@ func TestForwardPackedEvent(t *testing.T) {
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593032517024597622,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -252,7 +248,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032517028573686,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -260,7 +256,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032517028815948,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -268,7 +264,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032517031174229,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -277,7 +273,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032522187382822,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -299,8 +295,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	n, err := conn.Write(eventBytes)
 	require.NoError(t, err)
 	require.Equal(t, len(eventBytes), n)
-
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	var converted []data.Logs
 	require.Eventually(t, func() bool {
@@ -312,8 +307,8 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
-	require.EqualValues(t, logtest.Logs(
-		logtest.Log{
+	require.EqualValues(t, logstest.Logs(
+		logstest.Log{
 			Timestamp: 1593032426012197420,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -324,7 +319,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032426013724933,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -332,7 +327,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032426020510455,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -340,7 +335,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"message":    pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032426024346580,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -349,7 +344,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
-		logtest.Log{
+		logstest.Log{
 			Timestamp: 1593032434346935532,
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
@@ -378,8 +373,7 @@ func TestUnixEndpoint(t *testing.T) {
 
 	receiver, err := New(ctx, zap.NewNop(), conf, next)
 	require.NoError(t, err)
-
-	receiver.Start(ctx, nil)
+	require.NoError(t, receiver.Start(ctx, nil))
 
 	conn, err := net.Dial("unix", receiver.(*Receiver).listener.Addr().String())
 	require.NoError(t, err)
@@ -393,11 +387,10 @@ func TestUnixEndpoint(t *testing.T) {
 		converted = next.AllLogs()
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
-
 }
 
 func makeSampleEvent(tag string) []byte {
-	b := []byte{}
+	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
 	b = msgp.AppendString(b, tag)
@@ -426,7 +419,7 @@ func TestHighVolume(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, len(eventBytes), n)
 			}
-			conn.Close()
+			require.NoError(t, conn.Close())
 			wg.Done()
 		}(i)
 	}

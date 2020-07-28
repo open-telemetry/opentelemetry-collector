@@ -195,17 +195,6 @@ func (r *CorrectnessResults) Save() {
 	r.resultsFile.Close()
 }
 
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return true, err
-}
-
 func consolidateAssertionFailures(failures []*AssertionFailure) map[string]*AssertionFailure {
 	afMap := make(map[string]*AssertionFailure)
 	for _, f := range failures {

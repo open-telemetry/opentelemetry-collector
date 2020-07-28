@@ -22,20 +22,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -54,13 +55,13 @@ func TestLoadConfig(t *testing.T) {
 				Timeout: 10 * time.Second,
 			},
 			RetrySettings: exporterhelper.RetrySettings{
-				Disabled:        false,
+				Enabled:         true,
 				InitialInterval: 10 * time.Second,
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			QueueSettings: exporterhelper.QueueSettings{
-				Disabled:     false,
+				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
 			},

@@ -31,6 +31,7 @@ import (
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
+	agentmetricspb.UnimplementedMetricsServiceServer
 	instanceName string
 	nextConsumer consumer.MetricsConsumerOld
 }

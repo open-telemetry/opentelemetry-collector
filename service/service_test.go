@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/version"
@@ -142,7 +143,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
 		Factories: factories,
@@ -219,8 +220,8 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 }
 
 func TestApplication_setupExtensions(t *testing.T) {
-	exampleExtensionFactory := &config.ExampleExtensionFactory{FailCreation: true}
-	exampleExtensionConfig := &config.ExampleExtensionCfg{
+	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{FailCreation: true}
+	exampleExtensionConfig := &componenttest.ExampleExtensionCfg{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: exampleExtensionFactory.Type(),
 			NameVal: string(exampleExtensionFactory.Type()),
@@ -235,7 +236,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		factories  config.Factories
+		factories  component.Factories
 		config     *configmodels.Config
 		wantErrMsg string
 	}{
@@ -266,7 +267,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 		},
 		{
 			name: "error_on_create_extension",
-			factories: config.Factories{
+			factories: component.Factories{
 				Extensions: map[configmodels.Type]component.ExtensionFactory{
 					exampleExtensionFactory.Type(): exampleExtensionFactory,
 				},
@@ -285,7 +286,7 @@ func TestApplication_setupExtensions(t *testing.T) {
 		},
 		{
 			name: "bad_factory",
-			factories: config.Factories{
+			factories: component.Factories{
 				Extensions: map[configmodels.Type]component.ExtensionFactory{
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
@@ -347,12 +348,12 @@ func (b badExtensionFactory) CreateExtension(_ context.Context, _ component.Exte
 
 func TestApplication_GetFactory(t *testing.T) {
 	// Create some factories.
-	exampleReceiverFactory := &config.ExampleReceiverFactory{}
-	exampleProcessorFactory := &config.ExampleProcessorFactory{}
-	exampleExporterFactory := &config.ExampleExporterFactory{}
-	exampleExtensionFactory := &config.ExampleExtensionFactory{}
+	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
+	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
+	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
+	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{}
 
-	factories := config.Factories{
+	factories := component.Factories{
 		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
@@ -396,11 +397,11 @@ func TestApplication_GetFactory(t *testing.T) {
 
 func createExampleApplication(t *testing.T) *Application {
 	// Create some factories.
-	exampleReceiverFactory := &config.ExampleReceiverFactory{}
-	exampleProcessorFactory := &config.ExampleProcessorFactory{}
-	exampleExporterFactory := &config.ExampleExporterFactory{}
-	exampleExtensionFactory := &config.ExampleExtensionFactory{}
-	factories := config.Factories{
+	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
+	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
+	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
+	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{}
+	factories := component.Factories{
 		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
@@ -417,7 +418,7 @@ func createExampleApplication(t *testing.T) *Application {
 
 	app, err := New(Parameters{
 		Factories: factories,
-		ConfigFactory: func(v *viper.Viper, factories config.Factories) (c *configmodels.Config, err error) {
+		ConfigFactory: func(v *viper.Viper, factories component.Factories) (c *configmodels.Config, err error) {
 			config := &configmodels.Config{
 				Receivers: map[string]configmodels.Receiver{
 					string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
@@ -516,7 +517,7 @@ func TestApplication_GetExporters(t *testing.T) {
 	<-appDone
 }
 
-func constructMimumalOpConfig(t *testing.T, factories config.Factories) *configmodels.Config {
+func constructMimumalOpConfig(t *testing.T, factories component.Factories) *configmodels.Config {
 	configStr := `
 receivers:
   otlp:

@@ -107,11 +107,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		appendSystemSpecificMetrics(metrics, 1, usages)
 	}
 
-	if len(errors) > 0 {
-		return metrics, componenterror.CombineErrors(errors)
-	}
-
-	return metrics, nil
+	return metrics, componenterror.CombineErrors(errors)
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, deviceUsages []*deviceUsage) {

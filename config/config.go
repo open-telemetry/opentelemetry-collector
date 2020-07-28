@@ -100,22 +100,6 @@ const (
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
-// Factories struct holds in a single type all component factories that
-// can be handled by the Config.
-type Factories struct {
-	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[configmodels.Type]component.ReceiverFactoryBase
-
-	// Processors maps processor type names in the config to the respective factory.
-	Processors map[configmodels.Type]component.ProcessorFactoryBase
-
-	// Exporters maps exporter type names in the config to the respective factory.
-	Exporters map[configmodels.Type]component.ExporterFactoryBase
-
-	// Extensions maps extension type names in the config to the respective factory.
-	Extensions map[configmodels.Type]component.ExtensionFactory
-}
-
 // Creates a new Viper instance with a different key-delimitor "::" instead of the
 // default ".". This way configs can have keys that contain ".".
 func NewViper() *viper.Viper {
@@ -126,7 +110,7 @@ func NewViper() *viper.Viper {
 // After loading the config, need to check if it is valid by calling `ValidateConfig`.
 func Load(
 	v *viper.Viper,
-	factories Factories,
+	factories component.Factories,
 ) (*configmodels.Config, error) {
 
 	var config configmodels.Config
@@ -578,7 +562,7 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 }
 
 // ValidateConfig validates config.
-func ValidateConfig(cfg *configmodels.Config, logger *zap.Logger) error {
+func ValidateConfig(cfg *configmodels.Config, _ *zap.Logger) error {
 	// This function performs basic validation of configuration. There may be more subtle
 	// invalid cases that we currently don't check for but which we may want to add in
 	// the future (e.g. disallowing receiving and exporting on the same endpoint).

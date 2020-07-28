@@ -17,7 +17,6 @@ package goldendataset
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -34,13 +33,13 @@ func TestGenerateResource(t *testing.T) {
 			assert.NotNil(t, rsc.Attributes)
 		}
 		// test marshal/unmarshal
-		bytes, err := proto.Marshal(rsc)
+		bytes, err := rsc.Marshal()
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
 		if len(bytes) > 0 {
 			copy := &otlpresource.Resource{}
-			err = proto.Unmarshal(bytes, copy)
+			err = copy.Unmarshal(bytes)
 			if err != nil {
 				assert.Fail(t, err.Error())
 			}

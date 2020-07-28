@@ -146,6 +146,10 @@ func TestSinkLogsExporter(t *testing.T) {
 	}
 	assert.Equal(t, want, sink.AllLogs())
 	assert.Equal(t, len(want), sink.LogRecordsCount())
+
+	sink.Reset()
+	assert.Equal(t, 0, len(sink.AllLogs()))
+
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 

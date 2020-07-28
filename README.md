@@ -59,13 +59,16 @@ Objectives:
 
 ### Community Roles
 
+Triagers ([](https://github.com/orgs/open-telemetry/teams/collector-triager))
+- [Jay Camp](https://github.com/jrcamp), Splunk
+- [Steve Flanders](https://github.com/flands), Splunk
+
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
-- [Owais Lone](https://github.com/owais), Splunk
-- [Rahul Patel](https://github.com/rghetia), Google
-- [Steve Flanders](https://github.com/flands), Splunk
-- [James Bebbington](https://github.com/james-bebbington), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [James Bebbington](https://github.com/james-bebbington), Google
+- [Nail Islamov](https://github.com/nilebox), Google
+- [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 

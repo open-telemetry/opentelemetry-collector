@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -224,6 +225,130 @@ func TestCreateMetricReceiver(t *testing.T) {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
 			}
+		})
+	}
+}
+
+func TestCreateLogReceiver(t *testing.T) {
+	factory := NewFactory()
+	defaultReceiverSettings := configmodels.ReceiverSettings{
+		TypeVal: typeStr,
+		NameVal: typeStr,
+	}
+	defaultGRPCSettings := &configgrpc.GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint:  testutil.GetAvailableLocalAddress(t),
+			Transport: "tcp",
+		},
+	}
+	defaultHTTPSettings := &confighttp.HTTPServerSettings{
+		Endpoint: testutil.GetAvailableLocalAddress(t),
+	}
+
+	tests := []struct {
+		name         string
+		cfg          *Config
+		wantStartErr bool
+		wantErr      bool
+		sink         consumer.LogsConsumer
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				ReceiverSettings: defaultReceiverSettings,
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: defaultHTTPSettings,
+				},
+			},
+			sink: new(exportertest.SinkLogsExporter),
+		},
+		{
+			name: "invalid_grpc_address",
+			cfg: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				Protocols: Protocols{
+					GRPC: &configgrpc.GRPCServerSettings{
+						NetAddr: confignet.NetAddr{
+							Endpoint:  "327.0.0.1:1122",
+							Transport: "tcp",
+						},
+					},
+					HTTP: defaultHTTPSettings,
+				},
+			},
+			wantStartErr: true,
+			sink:         new(exportertest.SinkLogsExporter),
+		},
+		{
+			name: "invalid_http_address",
+			cfg: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: &confighttp.HTTPServerSettings{
+						Endpoint: "327.0.0.1:1122",
+					},
+				},
+			},
+			wantStartErr: true,
+			sink:         new(exportertest.SinkLogsExporter),
+		},
+		{
+			name: "no_next_consumer",
+			cfg: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				Protocols: Protocols{
+					GRPC: defaultGRPCSettings,
+					HTTP: &confighttp.HTTPServerSettings{
+						Endpoint: "327.0.0.1:1122",
+					},
+				},
+			},
+			wantErr: true,
+			sink:    nil,
+		},
+		{
+			name: "no_http_or_grcp_config",
+			cfg: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: typeStr,
+					NameVal: typeStr,
+				},
+				Protocols: Protocols{},
+			},
+			wantErr: false,
+			sink:    new(exportertest.SinkLogsExporter),
+		},
+	}
+	ctx := context.Background()
+	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mr, err := factory.(component.LogsReceiverFactory).CreateLogsReceiver(ctx, creationParams, tt.cfg, tt.sink)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			require.NotNil(t, mr)
+
+			if tt.wantStartErr {
+				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+			} else {
+				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(context.Background()))
+			}
+			receivers = map[*Config]*Receiver{}
 		})
 	}
 }

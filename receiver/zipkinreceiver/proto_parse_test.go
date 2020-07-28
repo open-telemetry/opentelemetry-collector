@@ -24,11 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/internal"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -280,4 +277,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	assert.Equal(t, want.SpanCount(), reqs.SpanCount())
 	assert.Equal(t, want.ResourceSpans().Len(), reqs.ResourceSpans().Len())
+	if diff := cmp.Diff(want, reqs, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
 }

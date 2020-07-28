@@ -374,8 +374,8 @@ func NewTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 		s.pushTraceData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }
@@ -393,8 +393,8 @@ func NewMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 		s.pushMetricsData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }
@@ -412,8 +412,8 @@ func NewLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 		s.pushLogData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Disabled: true}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Disabled: true}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
 		exporterhelper.WithShutdown(loggerSync(logger)),
 	)
 }

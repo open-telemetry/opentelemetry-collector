@@ -96,9 +96,9 @@ func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
 	opts := &internalOptions{
 		TimeoutSettings: CreateDefaultTimeoutSettings(),
 		// TODO: Enable queuing by default (call CreateDefaultQueueSettings)
-		QueueSettings: QueueSettings{Disabled: true},
+		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call CreateDefaultRetrySettings)
-		RetrySettings: RetrySettings{Disabled: true},
+		RetrySettings: RetrySettings{Enabled: false},
 		Start:         func(ctx context.Context, host component.Host) error { return nil },
 		Shutdown:      func(ctx context.Context) error { return nil },
 	}

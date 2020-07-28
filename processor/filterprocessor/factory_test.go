@@ -24,9 +24,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -67,12 +68,12 @@ func TestCreateProcessors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		factories, err := config.ExampleComponents()
+		factories, err := componenttest.ExampleComponents()
 		assert.Nil(t, err)
 
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.Nil(t, err)
 
 		for name, cfg := range cfg.Processors {

@@ -204,7 +204,10 @@ func (me *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Time")
 	}
 
-	parseRecordToLogRecord(dc, &me.LogRecord)
+	err = parseRecordToLogRecord(dc, &me.LogRecord)
+	if err != nil {
+		return err
+	}
 
 	if arrLen == 4 {
 		me.OptionsMap, err = parseOptions(dc)
@@ -279,9 +282,6 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {
-			if msgp.Cause(err) == io.EOF {
-				return nil
-			}
 			return msgp.WrapError(err, "Entries", i)
 		}
 		fe.LogSlice.At(i).Attributes().InsertString(tagAttributeKey, tag)
@@ -311,8 +311,7 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		return msgp.WrapError(err, "Time")
 	}
 
-	parseRecordToLogRecord(dc, &lr)
-	return nil
+	return parseRecordToLogRecord(dc, &lr)
 }
 
 type PackedForwardEventLogRecords struct {

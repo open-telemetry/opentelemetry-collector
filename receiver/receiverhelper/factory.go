@@ -47,6 +47,13 @@ func WithMetrics(createMetricsReceiver CreateMetricsReceiver) FactoryOption {
 	}
 }
 
+// WithLogs overrides the default "error not supported" implementation for CreateLogsReceiver.
+func WithLogs(createLogsReceiver CreateLogsReceiver) FactoryOption {
+	return func(o *factory) {
+		o.createLogsReceiver = createLogsReceiver
+	}
+}
+
 // CreateDefaultConfig is the equivalent of component.ReceiverFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() configmodels.Receiver
 
@@ -56,6 +63,9 @@ type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, c
 // CreateMetricsReceiver is the equivalent of component.ReceiverFactory.CreateMetricsReceiver()
 type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (component.MetricsReceiver, error)
 
+// CreateLogsReceiver is the equivalent of component.ReceiverFactory.CreateLogsReceiver()
+type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.LogsConsumer) (component.LogsReceiver, error)
+
 // factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType               configmodels.Type
@@ -63,6 +73,7 @@ type factory struct {
 	createDefaultConfig   CreateDefaultConfig
 	createTraceReceiver   CreateTraceReceiver
 	createMetricsReceiver CreateMetricsReceiver
+	createLogsReceiver    CreateLogsReceiver
 }
 
 // NewFactory returns a component.ReceiverFactory that only supports all types.
@@ -116,6 +127,19 @@ func (f *factory) CreateMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
 	if f.createMetricsReceiver != nil {
 		return f.createMetricsReceiver(ctx, params, cfg, nextConsumer)
+	}
+	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+// CreateLogsReceiver creates a metrics processor based on this config.
+func (f *factory) CreateLogsReceiver(
+	ctx context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	if f.createLogsReceiver != nil {
+		return f.createLogsReceiver(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

@@ -27,7 +27,6 @@ import (
 
 const (
 	exporter  = "fakeExporter"
-	processor = "fakeProcessor"
 	receiver  = "fakeReicever"
 	transport = "fakeTransport"
 	format    = "fakeFormat"

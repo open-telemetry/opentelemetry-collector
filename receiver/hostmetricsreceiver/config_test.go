@@ -22,8 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -38,12 +39,12 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -87,23 +88,23 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "config-noscrapers.yaml"), factories)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config-noscrapers.yaml"), factories)
 
 	require.EqualError(t, err, "error reading settings for receiver type \"hostmetrics\": must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "config-invalidscraperkey.yaml"), factories)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config-invalidscraperkey.yaml"), factories)
 
 	require.EqualError(t, err, "error reading settings for receiver type \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }

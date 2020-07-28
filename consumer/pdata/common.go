@@ -437,7 +437,6 @@ func (am AttributeMap) InitFromAttributeMap(attrMap AttributeMap) AttributeMap {
 		wrappers[ix] = &origs[ix]
 		wrappers[ix].Key = v.Key
 		AttributeValue{&v.Value}.copyTo(&anyVals[ix])
-		ix++
 	}
 	*am.orig = wrappers
 	return am

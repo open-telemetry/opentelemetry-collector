@@ -197,7 +197,7 @@ func TestSendTraces(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, rcv.requestCount)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
 	td := testdata.GenerateTraceDataEmpty()
@@ -209,7 +209,7 @@ func TestSendTraces(t *testing.T) {
 	}, "receive a request")
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, rcv.totalItems)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A trace with 2 spans.
 	td = testdata.GenerateTraceDataTwoSpansSameResource()
@@ -229,8 +229,8 @@ func TestSendTraces(t *testing.T) {
 	expectedHeader := []string{"header-value"}
 
 	// Verify received span.
-	assert.EqualValues(t, 2, rcv.totalItems)
-	assert.EqualValues(t, 2, rcv.requestCount)
+	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 
 	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
@@ -269,7 +269,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, rcv.requestCount)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
 	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())
@@ -281,7 +281,7 @@ func TestSendMetrics(t *testing.T) {
 	}, "receive a request")
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, rcv.totalItems)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A trace with 2 spans.
 	md = pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
@@ -301,8 +301,8 @@ func TestSendMetrics(t *testing.T) {
 	expectedHeader := []string{"header-value"}
 
 	// Verify received metrics.
-	assert.EqualValues(t, 2, rcv.requestCount)
-	assert.EqualValues(t, 4, rcv.totalItems)
+	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 4, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 
 	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
@@ -321,6 +321,9 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
+		// Need to wait for every request blocking until either request timeouts or succeed.
+		// Do not rely on external retry logic here, if that is intended set InitialInterval to 100ms.
+		WaitForReady: true,
 	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
@@ -418,10 +421,10 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 	rcv := otlpTraceReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, rcv.requestCount)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Resend the request, this should succeed.
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	assert.NoError(t, exp.ConsumeTraces(ctx, td))
 	cancel()
 
@@ -435,7 +438,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 	}
 
 	// Verify received span.
-	assert.EqualValues(t, 2, rcv.totalItems)
+	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 }
 
@@ -469,7 +472,7 @@ func TestSendLogData(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, rcv.requestCount)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty request.
 	td := testdata.GenerateLogDataEmpty()
@@ -481,7 +484,7 @@ func TestSendLogData(t *testing.T) {
 	}, "receive a request")
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, rcv.totalItems)
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A request with 2 log entries.
 	td = testdata.GenerateLogDataTwoLogsSameResource()
@@ -499,7 +502,7 @@ func TestSendLogData(t *testing.T) {
 	}, "receive a request")
 
 	// Verify received logs.
-	assert.EqualValues(t, 2, rcv.requestCount)
-	assert.EqualValues(t, 2, rcv.totalItems)
+	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
 }

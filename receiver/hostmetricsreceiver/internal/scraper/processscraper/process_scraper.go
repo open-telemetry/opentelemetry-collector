@@ -102,7 +102,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.ResourceMetricsSlice, 
 			errs = append(errs, errors.Wrapf(err, "error reading cpu times for process %q (pid %v)", md.executable.name, md.pid))
 		}
 
-		if err = scrapeAndAppendMemoryUsageMetric(metrics, md.handle); err != nil {
+		if err = scrapeAndAppendMemoryUsageMetrics(metrics, md.handle); err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading memory info for process %q (pid %v)", md.executable.name, md.pid))
 		}
 
@@ -111,11 +111,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.ResourceMetricsSlice, 
 		}
 	}
 
-	if len(errs) > 0 {
-		return rms, componenterror.CombineErrors(errs)
-	}
-
-	return rms, nil
+	return rms, componenterror.CombineErrors(errs)
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -167,11 +163,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	if len(errs) > 0 {
-		return metadata, componenterror.CombineErrors(errs)
-	}
-
-	return metadata, nil
+	return metadata, componenterror.CombineErrors(errs)
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, handle processHandle) error {
@@ -194,29 +186,30 @@ func initializeCPUTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixN
 	appendCPUTimeStateDataPoints(ddps, startTime, times)
 }
 
-func scrapeAndAppendMemoryUsageMetric(metrics pdata.MetricSlice, handle processHandle) error {
+func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
 	}
 
 	startIdx := metrics.Len()
-	metrics.Resize(startIdx + 1)
-	initializeMemoryUsageMetric(metrics.At(startIdx), mem)
+	metrics.Resize(startIdx + 2)
+	initializeMemoryUsageMetric(metrics.At(startIdx+0), physicalMemoryUsageDescriptor, int64(mem.RSS))
+	initializeMemoryUsageMetric(metrics.At(startIdx+1), virtualMemoryUsageDescriptor, int64(mem.VMS))
 	return nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, mem *process.MemoryInfoStat) {
-	memoryUsageDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeMemoryUsageMetric(metric pdata.Metric, descriptor pdata.MetricDescriptor, usage int64) {
+	descriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(1)
-	initializeMemoryUsageDataPoint(idps.At(0), int64(mem.RSS))
+	initializeMemoryUsageDataPoint(idps.At(0), usage)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, value int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, usage int64) {
 	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-	dataPoint.SetValue(value)
+	dataPoint.SetValue(usage)
 }
 
 func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, handle processHandle) error {

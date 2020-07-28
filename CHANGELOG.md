@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 
+
+## 💡 Enhancements 
+
+- Updated `golang/protobuf` from v1.3.5 to v1.4.2 (#1308)
+- Updated `opencensus-proto` from v0.2.1 to v0.3.0 (#1308)
+
+## 🧰 Bug fixes 🧰
+
 ## v0.6.0 Beta
 
 ## 🛑 Breaking changes 🛑
