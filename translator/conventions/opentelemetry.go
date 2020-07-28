@@ -104,11 +104,20 @@ const (
 // OpenTelemetry Semantic Convention attribute names for database related attributes
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
 const (
-	AttributeDBType      = "db.type"
-	AttributeDBInstance  = "db.instance"
+	AttributeDBSystem           = "db.system"
+	AttributeDBConnectionString = "db.connection_string"
+	AttributeDBUser             = "db.user"
+
+	AttributeDBName      = "db.name"
 	AttributeDBStatement = "db.statement"
-	AttributeDBUser      = "db.user"
-	AttributeDBURL       = "db.url"
+	AttributeDBOperation = "db.operation"
+
+	AttributeDBMsSQLInstanceName   = "db.mssql.instance_name"
+	AttributeDBJDBCDriverClassname = "db.jdbc.driver_classname"
+	AttributeDBCassandraKeyspace   = "db.cassandra.keyspace"
+	AttributeDBHBaseNamespace      = "db.hbase.namespace"
+	AttributeDBRedisDatabaseIndex  = "db.redis.database_index"
+	AttributeDBMongoDBCollection   = "db.mongodb.collection"
 )
 
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
@@ -159,4 +168,13 @@ const (
 	AttributeMessagingPayloadSize           = "messaging.message_payload_size_bytes"
 	AttributeMessagingPayloadCompressedSize = "messaging.message_payload_compressed_size_bytes"
 	AttributeMessagingOperation             = "messaging.operation"
+)
+
+// OpenTelemetry Semantic Convention attribute names for exceptions
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/exceptions.md
+const (
+	AttributeExceptionEventName  = "exception"
+	AttributeExceptionType       = "exception.type"
+	AttributeExceptionMessage    = "exception.message"
+	AttributeExceptionStacktrace = "exception.stacktrace"
 )
