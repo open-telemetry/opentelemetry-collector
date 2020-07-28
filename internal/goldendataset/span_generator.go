@@ -244,26 +244,30 @@ func generateStatus(statusStr PICTInputStatus) *otlptrace.Status {
 
 func generateDatabaseSQLAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeDBType] = "sql"
-	attrMap[conventions.AttributeDBInstance] = "inventory"
-	attrMap[conventions.AttributeDBStatement] =
-		"SELECT c.product_catg_id, c.catg_name, c.description, c.html_frag, c.image_url, p.name FROM product_catg c OUTER JOIN product p ON c.product_catg_id=p.product_catg_id WHERE c.product_catg_id = :catgId"
-	attrMap[conventions.AttributeDBUser] = "invsvc"
-	attrMap[conventions.AttributeDBURL] = "jdbc:postgresql://invdev.cdsr3wfqepqo.us-east-1.rds.amazonaws.com:5432/inventory"
-	attrMap[conventions.AttributeNetPeerIP] = "172.30.2.7"
-	attrMap[conventions.AttributeNetPeerPort] = int64(5432)
+	attrMap[conventions.AttributeDBSystem] = "mysql"
+	attrMap[conventions.AttributeDBConnectionString] = "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;"
+	attrMap[conventions.AttributeDBUser] = "billing_user"
+	attrMap[conventions.AttributeNetPeerName] = "shopdb.example.com"
+	attrMap[conventions.AttributeNetPeerIP] = "192.0.2.12"
+	attrMap[conventions.AttributeNetPeerPort] = int64(3306)
+	attrMap[conventions.AttributeNetTransport] = "IP.TCP"
+	attrMap[conventions.AttributeDBName] = "shopdb"
+	attrMap[conventions.AttributeDBStatement] = "SELECT * FROM orders WHERE order_id = 'o4711'"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
 }
 
 func generateDatabaseNoSQLAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
-	attrMap[conventions.AttributeDBType] = "cosmosdb"
-	attrMap[conventions.AttributeDBInstance] = "graphdb"
-	attrMap[conventions.AttributeDBStatement] = "g.V().hasLabel('postive').has('age', gt(65)).values('geocode')"
-	attrMap[conventions.AttributeDBURL] = "wss://contacttrace.gremlin.cosmos.azure.com:443/"
-	attrMap[conventions.AttributeNetPeerIP] = "10.118.17.63"
-	attrMap[conventions.AttributeNetPeerPort] = int64(443)
+	attrMap[conventions.AttributeDBSystem] = "mongodb"
+	attrMap[conventions.AttributeDBUser] = "the_user"
+	attrMap[conventions.AttributeNetPeerName] = "mongodb0.example.com"
+	attrMap[conventions.AttributeNetPeerIP] = "192.0.2.14"
+	attrMap[conventions.AttributeNetPeerPort] = int64(27017)
+	attrMap[conventions.AttributeNetTransport] = "IP.TCP"
+	attrMap[conventions.AttributeDBName] = "shopDb"
+	attrMap[conventions.AttributeDBOperation] = "findAndModify"
+	attrMap[conventions.AttributeDBMongoDBCollection] = "products"
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	return attrMap
 }
