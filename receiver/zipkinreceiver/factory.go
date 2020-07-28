@@ -17,8 +17,6 @@ package zipkinreceiver
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -35,20 +33,16 @@ const (
 	defaultBindEndpoint = "0.0.0.0:9411"
 )
 
+// NewFactory creates a new Zipkin receiver factory
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithTraces(createTraceReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
+	)
 }
 
-// customUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return nil
-}
-
-// CreateDefaultConfig creates the default configuration for Jaeger receiver.
+// createDefaultConfig creates the default configuration for Zipkin receiver.
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
