@@ -38,12 +38,12 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
-		Topic:   defaultTopic,
-		Brokers: []string{defaultBroker},
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		Brokers: []string{defaultBroker},
+		Topic:   defaultTopic,
 	}
 }
 

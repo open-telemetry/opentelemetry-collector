@@ -15,30 +15,22 @@
 package kafkaexporter
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
 // marshaller encodes traces into a byte array to be sent to Kafka.
 type marshaller interface {
 	// Marshal serializes spans into byte array
-	Marshal(spans pdata.ResourceSpans) ([]byte, error)
+	Marshal(traces pdata.Traces) ([]byte, error)
 }
 
 type protoMarshaller struct {
 }
 
-func (m *protoMarshaller) Marshal(spans pdata.ResourceSpans) ([]byte, error) {
-	pd := pdata.NewTraces()
-	pd.ResourceSpans().Append(&spans)
-	otlp := pdata.TracesToOtlp(pd)
-	if len(otlp) < 1 || otlp[0].GetInstrumentationLibrarySpans() == nil && otlp[0].GetResource() == nil {
-		return nil, fmt.Errorf("empty resource spans cannot be marshaled")
+func (m *protoMarshaller) Marshal(traces pdata.Traces) ([]byte, error) {
+	request := &otlptrace.ExportTraceServiceRequest{
+		ResourceSpans: pdata.TracesToOtlp(traces),
 	}
-	bts, err := otlp[0].Marshal()
-	if err != nil {
-		return nil, err
-	}
-	return bts, nil
+	return request.Marshal()
 }

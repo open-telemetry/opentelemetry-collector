@@ -17,29 +17,33 @@ package kafkaexporter
 import (
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
 func TestMarshall(t *testing.T) {
-	pd := pdata.NewTraces()
-	pd.ResourceSpans().Resize(1)
-	pd.ResourceSpans().At(0).Resource().InitEmpty()
-	pd.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).Resource().InitEmpty()
+	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
 	m := protoMarshaller{}
-	bts, err := m.Marshal(pd.ResourceSpans().At(0))
+	bts, err := m.Marshal(td)
 	require.NoError(t, err)
-	expected, err := proto.Marshal(pdata.TracesToOtlp(pd)[0])
+
+	request := &otlptrace.ExportTraceServiceRequest{
+		ResourceSpans: pdata.TracesToOtlp(td),
+	}
+	expected, err := request.Marshal()
 	require.NoError(t, err)
 	assert.Equal(t, expected, bts)
 }
 
 func TestMarshall_empty(t *testing.T) {
 	m := protoMarshaller{}
-	bts, err := m.Marshal(pdata.NewResourceSpans())
-	assert.Error(t, err)
-	assert.Nil(t, bts)
+	bts, err := m.Marshal(pdata.NewTraces())
+	require.NoError(t, err)
+	assert.NotNil(t, bts)
 }

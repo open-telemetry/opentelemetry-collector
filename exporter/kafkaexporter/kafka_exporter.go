@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -39,7 +38,9 @@ type kafkaProducer struct {
 // newExporter creates Kafka exporter.
 func newExporter(config Config, params component.ExporterCreateParams) (*kafkaProducer, error) {
 	c := sarama.NewConfig()
+	// deliver confirmations to the success channel
 	c.Producer.Return.Successes = true
+	// deliver errors to the error channel
 	c.Producer.Return.Errors = true
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
@@ -63,9 +64,9 @@ func newExporter(config Config, params component.ExporterCreateParams) (*kafkaPr
 }
 
 func (e *kafkaProducer) processSendResults(name string) {
+	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, name)}
 	go func() {
 		for range e.asyncProducer.Successes() {
-			statsTags := []tag.Mutator{tag.Insert(tagInstanceName, name)}
 			_ = stats.RecordWithTags(context.Background(), statsTags, statSendSuccess.M(1))
 		}
 	}()
@@ -79,40 +80,17 @@ func (e *kafkaProducer) processSendResults(name string) {
 }
 
 func (e *kafkaProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
-	sendSpans := 0
-	var errs []error
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rss := td.ResourceSpans().At(i)
-		bts, err := e.marshaller.Marshal(rss)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		e.asyncProducer.Input() <- &sarama.ProducerMessage{
-			Topic: e.topic,
-			Value: sarama.ByteEncoder(bts),
-		}
-		sendSpans += resourceSpansCount(rss)
+	bts, err := e.marshaller.Marshal(td)
+	if err != nil {
+		return td.SpanCount(), consumererror.Permanent(err)
 	}
-	if len(errs) > 0 {
-		err := componenterror.CombineErrors(errs)
-		return td.SpanCount() - sendSpans, consumererror.Permanent(err)
+	e.asyncProducer.Input() <- &sarama.ProducerMessage{
+		Topic: e.topic,
+		Value: sarama.ByteEncoder(bts),
 	}
 	return 0, nil
 }
 
 func (e *kafkaProducer) Close(context.Context) error {
 	return e.asyncProducer.Close()
-}
-
-func resourceSpansCount(spans pdata.ResourceSpans) int {
-	size := 0
-
-	if spans.IsNil() {
-		return 0
-	}
-	for i := 0; i < spans.InstrumentationLibrarySpans().Len(); i++ {
-		size += spans.InstrumentationLibrarySpans().At(i).Spans().Len()
-	}
-	return size
 }

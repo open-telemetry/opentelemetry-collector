@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -60,11 +59,6 @@ func TestTraceDataPusher(t *testing.T) {
 	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
 	assert.Equal(t, 0, droppedSpans)
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	droppedSpans, err = p.traceDataPusher(context.Background(), td)
-	require.Error(t, err)
-	assert.Equal(t, 0, droppedSpans)
 
 	// wait for success and error goroutines to finish
 	time.Sleep(time.Millisecond * 500)
@@ -95,11 +89,6 @@ func TestTraceDataPusher_err(t *testing.T) {
 	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
 	assert.Equal(t, 0, droppedSpans)
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	droppedSpans, err = p.traceDataPusher(context.Background(), td)
-	require.Error(t, err)
-	assert.Equal(t, 0, droppedSpans)
 
 	// wait for success and error goroutines to finish
 	time.Sleep(time.Millisecond * 500)
@@ -117,18 +106,4 @@ func TestTraceDataPusher_remove(t *testing.T) {
 	c.Net.Proxy.Enable = true
 	producer := mocks.NewAsyncProducer(t, c)
 	producer.ExpectInputAndFail(fmt.Errorf("failed to send"))
-}
-
-func TestResourceSpansCount(t *testing.T) {
-	assert.Equal(t, 0, resourceSpansCount(pdata.NewResourceSpans()))
-	rss := pdata.NewResourceSpans()
-	rss.InitEmpty()
-	rss.InstrumentationLibrarySpans().Resize(1)
-	rss.InstrumentationLibrarySpans().At(0).InitEmpty()
-	assert.Equal(t, 0, resourceSpansCount(rss))
-	rss.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	rss.InstrumentationLibrarySpans().At(0).Spans().At(0).InitEmpty()
-	assert.Equal(t, 1, resourceSpansCount(rss))
-	assert.Equal(t, 2, resourceSpansCount(testdata.GenerateTraceDataTwoSpansSameResource().ResourceSpans().At(0)))
-	assert.Equal(t, 0, resourceSpansCount(testdata.GenerateTraceDataOneEmptyInstrumentationLibrary().ResourceSpans().At(0)))
 }

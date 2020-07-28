@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -35,7 +36,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfg.Receivers))
 
-	r := cfg.Exporters[typeStr].(*Config)
-	assert.Equal(t, "spans", r.Topic)
-	assert.Equal(t, []string{"foo:123", "bar:456"}, r.Brokers)
+	c := cfg.Exporters[typeStr].(*Config)
+	assert.Equal(t, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: typeStr,
+			TypeVal: typeStr,
+		},
+		Topic:   "spans",
+		Brokers: []string{"foo:123", "bar:456"},
+	}, c)
 }
