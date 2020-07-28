@@ -24,12 +24,12 @@ import (
 )
 
 const (
-	typeStr                 = "kafka"
-	defaultTopic            = "otlp_spans"
-	defaultBroker           = "localhost:9092"
-	defaultMetadataMaxRetry = 3
-	defaultMetadataBackoff  = time.Millisecond * 250
-	defaultMetadataFull     = true
+	typeStr                     = "kafka"
+	defaultTopic                = "otlp_spans"
+	defaultBroker               = "localhost:9092"
+	defaultMetadataRetryMax     = 3
+	defaultMetadataRetryBackoff = time.Millisecond * 250
+	defaultMetadataFull         = true
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -51,8 +51,8 @@ func createDefaultConfig() configmodels.Exporter {
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: Retry{
-				Max:     defaultMetadataMaxRetry,
-				BackOff: defaultMetadataBackoff,
+				Max:     defaultMetadataRetryMax,
+				BackOff: defaultMetadataRetryBackoff,
 			},
 		},
 	}

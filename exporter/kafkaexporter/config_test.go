@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			Full: false,
 			Retry: Retry{
 				Max:     15,
-				BackOff: defaultMetadataBackoff,
+				BackOff: defaultMetadataRetryBackoff,
 			},
 		},
 	}, c)
