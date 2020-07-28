@@ -55,6 +55,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: defaultTimeout,
+			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			WriteBufferSize: 512 * 1024,
 		},
 		Format:             defaultFormat,
 		DefaultServiceName: defaultServiceName,
