@@ -21,6 +21,7 @@ import (
 // network metric constants
 
 const (
+	interfaceLabelName = "interface"
 	directionLabelName = "direction"
 	stateLabelName     = "state"
 )

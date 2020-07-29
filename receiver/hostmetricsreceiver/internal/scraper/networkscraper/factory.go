@@ -45,6 +45,10 @@ func (f *Factory) CreateMetricsScraper(
 	logger *zap.Logger,
 	config internal.Config,
 ) (internal.Scraper, error) {
-	cfg := config.(*Config)
-	return obsreportscraper.WrapScraper(newNetworkScraper(ctx, cfg), TypeStr), nil
+	scraper, err := newNetworkScraper(ctx, config.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
+	return obsreportscraper.WrapScraper(scraper, TypeStr), nil
 }

@@ -14,9 +14,23 @@
 
 package networkscraper
 
-import "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+import (
+	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+)
 
 // Config relating to Network Metric Scraper.
 type Config struct {
 	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Include specifies a filter on the network interfaces that should be included from the generated metrics.
+	Include MatchConfig `mapstructure:"include"`
+	// Exclude specifies a filter on the network interfaces that should be excluded from the generated metrics.
+	Exclude MatchConfig `mapstructure:"exclude"`
+}
+
+type MatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+
+	Interfaces []string `mapstructure:"interfaces"`
 }
