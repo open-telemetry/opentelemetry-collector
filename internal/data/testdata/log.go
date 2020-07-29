@@ -17,7 +17,6 @@ package testdata
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -33,8 +32,8 @@ const (
 	NumLogTests = 11
 )
 
-func GenerateLogDataEmpty() data.Logs {
-	ld := data.NewLogs()
+func GenerateLogDataEmpty() pdata.Logs {
+	ld := pdata.NewLogs()
 	return ld
 }
 
@@ -42,7 +41,7 @@ func generateLogOtlpEmpty() []*otlplogs.ResourceLogs {
 	return []*otlplogs.ResourceLogs(nil)
 }
 
-func GenerateLogDataOneEmptyResourceLogs() data.Logs {
+func GenerateLogDataOneEmptyResourceLogs() pdata.Logs {
 	ld := GenerateLogDataEmpty()
 	ld.ResourceLogs().Resize(1)
 	return ld
@@ -54,8 +53,8 @@ func generateLogOtlpOneEmptyResourceLogs() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataOneEmptyOneNilResourceLogs() data.Logs {
-	return data.LogsFromProto(generateLogOtlpOneEmptyOneNilResourceLogs())
+func GenerateLogDataOneEmptyOneNilResourceLogs() pdata.Logs {
+	return pdata.LogsFromOtlp(generateLogOtlpOneEmptyOneNilResourceLogs())
 
 }
 
@@ -66,7 +65,7 @@ func generateLogOtlpOneEmptyOneNilResourceLogs() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataNoLogRecords() data.Logs {
+func GenerateLogDataNoLogRecords() pdata.Logs {
 	ld := GenerateLogDataOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)
 	initResource1(rs0.Resource())
@@ -81,7 +80,7 @@ func generateLogOtlpNoLogRecords() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataOneEmptyLogs() data.Logs {
+func GenerateLogDataOneEmptyLogs() pdata.Logs {
 	ld := GenerateLogDataNoLogRecords()
 	rs0 := ld.ResourceLogs().At(0)
 	rs0.InstrumentationLibraryLogs().Resize(1)
@@ -104,8 +103,8 @@ func generateLogOtlpOneEmptyLogs() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataOneEmptyOneNilLogRecord() data.Logs {
-	return data.LogsFromProto(generateLogOtlpOneEmptyOneNilLogRecord())
+func GenerateLogDataOneEmptyOneNilLogRecord() pdata.Logs {
+	return pdata.LogsFromOtlp(generateLogOtlpOneEmptyOneNilLogRecord())
 }
 
 func generateLogOtlpOneEmptyOneNilLogRecord() []*otlplogs.ResourceLogs {
@@ -124,7 +123,7 @@ func generateLogOtlpOneEmptyOneNilLogRecord() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataOneLogNoResource() data.Logs {
+func GenerateLogDataOneLogNoResource() pdata.Logs {
 	ld := GenerateLogDataOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)
 	rs0.InstrumentationLibraryLogs().Resize(1)
@@ -148,7 +147,7 @@ func generateLogOtlpOneLogNoResource() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataOneLog() data.Logs {
+func GenerateLogDataOneLog() pdata.Logs {
 	ld := GenerateLogDataOneEmptyLogs()
 	rs0 := ld.ResourceLogs().At(0)
 	rs0.InstrumentationLibraryLogs().Resize(1)
@@ -173,8 +172,8 @@ func generateLogOtlpOneLog() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataOneLogOneNil() data.Logs {
-	return data.LogsFromProto(generateLogOtlpOneLogOneNil())
+func GenerateLogDataOneLogOneNil() pdata.Logs {
+	return pdata.LogsFromOtlp(generateLogOtlpOneLogOneNil())
 }
 
 func generateLogOtlpOneLogOneNil() []*otlplogs.ResourceLogs {
@@ -193,7 +192,7 @@ func generateLogOtlpOneLogOneNil() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataTwoLogsSameResource() data.Logs {
+func GenerateLogDataTwoLogsSameResource() pdata.Logs {
 	ld := GenerateLogDataOneEmptyLogs()
 	rs0 := ld.ResourceLogs().At(0)
 	rs0.InstrumentationLibraryLogs().Resize(1)
@@ -220,8 +219,8 @@ func GenerateLogOtlpSameResourceTwoLogs() []*otlplogs.ResourceLogs {
 	}
 }
 
-func GenerateLogDataTwoLogsSameResourceOneDifferent() data.Logs {
-	ld := data.NewLogs()
+func GenerateLogDataTwoLogsSameResourceOneDifferent() pdata.Logs {
+	ld := pdata.NewLogs()
 	ld.ResourceLogs().Resize(2)
 	rl0 := ld.ResourceLogs().At(0)
 	initResource1(rl0.Resource())

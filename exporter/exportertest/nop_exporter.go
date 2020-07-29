@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 type nopExporterOld struct {
@@ -84,7 +83,7 @@ func (ne *nopExporter) ConsumeMetrics(context.Context, pdata.Metrics) error {
 	return ne.retError
 }
 
-func (ne *nopExporter) ConsumeLogs(context.Context, data.Logs) error {
+func (ne *nopExporter) ConsumeLogs(context.Context, pdata.Logs) error {
 	return ne.retError
 }
 

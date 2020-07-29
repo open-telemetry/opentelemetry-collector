@@ -16,7 +16,6 @@ package logstest
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 type Log struct {
@@ -29,8 +28,8 @@ type Log struct {
 // relatively easy to read and write declaratively compared to the highly
 // imperative and verbose method of using pdata directly.
 // Attributes are sorted by key name.
-func Logs(recs ...Log) data.Logs {
-	out := data.NewLogs()
+func Logs(recs ...Log) pdata.Logs {
+	out := pdata.NewLogs()
 
 	logs := out.ResourceLogs()
 

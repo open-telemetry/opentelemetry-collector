@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package data
+package pdata
 
 import (
 	"testing"
@@ -46,13 +46,13 @@ func TestLogRecordCount(t *testing.T) {
 }
 
 func TestLogRecordCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, LogsFromProto([]*otlplogs.ResourceLogs{nil, {}}).LogRecordCount())
-	assert.EqualValues(t, 0, LogsFromProto([]*otlplogs.ResourceLogs{
+	assert.EqualValues(t, 0, LogsFromOtlp([]*otlplogs.ResourceLogs{nil, {}}).LogRecordCount())
+	assert.EqualValues(t, 0, LogsFromOtlp([]*otlplogs.ResourceLogs{
 		{
 			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{nil, {}},
 		},
 	}).LogRecordCount())
-	assert.EqualValues(t, 2, LogsFromProto([]*otlplogs.ResourceLogs{
+	assert.EqualValues(t, 2, LogsFromOtlp([]*otlplogs.ResourceLogs{
 		{
 			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
 				{
@@ -65,7 +65,7 @@ func TestLogRecordCountWithNils(t *testing.T) {
 
 func TestToFromLogProto(t *testing.T) {
 	otlp := []*otlplogs.ResourceLogs(nil)
-	td := LogsFromProto(otlp)
+	td := LogsFromOtlp(otlp)
 	assert.EqualValues(t, NewLogs(), td)
-	assert.EqualValues(t, otlp, LogsToProto(td))
+	assert.EqualValues(t, otlp, LogsToOtlp(td))
 }

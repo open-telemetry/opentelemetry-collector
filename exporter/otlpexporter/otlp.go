@@ -102,9 +102,9 @@ func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) (in
 	return 0, nil
 }
 
-func (e *exporterImp) pushLogData(ctx context.Context, logs data.Logs) (int, error) {
+func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, error) {
 	request := &otlplogs.ExportLogsServiceRequest{
-		ResourceLogs: data.LogsToProto(logs),
+		ResourceLogs: pdata.LogsToOtlp(logs),
 	}
 	err := e.w.exportLogs(ctx, request)
 

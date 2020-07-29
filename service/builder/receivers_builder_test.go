@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	idata "go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
@@ -246,7 +246,7 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 			}
 
 			// Send one data.
-			log := idata.Logs{}
+			log := pdata.Logs{}
 			producer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
 			producer.LogConsumer.ConsumeLogs(context.Background(), log)
 

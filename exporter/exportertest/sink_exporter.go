@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // SinkTraceExporterOld acts as a trace receiver for use in tests.
@@ -239,7 +238,7 @@ func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
 type SinkLogsExporter struct {
 	consumeLogError error // to be returned by ConsumeLog, if set
 	mu              sync.Mutex
-	logs            []data.Logs
+	logs            []pdata.Logs
 	logRecordsCount int
 }
 
@@ -260,7 +259,7 @@ func (sle *SinkLogsExporter) Start(context.Context, component.Host) error {
 }
 
 // ConsumeLogData stores traces for tests.
-func (sle *SinkLogsExporter) ConsumeLogs(_ context.Context, ld data.Logs) error {
+func (sle *SinkLogsExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 	if sle.consumeLogError != nil {
@@ -274,11 +273,11 @@ func (sle *SinkLogsExporter) ConsumeLogs(_ context.Context, ld data.Logs) error 
 }
 
 // AllLog returns the metrics sent to the test sink.
-func (sle *SinkLogsExporter) AllLogs() []data.Logs {
+func (sle *SinkLogsExporter) AllLogs() []pdata.Logs {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 
-	copyLogs := make([]data.Logs, len(sle.logs))
+	copyLogs := make([]pdata.Logs, len(sle.logs))
 	copy(copyLogs, sle.logs)
 	return copyLogs
 }

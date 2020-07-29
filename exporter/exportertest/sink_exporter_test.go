@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -139,7 +138,7 @@ func TestSinkLogsExporter(t *testing.T) {
 	sink := new(SinkLogsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	md := testdata.GenerateLogDataOneLogNoResource()
-	want := make([]data.Logs, 0, 7)
+	want := make([]pdata.Logs, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeLogs(context.Background(), md))
 		want = append(want, md)

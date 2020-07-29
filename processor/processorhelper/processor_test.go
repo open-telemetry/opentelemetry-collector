@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -186,6 +185,6 @@ func newTestLProcessor(retError error) LProcessor {
 	return &testLProcessor{retError: retError}
 }
 
-func (tlp *testLProcessor) ProcessLogs(_ context.Context, ld data.Logs) (data.Logs, error) {
+func (tlp *testLProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	return ld, tlp.retError
 }

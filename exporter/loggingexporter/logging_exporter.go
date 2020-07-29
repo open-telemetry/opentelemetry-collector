@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 type logDataBuffer struct {
@@ -420,7 +419,7 @@ func NewLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 
 func (s *loggingExporter) pushLogData(
 	_ context.Context,
-	ld data.Logs,
+	ld pdata.Logs,
 ) (int, error) {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
