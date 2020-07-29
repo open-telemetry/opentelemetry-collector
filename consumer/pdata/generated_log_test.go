@@ -134,7 +134,7 @@ func TestResourceLogsSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewResourceLogs()
+	emptyVal2 := NewResourceLogs()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -286,7 +286,7 @@ func TestInstrumentationLibraryLogsSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewInstrumentationLibraryLogs()
+	emptyVal2 := NewInstrumentationLibraryLogs()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -438,7 +438,7 @@ func TestLogSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewLogRecord()
+	emptyVal2 := NewLogRecord()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)

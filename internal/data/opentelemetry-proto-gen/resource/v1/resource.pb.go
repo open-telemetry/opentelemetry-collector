@@ -5,11 +5,13 @@ package v1
 
 import (
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
-	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+
+	proto "github.com/gogo/protobuf/proto"
+
+	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

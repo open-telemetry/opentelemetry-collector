@@ -243,6 +243,7 @@ genproto:
 	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated after the submodule
 	# files are present.
 	$(MAKE) genproto_sub
+	$(MAKE) fmt
 
 genproto_sub:
 	@echo Generating code for the following files:
