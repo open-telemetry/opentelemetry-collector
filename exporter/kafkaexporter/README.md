@@ -11,7 +11,7 @@ The following settings can be optionally configured:
 - `metadata.full` (default = true): Whether to maintain a full set of metadata. 
                                     When disabled the client does not make the initial request to broker at the startup.
 - `metadata.retry.max` (default = 3): The number of retries to get metadata
-- `metadata.retry.backoff` (default = 250ms): How long to wait between retries
+- `metadata.retry.backoff` (default = 250ms): How long to wait between metadata retries
 
 Example configuration:
 
