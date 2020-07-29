@@ -18,11 +18,16 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
+	configmodels.ExporterSettings  `mapstructure:",squash"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
 	// Kafka protocol version

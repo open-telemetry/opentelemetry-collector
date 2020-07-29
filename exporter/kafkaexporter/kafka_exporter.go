@@ -41,6 +41,8 @@ func newExporter(config Config, params component.ExporterCreateParams) (*kafkaPr
 	c.Producer.Return.Errors = true
 	// Wait only the local commit to succeed before responding.
 	c.Producer.RequiredAcks = sarama.WaitForLocal
+	// Because sarama does not accept a Context for every message, set the Timeout here.
+	c.Producer.Timeout = config.Timeout
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff

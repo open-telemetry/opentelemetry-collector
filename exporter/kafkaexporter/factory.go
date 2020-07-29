@@ -44,13 +44,19 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
+	// TODO: Enable the queued settings by default.
+	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs.Enabled = false
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Brokers: []string{defaultBroker},
-		Topic:   defaultTopic,
+		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:   qs,
+		Brokers:         []string{defaultBroker},
+		Topic:           defaultTopic,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
@@ -66,13 +72,18 @@ func createTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
-	c := cfg.(*Config)
-	exp, err := newExporter(*c, params)
+	oCfg := cfg.(*Config)
+	exp, err := newExporter(*oCfg, params)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		exp.traceDataPusher,
+		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
+		// and will rely on the sarama Producer Timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(exp.Close))
 }
