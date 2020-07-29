@@ -41,6 +41,8 @@ BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
 RUN_CONFIG=local/config.yaml
 
+CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
+
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
@@ -275,3 +277,13 @@ genproto_sub:
 # to proto and after running `make genproto`
 genpdata:
 	go run cmd/pdatagen/main.go
+
+# Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
+# against the current version of this repo.
+.PHONY: check-contrib
+check-contrib:
+	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
+	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	make -C $(CONTRIB_PATH) test
+	@echo Restoring contrib to no longer use this core checkout
+	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
