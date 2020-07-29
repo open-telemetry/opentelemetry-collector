@@ -46,9 +46,9 @@ func TestLoadConfig(t *testing.T) {
 		Brokers: []string{"foo:123", "bar:456"},
 		Metadata: Metadata{
 			Full: false,
-			Retry: Retry{
+			Retry: MetadataRetry{
 				Max:     15,
-				BackOff: defaultMetadataRetryBackoff,
+				Backoff: defaultMetadataRetryBackoff,
 			},
 		},
 	}, c)

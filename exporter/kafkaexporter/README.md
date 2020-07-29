@@ -1,6 +1,6 @@
 # Kafka Exporter
 
-Kafka exporter exports traces to Kafka.
+Kafka exporter exports traces to Kafka. Payloads are serialized into OTLP `ExportTraceServiceRequest`.
 
 The following settings are required:
 - `protocol_version` (no default): Kafka protocol version e.g. 2.0.0

@@ -29,7 +29,7 @@ type protoMarshaller struct {
 }
 
 func (m *protoMarshaller) Marshal(traces pdata.Traces) ([]byte, error) {
-	request := &otlptrace.ExportTraceServiceRequest{
+	request := otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(traces),
 	}
 	return request.Marshal()

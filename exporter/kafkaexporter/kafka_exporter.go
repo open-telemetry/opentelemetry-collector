@@ -36,14 +36,14 @@ type kafkaProducer struct {
 // newExporter creates Kafka exporter.
 func newExporter(config Config, params component.ExporterCreateParams) (*kafkaProducer, error) {
 	c := sarama.NewConfig()
-	// These setting are required by the sarama implementation.
+	// These setting are required by the sarama.SyncProducer implementation.
 	c.Producer.Return.Successes = true
 	c.Producer.Return.Errors = true
-	// Waits for only the local commit to succeed before responding.
+	// Wait only the local commit to succeed before responding.
 	c.Producer.RequiredAcks = sarama.WaitForLocal
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
-	c.Metadata.Retry.Backoff = config.Metadata.Retry.BackOff
+	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {

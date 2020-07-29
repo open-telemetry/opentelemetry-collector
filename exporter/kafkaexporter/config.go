@@ -46,18 +46,18 @@ type Metadata struct {
 	// memory if you have many topics and partitions. Defaults to true.
 	Full bool `mapstructure:"full"`
 
-	// Retry configuration.
+	// Retry configuration for metadata.
 	// This configuration is useful to avoid race conditions when broker
 	// is starting at the same time as collector.
-	Retry Retry `mapstructure:"retry"`
+	Retry MetadataRetry `mapstructure:"retry"`
 }
 
-// Retry defines retry configuration for Metadata.
-type Retry struct {
+// MetadataRetry defines retry configuration for Metadata.
+type MetadataRetry struct {
 	// The total number of times to retry a metadata request when the
 	// cluster is in the middle of a leader election or at startup (default 3).
 	Max int `mapstructure:"max"`
 	// How long to wait for leader election to occur before retrying
 	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
-	BackOff time.Duration `mapstructure:"backoff"`
+	Backoff time.Duration `mapstructure:"backoff"`
 }

@@ -24,12 +24,15 @@ import (
 )
 
 const (
-	typeStr                     = "kafka"
-	defaultTopic                = "otlp_spans"
-	defaultBroker               = "localhost:9092"
-	defaultMetadataRetryMax     = 3
+	typeStr       = "kafka"
+	defaultTopic  = "otlp_spans"
+	defaultBroker = "localhost:9092"
+	// default from sarama.NewConfig()
+	defaultMetadataRetryMax = 3
+	// default from sarama.NewConfig()
 	defaultMetadataRetryBackoff = time.Millisecond * 250
-	defaultMetadataFull         = true
+	// default from sarama.NewConfig()
+	defaultMetadataFull = true
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -50,9 +53,9 @@ func createDefaultConfig() configmodels.Exporter {
 		Topic:   defaultTopic,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
-			Retry: Retry{
+			Retry: MetadataRetry{
 				Max:     defaultMetadataRetryMax,
-				BackOff: defaultMetadataRetryBackoff,
+				Backoff: defaultMetadataRetryBackoff,
 			},
 		},
 	}
