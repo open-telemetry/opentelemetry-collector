@@ -14,14 +14,73 @@
 
 package pdata
 
-import otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+import (
+	"github.com/gogo/protobuf/proto"
 
-// NewResourceLogsSliceFromOrig creates ResourceLogsSlice from otlplogs.ResourceLogs.
-// This function simply makes generated newResourceLogsSlice() function publicly
-// available for internal.data.Log to call. We intentionally placed data.Log in the
-// internal package so that it is not available publicly while it is experimental.
-// Once the experiment is over data.Log should move to this package (pdata) and
-// NewResourceLogsSliceFromOrig function will no longer be needed.
-func NewResourceLogsSliceFromOrig(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
-	return ResourceLogsSlice{orig}
+	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+)
+
+// This file defines in-memory data structures to represent logs.
+
+// Logs is the top-level struct that is propagated through the logs pipeline.
+//
+// This is a reference type (like builtin map).
+//
+// Must use NewLogs functions to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type Logs struct {
+	orig *[]*otlplogs.ResourceLogs
+}
+
+// LogsFromOtlp creates the internal Logs representation from the ProtoBuf.
+func LogsFromOtlp(orig []*otlplogs.ResourceLogs) Logs {
+	return Logs{&orig}
+}
+
+// LogsToOtlp converts the internal Logs to the ProtoBuf.
+func LogsToOtlp(ld Logs) []*otlplogs.ResourceLogs {
+	return *ld.orig
+}
+
+// NewLogs creates a new Logs.
+func NewLogs() Logs {
+	orig := []*otlplogs.ResourceLogs(nil)
+	return Logs{&orig}
+}
+
+// Clone returns a copy of Logs.
+func (ld Logs) Clone() Logs {
+	otlp := LogsToOtlp(ld)
+	resourceSpansClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
+	for _, resourceSpans := range otlp {
+		resourceSpansClones = append(resourceSpansClones,
+			proto.Clone(resourceSpans).(*otlplogs.ResourceLogs))
+	}
+	return LogsFromOtlp(resourceSpansClones)
+}
+
+// LogRecordCount calculates the total number of log records.
+func (ld Logs) LogRecordCount() int {
+	logCount := 0
+	rss := ld.ResourceLogs()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if rs.IsNil() {
+			continue
+		}
+
+		ill := rs.InstrumentationLibraryLogs()
+		for i := 0; i < ill.Len(); i++ {
+			logs := ill.At(i)
+			if logs.IsNil() {
+				continue
+			}
+			logCount += logs.Logs().Len()
+		}
+	}
+	return logCount
+}
+
+func (ld Logs) ResourceLogs() ResourceLogsSlice {
+	return ResourceLogsSlice(ld)
 }

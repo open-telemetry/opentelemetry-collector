@@ -64,6 +64,6 @@ func TestNopMetricsExporter(t *testing.T) {
 func TestNopLogsExporter(t *testing.T) {
 	nme := NewNopLogsExporter()
 	require.NoError(t, nme.Start(context.Background(), nil))
-	require.NoError(t, nme.ConsumeLogs(context.Background(), data.NewLogs()))
+	require.NoError(t, nme.ConsumeLogs(context.Background(), pdata.NewLogs()))
 	require.NoError(t, nme.Shutdown(context.Background()))
 }

@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -53,7 +53,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectorlog.ExportLogsServi
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
-	ld := data.LogsFromProto(req.ResourceLogs)
+	ld := pdata.LogsFromOtlp(req.ResourceLogs)
 	err := r.sendToNextConsumer(ctxWithReceiverName, ld)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectorlog.ExportLogsServi
 	return &collectorlog.ExportLogsServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, ld data.Logs) error {
+func (r *Receiver) sendToNextConsumer(ctx context.Context, ld pdata.Logs) error {
 	numSpans := ld.LogRecordCount()
 	if numSpans == 0 {
 		return nil

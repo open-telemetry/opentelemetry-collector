@@ -21,12 +21,12 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 )
 
 // Collector acts as an aggregator of LogRecords so that we don't have to
-// generate as many data.Logs instances...we can pre-batch the LogRecord
+// generate as many pdata.Logs instances...we can pre-batch the LogRecord
 // instances from several Forward events into one to hopefully reduce
 // allocations and GC overhead.
 type Collector struct {
@@ -75,8 +75,8 @@ func fillBufferUntilChanEmpty(eventCh <-chan Event, buf []Event) []Event {
 	}
 }
 
-func collectLogRecords(events []Event, logger *zap.Logger) data.Logs {
-	out := data.NewLogs()
+func collectLogRecords(events []Event, logger *zap.Logger) pdata.Logs {
+	out := pdata.NewLogs()
 
 	logs := out.ResourceLogs()
 

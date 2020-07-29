@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -196,7 +196,7 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), data.LogsFromProto(ld)))
+	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromOtlp(ld)))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
 	decoder := json.NewDecoder(mf)
@@ -331,7 +331,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			exporter := &Exporter{file: mf}
 			require.NotNil(t, exporter)
 
-			assert.Error(t, exporter.ConsumeLogs(context.Background(), data.LogsFromProto(ld)))
+			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromOtlp(ld)))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}

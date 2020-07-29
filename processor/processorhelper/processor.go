@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -51,7 +50,7 @@ type MProcessor interface {
 type LProcessor interface {
 	// ProcessLogs is a helper function that processes the incoming data and returns the data to be sent to the next component.
 	// If error is returned then returned data are ignored. It MUST not call the next component.
-	ProcessLogs(context.Context, data.Logs) (data.Logs, error)
+	ProcessLogs(context.Context, pdata.Logs) (pdata.Logs, error)
 }
 
 // Option apply changes to internalOptions.
@@ -207,7 +206,7 @@ type logProcessor struct {
 	nextConsumer consumer.LogsConsumer
 }
 
-func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	processorCtx := obsreport.ProcessorContext(ctx, lp.fullName)
 	var err error
 	ld, err = lp.processor.ProcessLogs(processorCtx, ld)

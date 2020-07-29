@@ -33,7 +33,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/testdata"
 	"go.opentelemetry.io/collector/testutil/logstest"
 )
@@ -112,7 +111,7 @@ func TestMessageEvent(t *testing.T) {
 	require.Equal(t, len(eventBytes), n)
 	require.NoError(t, conn.Close())
 
-	var converted []data.Logs
+	var converted []pdata.Logs
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
 		return len(converted) == 1
@@ -144,7 +143,7 @@ func TestForwardEvent(t *testing.T) {
 	require.Equal(t, len(eventBytes), n)
 	require.NoError(t, conn.Close())
 
-	var converted []data.Logs
+	var converted []pdata.Logs
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
 		return len(converted) == 1
@@ -226,7 +225,7 @@ func TestForwardPackedEvent(t *testing.T) {
 	require.Equal(t, len(eventBytes), n)
 	require.NoError(t, conn.Close())
 
-	var converted []data.Logs
+	var converted []pdata.Logs
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
 		return len(converted) == 1
@@ -297,7 +296,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	require.Equal(t, len(eventBytes), n)
 	require.NoError(t, conn.Close())
 
-	var converted []data.Logs
+	var converted []pdata.Logs
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
 		return len(converted) == 1
@@ -382,7 +381,7 @@ func TestUnixEndpoint(t *testing.T) {
 	require.NoError(t, err)
 	require.Greater(t, n, 0)
 
-	var converted []data.Logs
+	var converted []pdata.Logs
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
 		return len(converted) == 1
@@ -426,7 +425,7 @@ func TestHighVolume(t *testing.T) {
 
 	wg.Wait()
 
-	var converted []data.Logs
+	var converted []pdata.Logs
 	require.Eventually(t, func() bool {
 		converted = next.AllLogs()
 

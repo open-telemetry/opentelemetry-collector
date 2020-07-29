@@ -26,7 +26,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -153,7 +152,7 @@ func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (
 }
 
 // ProcessLogs implements the LProcessor interface
-func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld data.Logs) (data.Logs, error) {
+func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	numRecords := ld.LogRecordCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
