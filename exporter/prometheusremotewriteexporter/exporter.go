@@ -11,8 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// Note: implementation for this class is in a separate PR
 package prometheusremotewriteexporter
 
 import (
@@ -124,6 +122,11 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 							dropped++
 							errs = append(errs, err)
 						}
+					case otlp.MetricDescriptor_SUMMARY:
+						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
+							dropped++
+							errs = append(errs, err.Error())
+						}
 					default:
 						dropped++
 						errs = append(errs, fmt.Errorf("unsupported metric type"))
@@ -149,7 +152,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-
 	mType := metric.MetricDescriptor.Type
 
 	switch mType {
@@ -261,6 +263,53 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 	return nil
 }
 
+// handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
+// quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
+// tsMap and metric cannot be nil.
+func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+
+	if metric.SummaryDataPoints == nil {
+		return fmt.Errorf("invalid metric type: wants summary points")
+	}
+
+	for _, pt := range metric.SummaryDataPoints {
+
+		time := convertTimeStamp(pt.TimeUnixNano)
+		mType := metric.GetMetricDescriptor().GetType()
+
+		// sum and count of the Summary should append suffix to baseName
+		baseName := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
+
+		// treat sum as sample in an individual TimeSeries
+		sum := &prompb.Sample{
+			Value:     pt.GetSum(),
+			Timestamp: time,
+		}
+		sumlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumlabels, mType)
+
+		// treat count as a sample in an individual TimeSeries
+		count := &prompb.Sample{
+			Value:     float64(pt.GetCount()),
+			Timestamp: time,
+		}
+		countlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
+		addSample(tsMap, count, countlabels, mType)
+
+		// process each percentile/quantile
+		for _, qt := range pt.GetPercentileValues() {
+			quantile := &prompb.Sample{
+				Value:     qt.Value,
+				Timestamp: time,
+			}
+			percentileStr := strconv.FormatFloat(qt.Percentile, 'f', -1, 64)
+			qtlabels := createLabelSet(pt.GetLabels(), nameStr, baseName, quantileStr, percentileStr)
+			addSample(tsMap, quantile, qtlabels, mType)
+		}
+	}
+	return nil
+}
+
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
@@ -268,7 +317,6 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	if err != nil {
 		return err
 	}
-
 	//Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(req)
 	if err != nil {

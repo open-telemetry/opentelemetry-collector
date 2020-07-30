@@ -30,10 +30,11 @@ type combination struct {
 }
 
 var (
-	time1   = uint64(time.Now().UnixNano())
-	time2   = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
-	msTime1 = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
-	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	time1       = uint64(time.Now().UnixNano())
+	time2       = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
+	msTime1     = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	msTime2     = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	testHeaders = map[string]string{"headerOne": "value1"}
 
 	typeInt64           = "INT64"
 	typeMonotonicInt64  = "MONOTONIC_INT64"
