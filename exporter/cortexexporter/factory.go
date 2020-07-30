@@ -23,7 +23,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "jaeger"
+	typeStr = "cortex"
 )
 
 func NewFactory() component.ExporterFactory {

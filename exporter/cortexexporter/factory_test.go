@@ -14,7 +14,6 @@
 
 package cortexexporter
 
-
 import (
 	"context"
 	"testing"
@@ -22,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"s
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 )
