@@ -67,7 +67,6 @@ func Test_loadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			Namespace: "test-space",
-
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{

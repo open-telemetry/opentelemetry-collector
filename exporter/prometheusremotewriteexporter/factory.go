@@ -80,6 +80,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		Namespace: "",
 
+
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   qs,
@@ -90,6 +91,7 @@ func createDefaultConfig() configmodels.Exporter {
 			WriteBufferSize: 512 * 1024,
 			Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
 			Headers:         map[string]string{},
+
 		},
 	}
 }

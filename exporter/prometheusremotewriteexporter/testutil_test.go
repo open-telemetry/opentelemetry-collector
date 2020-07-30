@@ -19,9 +19,10 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 
+	"go.opentelemetry.io/collector/internal/data"
+
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
-	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 type combination struct {
@@ -30,10 +31,12 @@ type combination struct {
 }
 
 var (
-	time1   = uint64(time.Now().UnixNano())
-	time2   = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
-	msTime1 = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
-	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+
+	time1       = uint64(time.Now().UnixNano())
+	time2       = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
+	msTime1     = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	msTime2     = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	testHeaders = map[string]string{"headerOne": "value1"}
 
 	typeInt64           = "INT64"
 	typeMonotonicInt64  = "MONOTONIC_INT64"
@@ -56,6 +59,7 @@ var (
 	dirty1  = "%"
 	dirty2  = "?"
 
+
 	intVal1   int64 = 1
 	intVal2   int64 = 2
 	floatVal1       = 1.0
@@ -72,6 +76,7 @@ var (
 	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
 	ns1    = "test_ns"
 	name1  = "valid_single_int_point"
+
 
 	monotonicInt64Comb  = 0
 	monotonicDoubleComb = 1
@@ -156,10 +161,47 @@ func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uin
 	}
 }
 
+func getHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+	bks := []*otlp.HistogramDataPoint_Bucket{}
+	for _, c := range buckets {
+		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
+			Count:    c,
+			Exemplar: nil,
+		})
+	}
+	return &otlp.HistogramDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Count:             count,
+		Sum:               sum,
+		Buckets:           bks,
+		ExplicitBounds:    bounds,
+	}
+}
+
+func getSummaryDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
+	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
+	for i, v := range values {
+		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
+			Percentile: pcts[i],
+			Value:      v,
+		})
+	}
+	return &otlp.SummaryDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Count:             count,
+		Sum:               sum,
+		PercentileValues:  pcs,
+	}
+}
+
 // Prometheus TimeSeries
 func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
-		Labels: []prompb.Label{},
+		Labels:               []prompb.Label{},
 	}
 	for i := 0; i < len(lbs); i += 2 {
 		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[i], lbs[i+1]))
@@ -188,20 +230,18 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
-//setCumulative is for creating the dataold.MetricData to test with
-func setTemporality(metricsData *dataold.MetricData, temp otlp.MetricDescriptor_Temporality) {
-	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
+func setCumulative(metricsData *data.MetricData) {
+	for _, r := range data.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
-				m.MetricDescriptor.Temporality = temp
+				m.MetricDescriptor.Temporality = otlp.MetricDescriptor_CUMULATIVE
 			}
 		}
 	}
 }
 
-//setDataPointToNil is for creating the dataold.MetricData to test with
-func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
-	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
+func setDataPointToNil(metricsData *data.MetricData, dataField string) {
+	for _, r := range data.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
 				switch dataField {
@@ -219,9 +259,8 @@ func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
 	}
 }
 
-//setType is for creating the dataold.MetricData to test with
-func setType(metricsData *dataold.MetricData, dataField string) {
-	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
+func setType(metricsData *data.MetricData, dataField string) {
+	for _, r := range data.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
 				switch dataField {
