@@ -1,0 +1,55 @@
+receivers:
+    examplereceiver:
+  
+processors:
+    exampleprocessor:
+    
+exporters:
+    cortex:
+    cortex/2:
+        http_endpoint: "localhost:8888"
+        headers:
+            Prometheus-Remote-Write-Version: "1.0.2"
+            Tenant-id: 234
+            another: "somevalue"
+        
+        reconnection_delay: 15
+        compression: "on"
+        num_workers: 4
+        namespace: "prefix"
+        request_timeout: 30
+        const_labels:
+            label1: value1
+            label2: value2
+        basic_auth:
+            username: "username"
+            password: "1234"
+            password_file: "yes"
+        tls_config:
+            # CA certificate to validate API server certificate with.
+            ca_file: <filename>
+                
+            # Certificate and key files for client cert authentication to the server.
+            cert_file: <filename>
+            key_file: <filename>
+                
+            # ServerName extension to indicate the name of the server.
+            # https://tools.ietf.org/html/rfc4366#section-3.1
+            server_name: <string>
+                
+            # Disable validation of the server certificate.
+            insecure_skip_verify: <boolean>
+        http_client_config:
+
+
+        
+        
+        
+    
+    service:
+        pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [exampleprocessor]
+            exporters: [cortex]
+    
