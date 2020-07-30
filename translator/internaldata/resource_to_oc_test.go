@@ -22,6 +22,7 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/resource/resourcekeys"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -106,12 +107,12 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "container",
 			labels: map[string]string{
-				resourcekeys.K8SKeyClusterName:   "cluster1",
-				resourcekeys.K8SKeyPodName:       "pod1",
-				resourcekeys.K8SKeyNamespaceName: "namespace1",
-				resourcekeys.ContainerKeyName:    "container-name1",
-				resourcekeys.CloudKeyAccountID:   "proj1",
-				resourcekeys.CloudKeyZone:        "zone1",
+				conventions.AttributeK8sCluster:    "cluster1",
+				conventions.AttributeK8sPod:        "pod1",
+				conventions.AttributeK8sNamespace:  "namespace1",
+				conventions.AttributeContainerName: "container-name1",
+				conventions.AttributeCloudAccount:  "proj1",
+				conventions.AttributeCloudZone:     "zone1",
 			},
 			wantResourceType: resourcekeys.ContainerType,
 			wantOk:           true,
@@ -119,10 +120,10 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "pod",
 			labels: map[string]string{
-				resourcekeys.K8SKeyClusterName:   "cluster1",
-				resourcekeys.K8SKeyPodName:       "pod1",
-				resourcekeys.K8SKeyNamespaceName: "namespace1",
-				resourcekeys.CloudKeyZone:        "zone1",
+				conventions.AttributeK8sCluster:   "cluster1",
+				conventions.AttributeK8sPod:       "pod1",
+				conventions.AttributeK8sNamespace: "namespace1",
+				conventions.AttributeCloudZone:    "zone1",
 			},
 			wantResourceType: resourcekeys.K8SType,
 			wantOk:           true,
@@ -130,9 +131,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "host",
 			labels: map[string]string{
-				resourcekeys.K8SKeyClusterName: "cluster1",
-				resourcekeys.CloudKeyZone:      "zone1",
-				resourcekeys.HostKeyName:       "node1",
+				conventions.AttributeK8sCluster: "cluster1",
+				conventions.AttributeCloudZone:  "zone1",
+				conventions.AttributeHostName:   "node1",
 			},
 			wantResourceType: resourcekeys.HostType,
 			wantOk:           true,
@@ -140,9 +141,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "gce",
 			labels: map[string]string{
-				resourcekeys.CloudKeyProvider: resourcekeys.CloudProviderGCP,
-				resourcekeys.HostKeyID:        "inst1",
-				resourcekeys.CloudKeyZone:     "zone1",
+				conventions.AttributeCloudProvider: "gcp",
+				conventions.AttributeHostID:        "inst1",
+				conventions.AttributeCloudZone:     "zone1",
 			},
 			wantResourceType: resourcekeys.CloudType,
 			wantOk:           true,

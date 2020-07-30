@@ -41,23 +41,23 @@ type ocResourceTypeDetector struct {
 var attributeToResourceType = []ocResourceTypeDetector{
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
-		labelKey:     resourcekeys.ContainerKeyName,
+		labelKey:     conventions.AttributeContainerName,
 		resourceType: resourcekeys.ContainerType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
-		labelKey: resourcekeys.K8SKeyPodName,
+		labelKey: conventions.AttributeK8sPod,
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
-		labelKey:     resourcekeys.HostKeyName,
+		labelKey:     conventions.AttributeHostName,
 		resourceType: resourcekeys.HostType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
-		labelKey:     resourcekeys.CloudKeyProvider,
+		labelKey:     conventions.AttributeCloudProvider,
 		resourceType: resourcekeys.CloudType,
 	},
 }
