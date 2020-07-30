@@ -21,6 +21,7 @@ import (
 
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 type combination struct {
@@ -34,9 +35,11 @@ var (
 	msTime1 = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
-	typeInt64 = "INT64"
-
-	typeHistogram = "HISTOGRAM"
+	typeInt64           = "INT64"
+	typeMonotonicInt64  = "MONOTONIC_INT64"
+	typeMonotonicDouble = "MONOTONIC_DOUBLE"
+	typeHistogram       = "HISTOGRAM"
+	typeSummary         = "SUMMARY"
 
 	label11 = "test_label11"
 	value11 = "test_value11"
@@ -53,10 +56,13 @@ var (
 	dirty1  = "%"
 	dirty2  = "?"
 
-	intVal1 int64 = 1
-	intVal2 int64 = 2
+	intVal1   int64 = 1
+	intVal2   int64 = 2
+	floatVal1       = 1.0
+	floatVal2       = 2.0
 
 	lbs1      = getLabels(label11, value11, label12, value12)
+	lbs2      = getLabels(label21, value21, label22, value22)
 	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
 
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
@@ -67,10 +73,11 @@ var (
 	ns1    = "test_ns"
 	name1  = "valid_single_int_point"
 
-	monotonicInt64Comb = 0
-	histogramComb      = 2
-	summaryComb        = 3
-	validCombinations  = []combination{
+	monotonicInt64Comb  = 0
+	monotonicDoubleComb = 1
+	histogramComb       = 2
+	summaryComb         = 3
+	validCombinations   = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_CUMULATIVE},
@@ -131,6 +138,24 @@ func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescripto
 	}
 }
 
+func getIntDataPoint(labels []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.Int64DataPoint {
+	return &otlp.Int64DataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Value:             value,
+	}
+}
+
+func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uint64) *otlp.DoubleDataPoint {
+	return &otlp.DoubleDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Value:             value,
+	}
+}
+
 // Prometheus TimeSeries
 func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
@@ -160,5 +185,56 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	return &prompb.TimeSeries{
 		Labels:  labels,
 		Samples: samples,
+	}
+}
+
+//setCumulative is for creating the dataold.MetricData to test with
+func setTemporality(metricsData *dataold.MetricData, temp otlp.MetricDescriptor_Temporality) {
+	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
+		for _, instMetrics := range r.InstrumentationLibraryMetrics {
+			for _, m := range instMetrics.Metrics {
+				m.MetricDescriptor.Temporality = temp
+			}
+		}
+	}
+}
+
+//setDataPointToNil is for creating the dataold.MetricData to test with
+func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
+	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
+		for _, instMetrics := range r.InstrumentationLibraryMetrics {
+			for _, m := range instMetrics.Metrics {
+				switch dataField {
+				case typeMonotonicInt64:
+					m.Int64DataPoints = nil
+				case typeMonotonicDouble:
+					m.DoubleDataPoints = nil
+				case typeHistogram:
+					m.HistogramDataPoints = nil
+				case typeSummary:
+					m.SummaryDataPoints = nil
+				}
+			}
+		}
+	}
+}
+
+//setType is for creating the dataold.MetricData to test with
+func setType(metricsData *dataold.MetricData, dataField string) {
+	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
+		for _, instMetrics := range r.InstrumentationLibraryMetrics {
+			for _, m := range instMetrics.Metrics {
+				switch dataField {
+				case typeMonotonicInt64:
+					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_MONOTONIC_INT64
+				case typeMonotonicDouble:
+					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_MONOTONIC_DOUBLE
+				case typeHistogram:
+					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_HISTOGRAM
+				case typeSummary:
+					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_SUMMARY
+				}
+			}
+		}
 	}
 }
