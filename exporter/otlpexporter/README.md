@@ -11,19 +11,22 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
-  only be used if `insecure` is set to `false`.
-- `compression`: compression key for supported compression types within
-  collector. Currently the only supported mode is `gzip`.
-- `headers`: the headers associated with gRPC requests.
 - `insecure` (default = false): whether to enable client transport security for
   the exporter's gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-- `keepalive`: keepalive parameters for client gRPC. See
+- `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
+  only be used if `insecure` is set to true.
+- `cert_file` path to the TLS cert to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `key_file` path to the TLS key to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `compression` compression key for supported compression types within the collector. Currently, the only supported mode is `gzip`.
+- `headers` the headers associated with gRPC requests.
+- `keepalive` keepalive parameters for client gRPC. See
   [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 - `reconnection_delay`: time period between each reconnection performed by the
   exporter.
-- `insecure`: whether to enable client transport security for the exporter's
+- `insecure` whether to enable client transport security for the exporter's
   gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 - `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.

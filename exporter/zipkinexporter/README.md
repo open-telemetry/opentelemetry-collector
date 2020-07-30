@@ -9,6 +9,14 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
+- `insecure` (default = false): whether to enable client transport security for
+  the exporter's connection.
+- `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
+  only be used if `insecure` is set to true.
+- `cert_file` path to the TLS cert to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `key_file` path to the TLS key to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
 - `defaultservicename` (default = <missing service name>): What to name services missing this information.
 - `timeout` (default = 5s): How long to wait until the connection is close.
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
