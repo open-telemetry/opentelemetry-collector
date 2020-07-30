@@ -23,10 +23,44 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
+	"go.opencensus.io/resource/resourcekeys"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
+
+type ocResourceTypeDetector struct {
+	// label presence to check against
+	labelKey string
+	// matching resource type
+	resourceType string
+}
+
+// mapping of label presence to inferred OC resource type
+// NOTE: defined in the priority order (first match wins)
+var attributeToResourceType = []ocResourceTypeDetector{
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
+		labelKey:     resourcekeys.ContainerKeyName,
+		resourceType: resourcekeys.ContainerType,
+	},
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
+		labelKey: resourcekeys.K8SKeyPodName,
+		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
+		resourceType: resourcekeys.K8SType,
+	},
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
+		labelKey:     resourcekeys.HostKeyName,
+		resourceType: resourcekeys.HostType,
+	},
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+		labelKey:     resourcekeys.CloudKeyProvider,
+		resourceType: resourcekeys.CloudType,
+	},
+}
 
 func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
 	if resource.IsNil() {
@@ -104,6 +138,14 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	})
 	ocResource.Labels = labels
 
+	// If resource type is missing, try to infer it
+	// based on the presence of resource labels (semantic conventions)
+	if ocResource.Type == "" {
+		if resType, ok := inferResourceType(ocResource.Labels); ok {
+			ocResource.Type = resType
+		}
+	}
+
 	return &ocNode, &ocResource
 }
 
@@ -151,4 +193,18 @@ func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 	}
 
 	// TODO: Add support for ARRAY type.
+}
+
+func inferResourceType(labels map[string]string) (string, bool) {
+	if labels == nil {
+		return "", false
+	}
+
+	for _, detector := range attributeToResourceType {
+		if _, ok := labels[detector.labelKey]; ok {
+			return detector.resourceType, true
+		}
+	}
+
+	return "", false
 }
