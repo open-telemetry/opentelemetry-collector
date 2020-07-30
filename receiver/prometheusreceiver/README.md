@@ -23,14 +23,18 @@ receivers:
     prometheus:
       config:
         scrape_configs:
-          - job_name: 'opencensus_service'
+          - job_name: 'otel-collector'
             scrape_interval: 5s
             static_configs:
-              - targets: ['0.0.0.0:8889']
-          - job_name: 'jdbc_apps'
-            scrape_interval: 3s
-            static_configs:
-              - targets: ['0.0.0.0:9777']
+              - targets: ['0.0.0.0:8888']
+          - job_name: k8s
+            kubernetes_sd_configs:
+            - role: pod
+            relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              regex: "true"
+              action: keep
+
 ```
 
 ### Include Filter

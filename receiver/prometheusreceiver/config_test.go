@@ -15,6 +15,7 @@
 package prometheusreceiver
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -77,6 +78,38 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 		})
 	assert.Equal(t, r.PrometheusConfig.ScrapeConfigs[0].JobName, jobname)
 	os.Unsetenv(jobnamevar)
+}
+
+func TestLoadConfigK8s(t *testing.T) {
+	const node = "node1"
+	const nodenamevar = "NODE_NAME"
+	os.Setenv(nodenamevar, node)
+	defer os.Unsetenv(nodenamevar)
+
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
+
+	factory := &Factory{}
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_k8s.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	r := cfg.Receivers["prometheus"].(*Config)
+	assert.Equal(t, r.ReceiverSettings,
+		configmodels.ReceiverSettings{
+			TypeVal: typeStr,
+			NameVal: "prometheus",
+		})
+
+	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
+	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfig.KubernetesSDConfigs[0]
+	assert.Equal(t,
+		kubeSDConfig.Selectors[0].Field,
+		fmt.Sprintf("spec.nodeName=%s", node))
+	assert.Equal(t,
+		scrapeConfig.RelabelConfigs[1].Replacement,
+		"$1:$2")
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
