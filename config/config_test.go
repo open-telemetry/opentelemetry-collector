@@ -459,8 +459,9 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 func TestDecodeConfig_Invalid(t *testing.T) {
 
 	var testCases = []struct {
-		name     string          // test case name (also file name containing config yaml)
-		expected configErrorCode // expected error (if nil any error is acceptable)
+		name            string          // test case name (also file name containing config yaml)
+		expected        configErrorCode // expected error (if nil any error is acceptable)
+		expectedMessage string          // string that the error must contain
 	}{
 		{name: "empty-config"},
 		{name: "missing-all-sections"},
@@ -481,26 +482,26 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "pipeline-must-have-receiver2", expected: errPipelineMustHaveReceiver},
 		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
-		{name: "unknown-extension-type", expected: errUnknownExtensionType},
-		{name: "unknown-receiver-type", expected: errUnknownReceiverType},
-		{name: "unknown-exporter-type", expected: errUnknownExporterType},
-		{name: "unknown-processor-type", expected: errUnknownProcessorType},
-		{name: "invalid-service-extensions-value", expected: errUnmarshalErrorOnService},
-		{name: "invalid-sequence-value", expected: errUnmarshalErrorOnPipeline},
-		{name: "invalid-pipeline-type", expected: errInvalidPipelineType},
+		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},
+		{name: "unknown-receiver-type", expected: errUnknownType, expectedMessage: "receivers"},
+		{name: "unknown-exporter-type", expected: errUnknownType, expectedMessage: "exporters"},
+		{name: "unknown-processor-type", expected: errUnknownType, expectedMessage: "processors"},
+		{name: "invalid-service-extensions-value", expected: errUnmarshalError, expectedMessage: "service"},
+		{name: "invalid-sequence-value", expected: errUnmarshalError, expectedMessage: "pipelines"},
+		{name: "invalid-pipeline-type", expected: errUnknownType, expectedMessage: "pipelines"},
 		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
-		{name: "duplicate-extension", expected: errDuplicateExtensionName},
-		{name: "duplicate-receiver", expected: errDuplicateReceiverName},
-		{name: "duplicate-exporter", expected: errDuplicateExporterName},
-		{name: "duplicate-processor", expected: errDuplicateProcessorName},
-		{name: "duplicate-pipeline", expected: errDuplicatePipelineName},
-		{name: "invalid-top-level-section", expected: errUnmarshalErrorOnTopLevelSection},
-		{name: "invalid-extension-section", expected: errUnmarshalErrorOnExtension},
-		{name: "invalid-service-section", expected: errUnmarshalErrorOnService},
-		{name: "invalid-receiver-section", expected: errUnmarshalErrorOnReceiver},
-		{name: "invalid-processor-section", expected: errUnmarshalErrorOnProcessor},
-		{name: "invalid-exporter-section", expected: errUnmarshalErrorOnExporter},
-		{name: "invalid-pipeline-section", expected: errUnmarshalErrorOnPipeline},
+		{name: "duplicate-extension", expected: errDuplicateName, expectedMessage: "extensions"},
+		{name: "duplicate-receiver", expected: errDuplicateName, expectedMessage: "receivers"},
+		{name: "duplicate-exporter", expected: errDuplicateName, expectedMessage: "exporters"},
+		{name: "duplicate-processor", expected: errDuplicateName, expectedMessage: "processors"},
+		{name: "duplicate-pipeline", expected: errDuplicateName, expectedMessage: "pipelines"},
+		{name: "invalid-top-level-section", expected: errUnmarshalError, expectedMessage: "top level"},
+		{name: "invalid-extension-section", expected: errUnmarshalError, expectedMessage: "extensions"},
+		{name: "invalid-service-section", expected: errUnmarshalError, expectedMessage: "service"},
+		{name: "invalid-receiver-section", expected: errUnmarshalError, expectedMessage: "receivers"},
+		{name: "invalid-processor-section", expected: errUnmarshalError, expectedMessage: "processors"},
+		{name: "invalid-exporter-section", expected: errUnmarshalError, expectedMessage: "exporters"},
+		{name: "invalid-pipeline-section", expected: errUnmarshalError, expectedMessage: "pipelines"},
 	}
 
 	factories, err := componenttest.ExampleComponents()
@@ -516,14 +517,11 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 				t.Errorf("expected config error code %v but got a different error '%v' on invalid config case: %s",
 					test.expected, err, test.name)
 			} else {
-				if cfgErr.code != test.expected {
-					t.Errorf("expected config error code %v but got error code %v (msg: %q) on invalid config case: %s",
-						test.expected, cfgErr.code, cfgErr.msg, test.name)
+				assert.Equal(t, test.expected, cfgErr.code)
+				if test.expectedMessage != "" {
+					assert.Contains(t, cfgErr.Error(), test.expectedMessage)
 				}
-
-				if cfgErr.Error() == "" {
-					t.Errorf("returned config error %v with empty error message", cfgErr.code)
-				}
+				assert.NotEmpty(t, cfgErr.Error(), "returned config error %v with empty error message", cfgErr.code)
 			}
 		}
 	}
