@@ -20,10 +20,12 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -73,6 +75,36 @@ func TestResourceToOC(t *testing.T) {
 			assert.EqualValues(t, test.ocNode, ocNode)
 			assert.EqualValues(t, test.ocResource, ocResource)
 		})
+	}
+}
+
+func TestContainerResourceToOC(t *testing.T) {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("cluster1"),
+		conventions.AttributeK8sPod:        pdata.NewAttributeValueString("pod1"),
+		conventions.AttributeK8sNamespace:  pdata.NewAttributeValueString("namespace1"),
+		conventions.AttributeContainerName: pdata.NewAttributeValueString("container-name1"),
+		conventions.AttributeCloudAccount:  pdata.NewAttributeValueString("proj1"),
+		conventions.AttributeCloudZone:     pdata.NewAttributeValueString("zone1"),
+	})
+
+	want := &ocresource.Resource{
+		Type: resourcekeys.ContainerType, // Inferred type
+		Labels: map[string]string{
+			resourcekeys.K8SKeyClusterName:   "cluster1",
+			resourcekeys.K8SKeyPodName:       "pod1",
+			resourcekeys.K8SKeyNamespaceName: "namespace1",
+			resourcekeys.ContainerKeyName:    "container-name1",
+			resourcekeys.CloudKeyAccountID:   "proj1",
+			resourcekeys.CloudKeyZone:        "zone1",
+		},
+	}
+
+	_, ocResource := internalResourceToOC(resource)
+	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
 	}
 }
 
