@@ -11,15 +11,19 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
-  only be used if `secure` is set to true.
-- `compression` (default = gzip): compression key for supported compression
-  types within collector. Currently the only supported mode is `gzip`.
-- `headers`: the headers associated with gRPC requests.
 - `insecure` (default = false): whether to enable client transport security for
   the exporter's gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-- `keepalive`: keepalive parameters for client gRPC. See
+- `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
+  only be used if `insecure` is set to true.
+- `cert_file` path to the TLS cert to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `key_file` path to the TLS key to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `compression` (default = gzip): compression key for supported compression
+  types within collector. Currently the only supported mode is `gzip`.
+- `headers` the headers associated with gRPC requests.
+- `keepalive` keepalive parameters for client gRPC. See
   [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 - `num_workers` (default = 2): number of workers that send the gRPC requests.
   Optional.
