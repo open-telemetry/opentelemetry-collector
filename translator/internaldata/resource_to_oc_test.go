@@ -23,11 +23,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/resource/resourcekeys"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestResourceToOC(t *testing.T) {
@@ -103,6 +103,15 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	_, ocResource := internalResourceToOC(resource)
+	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
+
+	// Also test that the explicit resource type is preserved if present
+	resource.Attributes().InsertString(conventions.OCAttributeResourceType, "other-type")
+	want.Type = "other-type"
+
+	_, ocResource = internalResourceToOC(resource)
 	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
 		t.Errorf("Unexpected difference:\n%v", diff)
 	}
