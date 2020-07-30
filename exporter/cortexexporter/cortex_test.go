@@ -15,8 +15,9 @@
 package cortexexporter
 
 import (
+	"github.com/prometheus/prometheus/prompb"
 	"strconv"
-	// "go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,12 +27,15 @@ import (
 )
 
 func Test_validateMetrics(t *testing.T) {
+	// define a single test
 	type combTest struct {
 		name string
 		desc *otlp.MetricDescriptor
 		want bool
 	}
+
 	tests := []combTest{}
+
 	// append true cases
 	for i := range validCombinations {
 		name := "validateMetric_" + strconv.Itoa(i)
@@ -42,6 +46,7 @@ func Test_validateMetrics(t *testing.T) {
 			true,
 		})
 	}
+	// append false cases
 	for i := range invalidCombinations {
 		name := "invalidateMetric_" + strconv.Itoa(i)
 		desc := generateDescriptor(name, i, invalidCombinations)
@@ -51,7 +56,10 @@ func Test_validateMetrics(t *testing.T) {
 			false,
 		})
 	}
+	// append nil case
 	tests = append(tests, combTest{"invalidMertics_nil", nil, false})
+
+	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := validateMetrics(tt.desc)
@@ -60,6 +68,22 @@ func Test_validateMetrics(t *testing.T) {
 	}
 }
 
+func Test_handleScalarMetric(t *testing.T) {
+
+	tests := []handleMetricTest{}
+
+	// two points in the same ts in the same metric
+	// two points in the same ts in different metrics
+
+	// two points in different ts in the same metric
+	// two points in different ts in different metrics
+	//	- one is INT64, the other is DOUBLE, but have the same signature and labels otherwise ---should be in different time series.
+	//
+
+
+	testdata.GenerateMetricOtlpTwoMetrics()
+
+}
 // ------ Utilities ---------
 
 func generateDescriptor(name string, i int, comb []combination) *otlp.MetricDescriptor {
@@ -76,6 +100,11 @@ func generateDescriptor(name string, i int, comb []combination) *otlp.MetricDesc
 type combination struct {
 	ty   otlp.MetricDescriptor_Type
 	temp otlp.MetricDescriptor_Temporality
+}
+
+type handleMetricTest struct {
+	tsMap map[string]prompb.TimeSeries
+	metric *otlp.Metric
 }
 
 var (
