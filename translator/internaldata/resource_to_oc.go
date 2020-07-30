@@ -29,36 +29,36 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-type ocResourceTypeDetector struct {
+type ocInferredResourceType struct {
 	// label presence to check against
-	labelKey string
-	// matching resource type
+	labelKeyPresent string
+	// inferred resource type
 	resourceType string
 }
 
 // mapping of label presence to inferred OC resource type
 // NOTE: defined in the priority order (first match wins)
-var attributeToResourceType = []ocResourceTypeDetector{
+var labelPresenceToResourceType = []ocInferredResourceType{
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
-		labelKey:     conventions.AttributeContainerName,
-		resourceType: resourcekeys.ContainerType,
+		labelKeyPresent: conventions.AttributeContainerName,
+		resourceType:    resourcekeys.ContainerType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
-		labelKey: conventions.AttributeK8sPod,
+		labelKeyPresent: conventions.AttributeK8sPod,
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
-		labelKey:     conventions.AttributeHostName,
-		resourceType: resourcekeys.HostType,
+		labelKeyPresent: conventions.AttributeHostName,
+		resourceType:    resourcekeys.HostType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
-		labelKey:     conventions.AttributeCloudProvider,
-		resourceType: resourcekeys.CloudType,
+		labelKeyPresent: conventions.AttributeCloudProvider,
+		resourceType:    resourcekeys.CloudType,
 	},
 }
 
@@ -200,9 +200,9 @@ func inferResourceType(labels map[string]string) (string, bool) {
 		return "", false
 	}
 
-	for _, detector := range attributeToResourceType {
-		if _, ok := labels[detector.labelKey]; ok {
-			return detector.resourceType, true
+	for _, mapping := range labelPresenceToResourceType {
+		if _, ok := labels[mapping.labelKeyPresent]; ok {
+			return mapping.resourceType, true
 		}
 	}
 
