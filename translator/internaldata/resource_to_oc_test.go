@@ -20,10 +20,14 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"go.opencensus.io/resource/resourcekeys"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestResourceToOC(t *testing.T) {
@@ -74,6 +78,45 @@ func TestResourceToOC(t *testing.T) {
 	}
 }
 
+func TestContainerResourceToOC(t *testing.T) {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("cluster1"),
+		conventions.AttributeK8sPod:        pdata.NewAttributeValueString("pod1"),
+		conventions.AttributeK8sNamespace:  pdata.NewAttributeValueString("namespace1"),
+		conventions.AttributeContainerName: pdata.NewAttributeValueString("container-name1"),
+		conventions.AttributeCloudAccount:  pdata.NewAttributeValueString("proj1"),
+		conventions.AttributeCloudZone:     pdata.NewAttributeValueString("zone1"),
+	})
+
+	want := &ocresource.Resource{
+		Type: resourcekeys.ContainerType, // Inferred type
+		Labels: map[string]string{
+			resourcekeys.K8SKeyClusterName:   "cluster1",
+			resourcekeys.K8SKeyPodName:       "pod1",
+			resourcekeys.K8SKeyNamespaceName: "namespace1",
+			resourcekeys.ContainerKeyName:    "container-name1",
+			resourcekeys.CloudKeyAccountID:   "proj1",
+			resourcekeys.CloudKeyZone:        "zone1",
+		},
+	}
+
+	_, ocResource := internalResourceToOC(resource)
+	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
+
+	// Also test that the explicit resource type is preserved if present
+	resource.Attributes().InsertString(conventions.OCAttributeResourceType, "other-type")
+	want.Type = "other-type"
+
+	_, ocResource = internalResourceToOC(resource)
+	if diff := cmp.Diff(want, ocResource, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
+}
+
 func TestAttributeValueToString(t *testing.T) {
 	assert.EqualValues(t, "", attributeValueToString(pdata.NewAttributeValueNull(), false))
 	assert.EqualValues(t, "abc", attributeValueToString(pdata.NewAttributeValueString("abc"), false))
@@ -88,6 +131,78 @@ func TestAttributeValueToString(t *testing.T) {
 	v.MapVal().Insert("d", pdata.NewAttributeValueNull())
 	v.MapVal().Insert("e", v)
 	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, attributeValueToString(v, false))
+}
+
+func TestInferResourceType(t *testing.T) {
+	tests := []struct {
+		name             string
+		labels           map[string]string
+		wantResourceType string
+		wantOk           bool
+	}{
+		{
+			name:   "empty labels",
+			labels: nil,
+			wantOk: false,
+		},
+		{
+			name: "container",
+			labels: map[string]string{
+				conventions.AttributeK8sCluster:    "cluster1",
+				conventions.AttributeK8sPod:        "pod1",
+				conventions.AttributeK8sNamespace:  "namespace1",
+				conventions.AttributeContainerName: "container-name1",
+				conventions.AttributeCloudAccount:  "proj1",
+				conventions.AttributeCloudZone:     "zone1",
+			},
+			wantResourceType: resourcekeys.ContainerType,
+			wantOk:           true,
+		},
+		{
+			name: "pod",
+			labels: map[string]string{
+				conventions.AttributeK8sCluster:   "cluster1",
+				conventions.AttributeK8sPod:       "pod1",
+				conventions.AttributeK8sNamespace: "namespace1",
+				conventions.AttributeCloudZone:    "zone1",
+			},
+			wantResourceType: resourcekeys.K8SType,
+			wantOk:           true,
+		},
+		{
+			name: "host",
+			labels: map[string]string{
+				conventions.AttributeK8sCluster: "cluster1",
+				conventions.AttributeCloudZone:  "zone1",
+				conventions.AttributeHostName:   "node1",
+			},
+			wantResourceType: resourcekeys.HostType,
+			wantOk:           true,
+		},
+		{
+			name: "gce",
+			labels: map[string]string{
+				conventions.AttributeCloudProvider: "gcp",
+				conventions.AttributeHostID:        "inst1",
+				conventions.AttributeCloudZone:     "zone1",
+			},
+			wantResourceType: resourcekeys.CloudType,
+			wantOk:           true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resourceType, ok := inferResourceType(tc.labels)
+			if tc.wantOk {
+				assert.True(t, ok)
+				assert.Equal(t, tc.wantResourceType, resourceType)
+			} else {
+				assert.False(t, ok)
+				assert.Equal(t, "", resourceType)
+			}
+		})
+	}
 }
 
 func BenchmarkInternalResourceToOC(b *testing.B) {
