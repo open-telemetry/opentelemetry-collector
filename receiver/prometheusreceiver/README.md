@@ -17,7 +17,9 @@ receivers:
     config:
 ```
 
-For example:
+This receiver is a drop-in replacement for getting Prometheus to scrape your 
+services. It supports the full set of Prometheus configuration, including 
+service discovery. For example:
 ```yaml
 receivers:
     prometheus:
@@ -34,7 +36,10 @@ receivers:
             - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
               regex: "true"
               action: keep
-
+            metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: "(request_duration_seconds.*|response_duration_seconds.*)"
+              action: keep
 ```
 
 ### Include Filter
