@@ -4,7 +4,8 @@ Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 [Design](DESIGN.md) for additional information on this receiver.
 
 This receiver is a drop-in replacement for getting Prometheus to scrape your
-services. Just like you would write in a YAML configuration file before
+services. It supports the full set of Prometheus configuration, including 
+service discovery. Just like you would write in a YAML configuration file before
 starting Prometheus, such as with:
 ```shell
 prometheus --config.file=prom.yaml
@@ -17,9 +18,7 @@ receivers:
     config:
 ```
 
-This receiver is a drop-in replacement for getting Prometheus to scrape your 
-services. It supports the full set of Prometheus configuration, including 
-service discovery. For example:
+For example:
 ```yaml
 receivers:
     prometheus:
