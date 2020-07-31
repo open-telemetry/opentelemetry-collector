@@ -42,7 +42,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal"
@@ -521,7 +520,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(sinkTraceConsumer)
+				sink := new(exportertest.SinkTraceExporterOld)
 
 				var opts []Option
 				ocr, err := New(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
@@ -670,7 +669,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(sinkMetricsConsumer)
+				sink := new(exportertest.SinkMetricsExporterOld)
 
 				var opts []Option
 				ocr, err := New(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
@@ -706,54 +705,4 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			})
 		}
 	}
-}
-
-type sinkTraceConsumer struct {
-	// consumeTraceError is the error to be returned when ConsumeTraceData is
-	// called
-	consumeTraceError error
-
-	traces []consumerdata.TraceData
-}
-
-var _ consumer.TraceConsumerOld = (*sinkTraceConsumer)(nil)
-
-func (stc *sinkTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	if stc.consumeTraceError == nil {
-		stc.traces = append(stc.traces, td)
-	}
-	return stc.consumeTraceError
-}
-
-func (stc *sinkTraceConsumer) SetConsumeTraceError(err error) {
-	stc.consumeTraceError = err
-}
-
-func (stc *sinkTraceConsumer) AllTraces() []consumerdata.TraceData {
-	return stc.traces[:]
-}
-
-type sinkMetricsConsumer struct {
-	// consumeMetricsError is the error to be returned when ConsumeMetricsData is
-	// called
-	consumeMetricsError error
-
-	metrics []consumerdata.MetricsData
-}
-
-var _ consumer.MetricsConsumerOld = (*sinkMetricsConsumer)(nil)
-
-func (smc *sinkMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	if smc.consumeMetricsError == nil {
-		smc.metrics = append(smc.metrics, md)
-	}
-	return smc.consumeMetricsError
-}
-
-func (smc *sinkMetricsConsumer) SetConsumeMetricsError(err error) {
-	smc.consumeMetricsError = err
-}
-
-func (smc *sinkMetricsConsumer) AllMetrics() []consumerdata.MetricsData {
-	return smc.metrics[:]
 }

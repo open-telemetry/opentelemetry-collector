@@ -41,12 +41,12 @@ func (ste *SinkTraceExporterOld) Start(context.Context, component.Host) error {
 
 // ConsumeTraceData stores traces for tests.
 func (ste *SinkTraceExporterOld) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
 	if ste.consumeTraceError != nil {
 		return ste.consumeTraceError
 	}
-
-	ste.mu.Lock()
-	defer ste.mu.Unlock()
 
 	ste.traces = append(ste.traces, td)
 
@@ -63,6 +63,9 @@ func (ste *SinkTraceExporterOld) AllTraces() []consumerdata.TraceData {
 
 // SetConsumeTraceError sets an error that will be returned by ConsumeTraceData
 func (ste *SinkTraceExporterOld) SetConsumeTraceError(err error) {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
 	ste.consumeTraceError = err
 }
 
@@ -146,12 +149,12 @@ func (sme *SinkMetricsExporterOld) Start(context.Context, component.Host) error 
 
 // ConsumeMetricsData stores traces for tests.
 func (sme *SinkMetricsExporterOld) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
 	if sme.consumeMetricsError != nil {
 		return sme.consumeMetricsError
 	}
-
-	sme.mu.Lock()
-	defer sme.mu.Unlock()
 
 	sme.metrics = append(sme.metrics, md)
 
@@ -168,6 +171,9 @@ func (sme *SinkMetricsExporterOld) AllMetrics() []consumerdata.MetricsData {
 
 // SetConsumeMetricsError sets an error that will be returned by ConsumeMetricsData
 func (sme *SinkMetricsExporterOld) SetConsumeMetricsError(err error) {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
 	sme.consumeMetricsError = err
 }
 
