@@ -1,6 +1,7 @@
 package cortexexporter
 
 import (
+	"github.com/prometheus/prometheus/prompb"
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"time"
@@ -9,17 +10,37 @@ type combination struct {
 	ty   otlp.MetricDescriptor_Type
 	temp otlp.MetricDescriptor_Temporality
 }
-var (
-	testLabelName1 = "testName1"
-	testLabelValue1 = "testValue1"
-	testLabelName2 = "testName2"
-	testLabelValue2 = "testValue2"
-	testLabelNameDirty1 = "test.Name1"
-	testLabelValue1Dirty2 = "test.Value1"
-	testLabelNameDirty2 = "test.Name2"
-	testLabelValueDirty2 = "test.Value2"
 
-    validCombinations = []combination{
+var (
+	time1 = time.Now()
+	time2 = time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC)
+
+	typeInt64 = "int64"
+	label11 = "test_label11"
+	value11 = "test_value11"
+	label12 = "test_label12"
+	value12 = "test_value12"
+	label21 = "test_label21"
+	value21 = "test_value21"
+	label22 = "test_label22"
+	value22 = "test_value22"
+	dirty1 = "%"
+	dirty2 = "?"
+
+	lbs1 = getLabels(label11, value11, label12, value12)
+	lbs2 = getLabels(label21, value21, label22, value22)
+	lbSet1Dirty = getLabels(label11+dirty1, dirty1+value11, dirty2+label12, dirty2+value12)
+	lbSet2Dirty = getLabels(label21+dirty1, dirty1+value21, dirty2+label22, dirty2+value22)
+
+	promlbs1 = getPromLabels(label11, value11, label12, value12)
+	promlbs2 = getPromLabels(label21, value21, label22, value22)
+
+	int_val1 int64 = 1
+	int_val2 int64 = 2
+    float_val1 = 1.0
+    float_val2 = 2.0
+
+	validCombinations = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_CUMULATIVE},
@@ -46,8 +67,9 @@ var (
 	}
 )
 
+// OTLP metrics
 // labels must come in pairs
-func getLabelSet (labels...string) []*commonpb.StringKeyValue{
+func getLabels (labels...string) []*commonpb.StringKeyValue{
 	var set []*commonpb.StringKeyValue
 	for i := 0; i < len(labels); i += 2 {
 		set = append(set, &commonpb.StringKeyValue{
@@ -68,25 +90,25 @@ func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescripto
 	}
 }
 
-func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64,) *otlp.Int64DataPoint{
+func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64, ts time.Time) *otlp.Int64DataPoint{
 	return &otlp.Int64DataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time.Now().Unix()),
+		TimeUnixNano:      uint64(ts.Unix()),
 		Value:             value,
 	}
 }
 
-func getDoubleDataPoint(lbls []*commonpb.StringKeyValue, value float64,) *otlp.DoubleDataPoint {
+func getDoubleDataPoint(lbls []*commonpb.StringKeyValue, value float64, ts time.Time) *otlp.DoubleDataPoint {
 	return &otlp.DoubleDataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time.Now().Unix()),
+		TimeUnixNano:      uint64(ts.Unix()),
 		Value:             value,
 	}
 }
 
-func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
 	bks := []*otlp.HistogramDataPoint_Bucket{}
 	for _, c := range buckets {
 		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
@@ -97,14 +119,15 @@ func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, sum float64, count u
 	return &otlp.HistogramDataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time.Now().Unix()),
+		TimeUnixNano:      uint64(ts.Unix()),
 		Count:             count,
 		Sum:               sum,
 		Buckets:           bks,
 		ExplicitBounds:    bounds,
 	}
 }
-func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
+
+func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
 	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
 	for i, v := range values {
 		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
@@ -115,10 +138,54 @@ func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, sum float64, count uin
 	return &otlp.SummaryDataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time.Now().Unix()),
+		TimeUnixNano:      uint64(ts.Unix()),
 		Count:             count,
 		Sum:               sum,
 		PercentileValues:  pcs,
 	}
 }
 
+// Prometheus TimeSeries
+func getPromLabels(lbs ...string) prompb.Labels{
+	pbLbs := prompb.Labels{
+		Labels:               []prompb.Label{},
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+	for i := 0; i < len(lbs); i++ {
+		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[1],lbs[2]))
+	}
+	return pbLbs
+}
+
+func getLabel(name string, value string) prompb.Label{
+	return prompb.Label{
+		Name:                 name,
+		Value:                value,
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+}
+
+
+func getSample(v float64, t time.Time) prompb.Sample {
+	return prompb.Sample{
+		Value:                v,
+		Timestamp:            t.Unix(),
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+}
+
+func getTimeSeries (lbls prompb.Labels, samples...prompb.Sample) *prompb.TimeSeries{
+	return &prompb.TimeSeries{
+		Labels:               lbls.Labels,
+		Samples:              samples,
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}
+}

@@ -15,6 +15,7 @@
 package cortexexporter
 
 import (
+	"github.com/prometheus/prometheus/prompb"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
@@ -29,3 +30,4 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	}
 	return false
 }
+func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,desc otlp.MetricDescriptor_Type){}

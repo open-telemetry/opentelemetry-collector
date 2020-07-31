@@ -15,8 +15,10 @@
 package cortexexporter
 
 import (
+	"github.com/prometheus/prometheus/prompb"
 	"strconv"
 	"testing"
+	"reflect"
 
 	"github.com/stretchr/testify/assert"
 
@@ -66,19 +68,85 @@ func Test_validateMetrics(t *testing.T) {
 	}
 }
 
-func Test_create
+func Test_addSample(t *testing.T) {
+	type testCase struct{
+		desc 	otlp.MetricDescriptor_Type
+		sample prompb.Sample
+		labels []prompb.Label
+	}
 
+	tests := []struct{
+		name    	string
+		orig   		map[string]*prompb.TimeSeries
+		testCase 	[]testCase
+		want   		map[string]*prompb.TimeSeries
+	} {
+		{
+			name: "two_points_same_ts_same_metric",
+			testCase: []testCase{
+				{	otlp.MetricDescriptor_INT64,
+					getSample(float64(int_val1), time1),
+					 promlbs1.Labels,
+				},
+				{
+					otlp.MetricDescriptor_INT64,
+					getSample(float64(int_val2), time2),
+					promlbs1.Labels,
+				},
+			},
+			want: map[string]*prompb.TimeSeries {
+					typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
+							getTimeSeries(getPromLabels(label11,value11, label12,value12),
+											getSample(float64(int_val1),time1),
+											getSample(float64(int_val2),time2)),
+			},
+		},
+		{
+			name: "two_points_different_ts_same_metric",
+			testCase: []testCase{
+				{	otlp.MetricDescriptor_INT64,
+					getSample(float64(int_val1), time1),
+					promlbs1.Labels,
+				},
+				{	otlp.MetricDescriptor_INT64,
+					getSample(float64(int_val1), time1),
+					promlbs2.Labels,
+				},
+			},
+			want: map[string]*prompb.TimeSeries {
+				typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
+				getTimeSeries(getPromLabels(label11,value11, label12,value12),
+					getSample(float64(int_val1),time1),),
+				typeInt64+"-"+label21+"-"+value21+"-"+label22+"-"+value22:
+				getTimeSeries(getPromLabels(label21,value21, label22,value22),
+					getSample(float64(int_val1),time2),),
+			},
+		},
+	}
+
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addSample(tt.orig,&tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].desc)
+			addSample(tt.orig,&tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].desc)
+			assert.EqualValues(t, reflect.DeepEqual(t,tt.want), true)
+		})
+	}
+}
+
+
+/*
 func Test_handleScalarMetric(t *testing.T) {
 
 	//tests := []handleMetricTest{}
 
 	// two points in the same ts in the same metric
 
-	// two points in the same ts in different metrics
-
 	// two points in different ts in the same metric
+
+	// two points in the same ts in different metrics
 
 	// two points in different ts in different metrics
 
 }
-// ------ Utilities ---------
+*/
