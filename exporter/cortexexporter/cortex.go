@@ -18,4 +18,14 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
-func validateMetrics(descriptor *otlp.MetricDescriptor) bool { return true }
+// check whether the metric has the correct type and kind combination
+func validateMetrics(desc *otlp.MetricDescriptor) bool {
+	switch desc.GetType() {
+		case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_MONOTONIC_INT64,
+		otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_SUMMARY:
+			return desc.GetTemporality() == otlp.MetricDescriptor_CUMULATIVE
+		case otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_DOUBLE:
+			return true
+	}
+	return false
+}
