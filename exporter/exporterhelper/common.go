@@ -19,16 +19,13 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-)
-
-var (
-	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
 
 // Settings for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -88,6 +85,7 @@ type internalOptions struct {
 	RetrySettings
 	Start
 	Shutdown
+	traceProvider trace.Provider
 }
 
 // fromConfiguredOptions returns the internal options starting from the default and applying all configured options.
@@ -101,6 +99,7 @@ func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
 		RetrySettings: RetrySettings{Enabled: false},
 		Start:         func(ctx context.Context, host component.Host) error { return nil },
 		Shutdown:      func(ctx context.Context) error { return nil },
+		traceProvider: global.TraceProvider(),
 	}
 
 	for _, op := range options {
@@ -153,15 +152,22 @@ func WithQueue(queueSettings QueueSettings) ExporterOption {
 	}
 }
 
+func withOtelProviders(traceProvider trace.Provider) ExporterOption {
+	return func(o *internalOptions) {
+		o.traceProvider = traceProvider
+	}
+}
+
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
 	cfg          configmodels.Exporter
 	sender       requestSender
 	qrSender     *queuedRetrySender
 	start        Start
-	shutdown     Shutdown
 	startOnce    sync.Once
+	shutdown     Shutdown
 	shutdownOnce sync.Once
+	tracer       trace.Tracer
 }
 
 func newBaseExporter(cfg configmodels.Exporter, options ...ExporterOption) *baseExporter {
@@ -170,6 +176,7 @@ func newBaseExporter(cfg configmodels.Exporter, options ...ExporterOption) *base
 		cfg:      cfg,
 		start:    opts.Start,
 		shutdown: opts.Shutdown,
+		tracer:   opts.traceProvider.Tracer("go.opentelemetry.io/collector/exporter"),
 	}
 
 	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings})

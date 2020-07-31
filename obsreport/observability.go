@@ -19,10 +19,11 @@ package obsreport
 // of the service.
 
 import (
-	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	otelgrpc "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc"
+	"go.opentelemetry.io/otel/api/trace"
 	"google.golang.org/grpc"
 )
 
@@ -153,7 +154,10 @@ var LegacyAllViews = []*view.View{
 // GRPCServerWithObservabilityEnabled creates a gRPC server that at a bare minimum has
 // the OpenCensus ocgrpc server stats handler enabled for tracing and stats.
 // Use it instead of invoking grpc.NewServer directly.
-func GRPCServerWithObservabilityEnabled(extraOpts ...grpc.ServerOption) *grpc.Server {
-	opts := append(extraOpts, grpc.StatsHandler(&ocgrpc.ServerHandler{}))
+func GRPCServerWithObservabilityEnabled(tProvider trace.Provider, extraOpts ...grpc.ServerOption) *grpc.Server {
+	tracer := tProvider.Tracer("grpc")
+	opts := append(extraOpts,
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor(tracer)),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor(tracer)))
 	return grpc.NewServer(opts...)
 }

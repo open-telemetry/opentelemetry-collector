@@ -19,9 +19,18 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
+	exptrace "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel/sdk/export/trace/tracetest"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
+	"google.golang.org/grpc/codes"
 
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -106,16 +115,16 @@ func CheckProcessorLogsViews(t *testing.T, processor string, acceptedLogRecords,
 
 // CheckReceiverTracesViews checks that for the current exported values for trace receiver views match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverTracesViews(t *testing.T, receiver, protocol string, acceptedSpans, droppedSpans int64) {
-	receiverTags := tagsForReceiverView(receiver, protocol)
+func CheckReceiverTracesViews(t *testing.T, receiver, transport string, acceptedSpans, droppedSpans int64) {
+	receiverTags := tagsForReceiverView(receiver, transport)
 	CheckValueForView(t, receiverTags, acceptedSpans, "receiver/accepted_spans")
 	CheckValueForView(t, receiverTags, droppedSpans, "receiver/refused_spans")
 }
 
 // CheckReceiverMetricsViews checks that for the current exported values for metrics receiver views match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
-func CheckReceiverMetricsViews(t *testing.T, receiver, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
-	receiverTags := tagsForReceiverView(receiver, protocol)
+func CheckReceiverMetricsViews(t *testing.T, receiver, transport string, acceptedMetricPoints, droppedMetricPoints int64) {
+	receiverTags := tagsForReceiverView(receiver, transport)
 	CheckValueForView(t, receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points")
 	CheckValueForView(t, receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
 }
@@ -140,6 +149,94 @@ func CheckValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName stri
 	}
 
 	require.Failf(t, "could not find tags", "wantTags: %s in rows %v", wantTags, rows)
+}
+
+// CheckReceiverTracesViews checks that for the current exported values for traces receiver span attributes match given values.
+// When this function is called it is required to also call SetupSdkTraceProviderTest as first thing.
+func CheckReceiverTracesSpanAttributes(t *testing.T, sd *exptrace.SpanData, transport string, acceptedSpans, droppedSpans int64) {
+	checkTransport(t, sd, transport)
+	checkInt64Attribute(t, sd, obsreport.AcceptedSpansKey, acceptedSpans)
+	checkInt64Attribute(t, sd, obsreport.RefusedSpansKey, droppedSpans)
+}
+
+// CheckReceiverMetricsSpanAttributes checks that for the current exported values for metrics receiver span attributes match given values.
+// When this function is called it is required to also call SetupSdkTraceProviderTest as first thing.
+func CheckReceiverMetricsSpanAttributes(t *testing.T, sd *exptrace.SpanData, transport string, acceptedMetricsPoints, droppedMetricsPoints int64) {
+	checkTransport(t, sd, transport)
+	checkInt64Attribute(t, sd, obsreport.AcceptedMetricPointsKey, acceptedMetricsPoints)
+	checkInt64Attribute(t, sd, obsreport.RefusedMetricPointsKey, droppedMetricsPoints)
+}
+
+// CheckExporterTracesSpanAttributes checks that for the current exported values for traces receiver span attributes match given values.
+// When this function is called it is required to also call SetupSdkTraceProviderTest as first thing.
+func CheckExporterTracesSpanAttributes(t *testing.T, sd *exptrace.SpanData, acceptedSpans, droppedSpans int64) {
+	checkInt64Attribute(t, sd, obsreport.SentSpansKey, acceptedSpans)
+	checkInt64Attribute(t, sd, obsreport.FailedToSendSpansKey, droppedSpans)
+}
+
+// CheckExporterMetricsSpanAttributes checks that for the current exported values for metrics receiver span attributes match given values.
+// When this function is called it is required to also call SetupSdkTraceProviderTest as first thing.
+func CheckExporterMetricsSpanAttributes(t *testing.T, sd *exptrace.SpanData, acceptedMetricsPoints, droppedMetricsPoints int64) {
+	checkInt64Attribute(t, sd, obsreport.SentMetricPointsKey, acceptedMetricsPoints)
+	checkInt64Attribute(t, sd, obsreport.FailedToSendMetricPointsKey, droppedMetricsPoints)
+}
+
+// CheckExporterLogsSpanAttributes checks that for the current exported values for logs receiver span attributes match given values.
+// When this function is called it is required to also call SetupSdkTraceProviderTest as first thing.
+func CheckExporterLogsSpanAttributes(t *testing.T, sd *exptrace.SpanData, acceptedLogRecords, droppedLogRecords int64) {
+	checkInt64Attribute(t, sd, obsreport.SentLogRecordsKey, acceptedLogRecords)
+	checkInt64Attribute(t, sd, obsreport.FailedToSendLogRecordsKey, droppedLogRecords)
+}
+
+// CheckSpanStatus checks that for the Span status matches the error.
+func CheckSpanStatus(t *testing.T, err error, sd *exptrace.SpanData) {
+	if err != nil {
+		require.Equal(t, codes.Unknown, sd.StatusCode)
+		require.Equal(t, err.Error(), sd.StatusMessage)
+	} else {
+		require.Equal(t, codes.OK, sd.StatusCode)
+		require.Equal(t, "", sd.StatusMessage)
+	}
+}
+
+// SetupSdkTraceProviderTest does setup the testing environment to check the spans recorded by receivers, producers or exporters.
+func SetupSdkTraceProviderTest(t *testing.T) (trace.Provider, *tracetest.InMemoryExporter) {
+	ime := tracetest.NewInMemoryExporter()
+	traceProvider, err := sdktrace.NewProvider(
+		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithResource(resource.New(
+			// the service name used to display traces in backends
+			semconv.ServiceNameKey.String("test-service"),
+		)),
+		sdktrace.WithSyncer(ime),
+	)
+	require.NoError(t, err)
+	return traceProvider, ime
+}
+
+func getAttribute(attrs []label.KeyValue, key label.Key) (label.KeyValue, bool) {
+	for _, attr := range attrs {
+		if attr.Key == key {
+			return attr, true
+		}
+	}
+	return label.KeyValue{}, false
+}
+
+func checkInt64Attribute(t *testing.T, sd *exptrace.SpanData, key string, value int64) {
+	attr, ok := getAttribute(sd.Attributes, label.Key(key))
+	assert.True(t, ok)
+	assert.Equal(t, value, attr.Value.AsInt64())
+}
+
+func checkTransport(t *testing.T, sd *exptrace.SpanData, transport string) {
+	attr, ok := getAttribute(sd.Attributes, obsreport.TransportKey)
+	if transport != "" {
+		assert.True(t, ok)
+		assert.Equal(t, transport, attr.Value.AsString())
+	} else {
+		assert.False(t, ok)
+	}
 }
 
 // tagsForReceiverView returns the tags that are needed for the receiver views.

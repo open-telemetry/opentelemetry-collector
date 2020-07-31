@@ -16,19 +16,15 @@ package exporterhelper
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -50,18 +46,6 @@ func TestTracesRequest(t *testing.T) {
 
 	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataEmpty())
 	assert.EqualValues(t, newTracesRequest(context.Background(), testdata.GenerateTraceDataEmpty(), nil), mr.onPartialError(partialErr.(consumererror.PartialError)))
-}
-
-type testOCTraceExporter struct {
-	mu       sync.Mutex
-	spanData []*trace.SpanData
-}
-
-func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
-	tote.mu.Lock()
-	defer tote.mu.Unlock()
-
-	tote.spanData = append(tote.spanData, sd)
 }
 
 func TestTraceExporter_InvalidName(t *testing.T) {
@@ -97,54 +81,16 @@ func TestTraceExporter_Default_ReturnError(t *testing.T) {
 	require.Equalf(t, want, err, "ConsumeTraceData returns: Want %v Got %v", want, err)
 }
 
-func TestTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
-	require.Nil(t, err)
-	require.NotNil(t, te)
-
-	checkRecordedMetricsForTraceExporter(t, te, nil, 0)
+func TestTraceExporter_Observability(t *testing.T) {
+	checkObservabilityForTraceExporter(t, nil, 0)
 }
 
-func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(1, nil))
-	require.Nil(t, err)
-	require.NotNil(t, te)
-
-	checkRecordedMetricsForTraceExporter(t, te, nil, 1)
+func TestTraceExporter_Observability_NonZeroDropped(t *testing.T) {
+	checkObservabilityForTraceExporter(t, nil, 1)
 }
 
-func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
-	require.Nil(t, err)
-	require.NotNil(t, te)
-
-	checkRecordedMetricsForTraceExporter(t, te, want, 0)
-}
-
-func TestTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
-	require.Nil(t, err)
-	require.NotNil(t, te)
-
-	checkWrapSpanForTraceExporter(t, te, nil, 1)
-}
-
-func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(1, nil))
-	require.Nil(t, err)
-	require.NotNil(t, te)
-
-	checkWrapSpanForTraceExporter(t, te, nil, 1)
-}
-
-func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
-	require.Nil(t, err)
-	require.NotNil(t, te)
-
-	checkWrapSpanForTraceExporter(t, te, want, 1)
+func TestTraceExporter_Observability_ReturnError(t *testing.T) {
+	checkObservabilityForTraceExporter(t, errors.New("my_error"), 0)
 }
 
 func TestTraceExporter_WithShutdown(t *testing.T) {
@@ -176,70 +122,49 @@ func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
 	}
 }
 
-func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExporter, wantError error, droppedSpans int) {
+func checkObservabilityForTraceExporter(t *testing.T, wantError error, droppedSpans int) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
-	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, te.ConsumeTraces(context.Background(), td))
-	}
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/exporter/tracesshelper")
 
-	// TODO: When the new metrics correctly count partial dropped fix this.
-	if wantError != nil {
-		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, 0, int64(numBatches*td.SpanCount()))
-	} else {
-		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, int64(numBatches*td.SpanCount()), 0)
-	}
-}
-
-func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {
-	td := pdata.NewTraces()
-	rs := td.ResourceSpans()
-	rs.Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	ctx, span := trace.StartSpan(context.Background(), fakeTraceParentSpanName, trace.WithSampler(trace.AlwaysSample()))
-	defer span.End()
-	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, te.ConsumeTraces(ctx, td))
-	}
-}
-
-func checkWrapSpanForTraceExporter(t *testing.T, te component.TraceExporter, wantError error, numSpans int64) {
-	ocSpansSaver := new(testOCTraceExporter)
-	trace.RegisterExporter(ocSpansSaver)
-	defer trace.UnregisterExporter(ocSpansSaver)
+	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(droppedSpans, wantError), withOtelProviders(traceProvider))
+	require.Nil(t, err)
+	require.NotNil(t, te)
 
 	const numRequests = 5
-	generateTraceTraffic(t, te, numRequests, wantError)
+	const numSpans = 2
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+	ctx, span := tracer.Start(context.Background(), fakeTraceParentSpanName)
+	for i := 0; i < numRequests; i++ {
+		assert.Equal(t, wantError, te.ConsumeTraces(ctx, td))
+	}
+	span.End()
 
 	// Inspection time!
-	ocSpansSaver.mu.Lock()
-	defer ocSpansSaver.mu.Unlock()
-
-	require.NotEqual(t, 0, len(ocSpansSaver.spanData), "No exported span data.")
-
-	gotSpanData := ocSpansSaver.spanData
-	require.Equal(t, numRequests+1, len(gotSpanData))
+	gotSpanData := ime.GetSpans()
+	require.Len(t, gotSpanData, numRequests+1, "No exported span data")
 
 	parentSpan := gotSpanData[numRequests]
 	require.Equalf(t, fakeTraceParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
-
 	for _, sd := range gotSpanData[:numRequests] {
-		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
-		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
-
+		assert.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
+		obsreporttest.CheckSpanStatus(t, wantError, sd)
 		sentSpans := numSpans
-		var failedToSendSpans int64
+		failedToSendSpans := 0
 		if wantError != nil {
 			sentSpans = 0
 			failedToSendSpans = numSpans
 		}
+		obsreporttest.CheckExporterTracesSpanAttributes(t, sd, int64(sentSpans), int64(failedToSendSpans))
+	}
 
-		require.Equalf(t, sentSpans, sd.Attributes[obsreport.SentSpansKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendSpans, sd.Attributes[obsreport.FailedToSendSpansKey], "SpanData %v", sd)
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	if wantError != nil {
+		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, 0, int64(numRequests*td.SpanCount()))
+	} else {
+		obsreporttest.CheckExporterTracesViews(t, fakeTraceExporterName, int64(numRequests*td.SpanCount()), 0)
 	}
 }

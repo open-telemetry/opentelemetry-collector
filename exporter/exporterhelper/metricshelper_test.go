@@ -20,14 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -83,51 +80,16 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
 }
 
-func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
-	require.Nil(t, err)
-	require.NotNil(t, me)
-
-	checkRecordedMetricsForMetricsExporter(t, me, nil, 0)
+func TestMetricsExporter_Observability(t *testing.T) {
+	checkObservabilityForMetricsExporter(t, nil, 0)
 }
 
-func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil))
-	require.Nil(t, err)
-	require.NotNil(t, me)
-
-	checkRecordedMetricsForMetricsExporter(t, me, nil, 1)
+func TestMetricsExporter_Observability_NonZeroDropped(t *testing.T) {
+	checkObservabilityForMetricsExporter(t, nil, 1)
 }
 
-func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
-	require.Nil(t, err)
-	require.NotNil(t, me)
-
-	checkRecordedMetricsForMetricsExporter(t, me, want, 0)
-}
-
-func TestMetricsExporter_WithSpan(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
-	require.Nil(t, err)
-	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, nil, 1)
-}
-
-func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil))
-	require.Nil(t, err)
-	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, nil, 1)
-}
-
-func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
-	require.Nil(t, err)
-	require.NotNil(t, me)
-	checkWrapSpanForMetricsExporter(t, me, want, 1)
+func TestMetricsExporter_Observability_ReturnError(t *testing.T) {
+	checkObservabilityForMetricsExporter(t, errors.New("my_error"), 1)
 }
 
 func TestMetricsExporter_WithShutdown(t *testing.T) {
@@ -159,65 +121,50 @@ func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
 	}
 }
 
-func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, droppedTimeSeries int) {
+func checkObservabilityForMetricsExporter(t *testing.T, wantError error, droppedMetricPoints int) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := testdata.GenerateMetricsTwoMetrics()
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), md))
-	}
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/exporter/metricshelper")
 
-	// TODO: When the new metrics correctly count partial dropped fix this.
-	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
-	if wantError != nil {
-		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, 0, numPoints)
-	} else {
-		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, numPoints, 0)
-	}
-}
-
-func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numRequests int, wantError error) {
-	md := testdata.GenerateMetricsOneMetricOneDataPoint()
-	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
-	defer span.End()
-	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(ctx, md))
-	}
-}
-
-func checkWrapSpanForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, numMetricPoints int64) {
-	ocSpansSaver := new(testOCTraceExporter)
-	trace.RegisterExporter(ocSpansSaver)
-	defer trace.UnregisterExporter(ocSpansSaver)
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(droppedMetricPoints, wantError), withOtelProviders(traceProvider))
+	require.Nil(t, err)
+	require.NotNil(t, me)
 
 	const numRequests = 5
-	generateMetricsTraffic(t, me, numRequests, wantError)
+	const numMetricPoints = 4
+	md := testdata.GenerateMetricsTwoMetrics()
+	ctx, span := tracer.Start(context.Background(), fakeMetricsParentSpanName)
+	for i := 0; i < numRequests; i++ {
+		assert.Equal(t, wantError, me.ConsumeMetrics(ctx, md))
+	}
+	span.End()
 
 	// Inspection time!
-	ocSpansSaver.mu.Lock()
-	defer ocSpansSaver.mu.Unlock()
-
-	require.NotEqual(t, 0, len(ocSpansSaver.spanData), "No exported span data")
-
-	gotSpanData := ocSpansSaver.spanData
-	require.Equal(t, numRequests+1, len(gotSpanData))
+	gotSpanData := ime.GetSpans()
+	require.Len(t, gotSpanData, numRequests+1, "No exported span data")
 
 	parentSpan := gotSpanData[numRequests]
 	require.Equalf(t, fakeMetricsParentSpanName, parentSpan.Name, "SpanData %v", parentSpan)
 	for _, sd := range gotSpanData[:numRequests] {
-		require.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
-		require.Equalf(t, errToStatus(wantError), sd.Status, "SpanData %v", sd)
-
+		assert.Equalf(t, parentSpan.SpanContext.SpanID, sd.ParentSpanID, "Exporter span not a child\nSpanData %v", sd)
+		obsreporttest.CheckSpanStatus(t, wantError, sd)
 		sentMetricPoints := numMetricPoints
-		var failedToSendMetricPoints int64
+		failedToSendMetricPoints := 0
 		if wantError != nil {
 			sentMetricPoints = 0
 			failedToSendMetricPoints = numMetricPoints
 		}
-		require.Equalf(t, sentMetricPoints, sd.Attributes[obsreport.SentMetricPointsKey], "SpanData %v", sd)
-		require.Equalf(t, failedToSendMetricPoints, sd.Attributes[obsreport.FailedToSendMetricPointsKey], "SpanData %v", sd)
+		obsreporttest.CheckExporterMetricsSpanAttributes(t, sd, int64(sentMetricPoints), int64(failedToSendMetricPoints))
+	}
+
+	// TODO: When the new metrics correctly count partial dropped fix this.
+	numPoints := int64(numRequests * numMetricPoints)
+	if wantError != nil {
+		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, 0, numPoints)
+	} else {
+		obsreporttest.CheckExporterMetricsViews(t, fakeMetricsExporterName, numPoints, 0)
 	}
 }

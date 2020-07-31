@@ -19,7 +19,6 @@ package obsreport_test
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/api/trace"
 
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -102,12 +101,10 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/obsreport")
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tracer.Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, "")
@@ -117,7 +114,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	}
 	rcvdSpans := []int{13, 42}
 	for i, param := range params {
-		ctx := obsreport.StartTraceDataReceiveOp(receiverCtx, receiver, param.transport)
+		ctx := obsreport.StartTraceDataReceiveOp(receiverCtx, receiver, param.transport, obsreport.WithReceiveTracer(tracer))
 		assert.NotNil(t, ctx)
 
 		obsreport.EndTraceDataReceiveOp(
@@ -127,7 +124,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			param.err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := ime.GetSpans()
 	require.Equal(t, len(params), len(spans))
 
 	var acceptedSpans, refusedSpans int
@@ -136,23 +133,14 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedSpansKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			obsreporttest.CheckReceiverTracesSpanAttributes(t, span, params[i].transport, int64(rcvdSpans[i]), int64(0))
 		case errFake:
 			refusedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.RefusedSpansKey])
-			assert.Equal(t, params[i].err.Error(), span.Status.Message)
+			obsreporttest.CheckReceiverTracesSpanAttributes(t, span, params[i].transport, int64(0), int64(rcvdSpans[i]))
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
-		}
+		obsreporttest.CheckSpanStatus(t, params[i].err, span)
 	}
 	// Check legacy metrics.
 	legacyReceiverTags := []tag.Tag{{Key: obsreport.LegacyTagKeyReceiver, Value: receiver}}
@@ -168,12 +156,10 @@ func TestReceiveMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/obsreport")
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tracer.Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, "")
@@ -184,7 +170,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 	rcvdMetricPts := []int{23, 29}
 	rcvdTimeSeries := []int{2, 3}
 	for i, param := range params {
-		ctx := obsreport.StartMetricsReceiveOp(receiverCtx, receiver, param.transport)
+		ctx := obsreport.StartMetricsReceiveOp(receiverCtx, receiver, param.transport, obsreport.WithReceiveTracer(tracer))
 		assert.NotNil(t, ctx)
 
 		obsreport.EndMetricsReceiveOp(
@@ -195,7 +181,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			param.err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := ime.GetSpans()
 	require.Equal(t, len(params), len(spans))
 
 	var receivedTimeSeries, droppedTimeSeries int
@@ -206,24 +192,15 @@ func TestReceiveMetricsOp(t *testing.T) {
 		case nil:
 			receivedTimeSeries += rcvdTimeSeries[i]
 			acceptedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedMetricPointsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			obsreporttest.CheckReceiverMetricsSpanAttributes(t, span, params[i].transport, int64(rcvdMetricPts[i]), int64(0))
 		case errFake:
 			droppedTimeSeries += rcvdTimeSeries[i]
 			refusedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.RefusedMetricPointsKey])
-			assert.Equal(t, params[i].err.Error(), span.Status.Message)
+			obsreporttest.CheckReceiverMetricsSpanAttributes(t, span, params[i].transport, int64(0), int64(rcvdMetricPts[i]))
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
-		switch params[i].transport {
-		case "":
-			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
-		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
-		}
+		obsreporttest.CheckSpanStatus(t, params[i].err, span)
 	}
 
 	// Check legacy metrics.
@@ -240,19 +217,17 @@ func TestExportTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/obsreport")
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tracer.Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
+		ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter, obsreport.WithExportTracer(tracer))
 		assert.NotNil(t, ctx)
 
 		var numDroppedSpans int
@@ -263,7 +238,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		obsreport.EndTraceDataExportOp(ctx, numExportedSpans[i], numDroppedSpans, err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := ime.GetSpans()
 	require.Equal(t, len(errs), len(spans))
 
 	var sentSpans, failedToSendSpans int
@@ -272,17 +247,14 @@ func TestExportTraceDataOp(t *testing.T) {
 		switch errs[i] {
 		case nil:
 			sentSpans += numExportedSpans[i]
-			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[obsreport.SentSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.FailedToSendSpansKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			obsreporttest.CheckExporterTracesSpanAttributes(t, span, int64(numExportedSpans[i]), int64(0))
 		case errFake:
 			failedToSendSpans += numExportedSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.SentSpansKey])
-			assert.Equal(t, int64(numExportedSpans[i]), span.Attributes[obsreport.FailedToSendSpansKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			obsreporttest.CheckExporterTracesSpanAttributes(t, span, int64(0), int64(numExportedSpans[i]))
 		default:
 			t.Fatalf("unexpected error: %v", errs[i])
 		}
+		obsreporttest.CheckSpanStatus(t, errs[i], span)
 	}
 
 	// Check legacy metrics.
@@ -299,12 +271,10 @@ func TestExportMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/obsreport")
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(),
-		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	parentCtx, parentSpan := tracer.Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
@@ -312,7 +282,7 @@ func TestExportMetricsOp(t *testing.T) {
 	toSendMetricPts := []int{17, 23}
 	toSendTimeSeries := []int{3, 5}
 	for i, err := range errs {
-		ctx := obsreport.StartMetricsExportOp(exporterCtx, exporter)
+		ctx := obsreport.StartMetricsExportOp(exporterCtx, exporter, obsreport.WithExportTracer(tracer))
 		assert.NotNil(t, ctx)
 
 		var numDroppedTimeSeires int
@@ -328,7 +298,7 @@ func TestExportMetricsOp(t *testing.T) {
 			err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := ime.GetSpans()
 	require.Equal(t, len(errs), len(spans))
 
 	var receivedTimeSeries, droppedTimeSeries int
@@ -339,18 +309,15 @@ func TestExportMetricsOp(t *testing.T) {
 		switch errs[i] {
 		case nil:
 			sentPoints += toSendMetricPts[i]
-			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[obsreport.SentMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.FailedToSendMetricPointsKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			obsreporttest.CheckExporterMetricsSpanAttributes(t, span, int64(toSendMetricPts[i]), int64(0))
 		case errFake:
 			failedToSendPoints += toSendMetricPts[i]
 			droppedTimeSeries += toSendTimeSeries[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.SentMetricPointsKey])
-			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[obsreport.FailedToSendMetricPointsKey])
-			assert.Equal(t, errs[i].Error(), span.Status.Message)
+			obsreporttest.CheckExporterMetricsSpanAttributes(t, span, int64(0), int64(toSendMetricPts[i]))
 		default:
 			t.Fatalf("unexpected error: %v", errs[i])
 		}
+		obsreporttest.CheckSpanStatus(t, errs[i], span)
 	}
 
 	// Check legacy metrics.
@@ -363,20 +330,14 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	ss := &spanStore{}
-	trace.RegisterExporter(ss)
-	defer trace.UnregisterExporter(ss)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
 
-	trace.ApplyConfig(trace.Config{
-		DefaultSampler: trace.AlwaysSample(),
-	})
-	defer func() {
-		trace.ApplyConfig(trace.Config{
-			DefaultSampler: trace.ProbabilitySampler(1e-4),
-		})
-	}()
+	traceProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	tracer := traceProvider.Tracer("go.opentelemetry.io/collector/obsreport")
 
-	parentCtx, parentSpan := trace.StartSpan(context.Background(), t.Name())
+	parentCtx, parentSpan := tracer.Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	longLivedCtx := obsreport.ReceiverContext(parentCtx, receiver, transport, legacyName)
@@ -394,7 +355,8 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			longLivedCtx,
 			receiver,
 			transport,
-			obsreport.WithLongLivedCtx())
+			obsreport.WithLongLivedCtx(),
+			obsreport.WithReceiveTracer(tracer))
 		assert.NotNil(t, ctx)
 
 		obsreport.EndTraceDataReceiveOp(
@@ -404,31 +366,29 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			op.err)
 	}
 
-	spans := ss.PullAllSpans()
+	spans := ime.GetSpans()
 	require.Equal(t, len(ops), len(spans))
 
 	for i, span := range spans {
 		assert.Equal(t, trace.SpanID{}, span.ParentSpanID)
 		require.Equal(t, 1, len(span.Links))
 		link := span.Links[0]
-		assert.Equal(t, trace.LinkTypeParent, link.Type)
 		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
 		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
 		assert.Equal(t, "receiver/"+receiver+"/TraceDataReceived", span.Name)
-		assert.Equal(t, transport, span.Attributes[obsreport.TransportKey])
 		switch ops[i].err {
 		case nil:
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedSpansKey])
-			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+			obsreporttest.CheckReceiverTracesSpanAttributes(t, span, transport, int64(ops[i].numSpans), int64(0))
 		case errFake:
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.RefusedSpansKey])
-			assert.Equal(t, ops[i].err.Error(), span.Status.Message)
+			obsreporttest.CheckReceiverTracesSpanAttributes(t, span, transport, int64(0), int64(ops[i].numSpans))
 		default:
 			t.Fatalf("unexpected error: %v", ops[i].err)
 		}
+		obsreporttest.CheckSpanStatus(t, ops[i].err, span)
 	}
+
+	// Check metrics.
+	obsreporttest.CheckReceiverTracesViews(t, receiver, transport, int64(13), int64(42))
 }
 
 func TestProcessorTraceData(t *testing.T) {
@@ -540,23 +500,4 @@ func TestProcessorLogRecords(t *testing.T) {
 	obsreport.ProcessorLogRecordsDropped(processorCtx, droppedRecords)
 
 	obsreporttest.CheckProcessorLogsViews(t, processor, acceptedRecords, refusedRecords, droppedRecords)
-}
-
-type spanStore struct {
-	sync.Mutex
-	spans []*trace.SpanData
-}
-
-func (ss *spanStore) ExportSpan(sd *trace.SpanData) {
-	ss.Lock()
-	ss.spans = append(ss.spans, sd)
-	ss.Unlock()
-}
-
-func (ss *spanStore) PullAllSpans() []*trace.SpanData {
-	ss.Lock()
-	capturedSpans := ss.spans
-	ss.spans = nil
-	ss.Unlock()
-	return capturedSpans
 }

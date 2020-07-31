@@ -17,6 +17,8 @@ package exporterhelper
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/api/trace"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -93,6 +95,7 @@ func NewMetricsExporter(cfg configmodels.Exporter, pushMetricsData PushMetricsDa
 		return &metricsSenderWithObservability{
 			exporterName: cfg.Name(),
 			nextSender:   nextSender,
+			tracer:       be.tracer,
 		}
 	})
 
@@ -105,10 +108,11 @@ func NewMetricsExporter(cfg configmodels.Exporter, pushMetricsData PushMetricsDa
 type metricsSenderWithObservability struct {
 	exporterName string
 	nextSender   requestSender
+	tracer       trace.Tracer
 }
 
 func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartMetricsExportOp(req.context(), mewo.exporterName))
+	req.setContext(obsreport.StartMetricsExportOp(req.context(), mewo.exporterName, obsreport.WithExportTracer(mewo.tracer)))
 	numDroppedMetrics, err := mewo.nextSender.send(req)
 
 	// TODO: this is not ideal: it should come from the next function itself.

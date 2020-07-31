@@ -15,18 +15,15 @@
 package octrace
 
 import (
-	"bytes"
-	"encoding/json"
-	"reflect"
-	"sync"
 	"testing"
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/api/global"
 
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -44,7 +41,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	port, doneReceiverFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter(), global.TraceProvider())
 	defer doneReceiverFn()
 
 	n := 20
@@ -66,7 +63,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter(), global.TraceProvider())
 	defer doneFn()
 
 	n := 20
@@ -83,20 +80,8 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
-	// Always sample for the purpose of examining all the spans in this test.
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-
-	// TODO: File an issue with OpenCensus-Go to ask for a method to retrieve
-	// the default sampler because the current method of blindly changing the
-	// global sampler makes testing hard.
-	// Denoise this test by setting the sampler to never sample
-	defer trace.ApplyConfig(trace.Config{DefaultSampler: trace.NeverSample()})
-
-	ocSpansSaver := new(testOCTraceExporter)
-	trace.RegisterExporter(ocSpansSaver)
-	defer trace.UnregisterExporter(ocSpansSaver)
-
-	port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter())
+	tProvider, ime := obsreporttest.SetupSdkTraceProviderTest(t)
+	port, doneFn := ocReceiverOnGRPCServer(t, exportertest.NewNopTraceExporter(), tProvider)
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -112,67 +97,23 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	flush(traceSvcDoneFn)
 
 	// Inspection time!
-	ocSpansSaver.mu.Lock()
-	defer ocSpansSaver.mu.Unlock()
-
-	require.NotEqual(
-		t,
-		len(ocSpansSaver.spanData),
-		0,
-		"Unfortunately did not receive an exported span data. Please check this library's implementation or go.opencensus.io/trace",
-	)
-
-	gotSpanData := ocSpansSaver.spanData
-	if g, w := len(gotSpanData), n+1; g != w {
-		blob, _ := json.MarshalIndent(gotSpanData, "  ", " ")
-		t.Fatalf("Spandata count: Got %d Want %d\n\nData: %s", g, w, blob)
-	}
+	gotSpanData := ime.GetSpans()
+	require.Len(t, gotSpanData, n+1)
 
 	receiverSpanData := gotSpanData[0]
-	if g, w := len(receiverSpanData.Links), 1; g != w {
-		t.Fatalf("Links count: Got %d Want %d\nGotSpanData: %#v", g, w, receiverSpanData)
-	}
+	require.Len(t, receiverSpanData.Links, 1)
+	assert.Equal(t, "receiver/oc_trace/TraceDataReceived", receiverSpanData.Name)
 
 	// The rpc span is always last in the list
 	rpcSpanData := gotSpanData[len(gotSpanData)-1]
-
-	// Ensure that the link matches up exactly!
-	wantLink := trace.Link{
-		SpanID:  rpcSpanData.SpanID,
-		TraceID: rpcSpanData.TraceID,
-		Type:    trace.LinkTypeParent,
-	}
-	if g, w := receiverSpanData.Links[0], wantLink; !reflect.DeepEqual(g, w) {
-		t.Errorf("Link:\nGot: %#v\nWant: %#v\n", g, w)
-	}
-	if g, w := receiverSpanData.Name, "receiver/oc_trace/TraceDataReceived"; g != w {
-		t.Errorf("ReceiverExport span's SpanData.Name:\nGot:  %q\nWant: %q\n", g, w)
-	}
+	assert.Equal(t, rpcSpanData.SpanContext, receiverSpanData.Links[0].SpanContext)
 
 	// And then for the receiverSpanData itself, it SHOULD NOT
 	// have a ParentID, so let's enforce all the conditions below:
 	// 1. That it doesn't have the RPC spanID as its ParentSpanID
 	// 2. That it actually has no ParentSpanID i.e. has a blank SpanID
-	if g, w := receiverSpanData.ParentSpanID[:], rpcSpanData.SpanID[:]; bytes.Equal(g, w) {
-		t.Errorf("ReceiverSpanData.ParentSpanID unfortunately was linked to the RPC span\nGot:  %x\nWant: %x", g, w)
-	}
-
-	var blankSpanID trace.SpanID
-	if g, w := receiverSpanData.ParentSpanID[:], blankSpanID[:]; !bytes.Equal(g, w) {
-		t.Errorf("ReceiverSpanData unfortunately has a parent and isn't NULL\nGot:  %x\nWant: %x", g, w)
-	}
-}
-
-type testOCTraceExporter struct {
-	mu       sync.Mutex
-	spanData []*trace.SpanData
-}
-
-func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
-	tote.mu.Lock()
-	defer tote.mu.Unlock()
-
-	tote.spanData = append(tote.spanData, sd)
+	assert.NotEqual(t, rpcSpanData.SpanContext.SpanID, receiverSpanData.ParentSpanID[:])
+	assert.False(t, receiverSpanData.ParentSpanID.IsValid())
 }
 
 // TODO: Determine how to do this deterministic.

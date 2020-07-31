@@ -22,6 +22,8 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -42,6 +44,7 @@ type Receiver struct {
 	agenttracepb.UnimplementedTraceServiceServer
 	nextConsumer consumer.TraceConsumer
 	instanceName string
+	tracer       trace.Tracer
 }
 
 // New creates a new opencensus.Receiver reference.
@@ -53,6 +56,7 @@ func New(instanceName string, nextConsumer consumer.TraceConsumer, opts ...Optio
 	ocr := &Receiver{
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
+		tracer:       global.Tracer("go.opentelemetry.io/collector/receiver/opencensus"),
 	}
 	for _, opt := range opts {
 		opt(ocr)
@@ -152,7 +156,8 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, traceda
 		longLivedRPCCtx,
 		ocr.instanceName,
 		receiverTransport,
-		obsreport.WithLongLivedCtx())
+		obsreport.WithLongLivedCtx(),
+		obsreport.WithReceiveTracer(ocr.tracer))
 
 	var err error
 	numSpans := len(tracedata.Spans)

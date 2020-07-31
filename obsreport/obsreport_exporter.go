@@ -19,7 +19,10 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/label"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -45,7 +48,8 @@ const (
 )
 
 var (
-	tagKeyExporter, _ = tag.NewKey(ExporterKey)
+	defaultExportTracer = global.Tracer("")
+	tagKeyExporter, _   = tag.NewKey(ExporterKey)
 
 	exporterPrefix                 = ExporterKey + nameSep
 	exportTraceDataOperationSuffix = nameSep + "TraceDataExported"
@@ -83,17 +87,40 @@ var (
 		stats.UnitDimensionless)
 )
 
+// startReceiveOptions has the options related to starting a receive operation.
+type startExportOptions struct {
+	tracer trace.Tracer
+}
+
+// StartExporterOption function applies options to Start*ExportOp.
+type StartExportOption func(*startExportOptions)
+
+// WithExportTracer assign a non-default Tracer to be used when doing tracing.
+func WithExportTracer(tracer trace.Tracer) StartExportOption {
+	return func(opts *startExportOptions) {
+		opts.tracer = tracer
+	}
+}
+
+func toExportOptions(opts []StartExportOption) startExportOptions {
+	seo := startExportOptions{
+		tracer: defaultExportTracer,
+	}
+	for _, o := range opts {
+		o(&seo)
+	}
+	return seo
+}
+
 // StartTraceDataExportOp is called at the start of an Export operation.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same export operation.
 func StartTraceDataExportOp(
 	operationCtx context.Context,
 	exporter string,
+	opts ...StartExportOption,
 ) context.Context {
-	return traceExportDataOp(
-		operationCtx,
-		exporter,
-		exportTraceDataOperationSuffix)
+	return traceExportDataOp(operationCtx, exporter, exportTraceDataOperationSuffix, opts)
 }
 
 // EndTraceDataExportOp completes the export operation that was started with
@@ -122,11 +149,9 @@ func EndTraceDataExportOp(
 func StartMetricsExportOp(
 	operationCtx context.Context,
 	exporter string,
+	opts ...StartExportOption,
 ) context.Context {
-	return traceExportDataOp(
-		operationCtx,
-		exporter,
-		exportMetricsOperationSuffix)
+	return traceExportDataOp(operationCtx, exporter, exportMetricsOperationSuffix, opts)
 }
 
 // EndMetricsExportOp completes the export operation that was started with
@@ -156,11 +181,9 @@ func EndMetricsExportOp(
 func StartLogsExportOp(
 	operationCtx context.Context,
 	exporter string,
+	opts ...StartExportOption,
 ) context.Context {
-	return traceExportDataOp(
-		operationCtx,
-		exporter,
-		exportLogsOperationSuffix)
+	return traceExportDataOp(operationCtx, exporter, exportLogsOperationSuffix, opts)
 }
 
 // EndLogsExportOp completes the export operation that was started with
@@ -206,9 +229,11 @@ func traceExportDataOp(
 	exporterCtx context.Context,
 	exporterName string,
 	operationSuffix string,
+	opts []StartExportOption,
 ) context.Context {
+	seo := toExportOptions(opts)
 	spanName := exporterPrefix + exporterName + operationSuffix
-	ctx, _ := trace.StartSpan(exporterCtx, spanName)
+	ctx, _ := seo.tracer.Start(exporterCtx, spanName)
 	return ctx
 }
 
@@ -248,9 +273,9 @@ func endExportOp(
 			failedToSendMeasure.M(int64(numFailedToSend)))
 	}
 
-	span := trace.FromContext(exporterCtx)
+	span := trace.SpanFromContext(exporterCtx)
 	// End span according to errors.
-	if span.IsRecordingEvents() {
+	if span.IsRecording() {
 		var sentItemsKey, failedToSendItemsKey string
 		switch dataType {
 		case configmodels.TracesDataType:
@@ -264,13 +289,13 @@ func endExportOp(
 			failedToSendItemsKey = FailedToSendLogRecordsKey
 		}
 
-		span.AddAttributes(
-			trace.Int64Attribute(
-				sentItemsKey, int64(numSent)),
-			trace.Int64Attribute(
-				failedToSendItemsKey, int64(numFailedToSend)),
+		span.SetAttributes(
+			label.Int64(sentItemsKey, int64(numSent)),
+			label.Int64(failedToSendItemsKey, int64(numFailedToSend)),
 		)
-		span.SetStatus(errToStatus(err))
+		if err != nil {
+			span.SetStatus(codes.Unknown, err.Error())
+		}
 	}
 	span.End()
 }

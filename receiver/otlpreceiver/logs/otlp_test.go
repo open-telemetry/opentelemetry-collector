@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/internal"
 	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -176,7 +175,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.LogsConsumer) (int, func
 	require.NoError(t, err)
 
 	// Now run it as a gRPC server
-	srv := obsreport.GRPCServerWithObservabilityEnabled()
+	srv := grpc.NewServer()
 	collectorlog.RegisterLogsServiceServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)

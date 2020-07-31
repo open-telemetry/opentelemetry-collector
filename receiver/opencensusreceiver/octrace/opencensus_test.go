@@ -30,6 +30,8 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -48,7 +50,7 @@ import (
 func TestReceiver_endToEnd(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporter)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, global.TraceProvider())
 	defer doneFn()
 
 	address := fmt.Sprintf("localhost:%d", port)
@@ -86,7 +88,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporter)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, global.TraceProvider())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -215,7 +217,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporter)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, global.TraceProvider())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -283,7 +285,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporter)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, global.TraceProvider())
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -361,7 +363,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer, tProvider trace.Provider) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -379,10 +381,11 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer) (int, func(
 	}
 
 	oci, err := New(receiverTagValue, sr)
-	require.NoError(t, err, "Failed to create the Receiver: %v", err)
+	require.NoError(t, err, "Failed to create the Receiver")
+	oci.tracer = tProvider.Tracer("go.opentelemetry.io/collector/receiver/opencensus")
 
 	// Now run it as a gRPC server
-	srv := obsreport.GRPCServerWithObservabilityEnabled()
+	srv := obsreport.GRPCServerWithObservabilityEnabled(tProvider)
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)

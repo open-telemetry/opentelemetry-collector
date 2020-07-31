@@ -17,6 +17,8 @@ package exporterhelper
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/api/trace"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -81,6 +83,7 @@ func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, optio
 		return &logsExporterWithObservability{
 			exporterName: cfg.Name(),
 			nextSender:   nextSender,
+			tracer:       be.tracer,
 		}
 	})
 
@@ -93,10 +96,11 @@ func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, optio
 type logsExporterWithObservability struct {
 	exporterName string
 	nextSender   requestSender
+	tracer       trace.Tracer
 }
 
 func (lewo *logsExporterWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName))
+	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName, obsreport.WithExportTracer(lewo.tracer)))
 	numDroppedLogs, err := lewo.nextSender.send(req)
 	obsreport.EndLogsExportOp(req.context(), req.count(), numDroppedLogs, err)
 	return numDroppedLogs, err

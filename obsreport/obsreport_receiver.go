@@ -19,7 +19,10 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/label"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -51,8 +54,9 @@ const (
 )
 
 var (
-	tagKeyReceiver, _  = tag.NewKey(ReceiverKey)
-	tagKeyTransport, _ = tag.NewKey(TransportKey)
+	defaultReceiveTracer = global.Tracer("")
+	tagKeyReceiver, _    = tag.NewKey(ReceiverKey)
+	tagKeyTransport, _   = tag.NewKey(TransportKey)
 
 	receiverPrefix                  = ReceiverKey + nameSep
 	receiveTraceDataOperationSuffix = nameSep + "TraceDataReceived"
@@ -89,16 +93,18 @@ var (
 		stats.UnitDimensionless)
 )
 
-// StartReceiveOptions has the options related to starting a receive operation.
-type StartReceiveOptions struct {
-	// LongLivedCtx when true indicates that the context passed in the call
+// startReceiveOptions has the options related to starting a receive operation.
+type startReceiveOptions struct {
+	tracer trace.Tracer
+
+	// longLivedCtx when true indicates that the context passed in the call
 	// outlives the individual receive operation. See WithLongLivedCtx() for
 	// more information.
-	LongLivedCtx bool
+	longLivedCtx bool
 }
 
-// StartReceiveOption function applues changes to StartReceiveOptions.
-type StartReceiveOption func(*StartReceiveOptions)
+// StartReceiveOption function applies changes to startReceiveOptions.
+type StartReceiveOption func(*startReceiveOptions)
 
 // WithLongLivedCtx indicates that the context passed in the call outlives the
 // receive operation at hand. Typically the long lived context is associated
@@ -136,9 +142,27 @@ type StartReceiveOption func(*StartReceiveOptions)
 //    }
 //
 func WithLongLivedCtx() StartReceiveOption {
-	return func(opts *StartReceiveOptions) {
-		opts.LongLivedCtx = true
+	return func(opts *startReceiveOptions) {
+		opts.longLivedCtx = true
 	}
+}
+
+// WithReceiveTracer assign a non-default Tracer to be used when doing tracing.
+func WithReceiveTracer(tracer trace.Tracer) StartReceiveOption {
+	return func(opts *startReceiveOptions) {
+		opts.tracer = tracer
+	}
+}
+
+func toOptions(opts []StartReceiveOption) startReceiveOptions {
+	sro := startReceiveOptions{
+		tracer:       defaultReceiveTracer,
+		longLivedCtx: false,
+	}
+	for _, o := range opts {
+		o(&sro)
+	}
+	return sro
 }
 
 // StartTraceDataReceiveOp is called when a request is received from a client.
@@ -148,14 +172,9 @@ func StartTraceDataReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
-	opt ...StartReceiveOption,
+	opts ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
-		operationCtx,
-		receiver,
-		transport,
-		receiveTraceDataOperationSuffix,
-		opt...)
+	return traceReceiveOp(operationCtx, receiver, transport, receiveTraceDataOperationSuffix, opts)
 }
 
 // EndTraceDataReceiveOp completes the receive operation that was started with
@@ -192,14 +211,9 @@ func StartMetricsReceiveOp(
 	operationCtx context.Context,
 	receiver string,
 	transport string,
-	opt ...StartReceiveOption,
+	opts ...StartReceiveOption,
 ) context.Context {
-	return traceReceiveOp(
-		operationCtx,
-		receiver,
-		transport,
-		receiverMetricsOperationSuffix,
-		opt...)
+	return traceReceiveOp(operationCtx, receiver, transport, receiverMetricsOperationSuffix, opts)
 }
 
 // EndMetricsReceiveOp completes the receive operation that was started with
@@ -261,32 +275,26 @@ func traceReceiveOp(
 	receiverName string,
 	transport string,
 	operationSuffix string,
-	opt ...StartReceiveOption,
+	opts []StartReceiveOption,
 ) context.Context {
-	var opts StartReceiveOptions
-	for _, o := range opt {
-		o(&opts)
-	}
+	sro := toOptions(opts)
 
 	var ctx context.Context
-	var span *trace.Span
+	var span trace.Span
 	spanName := receiverPrefix + receiverName + operationSuffix
-	if !opts.LongLivedCtx {
-		ctx, span = trace.StartSpan(receiverCtx, spanName)
+	if !sro.longLivedCtx {
+		ctx, span = sro.tracer.Start(receiverCtx, spanName)
 	} else {
 		// Since the receiverCtx is long lived do not use it to start the span.
 		// This way this trace ends when the EndTraceDataReceiveOp is called.
 		// Here is safe to ignore the returned context since it is not used below.
-		_, span = trace.StartSpan(context.Background(), spanName)
-
-		// If the long lived context has a parent span, then add it as a parent link.
-		setParentLink(receiverCtx, span)
-
-		ctx = trace.NewContext(receiverCtx, span)
+		psc := trace.SpanFromContext(receiverCtx).SpanContext()
+		_, span = sro.tracer.Start(context.Background(), spanName, trace.LinkedTo(psc))
+		ctx = trace.ContextWithSpan(receiverCtx, span)
 	}
 
 	if transport != "" {
-		span.AddAttributes(trace.StringAttribute(TransportKey, transport))
+		span.SetAttribute(TransportKey, transport)
 	}
 	return ctx
 }
@@ -306,7 +314,7 @@ func endReceiveOp(
 		numRefused = numReceivedItems
 	}
 
-	span := trace.FromContext(receiverCtx)
+	span := trace.SpanFromContext(receiverCtx)
 
 	if useNew {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
@@ -326,7 +334,7 @@ func endReceiveOp(
 	}
 
 	// end span according to errors
-	if span.IsRecordingEvents() {
+	if span.IsRecording() {
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
 		case configmodels.TracesDataType:
@@ -337,15 +345,14 @@ func endReceiveOp(
 			refusedItemsKey = RefusedMetricPointsKey
 		}
 
-		span.AddAttributes(
-			trace.StringAttribute(
-				FormatKey, format),
-			trace.Int64Attribute(
-				acceptedItemsKey, int64(numAccepted)),
-			trace.Int64Attribute(
-				refusedItemsKey, int64(numRefused)),
+		span.SetAttributes(
+			label.String(FormatKey, format),
+			label.Int64(acceptedItemsKey, int64(numAccepted)),
+			label.Int64(refusedItemsKey, int64(numRefused)),
 		)
-		span.SetStatus(errToStatus(err))
+		if err != nil {
+			span.SetStatus(codes.Unknown, err.Error())
+		}
 	}
 	span.End()
 }

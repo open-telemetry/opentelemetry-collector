@@ -17,6 +17,8 @@ package exporterhelper
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/api/trace"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -86,6 +88,7 @@ func NewTraceExporter(
 		return &tracesExporterWithObservability{
 			exporterName: cfg.Name(),
 			nextSender:   nextSender,
+			tracer:       be.tracer,
 		}
 	})
 
@@ -98,10 +101,11 @@ func NewTraceExporter(
 type tracesExporterWithObservability struct {
 	exporterName string
 	nextSender   requestSender
+	tracer       trace.Tracer
 }
 
 func (tewo *tracesExporterWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartTraceDataExportOp(req.context(), tewo.exporterName))
+	req.setContext(obsreport.StartTraceDataExportOp(req.context(), tewo.exporterName, obsreport.WithExportTracer(tewo.tracer)))
 	// Forward the data to the next consumer (this pusher is the next).
 	droppedSpans, err := tewo.nextSender.send(req)
 

@@ -27,6 +27,7 @@ import (
 	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
+	"go.opentelemetry.io/otel/api/global"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
@@ -137,7 +138,7 @@ func (ocr *ocReceiver) grpcServer() *grpc.Server {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		ocr.serverGRPC = obsreport.GRPCServerWithObservabilityEnabled(ocr.grpcServerOptions...)
+		ocr.serverGRPC = obsreport.GRPCServerWithObservabilityEnabled(global.TraceProvider(), ocr.grpcServerOptions...)
 	}
 
 	return ocr.serverGRPC
