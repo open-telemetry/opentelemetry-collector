@@ -3,6 +3,7 @@ package cortexexporter
 import (
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"time"
 )
 type combination struct {
 	ty   otlp.MetricDescriptor_Type
@@ -46,7 +47,7 @@ var (
 )
 
 // labels must come in pairs
-func labelSet (labels...string) []*commonpb.StringKeyValue{
+func getLabelSet (labels...string) []*commonpb.StringKeyValue{
 	var set []*commonpb.StringKeyValue
 	for i := 0; i < len(labels); i += 2 {
 		set = append(set, &commonpb.StringKeyValue{
@@ -58,7 +59,6 @@ func labelSet (labels...string) []*commonpb.StringKeyValue{
 }
 
 func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescriptor {
-
 	return &otlp.MetricDescriptor{
 		Name:        name,
 		Description: "",
@@ -68,4 +68,57 @@ func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescripto
 	}
 }
 
+func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64,) *otlp.Int64DataPoint{
+	return &otlp.Int64DataPoint{
+		Labels:            lbls,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      uint64(time.Now().Unix()),
+		Value:             value,
+	}
+}
+
+func getDoubleDataPoint(lbls []*commonpb.StringKeyValue, value float64,) *otlp.DoubleDataPoint {
+	return &otlp.DoubleDataPoint{
+		Labels:            lbls,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      uint64(time.Now().Unix()),
+		Value:             value,
+	}
+}
+
+func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+	bks := []*otlp.HistogramDataPoint_Bucket{}
+	for _, c := range buckets {
+		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
+			Count:    c,
+			Exemplar: nil,
+		})
+	}
+	return &otlp.HistogramDataPoint{
+		Labels:            lbls,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      uint64(time.Now().Unix()),
+		Count:             count,
+		Sum:               sum,
+		Buckets:           bks,
+		ExplicitBounds:    bounds,
+	}
+}
+func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
+	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
+	for i, v := range values {
+		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
+			Percentile: pcts[i],
+			Value: v,
+			})
+	}
+	return &otlp.SummaryDataPoint{
+		Labels:            lbls,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      uint64(time.Now().Unix()),
+		Count:             count,
+		Sum:               sum,
+		PercentileValues:  pcs,
+	}
+}
 

@@ -15,8 +15,6 @@
 package cortexexporter
 
 import (
-	"github.com/prometheus/prometheus/prompb"
-	commonproto "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"strconv"
 	"testing"
 
@@ -68,19 +66,7 @@ func Test_validateMetrics(t *testing.T) {
 	}
 }
 
-func Test_createLabelSet(t testing.T) {
-	tests := []struct{
-		labels *[]commonproto.StringKeyValue
-		extras []string
-	} {
-		{&commonproto.StringKeyValue{
-			Key:   "",
-			Value: "",
-		}
-		}
-
-	}
-}
+func Test_create
 
 func Test_handleScalarMetric(t *testing.T) {
 
