@@ -11,14 +11,14 @@ Cortex is an open source, horizontally scalable, highly available, multi-tenant,
 
 The following diagram is the architecture of Cortex. 
 
-![Cortex Archietecture](https://raw.githubusercontent.com/open-o11y/opentelemetry-collector/design-doc/exporter/cortexexporter/png%3Bbase64e4e5466cd84608b5%20(1).png)
+![Cortex Archietecture](https://raw.githubusercontent.com/open-o11y/opentelemetry-collector/design-doc/exporter/cortexexporter/cortex.png)
 
 ### **1.1 Remote Write API**
 
 Cortex has a Remote Write API that accepts incoming metrics. This exporter should write metrics to a remote URL in a snappy-compressed, protocol buffer encoded HTTP request defined by the Remote Write API. Each request encodes multiple Cortex TimeSeries, which are composed of a set of labels and a collection of samples. Each label contains a name-value pair of strings, and each sample contains a timestamp-value number pair.
 
 ![Image of TimeSeries
-](https://raw.githubusercontent.com/open-o11y/opentelemetry-collector/design-doc/exporter/cortexexporter/png%3Bbase6470b5ba4b11b18d5c.png)
+](https://raw.githubusercontent.com/open-o11y/opentelemetry-collector/design-doc/exporter/cortexexporter/timeseries.png)
 
 TimeSeries stores its metric name in its labels and does not describe metric types or start timestamps. To convert to TimeSeries data, buckets of a Histogram are broken down into individual TimeSeries with a bound label(`le`), and a similar process happens with quantiles in a Summary.
 
