@@ -32,6 +32,7 @@ import (
 )
 
 var floatRegex, _ = regexp.Compile(`^-?\d+\.\d+$`)
+var ocRegex, _ = regexp.Compile(`^opencensus`)
 
 var intAttributes = getIntAttributes()
 
@@ -64,6 +65,10 @@ func getNonSpanAttributes() map[string]struct{} {
 	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
 	attrs[tracetranslator.TagInstrumentationName] = struct{}{}
 	attrs[tracetranslator.TagInstrumentationVersion] = struct{}{}
+	attrs[conventions.OCAttributeProcessStartTime] = struct{}{}
+	attrs[conventions.OCAttributeExporterVersion] = struct{}{}
+	attrs[conventions.OCAttributeProcessID] = struct{}{}
+	attrs[conventions.OCAttributeResourceType] = struct{}{}
 	return attrs
 }
 
@@ -150,6 +155,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(zspan.ID))))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
 		dest.SetTraceState(pdata.TraceState(value))
+		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
 	if parentID != nil && *parentID != zspan.ID {
@@ -402,6 +408,12 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 
 	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
 		if value, ok := tags[key]; ok {
+			resource.Attributes().UpsertString(key, value)
+			delete(tags, key)
+		}
+	}
+	for key, value := range tags {
+		if ocRegex.Match([]byte(key)) {
 			resource.Attributes().UpsertString(key, value)
 			delete(tags, key)
 		}

@@ -104,8 +104,7 @@ func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 		}
 		v.assertSentRecdTracingDataEqual(tracesList)
 	}
-	// TODO enable once identified problems are fixed
-	//assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
+	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }
 
 func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
@@ -428,14 +427,18 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 			sentVal := retrieveAttributeValue(sentAttr)
 			recdVal := retrieveAttributeValue(recdAttr)
 			if !reflect.DeepEqual(sentVal, recdVal) {
-				af := &AssertionFailure{
-					typeName:      "Span",
-					dataComboName: spanName,
-					fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
-					expectedValue: sentVal,
-					actualValue:   recdVal,
+				sentStr := fmt.Sprintf("%v", sentVal)
+				recdStr := fmt.Sprintf("%v", recdVal)
+				if sentStr != recdStr {
+					af := &AssertionFailure{
+						typeName:      "Span",
+						dataComboName: spanName,
+						fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
+						expectedValue: sentVal,
+						actualValue:   recdVal,
+					}
+					v.assertionFailures = append(v.assertionFailures, af)
 				}
-				v.assertionFailures = append(v.assertionFailures, af)
 			}
 		} else {
 			af := &AssertionFailure{
