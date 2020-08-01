@@ -29,10 +29,5 @@ func TestSingleJSONV1BatchToTraces(t *testing.T) {
 	got, err := V1JSONBatchToInternalTraces(blob)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
-	assert.Equal(t, 4, len(got))
-	spanCount := 0
-	for _, td := range got {
-		spanCount += td.SpanCount()
-	}
-	assert.Equal(t, 5, spanCount)
+	assert.Equal(t, 5, got.SpanCount())
 }

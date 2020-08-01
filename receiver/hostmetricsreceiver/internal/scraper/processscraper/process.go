@@ -58,7 +58,7 @@ func (m *processMetadata) initializeResource(resource pdata.Resource) {
 }
 
 func (m *processMetadata) insertPid(attr pdata.AttributeMap) {
-	attr.InsertInt(conventions.AttributeProcessPID, int64(m.pid))
+	attr.InsertInt(conventions.AttributeProcessID, int64(m.pid))
 }
 
 func (m *processMetadata) insertExecutable(attr pdata.AttributeMap) {

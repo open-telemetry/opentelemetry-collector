@@ -35,10 +35,5 @@ func TestV1ThriftToTraces(t *testing.T) {
 	got, err := V1ThriftBatchToInternalTraces(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 
-	assert.Equal(t, 4, len(got))
-	spanCount := 0
-	for _, td := range got {
-		spanCount += td.SpanCount()
-	}
-	assert.Equal(t, 5, spanCount)
+	assert.Equal(t, 5, got.SpanCount())
 }

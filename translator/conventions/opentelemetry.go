@@ -42,7 +42,7 @@ const (
 	AttributeHostImageName         = "host.image.name"
 	AttributeHostImageID           = "host.image.id"
 	AttributeHostImageVersion      = "host.image.version"
-	AttributeProcessPID            = "process.pid"
+	AttributeProcessID             = "process.pid"
 	AttributeProcessExecutableName = "process.executable.name"
 	AttributeProcessExecutablePath = "process.executable.path"
 	AttributeProcessCommand        = "process.command"
@@ -82,7 +82,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeHostImageName,
 		AttributeHostImageID,
 		AttributeHostImageVersion,
-		AttributeProcessPID,
+		AttributeProcessID,
 		AttributeProcessExecutableName,
 		AttributeProcessExecutablePath,
 		AttributeProcessCommand,

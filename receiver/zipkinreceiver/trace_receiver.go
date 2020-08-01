@@ -115,11 +115,11 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 }
 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []pdata.Traces, err error) {
+func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
 		zSpans, err := deserializeThrift(blob)
 		if err != nil {
-			return nil, err
+			return pdata.NewTraces(), err
 		}
 
 		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
@@ -269,19 +269,12 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = r.Body.Close()
 
-	var tds []pdata.Traces
+	var td pdata.Traces
 	var err error
 	if asZipkinv1 {
-		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
+		td, err = zr.v1ToTraceSpans(slurp, r.Header)
 	} else {
-		td, tErr := zr.v2ToTraceSpans(slurp, r.Header)
-		if tErr == nil {
-			tds = make([]pdata.Traces, 0, 1)
-			tds = append(tds, td)
-		} else {
-			tds = make([]pdata.Traces, 0)
-			err = tErr
-		}
+		td, err = zr.v2ToTraceSpans(slurp, r.Header)
 	}
 
 	if err != nil {
@@ -289,19 +282,9 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var consumerErr error
-	tdsSize := 0
-	for _, td := range tds {
-		tdsSize += td.SpanCount()
-		if consumerErr != nil {
-			// Do not attempt the remaining data, continue on the loop just to
-			// count all the data on the request.
-			continue
-		}
-		consumerErr = zr.nextConsumer.ConsumeTraces(ctx, td)
-	}
+	consumerErr := zr.nextConsumer.ConsumeTraces(ctx, td)
 
-	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, tdsSize, consumerErr)
+	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
 
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.

@@ -20,11 +20,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
-	"github.com/google/go-cmp/cmp"
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -282,7 +280,24 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	assert.Equal(t, want.SpanCount(), reqs.SpanCount())
 	assert.Equal(t, want.ResourceSpans().Len(), reqs.ResourceSpans().Len())
-	if diff := cmp.Diff(want, reqs, protocmp.Transform()); diff != "" {
-		t.Errorf("Unexpected difference:\n%v", diff)
+	for i := 0; i < want.ResourceSpans().Len(); i++ {
+		wantRS := want.ResourceSpans().At(i)
+		wSvcName, ok := wantRS.Resource().Attributes().Get(conventions.AttributeServiceName)
+		assert.True(t, ok)
+		for j := 0; j < reqs.ResourceSpans().Len(); j++ {
+			reqsRS := reqs.ResourceSpans().At(j)
+			rSvcName, ok := reqsRS.Resource().Attributes().Get(conventions.AttributeServiceName)
+			assert.True(t, ok)
+			if rSvcName.StringVal() == wSvcName.StringVal() {
+				compareResourceSpans(t, wantRS, reqsRS)
+			}
+		}
 	}
+}
+
+func compareResourceSpans(t *testing.T, wantRS pdata.ResourceSpans, reqsRS pdata.ResourceSpans) {
+	assert.Equal(t, wantRS.InstrumentationLibrarySpans().Len(), reqsRS.InstrumentationLibrarySpans().Len())
+	wantIL := wantRS.InstrumentationLibrarySpans().At(0)
+	reqsIL := reqsRS.InstrumentationLibrarySpans().At(0)
+	assert.Equal(t, wantIL.Spans().Len(), reqsIL.Spans().Len())
 }

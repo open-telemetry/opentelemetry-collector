@@ -19,15 +19,17 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func V1JSONBatchToInternalTraces(blob []byte) ([]pdata.Traces, error) {
+func V1JSONBatchToInternalTraces(blob []byte) (pdata.Traces, error) {
+	traces := pdata.NewTraces()
+
 	ocTraces, err := V1JSONBatchToOCProto(blob)
 	if err != nil {
-		return make([]pdata.Traces, 0), err
+		return traces, err
 	}
 
-	traces := make([]pdata.Traces, 0, len(ocTraces))
 	for _, td := range ocTraces {
-		traces = append(traces, internaldata.OCToTraceData(td))
+		tmp := internaldata.OCToTraceData(td)
+		tmp.ResourceSpans().MoveAndAppendTo(traces.ResourceSpans())
 	}
 	return traces, nil
 }
