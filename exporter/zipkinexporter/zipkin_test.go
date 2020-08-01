@@ -117,7 +117,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		  "tags": {"http.path": "/api","clnt/finagle.version": "6.45.0"}
 		},
 		{
-		  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91386","id": "4d1e00c0db9010db",
+		  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91386","id": "4d1e00c0db9010dc",
 		  "kind": "SERVER","name": "put",
 		  "timestamp": 1472470996199000,"duration": 207000,
 		  "localEndpoint": {"serviceName": "frontend","ipv6": "7::80:807f"},
@@ -131,7 +131,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		{
 		  "traceId": "4d1e00c0db9010db86154a4ba6e91385",
 		  "parentId": "86154a4ba6e91386",
-		  "id": "4d1e00c0db9010db",
+		  "id": "4d1e00c0db9010dd",
 		  "kind": "SERVER",
 		  "name": "put",
 		  "timestamp": 1472470996199000,
@@ -139,10 +139,19 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		}]
 		`}
 	for i, s := range wants {
-		want := testutil.GenerateNormalizedJSON(t, s)
+		want := unmarshalZipkinSpanArrayToMap(t, s)
 		gotBytes := buf.Next(int(sizes[i]))
-		got := testutil.GenerateNormalizedJSON(t, string(gotBytes))
-		assert.Equal(t, want, got)
+		got := unmarshalZipkinSpanArrayToMap(t, string(gotBytes))
+		for id, expected := range want {
+			actual, ok := got[id]
+			assert.True(t, ok)
+			assert.Equal(t, expected.ID, actual.ID)
+			assert.Equal(t, expected.Name, actual.Name)
+			assert.Equal(t, expected.TraceID, actual.TraceID)
+			assert.Equal(t, expected.Timestamp, actual.Timestamp)
+			assert.Equal(t, expected.Duration, actual.Duration)
+			assert.Equal(t, expected.Kind, actual.Kind)
+		}
 	}
 }
 
@@ -237,7 +246,7 @@ const zipkinSpansJSONJavaLibrary = `
 {
   "traceId": "4d1e00c0db9010db86154a4ba6e91385",
   "parentId": "86154a4ba6e91386",
-  "id": "4d1e00c0db9010db",
+  "id": "4d1e00c0db9010dc",
   "kind": "SERVER",
   "name": "put",
   "timestamp": 1472470996199000,
@@ -269,7 +278,7 @@ const zipkinSpansJSONJavaLibrary = `
 {
   "traceId": "4d1e00c0db9010db86154a4ba6e91385",
   "parentId": "86154a4ba6e91386",
-  "id": "4d1e00c0db9010db",
+  "id": "4d1e00c0db9010dd",
   "kind": "SERVER",
   "name": "put",
   "timestamp": 1472470996199000,
