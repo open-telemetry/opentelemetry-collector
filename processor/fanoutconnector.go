@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/converter"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // This file contains implementations of Trace/Metrics connectors
@@ -166,7 +165,7 @@ type LogFanOutConnector []consumer.LogsConsumer
 var _ consumer.LogsConsumer = (*LogFanOutConnector)(nil)
 
 // Consume exports the span data to all  consumers wrapped by the current one.
-func (fc LogFanOutConnector) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (fc LogFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 	for _, tc := range fc {
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {

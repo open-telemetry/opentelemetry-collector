@@ -72,12 +72,17 @@ func TestLoadConfig(t *testing.T) {
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
-			networkscraper.TypeStr:    &networkscraper.Config{},
-			processesscraper.TypeStr:  &processesscraper.Config{},
-			swapscraper.TypeStr:       &swapscraper.Config{},
+			networkscraper.TypeStr: &networkscraper.Config{
+				Include: networkscraper.MatchConfig{
+					Interfaces: []string{"test1"},
+					Config:     filterset.Config{MatchType: "strict"},
+				},
+			},
+			processesscraper.TypeStr: &processesscraper.Config{},
+			swapscraper.TypeStr:      &swapscraper.Config{},
 			processscraper.TypeStr: &processscraper.Config{
 				Include: processscraper.MatchConfig{
-					Names:  []string{"test1", "test2"},
+					Names:  []string{"test2", "test3"},
 					Config: filterset.Config{MatchType: "regexp"},
 				},
 			},
@@ -95,7 +100,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config-noscrapers.yaml"), factories)
 
-	require.EqualError(t, err, "error reading settings for receiver type \"hostmetrics\": must specify at least one scraper when using hostmetrics receiver")
+	require.EqualError(t, err, "error reading receivers configuration for hostmetrics: must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
@@ -106,5 +111,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.EqualError(t, err, "error reading settings for receiver type \"hostmetrics\": invalid scraper key: invalidscraperkey")
+	require.EqualError(t, err, "error reading receivers configuration for hostmetrics: invalid scraper key: invalidscraperkey")
 }

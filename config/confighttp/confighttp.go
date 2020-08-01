@@ -32,6 +32,12 @@ type HTTPClientSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
+	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
+	ReadBufferSize int `mapstructure:"read_buffer_size"`
+
+	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
+	WriteBufferSize int `mapstructure:"write_buffer_size"`
+
 	// Timeout parameter configures `http.Client.Timeout`.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 }
@@ -44,6 +50,12 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
+	}
+	if hcs.ReadBufferSize > 0 {
+		transport.ReadBufferSize = hcs.ReadBufferSize
+	}
+	if hcs.WriteBufferSize > 0 {
+		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 	return &http.Client{
 		Transport: transport,

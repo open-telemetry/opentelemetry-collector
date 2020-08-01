@@ -20,11 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
+	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
+	"go.opentelemetry.io/collector/extension/fluentbitextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
@@ -58,6 +60,7 @@ func Components() (
 		&healthcheckextension.Factory{},
 		&pprofextension.Factory{},
 		&zpagesextension.Factory{},
+		&fluentbitextension.Factory{},
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -84,6 +87,7 @@ func Components() (
 		jaegerexporter.NewFactory(),
 		&fileexporter.Factory{},
 		otlpexporter.NewFactory(),
+		kafkaexporter.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

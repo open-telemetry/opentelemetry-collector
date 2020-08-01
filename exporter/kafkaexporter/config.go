@@ -1,0 +1,63 @@
+// Copyright 2020 The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kafkaexporter
+
+import (
+	"time"
+
+	"go.opentelemetry.io/collector/config/configmodels"
+)
+
+// Config defines configuration for Kafka exporter.
+type Config struct {
+	configmodels.ExporterSettings `mapstructure:",squash"`
+	// The list of kafka brokers (default localhost:9092)
+	Brokers []string `mapstructure:"brokers"`
+	// Kafka protocol version
+	ProtocolVersion string `mapstructure:"protocol_version"`
+	// The name of the kafka topic to export to (default "otlp_spans")
+	Topic string `mapstructure:"topic"`
+
+	// Metadata is the namespace for metadata management properties used by the
+	// Client, and shared by the Producer/Consumer.
+	Metadata Metadata `mapstructure:"metadata"`
+
+	// TODO authentication
+	// TODO batch settings
+}
+
+// Metadata defines configuration for retrieving metadata from the broker.
+type Metadata struct {
+	// Whether to maintain a full set of metadata for all topics, or just
+	// the minimal set that has been necessary so far. The full set is simpler
+	// and usually more convenient, but can take up a substantial amount of
+	// memory if you have many topics and partitions. Defaults to true.
+	Full bool `mapstructure:"full"`
+
+	// Retry configuration for metadata.
+	// This configuration is useful to avoid race conditions when broker
+	// is starting at the same time as collector.
+	Retry MetadataRetry `mapstructure:"retry"`
+}
+
+// MetadataRetry defines retry configuration for Metadata.
+type MetadataRetry struct {
+	// The total number of times to retry a metadata request when the
+	// cluster is in the middle of a leader election or at startup (default 3).
+	Max int `mapstructure:"max"`
+	// How long to wait for leader election to occur before retrying
+	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
+	Backoff time.Duration `mapstructure:"backoff"`
+}

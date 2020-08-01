@@ -256,7 +256,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	ld := data.NewLogs()
+	ld := pdata.NewLogs()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800

@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/converter"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // This file contains implementations of cloning Trace/Metrics connectors
@@ -226,7 +225,7 @@ type LogCloningFanOutConnector []consumer.LogsConsumer
 var _ consumer.LogsConsumer = (*LogCloningFanOutConnector)(nil)
 
 // ConsumeLogs exports the span data to all  consumers wrapped by the current one.
-func (lfc LogCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (lfc LogCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.

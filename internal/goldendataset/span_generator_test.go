@@ -58,7 +58,7 @@ func TestGenerateChildSpan(t *testing.T) {
 	span := GenerateSpan(traceID, parentID, "get_test_info", spanInputs, random)
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Equal(t, parentID, span.ParentSpanId)
-	assert.Equal(t, 8, len(span.Attributes))
+	assert.Equal(t, 10, len(span.Attributes))
 	assert.Equal(t, otlptrace.Status_Ok, span.Status.Code)
 }
 

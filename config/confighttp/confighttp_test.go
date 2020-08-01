@@ -28,6 +28,22 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
+func TestAllHTTPClientSettings(t *testing.T) {
+	hcs := &HTTPClientSettings{
+		Endpoint: "localhost:1234",
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: false,
+		},
+		ReadBufferSize:  1024,
+		WriteBufferSize: 512,
+	}
+	client, err := hcs.ToClient()
+	assert.NoError(t, err)
+	transport := client.Transport.(*http.Transport)
+	assert.EqualValues(t, 1024, transport.ReadBufferSize)
+	assert.EqualValues(t, 512, transport.WriteBufferSize)
+}
+
 func TestHTTPClientSettingsError(t *testing.T) {
 	tests := []struct {
 		settings HTTPClientSettings

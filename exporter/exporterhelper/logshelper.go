@@ -20,21 +20,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
 // PushLogsData is a helper function that is similar to ConsumeLogsData but also returns
 // the number of dropped logs.
-type PushLogsData func(ctx context.Context, md data.Logs) (droppedTimeSeries int, err error)
+type PushLogsData func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error)
 
 type logsRequest struct {
 	baseRequest
-	ld     data.Logs
+	ld     pdata.Logs
 	pusher PushLogsData
 }
 
-func newLogsRequest(ctx context.Context, ld data.Logs, pusher PushLogsData) request {
+func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogsData) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -60,7 +60,7 @@ type logsExporter struct {
 	pushLogsData PushLogsData
 }
 
-func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	exporterCtx := obsreport.ExporterContext(ctx, lexp.cfg.Name())
 	_, err := lexp.sender.send(newLogsRequest(exporterCtx, ld, lexp.pushLogsData))
 	return err

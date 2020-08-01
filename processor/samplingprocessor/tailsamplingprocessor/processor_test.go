@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
@@ -268,8 +267,10 @@ var _ tTicker = (*manualTTicker)(nil)
 func (t *manualTTicker) Start(d time.Duration) {
 	t.Started = true
 }
+
 func (t *manualTTicker) OnTick() {
 }
+
 func (t *manualTTicker) Stop() {
 }
 
@@ -290,11 +291,13 @@ func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 		batchPipe: batches,
 	}
 }
+
 func (s *syncIDBatcher) AddToCurrentBatch(id idbatcher.ID) {
 	s.Lock()
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()
 }
+
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
 	s.Lock()
 	defer s.Unlock()
@@ -303,6 +306,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	s.openBatch = nil
 	return firstBatch, true
 }
+
 func (s *syncIDBatcher) Stop() {
 }
 
@@ -311,21 +315,6 @@ type mockSpanProcessor struct {
 }
 
 func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	batchSize := len(td.Spans)
-	p.TotalSpans += batchSize
-	return nil
-}
-
-func (p *mockSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
-}
-
-// Start is invoked during service startup.
-func (p *mockSpanProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (p *mockSpanProcessor) Shutdown(context.Context) error {
+	p.TotalSpans += len(td.Spans)
 	return nil
 }

@@ -19,13 +19,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
 type logTestCase struct {
 	name string
-	ld   data.Logs
+	ld   pdata.Logs
 	otlp []*otlplogs.ResourceLogs
 }
 
@@ -96,9 +96,9 @@ func TestToFromOtlpLog(t *testing.T) {
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
-			ld := data.LogsFromProto(test.otlp)
+			ld := pdata.LogsFromOtlp(test.otlp)
 			assert.EqualValues(t, test.ld, ld)
-			otlp := data.LogsToProto(ld)
+			otlp := pdata.LogsToOtlp(ld)
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}

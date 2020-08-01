@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
@@ -202,7 +202,7 @@ func (e *Exporter) ConsumeMetricsData(ctx context.Context, md consumerdata.Metri
 	return nil
 }
 
-func (e *Exporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (e *Exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -210,7 +210,7 @@ func (e *Exporter) ConsumeLogs(ctx context.Context, ld data.Logs) error {
 	// Prepare to write JSON object.
 	jw := &jsonWriter{writer: e.file}
 
-	logsProto := data.LogsToProto(ld)
+	logsProto := pdata.LogsToOtlp(ld)
 
 	for _, rl := range logsProto {
 		if err := jw.Begin(); err != nil {

@@ -134,7 +134,7 @@ func TestResourceMetricsSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewResourceMetrics()
+	emptyVal2 := NewResourceMetrics()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -286,7 +286,7 @@ func TestInstrumentationLibraryMetricsSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewInstrumentationLibraryMetrics()
+	emptyVal2 := NewInstrumentationLibraryMetrics()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -438,7 +438,7 @@ func TestMetricSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewMetric()
+	emptyVal2 := NewMetric()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -668,7 +668,7 @@ func TestInt64DataPointSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewInt64DataPoint()
+	emptyVal2 := NewInt64DataPoint()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -837,7 +837,7 @@ func TestDoubleDataPointSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewDoubleDataPoint()
+	emptyVal2 := NewDoubleDataPoint()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -1006,7 +1006,7 @@ func TestHistogramDataPointSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewHistogramDataPoint()
+	emptyVal2 := NewHistogramDataPoint()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -1202,7 +1202,7 @@ func TestHistogramBucketSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewHistogramBucket()
+	emptyVal2 := NewHistogramBucket()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -1396,7 +1396,7 @@ func TestSummaryDataPointSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewSummaryDataPoint()
+	emptyVal2 := NewSummaryDataPoint()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -1583,7 +1583,7 @@ func TestSummaryValueAtPercentileSlice_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= NewSummaryValueAtPercentile()
+	emptyVal2 := NewSummaryValueAtPercentile()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)

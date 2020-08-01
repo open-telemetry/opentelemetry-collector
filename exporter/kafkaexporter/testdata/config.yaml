@@ -1,0 +1,23 @@
+exporters:
+  kafka:
+    topic: spans
+    brokers:
+      - "foo:123"
+      - "bar:456"
+    metadata:
+      full: false
+      retry:
+        max: 15
+
+processors:
+  exampleprocessor:
+
+receivers:
+  examplereceiver:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [kafka]

@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	idata "go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -185,7 +185,7 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			}
 
 			// Send one custom data.
-			log := idata.Logs{}
+			log := pdata.Logs{}
 			processor.firstLC.(consumer.LogsConsumer).ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.

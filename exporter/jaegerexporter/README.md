@@ -10,13 +10,18 @@ https://github.com/grpc/grpc/blob/master/doc/naming.md
 
 The following settings can be optionally configured:
 
-- `cert_pem_file`: certificate file for TLS credentials of gRPC client. Should
-only be used if `insecure` is set to false.
-- `insecure` (default = false): whether to disable client transport security for the exporter's gRPC
-connection. See [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
-- `keepalive`: keepalive parameters for client gRPC. See
+- `insecure` (default = false): whether to enable client transport security for
+  the exporter's gRPC connection. See
+  [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
+- `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
+  only be used if `insecure` is set to true.
+- `cert_file` path to the TLS cert to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `key_file` path to the TLS key to use for TLS required connections. Should
+  only be used if `insecure` is set to true.
+- `keepalive` keepalive parameters for client gRPC. See
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-- `server_name_override`: If set to a non empty string, it will override the virtual host name 
+- `server_name_override` If set to a non-empty string, it will override the virtual host name 
 of authority (e.g. :authority header field) in requests (typically used for testing).
 - `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.
 See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).

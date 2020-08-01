@@ -23,7 +23,6 @@ import (
 	"net"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -38,7 +37,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
@@ -47,9 +46,9 @@ import (
 func TestReceiver_endToEnd(t *testing.T) {
 	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
 
-	sappender := newSpanAppender()
+	spanSink := new(exportertest.SinkTraceExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, sappender)
+	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -113,9 +112,9 @@ func TestReceiver_endToEnd(t *testing.T) {
 
 	// Now span inspection and verification time!
 	var gotSpans []*tracepb.Span
-	sappender.forEachEntry(func(_ *commonpb.Node, spans []*tracepb.Span) {
-		gotSpans = append(gotSpans, spans...)
-	})
+	for _, td := range spanSink.AllTraces() {
+		gotSpans = append(gotSpans, td.Spans...)
+	}
 
 	wantSpans := []*tracepb.Span{
 		{
@@ -168,7 +167,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportTrace request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	spanSink := newSpanAppender()
+	spanSink := new(exportertest.SinkTraceExporterOld)
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -233,10 +232,9 @@ func TestExportMultiplexing(t *testing.T) {
 
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
-
-	spanSink.forEachEntry(func(node *commonpb.Node, spans []*tracepb.Span) {
-		resultsMapping[nodeToKey(node)] = spans
-	})
+	for _, td := range spanSink.AllTraces() {
+		resultsMapping[nodeToKey(td.Node)] = append(resultsMapping[nodeToKey(td.Node)], td.Spans...)
+	}
 
 	// First things first, we expect exactly 3 unique keys
 	// 1. Initiating Node
@@ -295,7 +293,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	spanSink := newSpanAppender()
+	spanSink := new(exportertest.SinkTraceExporterOld)
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -363,7 +361,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // spans should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
-	spanSink := newSpanAppender()
+	spanSink := new(exportertest.SinkTraceExporterOld)
 
 	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -385,9 +383,9 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
-	spanSink.forEachEntry(func(node *commonpb.Node, spans []*tracepb.Span) {
-		resultsMapping[nodeToKey(node)] = spans
-	})
+	for _, td := range spanSink.AllTraces() {
+		resultsMapping[nodeToKey(td.Node)] = append(resultsMapping[nodeToKey(td.Node)], td.Spans...)
+	}
 
 	if g, w := len(resultsMapping), 1; g != w {
 		t.Errorf("Results mapping: Got len(keys) %d Want %d", g, w)
@@ -440,26 +438,6 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-// TODO: Move this to processortest.
-type spanAppender struct {
-	sync.RWMutex
-	spansPerNode map[*commonpb.Node][]*tracepb.Span
-}
-
-func newSpanAppender() *spanAppender {
-	return &spanAppender{spansPerNode: make(map[*commonpb.Node][]*tracepb.Span)}
-}
-
-var _ consumer.TraceConsumerOld = (*spanAppender)(nil)
-
-func (sa *spanAppender) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	sa.Lock()
-	defer sa.Unlock()
-
-	sa.spansPerNode[td.Node] = append(sa.spansPerNode[td.Node], td.Spans...)
-	return nil
-}
-
 func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...Option) (oci *Receiver, port int, done func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
@@ -488,13 +466,4 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...
 	}()
 
 	return oci, port, done
-}
-
-func (sa *spanAppender) forEachEntry(fn func(*commonpb.Node, []*tracepb.Span)) {
-	sa.RLock()
-	defer sa.RUnlock()
-
-	for node, spans := range sa.spansPerNode {
-		fn(node, spans)
-	}
 }

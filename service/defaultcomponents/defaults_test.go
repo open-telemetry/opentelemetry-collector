@@ -30,6 +30,7 @@ func TestDefaultComponents(t *testing.T) {
 		"health_check",
 		"pprof",
 		"zpages",
+		"fluentbit",
 	}
 	expectedReceivers := []configmodels.Type{
 		"jaeger",
@@ -59,6 +60,7 @@ func TestDefaultComponents(t *testing.T) {
 		"jaeger",
 		"file",
 		"otlp",
+		"kafka",
 	}
 
 	factories, err := Components()
