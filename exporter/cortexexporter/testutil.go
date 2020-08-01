@@ -15,7 +15,10 @@ var (
 	time1 = time.Now()
 	time2 = time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC)
 
-	typeInt64 = "int64"
+	typeInt64 = "1"
+	typeDouble = "2"
+	typeHistogram = "3"
+
 	label11 = "test_label11"
 	value11 = "test_value11"
 	label12 = "test_label12"
@@ -24,21 +27,27 @@ var (
 	value21 = "test_value21"
 	label22 = "test_label22"
 	value22 = "test_value22"
+	label31 = "test_label31"
+	value31 = "test_value31"
+	label32 = "test_label32"
+	value32 = "test_value32"
 	dirty1 = "%"
 	dirty2 = "?"
 
 	lbs1 = getLabels(label11, value11, label12, value12)
 	lbs2 = getLabels(label21, value21, label22, value22)
-	lbSet1Dirty = getLabels(label11+dirty1, dirty1+value11, dirty2+label12, dirty2+value12)
-	lbSet2Dirty = getLabels(label21+dirty1, dirty1+value21, dirty2+label22, dirty2+value22)
+	lbs1Dirty = getLabels(label11+dirty1, dirty1+value11, dirty2+label12, dirty2+value12)
+	lbs2Dirty = getLabels(label21+dirty1, dirty1+value21, dirty2+label22, dirty2+value22)
 
 	promlbs1 = getPromLabels(label11, value11, label12, value12)
 	promlbs2 = getPromLabels(label21, value21, label22, value22)
-
+	promlbs3 = getPromLabels(label31, value31, label32, value32)
 	int_val1 int64 = 1
 	int_val2 int64 = 2
     float_val1 = 1.0
     float_val2 = 2.0
+
+	int64Cumulative = 9
 
 	validCombinations = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},

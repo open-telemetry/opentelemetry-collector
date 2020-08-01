@@ -16,6 +16,7 @@ package cortexexporter
 
 import (
 	"github.com/prometheus/prometheus/prompb"
+	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"strconv"
 	"testing"
 	"reflect"
@@ -38,7 +39,7 @@ func Test_validateMetrics(t *testing.T) {
 
 	// append true cases
 	for i := range validCombinations {
-		name := "validateMetric_" + strconv.Itoa(i)
+		name := "valid_" + strconv.Itoa(i)
 		desc := getDescriptor(name, i, validCombinations)
 		tests = append(tests, combTest{
 			name,
@@ -48,7 +49,7 @@ func Test_validateMetrics(t *testing.T) {
 	}
 	// append false cases
 	for i := range invalidCombinations {
-		name := "invalidateMetric_" + strconv.Itoa(i)
+		name := "invalid_" + strconv.Itoa(i)
 		desc := getDescriptor(name, i, invalidCombinations)
 		tests = append(tests, combTest{
 			name,
@@ -57,7 +58,7 @@ func Test_validateMetrics(t *testing.T) {
 		})
 	}
 	// append nil case
-	tests = append(tests, combTest{"invalidMertics_nil", nil, false})
+	tests = append(tests, combTest{"invalid_nil", nil, false})
 
 	// run tests
 	for _, tt := range tests {
@@ -129,12 +130,75 @@ func Test_addSample(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			addSample(tt.orig,&tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].desc)
 			addSample(tt.orig,&tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].desc)
-			assert.EqualValues(t, reflect.DeepEqual(t,tt.want), true)
+			assert.EqualValues(t, true, reflect.DeepEqual(tt.orig,tt.want))
 		})
 	}
 }
 
+func Test_timeSeriesSignature(t *testing.T) {
+	tests := []struct {
+		name	string
+		lbs 	[]prompb.Label
+		desc   	otlp.MetricDescriptor_Type
+		want    string
+	} {
+		{
+			"int64_signature",
+			promlbs1.Labels,
+			otlp.MetricDescriptor_INT64,
+			typeInt64+"-"+label11+"-"+value11+"-"+label12+"-"+value12,
+		},
+		{
 
+			"histogram_signature",
+			promlbs2.Labels,
+			otlp.MetricDescriptor_HISTOGRAM,
+			typeHistogram+"-"+label21+"-"+value21+"-"+label22+"-"+value22,
+		},
+	}
+
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.desc, &tt.lbs))
+		})
+	}
+}
+
+// Labels should be sanitized; label in extra overrides label in labels if collision happens
+func Test_createLabelSet(t *testing.T) {
+	tests := []struct {
+		name string
+		orig []*common.StringKeyValue
+		extras []string
+		want []prompb.Label
+	} {
+		{
+			"labels_clean",
+			lbs1,
+			[]string{label31,value31,label32,value32},
+			append(promlbs1.Labels,promlbs3.Labels...),
+		},
+		{
+			"labels_duplicate_in_extras",
+			lbs1,
+			[]string{label11,value31},
+			getPromLabels(label11,value31,label12, value12).Labels,
+		},
+		{
+			"labels_dirty",
+			lbs1Dirty,
+			[]string{label31+dirty1,value31,label32,value32},
+			getPromLabels(label11,value31,label12, value12).Labels,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualValues(t, true, reflect.DeepEqual(createLabelSet(tt.orig,tt.extras...),tt.want))
+		})
+	}
+}
 /*
 func Test_handleScalarMetric(t *testing.T) {
 

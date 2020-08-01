@@ -17,6 +17,7 @@ package cortexexporter
 import (
 	"github.com/prometheus/prometheus/prompb"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
 // check whether the metric has the correct type and kind combination
@@ -30,4 +31,10 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	}
 	return false
 }
+
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,desc otlp.MetricDescriptor_Type){}
+
+func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) string {return ""}
+
+// sanitize labels as well; label in extra ovewrites label in labels if collision happens, perhaps log the overwrite
+func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label { return nil}
