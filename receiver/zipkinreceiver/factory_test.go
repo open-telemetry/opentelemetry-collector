@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -34,23 +34,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-type mockTraceConsumer struct {
-}
-
-func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return nil
-}
-
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, &mockTraceConsumer{})
+	tReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, &mockTraceConsumer{})
+	tReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
