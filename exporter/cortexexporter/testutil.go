@@ -90,6 +90,7 @@ var (
 		getTimeSeries(getPromLabels(label21, value21, label22, value22),
 			getSample(float64(int_val1), time2), ),
 	}
+
 )
 
 // OTLP metrics
@@ -171,7 +172,7 @@ func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum floa
 }
 
 // Prometheus TimeSeries
-func getPromLabels(lbs ...string) prompb.Labels{
+func getPromLabels(lbs ...string) []prompb.Label{
 	pbLbs := prompb.Labels{
 		Labels:               []prompb.Label{},
 		XXX_NoUnkeyedLiteral: struct{}{},
@@ -181,7 +182,7 @@ func getPromLabels(lbs ...string) prompb.Labels{
 	for i := 0; i < len(lbs); i+=2 {
 		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[i],lbs[i+1]))
 	}
-	return pbLbs
+	return pbLbs.Labels
 }
 
 func getLabel(name string, value string) prompb.Label{
@@ -205,9 +206,9 @@ func getSample(v float64, t time.Time) prompb.Sample {
 	}
 }
 
-func getTimeSeries (lbls prompb.Labels, samples...prompb.Sample) *prompb.TimeSeries{
+func getTimeSeries (lbls []prompb.Label, samples...prompb.Sample) *prompb.TimeSeries{
 	return &prompb.TimeSeries{
-		Labels:               lbls.Labels,
+		Labels:              lbls,
 		Samples:              samples,
 		XXX_NoUnkeyedLiteral: struct{}{},
 		XXX_unrecognized:     nil,

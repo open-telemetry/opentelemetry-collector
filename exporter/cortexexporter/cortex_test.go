@@ -25,7 +25,6 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	// "github.com/stretchr/testify/require"
 )
-// TODO: Test_fix handleScalarPoint; right now metric name is not included in label
 // TODO: make sure nil case is checked in every test
 
 func Test_validateMetrics(t *testing.T) {
@@ -89,12 +88,12 @@ func Test_addSample(t *testing.T) {
 			[]testCase{
 				{	otlp.MetricDescriptor_INT64,
 					getSample(float64(int_val1), time1),
-					 promlbs1.Labels,
+					 promlbs1,
 				},
 				{
 					otlp.MetricDescriptor_INT64,
 					getSample(float64(int_val2), time2),
-					promlbs1.Labels,
+					promlbs1,
 				},
 			},
 			map[string]*prompb.TimeSeries {
@@ -110,11 +109,11 @@ func Test_addSample(t *testing.T) {
 			 []testCase{
 				{	otlp.MetricDescriptor_INT64,
 					getSample(float64(int_val1), time1),
-					promlbs1.Labels,
+					promlbs1,
 				},
 				{	otlp.MetricDescriptor_INT64,
 					getSample(float64(int_val1), time1),
-					promlbs2.Labels,
+					promlbs2,
 				},
 			},
 			twoPointsDifferentTs,
@@ -140,14 +139,14 @@ func Test_timeSeriesSignature(t *testing.T) {
 	} {
 		{
 			"int64_signature",
-			promlbs1.Labels,
+			promlbs1,
 			otlp.MetricDescriptor_INT64,
 			typeInt64+"-"+label11+"-"+value11+"-"+label12+"-"+value12,
 		},
 		{
 
 			"histogram_signature",
-			promlbs2.Labels,
+			promlbs2,
 			otlp.MetricDescriptor_HISTOGRAM,
 			typeHistogram+"-"+label21+"-"+value21+"-"+label22+"-"+value22,
 		},
@@ -173,19 +172,19 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_clean",
 			lbs1,
 			[]string{label31,value31,label32,value32},
-			append(promlbs1.Labels,promlbs3.Labels...),
+			append(promlbs1,promlbs3...),
 		},
 		{
 			"labels_duplicate_in_extras",
 			lbs1,
 			[]string{label11,value31},
-			getPromLabels(label11,value31,label12, value12).Labels,
+			getPromLabels(label11,value31,label12, value12),
 		},
 		{
 			"labels_dirty",
 			lbs1Dirty,
 			[]string{label31+dirty1,value31,label32,value32},
-			getPromLabels(label11,value31,label12, value12).Labels,
+			getPromLabels(label11,value31,label12, value12),
 		},
 	}
 	// run tests
@@ -196,8 +195,21 @@ func Test_createLabelSet(t *testing.T) {
 	}
 }
 
-// Check if there is an error, the map stays the same
 func Test_handleScalarMetric(t *testing.T) {
+	sameTs := map[string]*prompb.TimeSeries {
+		typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21+"-name-same_ts_int_points":
+		getTimeSeries(getPromLabels(label11,value11, label12, value12, "name", "same_ts_int_points"),
+			getSample(float64(int_val1),time1),
+			getSample(float64(int_val2),time2)),
+	}
+	differentTs := map[string]*prompb.TimeSeries{
+		typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21+"-name-different_ts_int_points":
+		getTimeSeries(getPromLabels(label11, value11, label12, value12,"name","different_ts_int_points"),
+			getSample(float64(int_val1), time1), ),
+		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22:
+		getTimeSeries(getPromLabels(label21, value21, label22, value22,"name","different_ts_int_points"),
+			getSample(float64(int_val1), time2), ),
+	}
 	tests := []struct {
 		name 		string
 		m			*otlp.Metric
@@ -207,7 +219,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"invalid_nil_array",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
+				MetricDescriptor:    getDescriptor("invalid_nil_array",monotonicInt64,validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -219,7 +231,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"same_ts_int_points",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
+				MetricDescriptor:    getDescriptor("same_ts_int_points",monotonicInt64,validCombinations),
 				Int64DataPoints:     []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1,int_val1,time1),
 					getIntDataPoint(lbs1,int_val2,time1),
@@ -229,12 +241,12 @@ func Test_handleScalarMetric(t *testing.T) {
 				SummaryDataPoints:   nil,
 			},
 			false,
-			twoPointsSameTs,
+			sameTs,
 		},
 		{
 			"different_ts_int_points",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
+				MetricDescriptor:    getDescriptor("different_ts_int_points",monotonicInt64,validCombinations),
 				Int64DataPoints:     []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1,int_val1,time1),
 					getIntDataPoint(lbs2,int_val2,time2),
@@ -244,7 +256,7 @@ func Test_handleScalarMetric(t *testing.T) {
 				SummaryDataPoints:   nil,
 			},
 			false,
-			twoPointsDifferentTs,
+			differentTs,
 		},
 	}
 	// run tests
@@ -296,14 +308,14 @@ func Test_handleHistogramMetric(t *testing.T) {
 			"+Inf"+"-name-valid_single_point_bucket",
 	}
 	lbls := map[string][]prompb.Label {
-		sum: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_sum").Labels...),
-		count: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_count").Labels...),
-		bucket1:append(promlbs1.Labels,getPromLabels("name", "valid_single_point_bucket","le",
-					strconv.FormatFloat(float_val1,'f',-1,64)).Labels...),
-		bucket2: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_bucket","le",
-			strconv.FormatFloat(float_val2,'f',-1,64)).Labels...),
-		bucketInf: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_bucket","le",
-			"+Inf").Labels...),
+		sum: append(promlbs1,getPromLabels("name", "valid_single_point_sum")...),
+		count: append(promlbs1,getPromLabels("name", "valid_single_point_count")...),
+		bucket1:append(promlbs1,getPromLabels("name", "valid_single_point_bucket","le",
+					strconv.FormatFloat(float_val1,'f',-1,64))...),
+		bucket2: append(promlbs1,getPromLabels("name", "valid_single_point_bucket","le",
+			strconv.FormatFloat(float_val2,'f',-1,64))...),
+		bucketInf: append(promlbs1,getPromLabels("name", "valid_single_point_bucket","le",
+			"+Inf")...),
 	}
 	tests := []struct {
 		name 		string
@@ -334,42 +346,11 @@ func Test_handleHistogramMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				
-					sigs[sum]: &prompb.TimeSeries{
-						Labels:      		  lbls[sum],
-						Samples:              []prompb.Sample{getSample(float_val2,time1)},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     nil,
-						XXX_sizecache:        0,
-					},
-					sigs[count]: &prompb.TimeSeries{
-						Labels:      		  lbls[count],
-						Samples:              []prompb.Sample{getSample(float64(int_val2),time1)},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     nil,
-						XXX_sizecache:        0,
-					},
-					sigs[bucket1]: &prompb.TimeSeries{
-						Labels:      		  lbls[bucket1],
-						Samples:              []prompb.Sample{getSample(float64(int_val1),time1)},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     nil,
-						XXX_sizecache:        0,
-					},
-					sigs[bucket2]: &prompb.TimeSeries{
-						Labels:      		  lbls[bucket2],
-						Samples:              []prompb.Sample{getSample(float64(int_val1),time1)},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     nil,
-						XXX_sizecache:        0,
-					},
-					sigs[bucketInf]: &prompb.TimeSeries{
-						Labels:      		  lbls[bucketInf],
-						Samples:              []prompb.Sample{getSample(float64(int_val2),time1)},
-						XXX_NoUnkeyedLiteral: struct{}{},
-						XXX_unrecognized:     nil,
-						XXX_sizecache:        0,
-					},
+					sigs[sum]: getTimeSeries(lbls[sum],getSample(float_val2,time1)),
+					sigs[count]: getTimeSeries(lbls[count],getSample(float64(int_val2),time1)),
+					sigs[bucket1]: getTimeSeries(lbls[bucket1],getSample(float64(int_val1),time1)),
+					sigs[bucket2]: getTimeSeries(lbls[bucket2],getSample(float64(int_val1),time1)),
+					sigs[bucketInf]:getTimeSeries(lbls[bucketInf],getSample(float64(int_val2),time1)),
 			},
 		},
 	}
