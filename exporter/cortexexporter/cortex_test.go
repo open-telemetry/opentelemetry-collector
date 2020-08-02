@@ -27,6 +27,9 @@ import (
 	// "github.com/stretchr/testify/require"
 )
 
+// TODO: make sure nil case is checked in every test
+// TODO: test if assert.Exactly does deep equal
+
 func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
@@ -83,8 +86,9 @@ func Test_addSample(t *testing.T) {
 		want   		map[string]*prompb.TimeSeries
 	} {
 		{
-			name: "two_points_same_ts_same_metric",
-			testCase: []testCase{
+			 "two_points_same_ts_same_metric",
+			 map[string]*prompb.TimeSeries {},
+			[]testCase{
 				{	otlp.MetricDescriptor_INT64,
 					getSample(float64(int_val1), time1),
 					 promlbs1.Labels,
@@ -95,7 +99,7 @@ func Test_addSample(t *testing.T) {
 					promlbs1.Labels,
 				},
 			},
-			want: map[string]*prompb.TimeSeries {
+			map[string]*prompb.TimeSeries {
 					typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
 							getTimeSeries(getPromLabels(label11,value11, label12,value12),
 											getSample(float64(int_val1),time1),
@@ -103,8 +107,9 @@ func Test_addSample(t *testing.T) {
 			},
 		},
 		{
-			name: "two_points_different_ts_same_metric",
-			testCase: []testCase{
+			"two_points_different_ts_same_metric",
+			map[string]*prompb.TimeSeries {},
+			 []testCase{
 				{	otlp.MetricDescriptor_INT64,
 					getSample(float64(int_val1), time1),
 					promlbs1.Labels,
@@ -114,14 +119,7 @@ func Test_addSample(t *testing.T) {
 					promlbs2.Labels,
 				},
 			},
-			want: map[string]*prompb.TimeSeries {
-				typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
-				getTimeSeries(getPromLabels(label11,value11, label12,value12),
-					getSample(float64(int_val1),time1),),
-				typeInt64+"-"+label21+"-"+value21+"-"+label22+"-"+value22:
-				getTimeSeries(getPromLabels(label21,value21, label22,value22),
-					getSample(float64(int_val1),time2),),
-			},
+			twoPointsDifferentTs,
 		},
 	}
 
@@ -195,22 +193,83 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, true, reflect.DeepEqual(createLabelSet(tt.orig,tt.extras...),tt.want))
+			assert.Exactly(t, tt.want, createLabelSet(tt.orig,tt.extras...))
 		})
 	}
 }
-/*
+
+// Check if there is an error, the map stays the same
 func Test_handleScalarMetric(t *testing.T) {
-
-	//tests := []handleMetricTest{}
-
-	// two points in the same ts in the same metric
-
-	// two points in different ts in the same metric
-
-	// two points in the same ts in different metrics
-
-	// two points in different ts in different metrics
-
+	tests := []struct {
+		name 		string
+		m			*otlp.Metric
+		returnError  bool
+		want   		map[string]*prompb.TimeSeries
+	} {
+		{
+			"valid_single_int_point",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
+				Int64DataPoints:     []*otlp.Int64DataPoint{getIntDataPoint(lbs1,int_val1,time1)},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			map[string]*prompb.TimeSeries {},
+		},
+		{
+			"invalid_single_int_point",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,invalidCombinations),
+				Int64DataPoints:     []*otlp.Int64DataPoint{getIntDataPoint(lbs1,int_val1,time1)},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			true,
+			map[string]*prompb.TimeSeries {},
+		},
+		{
+			"same_ts_int_points",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,invalidCombinations),
+				Int64DataPoints:     []*otlp.Int64DataPoint{
+					getIntDataPoint(lbs1,int_val1,time1),
+					getIntDataPoint(lbs1,int_val2,time1),
+				},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			twoPointsSameTs,
+		},
+		{
+			"different_ts_int_points",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,invalidCombinations),
+				Int64DataPoints:     []*otlp.Int64DataPoint{
+					getIntDataPoint(lbs1,int_val1,time1),
+					getIntDataPoint(lbs2,int_val2,time2),
+				},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			twoPointsDifferentTs,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			ok := handleScalarMetric(tsMap, tt.m)
+			if tt.returnError {
+				assert.Nil(t,ok)
+			}
+			assert.Exactly(t, tt.want, tsMap)
+		})
+	}
 }
-*/

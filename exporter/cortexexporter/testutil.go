@@ -48,7 +48,7 @@ var (
     float_val2 = 2.0
 
 	int64Cumulative = 9
-
+	monotonicInt64 = 0
 	validCombinations = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
@@ -73,6 +73,20 @@ var (
 		{ty: otlp.MetricDescriptor_INVALID_TYPE},
 		{temp: otlp.MetricDescriptor_INVALID_TEMPORALITY},
 		{},
+	}
+	twoPointsSameTs = map[string]*prompb.TimeSeries {
+		typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
+		getTimeSeries(getPromLabels(label11,value11, label12,value12),
+			getSample(float64(int_val1),time1),
+			getSample(float64(int_val2),time2)),
+	}
+	twoPointsDifferentTs = map[string]*prompb.TimeSeries {
+		typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
+		getTimeSeries(getPromLabels(label11,value11, label12,value12),
+			getSample(float64(int_val1),time1),),
+		typeInt64+"-"+label21+"-"+value21+"-"+label22+"-"+value22:
+		getTimeSeries(getPromLabels(label21,value21, label22,value22),
+			getSample(float64(int_val1),time2),),
 	}
 )
 

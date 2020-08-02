@@ -38,3 +38,6 @@ func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) stri
 
 // sanitize labels as well; label in extra ovewrites label in labels if collision happens, perhaps log the overwrite
 func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label { return nil}
+
+
+func handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
