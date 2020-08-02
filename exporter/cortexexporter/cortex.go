@@ -16,10 +16,15 @@ package cortexexporter
 
 import (
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/config/configmodels"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	"net/http"
 )
-type cortexExporter struct {}
+type cortexExporter struct {
+	namespace string
+	endpoint  string
+	client http.Client}
 // check whether the metric has the correct type and kind combination
 func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	switch desc.GetType() {
@@ -43,6 +48,7 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 func handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
 func handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
 func handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
+func newCortexExporter(cfg configmodels.Exporter) *cortexExporter{ return nil}
 
 func (ce *cortexExporter)shutdown() {}
-func (ce *cortexExporter)pushMetrics() (int, error){return 0 , error}
+func (ce *cortexExporter)pushMetrics() (int, error){return 0 , nil}

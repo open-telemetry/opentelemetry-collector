@@ -16,6 +16,7 @@ package cortexexporter
 
 import (
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/require"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"strconv"
 	"sync"
@@ -473,3 +474,14 @@ func Test_shutdown(t *testing.T) {
 		assert.Error(t,ok)
 	}
 }
+
+func Test_newCortexExporter(t *testing.T) {
+	config := createDefaultConfig()
+	ce := newCortexExporter(config)
+	require.NotNil(t, ce)
+	assert.NotNil(t,ce.namespace)
+	assert.NotNil(t,ce.endpoint)
+	assert.NotNil(t,ce.client)
+}
+
+func Test_pushMetrics(t *testing.T) {}
