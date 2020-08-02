@@ -42,6 +42,7 @@ var (
 	promlbs1 = getPromLabels(label11, value11, label12, value12)
 	promlbs2 = getPromLabels(label21, value21, label22, value22)
 	promlbs3 = getPromLabels(label31, value31, label32, value32)
+
 	int_val1 int64 = 1
 	int_val2 int64 = 2
     float_val1 = 1.0
@@ -49,6 +50,7 @@ var (
 
 	int64Cumulative = 9
 	monotonicInt64 = 0
+	histogram = 2
 	validCombinations = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
@@ -80,13 +82,13 @@ var (
 			getSample(float64(int_val1),time1),
 			getSample(float64(int_val2),time2)),
 	}
-	twoPointsDifferentTs = map[string]*prompb.TimeSeries {
-		typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
-		getTimeSeries(getPromLabels(label11,value11, label12,value12),
-			getSample(float64(int_val1),time1),),
-		typeInt64+"-"+label21+"-"+value21+"-"+label22+"-"+value22:
-		getTimeSeries(getPromLabels(label21,value21, label22,value22),
-			getSample(float64(int_val1),time2),),
+	twoPointsDifferentTs = map[string]*prompb.TimeSeries{
+		typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21:
+		getTimeSeries(getPromLabels(label11, value11, label12, value12),
+			getSample(float64(int_val1), time1), ),
+		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22:
+		getTimeSeries(getPromLabels(label21, value21, label22, value22),
+			getSample(float64(int_val1), time2), ),
 	}
 )
 
@@ -176,8 +178,8 @@ func getPromLabels(lbs ...string) prompb.Labels{
 		XXX_unrecognized:     nil,
 		XXX_sizecache:        0,
 	}
-	for i := 0; i < len(lbs); i++ {
-		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[1],lbs[2]))
+	for i := 0; i < len(lbs); i+=2 {
+		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[i],lbs[i+1]))
 	}
 	return pbLbs
 }

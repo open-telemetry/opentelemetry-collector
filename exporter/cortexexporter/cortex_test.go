@@ -25,7 +25,7 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	// "github.com/stretchr/testify/require"
 )
-
+// TODO: Test_fix handleScalarPoint; right now metric name is not included in label
 // TODO: make sure nil case is checked in every test
 
 func Test_validateMetrics(t *testing.T) {
@@ -205,22 +205,10 @@ func Test_handleScalarMetric(t *testing.T) {
 		want   		map[string]*prompb.TimeSeries
 	} {
 		{
-			"valid_single_int_point",
+			"invalid_nil_array",
 			&otlp.Metric{
 				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
-				Int64DataPoints:     []*otlp.Int64DataPoint{getIntDataPoint(lbs1,int_val1,time1)},
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			false,
-			map[string]*prompb.TimeSeries {},
-		},
-		{
-			"invalid_single_int_point",
-			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,invalidCombinations),
-				Int64DataPoints:     []*otlp.Int64DataPoint{getIntDataPoint(lbs1,int_val1,time1)},
+				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
 				SummaryDataPoints:   nil,
@@ -231,7 +219,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"same_ts_int_points",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,invalidCombinations),
+				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
 				Int64DataPoints:     []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1,int_val1,time1),
 					getIntDataPoint(lbs1,int_val2,time1),
@@ -246,7 +234,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"different_ts_int_points",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,invalidCombinations),
+				MetricDescriptor:    getDescriptor("valid_single_int_point",monotonicInt64,validCombinations),
 				Int64DataPoints:     []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1,int_val1,time1),
 					getIntDataPoint(lbs2,int_val2,time2),
@@ -271,3 +259,130 @@ func Test_handleScalarMetric(t *testing.T) {
 		})
 	}
 }
+
+func Test_handleHistogramMetric(t *testing.T) {
+	sum := "sum"
+	count := "count"
+	bucket1 := "bucket1"
+	bucket2 := "bucket2"
+	bucketInf := "bucketInf"
+	histPoint := otlp.HistogramDataPoint{
+		Labels:            lbs1,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      uint64(time1.UnixNano()),
+		Count:             uint64(int_val2),
+		Sum:               float_val2,
+		Buckets:           []*otlp.HistogramDataPoint_Bucket{
+				{uint64(int_val1),
+					nil,
+				},
+				{uint64(int_val1),
+				nil,
+				},
+		},
+		ExplicitBounds:    []float64{
+			float_val1,
+			float_val2,
+		},
+	}
+	sigs := map[string]string{
+		sum: typeHistogram+"-"+label11+"-"+value11+"-"+label21+"-"+value21+"-name-valid_single_point_sum",
+		count: typeHistogram+"-"+label11+"-"+value11+"-"+label21+"-"+value21+"-name-valid_single_point_count",
+		bucket1: typeHistogram+"-"+label11+"-"+value11+"-"+label21+"-"+value21+"-"+"le-"+
+			strconv.FormatFloat(float_val1,'f',-1,64)+"-name-valid_single_point_bucket",
+		bucket2: typeHistogram+"-"+label11+"-"+value11+"-"+label21+"-"+value21+"-"+"le-"+
+			strconv.FormatFloat(float_val2,'f',-1,64)+"-name-valid_single_point_bucket",
+		bucketInf: typeHistogram+"-"+label11+"-"+value11+"-"+label21+"-"+value21+"-"+"le-"+
+			"+Inf"+"-name-valid_single_point_bucket",
+	}
+	lbls := map[string][]prompb.Label {
+		sum: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_sum").Labels...),
+		count: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_count").Labels...),
+		bucket1:append(promlbs1.Labels,getPromLabels("name", "valid_single_point_bucket","le",
+					strconv.FormatFloat(float_val1,'f',-1,64)).Labels...),
+		bucket2: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_bucket","le",
+			strconv.FormatFloat(float_val2,'f',-1,64)).Labels...),
+		bucketInf: append(promlbs1.Labels,getPromLabels("name", "valid_single_point_bucket","le",
+			"+Inf").Labels...),
+	}
+	tests := []struct {
+		name 		string
+		m    		otlp.Metric
+		returnError	bool
+		want 		map[string]*prompb.TimeSeries
+	} {
+		{
+			"invalid_nil_array",
+			otlp.Metric{
+				MetricDescriptor:    getDescriptor("invalid_nil_array", histogram, validCombinations),
+				Int64DataPoints:     nil,
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			true,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"single_histogram_point",
+			otlp.Metric{
+				MetricDescriptor:    getDescriptor("valid_single_int_point", histogram, validCombinations),
+				Int64DataPoints:     nil,
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: []*otlp.HistogramDataPoint{&histPoint},
+				SummaryDataPoints:   nil,
+			},
+			false,
+			map[string]*prompb.TimeSeries{
+				
+					sigs[sum]: &prompb.TimeSeries{
+						Labels:      		  lbls[sum],
+						Samples:              []prompb.Sample{getSample(float_val2,time1)},
+						XXX_NoUnkeyedLiteral: struct{}{},
+						XXX_unrecognized:     nil,
+						XXX_sizecache:        0,
+					},
+					sigs[count]: &prompb.TimeSeries{
+						Labels:      		  lbls[count],
+						Samples:              []prompb.Sample{getSample(float64(int_val2),time1)},
+						XXX_NoUnkeyedLiteral: struct{}{},
+						XXX_unrecognized:     nil,
+						XXX_sizecache:        0,
+					},
+					sigs[bucket1]: &prompb.TimeSeries{
+						Labels:      		  lbls[bucket1],
+						Samples:              []prompb.Sample{getSample(float64(int_val1),time1)},
+						XXX_NoUnkeyedLiteral: struct{}{},
+						XXX_unrecognized:     nil,
+						XXX_sizecache:        0,
+					},
+					sigs[bucket2]: &prompb.TimeSeries{
+						Labels:      		  lbls[bucket2],
+						Samples:              []prompb.Sample{getSample(float64(int_val1),time1)},
+						XXX_NoUnkeyedLiteral: struct{}{},
+						XXX_unrecognized:     nil,
+						XXX_sizecache:        0,
+					},
+					sigs[bucketInf]: &prompb.TimeSeries{
+						Labels:      		  lbls[bucketInf],
+						Samples:              []prompb.Sample{getSample(float64(int_val2),time1)},
+						XXX_NoUnkeyedLiteral: struct{}{},
+						XXX_unrecognized:     nil,
+						XXX_sizecache:        0,
+					},
+			},
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			ok := handleScalarMetric(tsMap, &tt.m)
+			if tt.returnError {
+				assert.Nil(t,ok)
+			}
+			assert.Exactly(t, tt.want, tsMap)
+		})
+	}
+}
+

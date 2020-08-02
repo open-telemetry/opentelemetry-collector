@@ -41,3 +41,4 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 
 
 func handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
+func handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
