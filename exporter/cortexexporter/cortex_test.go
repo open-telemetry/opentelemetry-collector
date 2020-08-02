@@ -19,7 +19,6 @@ import (
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"strconv"
 	"testing"
-	"reflect"
 
 	"github.com/stretchr/testify/assert"
 
@@ -28,7 +27,6 @@ import (
 )
 
 // TODO: make sure nil case is checked in every test
-// TODO: test if assert.Exactly does deep equal
 
 func Test_validateMetrics(t *testing.T) {
 	// define a single test
@@ -128,7 +126,7 @@ func Test_addSample(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			addSample(tt.orig,&tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].desc)
 			addSample(tt.orig,&tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].desc)
-			assert.EqualValues(t, true, reflect.DeepEqual(tt.orig,tt.want))
+			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
 }
