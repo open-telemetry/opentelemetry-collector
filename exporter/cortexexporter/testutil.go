@@ -18,6 +18,7 @@ var (
 	typeInt64 = "1"
 	typeDouble = "2"
 	typeHistogram = "3"
+	typeSummary = "4"
 
 	label11 = "test_label11"
 	value11 = "test_value11"
@@ -51,6 +52,7 @@ var (
 	int64Cumulative = 9
 	monotonicInt64 = 0
 	histogram = 2
+	summary = 3
 	validCombinations = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
