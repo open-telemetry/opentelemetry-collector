@@ -18,7 +18,9 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"strconv"
+	"sync"
 	"testing"
+
 
 	"github.com/stretchr/testify/assert"
 
@@ -448,5 +450,26 @@ func Test_handleSummaryMetric(t *testing.T) {
 			}
 			assert.Exactly(t, tt.want, tsMap)
 		})
+	}
+}
+
+// test after shutdown is called, incoming calls to pushMetrics return error.
+func Test_shutdown(t *testing.T) {
+	ce  := &cortexExporter{}
+	wg := sync.WaitGroup{}
+	ce.shutdown()
+	errChan := make(chan error, 5)
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, ok :=  ce.pushMetrics()
+			errChan <- ok
+		} ()
+	}
+	wg.Wait()
+	close(errChan)
+	for ok := range errChan {
+		assert.Error(t,ok)
 	}
 }
