@@ -40,8 +40,8 @@ var (
 
 	lbs1 = getLabels(label11, value11, label12, value12)
 	lbs2 = getLabels(label21, value21, label22, value22)
-	lbs1Dirty = getLabels(label11+dirty1, dirty1+value11, dirty2+label12, dirty2+value12)
-	lbs2Dirty = getLabels(label21+dirty1, dirty1+value21, dirty2+label22, dirty2+value22)
+	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
+	lbs2Dirty = getLabels(label21+dirty1, value21, dirty2+label22, value22)
 
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
 	promLbs2 = getPromLabels(label21, value21, label22, value22)

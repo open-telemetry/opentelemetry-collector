@@ -116,7 +116,7 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 			XXX_sizecache:        0,
 		}
 	}
-	s := []prompb.Label{}
+	s := make([]prompb.Label,0,len(l))
 	for _, lb := range l {
 		s = append(s,lb)
 	}
@@ -154,7 +154,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 }
 func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 	if metric.HistogramDataPoints == nil {
-		return fmt.Errorf("invalid metric type: wants int or double points")
+		return fmt.Errorf("invalid metric type: wants histogram points")
 	}
 	for _, pt := range metric.HistogramDataPoints {
 		time := pt.GetTimeUnixNano()
@@ -176,7 +176,28 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 	}
 	return nil
 }
-func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
+func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	if metric.SummaryDataPoints == nil {
+		return fmt.Errorf("invalid metric type: wants summary points")
+	}
+	for _, pt := range metric.SummaryDataPoints {
+		time := pt.GetTimeUnixNano()
+		ty := metric.GetMetricDescriptor().GetType()
+		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
+		sum := getSample(pt.GetSum(),time)
+		count := getSample(float64(pt.GetCount()),time)
+
+		addSample(tsMap, &sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
+		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
+		for _, qt := range pt.GetPercentileValues(){
+			quantile := getSample(float64(qt.Value),time)
+			addSample(tsMap, &quantile, createLabelSet(pt.GetLabels(),"name", baseName, "quantile",
+				strconv.FormatFloat(qt.Percentile, 'f',-1, 64)),ty)
+		}
+	}
+	return nil
+
+}
 
 func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter {
 	return &cortexExporter{
@@ -192,6 +213,9 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 
 // create Prometheus metric name by attaching namespace prefix, unit, and _total suffix
 func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
+	if desc == nil {
+		return ""
+	}
 	isCounter := desc.Type == otlp.MetricDescriptor_MONOTONIC_INT64 || desc.Type == otlp.MetricDescriptor_MONOTONIC_DOUBLE
 	b := strings.Builder{}
 	fmt.Fprintf(&b, ns)

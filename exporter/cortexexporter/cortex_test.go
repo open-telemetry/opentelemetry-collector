@@ -206,7 +206,7 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_dirty",
 			lbs1Dirty,
 			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11+"_", "key_"+value11, "key_"+label12, "key_"+value12, label31+"_", value31, label32, value32),
+			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
 			"no_extras_case",
@@ -412,19 +412,19 @@ func Test_handleSummaryMetric(t *testing.T) {
 	q1 := "quantile1"
 	q2 := "quantile2"
 	sigs := map[string]string{
-		sum:   typeSummary + "-name-valid_single_point_sum-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		count: typeSummary + "-name-valid_single_point_count-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		q1: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		q2: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			label11 + "-" + value11 + "-" + label21 + "-" + value21,
+		sum:   typeSummary + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		count: typeSummary + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		q1: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
+			 "-"+ label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		q2: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
+		 "-" +label11 + "-" + value11 + "-" + label12 + "-" + value12,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", "valid_single_point_sum")...),
-		count: append(promLbs1, getPromLabels("name", "valid_single_point_count")...),
-		q1: append(promLbs1, getPromLabels("name", "valid_single_point", "quantile",
+		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
+		count: append(promLbs1, getPromLabels("name", "valid_single_int_point_count")...),
+		q1: append(promLbs1, getPromLabels("name", "valid_single_int_point", "quantile",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		q2: append(promLbs1, getPromLabels("name", "valid_single_point", "quantile",
+		q2: append(promLbs1, getPromLabels("name", "valid_single_int_point", "quantile",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
 	summaryPoint := otlp.SummaryDataPoint{
@@ -438,7 +438,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 				floatVal1,
 			},
 			{floatVal2,
-				floatVal2,
+				floatVal1,
 			},
 		},
 	}
@@ -463,7 +463,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		{
 			"single_summary_point",
 			otlp.Metric{
-				MetricDescriptor:    nil,
+				MetricDescriptor:    getDescriptor("valid_single_int_point", summary, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -474,7 +474,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 				sigs[sum]:   getTimeSeries(lbls[sum], getSample(floatVal2, time1)),
 				sigs[count]: getTimeSeries(lbls[count], getSample(float64(intVal2), time1)),
 				sigs[q1]:    getTimeSeries(lbls[q1], getSample(float64(intVal1), time1)),
-				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(intVal2), time1)),
+				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(intVal1), time1)),
 			},
 		},
 	}
@@ -489,6 +489,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 			}
 			assert.Exactly(t,len(tt.want), len(tsMap))
 			for k,v := range tsMap {
+				require.NotNil(t,tt.want[k],k)
 				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
 				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
 			}
