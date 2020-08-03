@@ -50,7 +50,7 @@ func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, err
 
 		batch, err := resourceSpansToZipkinSpans(rs, td.SpanCount()/resourceSpans.Len())
 		if err != nil {
-			return nil, err
+			return zSpans, err
 		}
 		if batch != nil {
 			zSpans = append(zSpans, batch...)
@@ -80,9 +80,10 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
-			if err == nil {
-				zSpans = append(zSpans, span)
+			if err != nil {
+				return zSpans, err
 			}
+			zSpans = append(zSpans, span)
 		}
 	}
 

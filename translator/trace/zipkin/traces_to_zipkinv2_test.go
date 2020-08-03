@@ -15,6 +15,7 @@
 package zipkin
 
 import (
+	"errors"
 	"io"
 	"math/rand"
 	"testing"
@@ -39,6 +40,42 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			name: "empty",
 			td:   testdata.GenerateTraceDataEmpty(),
 			err:  nil,
+		},
+		{
+			name: "oneEmpty",
+			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
+			zs:   make([]*zipkinmodel.SpanModel, 0),
+			err:  nil,
+		},
+		{
+			name: "oneEmptyOneNil",
+			td:   testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
+			zs:   make([]*zipkinmodel.SpanModel, 0),
+			err:  nil,
+		},
+		{
+			name: "noLibs",
+			td:   testdata.GenerateTraceDataNoLibraries(),
+			zs:   make([]*zipkinmodel.SpanModel, 0),
+			err:  nil,
+		},
+		{
+			name: "oneEmptyLib",
+			td:   testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
+			zs:   make([]*zipkinmodel.SpanModel, 0),
+			err:  nil,
+		},
+		{
+			name: "oneEmptyLibOneNilLib",
+			td:   testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
+			zs:   make([]*zipkinmodel.SpanModel, 0),
+			err:  nil,
+		},
+		{
+			name: "oneSpanNoResrouce",
+			td:   testdata.GenerateTraceDataOneSpanNoResource(),
+			zs:   make([]*zipkinmodel.SpanModel, 0),
+			err:  errors.New("TraceID is nil"),
 		},
 	}
 	for _, test := range tests {

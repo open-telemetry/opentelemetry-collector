@@ -37,13 +37,25 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 			td:   testdata.GenerateTraceDataEmpty(),
 			err:  nil,
 		},
+		{
+			name: "nilSpan",
+			zs:   generateNilSpan(),
+			td:   testdata.GenerateTraceDataEmpty(),
+			err:  nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			td, err := V2SpansToInternalTraces(test.zs)
 			assert.EqualValues(t, test.err, err)
-			assert.Equal(t, len(test.zs), td.SpanCount())
+			if test.name != "nilSpan" {
+				assert.Equal(t, len(test.zs), td.SpanCount())
+			}
 			assert.EqualValues(t, test.td, td)
 		})
 	}
+}
+
+func generateNilSpan() []*zipkinmodel.SpanModel {
+	return make([]*zipkinmodel.SpanModel, 1)
 }
