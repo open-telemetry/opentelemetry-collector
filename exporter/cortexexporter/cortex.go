@@ -91,30 +91,33 @@ func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) stri
 
 // sanitize labels as well; label in extras overwrites label in labels if collision happens, perhaps log the overwrite
 func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label {
-	l := []prompb.Label{}
+	l := map[string]prompb.Label{}
 	for _, lb := range labels {
-		l = append(l,prompb.Label{
+		l[lb.Key] = prompb.Label{
 			Name:                 sanitize(lb.Key),
 			Value:                sanitize(lb.Value),
 			XXX_NoUnkeyedLiteral: struct{}{},
 			XXX_unrecognized:     nil,
 			XXX_sizecache:        0,
-		})
+		}
 	}
 	for i := 0; i < len(extras); i+=2 {
 		if i+1 >= len(extras){
 			break
 		}
-		l = append(l,prompb.Label{
+		l[extras[i]] = prompb.Label{
 			Name:                 sanitize(extras[i]),
 			Value:                sanitize(extras[i+1]),
 			XXX_NoUnkeyedLiteral: struct{}{},
 			XXX_unrecognized:     nil,
 			XXX_sizecache:        0,
-		})
-
+		}
 	}
-	return l
+	s := []prompb.Label{}
+	for _, lb := range l {
+		s = append(s,lb)
+	}
+	return s
 }
 
 func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {

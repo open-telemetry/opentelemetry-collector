@@ -193,7 +193,7 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_clean",
 			lbs1,
 			[]string{label31, value31, label32, value32},
-			append(promlbs1, promlbs3...),
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
 			"labels_duplicate_in_extras",
@@ -205,19 +205,19 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_dirty",
 			lbs1Dirty,
 			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+			getPromLabels(label11+"_", "key_"+value11, "key_"+label12, "key_"+value12, label31+"_", value31, label32, value32),
 		},
 		{
-			"nil_case",
+			"no_extras_case",
 			nil,
-			[]string{label31 + dirty1, value31, label32, value32},
+			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Exactly(t, tt.want, createLabelSet(tt.orig, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createLabelSet(tt.orig, tt.extras...))
 		})
 	}
 }
