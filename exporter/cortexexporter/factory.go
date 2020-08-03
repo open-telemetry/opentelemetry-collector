@@ -104,10 +104,12 @@ func createMetricsExporter(
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	cCfg := cfg.(*Config)
-	client,ok := cCfg.HTTPClientSettings.ToClient()
-	if ok != nil {
-		return nil, ok
+	client,error := cCfg.HTTPClientSettings.ToClient()
+
+	if error != nil {
+		return nil, error
 	}
+
 	ce := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint,client)
 	cexp, err := exporterhelper.NewMetricsExporter(
 		cfg,

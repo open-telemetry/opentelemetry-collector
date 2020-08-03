@@ -224,14 +224,14 @@ func Test_createLabelSet(t *testing.T) {
 
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-same_ts_int_points_total": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points"),
+		typeMonotonicInt64  + "-name-same_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
 			getSample(float64(intVal1), time1),
-			getSample(float64(intVal2), time2)),
+			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-different_ts_int_points_total": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points"),
+		typeMonotonicInt64  + "-name-different_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22 + "-name-different_ts_int_points_total": getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points"),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total"+ "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time2)),
 	}
 	tests := []struct {
@@ -273,7 +273,7 @@ func Test_handleScalarMetric(t *testing.T) {
 				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64, validCombinations),
 				Int64DataPoints: []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1, intVal1, time1),
-					getIntDataPoint(lbs2, intVal2, time2),
+					getIntDataPoint(lbs2, intVal1, time2),
 				},
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -287,13 +287,17 @@ func Test_handleScalarMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ce := &cortexExporter{namespace:""}
+			ce := &cortexExporter{}
 			ok := ce.handleScalarMetric(tsMap, tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, tt.want, tsMap)
+			assert.Exactly(t,len(tt.want), len(tsMap))
+			for k,v := range tsMap {
+				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			}
 		})
 	}
 }
@@ -390,7 +394,11 @@ func Test_handleHistogramMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, tt.want, tsMap)
+			assert.Exactly(t,len(tt.want), len(tsMap))
+			for k,v := range tsMap {
+				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			}
 		})
 	}
 }
@@ -476,7 +484,11 @@ func Test_handleSummaryMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, tt.want, tsMap)
+			assert.Exactly(t,len(tt.want), len(tsMap))
+			for k,v := range tsMap {
+				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			}
 		})
 	}
 }
@@ -485,7 +497,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 func Test_shutdown(t *testing.T) {
 	ce := &cortexExporter{}
 	wg := sync.WaitGroup{}
-	ce.shutdown()
+	ce.shutdown(context.Background())
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
