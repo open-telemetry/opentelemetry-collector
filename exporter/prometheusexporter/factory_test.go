@@ -15,39 +15,31 @@
 package prometheusexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	require.NotNil(t, factory)
-
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateTraceExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
-}
-
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Endpoint = ""
-	consumer, err := factory.CreateMetricsExporter(zap.NewNop(), oCfg)
+	exp, err := createMetricsExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		cfg)
 	require.Equal(t, errBlankPrometheusAddress, err)
-	require.Nil(t, consumer)
+	require.Nil(t, exp)
 }
