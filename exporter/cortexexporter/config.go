@@ -20,6 +20,6 @@ type Config struct {
 	// ConstLabels are values that are applied for every exported metric.
 	ConstLabels prometheus_golang.Labels `mapstructure:"const_labels"`
 
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 }
