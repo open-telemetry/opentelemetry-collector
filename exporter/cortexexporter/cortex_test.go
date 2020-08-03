@@ -96,13 +96,13 @@ func Test_addSample(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(int_val1), time1),
-					promlbs1,
+					getSample(float64(intVal1), time1),
+					promLbs1,
 				},
 				{
 					otlp.MetricDescriptor_INT64,
-					getSample(float64(int_val2), time2),
-					promlbs1,
+					getSample(float64(intVal2), time2),
+					promLbs1,
 				},
 			},
 			twoPointsSameTs,
@@ -112,12 +112,12 @@ func Test_addSample(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(int_val1), time1),
-					promlbs1,
+					getSample(float64(intVal1), time1),
+					promLbs1,
 				},
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(int_val1), time2),
-					promlbs2,
+					getSample(float64(intVal1), time2),
+					promLbs2,
 				},
 			},
 			twoPointsDifferentTs,
@@ -147,13 +147,13 @@ func Test_timeSeriesSignature(t *testing.T) {
 	}{
 		{
 			"int64_signature",
-			promlbs1,
+			promLbs1,
 			otlp.MetricDescriptor_INT64,
 			typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		},
 		{
 			"histogram_signature",
-			promlbs2,
+			promLbs2,
 			otlp.MetricDescriptor_HISTOGRAM,
 			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
 		},
@@ -224,15 +224,15 @@ func Test_createLabelSet(t *testing.T) {
 
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
-		typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-same_ts_int_points": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points"),
-			getSample(float64(int_val1), time1),
-			getSample(float64(int_val2), time2)),
+		typeMonotonicInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-same_ts_int_points_total": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points"),
+			getSample(float64(intVal1), time1),
+			getSample(float64(intVal2), time2)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-different_ts_int_points": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points"),
-			getSample(float64(int_val1), time1)),
-		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points"),
-			getSample(float64(int_val1), time2)),
+		typeMonotonicInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-different_ts_int_points_total": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points"),
+			getSample(float64(intVal1), time1)),
+		typeMonotonicInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22 + "-name-different_ts_int_points_total": getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points"),
+			getSample(float64(intVal1), time2)),
 	}
 	tests := []struct {
 		name        string
@@ -257,8 +257,8 @@ func Test_handleScalarMetric(t *testing.T) {
 			&otlp.Metric{
 				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64, validCombinations),
 				Int64DataPoints: []*otlp.Int64DataPoint{
-					getIntDataPoint(lbs1, int_val1, time1),
-					getIntDataPoint(lbs1, int_val2, time1),
+					getIntDataPoint(lbs1, intVal1, time1),
+					getIntDataPoint(lbs1, intVal2, time1),
 				},
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -272,8 +272,8 @@ func Test_handleScalarMetric(t *testing.T) {
 			&otlp.Metric{
 				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64, validCombinations),
 				Int64DataPoints: []*otlp.Int64DataPoint{
-					getIntDataPoint(lbs1, int_val1, time1),
-					getIntDataPoint(lbs2, int_val2, time2),
+					getIntDataPoint(lbs1, intVal1, time1),
+					getIntDataPoint(lbs2, intVal2, time2),
 				},
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -308,39 +308,39 @@ func Test_handleHistogramMetric(t *testing.T) {
 		Labels:            lbs1,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      uint64(time1.UnixNano()),
-		Count:             uint64(int_val2),
-		Sum:               float_val2,
+		Count:             uint64(intVal2),
+		Sum:               floatVal2,
 		Buckets: []*otlp.HistogramDataPoint_Bucket{
-			{uint64(int_val1),
+			{uint64(intVal1),
 				nil,
 			},
-			{uint64(int_val1),
+			{uint64(intVal1),
 				nil,
 			},
 		},
 		ExplicitBounds: []float64{
-			float_val1,
-			float_val2,
+			floatVal1,
+			floatVal2,
 		},
 	}
 	sigs := map[string]string{
 		sum:   typeHistogram + "-name-valid_single_point_sum-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
 		count: typeHistogram + "-name-valid_single_point_count-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(float_val1, 'f', -1, 64) +
+		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
 			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
-		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(float_val2, 'f', -1, 64) +
+		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
 			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
 			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promlbs1, getPromLabels("name", "valid_single_point_sum")...),
-		count: append(promlbs1, getPromLabels("name", "valid_single_point_count")...),
-		bucket1: append(promlbs1, getPromLabels("name", "valid_single_point_bucket", "le",
-			strconv.FormatFloat(float_val1, 'f', -1, 64))...),
-		bucket2: append(promlbs1, getPromLabels("name", "valid_single_point_bucket", "le",
-			strconv.FormatFloat(float_val2, 'f', -1, 64))...),
-		bucketInf: append(promlbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		sum:   append(promLbs1, getPromLabels("name", "valid_single_point_sum")...),
+		count: append(promLbs1, getPromLabels("name", "valid_single_point_count")...),
+		bucket1: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
+		bucket2: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
+		bucketInf: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
 			"+Inf")...),
 	}
 	tests := []struct {
@@ -372,11 +372,11 @@ func Test_handleHistogramMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				sigs[sum]:       getTimeSeries(lbls[sum], getSample(float_val2, time1)),
-				sigs[count]:     getTimeSeries(lbls[count], getSample(float64(int_val2), time1)),
-				sigs[bucket1]:   getTimeSeries(lbls[bucket1], getSample(float64(int_val1), time1)),
-				sigs[bucket2]:   getTimeSeries(lbls[bucket2], getSample(float64(int_val1), time1)),
-				sigs[bucketInf]: getTimeSeries(lbls[bucketInf], getSample(float64(int_val2), time1)),
+				sigs[sum]:       getTimeSeries(lbls[sum], getSample(floatVal2, time1)),
+				sigs[count]:     getTimeSeries(lbls[count], getSample(float64(intVal2), time1)),
+				sigs[bucket1]:   getTimeSeries(lbls[bucket1], getSample(float64(intVal1), time1)),
+				sigs[bucket2]:   getTimeSeries(lbls[bucket2], getSample(float64(intVal1), time1)),
+				sigs[bucketInf]: getTimeSeries(lbls[bucketInf], getSample(float64(intVal2), time1)),
 			},
 		},
 	}
@@ -403,31 +403,31 @@ func Test_handleSummaryMetric(t *testing.T) {
 	sigs := map[string]string{
 		sum:   typeSummary + "-name-valid_single_point_sum-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
 		count: typeSummary + "-name-valid_single_point_count-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		q1: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(float_val1, 'f', -1, 64) +
+		q1: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
 			label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		q2: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(float_val2, 'f', -1, 64) +
+		q2: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
 			label11 + "-" + value11 + "-" + label21 + "-" + value21,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promlbs1, getPromLabels("name", "valid_single_point_sum")...),
-		count: append(promlbs1, getPromLabels("name", "valid_single_point_count")...),
-		q1: append(promlbs1, getPromLabels("name", "valid_single_point", "quantile",
-			strconv.FormatFloat(float_val1, 'f', -1, 64))...),
-		q2: append(promlbs1, getPromLabels("name", "valid_single_point", "quantile",
-			strconv.FormatFloat(float_val2, 'f', -1, 64))...),
+		sum:   append(promLbs1, getPromLabels("name", "valid_single_point_sum")...),
+		count: append(promLbs1, getPromLabels("name", "valid_single_point_count")...),
+		q1: append(promLbs1, getPromLabels("name", "valid_single_point", "quantile",
+			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
+		q2: append(promLbs1, getPromLabels("name", "valid_single_point", "quantile",
+			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
 	summaryPoint := otlp.SummaryDataPoint{
 		Labels:            lbs1,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      uint64(time1.UnixNano()),
-		Count:             uint64(int_val2),
-		Sum:               float_val2,
+		Count:             uint64(intVal2),
+		Sum:               floatVal2,
 		PercentileValues: []*otlp.SummaryDataPoint_ValueAtPercentile{
-			{float_val1,
-				float_val1,
+			{   floatVal1,
+				floatVal1,
 			},
-			{float_val2,
-				float_val2,
+			{floatVal2,
+				floatVal2,
 			},
 		},
 	}
@@ -460,10 +460,10 @@ func Test_handleSummaryMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				sigs[sum]:   getTimeSeries(lbls[sum], getSample(float_val2, time1)),
-				sigs[count]: getTimeSeries(lbls[count], getSample(float64(int_val2), time1)),
-				sigs[q1]:    getTimeSeries(lbls[q1], getSample(float64(int_val1), time1)),
-				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(int_val2), time1)),
+				sigs[sum]:   getTimeSeries(lbls[sum], getSample(floatVal2, time1)),
+				sigs[count]: getTimeSeries(lbls[count], getSample(float64(intVal2), time1)),
+				sigs[q1]:    getTimeSeries(lbls[q1], getSample(float64(intVal1), time1)),
+				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(intVal2), time1)),
 			},
 		},
 	}

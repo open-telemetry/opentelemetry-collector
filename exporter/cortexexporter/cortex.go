@@ -155,7 +155,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
 
 func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter                        { return nil }
-func (ce *cortexExporter) shutdown() {}
+func (ce *cortexExporter)shutdown(context.Context) error{ return nil}
 func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
 	return 0, nil
 }

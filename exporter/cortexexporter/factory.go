@@ -76,7 +76,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -96,4 +96,30 @@ func createDefaultConfig() configmodels.Exporter {
 			WriteBufferSize: 512 * 1024,
 		},
 	}
+}
+
+func createMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	cCfg := cfg.(*Config)
+	client,ok := cCfg.HTTPClientSettings.ToClient()
+	if ok != nil {
+		return nil, ok
+	}
+	ce := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint,client)
+	cexp, err := exporterhelper.NewMetricsExporter(
+		cfg,
+		ce.pushMetrics,
+		exporterhelper.WithTimeout(cCfg.TimeoutSettings),
+		exporterhelper.WithRetry(cCfg.RetrySettings),
+		exporterhelper.WithQueue(cCfg.QueueSettings),
+		exporterhelper.WithShutdown(ce.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return cexp, nil
 }
