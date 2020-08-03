@@ -41,9 +41,11 @@ import (
 )
 
 // TODO: make sure nil case is checked in every test
+// TODO: add unordered labels test case for Test_timeSeriesSignature
 // TODO: try to run Test_newCortexExporter and Test_PushMetrics after factory and config.go are in
 // TODO: add bucket and histogram test cases for Test_PushMetrics
 
+//return false if descriptor type is nil
 func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
@@ -134,6 +136,21 @@ func Test_addSample(t *testing.T) {
 			},
 			twoPointsDifferentTs,
 		},
+		{
+			"nil_case",
+			map[string]*prompb.TimeSeries{},
+			[]testCase{
+				{nil,
+					nil,
+					nil,
+				},
+				{nil,
+					nil,
+					nil,
+				},
+			},
+			map[string]*prompb.TimeSeries{},
+		},
 	}
 
 	// run tests
@@ -160,11 +177,17 @@ func Test_timeSeriesSignature(t *testing.T) {
 			typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		},
 		{
-
 			"histogram_signature",
 			promlbs2,
 			otlp.MetricDescriptor_HISTOGRAM,
 			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
+		},
+		// descriptor type cannot be nil, as checked by validateMetrics
+		{
+			"nil_case",
+			nil,
+			otlp.MetricDescriptor_HISTOGRAM,
+			typeHistogram,
 		},
 	}
 
@@ -177,6 +200,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 }
 
 // Labels should be sanitized; label in extra overrides label in labels if collision happens
+// Labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -200,7 +224,13 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_dirty",
 			lbs1Dirty,
 			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11, value31, label12, value12),
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+		},
+		{
+			"nil_case",
+			nil,
+			[]string{label31 + dirty1, value31, label32, value32},
+			getPromLabels(label31, value31, label32, value32),
 		},
 	}
 	// run tests
@@ -502,7 +532,7 @@ func Test_newCortexExporter(t *testing.T) {
 		ConstLabels:        nil,
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
-	ce := newCortexExporter(config.Endpoint, config.Namespace, createClient())
+	ce := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, createClient())
 	require.NotNil(t, ce)
 	assert.NotNil(t, ce.namespace)
 	assert.NotNil(t, ce.endpoint)
@@ -512,7 +542,7 @@ func Test_newCortexExporter(t *testing.T) {
 // test the correctness and the number of points
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
-
+	noDescBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())
 	// 10 counter metrics, 2 points in each. Two TimeSeries in total
 	batch := testdata.GenerateMetricDataManyMetricsSameResource(10)
 	setCumulative(batch)
@@ -526,6 +556,14 @@ func Test_pushMetrics(t *testing.T) {
 		numDroppedTimeSeries int
 		returnErr            bool
 	}{
+		{
+			"no_desc_case",
+			&noDescBatch,
+			nil,
+			http.StatusAccepted,
+			pdatautil.MetricCount(noDescBatch),
+			true,
+		},
 		{
 			"no_temp_case",
 			&noTempBatch,
@@ -585,7 +623,7 @@ func Test_pushMetrics(t *testing.T) {
 				ConstLabels:        nil,
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: serverURL.String()},
 			}
-			sender := newCortexExporter(config.Endpoint,config.Namespace,createClient())
+			sender := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, createClient())
 
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
