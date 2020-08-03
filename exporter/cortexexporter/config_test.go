@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Namespace: "test-space",
 
-			Headers: []string{"example_header1", "example_header2"},
+			Headers: map[string]string{"example_header1": "example_header_value1"},
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
