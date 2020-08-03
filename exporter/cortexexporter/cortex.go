@@ -19,12 +19,14 @@ import (
 	"fmt"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -32,6 +34,8 @@ type cortexExporter struct {
 	namespace string
 	endpoint  string
 	client    http.Client
+	wg		  *sync.WaitGroup
+	closeChan	chan struct{}
 }
 
 type ByLabelName []prompb.Label
@@ -206,9 +210,20 @@ func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporte
 		client:    *client,
 	}
 }
-func (ce *cortexExporter)shutdown(context.Context) error{ return nil}
+func (ce *cortexExporter)shutdown(context.Context) error{
+	close(ce.closeChan)
+	ce.wg.Wait()
+	return nil
+}
 func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	return 0, nil
+	ce.wg.Add(1)
+	defer ce.wg.Done()
+	select{
+	case <-ce.closeChan:
+		return pdatautil.MetricCount(md),fmt.Errorf("shutdown has been called")
+	default:
+		return 0,nil
+	}
 }
 
 // create Prometheus metric name by attaching namespace prefix, unit, and _total suffix

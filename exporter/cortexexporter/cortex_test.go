@@ -499,14 +499,16 @@ func Test_handleSummaryMetric(t *testing.T) {
 
 // test after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
-	ce := &cortexExporter{}
-	wg := sync.WaitGroup{}
+	ce := &cortexExporter{
+		wg:new(sync.WaitGroup),
+		closeChan: make(chan struct{}),
+	}
 	ce.shutdown(context.Background())
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
-		wg.Add(1)
+		ce.wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer ce.wg.Done()
 			_, ok := ce.pushMetrics(context.Background(),
 				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
 			errChan <- ok
