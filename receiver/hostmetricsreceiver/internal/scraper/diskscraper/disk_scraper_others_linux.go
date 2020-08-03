@@ -24,7 +24,7 @@ import (
 
 const systemSpecificMetricsLen = 1
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 	metric := metrics.At(startIdx)
 	diskMergedDescriptor.CopyTo(metric.MetricDescriptor())
 
@@ -33,8 +33,8 @@ func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startT
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeInt64DataPoint(idps.At(idx+0), startTime, device, readDirectionLabelValue, int64(ioCounter.MergedReadCount))
-		initializeInt64DataPoint(idps.At(idx+1), startTime, device, writeDirectionLabelValue, int64(ioCounter.MergedWriteCount))
+		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, readDirectionLabelValue, int64(ioCounter.MergedReadCount))
+		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, writeDirectionLabelValue, int64(ioCounter.MergedWriteCount))
 		idx += 2
 	}
 }

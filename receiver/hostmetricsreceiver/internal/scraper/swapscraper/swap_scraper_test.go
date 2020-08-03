@@ -43,10 +43,13 @@ func TestScrapeMetrics(t *testing.T) {
 	assert.Equal(t, expectedMetrics, metrics.Len())
 
 	assertSwapUsageMetricValid(t, metrics.At(0))
+	internal.AssertSameTimeStampForMetrics(t, metrics, 0, 1)
+
 	assertPagingMetricValid(t, metrics.At(1), 0)
 	if runtime.GOOS != "windows" {
 		assertPageFaultsMetricValid(t, metrics.At(2), 0)
 	}
+	internal.AssertSameTimeStampForMetrics(t, metrics, 1, metrics.Len())
 }
 
 func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) {

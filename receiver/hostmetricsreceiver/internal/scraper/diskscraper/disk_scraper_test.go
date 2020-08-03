@@ -89,6 +89,8 @@ func TestScrapeMetrics(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertInt64DiskMetricValid(t, metrics.At(4), diskMergedDescriptor, 0)
 			}
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
 }

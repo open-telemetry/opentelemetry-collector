@@ -91,6 +91,8 @@ func TestScrapeMetrics(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			}
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
 }

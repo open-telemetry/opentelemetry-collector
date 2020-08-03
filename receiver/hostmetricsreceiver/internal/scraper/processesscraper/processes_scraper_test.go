@@ -77,6 +77,8 @@ func TestScrapeMetrics(t *testing.T) {
 			for i, expectedMetricDescriptor := range expectedMetrics {
 				assertProcessesMetricValid(t, metrics.At(i), expectedMetricDescriptor)
 			}
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
 }

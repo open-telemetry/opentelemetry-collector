@@ -21,6 +21,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // scraper for Memory Metrics
@@ -50,27 +51,28 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
+	now := internal.TimeToUnixNano(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
 		return metrics, err
 	}
 
 	metrics.Resize(1)
-	initializeMemoryUsageMetric(metrics.At(0), memInfo)
+	initializeMemoryUsageMetric(metrics.At(0), now, memInfo)
 	return metrics, nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, memInfo *mem.VirtualMemoryStat) {
+func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
 	memoryUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(memStatesLen)
-	appendMemoryUsageStateDataPoints(idps, memInfo)
+	appendMemoryUsageStateDataPoints(idps, now, memInfo)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, stateLabel string, value int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(stateLabelName, stateLabel)
-	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

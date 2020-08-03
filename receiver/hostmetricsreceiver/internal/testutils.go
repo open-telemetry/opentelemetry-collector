@@ -70,3 +70,30 @@ func AssertDoubleMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startT
 		require.Equal(t, startTime, ddps.At(i).StartTime())
 	}
 }
+
+func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pdata.MetricSlice) {
+	AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len())
+}
+
+func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, startIdx, endIdx int) {
+	var ts pdata.TimestampUnixNano
+	for i := startIdx; i < endIdx; i++ {
+		metric := metrics.At(i)
+
+		idps := metric.Int64DataPoints()
+		for j := 0; j < idps.Len(); j++ {
+			if ts == 0 {
+				ts = idps.At(j).Timestamp()
+			}
+			require.Equalf(t, ts, idps.At(j).Timestamp(), "metrics contained different end timestamp values")
+		}
+
+		ddps := metric.DoubleDataPoints()
+		for j := 0; j < ddps.Len(); j++ {
+			if ts == 0 {
+				ts = ddps.At(j).Timestamp()
+			}
+			require.Equalf(t, ts, ddps.At(j).Timestamp(), "metrics contained different end timestamp values")
+		}
+	}
+}

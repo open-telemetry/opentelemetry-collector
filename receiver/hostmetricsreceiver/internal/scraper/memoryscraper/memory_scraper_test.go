@@ -73,6 +73,8 @@ func TestScrapeMetrics(t *testing.T) {
 			} else if runtime.GOOS != "windows" {
 				internal.AssertInt64MetricLabelHasValue(t, metrics.At(0), 2, stateLabelName, inactiveStateLabelValue)
 			}
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
 }

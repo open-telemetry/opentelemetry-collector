@@ -16,8 +16,10 @@ package loadscraper
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/shirou/gopsutil/load"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -26,33 +28,56 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, pdata.MetricSlice)
-
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
-		// expect 3 metrics
-		assert.Equal(t, 3, metrics.Len())
+	type testCase struct {
+		name        string
+		loadFunc    func() (*load.AvgStat, error)
+		expectedErr string
+	}
 
-		// expect a single datapoint for 1m, 5m & 15m load metrics
-		assertMetricHasSingleDatapoint(t, metrics.At(0), loadAvg1MDescriptor)
-		assertMetricHasSingleDatapoint(t, metrics.At(1), loadAvg5mDescriptor)
-		assertMetricHasSingleDatapoint(t, metrics.At(2), loadAvg15mDescriptor)
-	})
+	testCases := []testCase{
+		{
+			name: "Standard",
+		},
+		{
+			name:        "Load Error",
+			loadFunc:    func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			expectedErr: "err1",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper := newLoadScraper(context.Background(), zap.NewNop(), &Config{})
+			if test.loadFunc != nil {
+				scraper.load = test.loadFunc
+			}
+
+			err := scraper.Initialize(context.Background())
+			require.NoError(t, err, "Failed to initialize load scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			metrics, err := scraper.ScrapeMetrics(context.Background())
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			// expect 3 metrics
+			assert.Equal(t, 3, metrics.Len())
+
+			// expect a single datapoint for 1m, 5m & 15m load metrics
+			assertMetricHasSingleDatapoint(t, metrics.At(0), loadAvg1MDescriptor)
+			assertMetricHasSingleDatapoint(t, metrics.At(1), loadAvg5mDescriptor)
+			assertMetricHasSingleDatapoint(t, metrics.At(2), loadAvg15mDescriptor)
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
+		})
+	}
 }
 
 func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	assert.Equal(t, 1, metric.DoubleDataPoints().Len())
-}
-
-func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := newLoadScraper(context.Background(), zap.NewNop(), config)
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize load scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-	assertFn(t, metrics)
 }

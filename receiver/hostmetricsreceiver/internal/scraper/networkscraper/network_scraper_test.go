@@ -132,9 +132,12 @@ func TestScrapeMetrics(t *testing.T) {
 				assertNetworkIOMetricValid(t, metrics.At(idx+1), networkDroppedPacketsDescriptor, test.expectedStartTime)
 				assertNetworkIOMetricValid(t, metrics.At(idx+2), networkErrorsDescriptor, test.expectedStartTime)
 				assertNetworkIOMetricValid(t, metrics.At(idx+3), networkIODescriptor, test.expectedStartTime)
+				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
 				idx += 4
 			}
+
 			assertNetworkTCPConnectionsMetricValid(t, metrics.At(idx+0))
+			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
 		})
 	}
 }
