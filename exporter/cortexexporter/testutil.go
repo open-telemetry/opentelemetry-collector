@@ -17,10 +17,10 @@ var (
 	time1 = time.Now()
 	time2 = time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC)
 
-	typeInt64 = "1"
-	typeDouble = "2"
-	typeHistogram = "3"
-	typeSummary = "4"
+	typeInt64 = "INT64"
+	typeDouble = "DOUBLE"
+	typeHistogram = "HISTOGRAM"
+	typeSummary = "SUMMARY"
 
 	label11 = "test_label11"
 	value11 = "test_value11"
@@ -80,14 +80,14 @@ var (
 		{temp: otlp.MetricDescriptor_INVALID_TEMPORALITY},
 		{},
 	}
-	twoPointsSameTs = map[string]*prompb.TimeSeries {
-		typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
-		getTimeSeries(getPromLabels(label11,value11, label12,value12),
-			getSample(float64(int_val1),time1),
-			getSample(float64(int_val2),time2)),
+	twoPointsSameTs = map[string]*prompb.TimeSeries{
+		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12:
+			getTimeSeries(getPromLabels(label11, value11, label12, value12),
+				getSample(float64(int_val1), time1),
+				getSample(float64(int_val2), time2)),
 	}
 	twoPointsDifferentTs = map[string]*prompb.TimeSeries{
-		typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21:
+		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12:
 		getTimeSeries(getPromLabels(label11, value11, label12, value12),
 			getSample(float64(int_val1), time1), ),
 		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22:

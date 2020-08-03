@@ -16,20 +16,10 @@ package cortexexporter
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
 	"strconv"
 	"sync"
 	"testing"
@@ -115,11 +105,7 @@ func Test_addSample(t *testing.T) {
 					promlbs1,
 				},
 			},
-			map[string]*prompb.TimeSeries{
-				typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-					getSample(float64(int_val1), time1),
-					getSample(float64(int_val2), time2)),
-			},
+			twoPointsSameTs,
 		},
 		{
 			"two_points_different_ts_same_metric",
@@ -130,29 +116,18 @@ func Test_addSample(t *testing.T) {
 					promlbs1,
 				},
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(int_val1), time1),
+					getSample(float64(int_val1), time2),
 					promlbs2,
 				},
 			},
 			twoPointsDifferentTs,
 		},
-		{
-			"nil_case",
-			map[string]*prompb.TimeSeries{},
-			[]testCase{
-				{nil,
-					nil,
-					nil,
-				},
-				{nil,
-					nil,
-					nil,
-				},
-			},
-			map[string]*prompb.TimeSeries{},
-		},
 	}
-
+	t.Run("nil_case", func(t *testing.T) {
+		tsMap := map[string]*prompb.TimeSeries{}
+		addSample(tsMap, nil,nil,0)
+		assert.Exactly(t, tsMap, map[string]*prompb.TimeSeries{})
+	})
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -521,7 +496,7 @@ func Test_shutdown(t *testing.T) {
 		assert.Error(t, ok)
 	}
 }
-
+/*
 func Test_newCortexExporter(t *testing.T) {
 	config  := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
@@ -636,3 +611,4 @@ func Test_pushMetrics(t *testing.T) {
 		})
 	}
 }
+*/
