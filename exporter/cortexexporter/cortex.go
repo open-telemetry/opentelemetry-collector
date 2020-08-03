@@ -17,7 +17,6 @@ package cortexexporter
 import (
 	"context"
 	"github.com/prometheus/prometheus/prompb"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
@@ -47,15 +46,15 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs [
 
 func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) string { return "" }
 
-// sanitize labels as well; label in extra ovewrites label in labels if collision happens, perhaps log the overwrite
+// sanitize labels as well; label in extra overwrites label in labels if collision happens, perhaps log the overwrite
 func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label { return nil }
 
-func handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
-func handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
+func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 	return nil
 }
-func handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
-func newCortexExporter(cfg configmodels.Exporter) *cortexExporter                        { return nil }
+func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
+func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter                        { return nil }
 
 func (ce *cortexExporter) shutdown() {}
 func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {

@@ -13,6 +13,7 @@ type combination struct {
 }
 
 var (
+
 	time1 = time.Now()
 	time2 = time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC)
 
@@ -113,7 +114,7 @@ func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescripto
 	return &otlp.MetricDescriptor{
 		Name:        name,
 		Description: "",
-		Unit:        "1",
+		Unit:        "",
 		Type:        comb[i].ty,
 		Temporality: comb[i].temp,
 	}

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"net/http"
 )
 
 const (
@@ -51,3 +52,5 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 	}
 }
+
+func createClient() *http.Client{ return nil}

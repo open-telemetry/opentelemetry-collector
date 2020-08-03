@@ -276,7 +276,8 @@ func Test_handleScalarMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ok := handleScalarMetric(tsMap, tt.m)
+			ce := &cortexExporter{namespace:""}
+			ok := ce.handleScalarMetric(tsMap, tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
@@ -372,7 +373,8 @@ func Test_handleHistogramMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ok := handleHistogramMetric(tsMap, &tt.m)
+			ce := &cortexExporter{}
+			ok := ce.handleHistogramMetric(tsMap, &tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
@@ -457,7 +459,8 @@ func Test_handleSummaryMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ok := handleSummaryMetric(tsMap, &tt.m)
+			ce := &cortexExporter{}
+			ok := ce.handleSummaryMetric(tsMap, &tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
@@ -490,8 +493,16 @@ func Test_shutdown(t *testing.T) {
 }
 
 func Test_newCortexExporter(t *testing.T) {
-	config := createDefaultConfig()
-	ce := newCortexExporter(config)
+	config  := &Config{
+		ExporterSettings:   configmodels.ExporterSettings{},
+		TimeoutSettings:    exporterhelper.TimeoutSettings{},
+		QueueSettings:      exporterhelper.QueueSettings{},
+		RetrySettings:      exporterhelper.RetrySettings{},
+		Namespace:          "",
+		ConstLabels:        nil,
+		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+	}
+	ce := newCortexExporter(config.Endpoint, config.Namespace, createClient())
 	require.NotNil(t, ce)
 	assert.NotNil(t, ce.namespace)
 	assert.NotNil(t, ce.endpoint)
@@ -574,7 +585,7 @@ func Test_pushMetrics(t *testing.T) {
 				ConstLabels:        nil,
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: serverURL.String()},
 			}
-			sender := newCortexExporter(config)
+			sender := newCortexExporter(config.Endpoint,config.Namespace,createClient())
 
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
