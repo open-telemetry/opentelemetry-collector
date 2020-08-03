@@ -32,7 +32,6 @@ import (
 )
 
 var floatRegex, _ = regexp.Compile(`^-?\d+\.\d+$`)
-var ocRegex, _ = regexp.Compile(`^opencensus`)
 
 var intAttributes = getIntAttributes()
 
@@ -406,14 +405,11 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 	delete(tags, tracetranslator.TagServiceNameSource)
 
-	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
-		if value, ok := tags[key]; ok {
-			resource.Attributes().UpsertString(key, value)
-			delete(tags, key)
+	for key := range getNonSpanAttributes() {
+		if key == tracetranslator.TagInstrumentationName || key == tracetranslator.TagInstrumentationVersion {
+			continue
 		}
-	}
-	for key, value := range tags {
-		if ocRegex.Match([]byte(key)) {
+		if value, ok := tags[key]; ok {
 			resource.Attributes().UpsertString(key, value)
 			delete(tags, key)
 		}
