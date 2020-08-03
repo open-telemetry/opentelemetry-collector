@@ -19,11 +19,14 @@ import (
 	"fmt"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -31,6 +34,8 @@ type cortexExporter struct {
 	namespace string
 	endpoint  string
 	client    http.Client
+	wg		  *sync.WaitGroup
+	closeChan	chan struct{}
 }
 
 type ByLabelName []prompb.Label
@@ -55,6 +60,8 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	return false
 }
 
+// find the TimeSeries corresponding to the label set in the map, and add sample to the TimeSeries; create new
+// TimeSeries if not found.
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,
 	ty otlp.MetricDescriptor_Type) {
 	if sample == nil {
@@ -95,7 +102,7 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 	for _, lb := range labels {
 		l[lb.Key] = prompb.Label{
 			Name:                 sanitize(lb.Key),
-			Value:                sanitize(lb.Value),
+			Value:                lb.Value,
 			XXX_NoUnkeyedLiteral: struct{}{},
 			XXX_unrecognized:     nil,
 			XXX_sizecache:        0,
@@ -107,13 +114,13 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 		}
 		l[extras[i]] = prompb.Label{
 			Name:                 sanitize(extras[i]),
-			Value:                sanitize(extras[i+1]),
+			Value:               extras[i+1],
 			XXX_NoUnkeyedLiteral: struct{}{},
 			XXX_unrecognized:     nil,
 			XXX_sizecache:        0,
 		}
 	}
-	s := []prompb.Label{}
+	s := make([]prompb.Label,0,len(l))
 	for _, lb := range l {
 		s = append(s,lb)
 	}
@@ -130,7 +137,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		}
 		for _, pt := range metric.Int64DataPoints {
 				lbs := createLabelSet(pt.GetLabels(),"name",
-					getScalarMetricName(metric.GetMetricDescriptor(),ce.namespace))
+					getPromMetricName(metric.GetMetricDescriptor(),ce.namespace))
 				sample := &prompb.Sample{Value:float64(pt.Value), Timestamp:int64(pt.TimeUnixNano)}
 				addSample(tsMap,sample, lbs, metric.GetMetricDescriptor().GetType())
 		}
@@ -141,7 +148,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		}
 		for _, pt := range metric.DoubleDataPoints {
 			lbs := createLabelSet(pt.GetLabels(),"name",
-				getScalarMetricName(metric.GetMetricDescriptor(),ce.namespace))
+				getPromMetricName(metric.GetMetricDescriptor(),ce.namespace))
 			sample := &prompb.Sample{Value:pt.Value, Timestamp:int64(pt.TimeUnixNano)}
 			addSample(tsMap,sample, lbs, metric.GetMetricDescriptor().GetType())
 		}
@@ -150,32 +157,95 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 	return fmt.Errorf("invalid metric type: wants int or double points");
 }
 func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	if metric.HistogramDataPoints == nil {
+		return fmt.Errorf("invalid metric type: wants histogram points")
+	}
+	for _, pt := range metric.HistogramDataPoints {
+		time := pt.GetTimeUnixNano()
+		ty := metric.GetMetricDescriptor().GetType()
+		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
+		sum := getSample(pt.GetSum(),time)
+		count := getSample(float64(pt.GetCount()),time)
+
+		addSample(tsMap, &sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
+		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
+		var totalCount uint64
+		for le, bk := range pt.GetBuckets(){
+			bucket := getSample(float64(bk.Count),time)
+			addSample(tsMap, &bucket, createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le",
+				strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f',-1, 64)),ty)
+			totalCount += bk.GetCount()
+		}
+		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le","+Inf"),ty)
+	}
 	return nil
 }
-func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
+func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	if metric.SummaryDataPoints == nil {
+		return fmt.Errorf("invalid metric type: wants summary points")
+	}
+	for _, pt := range metric.SummaryDataPoints {
+		time := pt.GetTimeUnixNano()
+		ty := metric.GetMetricDescriptor().GetType()
+		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
+		sum := getSample(pt.GetSum(),time)
+		count := getSample(float64(pt.GetCount()),time)
 
-func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter                        { return nil }
-func (ce *cortexExporter)shutdown(context.Context) error{ return nil}
-func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	return 0, nil
+		addSample(tsMap, &sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
+		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
+		for _, qt := range pt.GetPercentileValues(){
+			quantile := getSample(float64(qt.Value),time)
+			addSample(tsMap, &quantile, createLabelSet(pt.GetLabels(),"name", baseName, "quantile",
+				strconv.FormatFloat(qt.Percentile, 'f',-1, 64)),ty)
+		}
+	}
+	return nil
+
 }
 
-// check for empty namespace, name, and unit
-func getScalarMetricName(desc *otlp.MetricDescriptor, ns string) string {
+func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter {
+	return &cortexExporter{
+		namespace: ns,
+		endpoint:  ep,
+		client:    *client,
+	}
+}
+func (ce *cortexExporter)shutdown(context.Context) error{
+	close(ce.closeChan)
+	ce.wg.Wait()
+	return nil
+}
+func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+	ce.wg.Add(1)
+	defer ce.wg.Done()
+	select{
+	case <-ce.closeChan:
+		return pdatautil.MetricCount(md),fmt.Errorf("shutdown has been called")
+	default:
+		return 0,nil
+	}
+}
+
+// create Prometheus metric name by attaching namespace prefix, unit, and _total suffix
+func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
+	if desc == nil {
+		return ""
+	}
 	isCounter := desc.Type == otlp.MetricDescriptor_MONOTONIC_INT64 || desc.Type == otlp.MetricDescriptor_MONOTONIC_DOUBLE
 	b := strings.Builder{}
-	if len(ns) > 0{
-		fmt.Fprintf(&b, ns)
-	}
+	fmt.Fprintf(&b, ns)
 	if b.Len() > 0 {
 		fmt.Fprintf(&b, "_")
 	}
 	fmt.Fprintf(&b, desc.GetName())
-	if b.Len() > 0 {
+
+	if b.Len() > 0 && len(desc.GetUnit()) > 0{
 		fmt.Fprintf(&b, "_")
+		fmt.Fprintf(&b, desc.GetUnit())
 	}
-	fmt.Fprintf(&b, desc.GetUnit())
-	if isCounter&&b.Len() > 0 {
+
+	if b.Len()>0 && isCounter {
+		fmt.Fprintf(&b, "_")
 		fmt.Fprintf(&b, "total")
 	}
 	return b.String()

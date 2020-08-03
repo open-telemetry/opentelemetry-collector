@@ -17,6 +17,7 @@ package cortexexporter
 import (
 	"context"
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
@@ -205,7 +206,7 @@ func Test_createLabelSet(t *testing.T) {
 			"labels_dirty",
 			lbs1Dirty,
 			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11+"_", "key_"+value11, "key_"+label12, "key_"+value12, label31+"_", value31, label32, value32),
+			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
 			"no_extras_case",
@@ -224,14 +225,14 @@ func Test_createLabelSet(t *testing.T) {
 
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-same_ts_int_points_total": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points"),
+		typeMonotonicInt64  + "-name-same_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
 			getSample(float64(intVal1), time1),
-			getSample(float64(intVal2), time2)),
+			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-name-different_ts_int_points_total": getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points"),
+		typeMonotonicInt64  + "-name-different_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22 + "-name-different_ts_int_points_total": getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points"),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total"+ "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time2)),
 	}
 	tests := []struct {
@@ -273,7 +274,7 @@ func Test_handleScalarMetric(t *testing.T) {
 				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64, validCombinations),
 				Int64DataPoints: []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1, intVal1, time1),
-					getIntDataPoint(lbs2, intVal2, time2),
+					getIntDataPoint(lbs2, intVal1, time2),
 				},
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -287,13 +288,18 @@ func Test_handleScalarMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ce := &cortexExporter{namespace:""}
+			ce := &cortexExporter{}
 			ok := ce.handleScalarMetric(tsMap, tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, tt.want, tsMap)
+			assert.Exactly(t,len(tt.want), len(tsMap))
+			for k,v := range tsMap {
+				require.NotNil(t,tt.want[k])
+				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			}
 		})
 	}
 }
@@ -307,7 +313,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 	histPoint := otlp.HistogramDataPoint{
 		Labels:            lbs1,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time1.UnixNano()),
+		TimeUnixNano:      time1,
 		Count:             uint64(intVal2),
 		Sum:               floatVal2,
 		Buckets: []*otlp.HistogramDataPoint_Bucket{
@@ -324,23 +330,23 @@ func Test_handleHistogramMetric(t *testing.T) {
 		},
 	}
 	sigs := map[string]string{
-		sum:   typeHistogram + "-name-valid_single_point_sum-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		count: typeHistogram + "-name-valid_single_point_count-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
+		sum:   typeHistogram + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		count: typeHistogram + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
+			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
+			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
-			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
+			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", "valid_single_point_sum")...),
-		count: append(promLbs1, getPromLabels("name", "valid_single_point_count")...),
-		bucket1: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
+		count: append(promLbs1, getPromLabels("name", "valid_single_int_point_count")...),
+		bucket1: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		bucket2: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		bucket2: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-		bucketInf: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		bucketInf: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
 			"+Inf")...),
 	}
 	tests := []struct {
@@ -390,7 +396,12 @@ func Test_handleHistogramMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, tt.want, tsMap)
+			assert.Exactly(t,len(tt.want), len(tsMap))
+			for k,v := range tsMap {
+				require.NotNil(t,tt.want[k],k)
+				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			}
 		})
 	}
 }
@@ -401,25 +412,25 @@ func Test_handleSummaryMetric(t *testing.T) {
 	q1 := "quantile1"
 	q2 := "quantile2"
 	sigs := map[string]string{
-		sum:   typeSummary + "-name-valid_single_point_sum-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		count: typeSummary + "-name-valid_single_point_count-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		q1: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		q2: typeSummary + "-name-valid_single_point" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			label11 + "-" + value11 + "-" + label21 + "-" + value21,
+		sum:   typeSummary + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		count: typeSummary + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		q1: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
+			 "-"+ label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		q2: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
+		 "-" +label11 + "-" + value11 + "-" + label12 + "-" + value12,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", "valid_single_point_sum")...),
-		count: append(promLbs1, getPromLabels("name", "valid_single_point_count")...),
-		q1: append(promLbs1, getPromLabels("name", "valid_single_point", "quantile",
+		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
+		count: append(promLbs1, getPromLabels("name", "valid_single_int_point_count")...),
+		q1: append(promLbs1, getPromLabels("name", "valid_single_int_point", "quantile",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		q2: append(promLbs1, getPromLabels("name", "valid_single_point", "quantile",
+		q2: append(promLbs1, getPromLabels("name", "valid_single_int_point", "quantile",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
 	summaryPoint := otlp.SummaryDataPoint{
 		Labels:            lbs1,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time1.UnixNano()),
+		TimeUnixNano:      uint64(time1),
 		Count:             uint64(intVal2),
 		Sum:               floatVal2,
 		PercentileValues: []*otlp.SummaryDataPoint_ValueAtPercentile{
@@ -427,7 +438,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 				floatVal1,
 			},
 			{floatVal2,
-				floatVal2,
+				floatVal1,
 			},
 		},
 	}
@@ -452,7 +463,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		{
 			"single_summary_point",
 			otlp.Metric{
-				MetricDescriptor:    nil,
+				MetricDescriptor:    getDescriptor("valid_single_int_point", summary, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -463,7 +474,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 				sigs[sum]:   getTimeSeries(lbls[sum], getSample(floatVal2, time1)),
 				sigs[count]: getTimeSeries(lbls[count], getSample(float64(intVal2), time1)),
 				sigs[q1]:    getTimeSeries(lbls[q1], getSample(float64(intVal1), time1)),
-				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(intVal2), time1)),
+				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(intVal1), time1)),
 			},
 		},
 	}
@@ -476,21 +487,28 @@ func Test_handleSummaryMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, tt.want, tsMap)
+			assert.Exactly(t,len(tt.want), len(tsMap))
+			for k,v := range tsMap {
+				require.NotNil(t,tt.want[k],k)
+				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			}
 		})
 	}
 }
 
 // test after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
-	ce := &cortexExporter{}
-	wg := sync.WaitGroup{}
-	ce.shutdown()
+	ce := &cortexExporter{
+		wg:new(sync.WaitGroup),
+		closeChan: make(chan struct{}),
+	}
+	ce.shutdown(context.Background())
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
-		wg.Add(1)
+		ce.wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer ce.wg.Done()
 			_, ok := ce.pushMetrics(context.Background(),
 				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
 			errChan <- ok

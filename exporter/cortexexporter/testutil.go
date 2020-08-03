@@ -14,8 +14,8 @@ type combination struct {
 
 var (
 
-	time1 = time.Now()
-	time2 = time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC)
+	time1 = uint64(time.Now().UnixNano())
+	time2 = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
 
 	typeInt64 = "INT64"
 	typeMonotonicInt64 = "MONOTONIC_INT64"
@@ -40,8 +40,8 @@ var (
 
 	lbs1 = getLabels(label11, value11, label12, value12)
 	lbs2 = getLabels(label21, value21, label22, value22)
-	lbs1Dirty = getLabels(label11+dirty1, dirty1+value11, dirty2+label12, dirty2+value12)
-	lbs2Dirty = getLabels(label21+dirty1, dirty1+value21, dirty2+label22, dirty2+value22)
+	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
+	lbs2Dirty = getLabels(label21+dirty1, value21, dirty2+label22, value22)
 
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
 	promLbs2 = getPromLabels(label21, value21, label22, value22)
@@ -121,11 +121,11 @@ func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescripto
 	}
 }
 
-func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64, ts time.Time) *otlp.Int64DataPoint{
+func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.Int64DataPoint{
 	return &otlp.Int64DataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(ts.Unix()),
+		TimeUnixNano:      ts,
 		Value:             value,
 	}
 }
@@ -201,10 +201,10 @@ func getLabel(name string, value string) prompb.Label{
 }
 
 
-func getSample(v float64, t time.Time) prompb.Sample {
+func getSample(v float64, t uint64) prompb.Sample {
 	return prompb.Sample{
 		Value:                v,
-		Timestamp:            t.Unix(),
+		Timestamp:            int64(t),
 		XXX_NoUnkeyedLiteral: struct{}{},
 		XXX_unrecognized:     nil,
 		XXX_sizecache:        0,
