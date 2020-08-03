@@ -17,6 +17,7 @@ package cortexexporter
 import (
 	"context"
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
@@ -295,6 +296,7 @@ func Test_handleScalarMetric(t *testing.T) {
 			}
 			assert.Exactly(t,len(tt.want), len(tsMap))
 			for k,v := range tsMap {
+				require.NotNil(t,tt.want[k])
 				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
 				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
 			}
@@ -311,7 +313,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 	histPoint := otlp.HistogramDataPoint{
 		Labels:            lbs1,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time1.UnixNano()),
+		TimeUnixNano:      time1,
 		Count:             uint64(intVal2),
 		Sum:               floatVal2,
 		Buckets: []*otlp.HistogramDataPoint_Bucket{
@@ -328,23 +330,23 @@ func Test_handleHistogramMetric(t *testing.T) {
 		},
 	}
 	sigs := map[string]string{
-		sum:   typeHistogram + "-name-valid_single_point_sum-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
-		count: typeHistogram + "-name-valid_single_point_count-" + label11 + "-" + value11 + "-" + label21 + "-" + value21,
+		sum:   typeHistogram + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		count: typeHistogram + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
+			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
+			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
-			"-name-valid_single_point_bucket-" + label11 + "-" + value11 + "-" + label21 + "-" + value21 + "-",
+			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", "valid_single_point_sum")...),
-		count: append(promLbs1, getPromLabels("name", "valid_single_point_count")...),
-		bucket1: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
+		count: append(promLbs1, getPromLabels("name", "valid_single_int_point_count")...),
+		bucket1: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		bucket2: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		bucket2: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-		bucketInf: append(promLbs1, getPromLabels("name", "valid_single_point_bucket", "le",
+		bucketInf: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
 			"+Inf")...),
 	}
 	tests := []struct {
@@ -396,6 +398,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 			}
 			assert.Exactly(t,len(tt.want), len(tsMap))
 			for k,v := range tsMap {
+				require.NotNil(t,tt.want[k],k)
 				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
 				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
 			}
@@ -427,7 +430,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 	summaryPoint := otlp.SummaryDataPoint{
 		Labels:            lbs1,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time1.UnixNano()),
+		TimeUnixNano:      uint64(time1),
 		Count:             uint64(intVal2),
 		Sum:               floatVal2,
 		PercentileValues: []*otlp.SummaryDataPoint_ValueAtPercentile{
