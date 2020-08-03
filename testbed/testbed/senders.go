@@ -384,27 +384,28 @@ func (ome *OTLPMetricsDataSender) ProtocolName() string {
 
 // ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
 type ZipkinDataSender struct {
-	DataSenderOverTraceExporterOld
+	DataSenderOverTraceExporter
 }
 
 // Ensure ZipkinDataSender implements TraceDataSender.
-var _ TraceDataSenderOld = (*ZipkinDataSender)(nil)
+var _ TraceDataSender = (*ZipkinDataSender)(nil)
 
 // NewZipkinDataSender creates a new Zipkin protocol sender that will send
 // to the specified port after Start is called.
 func NewZipkinDataSender(host string, port int) *ZipkinDataSender {
-	return &ZipkinDataSender{DataSenderOverTraceExporterOld{
+	return &ZipkinDataSender{DataSenderOverTraceExporter{
 		Host: host,
 		Port: port,
 	}}
 }
 
 func (zs *ZipkinDataSender) Start() error {
-	factory := zipkinexporter.Factory{}
+	factory := zipkinexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("http://localhost:%d/api/v2/spans", zs.Port)
 
-	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+	creationParams := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 	if err != nil {
 		return err
 	}
