@@ -2,6 +2,7 @@ package cortexexporter
 
 import (
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/internal/data"
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"time"
@@ -215,5 +216,15 @@ func getTimeSeries (lbls []prompb.Label, samples...prompb.Sample) *prompb.TimeSe
 		XXX_NoUnkeyedLiteral: struct{}{},
 		XXX_unrecognized:     nil,
 		XXX_sizecache:        0,
+	}
+}
+
+func setCumulative (metricsData data.MetricData) {
+	for _, r := range data.MetricDataToOtlp(metricsData) {
+		for _, instMetrics := range r.InstrumentationLibraryMetrics {
+			for _, m := range instMetrics.Metrics {
+				m.MetricDescriptor.Temporality = otlp.MetricDescriptor_CUMULATIVE
+			}
+		}
 	}
 }

@@ -15,40 +15,49 @@
 package cortexexporter
 
 import (
+	"context"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/config/configmodels"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"net/http"
 )
+
 type cortexExporter struct {
 	namespace string
 	endpoint  string
-	client http.Client}
+	client    http.Client
+}
+
 // check whether the metric has the correct type and kind combination
 func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	switch desc.GetType() {
-		case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_MONOTONIC_INT64,
+	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_MONOTONIC_INT64,
 		otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_SUMMARY:
-			return desc.GetTemporality() == otlp.MetricDescriptor_CUMULATIVE
-		case otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_DOUBLE:
-			return true
+		return desc.GetTemporality() == otlp.MetricDescriptor_CUMULATIVE
+	case otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_DOUBLE:
+		return true
 	}
 	return false
 }
 
-func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,desc otlp.MetricDescriptor_Type){}
+func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label, desc otlp.MetricDescriptor_Type) {
+}
 
-func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) string {return ""}
+func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) string { return "" }
 
 // sanitize labels as well; label in extra ovewrites label in labels if collision happens, perhaps log the overwrite
-func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label { return nil}
+func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label { return nil }
 
+func handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
+func handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	return nil
+}
+func handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error { return nil }
+func newCortexExporter(cfg configmodels.Exporter) *cortexExporter                        { return nil }
 
-func handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
-func handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
-func handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) (error) {return nil}
-func newCortexExporter(cfg configmodels.Exporter) *cortexExporter{ return nil}
-
-func (ce *cortexExporter)shutdown() {}
-func (ce *cortexExporter)pushMetrics() (int, error){return 0 , nil}
+func (ce *cortexExporter) shutdown() {}
+func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+	return 0, nil
+}
