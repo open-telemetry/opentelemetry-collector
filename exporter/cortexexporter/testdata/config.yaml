@@ -9,7 +9,7 @@ exporters:
     cortex/2:
         #This is subject to change, and I need to find out where to put in headers, if even needed... We might just put that in factory as it stands as hardcoded Prometheus-Remote-Write idk
         headers:
-            Prometheus-Remote-Write-Version: "1.0.2"
+            Prometheus-Remote-Write-Version: "0.1.0"
             Tenant-id: 234
             another: "somevalue"
         #A lot of this will be rewritten

@@ -82,7 +82,7 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs [
 		tsMap[sig] = newTs
 	}
 }
-
+// TYPE - label 1 - value 1 - ...  label N - value N; labels should be in sorted order
 func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) string {
 	b := strings.Builder{}
 	fmt.Fprintf(&b, t.String())
@@ -161,22 +161,23 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 		return fmt.Errorf("invalid metric type: wants histogram points")
 	}
 	for _, pt := range metric.HistogramDataPoints {
-		time := pt.GetTimeUnixNano()
+		time := int64(pt.GetTimeUnixNano())
 		ty := metric.GetMetricDescriptor().GetType()
 		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
-		sum := getSample(pt.GetSum(),time)
-		count := getSample(float64(pt.GetCount()),time)
+		sum := &prompb.Sample{Value:pt.GetSum(),Timestamp:time}
+		count := &prompb.Sample{Value:float64(pt.GetCount()),Timestamp:time}
 
-		addSample(tsMap, &sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
-		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
+		addSample(tsMap, sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
+		addSample(tsMap, count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
 		var totalCount uint64
 		for le, bk := range pt.GetBuckets(){
-			bucket := getSample(float64(bk.Count),time)
-			addSample(tsMap, &bucket, createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le",
+			bucket := &prompb.Sample{Value:float64(bk.Count),Timestamp:time}
+			addSample(tsMap, bucket, createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le",
 				strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f',-1, 64)),ty)
 			totalCount += bk.GetCount()
 		}
-		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le","+Inf"),ty)
+		addSample(tsMap, &prompb.Sample{Value:float64(totalCount),Timestamp:time},
+			createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le","+Inf"),ty)
 	}
 	return nil
 }
@@ -185,17 +186,17 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 		return fmt.Errorf("invalid metric type: wants summary points")
 	}
 	for _, pt := range metric.SummaryDataPoints {
-		time := pt.GetTimeUnixNano()
+		time := int64(pt.GetTimeUnixNano())
 		ty := metric.GetMetricDescriptor().GetType()
 		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
-		sum := getSample(pt.GetSum(),time)
-		count := getSample(float64(pt.GetCount()),time)
+		sum := &prompb.Sample{Value:pt.GetSum(),Timestamp:time}
+		count := &prompb.Sample{Value:float64(pt.GetCount()),Timestamp:time}
 
-		addSample(tsMap, &sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
-		addSample(tsMap, &count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
+		addSample(tsMap, sum, createLabelSet(pt.GetLabels(),"name", baseName+"_sum"),ty)
+		addSample(tsMap, count, createLabelSet(pt.GetLabels(),"name", baseName+"_count"),ty)
 		for _, qt := range pt.GetPercentileValues(){
-			quantile := getSample(float64(qt.Value),time)
-			addSample(tsMap, &quantile, createLabelSet(pt.GetLabels(),"name", baseName, "quantile",
+			quantile := &prompb.Sample{Value:float64(qt.Value), Timestamp:time}
+			addSample(tsMap, quantile, createLabelSet(pt.GetLabels(),"name", baseName, "quantile",
 				strconv.FormatFloat(qt.Percentile, 'f',-1, 64)),ty)
 		}
 	}
