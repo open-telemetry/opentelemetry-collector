@@ -118,7 +118,6 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 	}
 }
-<<<<<<< HEAD
 
 func createMetricsExporter(
 	_ context.Context,
@@ -147,5 +146,3 @@ func createMetricsExporter(
 
 	return cexp, nil
 }
-=======
->>>>>>> da4dbcc9a9ca066844d4480fdca38023773c43ce
