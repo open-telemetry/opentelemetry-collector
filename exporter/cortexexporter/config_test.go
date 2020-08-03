@@ -54,8 +54,8 @@ func TestLoadConfig(t *testing.T) {
 			Namespace: "test-space",
 
 			ConstLabels: map[string]string{
-				"label1":        "value1",
-				"another label": "spaced value",
+				"label1": "Yang",
+				"label2": "Daniel",
 			},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
@@ -65,14 +65,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-
-				// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 				ReadBufferSize: 512 * 1024,
 
-				// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
 				WriteBufferSize: 512 * 1024,
 
-				// Timeout parameter configures `http.Client.Timeout`.
 				Timeout: 5 * time.Second,
 			},
 		})
