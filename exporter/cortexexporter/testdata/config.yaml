@@ -9,10 +9,11 @@ exporters:
     cortex/2:
         #This is subject to change, and I need to find out where to put in headers, if even needed... We might just put that in factory as it stands as hardcoded Prometheus-Remote-Write idk
         headers:
-            Prometheus-Remote-Write-Version: "0.1.0"
+            Prometheus-Remote-Write-Version: "1.0.2"
             Tenant-id: 234
             another: "somevalue"
         #A lot of this will be rewritten
+        timeout: 10s
         reconnection_delay: 15
         compression: "on"
         num_workers: 4
@@ -27,17 +28,14 @@ exporters:
         http_config:
             # CA certificate to validate API server certificate with.
             http_endpoint: "localhost:8888"
-            ca_file: /var/lib/mycert.pem
+            tls_config:
+                ca_file: /var/lib/mycert.pem
+            read_buffer:
+            
+            write_buffer: 
                 
             # ServerName extension to indicate the name of the server.
-            # https://tools.ietf.org/html/rfc4366#section-3.1
-            server_name: <string>
-                
-            # Disable validation of the server certificate.
-            insecure_skip_verify: <boolean>
-        http_client_config:
-            http_endpoint: "localhost:8888"
-            request_timeout: 5
+            # https://tools.ietf.org/html/rfc4366#section-3.
             
 
 

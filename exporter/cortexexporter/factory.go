@@ -25,13 +25,12 @@ import (
 	"github.com/shurcooL/go/ctxhttp"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
+	confighttp "go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts. Also, will readjust to fit our pipeline, not prometheus
-
 type WriteRequest struct {
 	Timeseries           []TimeSeries `protobuf:"bytes,1,rep,name=timeseries,proto3" json:"timeseries"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
@@ -44,6 +43,7 @@ func (c *Exporter) WrapTimeSeries(ts *prompb.TimeSeries) {
 }
 
 func (c *Exporter) Export(ctx context.Context, req *prompb.WriteRequest) error {
+	//TODO:: Error handling
 	data, err := proto.Marshal(req)
 	if err != nil {
 		return err
@@ -51,8 +51,6 @@ func (c *Exporter) Export(ctx context.Context, req *prompb.WriteRequest) error {
 	compressed := snappy.Encode(nil, data)
 	httpReq, err := http.NewRequest("POST", c.url.String(), bytes.NewReader(compressed))
 	if err != nil {
-		// Errors from NewRequest are from unparseable URLs, so are not
-		// recoverable.
 		return err
 	}
 	httpReq.Header.Add("Content-Encoding", "snappy")
@@ -79,6 +77,29 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
+
+	cCfg := cfg.(*Config)
+	client, err := cCfg.HTTPClientSettings.ToClient()
+	if err != nil {
+		return nil, err
+	}
+	ce := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
+	cexp, err := exporterhelper.NewMetricsExporter(
+		cfg,
+		ce.pushMetrics,
+		exporterhelper.WithTimeout(cCfg.TimeoutSettings),
+		exporterhelper.WithQueue(cCfg.QueueSettings),
+		exporterhelper.WithRetry(cCfg.RetrySettings),
+		exporterhelper.WithShutdown(ce.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return cexp, nil
+}
+
 func createDefaultConfig() configmodels.Exporter {
 	// TODO: Enable the queued settings.
 	qs := exporterhelper.CreateDefaultQueueSettings()
@@ -97,6 +118,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 	}
 }
+<<<<<<< HEAD
 
 func createMetricsExporter(
 	_ context.Context,
@@ -125,3 +147,5 @@ func createMetricsExporter(
 
 	return cexp, nil
 }
+=======
+>>>>>>> da4dbcc9a9ca066844d4480fdca38023773c43ce
