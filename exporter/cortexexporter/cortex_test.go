@@ -503,12 +503,28 @@ func Test_shutdown(t *testing.T) {
 		wg:new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
-	ce.shutdown(context.Background())
+	wg:=new(sync.WaitGroup)
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
-		ce.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer ce.wg.Done()
+			defer wg.Done()
+			_, ok := ce.pushMetrics(context.Background(),
+				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
+			errChan <- ok
+		}()
+	}
+	wg.Wait()
+	close(errChan)
+	for ok := range errChan {
+		assert.Nil(t, ok)
+	}
+	ce.shutdown(context.Background())
+	errChan = make(chan error, 5)
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			_, ok := ce.pushMetrics(context.Background(),
 				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
 			errChan <- ok
