@@ -30,6 +30,9 @@ type Config struct {
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
 
+	// Optional headers configuration for authorization and security/extra metadata
+	Headers []string `mapstructure:"optional_headers"`
+
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 }
