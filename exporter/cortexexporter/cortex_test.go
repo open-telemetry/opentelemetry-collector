@@ -16,14 +16,15 @@ package cortexexporter
 
 import (
 	"context"
+	"strconv"
+	"sync"
+	"testing"
+
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"strconv"
-	"sync"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 
@@ -126,7 +127,7 @@ func Test_addSample(t *testing.T) {
 	}
 	t.Run("nil_case", func(t *testing.T) {
 		tsMap := map[string]*prompb.TimeSeries{}
-		addSample(tsMap, nil,nil,0)
+		addSample(tsMap, nil, nil, 0)
 		assert.Exactly(t, tsMap, map[string]*prompb.TimeSeries{})
 	})
 	// run tests
@@ -160,7 +161,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 		},
 		{
 			"unordered_signature",
-			getPromLabels(label22, value22,label21, value21, ),
+			getPromLabels(label22, value22, label21, value21),
 			otlp.MetricDescriptor_HISTOGRAM,
 			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
 		},
@@ -225,14 +226,14 @@ func Test_createLabelSet(t *testing.T) {
 
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64  + "-name-same_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
+		typeMonotonicInt64 + "-name-same_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
 			getSample(float64(intVal1), time1),
 			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64  + "-name-different_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-name-different_ts_int_points_total"+ "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time2)),
 	}
 	tests := []struct {
@@ -294,11 +295,11 @@ func Test_handleScalarMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t,len(tt.want), len(tsMap))
-			for k,v := range tsMap {
-				require.NotNil(t,tt.want[k])
-				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			assert.Exactly(t, len(tt.want), len(tsMap))
+			for k, v := range tsMap {
+				require.NotNil(t, tt.want[k])
+				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
 			}
 		})
 	}
@@ -396,11 +397,11 @@ func Test_handleHistogramMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t,len(tt.want), len(tsMap))
-			for k,v := range tsMap {
-				require.NotNil(t,tt.want[k],k)
-				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			assert.Exactly(t, len(tt.want), len(tsMap))
+			for k, v := range tsMap {
+				require.NotNil(t, tt.want[k], k)
+				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
 			}
 		})
 	}
@@ -415,9 +416,9 @@ func Test_handleSummaryMetric(t *testing.T) {
 		sum:   typeSummary + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		count: typeSummary + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		q1: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			 "-"+ label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			"-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 		q2: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-		 "-" +label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			"-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
 	}
 	lbls := map[string][]prompb.Label{
 		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
@@ -434,7 +435,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		Count:             uint64(intVal2),
 		Sum:               floatVal2,
 		PercentileValues: []*otlp.SummaryDataPoint_ValueAtPercentile{
-			{   floatVal1,
+			{floatVal1,
 				floatVal1,
 			},
 			{floatVal2,
@@ -487,11 +488,11 @@ func Test_handleSummaryMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t,len(tt.want), len(tsMap))
-			for k,v := range tsMap {
-				require.NotNil(t,tt.want[k],k)
-				assert.ElementsMatch(t, tt.want[k].Labels,v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples,v.Samples)
+			assert.Exactly(t, len(tt.want), len(tsMap))
+			for k, v := range tsMap {
+				require.NotNil(t, tt.want[k], k)
+				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
 			}
 		})
 	}
@@ -500,7 +501,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 // test after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
 	ce := &cortexExporter{
-		wg:new(sync.WaitGroup),
+		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	ce.shutdown(context.Background())
@@ -520,6 +521,11 @@ func Test_shutdown(t *testing.T) {
 		assert.Error(t, ok)
 	}
 }
+
+func Test_Export(t *testing.T) {
+	return
+}
+
 /*
 func Test_newCortexExporter(t *testing.T) {
 	config  := &Config{
