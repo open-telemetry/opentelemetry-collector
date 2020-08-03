@@ -33,6 +33,13 @@ type cortexExporter struct {
 	client    http.Client
 }
 
+type ByLabelName []prompb.Label
+
+func (a ByLabelName) Len() int           { return len(a) }
+func (a ByLabelName) Less(i, j int) bool { return a[i].Name < a[j].Name }
+func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
+
 // check whether the metric has the correct type and kind combination
 func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	if desc == nil {
@@ -73,14 +80,12 @@ func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) stri
 	b := strings.Builder{}
 	fmt.Fprintf(&b, t.String())
 
-	l := *lbs
 	// sort labels by name
-	sort.SliceStable(l, func(i, j int) bool {
-		return l[i].Name < l[i].Name
-	})
-	for _, lb := range l {
+	sort.Sort(ByLabelName(*lbs))
+	for _, lb := range *lbs {
 		fmt.Fprintf(&b, "-%s-%s", lb.GetName(),lb.GetValue())
 	}
+
 	return b.String()
 }
 

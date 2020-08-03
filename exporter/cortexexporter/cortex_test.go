@@ -157,6 +157,12 @@ func Test_timeSeriesSignature(t *testing.T) {
 			otlp.MetricDescriptor_HISTOGRAM,
 			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
 		},
+		{
+			"unordered_signature",
+			getPromLabels(label22, value22,label21, value21, ),
+			otlp.MetricDescriptor_HISTOGRAM,
+			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
+		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
