@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"net/http"
 )
 
 // This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts
@@ -111,3 +112,5 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 	}
 }
+
+func createClient() *http.Client{ return nil}
