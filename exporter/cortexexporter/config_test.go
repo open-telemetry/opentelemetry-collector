@@ -17,6 +17,7 @@ package cortexexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,13 +27,14 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -49,27 +51,43 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "cortex/2",
 				TypeVal: "cortex",
 			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
+			QueueSettings: exporterhelper.QueueSettings{
+				Enabled:      true,
+				NumConsumers: 2,
+				QueueSize:    10,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         true,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			Namespace: "test-space",
+
+			ConstLabels: map[string]string{
+				"label1":        "value1",
+				"another label": "spaced value",
+			},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Headers: map[string]string{
-					//oof gotta reimplement these params
-				},
-				Endpoint:    "localhost:8888",
-				Compression: "on",
+				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
-						CAFile: "/var/lib/mycert.pem",
+						CAFile: "/var/lib/mycert.pem", //This is subject to change, but currently I have no idea what else to put here lol
 					},
 					Insecure: false,
 				},
-				Keepalive: &configgrpc.KeepaliveClientConfig{
-					Time:                20,
-					PermitWithoutStream: true,
-					Timeout:             30,
-				},
+
+				// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
+				ReadBufferSize: 512 * 1024,
+
+				// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
 				WriteBufferSize: 512 * 1024,
-				BalancerName:    "round_robin",
+
+				// Timeout parameter configures `http.Client.Timeout`.
+				Timeout: 5 * time.Second,
 			},
-			NumWorkers:        123,
-			ReconnectionDelay: 15,
 		})
 }

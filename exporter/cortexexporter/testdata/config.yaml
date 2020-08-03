@@ -3,35 +3,31 @@ receivers:
   
 processors:
     exampleprocessor:
-    
+ 
 exporters:
     cortex:
     cortex/2:
-        http_endpoint: "localhost:8888"
+        #This is subject to change, and I need to find out where to put in headers, if even needed... We might just put that in factory as it stands as hardcoded Prometheus-Remote-Write idk
         headers:
             Prometheus-Remote-Write-Version: "1.0.2"
             Tenant-id: 234
             another: "somevalue"
-        
+        #A lot of this will be rewritten
         reconnection_delay: 15
         compression: "on"
         num_workers: 4
         namespace: "prefix"
-        request_timeout: 30
         const_labels:
             label1: value1
             label2: value2
-        basic_auth:
+        basic_auth: #Nope
             username: "username"
             password: "1234"
             password_file: "yes"
-        tls_config:
+        http_config:
             # CA certificate to validate API server certificate with.
-            ca_file: <filename>
-                
-            # Certificate and key files for client cert authentication to the server.
-            cert_file: <filename>
-            key_file: <filename>
+            http_endpoint: "localhost:8888"
+            ca_file: /var/lib/mycert.pem
                 
             # ServerName extension to indicate the name of the server.
             # https://tools.ietf.org/html/rfc4366#section-3.1
@@ -40,6 +36,9 @@ exporters:
             # Disable validation of the server certificate.
             insecure_skip_verify: <boolean>
         http_client_config:
+            http_endpoint: "localhost:8888"
+            request_timeout: 5
+            
 
 
         
