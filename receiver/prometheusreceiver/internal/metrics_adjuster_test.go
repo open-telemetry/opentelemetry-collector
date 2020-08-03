@@ -39,7 +39,7 @@ func Test_gauge(t *testing.T) {
 		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
 		[]*metricspb.Metric{mtu.Gauge(g1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t3Ms, 55)))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_gaugeDistribution(t *testing.T) {
@@ -56,7 +56,7 @@ func Test_gaugeDistribution(t *testing.T) {
 		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
 		[]*metricspb.Metric{mtu.GaugeDist(gd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_cumulative(t *testing.T) {
@@ -77,7 +77,7 @@ func Test_cumulative(t *testing.T) {
 		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t4Ms, 72)))},
 		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.Double(t4Ms, 17)))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_cumulativeDistribution(t *testing.T) {
@@ -98,7 +98,7 @@ func Test_cumulativeDistribution(t *testing.T) {
 		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
 		[]*metricspb.Metric{mtu.CumulativeDist(cd1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.DistPt(t4Ms, bounds0, []int64{2, 1, 0, 5})))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_summary(t *testing.T) {
@@ -119,7 +119,7 @@ func Test_summary(t *testing.T) {
 		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
 		[]*metricspb.Metric{mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 2, 30, percent0, []float64{9, 47, 8})))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_multiMetrics(t *testing.T) {
@@ -178,7 +178,7 @@ func Test_multiMetrics(t *testing.T) {
 			mtu.Summary(s1, k1k2, mtu.Timeseries(t3Ms, v1v2, mtu.SummPt(t4Ms, 2, 30, percent0, []float64{9, 47, 8}))),
 		},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_multiTimeseries(t *testing.T) {
@@ -207,7 +207,7 @@ func Test_multiTimeseries(t *testing.T) {
 		[]*metricspb.Metric{
 			mtu.Cumulative(c1, k1k2, mtu.Timeseries(t4Ms, v1v2, mtu.Double(t5Ms, 3)), mtu.Timeseries(t2Ms, v10v20, mtu.Double(t5Ms, 45)), mtu.Timeseries(t4Ms, v100v200, mtu.Double(t5Ms, 12)))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_emptyLabels(t *testing.T) {
@@ -228,7 +228,7 @@ func Test_emptyLabels(t *testing.T) {
 		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2k3, mtu.Timeseries(t3Ms, []string{"", "", ""}, mtu.Double(t3Ms, 88)))},
 		[]*metricspb.Metric{mtu.Cumulative(c1, k1k2k3, mtu.Timeseries(t1Ms, []string{"", "", ""}, mtu.Double(t3Ms, 44)))},
 	}}
-	runScript(t, NewJobsMap(time.Duration(time.Minute)).get("job", "0"), script)
+	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
 }
 
 func Test_tsGC(t *testing.T) {
@@ -265,7 +265,7 @@ func Test_tsGC(t *testing.T) {
 		},
 	}}
 
-	jobsMap := NewJobsMap(time.Duration(time.Minute))
+	jobsMap := NewJobsMap(time.Minute)
 
 	// run round 1
 	runScript(t, jobsMap.get("job", "0"), script1)
@@ -304,7 +304,7 @@ func Test_jobGC(t *testing.T) {
 		[]*metricspb.Metric{},
 	}}
 
-	gcInterval := time.Duration(10 * time.Millisecond)
+	gcInterval := 10 * time.Millisecond
 	jobsMap := NewJobsMap(gcInterval)
 
 	// run job 1, round 1 - all entries marked

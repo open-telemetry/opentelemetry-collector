@@ -102,7 +102,7 @@ func (dp *PerfTestDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
 				},
 			},
 			StartTime: timeToTimestamp(startTime),
-			EndTime:   timeToTimestamp(startTime.Add(time.Duration(time.Millisecond))),
+			EndTime:   timeToTimestamp(startTime.Add(time.Millisecond)),
 		}
 
 		// Append attributes.
@@ -130,7 +130,7 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
 		startTime := time.Now()
-		endTime := startTime.Add(time.Duration(time.Millisecond))
+		endTime := startTime.Add(time.Millisecond)
 
 		spanID := dp.dataItemsGenerated.Inc()
 

@@ -99,15 +99,15 @@ func jThriftSpansToInternal(spans []*jaeger.Span, dest pdata.SpanSlice) {
 }
 
 func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
-	dest.SetTraceID(pdata.TraceID(tracetranslator.Int64ToByteTraceID(span.TraceIdHigh, span.TraceIdLow)))
-	dest.SetSpanID(pdata.SpanID(tracetranslator.Int64ToByteSpanID(span.SpanId)))
+	dest.SetTraceID(tracetranslator.Int64ToByteTraceID(span.TraceIdHigh, span.TraceIdLow))
+	dest.SetSpanID(tracetranslator.Int64ToByteSpanID(span.SpanId))
 	dest.SetName(span.OperationName)
 	dest.SetStartTime(microsecondsToUnixNano(span.StartTime))
 	dest.SetEndTime(microsecondsToUnixNano(span.StartTime + span.Duration))
 
 	parentSpanID := span.ParentSpanId
 	if parentSpanID != 0 {
-		dest.SetParentSpanID(pdata.SpanID(tracetranslator.Int64ToByteSpanID(parentSpanID)))
+		dest.SetParentSpanID(tracetranslator.Int64ToByteSpanID(parentSpanID))
 	}
 
 	attrs := dest.Attributes()

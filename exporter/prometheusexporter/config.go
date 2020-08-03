@@ -15,7 +15,7 @@
 package prometheusexporter
 
 import (
-	prometheus_golang "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -31,5 +31,5 @@ type Config struct {
 	Namespace string `mapstructure:"namespace"`
 
 	// ConstLabels are values that are applied for every exported metric.
-	ConstLabels prometheus_golang.Labels `mapstructure:"const_labels"`
+	ConstLabels prometheus.Labels `mapstructure:"const_labels"`
 }

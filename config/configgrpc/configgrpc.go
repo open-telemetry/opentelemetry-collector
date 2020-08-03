@@ -161,7 +161,7 @@ type GRPCServerSettings struct {
 
 // ToServerOption maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
 func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
-	opts := []grpc.DialOption{}
+	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
 			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))

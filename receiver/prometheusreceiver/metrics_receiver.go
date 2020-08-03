@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/discovery"
-	sd_config "github.com/prometheus/prometheus/discovery/config"
+	sdconfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
 
@@ -60,7 +60,7 @@ func (pr *pReceiver) Start(ctx context.Context, host component.Host) error {
 		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
 		var jobsMap *internal.JobsMap
 		if !pr.cfg.UseStartTimeMetric {
-			jobsMap = internal.NewJobsMap(time.Duration(2 * time.Minute))
+			jobsMap = internal.NewJobsMap(2 * time.Minute)
 		}
 		app := internal.NewOcaStore(c, pr.consumer, pr.logger, jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.Name())
 		// need to use a logger with the gokitLog interface
@@ -93,7 +93,7 @@ func (pr *pReceiver) Start(ctx context.Context, host component.Host) error {
 		// By this point we've given time to the scrape manager
 		// to start applying its original configuration.
 
-		discoveryCfg := make(map[string]sd_config.ServiceDiscoveryConfig)
+		discoveryCfg := make(map[string]sdconfig.ServiceDiscoveryConfig)
 		for _, scrapeConfig := range pr.cfg.PrometheusConfig.ScrapeConfigs {
 			discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfig
 		}

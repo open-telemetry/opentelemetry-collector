@@ -51,7 +51,7 @@ import (
 // The rest of the fields should match up exactly
 func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	buf := new(bytes.Buffer)
-	sizes := []int64{}
+	var sizes []int64
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := io.Copy(buf, r.Body)
 		sizes = append(sizes, s)
@@ -151,7 +151,7 @@ type mockZipkinReporter struct {
 	serializer zipkinreporter.SpanSerializer
 }
 
-var _ (zipkinreporter.Reporter) = (*mockZipkinReporter)(nil)
+var _ zipkinreporter.Reporter = (*mockZipkinReporter)(nil)
 
 func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
 	r.batch = append(r.batch, &span)
