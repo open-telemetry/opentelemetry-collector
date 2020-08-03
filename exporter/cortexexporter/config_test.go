@@ -53,10 +53,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Namespace: "test-space",
 
-			ConstLabels: map[string]string{
-				"label1": "Yang",
-				"label2": "Daniel",
-			},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{
