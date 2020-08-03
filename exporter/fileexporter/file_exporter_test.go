@@ -28,10 +28,13 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestFileTraceExporterNoErrors(t *testing.T) {
@@ -46,42 +49,51 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 		},
 		Spans: []*tracepb.Span{
 			{
-				TraceId: []byte("123"),
-				SpanId:  []byte("456"),
-				Name:    &tracepb.TruncatableString{Value: "Checkout"},
-				Kind:    tracepb.Span_CLIENT,
+				StartTime: internal.TimeToTimestamp(time.Unix(123, 0)),
+				EndTime:   internal.TimeToTimestamp(time.Unix(124, 0)),
+				TraceId:   []byte("123"),
+				SpanId:    []byte("456"),
+				Name:      &tracepb.TruncatableString{Value: "Checkout"},
+				Kind:      tracepb.Span_CLIENT,
 			},
 			{
-				Name: &tracepb.TruncatableString{Value: "Frontend"},
-				Kind: tracepb.Span_SERVER,
+				StartTime: internal.TimeToTimestamp(time.Unix(123, 0)),
+				EndTime:   internal.TimeToTimestamp(time.Unix(124, 0)),
+				Name:      &tracepb.TruncatableString{Value: "Frontend"},
+				Kind:      tracepb.Span_SERVER,
 			},
 		},
 	}
-	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), internaldata.OCToTraceData(td)))
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
 	var j map[string]interface{}
 	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
 
-	assert.EqualValues(t, j,
+	assert.EqualValues(t,
 		map[string]interface{}{
+			"node": map[string]interface{}{},
 			"resource": map[string]interface{}{
 				"type":   "ServiceA",
 				"labels": map[string]interface{}{"attr1": "value1"},
 			},
 			"spans": []interface{}{
 				map[string]interface{}{
-					"traceId": "MTIz", // base64 encoding of "123"
-					"spanId":  "NDU2", // base64 encoding of "456"
-					"kind":    "CLIENT",
-					"name":    map[string]interface{}{"value": "Checkout"},
+					"startTime": map[string]interface{}{"seconds": "123"},
+					"endTime":   map[string]interface{}{"seconds": "124"},
+					"traceId":   "MTIz", // base64 encoding of "123"
+					"spanId":    "NDU2", // base64 encoding of "456"
+					"kind":      "CLIENT",
+					"name":      map[string]interface{}{"value": "Checkout"},
 				},
 				map[string]interface{}{
-					"kind": "SERVER",
-					"name": map[string]interface{}{"value": "Frontend"},
+					"startTime": map[string]interface{}{"seconds": "123"},
+					"endTime":   map[string]interface{}{"seconds": "124"},
+					"kind":      "SERVER",
+					"name":      map[string]interface{}{"value": "Frontend"},
 				},
 			},
-		})
+		}, j)
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
@@ -89,29 +101,31 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	lme := &Exporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := consumerdata.MetricsData{
-		Resource: &resourcepb.Resource{
-			Type:   "ServiceA",
-			Labels: map[string]string{"attr1": "value1"},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "my-metric",
-					Description: "My metric",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+	md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+		{
+			Resource: &resourcepb.Resource{
+				Type:   "ServiceA",
+				Labels: map[string]string{"attr1": "value1"},
+			},
+			Metrics: []*metricspb.Metric{
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "my-metric",
+						Description: "My metric",
+						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							Points: []*metricspb.Point{
+								{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+							},
 						},
 					},
 				},
 			},
 		},
-	}
-	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
+	})
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
 	var j map[string]interface{}
