@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -273,6 +274,32 @@ func TestOCSpanProtoToZipkin_endToEnd(t *testing.T) {
 			statusCodeTagKey:        "INTERNAL",
 			statusDescriptionTagKey: "This is not a drill!",
 		},
+	}
+
+	assert.EqualValues(t, wantZipkinSpan, gotOCSpanData)
+}
+
+func TestOCSpanProtoToZipkin_serviceNameNoAttributes(t *testing.T) {
+	// When Service Name is available, it should be extracted into LocalEndpoint
+	// even when other attributes (IP, Port) are not available
+	protoSpan := &tracepb.Span{}
+	resource := &resourcepb.Resource{}
+	node := &commonpb.Node{
+		ServiceInfo: &commonpb.ServiceInfo{
+			Name: "servicename",
+		},
+	}
+
+	gotOCSpanData, err := OCSpanProtoToZipkin(node, resource, protoSpan, "default_service")
+	require.NoError(t, err, "Failed to convert from ProtoSpan to OCSpanData")
+
+	sampled := true
+	wantZipkinSpan := &zipkinmodel.SpanModel{
+		SpanContext: zipkinmodel.SpanContext{Sampled: &sampled},
+		LocalEndpoint: &zipkinmodel.Endpoint{
+			ServiceName: "servicename",
+		},
+		Tags: map[string]string{},
 	}
 
 	assert.EqualValues(t, wantZipkinSpan, gotOCSpanData)

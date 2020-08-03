@@ -79,6 +79,11 @@ func zipkinEndpointFromAttributes(
 ) (endpoint *zipkinmodel.Endpoint) {
 
 	if attrMap == nil {
+		if serviceName != "" {
+			return &zipkinmodel.Endpoint{
+				ServiceName: serviceName,
+			}
+		}
 		return nil
 	}
 
