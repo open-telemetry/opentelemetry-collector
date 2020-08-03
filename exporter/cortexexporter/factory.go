@@ -118,31 +118,3 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 	}
 }
-
-func createMetricsExporter(
-	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.MetricsExporter, error) {
-	cCfg := cfg.(*Config)
-	client,error := cCfg.HTTPClientSettings.ToClient()
-
-	if error != nil {
-		return nil, error
-	}
-
-	ce := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint,client)
-	cexp, err := exporterhelper.NewMetricsExporter(
-		cfg,
-		ce.pushMetrics,
-		exporterhelper.WithTimeout(cCfg.TimeoutSettings),
-		exporterhelper.WithRetry(cCfg.RetrySettings),
-		exporterhelper.WithQueue(cCfg.QueueSettings),
-		exporterhelper.WithShutdown(ce.shutdown),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return cexp, nil
-}
