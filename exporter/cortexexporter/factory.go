@@ -15,11 +15,8 @@
 package cortexexporter
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/gogo/protobuf/proto"
@@ -28,23 +25,29 @@ import (
 	"github.com/shurcooL/go/ctxhttp"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"net/http"
 )
 
-// This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts
+// This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts. Also, will readjust to fit our pipeline, not prometheus
 
 type WriteRequest struct {
+	Timeseries           []TimeSeries `protobuf:"bytes,1,rep,name=timeseries,proto3" json:"timeseries"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
-func (c *Client) Store(ctx context.Context, req *prompb.WriteRequest) error {
+func (c *Exporter) WrapTimeSeries(ts *prompb.TimeSeries) {
+	return //will populate later
+}
+
+func (c *Exporter) Export(ctx context.Context, req *prompb.WriteRequest) error {
 	data, err := proto.Marshal(req)
 	if err != nil {
 		return err
 	}
-
 	compressed := snappy.Encode(nil, data)
 	httpReq, err := http.NewRequest("POST", c.url.String(), bytes.NewReader(compressed))
 	if err != nil {
@@ -61,24 +64,6 @@ func (c *Client) Store(ctx context.Context, req *prompb.WriteRequest) error {
 	defer cancel()
 
 	httpResp, err := ctxhttp.Do(ctx, c.client, httpReq)
-	if err != nil {
-		// Errors from client.Do are from (for example) network errors, so are
-		// recoverable.
-		return recoverableError{err}
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode/100 != 2 {
-		scanner := bufio.NewScanner(io.LimitReader(httpResp.Body, maxErrMsgLen))
-		line := ""
-		if scanner.Scan() {
-			line = scanner.Text()
-		}
-		err = fmt.Errorf("server returned HTTP status %s: %s", httpResp.Status, line)
-	}
-	if httpResp.StatusCode/100 == 5 {
-		return recoverableError{err}
-	}
 	return err
 }
 
@@ -106,11 +91,9 @@ func createDefaultConfig() configmodels.Exporter {
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   qs,
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
 	}
 }
-
-func createClient() *http.Client{ return nil}
