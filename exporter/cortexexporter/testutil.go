@@ -17,10 +17,11 @@ var (
 	time1 = time.Now()
 	time2 = time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC)
 
-	typeInt64 = "1"
-	typeDouble = "2"
-	typeHistogram = "3"
-	typeSummary = "4"
+	typeInt64 = "INT64"
+	typeMonotonicInt64 = "MONOTONIC_INT64"
+	typeDouble = "DOUBLE"
+	typeHistogram = "HISTOGRAM"
+	typeSummary = "SUMMARY"
 
 	label11 = "test_label11"
 	value11 = "test_value11"
@@ -42,14 +43,14 @@ var (
 	lbs1Dirty = getLabels(label11+dirty1, dirty1+value11, dirty2+label12, dirty2+value12)
 	lbs2Dirty = getLabels(label21+dirty1, dirty1+value21, dirty2+label22, dirty2+value22)
 
-	promlbs1 = getPromLabels(label11, value11, label12, value12)
-	promlbs2 = getPromLabels(label21, value21, label22, value22)
-	promlbs3 = getPromLabels(label31, value31, label32, value32)
+	promLbs1 = getPromLabels(label11, value11, label12, value12)
+	promLbs2 = getPromLabels(label21, value21, label22, value22)
+	promLbs3 = getPromLabels(label31, value31, label32, value32)
 
-	int_val1 int64 = 1
-	int_val2 int64 = 2
-    float_val1 = 1.0
-    float_val2 = 2.0
+	intVal1 int64 = 1
+	intVal2  int64= 2
+    floatVal1 = 1.0
+    floatVal2 = 2.0
 
 	int64Cumulative = 9
 	monotonicInt64 = 0
@@ -80,19 +81,19 @@ var (
 		{temp: otlp.MetricDescriptor_INVALID_TEMPORALITY},
 		{},
 	}
-	twoPointsSameTs = map[string]*prompb.TimeSeries {
-		typeInt64+"-"+label11+"-"+value11+"-"+label21+"-"+value21:
-		getTimeSeries(getPromLabels(label11,value11, label12,value12),
-			getSample(float64(int_val1),time1),
-			getSample(float64(int_val2),time2)),
+	twoPointsSameTs = map[string]*prompb.TimeSeries{
+		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12:
+			getTimeSeries(getPromLabels(label11, value11, label12, value12),
+				getSample(float64(intVal1), time1),
+				getSample(float64(intVal2), time2)),
 	}
 	twoPointsDifferentTs = map[string]*prompb.TimeSeries{
-		typeInt64 + "-" + label11 + "-" + value11 + "-" + label21 + "-" + value21:
+		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12:
 		getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(int_val1), time1), ),
+			getSample(float64(intVal1), time1), ),
 		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22:
 		getTimeSeries(getPromLabels(label21, value21, label22, value22),
-			getSample(float64(int_val1), time2), ),
+			getSample(float64(intVal1), time2), ),
 	}
 
 )

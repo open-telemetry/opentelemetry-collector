@@ -31,7 +31,6 @@ import (
 )
 
 // This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts. Also, will readjust to fit our pipeline, not prometheus
-
 type WriteRequest struct {
 	Timeseries           []TimeSeries `protobuf:"bytes,1,rep,name=timeseries,proto3" json:"timeseries"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
@@ -75,13 +74,10 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createMetricsExporter))
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createMetricsExporter(
-	_ context.Context,
-	_ component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
 	cCfg := cfg.(*Config)
 	client, err := cCfg.HTTPClientSettings.ToClient()
@@ -102,7 +98,6 @@ func createMetricsExporter(
 	}
 
 	return cexp, nil
-
 }
 
 func createDefaultConfig() configmodels.Exporter {
