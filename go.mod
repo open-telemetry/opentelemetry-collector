@@ -19,6 +19,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
+	github.com/golang/snappy v0.0.1
 	github.com/golangci/golangci-lint v1.29.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
 	github.com/google/go-cmp v0.5.1
@@ -44,6 +45,7 @@ require (
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
 	github.com/shirou/gopsutil v0.0.0-20200517204708-c89193f22d93 // c89193f22d9359848988f32aee972122bb2abdc2
+	github.com/shurcooL/go v0.0.0-20180423040247-9e1955d9fb6e
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1
