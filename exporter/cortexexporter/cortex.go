@@ -28,6 +28,9 @@ import (
 	"sync"
 )
 // TODO: get default labels such as job or instance from Resource
+
+
+// cortexExporter converts OTLP metrics to Cortex TimeSeries and sends them to a remote endpoint
 type cortexExporter struct {
 	namespace 	string
 	endpoint  	string
@@ -160,14 +163,18 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 
 // newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter {
+func newCortexExporter(ns string, ep string, client *http.Client) (*cortexExporter, error) {
+	if client == nil {
+		return nil, fmt.Errorf("http client cannot be nil")
+	}
+
 	return &cortexExporter{
 		namespace: 	ns,
 		endpoint:  	ep,
 		client:    	client,
 		wg:			new(sync.WaitGroup),
 		closeChan:  make(chan struct{}),
-	}
+	}, nil
 }
 
 // shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations

@@ -16,6 +16,7 @@ package cortexexporter
 
 import (
 	"context"
+	"github.com/golang/snappy"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -45,8 +46,102 @@ import (
 // TODO: check that NoError instead of NoNil is used at the right places
 // TODO: add one line comment before each test stating criteria
 
+// Test_handleScalarMetric checks whether data points within a single scalar metric can be added to a map of
+// TimeSeries correctly.
+// Test cases are two data point belonging to the same TimeSeries, two data point belonging different TimeSeries,
+// and nil data points case.
+func Test_handleScalarMetric(t *testing.T) {
+	sameTs := map[string]*prompb.TimeSeries{
+		// string signature of the data point is the key of the map
+		typeMonotonicInt64 + "-name-same_ts_int_points_total" + lb1Sig:
+			getTimeSeries(
+				getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
+				getSample(float64(intVal1), time1),
+				getSample(float64(intVal2), time1)),
+	}
+	differentTs := map[string]*prompb.TimeSeries{
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb1Sig:
+			getTimeSeries(
+				getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
+				getSample(float64(intVal1), time1)),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb2Sig:
+			getTimeSeries(
+				getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
+				getSample(float64(intVal1), time2)),
+	}
 
-// export is not complete yet, so the request is never sent, thus the handler function never run
+	tests := []struct {
+		name        string
+		m           *otlp.Metric
+		returnError bool
+		want        map[string]*prompb.TimeSeries
+	}{
+		{
+			"invalid_nil_array",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("invalid_nil_array", monotonicInt64, validCombinations),
+				Int64DataPoints:     nil,
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			true,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"same_ts_int_points",
+			&otlp.Metric{
+				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64, validCombinations),
+				Int64DataPoints: []*otlp.Int64DataPoint{
+					getIntDataPoint(lbs1, intVal1, time1),
+					getIntDataPoint(lbs1, intVal2, time1),
+				},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			sameTs,
+		},
+		{
+			"different_ts_int_points",
+			&otlp.Metric{
+				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64, validCombinations),
+				Int64DataPoints: []*otlp.Int64DataPoint{
+					getIntDataPoint(lbs1, intVal1, time1),
+					getIntDataPoint(lbs2, intVal1, time2),
+				},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			differentTs,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			ce := &cortexExporter{}
+			ok := ce.handleScalarMetric(tsMap, tt.m)
+			if tt.returnError {
+				assert.Error(t, ok)
+				return
+			}
+			assert.Exactly(t, len(tt.want), len(tsMap))
+			for k, v := range tsMap {
+				require.NotNil(t, tt.want[k])
+				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
+				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
+			}
+		})
+	}
+}
+
+// Test_handleHistogramMetric checks whether data points(sum, count, buckets) within a single Histogram metric can be
+// added to a map of TimeSeries correctly.
+// Test cases are a histogram data point with two buckets and nil data points case.
 func Test_handleHistogramMetric(t *testing.T) {
 	sum := "sum"
 	count := "count"
@@ -72,24 +167,25 @@ func Test_handleHistogramMetric(t *testing.T) {
 			floatVal2,
 		},
 	}
+	// string signature of the data point is the key of the map
 	sigs := map[string]string{
-		sum:   typeHistogram + "-name-valid_single_int_point_sum" + lb1Sig,
-		count: typeHistogram + "-name-valid_single_int_point_count" + lb1Sig,
+		sum:   typeHistogram + "-name-" + name1 +"_sum" + lb1Sig,
+		count: typeHistogram + "-name-" + name1 +"_count" + lb1Sig,
 		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-name-valid_single_int_point_bucket" + lb1Sig,
+			"-name-" + name1 +"_bucket" + lb1Sig,
 		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-name-valid_single_int_point_bucket" + lb1Sig,
+			"-name-" + name1 +"_bucket" + lb1Sig,
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
-			"-name-valid_single_int_point_bucket" + lb1Sig,
+			"-name-" + name1 +"_bucket" + lb1Sig,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
-		count: append(promLbs1, getPromLabels("name", "valid_single_int_point_count")...),
-		bucket1: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
+		sum:   append(promLbs1, getPromLabels("name", name1+ "_sum")...),
+		count: append(promLbs1, getPromLabels("name", name1+ "_count")...),
+		bucket1: append(promLbs1, getPromLabels("name", name1+ "_bucket", "le",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		bucket2: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
+		bucket2: append(promLbs1, getPromLabels("name", name1+ "_bucket", "le",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-		bucketInf: append(promLbs1, getPromLabels("name", "valid_single_int_point_bucket", "le",
+		bucketInf: append(promLbs1, getPromLabels("name", name1+ "_bucket", "le",
 			"+Inf")...),
 	}
 	tests := []struct {
@@ -113,7 +209,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 		{
 			"single_histogram_point",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point", histogram, validCombinations),
+				MetricDescriptor:    getDescriptor(name1+ "", histogram, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: []*otlp.HistogramDataPoint{&histPoint},
@@ -150,25 +246,29 @@ func Test_handleHistogramMetric(t *testing.T) {
 	}
 }
 
+// Test_handleSummaryMetric checks whether data points(sum, count, quantiles) within a single Summary metric can be
+// added to a map of TimeSeries correctly.
+// Test cases are a summary data point with two quantiles and nil data points case.
 func Test_handleSummaryMetric(t *testing.T) {
 	sum := "sum"
 	count := "count"
 	q1 := "quantile1"
 	q2 := "quantile2"
+	// string signature is the key of the map
 	sigs := map[string]string{
-		sum:   typeSummary + "-name-valid_single_int_point_sum" + lb1Sig,
-		count: typeSummary + "-name-valid_single_int_point_count" + lb1Sig,
-		q1: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			lb1Sig,
-		q2: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			lb1Sig,
+		sum:   typeSummary + "-name-" + name1 +"_sum" + lb1Sig,
+		count: typeSummary + "-name-" + name1 +"_count" + lb1Sig,
+		q1: typeSummary + "-name-" + name1 +"-" + "quantile-" +
+			strconv.FormatFloat(floatVal1, 'f', -1, 64) + lb1Sig,
+		q2: typeSummary + "-name-" + name1 +"-" + "quantile-" +
+			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
-		count: append(promLbs1, getPromLabels("name", "valid_single_int_point_count")...),
-		q1: append(promLbs1, getPromLabels("name", "valid_single_int_point", "quantile",
+		sum:   append(promLbs1, getPromLabels("name", name1+ "_sum")...),
+		count: append(promLbs1, getPromLabels("name", name1+ "_count")...),
+		q1: append(promLbs1, getPromLabels("name", name1+ "", "quantile",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		q2: append(promLbs1, getPromLabels("name", "valid_single_int_point", "quantile",
+		q2: append(promLbs1, getPromLabels("name", name1+ "", "quantile",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
 	summaryPoint := otlp.SummaryDataPoint{
@@ -207,7 +307,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		{
 			"single_summary_point",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor("valid_single_int_point", summary, validCombinations),
+				MetricDescriptor:    getDescriptor(name1+ "", summary, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -241,7 +341,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 	}
 }
 
-// test after shutdown is called, incoming calls to pushMetrics return error.
+// Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
 	ce := &cortexExporter{
 		wg:        new(sync.WaitGroup),
@@ -249,21 +349,8 @@ func Test_shutdown(t *testing.T) {
 	}
 	wg:=new(sync.WaitGroup)
 	errChan := make(chan error, 5)
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			_, ok := ce.pushMetrics(context.Background(),
-				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
-			errChan <- ok
-		}()
-	}
-	wg.Wait()
-	close(errChan)
-	for ok := range errChan {
-		assert.Nil(t, ok)
-	}
-	ce.shutdown(context.Background())
+	err := ce.shutdown(context.Background())
+	require.NoError(t, err)
 	errChan = make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
@@ -286,6 +373,7 @@ func Test_Export(t *testing.T) {
 	return
 }
 
+// Test_newCortexExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_newCortexExporter(t *testing.T) {
 	config  := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
@@ -296,7 +384,8 @@ func Test_newCortexExporter(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	c, _ := config.HTTPClientSettings.ToClient()
-	ce := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+	ce, err:= newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+	require.NoError(t,err)
 	require.NotNil(t, ce)
 	assert.NotNil(t, ce.namespace)
 	assert.NotNil(t, ce.endpoint)
@@ -304,9 +393,10 @@ func Test_newCortexExporter(t *testing.T) {
 	assert.NotNil(t, ce.closeChan)
 	assert.NotNil(t, ce.wg)
 }
+
 // Bug{@huyan0} success case pass but it should fail; this is because the server gets no request because export() is
-// empty.
-// test the correctness and the number of points
+// empty. This test cannot run until export is finished.
+// Test_pushMetrics the correctness and the number of points
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
 	noDescBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())
@@ -358,8 +448,10 @@ func Test_pushMetrics(t *testing.T) {
 				assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version:"))
 				assert.Equal(t, "Snappy", r.Header.Get("Content-Encoding"))
 				assert.NotNil(t, r.Header.Get("Tenant-id"))
+				buf := make([]byte, len(body))
+				snappy.Decode(buf, body)
 				wr := &prompb.WriteRequest{}
-				ok := proto.Unmarshal(body, wr)
+				ok := proto.Unmarshal(buf, wr)
 				require.Nil(t, ok)
 				assert.EqualValues(t, 2, len(wr.Timeseries))
 			},
@@ -378,16 +470,16 @@ func Test_pushMetrics(t *testing.T) {
 			}))
 			defer server.Close()
 
-			serverURL, err := url.Parse(server.URL)
-			assert.NoError(t, err)
+			serverURL, uErr := url.Parse(server.URL)
+			assert.NoError(t, uErr)
 
 			config := createDefaultConfig().(*Config)
 			assert.NotNil(t,config)
 			config.HTTPClientSettings.Endpoint = serverURL.String()
 			c, err := config.HTTPClientSettings.ToClient()
 			assert.Nil(t,err)
-			sender := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
-
+			sender, nErr:= newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 

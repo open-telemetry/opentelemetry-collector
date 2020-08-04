@@ -54,6 +54,8 @@ var (
 
 	lb1Sig = "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12
 	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
+	name1 = "valid_single_int_point"
+
 	int64Cumulative = 9
 	monotonicInt64 = 0
 	histogram = 2

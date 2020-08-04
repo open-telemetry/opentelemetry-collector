@@ -3,7 +3,6 @@ package cortexexporter
 import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"strconv"
@@ -193,87 +192,6 @@ func Test_createLabelSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, createLabelSet(tt.orig, tt.extras...))
-		})
-	}
-}
-
-func Test_handleScalarMetric(t *testing.T) {
-	sameTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-name-same_ts_int_points_total" + lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
-			getSample(float64(intVal1), time1),
-			getSample(float64(intVal2), time1)),
-	}
-	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
-			getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb2Sig: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
-			getSample(float64(intVal1), time2)),
-	}
-	tests := []struct {
-		name        string
-		m           *otlp.Metric
-		returnError bool
-		want        map[string]*prompb.TimeSeries
-	}{
-		{
-			"invalid_nil_array",
-			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_nil_array", monotonicInt64, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			true,
-			map[string]*prompb.TimeSeries{},
-		},
-		{
-			"same_ts_int_points",
-			&otlp.Metric{
-				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64, validCombinations),
-				Int64DataPoints: []*otlp.Int64DataPoint{
-					getIntDataPoint(lbs1, intVal1, time1),
-					getIntDataPoint(lbs1, intVal2, time1),
-				},
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			false,
-			sameTs,
-		},
-		{
-			"different_ts_int_points",
-			&otlp.Metric{
-				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64, validCombinations),
-				Int64DataPoints: []*otlp.Int64DataPoint{
-					getIntDataPoint(lbs1, intVal1, time1),
-					getIntDataPoint(lbs2, intVal1, time2),
-				},
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			false,
-			differentTs,
-		},
-	}
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tsMap := map[string]*prompb.TimeSeries{}
-			ce := &cortexExporter{}
-			ok := ce.handleScalarMetric(tsMap, tt.m)
-			if tt.returnError {
-				assert.Error(t, ok)
-				return
-			}
-			assert.Exactly(t, len(tt.want), len(tsMap))
-			for k, v := range tsMap {
-				require.NotNil(t, tt.want[k])
-				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
-			}
 		})
 	}
 }
