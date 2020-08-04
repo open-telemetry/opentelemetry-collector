@@ -327,6 +327,7 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 }
 
 // export sends TimeSeries in tsMap to a Cortex Gateway
+// this needs to be done
 func (ce *cortexExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	return nil
 }
