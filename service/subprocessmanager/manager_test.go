@@ -100,19 +100,19 @@ func TestGetDelay(t *testing.T) {
 func TestFormatEnvSlice(t *testing.T) {
 	var formatEnvSliceTests = []struct {
 		name     string
-		envSlice *[]EnvConfig
+		envSlice *[]EnvSettings
 		want     []string
 		wantNil  bool
 	}{
 		{
 			name:     "empty slice",
-			envSlice: &[]EnvConfig{},
+			envSlice: &[]EnvSettings{},
 			want:     nil,
 			wantNil:  true,
 		},
 		{
 			name: "one entry",
-			envSlice: &[]EnvConfig{
+			envSlice: &[]EnvSettings{
 				{
 					Name:  "DATA_SOURCE",
 					Value: "password:username",
@@ -125,7 +125,7 @@ func TestFormatEnvSlice(t *testing.T) {
 		},
 		{
 			name: "three entries",
-			envSlice: &[]EnvConfig{
+			envSlice: &[]EnvSettings{
 				{
 					Name:  "DATA_SOURCE",
 					Value: "password:username",
@@ -165,15 +165,15 @@ func TestFormatEnvSlice(t *testing.T) {
 func TestRun(t *testing.T) {
 	var runTests = []struct {
 		name        string
-		process     *SubprocessConfig
+		process     *SubprocessSettings
 		wantElapsed time.Duration
 		wantErr     bool
 	}{
 		{
 			name: "normal process 1, error process exit",
-			process: &SubprocessConfig{
+			process: &SubprocessSettings{
 				Command: "go run testdata/test_crasher.go",
-				Env: []EnvConfig{
+				Env: []EnvSettings{
 					{
 						Name:  "DATA_SOURCE",
 						Value: "username:password@(url:port)/dbname",
@@ -185,9 +185,9 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "normal process 2, normal process exit",
-			process: &SubprocessConfig{
+			process: &SubprocessSettings{
 				Command: "go version",
-				Env: []EnvConfig{
+				Env: []EnvSettings{
 					{
 						Name:  "DATA_SOURCE",
 						Value: "username:password@(url:port)/dbname",
@@ -199,9 +199,9 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "shellquote error",
-			process: &SubprocessConfig{
+			process: &SubprocessSettings{
 				Command: "command flag='something",
-				Env:     []EnvConfig{},
+				Env:     []EnvSettings{},
 			},
 			wantElapsed: 0,
 			wantErr:     true,

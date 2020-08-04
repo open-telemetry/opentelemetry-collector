@@ -49,7 +49,7 @@ func GetDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 }
 
 // Run will start the process and keep track of running time
-func (proc *SubprocessConfig) Run(logger *zap.Logger) (time.Duration, error) {
+func (proc *SubprocessSettings) Run(logger *zap.Logger) (time.Duration, error) {
 
 	var argsSlice []string
 
@@ -100,7 +100,7 @@ func (proc *SubprocessConfig) Run(logger *zap.Logger) (time.Duration, error) {
 }
 
 // Log every line of the subprocesse's output using zap, until pipe is closed (EOF)
-func (proc *SubprocessConfig) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger, isStdout bool) {
+func (proc *SubprocessSettings) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger, isStdout bool) {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
@@ -125,7 +125,7 @@ func (proc *SubprocessConfig) pipeSubprocessOutput(reader *bufio.Reader, logger 
 }
 
 // formatEnvSlice will loop over the key-value pairs and format the slice correctly for use by the Command object ("name=value")
-func formatEnvSlice(envs *[]EnvConfig) []string {
+func formatEnvSlice(envs *[]EnvSettings) []string {
 	if len(*envs) == 0 {
 		return nil
 	}

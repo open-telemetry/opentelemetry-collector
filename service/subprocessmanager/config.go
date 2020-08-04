@@ -14,16 +14,16 @@
 
 package subprocessmanager
 
-// SubprocessConfig is the config definition for the subprocess manager
-type SubprocessConfig struct {
+// SubprocessSettings is the config definition for the subprocess manager
+type SubprocessSettings struct {
 	// Command is the command string to be run (executable + flags)
 	Command string `mapstructure:"exec"`
 	// Env is a list of env variables to pass to a specific command
-	Env []EnvConfig `mapstructure:"env"`
+	Env []EnvSettings `mapstructure:"env"`
 }
 
-// EnvConfig is the config definition of each key-value pair for environment variables
-type EnvConfig struct {
+// EnvSettings is the config definition of each key-value pair for environment variables
+type EnvSettings struct {
 	// Name is the name of the environment variable
 	Name string `mapstructure:"name"`
 	// Value is the value of the variable
