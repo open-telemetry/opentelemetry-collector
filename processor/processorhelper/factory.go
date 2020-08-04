@@ -17,6 +17,8 @@ package processorhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -41,6 +43,7 @@ type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, 
 // factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType                configmodels.Type
+	customUnmarshaler      component.CustomUnmarshaler
 	createDefaultConfig    CreateDefaultConfig
 	createTraceProcessor   CreateTraceProcessor
 	createMetricsProcessor CreateMetricsProcessor
@@ -48,6 +51,13 @@ type factory struct {
 }
 
 var _ component.LogsProcessorFactory = new(factory)
+
+// WithCustomUnmarshaler overrides the default "not available" CustomUnmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+	return func(o *factory) {
+		o.customUnmarshaler = customUnmarshaler
+	}
+}
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraceProcessor.
 func WithTraces(createTraceProcessor CreateTraceProcessor) FactoryOption {
@@ -82,7 +92,13 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ProcessorFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Processor config created by this factory.
@@ -130,4 +146,16 @@ func (f *factory) CreateLogsProcessor(
 		return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
+// there is no need for custom unmarshaling.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

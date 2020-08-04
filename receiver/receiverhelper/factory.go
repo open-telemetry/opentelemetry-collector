@@ -17,6 +17,8 @@ package receiverhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -88,18 +90,18 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ReceiverFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *factory) Type() configmodels.Type {
 	return f.cfgType
-}
-
-// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-// there is no need for custom unmarshaling.
-func (f *factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return f.customUnmarshaler
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
@@ -142,4 +144,16 @@ func (f *factory) CreateLogsReceiver(
 		return f.createLogsReceiver(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
+// there is no need for custom unmarshaling.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

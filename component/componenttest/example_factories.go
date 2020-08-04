@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -56,11 +57,6 @@ func (f *ExampleReceiverFactory) Type() configmodels.Type {
 	return "examplereceiver"
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &ExampleReceiver{
@@ -75,6 +71,11 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,
 	}
+}
+
+// CustomUnmarshaler implements the deprecated way to provide custom unmarshalers.
+func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
@@ -163,31 +164,8 @@ var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
 // MultiProtoReceiver is for testing purposes. We are defining an example multi protocol
 // config and factory for "multireceiver" receiver type.
 type MultiProtoReceiver struct {
-	TypeVal   configmodels.Type                   `mapstructure:"-"`
-	NameVal   string                              `mapstructure:"-"`
-	Protocols map[string]MultiProtoReceiverOneCfg `mapstructure:"protocols"`
-}
-
-var _ configmodels.Receiver = (*MultiProtoReceiver)(nil)
-
-// Name gets the exporter name.
-func (rs *MultiProtoReceiver) Name() string {
-	return rs.NameVal
-}
-
-// SetName sets the receiver name.
-func (rs *MultiProtoReceiver) SetName(name string) {
-	rs.NameVal = name
-}
-
-// Type sets the receiver type.
-func (rs *MultiProtoReceiver) Type() configmodels.Type {
-	return rs.TypeVal
-}
-
-// SetType sets the receiver type.
-func (rs *MultiProtoReceiver) SetType(typeStr configmodels.Type) {
-	rs.TypeVal = typeStr
+	configmodels.ReceiverSettings `mapstructure:",squash"`            // squash ensures fields are correctly decoded in embedded struct
+	Protocols                     map[string]MultiProtoReceiverOneCfg `mapstructure:"protocols"`
 }
 
 // MultiProtoReceiverOneCfg is multi proto receiver config.
@@ -205,16 +183,18 @@ func (f *MultiProtoReceiverFactory) Type() configmodels.Type {
 	return "multireceiver"
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *MultiProtoReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
+// Unmarshal implements the ConfigUnmarshaler interface.
+func (f *MultiProtoReceiverFactory) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &MultiProtoReceiver{
-		TypeVal: f.Type(),
-		NameVal: string(f.Type()),
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: f.Type(),
+			NameVal: string(f.Type()),
+		},
 		Protocols: map[string]MultiProtoReceiverOneCfg{
 			"http": {
 				Endpoint:     "example.com:8888",
@@ -274,6 +254,13 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
 		ExtraListSetting: nil,
+	}
+}
+
+// CustomUnmarshaler implements the deprecated way to provide custom unmarshalers.
+func (f *ExampleExporterFactory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return func(componentViperSection *viper.Viper, intoCfg interface{}) error {
+		return componentViperSection.UnmarshalExact(intoCfg)
 	}
 }
 
