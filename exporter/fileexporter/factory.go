@@ -18,10 +18,9 @@ import (
 	"context"
 	"os"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -29,17 +28,17 @@ const (
 	typeStr = "file"
 )
 
-// Factory is the factory for logging exporter.
-type Factory struct {
+// NewFactory creates a factory for OTLP exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -48,28 +47,31 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
-	return f.createExporter(config)
+func createTraceExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TraceExporter, error) {
+	return createExporter(cfg)
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
-	return f.createExporter(config)
+func createMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	return createExporter(cfg)
 }
 
-// CreateLogsExporter creates a log exporter based on this config.
-func (f *Factory) CreateLogsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
+func createLogsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	return f.createExporter(cfg)
+	return createExporter(cfg)
 }
 
-var _ component.LogsExporterFactory = (*Factory)(nil)
-
-func (f *Factory) createExporter(config configmodels.Exporter) (*Exporter, error) {
+func createExporter(config configmodels.Exporter) (*Exporter, error) {
 	cfg := config.(*Config)
 
 	// There must be one exporter for metrics, traces, and logs. We maintain a

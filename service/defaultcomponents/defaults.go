@@ -85,7 +85,7 @@ func Components() (
 		loggingexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
-		&fileexporter.Factory{},
+		fileexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 	)
