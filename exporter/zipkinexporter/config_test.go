@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -30,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -49,6 +48,4 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
 	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).Endpoint)
 	assert.Equal(t, "proto", e1.(*Config).Format)
-	_, err = factory.CreateTraceExporter(zap.NewNop(), e1)
-	require.NoError(t, err)
 }

@@ -15,45 +15,35 @@
 package zipkinexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := Factory{}
-
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	ze, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	ze, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, ze)
 
 	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
 	zeCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
-	ze, err = factory.CreateTraceExporter(zap.NewNop(), cfg)
+	ze, err = createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ze)
 }

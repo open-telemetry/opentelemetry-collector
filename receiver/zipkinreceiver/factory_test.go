@@ -21,31 +21,33 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, exportertest.NewNopTraceExporterOld())
-	assert.Nil(t, err, "receiver creation failed")
+	tReceiver, err := createTraceReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		exportertest.NewNopTraceExporter())
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, exportertest.NewNopTraceExporterOld())
-	assert.Nil(t, err, "receiver creation failed")
+	tReceiver, err = createTraceReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		exportertest.NewNopTraceExporter())
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
-
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
-	assert.Nil(t, mReceiver)
 }
