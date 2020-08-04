@@ -41,8 +41,9 @@ import (
 	// "github.com/stretchr/testify/require"
 )
 
-// TODO: try to run  Test_PushMetrics after export is in
+// TODO: try to run Test_PushMetrics after export() is in
 // TODO: add bucket and histogram test cases for Test_PushMetrics
+// TODO: check that NoError instead of NoNil is used at the right places
 
 //return false if descriptor type is nil
 func Test_validateMetrics(t *testing.T) {

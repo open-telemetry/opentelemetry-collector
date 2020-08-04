@@ -12,38 +12,31 @@ exporters:
             Prometheus-Remote-Write-Version: "0.1.0"
             Tenant-id: 234
             another: "somevalue"
+
+        namespace: ""
+
         #A lot of this will be rewritten
         timeout: 10s
         reconnection_delay: 15
         compression: "on"
-        num_workers: 4
-        namespace: "prefix"
-        const_labels:
-            label1: value1
-            label2: value2
+
+
         basic_auth: #Nope
             username: "username"
             password: "1234"
             password_file: "yes"
         http_config:
             # CA certificate to validate API server certificate with.
-            http_endpoint: "localhost:8888"
+            endpoint: "localhost:8888"
             tls_config:
                 ca_file: /var/lib/mycert.pem
-            read_buffer:
-            
-            write_buffer: 
+                read_buffer_size:
+                write_buffer:
+                timeout: 5s
                 
             # ServerName extension to indicate the name of the server.
             # https://tools.ietf.org/html/rfc4366#section-3.
-            
-
-
-        
-        
-        
-    
-    service:
+service:
         pipelines:
         traces:
             receivers: [examplereceiver]

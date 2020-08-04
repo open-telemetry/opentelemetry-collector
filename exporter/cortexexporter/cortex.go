@@ -32,11 +32,12 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 
 )
-
+// TODO: get default labels such as job or instance from Resource
 type cortexExporter struct {
 	namespace 	string
 	endpoint  	string
 	client    	*http.Client
+	headers		map[string]string
 	wg		  	*sync.WaitGroup
 	closeChan	chan struct{}
 }
