@@ -33,5 +33,4 @@ type Config struct {
 	Headers map[string]string `mapstructure:"headers"`
 
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:"http_setting"` // squash ensures fields are correctly decoded in embedded struct.
-
 }
