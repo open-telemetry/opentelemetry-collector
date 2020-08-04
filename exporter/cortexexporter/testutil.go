@@ -38,6 +38,11 @@ var (
 	dirty1 = "%"
 	dirty2 = "?"
 
+	intVal1 int64 = 1
+	intVal2  int64= 2
+	floatVal1 = 1.0
+	floatVal2 = 2.0
+
 	lbs1 = getLabels(label11, value11, label12, value12)
 	lbs2 = getLabels(label21, value21, label22, value22)
 	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
@@ -47,11 +52,8 @@ var (
 	promLbs2 = getPromLabels(label21, value21, label22, value22)
 	promLbs3 = getPromLabels(label31, value31, label32, value32)
 
-	intVal1 int64 = 1
-	intVal2  int64= 2
-    floatVal1 = 1.0
-    floatVal2 = 2.0
-
+	lb1Sig = "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12
+	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
 	int64Cumulative = 9
 	monotonicInt64 = 0
 	histogram = 2

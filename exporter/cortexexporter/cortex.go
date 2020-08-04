@@ -263,6 +263,7 @@ func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporte
 		closeChan:  make(chan struct{}),
 	}
 }
+
 // shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
 func (ce *cortexExporter)shutdown(context.Context) error{
@@ -316,7 +317,7 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 			return dropped, fmt.Errorf(strings.Join(errStrings, "\n"))
 		}
 
-		if err := ce.Export(ctx,tsMap); err != nil {
+		if err := ce.export(ctx,tsMap); err != nil {
 			return pdatautil.MetricCount(md), err
 		}
 

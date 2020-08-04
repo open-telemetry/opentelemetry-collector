@@ -160,19 +160,19 @@ func Test_timeSeriesSignature(t *testing.T) {
 			"int64_signature",
 			promLbs1,
 			otlp.MetricDescriptor_INT64,
-			typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			typeInt64 + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
 			otlp.MetricDescriptor_HISTOGRAM,
-			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
+			typeHistogram + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
 			otlp.MetricDescriptor_HISTOGRAM,
-			typeHistogram + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22,
+			typeHistogram + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
@@ -235,14 +235,14 @@ func Test_createLabelSet(t *testing.T) {
 
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-name-same_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
+		typeMonotonicInt64 + "-name-same_ts_int_points_total" + lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
 			getSample(float64(intVal1), time1),
 			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb2Sig: getTimeSeries(getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
 			getSample(float64(intVal1), time2)),
 	}
 	tests := []struct {
@@ -340,14 +340,14 @@ func Test_handleHistogramMetric(t *testing.T) {
 		},
 	}
 	sigs := map[string]string{
-		sum:   typeHistogram + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
-		count: typeHistogram + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		sum:   typeHistogram + "-name-valid_single_int_point_sum" + lb1Sig,
+		count: typeHistogram + "-name-valid_single_int_point_count" + lb1Sig,
 		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			"-name-valid_single_int_point_bucket" + lb1Sig,
 		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			"-name-valid_single_int_point_bucket" + lb1Sig,
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
-			"-name-valid_single_int_point_bucket-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			"-name-valid_single_int_point_bucket" + lb1Sig,
 	}
 	lbls := map[string][]prompb.Label{
 		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
@@ -422,12 +422,12 @@ func Test_handleSummaryMetric(t *testing.T) {
 	q1 := "quantile1"
 	q2 := "quantile2"
 	sigs := map[string]string{
-		sum:   typeSummary + "-name-valid_single_int_point_sum-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
-		count: typeSummary + "-name-valid_single_int_point_count-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+		sum:   typeSummary + "-name-valid_single_int_point_sum" + lb1Sig,
+		count: typeSummary + "-name-valid_single_int_point_count" + lb1Sig,
 		q1: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			lb1Sig,
 		q2: typeSummary + "-name-valid_single_int_point-" + "quantile-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-" + label11 + "-" + value11 + "-" + label12 + "-" + value12,
+			lb1Sig,
 	}
 	lbls := map[string][]prompb.Label{
 		sum:   append(promLbs1, getPromLabels("name", "valid_single_int_point_sum")...),
@@ -551,7 +551,6 @@ func Test_Export(t *testing.T) {
 	return
 }
 
-
 func Test_newCortexExporter(t *testing.T) {
 	config  := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
@@ -570,7 +569,7 @@ func Test_newCortexExporter(t *testing.T) {
 	assert.NotNil(t, ce.closeChan)
 	assert.NotNil(t, ce.wg)
 }
-
+// Bug{@huyan0} success case pass but it should fail
 // test the correctness and the number of points
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
