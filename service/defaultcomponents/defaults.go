@@ -81,7 +81,7 @@ func Components() (
 
 	exporters, err := component.MakeExporterFactoryMap(
 		&opencensusexporter.Factory{},
-		&prometheusexporter.Factory{},
+		prometheusexporter.NewFactory(),
 		loggingexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 		jaegerexporter.NewFactory(),

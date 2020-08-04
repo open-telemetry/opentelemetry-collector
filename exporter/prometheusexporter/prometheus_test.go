@@ -28,7 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -52,21 +54,24 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 	}
 
-	factory := Factory{}
+	factory := NewFactory()
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
-			consumer, err := factory.CreateMetricsExporter(zap.NewNop(), tt.config)
+			exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, tt.config)
 
 			if tt.wantErr != "" {
-				require.Equal(t, tt.wantErr, err.Error())
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, err.Error())
 				continue
+			} else {
+				require.NoError(t, err)
 			}
 
-			assert.NotNil(t, consumer)
-
+			assert.NotNil(t, exp)
 			require.Nil(t, err)
-			require.NoError(t, consumer.Shutdown(context.Background()))
+			require.NoError(t, exp.Shutdown(context.Background()))
 		}
 	}
 }
@@ -81,16 +86,20 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		Endpoint: ":7777",
 	}
 
-	factory := Factory{}
-	consumer, err := factory.CreateMetricsExporter(zap.NewNop(), config)
+	factory := NewFactory()
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, config)
 	assert.NoError(t, err)
 
-	defer consumer.Shutdown(context.Background())
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
 
-	assert.NotNil(t, consumer)
+	assert.NotNil(t, exp)
 
 	for delta := 0; delta <= 20; delta += 10 {
-		consumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
+		md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{Metrics: metricBuilder(int64(delta))}})
+		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err, "Failed to perform a scrape")
