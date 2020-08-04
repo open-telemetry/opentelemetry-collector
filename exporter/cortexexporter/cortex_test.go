@@ -18,7 +18,12 @@ import (
 	"context"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"sync"
 	"testing"
@@ -32,6 +37,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	proto "github.com/gogo/protobuf/proto"
 	// "github.com/stretchr/testify/require"
 )
 
@@ -564,7 +570,7 @@ func Test_newCortexExporter(t *testing.T) {
 	assert.NotNil(t, ce.closeChan)
 	assert.NotNil(t, ce.wg)
 }
-/*
+
 // test the correctness and the number of points
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
@@ -620,7 +626,7 @@ func Test_pushMetrics(t *testing.T) {
 				wr := &prompb.WriteRequest{}
 				ok := proto.Unmarshal(body, wr)
 				require.NotNil(t, ok)
-				assert.EqualValues(t, 2, wr.Timeseries)
+				assert.EqualValues(t, 2, len(wr.Timeseries))
 			},
 			0,
 			0,
@@ -646,10 +652,11 @@ func Test_pushMetrics(t *testing.T) {
 				QueueSettings:      exporterhelper.QueueSettings{},
 				RetrySettings:      exporterhelper.RetrySettings{},
 				Namespace:          "",
-				ConstLabels:        nil,
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: serverURL.String()},
 			}
-			sender := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, createClient())
+			c, err := config.HTTPClientSettings.ToClient()
+			assert.NotNil(t,err)
+			sender := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
 
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
@@ -662,4 +669,4 @@ func Test_pushMetrics(t *testing.T) {
 		})
 	}
 }
-*/
+

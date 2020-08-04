@@ -39,6 +39,7 @@ type cortexExporter struct {
 	closeChan	chan struct{}
 }
 
+// ByLabelName enables the usage of sort.Sort() with a slice of labels
 type ByLabelName []prompb.Label
 
 func (a ByLabelName) Len() int           { return len(a) }
@@ -46,7 +47,8 @@ func (a ByLabelName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 
-// check whether the metric has the correct type and kind combination
+//check whether the metric has the correct type and kind combination
+//desc cannot be nil
 func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	if desc == nil {
 		return false
@@ -63,9 +65,10 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 
 // find the TimeSeries corresponding to the label set in the map, and add sample to the TimeSeries; create new
 // TimeSeries if not found.
+// Non of the parameter can be nil
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,
 	ty otlp.MetricDescriptor_Type) {
-	if sample == nil {
+	if sample == nil || lbs == nil || tsMap == nil {
 		return
 	}
 	sig := timeSeriesSignature(ty, &lbs)
@@ -205,6 +208,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 
 }
 
+// client cannot be nil
 func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter {
 	return &cortexExporter{
 		namespace: 	ns,
