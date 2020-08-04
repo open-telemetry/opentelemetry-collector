@@ -25,7 +25,7 @@ import (
 )
 
 func TestProcessTelemetry(t *testing.T) {
-	const ballastSizeBytes uint64 = 0;
+	const ballastSizeBytes uint64 = 0
 
 	pmv := NewProcessMetricsViews(ballastSizeBytes)
 	assert.NotNil(t, pmv)
@@ -71,4 +71,3 @@ func TestProcessTelemetry(t *testing.T) {
 		assert.True(t, lastValue.Value > 0, viewName)
 	}
 }
-
