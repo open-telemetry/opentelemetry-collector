@@ -39,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -58,7 +59,7 @@ type ZipkinReceiver struct {
 
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
-	nextConsumer consumer.TraceConsumerOld
+	nextConsumer consumer.TraceConsumer
 	instanceName string
 
 	startOnce sync.Once
@@ -70,7 +71,7 @@ type ZipkinReceiver struct {
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(config *Config, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
+func New(config *Config, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -84,7 +85,7 @@ func New(config *Config, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceive
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error {
+func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -297,7 +298,7 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		td.SourceFormat = "zipkin"
-		consumerErr = zr.nextConsumer.ConsumeTraceData(ctx, td)
+		consumerErr = zr.nextConsumer.ConsumeTraces(ctx, internaldata.OCToTraceData(td))
 	}
 
 	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, tdsSize, consumerErr)

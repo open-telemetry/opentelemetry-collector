@@ -48,10 +48,12 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -60,7 +62,7 @@ const zipkinReceiver = "zipkin_receiver_test"
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
-		nextConsumer consumer.TraceConsumerOld
+		nextConsumer consumer.TraceConsumer
 	}
 	tests := []struct {
 		name    string
@@ -75,7 +77,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: exportertest.NewNopTraceExporterOld(),
+				nextConsumer: exportertest.NewNopTraceExporter(),
 			},
 		},
 	}
@@ -114,7 +116,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := New(cfg, exportertest.NewNopTraceExporterOld())
+	traceReceiver, err := New(cfg, exportertest.NewNopTraceExporter())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -220,7 +222,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporterOld()}
+	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 
@@ -327,16 +329,16 @@ func TestConversionRoundtrip(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	factory := &zipkinexporter.Factory{}
+	factory := zipkinexporter.NewFactory()
 	config := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	config.Endpoint = backend.URL
-	ze, err := factory.CreateTraceExporter(zap.NewNop(), config)
+	ze, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	require.NoError(t, err)
 	require.NotNil(t, ze)
 	require.NoError(t, ze.Start(context.Background(), componenttest.NewNopHost()))
 
 	for _, treq := range ereqs {
-		require.NoError(t, ze.ConsumeTraceData(context.Background(), treq))
+		require.NoError(t, ze.ConsumeTraces(context.Background(), internaldata.OCToTraceData(treq)))
 	}
 
 	// Shutdown the exporter so it can flush any remaining data.
@@ -370,7 +372,7 @@ func TestStartTraceReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporterOld)
+			sink := new(exportertest.SinkTraceExporter)
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
 					NameVal: zipkinReceiver,
@@ -467,7 +469,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			r.Header.Add("content-encoding", test.encoding)
 
 			next := &zipkinMockTraceConsumer{
-				ch: make(chan consumerdata.TraceData, 10),
+				ch: make(chan pdata.Traces, 10),
 			}
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
@@ -504,7 +506,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	next := &zipkinMockTraceConsumer{
-		ch: make(chan consumerdata.TraceData, 10),
+		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -533,7 +535,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	next := &zipkinMockTraceConsumer{
-		ch:  make(chan consumerdata.TraceData, 10),
+		ch:  make(chan pdata.Traces, 10),
 		err: errors.New("consumer error"),
 	}
 	cfg := &Config{
@@ -607,11 +609,11 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 }
 
 type zipkinMockTraceConsumer struct {
-	ch  chan consumerdata.TraceData
+	ch  chan pdata.Traces
 	err error
 }
 
-func (m *zipkinMockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (m *zipkinMockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err
 }

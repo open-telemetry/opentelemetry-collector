@@ -32,11 +32,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -66,16 +65,15 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		},
 		Format: "json",
 	}
-	tes, err := newTraceExporter(config)
+	zexp, err := newTraceExporter(config)
 	assert.NoError(t, err)
-	require.NotNil(t, tes)
+	require.NotNil(t, zexp)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnectorOld([]consumer.TraceConsumerOld{tes})
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -284,8 +282,8 @@ func TestZipkinExporter_invalidFormat(t *testing.T) {
 		},
 		Format: "foobar",
 	}
-	f := &Factory{}
-	_, err := f.CreateTraceExporter(zap.NewNop(), config)
+	f := NewFactory()
+	_, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	require.Error(t, err)
 }
 
@@ -306,7 +304,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 		},
 		Format: "proto",
 	}
-	tes, err := newTraceExporter(config)
+	zexp, err := newTraceExporter(config)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
@@ -316,7 +314,6 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	mzr.serializer = zipkinproto.SpanSerializer{}
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnectorOld([]consumer.TraceConsumerOld{tes})
 	port := testutil.GetAvailablePort(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
