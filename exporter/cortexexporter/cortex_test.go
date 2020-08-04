@@ -41,9 +41,7 @@ import (
 	// "github.com/stretchr/testify/require"
 )
 
-// TODO: make sure nil case is checked in every test
-// TODO: add unordered labels test case for Test_timeSeriesSignature
-// TODO: try to run Test_newCortexExporter and Test_PushMetrics after factory and config.go are in
+// TODO: try to run  Test_PushMetrics after export is in
 // TODO: add bucket and histogram test cases for Test_PushMetrics
 
 //return false if descriptor type is nil
@@ -569,7 +567,8 @@ func Test_newCortexExporter(t *testing.T) {
 	assert.NotNil(t, ce.closeChan)
 	assert.NotNil(t, ce.wg)
 }
-// Bug{@huyan0} success case pass but it should fail
+// Bug{@huyan0} success case pass but it should fail; this is because the server gets no request because export() is
+// empty.
 // test the correctness and the number of points
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
@@ -646,6 +645,7 @@ func Test_pushMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			config := createDefaultConfig().(*Config)
+			assert.NotNil(t,config)
 			config.HTTPClientSettings.Endpoint = serverURL.String()
 			c, err := config.HTTPClientSettings.ToClient()
 			assert.Nil(t,err)

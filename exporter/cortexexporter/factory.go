@@ -105,6 +105,9 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		Namespace:		"",
+		Headers:		map[string]string{},
+
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   qs,
