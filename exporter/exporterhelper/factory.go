@@ -39,7 +39,6 @@ type CreateMetricsExporter func(context.Context, component.ExporterCreateParams,
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
 type CreateLogsExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogsExporter, error)
 
-// factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType               configmodels.Type
 	customUnmarshaler     component.CustomUnmarshaler
@@ -72,14 +71,14 @@ func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
 	}
 }
 
-// WithCustomUnmarshaler overrides the default "not available" CustomUnmarshaler.
+// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
 func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
 	}
 }
 
-// NewFactory returns a component.ExporterFactory that only supports all types.
+// NewFactory returns a component.ExporterFactory.
 func NewFactory(
 	cfgType configmodels.Type,
 	createDefaultConfig CreateDefaultConfig,
@@ -150,8 +149,7 @@ type factoryWithUnmarshaler struct {
 	*factory
 }
 
-// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-// there is no need for custom unmarshaling.
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
 func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
 	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

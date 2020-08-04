@@ -57,10 +57,10 @@ func Components() (
 	var errs []error
 
 	extensions, err := component.MakeExtensionFactoryMap(
-		&healthcheckextension.Factory{},
-		&pprofextension.Factory{},
-		&zpagesextension.Factory{},
-		&fluentbitextension.Factory{},
+		healthcheckextension.NewFactory(),
+		pprofextension.NewFactory(),
+		zpagesextension.NewFactory(),
+		fluentbitextension.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

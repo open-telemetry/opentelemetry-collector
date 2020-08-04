@@ -28,7 +28,7 @@ import (
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption func(o *factory)
 
-// WithCustomUnmarshaler overrides the default "not available" CustomUnmarshaler.
+// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
 func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
@@ -68,7 +68,6 @@ type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams,
 // CreateLogsReceiver is the equivalent of component.ReceiverFactory.CreateLogsReceiver()
 type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.LogsConsumer) (component.LogsReceiver, error)
 
-// factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType               configmodels.Type
 	customUnmarshaler     component.CustomUnmarshaler
@@ -78,7 +77,7 @@ type factory struct {
 	createLogsReceiver    CreateLogsReceiver
 }
 
-// NewFactory returns a component.ReceiverFactory that only supports all types.
+// NewFactory returns a component.ReceiverFactory.
 func NewFactory(
 	cfgType configmodels.Type,
 	createDefaultConfig CreateDefaultConfig,
@@ -152,8 +151,7 @@ type factoryWithUnmarshaler struct {
 	*factory
 }
 
-// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-// there is no need for custom unmarshaling.
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
 func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
 	return f.customUnmarshaler(componentViperSection, intoCfg)
 }
