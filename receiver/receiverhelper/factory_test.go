@@ -17,6 +17,7 @@ package receiverhelper
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -77,22 +78,126 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNewFactory_WithSharedPerConfig(t *testing.T) {
+	secondConfig := *defaultCfg
+	secondConfig.SetName("test2")
+
+	var lastShared interface{}
+
+	factory := NewFactory(
+		typeStr,
+		defaultConfig,
+		WithSharedTraces(createSharedTraceReceiver),
+		WithSharedMetrics(createSharedMetricsReceiver),
+		WithSharedLogs(createSharedLogsReceiver),
+		WithSharedPerConfig(func(cfg configmodels.Receiver, params component.ReceiverCreateParams) (interface{}, error) {
+			if cfg.Name() == "error" {
+				return nil, errors.New("failed")
+			}
+			lastShared = []byte("test")
+			return lastShared, nil
+		}))
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+
+	r, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, r.(*DummyReceiver).Shared, []byte("test"))
+	assert.Equal(t, lastShared, []byte("test"))
+	// Make sure they are actually shared instances and not just the same
+	// value.
+	assert.Equal(t, reflect.ValueOf(&r.(*DummyReceiver).Shared).Elem().InterfaceData(), reflect.ValueOf(&lastShared).Elem().InterfaceData())
+
+	r, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, r.(*DummyReceiver).Shared, []byte("test"))
+	assert.Equal(t, lastShared, []byte("test"))
+	assert.Equal(t, reflect.ValueOf(&r.(*DummyReceiver).Shared).Elem().InterfaceData(), reflect.ValueOf(&lastShared).Elem().InterfaceData())
+
+	lfactory := factory.(component.LogsReceiverFactory)
+	r, err = lfactory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, r.(*DummyReceiver).Shared, []byte("test"))
+	assert.Equal(t, lastShared, []byte("test"))
+	assert.Equal(t, reflect.ValueOf(&r.(*DummyReceiver).Shared).Elem().InterfaceData(), reflect.ValueOf(&lastShared).Elem().InterfaceData())
+
+	prevShared := lastShared
+	r, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, &secondConfig, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, r.(*DummyReceiver).Shared, []byte("test"))
+	assert.Equal(t, lastShared, []byte("test"))
+	assert.NotEqual(t, reflect.ValueOf(&r.(*DummyReceiver).Shared).Elem().InterfaceData(), reflect.ValueOf(&prevShared).Elem().InterfaceData())
+
+	errCfg := *defaultCfg
+	errCfg.SetName("error")
+	_, err = factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{}, &errCfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, &errCfg, nil)
+	assert.Error(t, err)
+
+	_, err = lfactory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, &errCfg, nil)
+	assert.Error(t, err)
+}
+
 func defaultConfig() configmodels.Receiver {
 	return defaultCfg
 }
 
-func createTraceReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.TraceConsumer) (component.TraceReceiver, error) {
+func createTraceReceiver(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver, next consumer.TraceConsumer) (component.TraceReceiver, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+func createMetricsReceiver(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver, next consumer.MetricsConsumer) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.LogsConsumer) (component.LogsReceiver, error) {
+func createLogsReceiver(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver, next consumer.LogsConsumer) (component.LogsReceiver, error) {
 	return nil, nil
+}
+
+func createSharedTraceReceiver(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver, next consumer.TraceConsumer, shared interface{}) (component.TraceReceiver, error) {
+	return &DummyReceiver{
+		Params:   &params,
+		Config:   &cfg,
+		Consumer: next,
+		Shared:   shared,
+	}, nil
+}
+
+func createSharedMetricsReceiver(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver, next consumer.MetricsConsumer, shared interface{}) (component.MetricsReceiver, error) {
+	return &DummyReceiver{
+		Params:   &params,
+		Config:   &cfg,
+		Consumer: next,
+		Shared:   shared,
+	}, nil
+}
+
+func createSharedLogsReceiver(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver, next consumer.LogsConsumer, shared interface{}) (component.LogsReceiver, error) {
+	return &DummyReceiver{
+		Params:   &params,
+		Config:   &cfg,
+		Consumer: next,
+		Shared:   shared,
+	}, nil
 }
 
 func customUnmarshaler(*viper.Viper, interface{}) error {
 	return errors.New("my error")
+}
+
+type DummyReceiver struct {
+	Params   *component.ReceiverCreateParams
+	Config   *configmodels.Receiver
+	Consumer interface{}
+	Shared   interface{}
+}
+
+func (r *DummyReceiver) Start(ctx context.Context, host component.Host) error {
+	return nil
+}
+
+func (r *DummyReceiver) Shutdown(ctx context.Context) error {
+	return nil
 }

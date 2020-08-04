@@ -348,7 +348,6 @@ func TestCreateLogReceiver(t *testing.T) {
 				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, mr.Shutdown(context.Background()))
 			}
-			receivers = map[*Config]*otlpReceiver{}
 		})
 	}
 }

@@ -407,7 +407,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Creation of the receiver for GRPC.
-	_, err := createReceiver(cfg)
+	_, err := createReceiver(cfg, component.ReceiverCreateParams{})
 	assert.EqualError(t, err,
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
@@ -454,17 +454,20 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.TraceConsumer, m
 }
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
-	r, err := createReceiver(cfg)
-	require.NoError(t, err)
+	params := component.ReceiverCreateParams{}
+	var lastCreated interface{}
+	var err error
 	if tc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+		lastCreated, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
+		lastCreated, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
 		require.NoError(t, err)
 	}
-	return r
+	if lastCreated != nil {
+		return lastCreated.(*otlpReceiver)
+	}
+	r, _ := createReceiver(cfg, params)
+	return r.(*otlpReceiver)
 }

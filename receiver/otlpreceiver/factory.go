@@ -43,9 +43,10 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver),
-		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithLogs(createLogReceiver),
+		receiverhelper.WithSharedTraces(createTraceReceiver),
+		receiverhelper.WithSharedMetrics(createMetricsReceiver),
+		receiverhelper.WithSharedLogs(createLogReceiver),
+		receiverhelper.WithSharedPerConfig(createReceiver),
 		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
@@ -120,12 +121,10 @@ func createTraceReceiver(
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
+	shared interface{},
 ) (component.TraceReceiver, error) {
-	r, err := createReceiver(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if err = r.registerTraceConsumer(ctx, nextConsumer); err != nil {
+	r := shared.(*otlpReceiver)
+	if err := r.registerTraceConsumer(ctx, nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -137,12 +136,10 @@ func createMetricsReceiver(
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
+	shared interface{},
 ) (component.MetricsReceiver, error) {
-	r, err := createReceiver(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if err = r.registerMetricsConsumer(ctx, consumer); err != nil {
+	r := shared.(*otlpReceiver)
+	if err := r.registerMetricsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -154,40 +151,16 @@ func createLogReceiver(
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.LogsConsumer,
+	shared interface{},
 ) (component.LogsReceiver, error) {
-	r, err := createReceiver(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if err = r.registerLogsConsumer(ctx, consumer); err != nil {
+	r := shared.(*otlpReceiver)
+	if err := r.registerLogsConsumer(ctx, consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver) (*otlpReceiver, error) {
+func createReceiver(cfg configmodels.Receiver, _ component.ReceiverCreateParams) (interface{}, error) {
 	rCfg := cfg.(*Config)
-
-	// There must be one receiver for both metrics and traces. We maintain a map of
-	// receivers per config.
-
-	// Check to see if there is already a receiver for this config.
-	receiver, ok := receivers[rCfg]
-	if !ok {
-		var err error
-		// We don't have a receiver, so create one.
-		receiver, err = newOtlpReceiver(rCfg)
-		if err != nil {
-			return nil, err
-		}
-		// Remember the receiver in the map
-		receivers[rCfg] = receiver
-	}
-	return receiver, nil
+	return newOtlpReceiver(rCfg)
 }
-
-// This is the map of already created OTLP receivers for particular configurations.
-// We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one otlpReceiver object per configuration.
-var receivers = map[*Config]*otlpReceiver{}
