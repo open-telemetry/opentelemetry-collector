@@ -7,38 +7,28 @@ processors:
 exporters:
     cortex:
     cortex/2:
-        #This is subject to change, and I need to find out where to put in headers, if even needed... We might just put that in factory as it stands as hardcoded Prometheus-Remote-Write idk
         headers:
             Prometheus-Remote-Write-Version: "0.1.0"
             Tenant-id: 234
-            another: "somevalue"
-
-        namespace: ""
-
-        #A lot of this will be rewritten
+        namespace: "test-space"
         timeout: 10s
-        reconnection_delay: 15
-        compression: "on"
-
-
-        basic_auth: #Nope
-            username: "username"
-            password: "1234"
-            password_file: "yes"
-        http_config:
-            # CA certificate to validate API server certificate with.
+        sending_queue:
+            enabled: true
+            num_consumers: 2
+            queue_size: 10
+        retry_on_failure:
+            enabled: true
+            initial_interval: 10s
+            max_interval: 60s
+            max_elapsed_time: 10m
+        http_setting:
             endpoint: "localhost:8888"
-            tls_config:
-                ca_file: /var/lib/mycert.pem
-                read_buffer_size:
-                write_buffer:
-                timeout: 5s
-                
-            # ServerName extension to indicate the name of the server.
-            # https://tools.ietf.org/html/rfc4366#section-3.
+            ca_file: "/var/lib/mycert.pem"
+            timeout: 5s
+
 service:
-        pipelines:
-        traces:
+    pipelines:
+        metrics:
             receivers: [examplereceiver]
             processors: [exampleprocessor]
             exporters: [cortex]

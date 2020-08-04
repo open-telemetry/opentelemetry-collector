@@ -44,6 +44,7 @@ import (
 // TODO: try to run Test_PushMetrics after export() is in
 // TODO: add bucket and histogram test cases for Test_PushMetrics
 // TODO: check that NoError instead of NoNil is used at the right places
+// TODO: add one line comment before each test stating criteria
 
 //return false if descriptor type is nil
 func Test_validateMetrics(t *testing.T) {

@@ -26,12 +26,12 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	// Namespace if set, exports metrics under the provided value.
+	// Namespace if set, exports metrics under the provided value.*/
 	Namespace string `mapstructure:"namespace"`
 
 	// Optional headers configuration for authorization and security/extra metadata
-	Headers map[string]string `mapstructure:"optional_headers"`
+	Headers map[string]string `mapstructure:"headers"`
 
-	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:"http_setting"` // squash ensures fields are correctly decoded in embedded struct.
 
 }
