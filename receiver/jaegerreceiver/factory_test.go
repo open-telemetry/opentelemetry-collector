@@ -313,12 +313,12 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 func TestCustomUnmarshalErrors(t *testing.T) {
 	factory := NewFactory()
 
-	f := factory.CustomUnmarshaler()
-	assert.NotNil(t, f, "custom unmarshal function should not be nil")
+	fu, ok := factory.(component.ConfigUnmarshaler)
+	assert.True(t, ok)
 
-	err := f(config.NewViper(), nil)
+	err := fu.Unmarshal(config.NewViper(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
-	err = f(config.NewViper(), &RemoteSamplingConfig{})
+	err = fu.Unmarshal(config.NewViper(), &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }

@@ -53,12 +53,7 @@ func (f *Factory) Type() configmodels.Type {
 }
 
 // CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return CustomUnmarshalerFunc
-}
-
-// CustomUnmarshalerFunc performs custom unmarshaling of config.
-func CustomUnmarshalerFunc(componentViperSection *viper.Viper, intoCfg interface{}) error {
+func (f *Factory) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
 	if componentViperSection == nil {
 		return nil
 	}

@@ -421,8 +421,10 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 
 	assert.Equal(t,
 		&componenttest.MultiProtoReceiver{
-			TypeVal: "multireceiver",
-			NameVal: "multireceiver",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "multireceiver",
+				NameVal: "multireceiver",
+			},
 			Protocols: map[string]componenttest.MultiProtoReceiverOneCfg{
 				"http": {
 					Endpoint:     "example.com:8888",
@@ -439,8 +441,10 @@ func TestDecodeConfig_MultiProto(t *testing.T) {
 
 	assert.Equal(t,
 		&componenttest.MultiProtoReceiver{
-			TypeVal: "multireceiver",
-			NameVal: "multireceiver/myreceiver",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "multireceiver",
+				NameVal: "multireceiver/myreceiver",
+			},
 			Protocols: map[string]componenttest.MultiProtoReceiverOneCfg{
 				"http": {
 					Endpoint:     "localhost:12345",

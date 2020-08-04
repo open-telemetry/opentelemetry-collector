@@ -34,11 +34,6 @@ func (f *TestReceiverFactory) Type() configmodels.Type {
 	return f.name
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *TestReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
-	return nil
-}
-
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return nil
