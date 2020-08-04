@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/kballard/go-shellquote"
@@ -136,11 +135,4 @@ func formatEnvSlice(envs *[]EnvSettings) []string {
 	}
 
 	return envSlice
-}
-
-// handleParentProcessKill kills the subprocess when the parent process dies, it is Linux-specific
-func handleParentProcessKill(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGTERM,
-	}
 }
