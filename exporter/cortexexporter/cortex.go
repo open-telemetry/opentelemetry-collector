@@ -36,7 +36,7 @@ import (
 type cortexExporter struct {
 	namespace 	string
 	endpoint  	string
-	client    	http.Client
+	client    	*http.Client
 	wg		  	*sync.WaitGroup
 	closeChan	chan struct{}
 }
@@ -258,7 +258,7 @@ func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporte
 	return &cortexExporter{
 		namespace: 	ns,
 		endpoint:  	ep,
-		client:    	*client,
+		client:    	client,
 		wg:			new(sync.WaitGroup),
 		closeChan:  make(chan struct{}),
 	}

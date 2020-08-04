@@ -313,7 +313,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		})
 	}
 }
-
+// export is not complete yet, so the request is never sent, thus the handler function never run
 func Test_handleHistogramMetric(t *testing.T) {
 	sum := "sum"
 	count := "count"
@@ -624,7 +624,7 @@ func Test_pushMetrics(t *testing.T) {
 				assert.NotNil(t, r.Header.Get("Tenant-id"))
 				wr := &prompb.WriteRequest{}
 				ok := proto.Unmarshal(body, wr)
-				require.NotNil(t, ok)
+				require.Nil(t, ok)
 				assert.EqualValues(t, 2, len(wr.Timeseries))
 			},
 			0,
@@ -645,16 +645,10 @@ func Test_pushMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
-			config := &Config{
-				ExporterSettings:   configmodels.ExporterSettings{},
-				TimeoutSettings:    exporterhelper.TimeoutSettings{},
-				QueueSettings:      exporterhelper.QueueSettings{},
-				RetrySettings:      exporterhelper.RetrySettings{},
-				Namespace:          "",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: serverURL.String()},
-			}
+			config := createDefaultConfig().(*Config)
+			config.HTTPClientSettings.Endpoint = serverURL.String()
 			c, err := config.HTTPClientSettings.ToClient()
-			assert.NotNil(t,err)
+			assert.Nil(t,err)
 			sender := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
 
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)

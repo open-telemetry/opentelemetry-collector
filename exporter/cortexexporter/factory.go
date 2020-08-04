@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -31,26 +32,20 @@ import (
 )
 
 // This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts. Also, will readjust to fit our pipeline, not prometheus
-type WriteRequest struct {
-	Timeseries           []TimeSeries `protobuf:"bytes,1,rep,name=timeseries,proto3" json:"timeseries"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
-}
 
-func (c *Exporter) WrapTimeSeries(ts *prompb.TimeSeries) {
+func (c *cortexExporter) WrapTimeSeries(ts *prompb.TimeSeries) {
 	return //will populate later
 }
 // To Daniel: I have created a empty version of the Export function in cortex.go. It has takes the parameter we defined
 // in the implementation note.
-func  Export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+func  (ce *cortexExporter)Export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	//TODO:: Error handling
-	data, err := proto.Marshal(req)
+	data, err := proto.Marshal(&prompb.WriteRequest{})
 	if err != nil {
 		return err
 	}
 	compressed := snappy.Encode(nil, data)
-	httpReq, err := http.NewRequest("POST", c.url.String(), bytes.NewReader(compressed))
+	httpReq, err := http.NewRequest("POST", ce.endpoint, bytes.NewReader(compressed))
 	if err != nil {
 		return err
 	}
@@ -59,11 +54,11 @@ func  Export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	httpReq = httpReq.WithContext(ctx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(1))
 	defer cancel()
 
-	httpResp, err := ctxhttp.Do(ctx, c.client, httpReq)
-	return err
+	_, httpErr := ctxhttp.Do(ctx, ce.client, httpReq)
+	return httpErr
 }
 
 const (
