@@ -38,7 +38,7 @@ const (
 
 // GetDelay will compute the delay for a given process according to its crash count and time alive using an exponential backoff algorithm
 func GetDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crashCount int, healthyCrashCount int) time.Duration {
-	// Return initialDelay if the process is healthy (lasted longer than health duration) or has less or equal the allowed amount of crashes
+	// Return the initialDelay if the process is healthy (lasted longer than health duration) or has less or equal the allowed amount of crashes
 	if elapsed > healthyProcessDuration || crashCount <= healthyCrashCount {
 		return initialDelay
 	}
