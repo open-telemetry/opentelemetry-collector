@@ -41,8 +41,9 @@ type WriteRequest struct {
 func (c *Exporter) WrapTimeSeries(ts *prompb.TimeSeries) {
 	return //will populate later
 }
-
-func (c *Exporter) Export(ctx context.Context, req *prompb.WriteRequest) error {
+// To Daniel: I have created a empty version of the Export function in cortex.go. It has takes the parameter we defined
+// in the implementation note.
+func  Export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	//TODO:: Error handling
 	data, err := proto.Marshal(req)
 	if err != nil {

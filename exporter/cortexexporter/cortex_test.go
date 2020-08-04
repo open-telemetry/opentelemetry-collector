@@ -16,6 +16,9 @@ package cortexexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"strconv"
 	"sync"
 	"testing"
@@ -542,7 +545,7 @@ func Test_Export(t *testing.T) {
 	return
 }
 
-/*
+
 func Test_newCortexExporter(t *testing.T) {
 	config  := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
@@ -550,16 +553,18 @@ func Test_newCortexExporter(t *testing.T) {
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
-		ConstLabels:        nil,
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
-	ce := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, createClient())
+	c, _ := config.HTTPClientSettings.ToClient()
+	ce := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
 	require.NotNil(t, ce)
 	assert.NotNil(t, ce.namespace)
 	assert.NotNil(t, ce.endpoint)
 	assert.NotNil(t, ce.client)
+	assert.NotNil(t, ce.closeChan)
+	assert.NotNil(t, ce.wg)
 }
-
+/*
 // test the correctness and the number of points
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))

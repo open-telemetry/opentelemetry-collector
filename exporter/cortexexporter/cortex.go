@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"net/http"
@@ -206,9 +207,11 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 
 func newCortexExporter(ns string, ep string, client *http.Client) *cortexExporter {
 	return &cortexExporter{
-		namespace: ns,
-		endpoint:  ep,
-		client:    *client,
+		namespace: 	ns,
+		endpoint:  	ep,
+		client:    	*client,
+		wg:			new(sync.WaitGroup),
+		closeChan:  make(chan struct{}),
 	}
 }
 func (ce *cortexExporter)shutdown(context.Context) error{
@@ -223,8 +226,50 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 	case <-ce.closeChan:
 		return pdatautil.MetricCount(md),fmt.Errorf("shutdown has been called")
 	default:
-		return 0,nil
+		tsMap := map[string]*prompb.TimeSeries{}
+		dropped := 0
+		errStrings := []string{}
+		rms := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
+		for _, r := range rms {
+			// TODO add resource attributes as labels
+			for _, inst := range r.InstrumentationLibraryMetrics {
+				//TODO add instrumentation library information as labels
+				for _, m := range inst.Metrics {
+					ok := validateMetrics(m.MetricDescriptor)
+					if !ok {
+						dropped++
+						errStrings = append(errStrings, "invalid temporality and type combination")
+						continue
+					}
+					switch m.GetMetricDescriptor().GetType() {
+					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
+						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
+							ce.handleScalarMetric(tsMap,m)
+					case otlp.MetricDescriptor_HISTOGRAM:
+							ce.handleHistogramMetric(tsMap,m)
+					case otlp.MetricDescriptor_SUMMARY:
+							ce.handleSummaryMetric(tsMap,m)
+					default:
+						dropped++
+						errStrings = append(errStrings, "invalid type")
+						continue
+					}
+				}
+			}
+		}
+		if(dropped != 0) {
+			return dropped, fmt.Errorf(strings.Join(errStrings, "\n"))
+		}
+
+		if err := ce.Export(ctx,tsMap); err != nil {
+			return pdatautil.MetricCount(md), err
+		}
+
+		return 0, nil
 	}
+}
+func (c *cortexExporter) Export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+	return nil
 }
 
 // create Prometheus metric name by attaching namespace prefix, unit, and _total suffix
