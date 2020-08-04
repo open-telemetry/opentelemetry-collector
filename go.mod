@@ -68,6 +68,4 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4
-	github.com/golang/snappy v0.0.1
-	github.com/shurcooL/go v0.0.0-20180423040247-9e1955d9fb6e
 )
