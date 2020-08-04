@@ -19,14 +19,13 @@ import (
 	"io"
 	"sync"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
@@ -58,7 +57,10 @@ func (jw *jsonWriter) End() error {
 // MarshalObject marshals an object as a field of top-level object.
 func (jw *jsonWriter) MarshalObject(fieldName string, pb proto.Message) error {
 	if jw.firstFieldDone {
-		io.WriteString(jw.writer, ",\n")
+		_, err := io.WriteString(jw.writer, ",\n")
+		if err != nil {
+			return err
+		}
 	} else {
 		jw.firstFieldDone = true
 	}
@@ -77,7 +79,10 @@ func (jw *jsonWriter) MarshalObject(fieldName string, pb proto.Message) error {
 // BeginMarshalArray prepares to marshal array items under a field of top-level object.
 func (jw *jsonWriter) BeginMarshalArray(fieldName string) error {
 	if jw.firstFieldDone {
-		io.WriteString(jw.writer, ",\n")
+		_, err := io.WriteString(jw.writer, ",\n")
+		if err != nil {
+			return err
+		}
 	} else {
 		jw.firstFieldDone = true
 	}
@@ -120,15 +125,12 @@ func (jw *jsonWriter) MarshalArrayItem(pb proto.Message) error {
 	return nil
 }
 
-func exportResourceAndNode(writer *jsonWriter, node *commonpb.Node, resource *resourcepb.Resource) error {
+func exportResource(writer *jsonWriter, resource proto.Message) error {
 	if resource != nil {
 		err := writer.MarshalObject("resource", resource)
 		if err != nil {
 			return err
 		}
-	}
-	if node != nil {
-		return writer.MarshalObject("node", node)
 	}
 	return nil
 }
@@ -140,7 +142,7 @@ type Exporter struct {
 	mutex sync.Mutex
 }
 
-func (e *Exporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (e *Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -152,26 +154,31 @@ func (e *Exporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceDa
 	}
 	defer jw.End()
 
-	if err := exportResourceAndNode(jw, td.Node, td.Resource); err != nil {
-		return err
-	}
+	resourceSpans := pdata.TracesToOtlp(td)
+	for _, rs := range resourceSpans {
+		if err := exportResource(jw, rs.Resource); err != nil {
+			return err
+		}
 
-	if err := jw.BeginMarshalArray("spans"); err != nil {
-		return err
-	}
-	defer jw.EndMarshalArray()
-
-	for _, span := range td.Spans {
-		if span != nil {
-			if err := jw.MarshalArrayItem(span); err != nil {
-				return err
+		if err := jw.BeginMarshalArray("instrumentationLibrarySpans"); err != nil {
+			return err
+		}
+		for _, span := range rs.InstrumentationLibrarySpans {
+			if span != nil {
+				if err := jw.MarshalArrayItem(span); err != nil {
+					return err
+				}
 			}
 		}
+		if err := jw.EndMarshalArray(); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
-func (e *Exporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (e *Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -183,20 +190,24 @@ func (e *Exporter) ConsumeMetricsData(ctx context.Context, md consumerdata.Metri
 	}
 	defer jw.End()
 
-	if err := exportResourceAndNode(jw, md.Node, md.Resource); err != nil {
-		return err
-	}
+	resourceMetrics := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
+	for _, resourceMetric := range resourceMetrics {
+		if err := exportResource(jw, resourceMetric.Resource); err != nil {
+			return err
+		}
 
-	if err := jw.BeginMarshalArray("metrics"); err != nil {
-		return err
-	}
-	defer jw.EndMarshalArray()
-
-	for _, metric := range md.Metrics {
-		if metric != nil {
-			if err := jw.MarshalArrayItem(metric); err != nil {
-				return err
+		if err := jw.BeginMarshalArray("instrumentationLibraryMetrics"); err != nil {
+			return err
+		}
+		for _, metric := range resourceMetric.InstrumentationLibraryMetrics {
+			if metric != nil {
+				if err := jw.MarshalArrayItem(metric); err != nil {
+					return err
+				}
 			}
+		}
+		if err := jw.EndMarshalArray(); err != nil {
+			return err
 		}
 	}
 	return nil

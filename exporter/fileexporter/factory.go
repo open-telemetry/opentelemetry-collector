@@ -49,12 +49,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporter, error) {
 	return f.createExporter(config)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporter, error) {
 	return f.createExporter(config)
 }
 

@@ -20,17 +20,15 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -39,49 +37,63 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 	lte := &Exporter{file: mf}
 	require.NotNil(t, lte)
 
-	td := consumerdata.TraceData{
-		Resource: &resourcepb.Resource{
-			Type:   "ServiceA",
-			Labels: map[string]string{"attr1": "value1"},
-		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte("123"),
-				SpanId:  []byte("456"),
-				Name:    &tracepb.TruncatableString{Value: "Checkout"},
-				Kind:    tracepb.Span_CLIENT,
-			},
-			{
-				Name: &tracepb.TruncatableString{Value: "Frontend"},
-				Kind: tracepb.Span_SERVER,
-			},
-		},
-	}
-	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
 	var j map[string]interface{}
 	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
 
-	assert.EqualValues(t, j,
+	assert.EqualValues(t,
 		map[string]interface{}{
 			"resource": map[string]interface{}{
-				"type":   "ServiceA",
-				"labels": map[string]interface{}{"attr1": "value1"},
-			},
-			"spans": []interface{}{
+				"attributes": []interface{}{map[string]interface{}{
+					"key": "resource-attr",
+					"value": map[string]interface{}{
+						"stringValue": "resource-attr-val-1"}}}},
+			"instrumentationLibrarySpans": []interface{}{
 				map[string]interface{}{
-					"traceId": "MTIz", // base64 encoding of "123"
-					"spanId":  "NDU2", // base64 encoding of "456"
-					"kind":    "CLIENT",
-					"name":    map[string]interface{}{"value": "Checkout"},
-				},
-				map[string]interface{}{
-					"kind": "SERVER",
-					"name": map[string]interface{}{"value": "Frontend"},
-				},
-			},
-		})
+					"spans": []interface{}{
+						map[string]interface{}{
+							"name":              "operationA",
+							"startTimeUnixNano": "1581452772000000321",
+							"status": map[string]interface{}{
+								"code":    "Cancelled",
+								"message": "status-cancelled"},
+							"droppedAttributesCount": float64(1),
+							"droppedEventsCount":     float64(1),
+							"endTimeUnixNano":        "1581452773000000789",
+							"events": []interface{}{
+								map[string]interface{}{
+									"attributes": []interface{}{
+										map[string]interface{}{
+											"key": "span-event-attr",
+											"value": map[string]interface{}{
+												"stringValue": "span-event-attr-val"}}},
+									"droppedAttributesCount": float64(2),
+									"name":                   "event-with-attr",
+									"timeUnixNano":           "1581452773000000123"},
+								map[string]interface{}{
+									"droppedAttributesCount": float64(2),
+									"name":                   "event",
+									"timeUnixNano":           "1581452773000000123"}}},
+						map[string]interface{}{
+							"name":              "operationB",
+							"startTimeUnixNano": "1581452772000000321",
+							"droppedLinksCount": float64(3),
+							"endTimeUnixNano":   "1581452773000000789",
+							"links": []interface{}{
+								map[string]interface{}{
+									"attributes": []interface{}{
+										map[string]interface{}{
+											"key": "span-link-attr",
+											"value": map[string]interface{}{
+												"stringValue": "span-link-attr-val"}}},
+									"droppedAttributesCount": float64(4)},
+								map[string]interface{}{
+									"droppedAttributesCount": float64(4)}}},
+					}}}}, j)
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
@@ -89,59 +101,68 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	lme := &Exporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := consumerdata.MetricsData{
-		Resource: &resourcepb.Resource{
-			Type:   "ServiceA",
-			Labels: map[string]string{"attr1": "value1"},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "my-metric",
-					Description: "My metric",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
 	var j map[string]interface{}
 	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
 
-	assert.EqualValues(t, j,
+	assert.EqualValues(t,
 		map[string]interface{}{
 			"resource": map[string]interface{}{
-				"type":   "ServiceA",
-				"labels": map[string]interface{}{"attr1": "value1"},
-			},
-			"metrics": []interface{}{
+				"attributes": []interface{}{
+					map[string]interface{}{
+						"key": "resource-attr",
+						"value": map[string]interface{}{
+							"stringValue": "resource-attr-val-1"}}}},
+			"instrumentationLibraryMetrics": []interface{}{
 				map[string]interface{}{
-					"metricDescriptor": map[string]interface{}{
-						"name":        "my-metric",
-						"description": "My metric",
-						"type":        "GAUGE_INT64",
-					},
-					"timeseries": []interface{}{
+					"metrics": []interface{}{
 						map[string]interface{}{
-							"points": []interface{}{
+							"int64DataPoints": []interface{}{
 								map[string]interface{}{
-									"int64Value": "123",
-								},
-							},
-						},
-					},
-				},
-			},
-		})
+									"labels": []interface{}{
+										map[string]interface{}{
+											"key":   "label-1",
+											"value": "label-value-1"}},
+									"startTimeUnixNano": "1581452772000000321",
+									"timeUnixNano":      "1581452773000000789",
+									"value":             "123"},
+								map[string]interface{}{
+									"labels": []interface{}{
+										map[string]interface{}{
+											"key":   "label-2",
+											"value": "label-value-2"}},
+									"startTimeUnixNano": "1581452772000000321",
+									"timeUnixNano":      "1581452773000000789",
+									"value":             "456"}},
+							"metricDescriptor": map[string]interface{}{
+								"name": "counter-int",
+								"type": "MONOTONIC_INT64",
+								"unit": "1"}},
+						map[string]interface{}{
+							"int64DataPoints": []interface{}{
+								map[string]interface{}{
+									"labels": []interface{}{
+										map[string]interface{}{
+											"key":   "label-1",
+											"value": "label-value-1"}},
+									"startTimeUnixNano": "1581452772000000321",
+									"timeUnixNano":      "1581452773000000789",
+									"value":             "123"},
+								map[string]interface{}{
+									"labels": []interface{}{
+										map[string]interface{}{
+											"key":   "label-2",
+											"value": "label-value-2"}},
+									"startTimeUnixNano": "1581452772000000321",
+									"timeUnixNano":      "1581452773000000789",
+									"value":             "456"}},
+							"metricDescriptor": map[string]interface{}{
+								"name": "counter-int",
+								"type": "MONOTONIC_INT64",
+								"unit": "1"}}}}}}, j)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
