@@ -33,7 +33,7 @@ import (
 
 // This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts. Also, will readjust to fit our pipeline, not prometheus
 
-func (c *cortexExporter) WrapTimeSeries(ts *prompb.TimeSeries) {
+func (ce *cortexExporter) WrapTimeSeries(ts *prompb.TimeSeries) {
 	return //will populate later
 }
 // To Daniel: I have created a empty version of the Export function in cortex.go. It has takes the parameter we defined
@@ -80,7 +80,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 	if err != nil {
 		return nil, err
 	}
-	ce := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
+	ce, err:= newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
 	cexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		ce.pushMetrics,

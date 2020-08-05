@@ -9,7 +9,8 @@ import (
 	"testing"
 )
 
-//return false if descriptor type is nil
+// Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
+// otherwise.
 func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
@@ -51,7 +52,10 @@ func Test_validateMetrics(t *testing.T) {
 		})
 	}
 }
-
+// Test_addSample checks addSample updates the map it receives correctly based on the sample and Label
+// set it receives.
+// Test cases are two samples belonging to the same TimeSeries,  two samples belong to different TimeSeries, and nil
+// case.
 func Test_addSample(t *testing.T) {
 	type testCase struct {
 		desc   otlp.MetricDescriptor_Type
@@ -111,7 +115,8 @@ func Test_addSample(t *testing.T) {
 		})
 	}
 }
-
+// Test_timeSeries checks timeSeriesSignature returns consistent and unique signatures for a distinct label set and
+// metric type combination.
 func Test_timeSeriesSignature(t *testing.T) {
 	tests := []struct {
 		name string
@@ -154,8 +159,8 @@ func Test_timeSeriesSignature(t *testing.T) {
 	}
 }
 
-// Labels should be sanitized; label in extra overrides label in labels if collision happens
-// Labels are not sorted
+// Test_createLabelSet checks resultant label names are sanitized and label in extra overrides label in labels if
+// collision happens. It does not check whether labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -194,4 +199,47 @@ func Test_createLabelSet(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, createLabelSet(tt.orig, tt.extras...))
 		})
 	}
+}
+// Tes_getPromMetricName checks if OTLP metric names are converted to Cortex metric names correctly.
+// Test cases are empty namespace, monotonic metrics that require a total suffix, and metric names that contains
+// invalid characters.
+func Test_getPromMetricName(t *testing.T) {
+	tests := []struct{
+		name 	string
+		desc 	*otlp.MetricDescriptor
+		ns		string
+		want	string
+	} {
+		{
+			"normal_case",
+			getDescriptor(name1, histogramComb, validCombinations),
+			ns1,
+			"test_ns_valid_single_int_point",
+		},
+		{
+			"empty_namespace",
+			getDescriptor(name1, summaryComb,validCombinations),
+			"",
+			"valid_single_int_point",
+		},
+		{
+			"total_suffix",
+			getDescriptor(name1, monotonicInt64Comb,validCombinations),
+			ns1,
+			"test_ns_valid_single_int_point_total",
+		},
+		{
+			"dirty_string",
+			getDescriptor(name1+dirty1, monotonicInt64Comb,validCombinations),
+			ns1,
+			"test_ns_valid_single_int_point__total",
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t,tt.want, getPromMetricName(tt.desc,tt.ns))
+		})
+	}
+
 }

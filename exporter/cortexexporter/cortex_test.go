@@ -79,7 +79,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"invalid_nil_array",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_nil_array", monotonicInt64, validCombinations),
+				MetricDescriptor:    getDescriptor("invalid_nil_array", monotonicInt64Comb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -91,7 +91,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"same_ts_int_points",
 			&otlp.Metric{
-				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64, validCombinations),
+				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64Comb, validCombinations),
 				Int64DataPoints: []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1, intVal1, time1),
 					getIntDataPoint(lbs1, intVal2, time1),
@@ -106,7 +106,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"different_ts_int_points",
 			&otlp.Metric{
-				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64, validCombinations),
+				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64Comb, validCombinations),
 				Int64DataPoints: []*otlp.Int64DataPoint{
 					getIntDataPoint(lbs1, intVal1, time1),
 					getIntDataPoint(lbs2, intVal1, time2),
@@ -197,7 +197,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 		{
 			"invalid_nil_array",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_nil_array", histogram, validCombinations),
+				MetricDescriptor:    getDescriptor("invalid_nil_array", histogramComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -209,7 +209,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 		{
 			"single_histogram_point",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor(name1+ "", histogram, validCombinations),
+				MetricDescriptor:    getDescriptor(name1+ "", histogramComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: []*otlp.HistogramDataPoint{&histPoint},
@@ -266,9 +266,9 @@ func Test_handleSummaryMetric(t *testing.T) {
 	lbls := map[string][]prompb.Label{
 		sum:   append(promLbs1, getPromLabels("name", name1+ "_sum")...),
 		count: append(promLbs1, getPromLabels("name", name1+ "_count")...),
-		q1: append(promLbs1, getPromLabels("name", name1+ "", "quantile",
+		q1: append(promLbs1, getPromLabels("name", name1, "quantile",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		q2: append(promLbs1, getPromLabels("name", name1+ "", "quantile",
+		q2: append(promLbs1, getPromLabels("name", name1, "quantile",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
 	summaryPoint := otlp.SummaryDataPoint{
@@ -295,7 +295,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		{
 			"invalid_nil_array",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_nil_array", summary, validCombinations),
+				MetricDescriptor:    getDescriptor("invalid_nil_array", summaryComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
@@ -307,7 +307,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		{
 			"single_summary_point",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor(name1+ "", summary, validCombinations),
+				MetricDescriptor:    getDescriptor(name1, summaryComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,

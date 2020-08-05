@@ -54,12 +54,13 @@ var (
 
 	lb1Sig = "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12
 	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
+	ns1 = "test_ns"
 	name1 = "valid_single_int_point"
 
-	int64Cumulative = 9
-	monotonicInt64 = 0
-	histogram = 2
-	summary = 3
+	int64CumulativeComb = 9
+	monotonicInt64Comb = 0
+	histogramComb = 2
+	summaryComb = 3
 	validCombinations = []combination{
 		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
 		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},

@@ -29,7 +29,6 @@ import (
 )
 // TODO: get default labels such as job or instance from Resource
 
-
 // cortexExporter converts OTLP metrics to Cortex TimeSeries and sends them to a remote endpoint
 type cortexExporter struct {
 	namespace 	string
@@ -41,11 +40,11 @@ type cortexExporter struct {
 }
 
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
-// its corresponding TimeSeries in tsMap. tsMap and metric cannot be nil. metric must have a non-nil descriptor
+// its corresponding TimeSeries in tsMap.
+// tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-
-	ty := metric.MetricDescriptor.Type
-	switch ty {
+	mType := metric.MetricDescriptor.Type
+	switch mType {
 	// int points
 	case otlp.MetricDescriptor_MONOTONIC_INT64,otlp.MetricDescriptor_INT64:
 		if metric.Int64DataPoints == nil {
@@ -53,7 +52,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		}
 		for _, pt := range metric.Int64DataPoints {
 			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
-			lbs := createLabelSet(pt.GetLabels(), "name", name)
+			lbs := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value: 		float64(pt.Value),
 				Timestamp: 	int64(pt.TimeUnixNano),
@@ -69,7 +68,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		}
 		for _, pt := range metric.DoubleDataPoints {
 			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
-			lbs := createLabelSet(pt.GetLabels(),"name", name)
+			lbs := createLabelSet(pt.GetLabels(),nameStr, name)
 			sample := &prompb.Sample{
 				Value: 		pt.Value,
 				Timestamp: 	int64(pt.TimeUnixNano),
@@ -92,7 +91,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 	for _, pt := range metric.HistogramDataPoints {
 		time := int64(pt.GetTimeUnixNano())
 		ty := metric.GetMetricDescriptor().GetType()
-		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
+		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
 		sum := &prompb.Sample{
 			Value:		pt.GetSum(),
 			Timestamp:	time,
@@ -101,8 +100,8 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			Value:		float64(pt.GetCount()),
 			Timestamp:	time,
 		}
-		sumLbs := createLabelSet(pt.GetLabels(),"name", baseName+"_sum")
-		countLbs := createLabelSet(pt.GetLabels(),"name", baseName+"_count")
+		sumLbs := createLabelSet(pt.GetLabels(),nameStr, baseName+sumStr)
+		countLbs := createLabelSet(pt.GetLabels(),nameStr, baseName+countStr)
 		addSample(tsMap, sum, sumLbs, ty)
 		addSample(tsMap, count, countLbs, ty)
 		var totalCount uint64
@@ -112,12 +111,12 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 				Timestamp:	time,
 			}
 			boundStr := strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f',-1, 64)
-			lbs := createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le",boundStr)
+			lbs := createLabelSet(pt.GetLabels(),nameStr, baseName+bucketStr, leStr,boundStr)
 			addSample(tsMap, bucket, lbs ,ty)
 			totalCount += bk.GetCount()
 		}
 		infSample := &prompb.Sample{Value:float64(totalCount),Timestamp:time}
-		infLbs := createLabelSet(pt.GetLabels(),"name", baseName+"_bucket", "le","+Inf")
+		infLbs := createLabelSet(pt.GetLabels(),nameStr, baseName+bucketStr, leStr,pInfStr)
 		addSample(tsMap, infSample, infLbs, ty)
 	}
 	return nil
@@ -134,7 +133,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 	for _, pt := range metric.SummaryDataPoints {
 		time := int64(pt.GetTimeUnixNano())
 		ty := metric.GetMetricDescriptor().GetType()
-		baseName := getPromMetricName(metric.GetMetricDescriptor(),ce.namespace)
+		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
 		sum := &prompb.Sample{
 			Value:		pt.GetSum(),
 			Timestamp:	time,
@@ -143,8 +142,8 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 			Value:		float64(pt.GetCount()),
 			Timestamp:	time,
 		}
-		sumLbs := createLabelSet(pt.GetLabels(),"name", baseName+"_sum")
-		countLbs := createLabelSet(pt.GetLabels(),"name", baseName+"_count")
+		sumLbs := createLabelSet(pt.GetLabels(),nameStr, baseName+sumStr)
+		countLbs := createLabelSet(pt.GetLabels(),nameStr, baseName+countStr)
 		addSample(tsMap, sum, sumLbs, ty)
 		addSample(tsMap, count, countLbs, ty)
 		for _, qt := range pt.GetPercentileValues(){
@@ -152,8 +151,8 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 				Value:		float64(qt.Value),
 				Timestamp:	time,
 			}
-			qtStr := strconv.FormatFloat(qt.Percentile, 'f',-1, 64)
-			qtLbs := createLabelSet(pt.GetLabels(),"name", baseName, "quantile", qtStr)
+			percentileStr := strconv.FormatFloat(qt.Percentile, 'f',-1, 64)
+			qtLbs := createLabelSet(pt.GetLabels(),nameStr, baseName, quantileStr, percentileStr)
 			addSample(tsMap, quantile, qtLbs, ty)
 		}
 	}
@@ -242,30 +241,4 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 // this needs to be done
 func (ce *cortexExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	return nil
-}
-
-// getPromMetricName creates a Prometheus metric name by attaching namespace prefix, unit, and _total suffix
-func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
-	if desc == nil {
-		return ""
-	}
-	isCounter := desc.Type == otlp.MetricDescriptor_MONOTONIC_INT64 ||
-			desc.Type == otlp.MetricDescriptor_MONOTONIC_DOUBLE
-	b := strings.Builder{}
-	fmt.Fprintf(&b, ns)
-	if b.Len() > 0 {
-		fmt.Fprintf(&b, "_")
-	}
-	fmt.Fprintf(&b, desc.GetName())
-
-	if b.Len() > 0 && len(desc.GetUnit()) > 0{
-		fmt.Fprintf(&b, "_")
-		fmt.Fprintf(&b, desc.GetUnit())
-	}
-
-	if b.Len()>0 && isCounter {
-		fmt.Fprintf(&b, "_")
-		fmt.Fprintf(&b, "total")
-	}
-	return sanitize(b.String())
 }

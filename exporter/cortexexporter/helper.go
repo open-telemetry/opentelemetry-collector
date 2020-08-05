@@ -11,6 +11,20 @@ import (
 	"unicode"
 )
 
+
+const (
+	nameStr = "name"
+	sumStr = "_sum"
+	countStr = "_count"
+	bucketStr = "_bucket"
+	leStr = "le"
+	quantileStr = "quantile"
+	pInfStr = "+Inf"
+	totalStr = "total"
+	delimeter = "_"
+	keyStr = "key"
+)
+
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
 type ByLabelName []prompb.Label
 func (a ByLabelName) Len() int           { return len(a) }
@@ -113,10 +127,10 @@ func sanitize(s string) string {
 
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
-		s = "key_" + s
+		s = keyStr + delimeter + s
 	}
 	if s[0] == '_' {
-		s = "key" + s
+		s = keyStr + s
 	}
 	return s
 }
@@ -129,4 +143,34 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
+}
+
+// getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
+// metrics.
+func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
+	if desc == nil {
+		return ""
+	}
+	isCounter := desc.Type == otlp.MetricDescriptor_MONOTONIC_INT64 ||
+		desc.Type == otlp.MetricDescriptor_MONOTONIC_DOUBLE
+	b := strings.Builder{}
+	fmt.Fprintf(&b, ns)
+	if b.Len() > 0 {
+		fmt.Fprintf(&b, delimeter)
+	}
+	fmt.Fprintf(&b, sanitize(desc.GetName()))
+
+	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
+	// units are different.
+	/*
+		if b.Len() > 0 && len(desc.GetUnit()) > 0{
+			fmt.Fprintf(&b, delimeter)
+			fmt.Fprintf(&b, desc.GetUnit())
+		}*/
+
+	if b.Len()>0 && isCounter {
+		fmt.Fprintf(&b, delimeter)
+		fmt.Fprintf(&b, totalStr)
+	}
+	return b.String()
 }
