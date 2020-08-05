@@ -83,6 +83,14 @@ const (
 	pipelinesKeyName = "pipelines"
 )
 
+// deprecatedUnmarshaler is the old/deprecated way to provide custom unmarshaler.
+type deprecatedUnmarshaler interface {
+	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
+	// there is no need for custom unmarshaling. This is typically used if viper.UnmarshalExact()
+	// is not sufficient to unmarshal correctly.
+	CustomUnmarshaler() component.CustomUnmarshaler
+}
+
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
@@ -259,7 +267,8 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := componentConfig.UnmarshalExact(extensionCfg); err != nil {
+		unm := unmarshaler(factory)
+		if err := unm(componentConfig, extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, fullName, err)
 		}
 
@@ -309,16 +318,8 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
-	customUnmarshaler := factory.CustomUnmarshaler()
-	var err error
-	if customUnmarshaler != nil {
-		// This configuration requires a custom unmarshaler, use it.
-		err = customUnmarshaler(componentConfig, receiverCfg)
-	} else {
-		err = componentConfig.UnmarshalExact(receiverCfg)
-	}
-
-	if err != nil {
+	unm := unmarshaler(factory)
+	if err := unm(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, fullName, err)
 	}
 
@@ -401,7 +402,8 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := componentConfig.UnmarshalExact(exporterCfg); err != nil {
+		unm := unmarshaler(factory)
+		if err := unm(componentConfig, exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, fullName, err)
 		}
 
@@ -450,7 +452,8 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
-		if err := componentConfig.UnmarshalExact(processorCfg); err != nil {
+		unm := unmarshaler(factory)
+		if err := unm(componentConfig, processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, fullName, err)
 		}
 
@@ -720,6 +723,25 @@ func expandEnv(s string) string {
 		}
 		return os.Getenv(str)
 	})
+}
+
+func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
+	if fu, ok := factory.(component.ConfigUnmarshaler); ok {
+		return fu.Unmarshal
+	}
+
+	if du, ok := factory.(deprecatedUnmarshaler); ok {
+		cu := du.CustomUnmarshaler()
+		if cu != nil {
+			return cu
+		}
+	}
+
+	return defaultUnmarshaler
+}
+
+func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
 // Copied from the Viper but changed to use the same delimiter.

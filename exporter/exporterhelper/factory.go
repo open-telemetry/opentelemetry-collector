@@ -17,6 +17,8 @@ package exporterhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -40,6 +42,7 @@ type CreateLogsExporter func(context.Context, component.ExporterCreateParams, co
 // factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType               configmodels.Type
+	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
 	createTraceExporter   CreateTraceExporter
 	createMetricsExporter CreateMetricsExporter
@@ -69,6 +72,13 @@ func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
 	}
 }
 
+// WithCustomUnmarshaler overrides the default "not available" CustomUnmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+	return func(o *factory) {
+		o.customUnmarshaler = customUnmarshaler
+	}
+}
+
 // NewFactory returns a component.ExporterFactory that only supports all types.
 func NewFactory(
 	cfgType configmodels.Type,
@@ -81,7 +91,13 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ExporterFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Exporter config created by this factory.
@@ -126,4 +142,16 @@ func (f *factory) CreateLogsExporter(
 		return f.createLogsExporter(ctx, params, cfg)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
+// there is no need for custom unmarshaling.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

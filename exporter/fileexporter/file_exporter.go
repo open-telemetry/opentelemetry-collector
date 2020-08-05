@@ -142,7 +142,7 @@ type Exporter struct {
 	mutex sync.Mutex
 }
 
-func (e *Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -178,7 +178,7 @@ func (e *Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (e *Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e *Exporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -213,7 +213,7 @@ func (e *Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return nil
 }
 
-func (e *Exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *Exporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()

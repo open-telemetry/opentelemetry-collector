@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,35 +27,38 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	assert.Error(t, err)
-}
-
-func TestCreateTraceExporter(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Error(t, err)
-}
-
-func TestCreateLogsExporter(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateLogsExporter(
+	cfg := createDefaultConfig()
+	exp, err := createMetricsExporter(
 		context.Background(),
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.Error(t, err)
+	require.Nil(t, exp)
+}
+
+func TestCreateTraceExporter(t *testing.T) {
+	cfg := createDefaultConfig()
+	exp, err := createTraceExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		cfg)
+	assert.Error(t, err)
+	require.Nil(t, exp)
+}
+
+func TestCreateLogsExporter(t *testing.T) {
+	cfg := createDefaultConfig()
+
+	exp, err := createLogsExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		cfg)
+	assert.Error(t, err)
+	require.Nil(t, exp)
 }
