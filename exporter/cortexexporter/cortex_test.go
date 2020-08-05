@@ -24,21 +24,19 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/golang/snappy"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data/testdata"
-
+	"github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
-
 	proto "github.com/gogo/protobuf/proto"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	// "github.com/stretchr/testify/require"
 )
 
