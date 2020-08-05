@@ -66,8 +66,8 @@ service:
 	)
 }
 
-// pipelineDef holds the information necessary to run a single testbed configuration.
-type pipelineDef struct {
+// PipelineDef holds the information necessary to run a single testbed configuration.
+type PipelineDef struct {
 	Receiver     string
 	Exporter     string
 	TestName     string
@@ -78,7 +78,7 @@ type pipelineDef struct {
 
 // LoadPictOutputPipelineDefs generates a slice of PipelineDefs from the passed-in generated PICT file. The
 // result should be a set of PipelineDefs that covers all possible pipeline configurations.
-func LoadPictOutputPipelineDefs(fileName string) ([]pipelineDef, error) {
+func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	file, err := os.Open(filepath.Clean(fileName))
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]pipelineDef, error) {
 		}
 	}()
 
-	defs := make([]pipelineDef, 0)
+	defs := make([]PipelineDef, 0)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), "\t")
@@ -98,7 +98,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]pipelineDef, error) {
 			continue
 		}
 
-		var aDef pipelineDef
+		var aDef PipelineDef
 		aDef.Receiver, aDef.Exporter = s[0], s[1]
 		defs = append(defs, aDef)
 	}
