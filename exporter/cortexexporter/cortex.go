@@ -19,9 +19,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	"io"
 	"net/http"
 	"strconv"
@@ -33,6 +30,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // TODO: get default labels such as job or instance from Resource
@@ -200,7 +200,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 	for _, pt := range metric.HistogramDataPoints {
 
 		time := int64(pt.GetTimeUnixNano())
-		ty := metric.GetMetricDescriptor().GetType()
+		mType := metric.GetMetricDescriptor().GetType()
 
 		// sum, count, and buckets of the histogram should append suffix to baseName
 		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
@@ -211,7 +211,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			Timestamp: time,
 		}
 		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumLbs, ty)
+		addSample(tsMap, sum, sumLbs, mType)
 
 		// treat count as a sample in an individual TimeSeries
 		count := &prompb.Sample{
@@ -219,11 +219,12 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			Timestamp: time,
 		}
 		countLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, count, countLbs, ty)
+		addSample(tsMap, count, countLbs, mType)
 
 		// count for +Inf bound
 		var totalCount uint64
 
+		// process each bucket
 		for le, bk := range pt.GetBuckets() {
 			bucket := &prompb.Sample{
 				Value:     float64(bk.Count),
@@ -231,7 +232,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			}
 			boundStr := strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f', -1, 64)
 			lbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, boundStr)
-			addSample(tsMap, bucket, lbs, ty)
+			addSample(tsMap, bucket, lbs, mType)
 
 			totalCount += bk.GetCount()
 		}
@@ -241,7 +242,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			Timestamp: time,
 		}
 		infLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
-		addSample(tsMap, infBucket, infLbs, ty)
+		addSample(tsMap, infBucket, infLbs, mType)
 	}
 	return nil
 }
@@ -258,7 +259,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 	for _, pt := range metric.SummaryDataPoints {
 
 		time := int64(pt.GetTimeUnixNano())
-		ty := metric.GetMetricDescriptor().GetType()
+		mType := metric.GetMetricDescriptor().GetType()
 
 		// sum and count of the Summary should append suffix to baseName
 		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
@@ -269,7 +270,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 			Timestamp: time,
 		}
 		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumLbs, ty)
+		addSample(tsMap, sum, sumLbs, mType)
 
 		// treat count as a sample in an individual TimeSeries
 		count := &prompb.Sample{
@@ -277,8 +278,9 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 			Timestamp: time,
 		}
 		countLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, count, countLbs, ty)
+		addSample(tsMap, count, countLbs, mType)
 
+		// process each percentile/quantile
 		for _, qt := range pt.GetPercentileValues() {
 			quantile := &prompb.Sample{
 				Value:     float64(qt.Value),
@@ -286,18 +288,16 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 			}
 			percentileStr := strconv.FormatFloat(qt.Percentile, 'f', -1, 64)
 			qtLbs := createLabelSet(pt.GetLabels(), nameStr, baseName, quantileStr, percentileStr)
-			addSample(tsMap, quantile, qtLbs, ty)
+			addSample(tsMap, quantile, qtLbs, mType)
 		}
 	}
 	return nil
-
 }
 
 
 // Because we are adhering closely to the Remote Write API, we must Export a
 // Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
 // for the Remote Write Endpoint to properly receive our Metrics data.
-//
 func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(TsMap)

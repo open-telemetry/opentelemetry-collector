@@ -27,7 +27,6 @@ const (
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
 type ByLabelName []prompb.Label
-
 func (a ByLabelName) Len() int           { return len(a) }
 func (a ByLabelName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -46,6 +45,7 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	case otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_DOUBLE:
 		return true
 	}
+
 	return false
 }
 
@@ -163,10 +163,9 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 	return b.String()
 }
 
-/*
-Simple helper function that takes the <Signature String - *TimeSeries> map
-and creates a WriteRequest from the struct -- can move to the helper.go file
-*/
+
+// Simple helper function that takes the <Signature String - *TimeSeries> map
+// and creates a WriteRequest from the struct -- can move to the helper.go file
 func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
 	if len(TsMap) == 0 {
 		return nil, fmt.Errorf("invalid TsMap: cannot be empty map")
