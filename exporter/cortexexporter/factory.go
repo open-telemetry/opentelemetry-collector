@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// !!!!!!!!!!!DO NOT REVIEW THIS FILE IN THIS PR!!!!!!!!!!!!!!!!!!!!!!!
 package cortexexporter
 
 import (
@@ -39,10 +38,13 @@ func NewFactory() component.ExporterFactory {
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
 	cCfg := cfg.(*Config)
+
 	client, err := cCfg.HTTPClientSettings.ToClient()
+
 	if err != nil {
 		return nil, err
 	}
+
 	ce, err := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
 	cexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
@@ -52,6 +54,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 		exporterhelper.WithRetry(cCfg.RetrySettings),
 		exporterhelper.WithShutdown(ce.shutdown),
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +66,7 @@ func createDefaultConfig() configmodels.Exporter {
 	// TODO: Enable the queued settings.
 	qs := exporterhelper.CreateDefaultQueueSettings()
 	qs.Enabled = false
+
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
