@@ -235,7 +235,7 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		if ip.IsNil() {
 			continue
 		}
-		ts := int64PointToOC(metric.MetricDescriptor(), ip, labelKeys)
+		ts := int64PointToOC(ip, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	dps := metric.DoubleDataPoints()
@@ -244,7 +244,7 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		if dp.IsNil() {
 			continue
 		}
-		ts := doublePointToOC(metric.MetricDescriptor(), dp, labelKeys)
+		ts := doublePointToOC(dp, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	hps := metric.HistogramDataPoints()
@@ -253,7 +253,7 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		if hp.IsNil() {
 			continue
 		}
-		ts := histogramPointToOC(metric.MetricDescriptor(), hp, labelKeys)
+		ts := histogramPointToOC(hp, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 	sps := metric.SummaryDataPoints()
@@ -262,17 +262,17 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		if sp.IsNil() {
 			continue
 		}
-		ts := summaryPointToOC(metric.MetricDescriptor(), sp, labelKeys)
+		ts := summaryPointToOC(sp, labelKeys)
 		timeseries = append(timeseries, ts)
 	}
 
 	return timeseries
 }
 
-func int64PointToOC(md pdata.MetricDescriptor, point pdata.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func int64PointToOC(point pdata.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -284,10 +284,10 @@ func int64PointToOC(md pdata.MetricDescriptor, point pdata.Int64DataPoint, label
 	}
 }
 
-func doublePointToOC(md pdata.MetricDescriptor, point pdata.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func doublePointToOC(point pdata.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -299,10 +299,10 @@ func doublePointToOC(md pdata.MetricDescriptor, point pdata.DoubleDataPoint, lab
 	}
 }
 
-func histogramPointToOC(md pdata.MetricDescriptor, point pdata.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func histogramPointToOC(point pdata.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -374,10 +374,10 @@ func exemplarToOC(exemplar pdata.HistogramBucketExemplar) *ocmetrics.Distributio
 	}
 }
 
-func summaryPointToOC(md pdata.MetricDescriptor, point pdata.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
+func summaryPointToOC(point pdata.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
 		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
-		LabelValues:    labelValuesToOC(md, point.LabelsMap(), labelKeys),
+		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
 				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
@@ -413,7 +413,7 @@ func percentileToOC(percentiles pdata.SummaryValueAtPercentileSlice) *ocmetrics.
 	}
 }
 
-func labelValuesToOC(md pdata.MetricDescriptor, labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
+func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
 	if len(labelKeys.keys) == 0 {
 		return nil
 	}

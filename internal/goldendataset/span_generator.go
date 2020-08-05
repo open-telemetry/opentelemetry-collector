@@ -467,7 +467,7 @@ func generateSpanLinks(linkCnt PICTInputSpanChild, random io.Reader) []*otlptrac
 	listSize := calculateListSize(linkCnt)
 	linkList := make([]*otlptrace.Span_Link, listSize)
 	for i := 0; i < listSize; i++ {
-		linkList[i] = generateSpanLink(i, random)
+		linkList[i] = generateSpanLink(random)
 	}
 	return linkList
 }
@@ -510,17 +510,17 @@ func generateEventAttributes(index int) []*otlpcommon.KeyValue {
 	return convertMapToAttributeKeyValues(attrMap)
 }
 
-func generateSpanLink(index int, random io.Reader) *otlptrace.Span_Link {
+func generateSpanLink(random io.Reader) *otlptrace.Span_Link {
 	return &otlptrace.Span_Link{
 		TraceId:                generateTraceID(random),
 		SpanId:                 generateSpanID(random),
 		TraceState:             "",
-		Attributes:             generateLinkAttributes(index),
+		Attributes:             generateLinkAttributes(),
 		DroppedAttributesCount: 0,
 	}
 }
 
-func generateLinkAttributes(index int) []*otlpcommon.KeyValue {
+func generateLinkAttributes() []*otlpcommon.KeyValue {
 	attrMap := generateMessagingConsumerAttributes()
 	return convertMapToAttributeKeyValues(attrMap)
 }

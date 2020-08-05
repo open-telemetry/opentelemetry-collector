@@ -40,18 +40,13 @@ func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
-) (TraceReceiver, error) {
+func (f *TestReceiverFactory) CreateTraceReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.TraceConsumerOld) (TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (MetricsReceiver, error) {
+func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }

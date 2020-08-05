@@ -436,7 +436,7 @@ func (b *badReceiverFactory) CreateTraceReceiver(
 	return nil, nil
 }
 
-func (b *badReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (b *badReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 

@@ -177,7 +177,7 @@ type MockTraceConsumer struct {
 	backend       *MockBackend
 }
 
-func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	tc.spansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
@@ -213,7 +213,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces)
 	return nil
 }
 
-func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (tc *MockTraceConsumer) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	tc.spansReceived.Add(uint64(len(td.Spans)))
 
 	for _, span := range td.Spans {
@@ -255,7 +255,7 @@ func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics
 	return nil
 }
 
-func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (mc *MockMetricConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
 	dataPoints := 0
 	for _, metric := range md.Metrics {
 		for _, ts := range metric.Timeseries {

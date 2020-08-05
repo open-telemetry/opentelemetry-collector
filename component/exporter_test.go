@@ -38,12 +38,12 @@ func (f *TestExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (TraceExporterOld, error) {
+func (f *TestExporterFactory) CreateTraceExporter(*zap.Logger, configmodels.Exporter) (TraceExporterOld, error) {
 	return nil, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestExporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (MetricsExporterOld, error) {
+func (f *TestExporterFactory) CreateMetricsExporter(*zap.Logger, configmodels.Exporter) (MetricsExporterOld, error) {
 	return nil, nil
 }
 

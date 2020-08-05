@@ -96,7 +96,7 @@ func TestApplication_Start(t *testing.T) {
 
 type mockAppTelemetry struct{}
 
-func (tel *mockAppTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *mockAppTelemetry) init(chan<- error, uint64, *zap.Logger) error {
 	return nil
 }
 
