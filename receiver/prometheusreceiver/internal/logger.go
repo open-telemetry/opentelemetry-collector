@@ -101,9 +101,9 @@ func toZapLevel(value level.Value) zapcore.Level {
 		return zapcore.InfoLevel
 	case "debug":
 		return zapcore.DebugLevel
-	default:
-		return zapcore.InfoLevel
 	}
+
+	return zapcore.InfoLevel
 }
 
 // find a matching zap logging function to be used for a given level
@@ -117,12 +117,6 @@ func levelToFunc(logger *zap.SugaredLogger, lvl zapcore.Level) (func(string, ...
 		return logger.Warnf, nil
 	case zapcore.ErrorLevel:
 		return logger.Errorf, nil
-	case zapcore.DPanicLevel:
-		return logger.DPanicf, nil
-	case zapcore.PanicLevel:
-		return logger.Panicf, nil
-	case zapcore.FatalLevel:
-		return logger.Fatalf, nil
 	}
 	return nil, fmt.Errorf("unrecognized level: %q", lvl)
 }

@@ -42,12 +42,30 @@ func TestExtractLogLevel(t *testing.T) {
 			wantOutput: []interface{}{},
 		},
 		{
+			name: "info level",
+			input: []interface{}{
+				"level",
+				level.InfoValue(),
+			},
+			wantLevel:  zapcore.InfoLevel,
+			wantOutput: []interface{}{},
+		},
+		{
 			name: "warn level",
 			input: []interface{}{
 				"level",
 				level.WarnValue(),
 			},
 			wantLevel:  zapcore.WarnLevel,
+			wantOutput: []interface{}{},
+		},
+		{
+			name: "error level",
+			input: []interface{}{
+				"level",
+				level.ErrorValue(),
+			},
+			wantLevel:  zapcore.ErrorLevel,
 			wantOutput: []interface{}{},
 		},
 		{
