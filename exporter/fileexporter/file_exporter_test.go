@@ -39,7 +39,7 @@ import (
 
 func TestFileTraceExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	lte := &Exporter{file: mf}
+	lte := &fileExporter{file: mf}
 	require.NotNil(t, lte)
 
 	td := consumerdata.TraceData{
@@ -98,7 +98,7 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	lme := &Exporter{file: mf}
+	lme := &fileExporter{file: mf}
 	require.NotNil(t, lme)
 
 	md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
@@ -160,7 +160,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	exporter := &Exporter{file: mf}
+	exporter := &fileExporter{file: mf}
 	require.NotNil(t, exporter)
 
 	now := time.Now()
@@ -342,7 +342,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			mf := &testutil.LimitedWriter{
 				MaxLen: maxLen,
 			}
-			exporter := &Exporter{file: mf}
+			exporter := &fileExporter{file: mf}
 			require.NotNil(t, exporter)
 
 			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromOtlp(ld)))

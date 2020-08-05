@@ -49,7 +49,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 )
 
-const ocReceiver = "oc_receiver_test"
+const ocReceiverName = "oc_receiver_test"
 
 // TODO(ccaraman): Migrate tests to use assert for validating functionality.
 func TestGrpcGateway_endToEnd(t *testing.T) {
@@ -57,7 +57,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporterOld)
-	ocr, err := New(ocReceiver, "tcp", addr, sink, nil)
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	err = ocr.Start(context.Background(), componenttest.NewNopHost())
@@ -155,7 +155,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkTraceExporterOld)
-	ocr, err := New(ocReceiver, "tcp", addr, sink, nil, WithCorsOrigins(corsOrigins))
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, sink, nil, withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
@@ -180,7 +180,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	corsOrigins := []string{"allowed-*.com"}
 
 	sink := new(exportertest.SinkMetricsExporterOld)
-	ocr, err := New(ocReceiver, "tcp", addr, nil, sink, WithCorsOrigins(corsOrigins))
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, sink, withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
@@ -208,7 +208,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 
 	addr := testutil.GetAvailableLocalAddress(t)
 	cbts := new(exportertest.SinkTraceExporterOld)
-	ocr, err := New(ocReceiver, "tcp", addr, cbts, nil)
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, cbts, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
 	err = ocr.Start(context.Background(), componenttest.NewNopHost())
@@ -237,7 +237,7 @@ func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
 	wantLen := len(protoAffiliatedContentSubTypes) + len(protoAffiliatedContentTypes)
 	gotReqs := cbts.AllTraces()
 	if len(gotReqs) != wantLen {
-		t.Errorf("Receiver ExportTraceServiceRequest length mismatch:: Got %d Want %d", len(gotReqs), wantLen)
+		t.Errorf("ocReceiver ExportTraceServiceRequest length mismatch:: Got %d Want %d", len(gotReqs), wantLen)
 	}
 }
 
@@ -331,7 +331,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 func TestStopWithoutStartNeverCrashes(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	ocr, err := New(ocReceiver, "tcp", addr, nil, nil)
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.NoError(t, err, "Failed to create an OpenCensus receiver: %v", err)
 	// Stop it before ever invoking Start*.
 	ocr.stop()
@@ -343,14 +343,14 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r, err := New(ocReceiver, "tcp", addr, nil, nil)
+	r, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.Error(t, err)
 	require.Nil(t, r)
 }
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := New(ocReceiver, "tcp", addr, new(exportertest.SinkTraceExporterOld), new(exportertest.SinkMetricsExporterOld))
+	r, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, new(exportertest.SinkTraceExporterOld), new(exportertest.SinkMetricsExporterOld))
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -360,7 +360,7 @@ func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 
 func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := New(ocReceiver, "tcp", addr, nil, nil)
+	r, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -379,7 +379,7 @@ func tempSocketName(t *testing.T) string {
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	socketName := tempSocketName(t)
 	cbts := new(exportertest.SinkTraceExporterOld)
-	r, err := New(ocReceiver, "unix", socketName, cbts, nil)
+	r, err := newOpenCensusReceiver(ocReceiverName, "unix", socketName, cbts, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -522,8 +522,8 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				sink := new(exportertest.SinkTraceExporterOld)
 
-				var opts []Option
-				ocr, err := New(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
+				var opts []ocOption
+				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -671,8 +671,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 				sink := new(exportertest.SinkMetricsExporterOld)
 
-				var opts []Option
-				ocr, err := New(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
+				var opts []ocOption
+				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 

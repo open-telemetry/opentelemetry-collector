@@ -134,14 +134,14 @@ func exportResourceAndNode(writer *jsonWriter, node *commonpb.Node, resource *re
 	return nil
 }
 
-// Exporter is the implementation of file exporter that writes telemetry data to a file
+// fileExporter is the implementation of file exporter that writes telemetry data to a file
 // in Protobuf-JSON format.
-type Exporter struct {
+type fileExporter struct {
 	file  io.WriteCloser
 	mutex sync.Mutex
 }
 
-func (e *Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	octds := internaldata.TraceDataToOC(td)
 	for _, octd := range octds {
 		// Ensure only one write operation happens at a time.
@@ -175,7 +175,7 @@ func (e *Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (e *Exporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	ocmds := pdatautil.MetricsToMetricsData(md)
 	for _, ocmd := range ocmds {
 		// Ensure only one write operation happens at a time.
@@ -209,7 +209,7 @@ func (e *Exporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	return nil
 }
 
-func (e *Exporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -249,11 +249,11 @@ func (e *Exporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func (e *Exporter) Start(ctx context.Context, host component.Host) error {
+func (e *fileExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (e *Exporter) Shutdown(context.Context) error {
+func (e *fileExporter) Shutdown(context.Context) error {
 	return e.file.Close()
 }

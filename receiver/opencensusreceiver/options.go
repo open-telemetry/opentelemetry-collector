@@ -18,39 +18,39 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Option interface defines for configuration settings to be applied to receivers.
+// ocOption interface defines for configuration settings to be applied to receivers.
 //
 // withReceiver applies the configuration to the given receiver.
-type Option interface {
-	withReceiver(*Receiver)
+type ocOption interface {
+	withReceiver(*ocReceiver)
 }
 
 type corsOrigins struct {
 	origins []string
 }
 
-var _ Option = (*corsOrigins)(nil)
+var _ ocOption = (*corsOrigins)(nil)
 
-func (co *corsOrigins) withReceiver(ocr *Receiver) {
+func (co *corsOrigins) withReceiver(ocr *ocReceiver) {
 	ocr.corsOrigins = co.origins
 }
 
-// WithCorsOrigins is an option to specify the allowed origins to enable writing
+// withCorsOrigins is an option to specify the allowed origins to enable writing
 // HTTP/JSON requests to the grpc-gateway adapter using CORS.
-func WithCorsOrigins(origins []string) Option {
+func withCorsOrigins(origins []string) ocOption {
 	return &corsOrigins{origins: origins}
 }
 
-var _ Option = (grpcServerOptions)(nil)
+var _ ocOption = (grpcServerOptions)(nil)
 
 type grpcServerOptions []grpc.ServerOption
 
-func (gsvo grpcServerOptions) withReceiver(ocr *Receiver) {
+func (gsvo grpcServerOptions) withReceiver(ocr *ocReceiver) {
 	ocr.grpcServerOptions = gsvo
 }
 
-// WithGRPCServerOptions allows one to specify the options for starting a gRPC server.
-func WithGRPCServerOptions(gsOpts ...grpc.ServerOption) Option {
+// withGRPCServerOptions allows one to specify the options for starting a gRPC server.
+func withGRPCServerOptions(gsOpts ...grpc.ServerOption) ocOption {
 	gsvOpts := grpcServerOptions(gsOpts)
 	return gsvOpts
 }

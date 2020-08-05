@@ -33,10 +33,10 @@ type Config struct {
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
 }
 
-func (rOpts *Config) buildOptions() ([]Option, error) {
-	var opts []Option
+func (rOpts *Config) buildOptions() ([]ocOption, error) {
+	var opts []ocOption
 	if len(rOpts.CorsOrigins) > 0 {
-		opts = append(opts, WithCorsOrigins(rOpts.CorsOrigins))
+		opts = append(opts, withCorsOrigins(rOpts.CorsOrigins))
 	}
 
 	grpcServerOptions, err := rOpts.GRPCServerSettings.ToServerOption()
@@ -44,7 +44,7 @@ func (rOpts *Config) buildOptions() ([]Option, error) {
 		return nil, err
 	}
 	if len(grpcServerOptions) > 0 {
-		opts = append(opts, WithGRPCServerOptions(grpcServerOptions...))
+		opts = append(opts, withGRPCServerOptions(grpcServerOptions...))
 	}
 
 	return opts, nil
