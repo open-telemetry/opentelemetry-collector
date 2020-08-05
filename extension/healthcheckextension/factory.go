@@ -63,7 +63,7 @@ func (f *Factory) CreateExtension(_ context.Context, params component.ExtensionC
 		return nil, errors.New("only a single instance can be created per process")
 	}
 
-	return newServer(*config, params.Logger)
+	return newServer(*config, params.Logger), nil
 }
 
 // See comment in CreateExtension how these are used.

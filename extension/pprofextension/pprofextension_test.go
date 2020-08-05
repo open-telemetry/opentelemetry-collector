@@ -35,8 +35,7 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 		MutexProfileFraction: 5,
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -65,8 +64,7 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	config := Config{
 		Endpoint: endpoint,
 	}
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -77,8 +75,7 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -93,8 +90,7 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -107,8 +103,7 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Shutdown(context.Background()))

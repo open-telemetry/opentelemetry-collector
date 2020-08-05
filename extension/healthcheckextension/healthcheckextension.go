@@ -35,7 +35,7 @@ type healthCheckExtension struct {
 
 var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
 
-func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
+func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 
@@ -74,7 +74,7 @@ func (hc *healthCheckExtension) NotReady() error {
 	return nil
 }
 
-func newServer(config Config, logger *zap.Logger) (*healthCheckExtension, error) {
+func newServer(config Config, logger *zap.Logger) *healthCheckExtension {
 	hc := &healthCheckExtension{
 		config: config,
 		logger: logger,
@@ -84,5 +84,5 @@ func newServer(config Config, logger *zap.Logger) (*healthCheckExtension, error)
 
 	hc.state.SetLogger(logger)
 
-	return hc, nil
+	return hc
 }

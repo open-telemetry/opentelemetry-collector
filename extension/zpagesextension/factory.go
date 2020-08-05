@@ -49,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 }
 
 // CreateExtension creates the extension based on this config.
-func (f *Factory) CreateExtension(ctx context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func (f *Factory) CreateExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 	if config.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"zpages\" extension")
@@ -66,7 +66,7 @@ func (f *Factory) CreateExtension(ctx context.Context, params component.Extensio
 		return nil, errors.New("only a single instance can be created per process")
 	}
 
-	return newServer(*config, params.Logger)
+	return newServer(*config, params.Logger), nil
 }
 
 // See comment in CreateExtension how these are used.
