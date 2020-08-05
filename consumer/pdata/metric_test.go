@@ -19,7 +19,7 @@ import (
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	goproto "github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
-	otlpmetrics_goproto "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
+	otlpmetricsgoproto "github.com/open-telemetry/opentelemetry-proto/gen/go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
@@ -39,7 +39,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 	assert.NotNil(t, wire1)
 
 	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoRM otlpmetrics_goproto.ResourceMetrics
+	var goprotoRM otlpmetricsgoproto.ResourceMetrics
 	err = goproto.Unmarshal(wire1, &goprotoRM)
 	assert.NoError(t, err)
 

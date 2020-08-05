@@ -428,7 +428,7 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap[conventions.AttributeHTTPClientIP] = "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01"
 	attrMap[conventions.AttributeNetPeerIP] = "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc"
 	attrMap[conventions.AttributeNetPeerPort] = int64(39111)
-	attrMap["ai-sampler.weight"] = float64(0.07)
+	attrMap["ai-sampler.weight"] = 0.07
 	attrMap["ai-sampler.absolute"] = false
 	attrMap["ai-sampler.maxhops"] = int64(6)
 	attrMap["application.create.location"] = "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE"
@@ -440,8 +440,8 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap["application.queue.size"] = int64(0)
 	attrMap["application.validation.results"] = "Success"
 	attrMap["application.job.id"] = "0E38800B-9C4C-484E-8F2B-C7864D854321"
-	attrMap["application.service.sla"] = float64(0.34)
-	attrMap["application.service.slo"] = float64(0.55)
+	attrMap["application.service.sla"] = 0.34
+	attrMap["application.service.slo"] = 0.55
 	attrMap[conventions.AttributeEnduserID] = "unittest"
 	attrMap[conventions.AttributeEnduserRole] = "poweruser"
 	attrMap[conventions.AttributeEnduserScope] = "email profile administrator"

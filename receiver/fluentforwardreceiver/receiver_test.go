@@ -48,12 +48,12 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 		ListenAddress: "127.0.0.1:0",
 	}
 
-	receiver, err := New(ctx, logger, conf, next)
+	receiver, err := newFluentReceiver(ctx, logger, conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 
 	connect := func() net.Conn {
-		conn, err := net.Dial("tcp", receiver.(*Receiver).listener.Addr().String())
+		conn, err := net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
 		require.Nil(t, err)
 		return conn
 	}
@@ -370,11 +370,11 @@ func TestUnixEndpoint(t *testing.T) {
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
 	}
 
-	receiver, err := New(ctx, zap.NewNop(), conf, next)
+	receiver, err := newFluentReceiver(ctx, zap.NewNop(), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 
-	conn, err := net.Dial("unix", receiver.(*Receiver).listener.Addr().String())
+	conn, err := net.Dial("unix", receiver.(*fluentReceiver).listener.Addr().String())
 	require.NoError(t, err)
 
 	n, err := conn.Write(testdata.ParseHexDump("message-event"))

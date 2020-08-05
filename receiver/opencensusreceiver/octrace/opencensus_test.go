@@ -125,7 +125,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 			Kind:         tracepb.Span_SERVER,
 			StartTime:    internal.TimeToTimestamp(serverSpanData.StartTime),
 			EndTime:      internal.TimeToTimestamp(serverSpanData.EndTime),
-			Status:       &tracepb.Status{Code: int32(serverSpanData.Status.Code), Message: serverSpanData.Status.Message},
+			Status:       &tracepb.Status{Code: serverSpanData.Status.Code, Message: serverSpanData.Status.Message},
 			Tracestate:   &tracepb.Span_Tracestate{},
 			Links: &tracepb.Span_Links{
 				Link: []*tracepb.Span_Link{
@@ -145,7 +145,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 			Kind:         tracepb.Span_CLIENT,
 			StartTime:    internal.TimeToTimestamp(clientSpanData.StartTime),
 			EndTime:      internal.TimeToTimestamp(clientSpanData.EndTime),
-			Status:       &tracepb.Status{Code: int32(clientSpanData.Status.Code), Message: clientSpanData.Status.Message},
+			Status:       &tracepb.Status{Code: clientSpanData.Status.Code, Message: clientSpanData.Status.Message},
 		},
 	}
 

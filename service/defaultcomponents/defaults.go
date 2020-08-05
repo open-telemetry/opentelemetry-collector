@@ -54,7 +54,7 @@ func Components() (
 	component.Factories,
 	error,
 ) {
-	errs := []error{}
+	var errs []error
 
 	extensions, err := component.MakeExtensionFactoryMap(
 		&healthcheckextension.Factory{},

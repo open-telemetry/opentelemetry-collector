@@ -23,7 +23,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
 	"github.com/google/go-cmp/cmp"
-	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
+	zipkinproto3 "github.com/openzipkin/zipkin-go/proto/v2"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -45,22 +45,22 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	minus10hr5ms := cmpTimestamp(now.Add(-(10*time.Hour + 5*time.Millisecond)))
 
 	// 1. Generate some spans then serialize them with protobuf
-	payloadFromWild := &zipkin_proto3.ListOfSpans{
-		Spans: []*zipkin_proto3.Span{
+	payloadFromWild := &zipkinproto3.ListOfSpans{
+		Spans: []*zipkinproto3.Span{
 			{
 				TraceId:   []byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
 				Id:        []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
 				ParentId:  []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
 				Name:      "ProtoSpan1",
-				Kind:      zipkin_proto3.Span_CONSUMER,
+				Kind:      zipkinproto3.Span_CONSUMER,
 				Timestamp: uint64(now.UnixNano() / 1e3),
 				Duration:  12e6, // 12 seconds
-				LocalEndpoint: &zipkin_proto3.Endpoint{
+				LocalEndpoint: &zipkinproto3.Endpoint{
 					ServiceName: "svc-1",
 					Ipv4:        []byte{0xC0, 0xA8, 0x00, 0x01},
 					Port:        8009,
 				},
-				RemoteEndpoint: &zipkin_proto3.Endpoint{
+				RemoteEndpoint: &zipkinproto3.Endpoint{
 					ServiceName: "memcached",
 					Ipv6:        []byte{0xFE, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x53, 0xa7, 0x7c, 0xda, 0x4d, 0xd2, 0x1b},
 					Port:        11211,
@@ -71,20 +71,20 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				Id:        []byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60},
 				ParentId:  []byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10},
 				Name:      "CacheWarmUp",
-				Kind:      zipkin_proto3.Span_PRODUCER,
+				Kind:      zipkinproto3.Span_PRODUCER,
 				Timestamp: uint64(minus10hr5ms.UnixNano() / 1e3),
 				Duration:  7e6, // 7 seconds
-				LocalEndpoint: &zipkin_proto3.Endpoint{
+				LocalEndpoint: &zipkinproto3.Endpoint{
 					ServiceName: "search",
 					Ipv4:        []byte{0x0A, 0x00, 0x00, 0x0D},
 					Port:        8009,
 				},
-				RemoteEndpoint: &zipkin_proto3.Endpoint{
+				RemoteEndpoint: &zipkinproto3.Endpoint{
 					ServiceName: "redis",
 					Ipv6:        []byte{0xFE, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x53, 0xa7, 0x7c, 0xda, 0x4d, 0xd2, 0x1b},
 					Port:        6379,
 				},
-				Annotations: []*zipkin_proto3.Annotation{
+				Annotations: []*zipkinproto3.Annotation{
 					{
 						Timestamp: uint64(minus10hr5ms.UnixNano() / 1e3),
 						Value:     "DB reset",

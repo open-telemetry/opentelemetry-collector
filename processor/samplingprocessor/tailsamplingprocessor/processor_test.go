@@ -212,7 +212,7 @@ func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
 		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
 	}
 
-	tds := []consumerdata.TraceData{}
+	var tds []consumerdata.TraceData
 	for i := range traceIds {
 		spans := make([]*tracepb.Span, i+1)
 		for j := range spans {
@@ -243,7 +243,7 @@ type mockPolicyEvaluator struct {
 	OnDroppedSpansCount    int
 }
 
-var _ (sampling.PolicyEvaluator) = (*mockPolicyEvaluator)(nil)
+var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) OnLateArrivingSpans(earlyDecision sampling.Decision, spans []*tracepb.Span) error {
 	m.LateArrivingSpansCount++
@@ -280,7 +280,7 @@ type syncIDBatcher struct {
 	batchPipe chan idbatcher.Batch
 }
 
-var _ (idbatcher.Batcher) = (*syncIDBatcher)(nil)
+var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
 
 func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 	batches := make(chan idbatcher.Batch, numBatches)

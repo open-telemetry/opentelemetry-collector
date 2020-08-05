@@ -146,13 +146,13 @@ func createTraceReceiver(
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 
-	// Convert settings in the source config to Configuration struct
+	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.
 
 	rCfg := cfg.(*Config)
 	remoteSamplingConfig := rCfg.RemoteSampling
 
-	config := Configuration{}
+	config := configuration{}
 
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
@@ -231,7 +231,7 @@ func createTraceReceiver(
 	}
 
 	// Create the receiver.
-	return New(rCfg.Name(), &config, nextConsumer, params)
+	return newJaegerReceiver(rCfg.Name(), &config, nextConsumer, params)
 }
 
 // extract the port number from string in "address:port" format. If the

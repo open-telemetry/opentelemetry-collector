@@ -29,7 +29,7 @@ import (
 // FluentBit and increase throughput.
 const eventChannelLength = 100
 
-type Receiver struct {
+type fluentReceiver struct {
 	collector *Collector
 	listener  net.Listener
 	conf      *Config
@@ -38,14 +38,14 @@ type Receiver struct {
 	cancel    context.CancelFunc
 }
 
-func New(ctx context.Context, logger *zap.Logger, conf *Config, next consumer.LogsConsumer) (component.LogsReceiver, error) {
+func newFluentReceiver(ctx context.Context, logger *zap.Logger, conf *Config, next consumer.LogsConsumer) (component.LogsReceiver, error) {
 	eventCh := make(chan Event, eventChannelLength)
 
 	collector := newCollector(eventCh, next, logger)
 
 	server := newServer(eventCh, logger)
 
-	return &Receiver{
+	return &fluentReceiver{
 		collector: collector,
 		server:    server,
 		conf:      conf,
@@ -53,7 +53,7 @@ func New(ctx context.Context, logger *zap.Logger, conf *Config, next consumer.Lo
 	}, nil
 }
 
-func (r *Receiver) Start(ctx context.Context, _ component.Host) error {
+func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 	receiverCtx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 
@@ -88,7 +88,7 @@ func (r *Receiver) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *Receiver) Shutdown(ctx context.Context) error {
+func (r *fluentReceiver) Shutdown(ctx context.Context) error {
 	r.cancel()
 	return nil
 }

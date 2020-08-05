@@ -33,28 +33,28 @@ import (
 // Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
 var marshaler = &jsonpb.Marshaler{}
 
-// Exporter is the implementation of file exporter that writes telemetry data to a file
+// fileExporter is the implementation of file exporter that writes telemetry data to a file
 // in Protobuf-JSON format.
-type Exporter struct {
+type fileExporter struct {
 	file  io.WriteCloser
 	mutex sync.Mutex
 }
 
-func (e *Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	request := otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(td),
 	}
 	return exportMessageAsLine(e, &request)
 }
 
-func (e *Exporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	request := otlpmetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)),
 	}
 	return exportMessageAsLine(e, &request)
 }
 
-func (e *Exporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	for _, rs := range pdata.LogsToOtlp(ld) {
 		if err := exportMessageAsLine(e, rs); err != nil {
 			return err
@@ -63,7 +63,7 @@ func (e *Exporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func exportMessageAsLine(e *Exporter, message proto.Message) error {
+func exportMessageAsLine(e *fileExporter, message proto.Message) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -76,11 +76,11 @@ func exportMessageAsLine(e *Exporter, message proto.Message) error {
 	return nil
 }
 
-func (e *Exporter) Start(ctx context.Context, host component.Host) error {
+func (e *fileExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-func (e *Exporter) Shutdown(context.Context) error {
+func (e *fileExporter) Shutdown(context.Context) error {
 	return e.file.Close()
 }

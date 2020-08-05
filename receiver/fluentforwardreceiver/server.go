@@ -159,7 +159,7 @@ func DetermineNextEventMode(peeker Peeker) (EventMode, error) {
 
 	isFixStr := tagType&0b10100000 == 0b10100000
 	if isFixStr {
-		tagLen += int(uint8(tagType & 0b00011111))
+		tagLen += int(tagType & 0b00011111)
 	} else {
 		switch tagType {
 		case 0xd9:
@@ -167,7 +167,7 @@ func DetermineNextEventMode(peeker Peeker) (EventMode, error) {
 			if err != nil {
 				return UnknownMode, err
 			}
-			tagLen += 1 + int(uint8(chunk[2]))
+			tagLen += 1 + int(chunk[2])
 		case 0xda:
 			chunk, err = peeker.Peek(4)
 			if err != nil {

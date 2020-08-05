@@ -165,7 +165,7 @@ func createLogReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
+func createReceiver(cfg configmodels.Receiver) (*otlpReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -176,7 +176,7 @@ func createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 	if !ok {
 		var err error
 		// We don't have a receiver, so create one.
-		receiver, err = New(rCfg)
+		receiver, err = newOtlpReceiver(rCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -189,5 +189,5 @@ func createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 // This is the map of already created OTLP receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one Receiver object per configuration.
-var receivers = map[*Config]*Receiver{}
+// create separate objects, they must use one otlpReceiver object per configuration.
+var receivers = map[*Config]*otlpReceiver{}

@@ -160,15 +160,15 @@ func jSpansToInternal(spans []*model.Span, dest pdata.SpanSlice) {
 }
 
 func jSpanToInternal(span *model.Span, dest pdata.Span) {
-	dest.SetTraceID(pdata.TraceID(tracetranslator.UInt64ToByteTraceID(span.TraceID.High, span.TraceID.Low)))
-	dest.SetSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(span.SpanID))))
+	dest.SetTraceID(tracetranslator.UInt64ToByteTraceID(span.TraceID.High, span.TraceID.Low))
+	dest.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
 	dest.SetStartTime(pdata.TimestampUnixNano(uint64(span.StartTime.UnixNano())))
 	dest.SetEndTime(pdata.TimestampUnixNano(uint64(span.StartTime.Add(span.Duration).UnixNano())))
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
-		dest.SetParentSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(parentSpanID))))
+		dest.SetParentSpanID(tracetranslator.UInt64ToByteSpanID(uint64(parentSpanID)))
 	}
 
 	attrs := dest.Attributes()

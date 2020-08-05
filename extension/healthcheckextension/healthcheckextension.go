@@ -33,7 +33,7 @@ type healthCheckExtension struct {
 	server http.Server
 }
 
-var _ (component.PipelineWatcher) = (*healthCheckExtension)(nil)
+var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 
