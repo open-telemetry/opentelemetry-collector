@@ -32,11 +32,12 @@ import (
 )
 
 type metricNameTest struct {
-	name  string
-	inc   *filtermetric.MatchProperties
-	exc   *filtermetric.MatchProperties
-	inMN  [][]*metricspb.Metric // input Metric batches
-	outMN [][]string            // output Metric names
+	name               string
+	inc                *filtermetric.MatchProperties
+	exc                *filtermetric.MatchProperties
+	inMN               [][]*metricspb.Metric // input Metric batches
+	outMN              [][]string            // output Metric names
+	allMetricsFiltered bool
 }
 
 var (
@@ -169,8 +170,8 @@ var (
 					MatchType: filterset.Strict,
 				},
 			},
-			inMN:  [][]*metricspb.Metric{metricsWithName(inMetricNames)},
-			outMN: [][]string{{}},
+			inMN:               [][]*metricspb.Metric{metricsWithName(inMetricNames)},
+			allMetricsFiltered: true,
 		},
 		{
 			name: "emptyFilterExclude",
@@ -220,8 +221,13 @@ func TestFilterMetricProcessor(t *testing.T) {
 				context.Background(),
 				pdatautil.MetricsFromMetricsData(mds))
 			assert.Nil(t, cErr)
-
 			got := next.AllMetrics()
+
+			if test.allMetricsFiltered {
+				require.Equal(t, 0, len(got))
+				return
+			}
+
 			require.Equal(t, 1, len(got))
 			gotMD := pdatautil.MetricsToMetricsData(got[0])
 			require.Equal(t, len(test.outMN), len(gotMD))

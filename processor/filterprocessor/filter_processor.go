@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 type filterMetricProcessor struct {
@@ -62,9 +63,10 @@ func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, err
 	return &matcher, nil
 }
 
-// ProcessMetrics filters the given spans based off the filterMetricProcessor's filters.
+// ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	mds := pdatautil.MetricsToMetricsData(md)
+	foundMetricToKeep := false
 	for i := range mds {
 		if len(mds[i].Metrics) == 0 {
 			continue
@@ -72,10 +74,15 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, md pdata.Met
 		keep := make([]*metricspb.Metric, 0, len(mds[i].Metrics))
 		for _, m := range mds[i].Metrics {
 			if fmp.shouldKeepMetric(m) {
+				foundMetricToKeep = true
 				keep = append(keep, m)
 			}
 		}
 		mds[i].Metrics = keep
+	}
+
+	if !foundMetricToKeep {
+		return md, processorhelper.ErrSkipProcessingData
 	}
 	return pdatautil.MetricsFromMetricsData(mds), nil
 }
