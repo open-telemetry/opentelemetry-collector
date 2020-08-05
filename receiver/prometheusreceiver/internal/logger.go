@@ -15,8 +15,12 @@
 package internal
 
 import (
+	"fmt"
+
 	gokitLog "github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // NewZapToGokitLogAdapter create an adapter for zap.Logger to gokitLog.Logger
@@ -32,14 +36,88 @@ type zapToGokitLogAdapter struct {
 }
 
 func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
+	// expecting key value pairs, the number of items need to be even
 	if len(keyvals)%2 == 0 {
-		// expecting key value pairs, the number of items need to be even
-		w.l.Infow("", keyvals...)
+		zapLevel, keyvals := extractLogLevel(keyvals)
+		logFunc, err := levelToFunc(w.l, zapLevel)
+		if err != nil {
+			return err
+		}
+		logFunc("", keyvals...)
 	} else {
 		// in case something goes wrong
 		w.l.Info(keyvals...)
 	}
 	return nil
+}
+
+func extractLogLevel(keyvals []interface{}) (zapcore.Level, []interface{}) {
+	zapLevel := zapcore.InfoLevel
+	output := make([]interface{}, 0, len(keyvals))
+	for i := 0; i < len(keyvals); i = i + 2 {
+		key := keyvals[i]
+		val := keyvals[i+1]
+
+		if l, ok := matchLogLevel(key, val); ok {
+			zapLevel = *l
+			continue
+		}
+
+		output = append(output, key, val)
+	}
+
+	return zapLevel, output
+}
+
+func matchLogLevel(key interface{}, val interface{}) (*zapcore.Level, bool) {
+	strKey, ok := key.(string)
+	if !ok || strKey != "level" {
+		return nil, false
+	}
+
+	levelVal, ok := val.(level.Value)
+	if !ok {
+		return nil, false
+	}
+
+	zapLevel := toZapLevel(levelVal)
+	return &zapLevel, true
+}
+
+func toZapLevel(value level.Value) zapcore.Level {
+	// See https://github.com/go-kit/kit/blob/556100560949062d23fe05d9fda4ce173c30c59f/log/level/level.go#L184-L187
+	switch value.String() {
+	case "error":
+		return zapcore.ErrorLevel
+	case "warn":
+		return zapcore.WarnLevel
+	case "info":
+		return zapcore.InfoLevel
+	case "debug":
+		return zapcore.DebugLevel
+	default:
+		return zapcore.InfoLevel
+	}
+}
+
+func levelToFunc(logger *zap.SugaredLogger, lvl zapcore.Level) (func(string, ...interface{}), error) {
+	switch lvl {
+	case zapcore.DebugLevel:
+		return logger.Debugf, nil
+	case zapcore.InfoLevel:
+		return logger.Infof, nil
+	case zapcore.WarnLevel:
+		return logger.Warnf, nil
+	case zapcore.ErrorLevel:
+		return logger.Errorf, nil
+	case zapcore.DPanicLevel:
+		return logger.DPanicf, nil
+	case zapcore.PanicLevel:
+		return logger.Panicf, nil
+	case zapcore.FatalLevel:
+		return logger.Fatalf, nil
+	}
+	return nil, fmt.Errorf("unrecognized level: %q", lvl)
 }
 
 var _ gokitLog.Logger = (*zapToGokitLogAdapter)(nil)
