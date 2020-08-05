@@ -169,16 +169,16 @@ type MessageEventLogRecord struct {
 	OptionsMap
 }
 
-func (me *MessageEventLogRecord) LogRecords() pdata.LogSlice {
+func (melr *MessageEventLogRecord) LogRecords() pdata.LogSlice {
 	out := pdata.NewLogSlice()
-	out.Append(&me.LogRecord)
+	out.Append(&melr.LogRecord)
 	return out
 }
 
-func (me *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
-	me.LogRecord = pdata.NewLogRecord()
-	me.LogRecord.InitEmpty()
-	me.Body().InitEmpty()
+func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
+	melr.LogRecord = pdata.NewLogRecord()
+	melr.LogRecord.InitEmpty()
+	melr.Body().InitEmpty()
 
 	var arrLen uint32
 	var err error
@@ -196,21 +196,21 @@ func (me *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	attrs := me.LogRecord.Attributes()
+	attrs := melr.LogRecord.Attributes()
 	attrs.InsertString(tagAttributeKey, tag)
 
-	err = decodeTimestampToLogRecord(dc, &me.LogRecord)
+	err = decodeTimestampToLogRecord(dc, &melr.LogRecord)
 	if err != nil {
 		return msgp.WrapError(err, "Time")
 	}
 
-	err = parseRecordToLogRecord(dc, &me.LogRecord)
+	err = parseRecordToLogRecord(dc, &melr.LogRecord)
 	if err != nil {
 		return err
 	}
 
 	if arrLen == 4 {
-		me.OptionsMap, err = parseOptions(dc)
+		melr.OptionsMap, err = parseOptions(dc)
 		if err != nil {
 			return err
 		}

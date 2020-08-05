@@ -84,7 +84,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOl
 	}
 
 	ctx := context.Background()
-	policies := []*Policy{}
+	var policies []*Policy
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
@@ -244,7 +244,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td c
 			ArrivalTime: time.Now(),
 			SpanCount:   lenSpans,
 		}
-		d, loaded := tsp.idToTrace.LoadOrStore(traceKey(id), initialTraceData)
+		d, loaded := tsp.idToTrace.LoadOrStore(id, initialTraceData)
 
 		actualData := d.(*sampling.TraceData)
 		if loaded {

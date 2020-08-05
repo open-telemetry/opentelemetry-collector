@@ -531,7 +531,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	require.NoError(t, err)
 
 	r := httptest.NewRequest("POST", "/api/v2/spans",
-		bytes.NewBuffer([]byte(body)))
+		bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	next := &zipkinMockTraceConsumer{

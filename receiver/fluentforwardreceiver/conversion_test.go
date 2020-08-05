@@ -55,7 +55,7 @@ func TestMessageEventConversion(t *testing.T) {
 
 func TestAttributeTypeConversion(t *testing.T) {
 
-	b := []byte{}
+	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
 	b = msgp.AppendString(b, "my-tag")
@@ -141,7 +141,7 @@ func TestTimeFromTimestampBadType(t *testing.T) {
 }
 
 func TestMessageEventConversionWithErrors(t *testing.T) {
-	b := []byte{}
+	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
 	b = msgp.AppendString(b, "my-tag")

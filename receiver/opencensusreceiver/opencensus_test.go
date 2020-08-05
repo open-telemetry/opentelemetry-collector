@@ -262,7 +262,7 @@ func runContentTypeTests(addr string, contentTypeDesignation bool, contentType s
 
 	cc, err := grpc.Dial(addr, opts...)
 	if err != nil {
-		return fmt.Errorf("Creating grpc.ClientConn: %v", err)
+		return fmt.Errorf("creating grpc.ClientConn: %v", err)
 	}
 	defer cc.Close()
 
@@ -271,7 +271,7 @@ func runContentTypeTests(addr string, contentTypeDesignation bool, contentType s
 
 	stream, err := acc.Export(context.Background())
 	if err != nil {
-		return fmt.Errorf("Initializing the export stream: %v", err)
+		return fmt.Errorf("initializing the export stream: %v", err)
 	}
 
 	msg := &agenttracepb.ExportTraceServiceRequest{

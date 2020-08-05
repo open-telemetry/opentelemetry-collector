@@ -51,7 +51,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	port := 999999
 
 	config := &configuration{
-		AgentCompactThriftPort: int(port),
+		AgentCompactThriftPort: port,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
@@ -100,7 +100,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	port := 999999
 
 	config := &configuration{
-		AgentBinaryThriftPort: int(port),
+		AgentBinaryThriftPort: port,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
