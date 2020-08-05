@@ -337,6 +337,27 @@ func Test_handleSummaryMetric(t *testing.T) {
 	}
 }
 
+// Test_newCortexExporter checks that a new exporter instance with non-nil fields is initialized
+func Test_newCortexExporter(t *testing.T) {
+	config := &Config{
+		ExporterSettings:   configmodels.ExporterSettings{},
+		TimeoutSettings:    exporterhelper.TimeoutSettings{},
+		QueueSettings:      exporterhelper.QueueSettings{},
+		RetrySettings:      exporterhelper.RetrySettings{},
+		Namespace:          "",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+	}
+	c, _ := config.HTTPClientSettings.ToClient()
+	ce, err := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+	require.NoError(t, err)
+	require.NotNil(t, ce)
+	assert.NotNil(t, ce.namespace)
+	assert.NotNil(t, ce.endpoint)
+	assert.NotNil(t, ce.client)
+	assert.NotNil(t, ce.closeChan)
+	assert.NotNil(t, ce.wg)
+}
+
 // Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
 	ce := &cortexExporter{
@@ -367,7 +388,7 @@ func Test_shutdown(t *testing.T) {
 //Test whether or not the Server receives the correct TimeSeries.
 //Currently considering making this test an iterative for loop of multiple TimeSeries
 //Much akin to Test_pushMetrics
-func Test_Export(t *testing.T) {
+func Test_export(t *testing.T) {
 	//First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
 	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
 	sample1 := getSample(floatVal1, time1)
@@ -382,19 +403,23 @@ func Test_Export(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
+		require.NotNil(t,body)
 		//Receives the http requests and unzip, unmarshals, and extracts TimeSeries
-		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version:"))
+		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
-		snappy.Decode(unzipped, body)
-		ok := proto.Unmarshal(unzipped, writeReq)
-		require.NotNil(t, ok)
+		dest,err := snappy.Decode(unzipped, body)
+		require.NoError(t,err)
+
+		ok := proto.Unmarshal(dest, writeReq)
+		require.NoError(t, ok)
 		assert.EqualValues(t, 1, len(writeReq.Timeseries))
+		require.NotNil(t, writeReq.GetTimeseries())
 		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
 		w.WriteHeader(http.StatusAccepted)
 	}))
+
 	defer server.Close()
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(t, err)
@@ -418,27 +443,6 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint string) err
 	return err
 }
 
-// Test_newCortexExporter checks that a new exporter instance with non-nil fields is initialized
-func Test_newCortexExporter(t *testing.T) {
-	config := &Config{
-		ExporterSettings:   configmodels.ExporterSettings{},
-		TimeoutSettings:    exporterhelper.TimeoutSettings{},
-		QueueSettings:      exporterhelper.QueueSettings{},
-		RetrySettings:      exporterhelper.RetrySettings{},
-		Namespace:          "",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-	}
-	c, _ := config.HTTPClientSettings.ToClient()
-	ce, err := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
-	require.NoError(t, err)
-	require.NotNil(t, ce)
-	assert.NotNil(t, ce.namespace)
-	assert.NotNil(t, ce.endpoint)
-	assert.NotNil(t, ce.client)
-	assert.NotNil(t, ce.closeChan)
-	assert.NotNil(t, ce.wg)
-}
-
 // Bug{@huyan0} success case pass but it should fail; this is because the server gets no request because export() is
 // empty. This test cannot run until export is finished.
 // Test_pushMetrics the correctness and the number of points
@@ -447,7 +451,7 @@ func Test_pushMetrics(t *testing.T) {
 	noDescBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())
 	// 10 counter metrics, 2 points in each. Two TimeSeries in total
 	batch := testdata.GenerateMetricDataManyMetricsSameResource(10)
-	setCumulative(batch)
+	setCumulative(&batch)
 	successBatch := pdatautil.MetricsFromInternalMetrics(batch)
 
 	tests := []struct {
@@ -490,21 +494,24 @@ func Test_pushMetrics(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version:"))
-				assert.Equal(t, "Snappy", r.Header.Get("Content-Encoding"))
-				assert.NotNil(t, r.Header.Get("Tenant-id"))
+
 				buf := make([]byte, len(body))
-				snappy.Decode(buf, body)
+				dest, err := snappy.Decode(buf, body)
+				assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
+				assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
+				assert.NotNil(t, r.Header.Get("tenant-id"))
+				require.NoError(t,err)
 				wr := &prompb.WriteRequest{}
-				ok := proto.Unmarshal(buf, wr)
+				ok  := proto.Unmarshal(dest, wr)
 				require.Nil(t, ok)
 				assert.EqualValues(t, 2, len(wr.Timeseries))
 			},
-			0,
+			http.StatusAccepted,
 			0,
 			false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -513,6 +520,7 @@ func Test_pushMetrics(t *testing.T) {
 				}
 				w.WriteHeader(tt.httpResponseCode)
 			}))
+
 			defer server.Close()
 
 			serverURL, uErr := url.Parse(server.URL)
@@ -520,19 +528,19 @@ func Test_pushMetrics(t *testing.T) {
 
 			config := createDefaultConfig().(*Config)
 			assert.NotNil(t, config)
-			config.HTTPClientSettings.Endpoint = serverURL.String()
-			c, err := config.HTTPClientSettings.ToClient()
-			assert.Nil(t, err)
-			sender, nErr := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+			// c, err := config.HTTPClientSettings.ToClient()
+			// assert.Nil(t, err)
+			c := http.DefaultClient
+			sender, nErr := newCortexExporter(config.Namespace, serverURL.String(), c)
 			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
-
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
+
 		})
 	}
 }

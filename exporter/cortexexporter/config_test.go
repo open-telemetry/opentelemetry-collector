@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				ReadBufferSize: 512 * 1024,
+				ReadBufferSize: 0,
 
 				WriteBufferSize: 512 * 1024,
 

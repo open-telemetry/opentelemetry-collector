@@ -226,8 +226,8 @@ func getTimeSeries (lbls []prompb.Label, samples...prompb.Sample) *prompb.TimeSe
 	}
 }
 
-func setCumulative (metricsData data.MetricData) {
-	for _, r := range data.MetricDataToOtlp(metricsData) {
+func setCumulative (metricsData *data.MetricData) {
+	for _, r := range data.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
 				m.MetricDescriptor.Temporality = otlp.MetricDescriptor_CUMULATIVE

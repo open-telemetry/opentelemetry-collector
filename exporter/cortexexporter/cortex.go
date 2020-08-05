@@ -18,22 +18,20 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
+	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/prompb"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
-	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/prompb"
-
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 // TODO: get default labels such as job or instance from Resource
@@ -53,8 +51,9 @@ type cortexExporter struct {
 func newCortexExporter(ns string, ep string, client *http.Client) (*cortexExporter, error) {
 
 	if client == nil {
-		return nil, fmt.Errorf("http client cannot be nil")
+		return nil, errors.Errorf("http client cannot be nil")
 	}
+	// endpoint cannot be nil either
 
 	return &cortexExporter{
 		namespace: ns,
@@ -81,19 +80,17 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 	defer ce.wg.Done()
 	select {
 	case <-ce.closeChan:
-		return pdatautil.MetricCount(md), fmt.Errorf("shutdown has been called")
+		return pdatautil.MetricCount(md), errors.Errorf("shutdown has been called")
 	default:
-		// stores TimeSeries
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
 		errs := []string{}
 
 		rms := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
-
 		for _, r := range rms {
 			// TODO: add resource attributes as labels
 			for _, inst := range r.InstrumentationLibraryMetrics {
-				//TODO: add instrumentation library information as labels
+				// TODO: add instrumentation library information as labels
 				for _, m := range inst.Metrics {
 					// check for valid type and temporality combination
 					ok := validateMetrics(m.MetricDescriptor)
@@ -131,7 +128,7 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 		}
 
 		if dropped != 0 {
-			return dropped, fmt.Errorf(strings.Join(errs, "\n"))
+			return dropped, errors.Errorf(strings.Join(errs, "\n"))
 		}
 
 		return 0, nil
@@ -142,6 +139,7 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	// add check for nil
 
 	mType := metric.MetricDescriptor.Type
 
@@ -149,7 +147,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 	// int points
 	case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64:
 		if metric.Int64DataPoints == nil {
-			return fmt.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
+			return errors.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
 		}
 
 		for _, pt := range metric.Int64DataPoints {
@@ -169,7 +167,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 	// double points
 	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
 		if metric.DoubleDataPoints == nil {
-			return fmt.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
+			return errors.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
 		}
 		for _, pt := range metric.DoubleDataPoints {
 
@@ -186,7 +184,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		return nil
 	}
 
-	return fmt.Errorf("invalid metric type: wants int or double data points")
+	return errors.Errorf("invalid metric type: wants int or double data points")
 }
 
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
@@ -195,7 +193,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.HistogramDataPoints == nil {
-		return fmt.Errorf("invalid metric type: wants histogram points")
+		return errors.Errorf("invalid metric type: wants histogram points")
 	}
 
 	for _, pt := range metric.HistogramDataPoints {
@@ -254,7 +252,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.SummaryDataPoints == nil {
-		return fmt.Errorf("invalid metric type: wants summary points")
+		return errors.Errorf("invalid metric type: wants summary points")
 	}
 
 	for _, pt := range metric.SummaryDataPoints {
@@ -311,9 +309,9 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	if err != nil {
 		return err
 	}
-
+	buf := make([]byte, len(data), cap(data))
 	//Makes use of the snappy compressor, as we are emulating the Remote Write package
-	compressedData := snappy.Encode(nil, data)
+	compressedData := snappy.Encode(buf, data)
 
 	//Create the HTTP POST request to send to the endpoint
 	httpReq, err := http.NewRequest("POST", ce.endpoint, bytes.NewReader(compressedData))
@@ -326,9 +324,11 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 		httpReq.Header.Set(name, value)
 	}
 
-	//Add necessary headers
+	// Add necessary headers
+ 	// https://cortexmetrics.io/docs/apis/#remote-api
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Add("Accept-Encoding", "snappy")
+	httpReq.Header.Set("User-Agent", "otel-collector")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 
