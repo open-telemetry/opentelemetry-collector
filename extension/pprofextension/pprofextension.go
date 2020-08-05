@@ -34,7 +34,7 @@ type pprofExtension struct {
 	server http.Server
 }
 
-func (p *pprofExtension) Start(ctx context.Context, host component.Host) error {
+func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	ln, err := net.Listen("tcp", p.config.Endpoint)
@@ -71,11 +71,9 @@ func (p *pprofExtension) Shutdown(context.Context) error {
 	return p.server.Close()
 }
 
-func newServer(config Config, logger *zap.Logger) (*pprofExtension, error) {
-	p := &pprofExtension{
+func newServer(config Config, logger *zap.Logger) *pprofExtension {
+	return &pprofExtension{
 		config: config,
 		logger: logger,
 	}
-
-	return p, nil
 }
