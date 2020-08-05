@@ -17,29 +17,98 @@ package internal
 import (
 	"testing"
 
-	"github.com/bmizerany/assert"
 	"github.com/go-kit/kit/log/level"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func TestExtractLogLevel(t *testing.T) {
+func TestLog(t *testing.T) {
 	tcs := []struct {
-		name       string
-		input      []interface{}
-		wantLevel  zapcore.Level
-		wantOutput []interface{}
+		name        string
+		input       []interface{}
+		wantLevel   zapcore.Level
+		wantMessage string
 	}{
 		{
-			name:       "nil fields",
-			input:      nil,
-			wantLevel:  zapcore.InfoLevel, // Default
-			wantOutput: []interface{}{},
+			name: "Starting provider",
+			input: []interface{}{
+				"level",
+				level.DebugValue(),
+				"msg",
+				"Starting provider",
+				"provider",
+				"string/0",
+				"subs",
+				"[target1]",
+			},
+			wantLevel:   zapcore.DebugLevel,
+			wantMessage: "Starting provider",
 		},
 		{
-			name:       "empty fields",
-			input:      []interface{}{},
-			wantLevel:  zapcore.InfoLevel, // Default
-			wantOutput: []interface{}{},
+			name: "Scrape failed",
+			input: []interface{}{
+				"level",
+				level.ErrorValue(),
+				"scrape_pool",
+				"target1",
+				"msg",
+				"Scrape failed",
+				"err",
+				"server returned HTTP status 500 Internal Server Error",
+			},
+			wantLevel:   zapcore.ErrorLevel,
+			wantMessage: "Scrape failed",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := zap.NewProductionConfig()
+			conf.Level.SetLevel(zapcore.DebugLevel)
+
+			// capture zap log entry
+			var entry zapcore.Entry
+			h := func(e zapcore.Entry) error {
+				entry = e
+				return nil
+			}
+
+			logger, err := conf.Build(zap.Hooks(h))
+			require.NoError(t, err)
+
+			adapter := NewZapToGokitLogAdapter(logger)
+			err = adapter.Log(tc.input...)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantLevel, entry.Level)
+			assert.Equal(t, tc.wantMessage, entry.Message)
+		})
+	}
+}
+
+func TestExtractLogData(t *testing.T) {
+	tcs := []struct {
+		name        string
+		input       []interface{}
+		wantLevel   level.Value
+		wantMessage string
+		wantOutput  []interface{}
+	}{
+		{
+			name:        "nil fields",
+			input:       nil,
+			wantLevel:   level.InfoValue(), // Default
+			wantMessage: "",
+			wantOutput:  []interface{}{},
+		},
+		{
+			name:        "empty fields",
+			input:       []interface{}{},
+			wantLevel:   level.InfoValue(), // Default
+			wantMessage: "",
+			wantOutput:  []interface{}{},
 		},
 		{
 			name: "info level",
@@ -47,8 +116,9 @@ func TestExtractLogLevel(t *testing.T) {
 				"level",
 				level.InfoValue(),
 			},
-			wantLevel:  zapcore.InfoLevel,
-			wantOutput: []interface{}{},
+			wantLevel:   level.InfoValue(),
+			wantMessage: "",
+			wantOutput:  []interface{}{},
 		},
 		{
 			name: "warn level",
@@ -56,8 +126,9 @@ func TestExtractLogLevel(t *testing.T) {
 				"level",
 				level.WarnValue(),
 			},
-			wantLevel:  zapcore.WarnLevel,
-			wantOutput: []interface{}{},
+			wantLevel:   level.WarnValue(),
+			wantMessage: "",
+			wantOutput:  []interface{}{},
 		},
 		{
 			name: "error level",
@@ -65,41 +136,40 @@ func TestExtractLogLevel(t *testing.T) {
 				"level",
 				level.ErrorValue(),
 			},
-			wantLevel:  zapcore.ErrorLevel,
-			wantOutput: []interface{}{},
+			wantLevel:   level.ErrorValue(),
+			wantMessage: "",
+			wantOutput:  []interface{}{},
 		},
 		{
 			name: "debug level + extra fields",
 			input: []interface{}{
-				"ts",
-				1596604719.955769,
+				"timestamp",
+				1596604719,
 				"level",
 				level.DebugValue(),
 				"msg",
 				"http client error",
 			},
-			wantLevel: zapcore.DebugLevel,
+			wantLevel:   level.DebugValue(),
+			wantMessage: "http client error",
 			wantOutput: []interface{}{
-				"ts",
-				1596604719.955769,
-				"msg",
-				"http client error",
+				"timestamp",
+				1596604719,
 			},
 		},
 		{
 			name: "missing level field",
 			input: []interface{}{
-				"ts",
-				1596604719.955769,
+				"timestamp",
+				1596604719,
 				"msg",
 				"http client error",
 			},
-			wantLevel: zapcore.InfoLevel, // Default
+			wantLevel:   level.InfoValue(), // Default
+			wantMessage: "http client error",
 			wantOutput: []interface{}{
-				"ts",
-				1596604719.955769,
-				"msg",
-				"http client error",
+				"timestamp",
+				1596604719,
 			},
 		},
 		{
@@ -108,7 +178,7 @@ func TestExtractLogLevel(t *testing.T) {
 				"level",
 				"warn", // String is not recognized
 			},
-			wantLevel: zapcore.InfoLevel, // Default
+			wantLevel: level.InfoValue(), // Default
 			wantOutput: []interface{}{
 				"level",
 				"warn", // Field is preserved
@@ -118,9 +188,10 @@ func TestExtractLogLevel(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			zapLevel, output := extractLogLevel(tc.input)
-			assert.Equal(t, tc.wantLevel, zapLevel)
-			assert.Equal(t, tc.wantOutput, output)
+			ld := extractLogData(tc.input)
+			assert.Equal(t, tc.wantLevel, ld.level)
+			assert.Equal(t, tc.wantMessage, ld.msg)
+			assert.Equal(t, tc.wantOutput, ld.otherFields)
 		})
 	}
 }
