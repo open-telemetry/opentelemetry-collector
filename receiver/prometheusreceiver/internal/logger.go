@@ -51,6 +51,8 @@ func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
 	return nil
 }
 
+// extract go-kit log level from key value pairs, convert it to zap log level
+// and remove from the list to avoid duplication in log message
 func extractLogLevel(keyvals []interface{}) (zapcore.Level, []interface{}) {
 	zapLevel := zapcore.InfoLevel
 	output := make([]interface{}, 0, len(keyvals))
@@ -69,6 +71,8 @@ func extractLogLevel(keyvals []interface{}) (zapcore.Level, []interface{}) {
 	return zapLevel, output
 }
 
+// check if a given key-value pair represents go-kit log level and return
+// a corresponding zap log level
 func matchLogLevel(key interface{}, val interface{}) (*zapcore.Level, bool) {
 	strKey, ok := key.(string)
 	if !ok || strKey != "level" {
@@ -84,6 +88,7 @@ func matchLogLevel(key interface{}, val interface{}) (*zapcore.Level, bool) {
 	return &zapLevel, true
 }
 
+// convert go-kit log level to zap
 func toZapLevel(value level.Value) zapcore.Level {
 	// See https://github.com/go-kit/kit/blob/556100560949062d23fe05d9fda4ce173c30c59f/log/level/level.go#L184-L187
 	switch value.String() {
@@ -100,6 +105,7 @@ func toZapLevel(value level.Value) zapcore.Level {
 	}
 }
 
+// find a matching zap logging function to be used for a given level
 func levelToFunc(logger *zap.SugaredLogger, lvl zapcore.Level) (func(string, ...interface{}), error) {
 	switch lvl {
 	case zapcore.DebugLevel:
