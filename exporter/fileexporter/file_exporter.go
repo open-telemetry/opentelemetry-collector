@@ -25,6 +25,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -144,31 +145,39 @@ type fileExporter struct {
 func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	octds := internaldata.TraceDataToOC(td)
 	for _, octd := range octds {
-		// Ensure only one write operation happens at a time.
-		e.mutex.Lock()
-		defer e.mutex.Unlock()
-
-		// Prepare to write JSON object.
-		jw := &jsonWriter{writer: e.file}
-		if err := jw.Begin(); err != nil {
+		err := e.printOcTd(octd)
+		if err != nil {
 			return err
 		}
-		defer jw.End()
+	}
+	return nil
+}
 
-		if err := exportResourceAndNode(jw, octd.Node, octd.Resource); err != nil {
-			return err
-		}
+func (e *fileExporter) printOcTd(octd consumerdata.TraceData) error {
+	// Ensure only one write operation happens at a time.
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
-		if err := jw.BeginMarshalArray("spans"); err != nil {
-			return err
-		}
-		defer jw.EndMarshalArray()
+	// Prepare to write JSON object.
+	jw := &jsonWriter{writer: e.file}
+	if err := jw.Begin(); err != nil {
+		return err
+	}
+	defer jw.End()
 
-		for _, span := range octd.Spans {
-			if span != nil {
-				if err := jw.MarshalArrayItem(span); err != nil {
-					return err
-				}
+	if err := exportResourceAndNode(jw, octd.Node, octd.Resource); err != nil {
+		return err
+	}
+
+	if err := jw.BeginMarshalArray("spans"); err != nil {
+		return err
+	}
+	defer jw.EndMarshalArray()
+
+	for _, span := range octd.Spans {
+		if span != nil {
+			if err := jw.MarshalArrayItem(span); err != nil {
+				return err
 			}
 		}
 	}
@@ -178,31 +187,39 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	ocmds := pdatautil.MetricsToMetricsData(md)
 	for _, ocmd := range ocmds {
-		// Ensure only one write operation happens at a time.
-		e.mutex.Lock()
-		defer e.mutex.Unlock()
-
-		// Prepare to write JSON object.
-		jw := &jsonWriter{writer: e.file}
-		if err := jw.Begin(); err != nil {
+		err := e.printOcMd(ocmd)
+		if err != nil {
 			return err
 		}
-		defer jw.End()
+	}
+	return nil
+}
 
-		if err := exportResourceAndNode(jw, ocmd.Node, ocmd.Resource); err != nil {
-			return err
-		}
+func (e *fileExporter) printOcMd(ocmd consumerdata.MetricsData) error {
+	// Ensure only one write operation happens at a time.
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
-		if err := jw.BeginMarshalArray("metrics"); err != nil {
-			return err
-		}
-		defer jw.EndMarshalArray()
+	// Prepare to write JSON object.
+	jw := &jsonWriter{writer: e.file}
+	if err := jw.Begin(); err != nil {
+		return err
+	}
+	defer jw.End()
 
-		for _, metric := range ocmd.Metrics {
-			if metric != nil {
-				if err := jw.MarshalArrayItem(metric); err != nil {
-					return err
-				}
+	if err := exportResourceAndNode(jw, ocmd.Node, ocmd.Resource); err != nil {
+		return err
+	}
+
+	if err := jw.BeginMarshalArray("metrics"); err != nil {
+		return err
+	}
+	defer jw.EndMarshalArray()
+
+	for _, metric := range ocmd.Metrics {
+		if metric != nil {
+			if err := jw.MarshalArrayItem(metric); err != nil {
+				return err
 			}
 		}
 	}
@@ -249,7 +266,7 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func (e *fileExporter) Start(ctx context.Context, host component.Host) error {
+func (e *fileExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
