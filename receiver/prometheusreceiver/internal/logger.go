@@ -38,8 +38,9 @@ type zapToGokitLogAdapter struct {
 func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
 	// expecting key value pairs, the number of items need to be even
 	if len(keyvals)%2 == 0 {
-		zapLevel, keyvals := extractLogLevel(keyvals)
-		logFunc, err := levelToFunc(w.l, zapLevel)
+		var lvl zapcore.Level
+		lvl, keyvals = extractLogLevel(keyvals)
+		logFunc, err := levelToFunc(w.l, lvl)
 		if err != nil {
 			return err
 		}
