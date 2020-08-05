@@ -2,31 +2,32 @@ package cortexexporter
 
 import (
 	"fmt"
+	"log"
+	"sort"
+	"strings"
+	"unicode"
+
 	"github.com/prometheus/prometheus/prompb"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	"sort"
-	"strings"
-	"log"
-	"unicode"
 )
 
-
 const (
-	nameStr = "name"
-	sumStr = "_sum"
-	countStr = "_count"
-	bucketStr = "_bucket"
-	leStr = "le"
+	nameStr     = "name"
+	sumStr      = "_sum"
+	countStr    = "_count"
+	bucketStr   = "_bucket"
+	leStr       = "le"
 	quantileStr = "quantile"
-	pInfStr = "+Inf"
-	totalStr = "total"
-	delimeter = "_"
-	keyStr = "key"
+	pInfStr     = "+Inf"
+	totalStr    = "total"
+	delimeter   = "_"
+	keyStr      = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
 type ByLabelName []prompb.Label
+
 func (a ByLabelName) Len() int           { return len(a) }
 func (a ByLabelName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -59,8 +60,8 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs [
 		ts.Samples = append(ts.Samples, *sample)
 	} else {
 		newTs := &prompb.TimeSeries{
-			Labels:		lbs,
-			Samples:	[]prompb.Sample{*sample},
+			Labels:  lbs,
+			Samples: []prompb.Sample{*sample},
 		}
 		tsMap[sig] = newTs
 	}
@@ -77,7 +78,7 @@ func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) stri
 	sort.Sort(ByLabelName(*lbs))
 
 	for _, lb := range *lbs {
-		fmt.Fprintf(&b, "-%s-%s", lb.GetName(),lb.GetValue())
+		fmt.Fprintf(&b, "-%s-%s", lb.GetName(), lb.GetValue())
 	}
 
 	return b.String()
@@ -90,26 +91,26 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 	l := map[string]prompb.Label{}
 	for _, lb := range labels {
 		l[lb.Key] = prompb.Label{
-			Name:	sanitize(lb.Key),
-			Value:	lb.Value,
+			Name:  sanitize(lb.Key),
+			Value: lb.Value,
 		}
 	}
-	for i := 0; i < len(extras); i+=2 {
-		if i+1 >= len(extras){
+	for i := 0; i < len(extras); i += 2 {
+		if i+1 >= len(extras) {
 			break
 		}
-		_,found:= l[extras[i]]
+		_, found := l[extras[i]]
 		if found {
 			log.Println("label " + extras[i] + " is overwritten. Check if Prometheus reserved labels are used.")
 		}
 		l[extras[i]] = prompb.Label{
-			Name:   sanitize(extras[i]),
-			Value:	extras[i+1],
+			Name:  sanitize(extras[i]),
+			Value: extras[i+1],
 		}
 	}
-	s := make([]prompb.Label,0,len(l))
+	s := make([]prompb.Label, 0, len(l))
 	for _, lb := range l {
-		s = append(s,lb)
+		s = append(s, lb)
 	}
 	return s
 }
@@ -168,9 +169,28 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 			fmt.Fprintf(&b, desc.GetUnit())
 		}*/
 
-	if b.Len()>0 && isCounter {
+	if b.Len() > 0 && isCounter {
 		fmt.Fprintf(&b, delimeter)
 		fmt.Fprintf(&b, totalStr)
 	}
 	return b.String()
+}
+
+/*
+Simple helper function that takes the <Signature String - *TimeSeries> map
+and creates a WriteRequest from the struct -- can move to the helper.go file
+*/
+func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+	if len(TsMap) == 0 {
+		return nil, fmt.Errorf("invalid TsMap: cannot be empty map")
+	}
+	TsArray := []prompb.TimeSeries{}
+	for _, v := range TsMap {
+		TsArray = append(TsArray, *v)
+	}
+	wrapped := prompb.WriteRequest{
+		Timeseries: TsArray,
+		//Other parameters of the WriteRequest are unnecessary for our Export (assumption --will revise if needed)
+	}
+	return &wrapped, nil
 }

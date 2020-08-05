@@ -16,51 +16,13 @@
 package cortexexporter
 
 import (
-	"bytes"
 	"context"
-	"net/http"
-	"time"
-
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/shurcooL/go/ctxhttp"
 
 	"go.opentelemetry.io/collector/component"
 	confighttp "go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
-
-// This will be added to cortex_test, but currently I'm going to put it here in order to not have merge conflicts. Also, will readjust to fit our pipeline, not prometheus
-
-func (ce *cortexExporter) WrapTimeSeries(ts *prompb.TimeSeries) {
-	return //will populate later
-}
-// To Daniel: I have created a empty version of the Export function in cortex.go. It has takes the parameter we defined
-// in the implementation note.
-func  (ce *cortexExporter)Export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
-	//TODO:: Error handling
-	data, err := proto.Marshal(&prompb.WriteRequest{})
-	if err != nil {
-		return err
-	}
-	compressed := snappy.Encode(nil, data)
-	httpReq, err := http.NewRequest("POST", ce.endpoint, bytes.NewReader(compressed))
-	if err != nil {
-		return err
-	}
-	httpReq.Header.Add("Content-Encoding", "snappy")
-	httpReq.Header.Set("Content-Type", "application/x-protobuf")
-	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-	httpReq = httpReq.WithContext(ctx)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(1))
-	defer cancel()
-
-	_, httpErr := ctxhttp.Do(ctx, ce.client, httpReq)
-	return httpErr
-}
 
 const (
 	// The value of "type" key in configuration.
@@ -81,7 +43,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 	if err != nil {
 		return nil, err
 	}
-	ce, err:= newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
+	ce, err := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
 	cexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		ce.pushMetrics,
@@ -106,8 +68,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Namespace:		"",
-		Headers:		map[string]string{},
+		Namespace: "",
+		Headers:   map[string]string{},
 
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),

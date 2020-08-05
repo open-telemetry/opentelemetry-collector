@@ -16,11 +16,6 @@ package cortexexporter
 
 import (
 	"context"
-	"github.com/golang/snappy"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +23,12 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/golang/snappy"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
@@ -53,21 +54,18 @@ import (
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
 		// string signature of the data point is the key of the map
-		typeMonotonicInt64 + "-name-same_ts_int_points_total" + lb1Sig:
-			getTimeSeries(
-				getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
-				getSample(float64(intVal1), time1),
-				getSample(float64(intVal2), time1)),
+		typeMonotonicInt64 + "-name-same_ts_int_points_total" + lb1Sig: getTimeSeries(
+			getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
+			getSample(float64(intVal1), time1),
+			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb1Sig:
-			getTimeSeries(
-				getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
-				getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb2Sig:
-			getTimeSeries(
-				getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
-				getSample(float64(intVal1), time2)),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb1Sig: getTimeSeries(
+			getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
+			getSample(float64(intVal1), time1)),
+		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb2Sig: getTimeSeries(
+			getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
+			getSample(float64(intVal1), time2)),
 	}
 
 	tests := []struct {
@@ -169,23 +167,23 @@ func Test_handleHistogramMetric(t *testing.T) {
 	}
 	// string signature of the data point is the key of the map
 	sigs := map[string]string{
-		sum:   typeHistogram + "-name-" + name1 +"_sum" + lb1Sig,
-		count: typeHistogram + "-name-" + name1 +"_count" + lb1Sig,
+		sum:   typeHistogram + "-name-" + name1 + "_sum" + lb1Sig,
+		count: typeHistogram + "-name-" + name1 + "_count" + lb1Sig,
 		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-name-" + name1 +"_bucket" + lb1Sig,
+			"-name-" + name1 + "_bucket" + lb1Sig,
 		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-name-" + name1 +"_bucket" + lb1Sig,
+			"-name-" + name1 + "_bucket" + lb1Sig,
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
-			"-name-" + name1 +"_bucket" + lb1Sig,
+			"-name-" + name1 + "_bucket" + lb1Sig,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", name1+ "_sum")...),
-		count: append(promLbs1, getPromLabels("name", name1+ "_count")...),
-		bucket1: append(promLbs1, getPromLabels("name", name1+ "_bucket", "le",
+		sum:   append(promLbs1, getPromLabels("name", name1+"_sum")...),
+		count: append(promLbs1, getPromLabels("name", name1+"_count")...),
+		bucket1: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		bucket2: append(promLbs1, getPromLabels("name", name1+ "_bucket", "le",
+		bucket2: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-		bucketInf: append(promLbs1, getPromLabels("name", name1+ "_bucket", "le",
+		bucketInf: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
 			"+Inf")...),
 	}
 	tests := []struct {
@@ -209,7 +207,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 		{
 			"single_histogram_point",
 			otlp.Metric{
-				MetricDescriptor:    getDescriptor(name1+ "", histogramComb, validCombinations),
+				MetricDescriptor:    getDescriptor(name1+"", histogramComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: []*otlp.HistogramDataPoint{&histPoint},
@@ -256,16 +254,16 @@ func Test_handleSummaryMetric(t *testing.T) {
 	q2 := "quantile2"
 	// string signature is the key of the map
 	sigs := map[string]string{
-		sum:   typeSummary + "-name-" + name1 +"_sum" + lb1Sig,
-		count: typeSummary + "-name-" + name1 +"_count" + lb1Sig,
-		q1: typeSummary + "-name-" + name1 +"-" + "quantile-" +
+		sum:   typeSummary + "-name-" + name1 + "_sum" + lb1Sig,
+		count: typeSummary + "-name-" + name1 + "_count" + lb1Sig,
+		q1: typeSummary + "-name-" + name1 + "-" + "quantile-" +
 			strconv.FormatFloat(floatVal1, 'f', -1, 64) + lb1Sig,
-		q2: typeSummary + "-name-" + name1 +"-" + "quantile-" +
+		q2: typeSummary + "-name-" + name1 + "-" + "quantile-" +
 			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
 	}
 	lbls := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", name1+ "_sum")...),
-		count: append(promLbs1, getPromLabels("name", name1+ "_count")...),
+		sum:   append(promLbs1, getPromLabels("name", name1+"_sum")...),
+		count: append(promLbs1, getPromLabels("name", name1+"_count")...),
 		q1: append(promLbs1, getPromLabels("name", name1, "quantile",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
 		q2: append(promLbs1, getPromLabels("name", name1, "quantile",
@@ -347,7 +345,7 @@ func Test_shutdown(t *testing.T) {
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
-	wg:=new(sync.WaitGroup)
+	wg := new(sync.WaitGroup)
 	errChan := make(chan error, 5)
 	err := ce.shutdown(context.Background())
 	require.NoError(t, err)
@@ -368,14 +366,63 @@ func Test_shutdown(t *testing.T) {
 	}
 }
 
-// To be implemented
+//Test whether or not the Server receives the correct TimeSeries.
+//Currently considering making this test an iterative for loop of multiple TimeSeries
+//Much akin to Test_pushMetrics
 func Test_Export(t *testing.T) {
-	return
+	//First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
+	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
+	sample1 := getSample(floatVal1, time1)
+	sample2 := getSample(floatVal2, time2)
+	ts1 := getTimeSeries(labels, sample1, sample2)
+
+	//This is supposed to represent the Cortex gateway instance, and how the Cortex Gateway receives and parses the writeRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//The following is a handler function that reads the sent httpRequest, unmarshals, and checks if the WriteRequest
+		//preserves the TimeSeries data correctly
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		//Receives the http requests and unzip, unmarshals, and extracts TimeSeries
+		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version:"))
+		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
+		writeReq := &prompb.WriteRequest{}
+		unzipped := []byte{}
+		snappy.Decode(unzipped, body)
+		ok := proto.Unmarshal(unzipped, writeReq)
+		require.NotNil(t, ok)
+		assert.EqualValues(t, 1, len(writeReq.Timeseries))
+		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+	endpoint := serverURL.String()
+	err = runExportPipeline(t, ts1, endpoint)
+	assert.NoError(t, err)
+}
+
+func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint string) error {
+	//First we will construct a TimeSeries array from the testutils package
+	testmap := make(map[string]*prompb.TimeSeries)
+	testmap["test"] = ts
+
+	HTTPClient := http.DefaultClient
+	//after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
+	ce, err := newCortexExporter("test", endpoint, HTTPClient)
+	if err != nil {
+		return err
+	}
+	err = ce.Export(context.Background(), testmap)
+	return err
 }
 
 // Test_newCortexExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_newCortexExporter(t *testing.T) {
-	config  := &Config{
+	config := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		QueueSettings:      exporterhelper.QueueSettings{},
@@ -384,8 +431,8 @@ func Test_newCortexExporter(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	c, _ := config.HTTPClientSettings.ToClient()
-	ce, err:= newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
-	require.NoError(t,err)
+	ce, err := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+	require.NoError(t, err)
 	require.NotNil(t, ce)
 	assert.NotNil(t, ce.namespace)
 	assert.NotNil(t, ce.endpoint)
@@ -474,11 +521,11 @@ func Test_pushMetrics(t *testing.T) {
 			assert.NoError(t, uErr)
 
 			config := createDefaultConfig().(*Config)
-			assert.NotNil(t,config)
+			assert.NotNil(t, config)
 			config.HTTPClientSettings.Endpoint = serverURL.String()
 			c, err := config.HTTPClientSettings.ToClient()
-			assert.Nil(t,err)
-			sender, nErr:= newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
+			assert.Nil(t, err)
+			sender, nErr := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
 			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
@@ -491,4 +538,3 @@ func Test_pushMetrics(t *testing.T) {
 		})
 	}
 }
-
