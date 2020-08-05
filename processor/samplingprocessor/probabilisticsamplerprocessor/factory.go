@@ -49,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
+	_ *zap.Logger,
 	nextConsumer consumer.TraceConsumerOld,
 	cfg configmodels.Processor,
 ) (component.TraceProcessorOld, error) {
@@ -58,10 +58,6 @@ func (f *Factory) CreateTraceProcessor(
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+func (f *Factory) CreateMetricsProcessor(*zap.Logger, consumer.MetricsConsumerOld, configmodels.Processor) (component.MetricsProcessorOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

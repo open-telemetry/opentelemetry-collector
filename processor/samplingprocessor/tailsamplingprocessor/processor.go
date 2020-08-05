@@ -213,7 +213,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 // ConsumeTraceData is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (tsp *tailSamplingSpanProcessor) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
@@ -314,7 +314,7 @@ func (tsp *tailSamplingSpanProcessor) GetCapabilities() component.ProcessorCapab
 }
 
 // Start is invoked during service startup.
-func (tsp *tailSamplingSpanProcessor) Start(ctx context.Context, host component.Host) error {
+func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 

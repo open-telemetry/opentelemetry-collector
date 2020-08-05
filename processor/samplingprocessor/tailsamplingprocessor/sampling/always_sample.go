@@ -36,20 +36,20 @@ func NewAlwaysSample(logger *zap.Logger) PolicyEvaluator {
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (as *alwaysSample) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error {
+func (as *alwaysSample) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
 	as.logger.Debug("Triggering action for late arriving spans in always-sample filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (as *alwaysSample) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
+func (as *alwaysSample) Evaluate([]byte, *TraceData) (Decision, error) {
 	as.logger.Debug("Evaluating spans in always-sample filter")
 	return Sampled, nil
 }
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (as *alwaysSample) OnDroppedSpans(traceID []byte, trace *TraceData) (Decision, error) {
+func (as *alwaysSample) OnDroppedSpans([]byte, *TraceData) (Decision, error) {
 	as.logger.Debug("Triggering action for dropped spans in always-sample filter")
 	return Sampled, nil
 }

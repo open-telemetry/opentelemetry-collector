@@ -163,7 +163,7 @@ type testTraceConsumer struct {
 	td pdata.Traces
 }
 
-func (ttn *testTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (ttn *testTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		sortResourceAttributes(td.ResourceSpans().At(i).Resource())
@@ -176,7 +176,7 @@ type testMetricsConsumer struct {
 	md pdata.Metrics
 }
 
-func (tmn *testMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (tmn *testMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// sort attributes to be able to compare traces
 	imd := pdatautil.MetricsToInternalMetrics(md)
 	for i := 0; i < imd.ResourceMetrics().Len(); i++ {
