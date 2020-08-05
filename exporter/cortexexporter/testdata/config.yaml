@@ -34,3 +34,4 @@ service:
             processors: [exampleprocessor]
             exporters: [cortex]
     
+    
