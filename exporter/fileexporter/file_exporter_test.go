@@ -15,7 +15,6 @@ package fileexporter
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
+	collectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -124,15 +124,10 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
-	var j logspb.ResourceLogs
+	var j collectorlogs.ExportLogsServiceRequest
 
-	records := strings.Split(mf.String(), "\n")
-
-	assert.NoError(t, unmarshaler.Unmarshal(strings.NewReader(records[0]), &j))
-	assert.EqualValues(t, ld[0], &j)
-
-	assert.NoError(t, unmarshaler.Unmarshal(strings.NewReader(records[1]), &j))
-	assert.EqualValues(t, ld[1], &j)
+	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
+	assert.EqualValues(t, ld, j.ResourceLogs)
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
