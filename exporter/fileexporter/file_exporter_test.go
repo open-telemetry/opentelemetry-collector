@@ -26,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
+	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
+	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -46,10 +46,10 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
-	var j otlptrace.ResourceSpans
+	var j collectortrace.ExportTraceServiceRequest
 	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, pdata.TracesToOtlp(td)[0], &j)
+	assert.EqualValues(t, pdata.TracesToOtlp(td), j.ResourceSpans)
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
@@ -62,10 +62,10 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
-	var j otlpmetrics.ResourceMetrics
+	var j collectormetrics.ExportMetricsServiceRequest
 	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))[0], &j)
+	assert.EqualValues(t, data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)), j.ResourceMetrics)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
