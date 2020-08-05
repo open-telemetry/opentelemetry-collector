@@ -42,7 +42,7 @@ func TestExport(t *testing.T) {
 
 	metricSink := new(exportertest.SinkMetricsExporter)
 
-	_, port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -122,7 +122,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 
 	metricSink := new(exportertest.SinkMetricsExporter)
 
-	_, port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -140,7 +140,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	metricSink := new(exportertest.SinkMetricsExporter)
 	metricSink.SetConsumeMetricsError(fmt.Errorf("error"))
 
-	_, port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -191,22 +191,21 @@ func makeMetricsServiceClient(port int) (collectormetrics.MetricsServiceClient, 
 	return metricsClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	doneFnList := []func(){func() { ln.Close() }}
-	done = func() {
+	done := func() {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
 	}
 
-	_, port, err = testutil.HostPortFromAddr(ln.Addr())
+	_, port, err := testutil.HostPortFromAddr(ln.Addr())
 	require.NoError(t, err)
 
-	r = New(receiverTagValue, mc)
-
+	r := New(receiverTagValue, mc)
 	// Now run it as a gRPC server
 	srv := obsreport.GRPCServerWithObservabilityEnabled()
 	collectormetrics.RegisterMetricsServiceServer(srv, r)
@@ -214,5 +213,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.MetricsConsumer) (r *Rec
 		_ = srv.Serve(ln)
 	}()
 
-	return r, port, done
+	return port, done
 }

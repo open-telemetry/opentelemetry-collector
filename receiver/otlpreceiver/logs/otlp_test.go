@@ -41,7 +41,7 @@ func TestExport(t *testing.T) {
 
 	logSink := new(exportertest.SinkLogsExporter)
 
-	_, port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeLogsServiceClient(port)
@@ -97,7 +97,7 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	logSink := new(exportertest.SinkLogsExporter)
 
-	_, port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
 
 	logClient, logClientDoneFn, err := makeLogsServiceClient(port)
@@ -113,7 +113,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	logSink := new(exportertest.SinkLogsExporter)
 	logSink.SetConsumeLogError(fmt.Errorf("error"))
 
-	_, port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
 
 	logClient, logClientDoneFn, err := makeLogsServiceClient(port)
@@ -154,24 +154,24 @@ func makeLogsServiceClient(port int) (collectorlog.LogsServiceClient, func(), er
 	return logClient, doneFn, nil
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.LogsConsumer) (r *Receiver, port int, done func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.LogsConsumer) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	doneFnList := []func(){func() { ln.Close() }}
-	done = func() {
+	done := func() {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
 	}
 
-	_, port, err = testutil.HostPortFromAddr(ln.Addr())
+	_, port, err := testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
-	r = New(receiverTagValue, tc)
+	r := New(receiverTagValue, tc)
 	require.NoError(t, err)
 
 	// Now run it as a gRPC server
@@ -181,5 +181,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.LogsConsumer) (r *Receiv
 		_ = srv.Serve(ln)
 	}()
 
-	return r, port, done
+	return port, done
 }

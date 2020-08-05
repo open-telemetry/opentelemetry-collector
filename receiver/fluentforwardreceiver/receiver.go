@@ -38,7 +38,7 @@ type fluentReceiver struct {
 	cancel    context.CancelFunc
 }
 
-func newFluentReceiver(ctx context.Context, logger *zap.Logger, conf *Config, next consumer.LogsConsumer) (component.LogsReceiver, error) {
+func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.LogsConsumer) (component.LogsReceiver, error) {
 	eventCh := make(chan Event, eventChannelLength)
 
 	collector := newCollector(eventCh, next, logger)
@@ -88,7 +88,7 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *fluentReceiver) Shutdown(ctx context.Context) error {
+func (r *fluentReceiver) Shutdown(context.Context) error {
 	r.cancel()
 	return nil
 }

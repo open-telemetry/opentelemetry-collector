@@ -51,7 +51,7 @@ import (
 func TestExportMultiplexing(t *testing.T) {
 	metricSink := new(exportertest.SinkMetricsExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -160,7 +160,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	metricSink := new(exportertest.SinkMetricsExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -234,7 +234,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 
 	metricSink := new(exportertest.SinkMetricsExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -309,24 +309,24 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	doneFnList := []func(){func() { ln.Close() }}
-	done = func() {
+	done := func() {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
 	}
 
-	_, port, err = testutil.HostPortFromAddr(ln.Addr())
+	_, port, err := testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
-	oci, err = New(receiverTagValue, sr)
+	oci, err := New(receiverTagValue, sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
@@ -336,7 +336,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (oci *
 		_ = srv.Serve(ln)
 	}()
 
-	return oci, port, done
+	return port, done
 }
 
 func makeMetric(val int) *metricspb.Metric {

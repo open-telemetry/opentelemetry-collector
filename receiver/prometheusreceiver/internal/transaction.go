@@ -113,7 +113,7 @@ func (tr *transaction) Add(ls labels.Labels, t int64, v float64) (uint64, error)
 }
 
 // always returns error since caching is not supported by Add() function
-func (tr *transaction) AddFast(_ uint64, t int64, v float64) error {
+func (tr *transaction) AddFast(_ uint64, _ int64, _ float64) error {
 	return storage.ErrNotFound
 }
 
