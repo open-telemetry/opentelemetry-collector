@@ -1,12 +1,14 @@
 package cortexexporter
 
 import (
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/stretchr/testify/assert"
-	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"strconv"
 	"testing"
+
+	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/assert"
+
+	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
