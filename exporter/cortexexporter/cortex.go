@@ -30,10 +30,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
 
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 // TODO: get default labels such as job or instance from Resource
@@ -239,7 +239,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 		}
 
 		infBucket := &prompb.Sample{
-			Value: float64(totalCount),
+			Value:     float64(totalCount),
 			Timestamp: time,
 		}
 		infLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
@@ -294,7 +294,6 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 	}
 	return nil
 }
-
 
 // Because we are adhering closely to the Remote Write API, we must Export a
 // Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order

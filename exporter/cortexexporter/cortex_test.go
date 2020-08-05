@@ -27,16 +27,16 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/stretchr/testify/require"
-	"github.com/golang/snappy"
-	"github.com/stretchr/testify/assert"
 	proto "github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	// "github.com/stretchr/testify/require"
 )
 
@@ -384,13 +384,14 @@ func Test_Export(t *testing.T) {
 		}
 
 		//Receives the http requests and unzip, unmarshals, and extracts TimeSeries
-		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version:"))
+		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
-		snappy.Decode(unzipped, body)
-		ok := proto.Unmarshal(unzipped, writeReq)
-		require.NotNil(t, ok)
+		dest, err := snappy.Decode(unzipped, body)
+		ok := proto.Unmarshal(dest, writeReq)
+		assert.NotNil(t, dest)
+		require.Nil(t, ok)
 		assert.EqualValues(t, 1, len(writeReq.Timeseries))
 		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
 		w.WriteHeader(http.StatusAccepted)
