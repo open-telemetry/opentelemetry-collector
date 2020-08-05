@@ -245,15 +245,15 @@ type mockPolicyEvaluator struct {
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) OnLateArrivingSpans(earlyDecision sampling.Decision, spans []*tracepb.Span) error {
+func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*tracepb.Span) error {
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate(traceID []byte, trace *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate([]byte, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
-func (m *mockPolicyEvaluator) OnDroppedSpans(traceID []byte, trace *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) OnDroppedSpans([]byte, *sampling.TraceData) (sampling.Decision, error) {
 	m.OnDroppedSpansCount++
 	return m.NextDecision, m.NextError
 }
@@ -264,7 +264,7 @@ type manualTTicker struct {
 
 var _ tTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) Start(d time.Duration) {
+func (t *manualTTicker) Start(time.Duration) {
 	t.Started = true
 }
 
@@ -314,7 +314,7 @@ type mockSpanProcessor struct {
 	TotalSpans int
 }
 
-func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (p *mockSpanProcessor) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	p.TotalSpans += len(td.Spans)
 	return nil
 }

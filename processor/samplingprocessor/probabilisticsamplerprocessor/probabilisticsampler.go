@@ -111,7 +111,7 @@ func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilit
 }
 
 // Start is invoked during service startup.
-func (tsp *tracesamplerprocessor) Start(ctx context.Context, host component.Host) error {
+func (tsp *tracesamplerprocessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
