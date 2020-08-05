@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// !!!!!!!!!!!DO NOT REVIEW THIS FILE IN THIS PR!!!!!!!!!!!!!!!!!!!!!!!
 package cortexexporter
 
 import (
