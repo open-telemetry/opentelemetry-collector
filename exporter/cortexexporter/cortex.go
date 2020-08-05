@@ -19,6 +19,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	"io"
 	"net/http"
 	"strconv"
@@ -29,9 +32,6 @@ import (
 	"github.com/golang/snappy"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
@@ -45,6 +45,96 @@ type cortexExporter struct {
 	headers   map[string]string
 	wg        *sync.WaitGroup
 	closeChan chan struct{}
+}
+
+// newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
+// client parameter cannot be nil.
+func newCortexExporter(ns string, ep string, client *http.Client) (*cortexExporter, error) {
+
+	if client == nil {
+		return nil, fmt.Errorf("http client cannot be nil")
+	}
+
+	return &cortexExporter{
+		namespace: ns,
+		endpoint:  ep,
+		client:    client,
+		wg:        new(sync.WaitGroup),
+		closeChan: make(chan struct{}),
+	}, nil
+}
+
+// shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
+// to finish before returning
+func (ce *cortexExporter) shutdown(context.Context) error {
+	close(ce.closeChan)
+	ce.wg.Wait()
+	return nil
+}
+
+// pushMetrics converts metrics to Cortex TimeSeries and send to remote endpoint. It maintain a map of TimeSeries,
+// validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
+// exports the map.
+func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+	ce.wg.Add(1)
+	defer ce.wg.Done()
+	select {
+	case <-ce.closeChan:
+		return pdatautil.MetricCount(md), fmt.Errorf("shutdown has been called")
+	default:
+		// stores TimeSeries
+		tsMap := map[string]*prompb.TimeSeries{}
+		dropped := 0
+		errs := []string{}
+
+		rms := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
+
+		for _, r := range rms {
+			// TODO: add resource attributes as labels
+			for _, inst := range r.InstrumentationLibraryMetrics {
+				//TODO: add instrumentation library information as labels
+				for _, m := range inst.Metrics {
+					// check for valid type and temporality combination
+					ok := validateMetrics(m.MetricDescriptor)
+					if !ok {
+						dropped++
+						errs = append(errs, "invalid temporality and type combination")
+						continue
+					}
+					// handle individual metric based on type
+					switch m.GetMetricDescriptor().GetType() {
+					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
+						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
+						if err := ce.handleScalarMetric(tsMap, m); err != nil {
+							errs = append(errs, err.Error())
+						}
+					case otlp.MetricDescriptor_HISTOGRAM:
+						if err := ce.handleHistogramMetric(tsMap, m); err != nil {
+							errs = append(errs, err.Error())
+						}
+					case otlp.MetricDescriptor_SUMMARY:
+						if err := ce.handleSummaryMetric(tsMap, m); err != nil {
+							errs = append(errs, err.Error())
+						}
+					default:
+						dropped++
+						errs = append(errs, "invalid type")
+						continue
+					}
+				}
+			}
+		}
+
+		if err := ce.export(ctx, tsMap); err != nil {
+			return pdatautil.MetricCount(md), err
+		}
+
+		if dropped != 0 {
+			return dropped, fmt.Errorf(strings.Join(errs, "\n"))
+		}
+
+		return 0, nil
+	}
 }
 
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
@@ -203,102 +293,12 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 
 }
 
-// newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
-// client parameter cannot be nil.
-func newCortexExporter(ns string, ep string, client *http.Client) (*cortexExporter, error) {
 
-	if client == nil {
-		return nil, fmt.Errorf("http client cannot be nil")
-	}
-
-	return &cortexExporter{
-		namespace: ns,
-		endpoint:  ep,
-		client:    client,
-		wg:        new(sync.WaitGroup),
-		closeChan: make(chan struct{}),
-	}, nil
-}
-
-// shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
-// to finish before returning
-func (ce *cortexExporter) shutdown(context.Context) error {
-	close(ce.closeChan)
-	ce.wg.Wait()
-	return nil
-}
-
-// pushMetrics converts metrics to Cortex TimeSeries and send to remote endpoint. It maintain a map of TimeSeries,
-// validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
-// exports the map.
-func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	ce.wg.Add(1)
-	defer ce.wg.Done()
-	select {
-	case <-ce.closeChan:
-		return pdatautil.MetricCount(md), fmt.Errorf("shutdown has been called")
-	default:
-		// stores TimeSeries
-		tsMap := map[string]*prompb.TimeSeries{}
-		dropped := 0
-		errs := []string{}
-
-		rms := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
-
-		for _, r := range rms {
-			// TODO: add resource attributes as labels
-			for _, inst := range r.InstrumentationLibraryMetrics {
-				//TODO: add instrumentation library information as labels
-				for _, m := range inst.Metrics {
-					// check for valid type and temporality combination
-					ok := validateMetrics(m.MetricDescriptor)
-					if !ok {
-						dropped++
-						errs = append(errs, "invalid temporality and type combination")
-						continue
-					}
-					// handle individual metric based on type
-					switch m.GetMetricDescriptor().GetType() {
-						case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
-							otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
-							if err := ce.handleScalarMetric(tsMap, m); err != nil {
-								errs = append(errs, err.Error())
-							}
-						case otlp.MetricDescriptor_HISTOGRAM:
-							if err := ce.handleHistogramMetric(tsMap, m); err != nil {
-								errs = append(errs, err.Error())
-							}
-						case otlp.MetricDescriptor_SUMMARY:
-							if err := ce.handleSummaryMetric(tsMap, m); err != nil {
-								errs = append(errs, err.Error())
-							}
-						default:
-							dropped++
-							errs = append(errs, "invalid type")
-							continue
-					}
-				}
-			}
-		}
-
-		if err := ce.Export(ctx, tsMap); err != nil {
-			return pdatautil.MetricCount(md), err
-		}
-
-		if dropped != 0 {
-			return dropped, fmt.Errorf(strings.Join(errs, "\n"))
-		}
-
-		return 0, nil
-	}
-}
-
-/*
-Because we are adhering closely to the Remote Write API, we must Export a
-Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
-for the Remote Write Endpoint to properly receive our Metrics data.
-*/
-func (ce *cortexExporter) Export(ctx context.Context, TsMap map[string]*prompb.TimeSeries) error {
+// Because we are adhering closely to the Remote Write API, we must Export a
+// Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
+// for the Remote Write Endpoint to properly receive our Metrics data.
+//
+func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(TsMap)
 	if err != nil {

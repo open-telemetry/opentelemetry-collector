@@ -416,7 +416,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint string) err
 	if err != nil {
 		return err
 	}
-	err = ce.Export(context.Background(), testmap)
+	err = ce.export(context.Background(), testmap)
 	return err
 }
 
