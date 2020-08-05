@@ -53,9 +53,9 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-// Configuration defines the behavior and the ports that
+// configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
-type Configuration struct {
+type configuration struct {
 	CollectorThriftPort  int
 	CollectorHTTPPort    int
 	CollectorGRPCPort    int
@@ -80,7 +80,7 @@ type jReceiver struct {
 	startOnce sync.Once
 	stopOnce  sync.Once
 
-	config *Configuration
+	config *configuration
 
 	grpc            *grpc.Server
 	collectorServer *http.Server
@@ -117,11 +117,11 @@ var (
 	}
 )
 
-// New creates a TraceReceiver that receives traffic as a Jaeger collector, and
+// newJaegerReceiver creates a TraceReceiver that receives traffic as a Jaeger collector, and
 // also as a Jaeger agent.
-func New(
+func newJaegerReceiver(
 	instanceName string,
-	config *Configuration,
+	config *configuration,
 	nextConsumer consumer.TraceConsumer,
 	params component.ReceiverCreateParams,
 ) (component.TraceReceiver, error) {

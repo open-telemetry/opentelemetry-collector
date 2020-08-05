@@ -59,7 +59,7 @@ const jaegerReceiver = "jaeger_receiver_test"
 
 func TestTraceSource(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, &Configuration{}, nil, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, params)
 	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
 	require.NotNil(t, jr)
 }
@@ -130,13 +130,13 @@ func TestClientIPDetection(t *testing.T) {
 
 func TestReception(t *testing.T) {
 	// 1. Create the Jaeger receiver aka "server"
-	config := &Configuration{
+	config := &configuration{
 		CollectorHTTPPort: 14268, // that's the only one used by this test
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
@@ -179,12 +179,12 @@ func TestReception(t *testing.T) {
 
 func TestPortsNotOpen(t *testing.T) {
 	// an empty config should result in no open ports
-	config := &Configuration{}
+	config := &configuration{}
 
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -208,13 +208,13 @@ func TestPortsNotOpen(t *testing.T) {
 
 func TestGRPCReception(t *testing.T) {
 	// prepare
-	config := &Configuration{
+	config := &configuration{
 		CollectorGRPCPort: 14250, // that's the only one used by this test
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -265,14 +265,14 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 
 	port := testutil.GetAvailablePort(t)
-	config := &Configuration{
+	config := &configuration{
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -448,14 +448,14 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 
 func TestSampling(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
-	config := &Configuration{
+	config := &configuration{
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -502,13 +502,13 @@ func TestSampling(t *testing.T) {
 func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	// prepare
-	config := &Configuration{
+	config := &configuration{
 		CollectorGRPCPort: int(port),
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -531,14 +531,14 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 func TestSamplingFailsOnBadFile(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	// prepare
-	config := &Configuration{
+	config := &configuration{
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "does-not-exist",
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerReceiver, config, sink, params)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))

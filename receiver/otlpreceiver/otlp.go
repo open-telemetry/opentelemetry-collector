@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/trace"
 )
 
-// Receiver is the type that exposes Trace and Metrics reception.
-type Receiver struct {
+// otlpReceiver is the type that exposes Trace and Metrics reception.
+type otlpReceiver struct {
 	cfg        *Config
 	serverGRPC *grpc.Server
 	gatewayMux *gatewayruntime.ServeMux
@@ -50,11 +50,11 @@ type Receiver struct {
 	startServerOnce sync.Once
 }
 
-// New just creates the OpenTelemetry receiver services. It is the caller's
+// newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func New(cfg *Config) (*Receiver, error) {
-	r := &Receiver{
+func newOtlpReceiver(cfg *Config) (*otlpReceiver, error) {
+	r := &otlpReceiver{
 		cfg: cfg,
 	}
 	if cfg.GRPC != nil {
@@ -75,7 +75,7 @@ func New(cfg *Config) (*Receiver, error) {
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (r *Receiver) Start(ctx context.Context, host component.Host) error {
+func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	if r.traceReceiver == nil && r.metricsReceiver == nil && r.logReceiver == nil {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
@@ -112,7 +112,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *Receiver) Shutdown(context.Context) error {
+func (r *otlpReceiver) Shutdown(context.Context) error {
 	var err error
 	r.stopOnce.Do(func() {
 		err = nil
@@ -128,7 +128,7 @@ func (r *Receiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *Receiver) registerTraceConsumer(ctx context.Context, tc consumer.TraceConsumer) error {
+func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TraceConsumer) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -142,7 +142,7 @@ func (r *Receiver) registerTraceConsumer(ctx context.Context, tc consumer.TraceC
 	return nil
 }
 
-func (r *Receiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
+func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -156,7 +156,7 @@ func (r *Receiver) registerMetricsConsumer(ctx context.Context, mc consumer.Metr
 	return nil
 }
 
-func (r *Receiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
+func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}

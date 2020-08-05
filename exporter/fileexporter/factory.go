@@ -71,7 +71,7 @@ func createLogsExporter(
 	return createExporter(cfg)
 }
 
-func createExporter(config configmodels.Exporter) (*Exporter, error) {
+func createExporter(config configmodels.Exporter) (*fileExporter, error) {
 	cfg := config.(*Config)
 
 	// There must be one exporter for metrics, traces, and logs. We maintain a
@@ -85,7 +85,7 @@ func createExporter(config configmodels.Exporter) (*Exporter, error) {
 		if err != nil {
 			return nil, err
 		}
-		exporter = &Exporter{file: file}
+		exporter = &fileExporter{file: file}
 
 		// Remember the receiver in the map
 		exporters[cfg] = exporter
@@ -97,4 +97,4 @@ func createExporter(config configmodels.Exporter) (*Exporter, error) {
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
-var exporters = map[*Config]*Exporter{}
+var exporters = map[*Config]*fileExporter{}

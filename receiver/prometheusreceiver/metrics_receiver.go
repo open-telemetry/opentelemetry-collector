@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver/internal"
 )
 
-// Preceiver is the type that provides Prometheus scraper/receiver functionality.
-type Preceiver struct {
+// pReceiver is the type that provides Prometheus scraper/receiver functionality.
+type pReceiver struct {
 	startOnce sync.Once
 	stopOnce  sync.Once
 	cfg       *Config
@@ -41,8 +41,8 @@ type Preceiver struct {
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumerOld) *Preceiver {
-	pr := &Preceiver{
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumerOld) *pReceiver {
+	pr := &pReceiver{
 		cfg:      cfg,
 		consumer: next,
 		logger:   logger,
@@ -52,7 +52,7 @@ func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metric
 
 // Start is the method that starts Prometheus scraping and it
 // is controlled by having previously defined a Configuration using perhaps New.
-func (pr *Preceiver) Start(ctx context.Context, host component.Host) error {
+func (pr *pReceiver) Start(ctx context.Context, host component.Host) error {
 	pr.startOnce.Do(func() {
 		ctx := context.Background()
 		c, cancel := context.WithCancel(ctx)
@@ -106,15 +106,8 @@ func (pr *Preceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// Flush triggers the Flush method on the underlying Prometheus scrapers and instructs
-// them to immediately sned over the metrics they've collected, to the MetricsConsumer.
-// it's not needed on the new prometheus receiver implementation, let it do nothing
-func (pr *Preceiver) Flush() {
-
-}
-
 // Shutdown stops and cancels the underlying Prometheus scrapers.
-func (pr *Preceiver) Shutdown(context.Context) error {
+func (pr *pReceiver) Shutdown(context.Context) error {
 	pr.stopOnce.Do(pr.cancel)
 	return nil
 }

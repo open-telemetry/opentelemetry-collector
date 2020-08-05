@@ -35,7 +35,7 @@ const (
 type Factory struct {
 }
 
-// Type gets the type of the Receiver config created by this Factory.
+// Type gets the type of the ocReceiver config created by this Factory.
 func (f *Factory) Type() configmodels.Type {
 	return typeStr
 }
@@ -88,7 +88,7 @@ func (f *Factory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, cfg co
 	return r, nil
 }
 
-func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
+func (f *Factory) createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -104,7 +104,7 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 		}
 
 		// We don't have a receiver, so create one.
-		receiver, err = New(
+		receiver, err = newOpenCensusReceiver(
 			rCfg.Name(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, opts...)
 		if err != nil {
 			return nil, err
@@ -118,5 +118,5 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 // This is the map of already created OpenCensus receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one Receiver object per configuration.
-var receivers = map[*Config]*Receiver{}
+// create separate objects, they must use one ocReceiver object per configuration.
+var receivers = map[*Config]*ocReceiver{}
