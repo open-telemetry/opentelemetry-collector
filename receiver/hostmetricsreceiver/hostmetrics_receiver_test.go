@@ -211,14 +211,14 @@ type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg internal.Config) (internal.Scraper, error) {
+func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, internal.Config) (internal.Scraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
 	return args.Get(0).(internal.Scraper), args.Error(1)
 }
 
-func (m *mockScraper) Initialize(ctx context.Context) error { return nil }
-func (m *mockScraper) Close(ctx context.Context) error      { return nil }
-func (m *mockScraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+func (m *mockScraper) Initialize(context.Context) error { return nil }
+func (m *mockScraper) Close(context.Context) error      { return nil }
+func (m *mockScraper) ScrapeMetrics(context.Context) (pdata.MetricSlice, error) {
 	return pdata.NewMetricSlice(), errors.New("err1")
 }
 
@@ -226,14 +226,14 @@ type mockResourceFactory struct{ mock.Mock }
 type mockResourceScraper struct{ mock.Mock }
 
 func (m *mockResourceFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockResourceFactory) CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg internal.Config) (internal.ResourceScraper, error) {
+func (m *mockResourceFactory) CreateMetricsScraper(context.Context, *zap.Logger, internal.Config) (internal.ResourceScraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
 	return args.Get(0).(internal.ResourceScraper), args.Error(1)
 }
 
-func (m *mockResourceScraper) Initialize(ctx context.Context) error { return nil }
-func (m *mockResourceScraper) Close(ctx context.Context) error      { return nil }
-func (m *mockResourceScraper) ScrapeMetrics(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (m *mockResourceScraper) Initialize(context.Context) error { return nil }
+func (m *mockResourceScraper) Close(context.Context) error      { return nil }
+func (m *mockResourceScraper) ScrapeMetrics(context.Context) (pdata.ResourceMetricsSlice, error) {
 	return pdata.NewResourceMetricsSlice(), errors.New("err2")
 }
 

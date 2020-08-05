@@ -75,7 +75,7 @@ func newOtlpReceiver(cfg *Config) (*otlpReceiver, error) {
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
+func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 	if r.traceReceiver == nil && r.metricsReceiver == nil && r.logReceiver == nil {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}

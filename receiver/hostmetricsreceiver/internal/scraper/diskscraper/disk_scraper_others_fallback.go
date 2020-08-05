@@ -16,13 +16,7 @@
 
 package diskscraper
 
-import (
-	"github.com/shirou/gopsutil/disk"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
-
 const systemSpecificMetricsLen = 0
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func appendSystemSpecificMetrics() {
 }

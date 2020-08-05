@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/process"
 
@@ -98,9 +97,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.ResourceMetricsSlice, 
 		ilms.Resize(1)
 		metrics := ilms.At(0).Metrics()
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, md.handle); err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading cpu times for process %q (pid %v)", md.executable.name, md.pid))
-		}
+		scrapeAndAppendCPUTimeMetric(metrics)
 
 		if err = scrapeAndAppendMemoryUsageMetrics(metrics, md.handle); err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading memory info for process %q (pid %v)", md.executable.name, md.pid))
@@ -130,7 +127,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
 
-		executable, err := getProcessExecutable(handle)
+		executable, err := getProcessExecutable()
 		if err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading process name for pid %v", pid))
 			continue
@@ -142,7 +139,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
-		command, err := getProcessCommand(handle)
+		command, err := getProcessCommand()
 		if err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading command for process %q (pid %v)", executable.name, pid))
 		}
@@ -166,24 +163,18 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, componenterror.CombineErrors(errs)
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, handle processHandle) error {
-	times, err := handle.Times()
-	if err != nil {
-		return err
-	}
-
+func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice) {
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + 1)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, times)
-	return nil
+	initializeCPUTimeMetric(metrics.At(startIdx))
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, times *cpu.TimesStat) {
+func initializeCPUTimeMetric(metric pdata.Metric) {
 	cpuTimeDescriptor.CopyTo(metric.MetricDescriptor())
 
 	ddps := metric.DoubleDataPoints()
 	ddps.Resize(cpuStatesLen)
-	appendCPUTimeStateDataPoints(ddps, startTime, times)
+	appendCPUTimeStateDataPoints()
 }
 
 func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, handle processHandle) error {

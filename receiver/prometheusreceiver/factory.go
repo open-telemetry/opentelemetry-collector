@@ -97,18 +97,13 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
-) (component.TraceReceiver, error) {
+func (f *Factory) CreateTraceReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.TraceConsumerOld) (component.TraceReceiver, error) {
 	// Prometheus does not support traces
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (f *Factory) CreateMetricsReceiver(_ context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig

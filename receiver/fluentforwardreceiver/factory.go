@@ -47,12 +47,12 @@ func createDefaultConfig() configmodels.Receiver {
 }
 
 func createLogsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.LogsConsumer,
 ) (component.LogsReceiver, error) {
 
 	rCfg := cfg.(*Config)
-	return newFluentReceiver(ctx, params.Logger, rCfg, consumer)
+	return newFluentReceiver(params.Logger, rCfg, consumer)
 }

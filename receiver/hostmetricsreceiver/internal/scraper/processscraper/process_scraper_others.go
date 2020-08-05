@@ -16,21 +16,15 @@
 
 package processscraper
 
-import (
-	"github.com/shirou/gopsutil/cpu"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
-
 const cpuStatesLen = 0
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
+func appendCPUTimeStateDataPoints() {
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+func getProcessExecutable() (*executableMetadata, error) {
 	return nil, nil
 }
 
-func getProcessCommand(proc processHandle) (*commandMetadata, error) {
+func getProcessCommand() (*commandMetadata, error) {
 	return nil, nil
 }

@@ -97,7 +97,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		initializeDiskOpsMetric(metrics.At(1), s.startTime, ioCounters)
 		initializeDiskTimeMetric(metrics.At(2), s.startTime, ioCounters)
 		initializeDiskPendingOperationsMetric(metrics.At(3), ioCounters)
-		appendSystemSpecificMetrics(metrics, 4, s.startTime, ioCounters)
+		appendSystemSpecificMetrics()
 	}
 
 	return metrics, nil

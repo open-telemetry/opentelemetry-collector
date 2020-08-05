@@ -58,7 +58,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	sink := new(exportertest.SinkTraceExporter)
-	ocr := newHTTPReceiver(t, otlpReceiverName, addr, sink, nil)
+	ocr := newHTTPReceiver(t, addr, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())
@@ -173,7 +173,7 @@ func TestProtoHttp(t *testing.T) {
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	tSink := new(exportertest.SinkTraceExporter)
 	mSink := new(exportertest.SinkMetricsExporter)
-	ocr := newHTTPReceiver(t, otlpReceiverName, addr, tSink, mSink)
+	ocr := newHTTPReceiver(t, addr, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())
@@ -245,7 +245,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newHTTPReceiver(t, otlpReceiverName, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newHTTPReceiver(t, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -260,7 +260,7 @@ func TestGRPCStartWithoutConsumers(t *testing.T) {
 
 func TestHTTPStartWithoutConsumers(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	r := newHTTPReceiver(t, otlpReceiverName, addr, nil, nil)
+	r := newHTTPReceiver(t, addr, nil, nil)
 	require.NotNil(t, r)
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
@@ -444,10 +444,10 @@ func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Tra
 	return newReceiver(t, factory, cfg, tc, mc)
 }
 
-func newHTTPReceiver(t *testing.T, name string, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
+func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.TraceConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetName(name)
+	cfg.SetName(otlpReceiverName)
 	cfg.HTTP.Endpoint = endpoint
 	cfg.GRPC = nil
 	return newReceiver(t, factory, cfg, tc, mc)
