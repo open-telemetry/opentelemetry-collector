@@ -34,9 +34,11 @@ func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 // validateMetrics returns a bool representing whether the metric has a valid type and temporality combination.
 func validateMetrics(desc *otlp.MetricDescriptor) bool {
+
 	if desc == nil {
 		return false
 	}
+
 	switch desc.GetType() {
 	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_MONOTONIC_INT64,
 		otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_SUMMARY:
@@ -51,11 +53,14 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 // creates a new TimeSeries in the map if not found. tsMap is unmodified if either of its parameters is nil.
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,
 	ty otlp.MetricDescriptor_Type) {
+
 	if sample == nil || lbs == nil || tsMap == nil {
 		return
 	}
+
 	sig := timeSeriesSignature(ty, &lbs)
 	ts, ok := tsMap[sig]
+
 	if ok {
 		ts.Samples = append(ts.Samples, *sample)
 	} else {
@@ -88,13 +93,17 @@ func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) stri
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
 func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label {
+
+	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
+
 	for _, lb := range labels {
 		l[lb.Key] = prompb.Label{
 			Name:  sanitize(lb.Key),
 			Value: lb.Value,
 		}
 	}
+
 	for i := 0; i < len(extras); i += 2 {
 		if i+1 >= len(extras) {
 			break
@@ -108,11 +117,69 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 			Value: extras[i+1],
 		}
 	}
+
 	s := make([]prompb.Label, 0, len(l))
+
 	for _, lb := range l {
 		s = append(s, lb)
 	}
+
 	return s
+}
+
+// getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
+// metrics.
+func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
+
+	if desc == nil {
+		return ""
+	}
+	// whether _total suffix should be applied
+	isCounter := desc.Type == otlp.MetricDescriptor_MONOTONIC_INT64 ||
+		desc.Type == otlp.MetricDescriptor_MONOTONIC_DOUBLE
+
+	b := strings.Builder{}
+
+	fmt.Fprintf(&b, ns)
+
+	if b.Len() > 0 {
+		fmt.Fprintf(&b, delimeter)
+	}
+	fmt.Fprintf(&b, sanitize(desc.GetName()))
+
+	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
+	// units are different.
+	/*
+		if b.Len() > 0 && len(desc.GetUnit()) > 0{
+			fmt.Fprintf(&b, delimeter)
+			fmt.Fprintf(&b, desc.GetUnit())
+		}
+	*/
+
+	if b.Len() > 0 && isCounter {
+		fmt.Fprintf(&b, delimeter)
+		fmt.Fprintf(&b, totalStr)
+	}
+	return b.String()
+}
+
+/*
+Simple helper function that takes the <Signature String - *TimeSeries> map
+and creates a WriteRequest from the struct -- can move to the helper.go file
+*/
+func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+	if len(TsMap) == 0 {
+		return nil, fmt.Errorf("invalid TsMap: cannot be empty map")
+	}
+	TsArray := []prompb.TimeSeries{}
+	for _, v := range TsMap {
+		TsArray = append(TsArray, *v)
+	}
+	wrapped := prompb.WriteRequest{
+		Timeseries: TsArray,
+		//Other parameters of the WriteRequest are unnecessary for our Export (assumption --will revise if needed)
+	}
+	return &wrapped, nil
 }
 
 // copied from prometheus-go-metric-exporter
@@ -144,53 +211,4 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
-}
-
-// getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
-// metrics.
-func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
-	if desc == nil {
-		return ""
-	}
-	isCounter := desc.Type == otlp.MetricDescriptor_MONOTONIC_INT64 ||
-		desc.Type == otlp.MetricDescriptor_MONOTONIC_DOUBLE
-	b := strings.Builder{}
-	fmt.Fprintf(&b, ns)
-	if b.Len() > 0 {
-		fmt.Fprintf(&b, delimeter)
-	}
-	fmt.Fprintf(&b, sanitize(desc.GetName()))
-
-	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
-	// units are different.
-	/*
-		if b.Len() > 0 && len(desc.GetUnit()) > 0{
-			fmt.Fprintf(&b, delimeter)
-			fmt.Fprintf(&b, desc.GetUnit())
-		}*/
-
-	if b.Len() > 0 && isCounter {
-		fmt.Fprintf(&b, delimeter)
-		fmt.Fprintf(&b, totalStr)
-	}
-	return b.String()
-}
-
-/*
-Simple helper function that takes the <Signature String - *TimeSeries> map
-and creates a WriteRequest from the struct -- can move to the helper.go file
-*/
-func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
-	if len(TsMap) == 0 {
-		return nil, fmt.Errorf("invalid TsMap: cannot be empty map")
-	}
-	TsArray := []prompb.TimeSeries{}
-	for _, v := range TsMap {
-		TsArray = append(TsArray, *v)
-	}
-	wrapped := prompb.WriteRequest{
-		Timeseries: TsArray,
-		//Other parameters of the WriteRequest are unnecessary for our Export (assumption --will revise if needed)
-	}
-	return &wrapped, nil
 }

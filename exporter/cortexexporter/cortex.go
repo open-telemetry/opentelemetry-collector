@@ -51,20 +51,26 @@ type cortexExporter struct {
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+
 	mType := metric.MetricDescriptor.Type
+
 	switch mType {
 	// int points
 	case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64:
 		if metric.Int64DataPoints == nil {
 			return fmt.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
 		}
+
 		for _, pt := range metric.Int64DataPoints {
+
+			// create parameters for addSample
 			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
 			lbs := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     float64(pt.Value),
 				Timestamp: int64(pt.TimeUnixNano),
 			}
+
 			addSample(tsMap, sample, lbs, metric.GetMetricDescriptor().GetType())
 		}
 		return nil
@@ -75,12 +81,15 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 			return fmt.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
 		}
 		for _, pt := range metric.DoubleDataPoints {
+
+			// create parameters for addSample
 			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
 			lbs := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     pt.Value,
 				Timestamp: int64(pt.TimeUnixNano),
 			}
+
 			addSample(tsMap, sample, lbs, metric.GetMetricDescriptor().GetType())
 		}
 		return nil
@@ -93,26 +102,38 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
 func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+
 	if metric.HistogramDataPoints == nil {
 		return fmt.Errorf("invalid metric type: wants histogram points")
 	}
+
 	for _, pt := range metric.HistogramDataPoints {
+
 		time := int64(pt.GetTimeUnixNano())
 		ty := metric.GetMetricDescriptor().GetType()
+
+		// sum, count, and buckets of the histogram should append suffix to baseName
 		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
+
+		// treat sum as sample in an individual TimeSeries
 		sum := &prompb.Sample{
 			Value:     pt.GetSum(),
 			Timestamp: time,
 		}
+		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumLbs, ty)
+
+		// treat count as a sample in an individual TimeSeries
 		count := &prompb.Sample{
 			Value:     float64(pt.GetCount()),
 			Timestamp: time,
 		}
-		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
 		countLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, sum, sumLbs, ty)
 		addSample(tsMap, count, countLbs, ty)
+
+		// count for +Inf bound
 		var totalCount uint64
+
 		for le, bk := range pt.GetBuckets() {
 			bucket := &prompb.Sample{
 				Value:     float64(bk.Count),
@@ -121,11 +142,16 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			boundStr := strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f', -1, 64)
 			lbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, boundStr)
 			addSample(tsMap, bucket, lbs, ty)
+
 			totalCount += bk.GetCount()
 		}
-		infSample := &prompb.Sample{Value: float64(totalCount), Timestamp: time}
+
+		infBucket := &prompb.Sample{
+			Value: float64(totalCount),
+			Timestamp: time,
+		}
 		infLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
-		addSample(tsMap, infSample, infLbs, ty)
+		addSample(tsMap, infBucket, infLbs, ty)
 	}
 	return nil
 }
@@ -134,26 +160,35 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 // quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
 func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+
 	if metric.SummaryDataPoints == nil {
 		return fmt.Errorf("invalid metric type: wants summary points")
 	}
 
 	for _, pt := range metric.SummaryDataPoints {
+
 		time := int64(pt.GetTimeUnixNano())
 		ty := metric.GetMetricDescriptor().GetType()
+
+		// sum and count of the Summary should append suffix to baseName
 		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
+
+		// treat sum as sample in an individual TimeSeries
 		sum := &prompb.Sample{
 			Value:     pt.GetSum(),
 			Timestamp: time,
 		}
+		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumLbs, ty)
+
+		// treat count as a sample in an individual TimeSeries
 		count := &prompb.Sample{
 			Value:     float64(pt.GetCount()),
 			Timestamp: time,
 		}
-		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
 		countLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, sum, sumLbs, ty)
 		addSample(tsMap, count, countLbs, ty)
+
 		for _, qt := range pt.GetPercentileValues() {
 			quantile := &prompb.Sample{
 				Value:     float64(qt.Value),
@@ -171,6 +206,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 // newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
 func newCortexExporter(ns string, ep string, client *http.Client) (*cortexExporter, error) {
+
 	if client == nil {
 		return nil, fmt.Errorf("http client cannot be nil")
 	}
@@ -202,43 +238,55 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 	case <-ce.closeChan:
 		return pdatautil.MetricCount(md), fmt.Errorf("shutdown has been called")
 	default:
+		// stores TimeSeries
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
-		errStrings := []string{}
+		errs := []string{}
+
 		rms := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
+
 		for _, r := range rms {
-			// TODO add resource attributes as labels
+			// TODO: add resource attributes as labels
 			for _, inst := range r.InstrumentationLibraryMetrics {
-				//TODO add instrumentation library information as labels
+				//TODO: add instrumentation library information as labels
 				for _, m := range inst.Metrics {
+					// check for valid type and temporality combination
 					ok := validateMetrics(m.MetricDescriptor)
 					if !ok {
 						dropped++
-						errStrings = append(errStrings, "invalid temporality and type combination")
+						errs = append(errs, "invalid temporality and type combination")
 						continue
 					}
+					// handle individual metric based on type
 					switch m.GetMetricDescriptor().GetType() {
-					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
-						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
-						ce.handleScalarMetric(tsMap, m)
-					case otlp.MetricDescriptor_HISTOGRAM:
-						ce.handleHistogramMetric(tsMap, m)
-					case otlp.MetricDescriptor_SUMMARY:
-						ce.handleSummaryMetric(tsMap, m)
-					default:
-						dropped++
-						errStrings = append(errStrings, "invalid type")
-						continue
+						case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
+							otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
+							if err := ce.handleScalarMetric(tsMap, m); err != nil {
+								errs = append(errs, err.Error())
+							}
+						case otlp.MetricDescriptor_HISTOGRAM:
+							if err := ce.handleHistogramMetric(tsMap, m); err != nil {
+								errs = append(errs, err.Error())
+							}
+						case otlp.MetricDescriptor_SUMMARY:
+							if err := ce.handleSummaryMetric(tsMap, m); err != nil {
+								errs = append(errs, err.Error())
+							}
+						default:
+							dropped++
+							errs = append(errs, "invalid type")
+							continue
 					}
 				}
 			}
 		}
-		if dropped != 0 {
-			return dropped, fmt.Errorf(strings.Join(errStrings, "\n"))
-		}
 
 		if err := ce.Export(ctx, tsMap); err != nil {
 			return pdatautil.MetricCount(md), err
+		}
+
+		if dropped != 0 {
+			return dropped, fmt.Errorf(strings.Join(errs, "\n"))
 		}
 
 		return 0, nil

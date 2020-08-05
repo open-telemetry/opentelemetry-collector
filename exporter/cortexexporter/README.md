@@ -4,9 +4,9 @@ _here is a link to the overall project [design](https://github.com/open-telemetr
 
 File structure:
 
-- cortex.go: exporter implementation. converts and sends OTLP metrics
+- cortex.go: exporter implementation. Converts and sends OTLP metrics
 
-- helper.go: helper functions that cortex.go uses. Perform tasks such as sanitizing label and generating signature string
+- helper.go: helper functions that cortex.go uses. Performs tasks such as sanitizing label and generating signature string
 
 - config.go: configuration struct of the exporter
 
