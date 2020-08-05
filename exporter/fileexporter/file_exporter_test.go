@@ -15,19 +15,22 @@ package fileexporter
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -42,58 +45,11 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lte.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
-	var j map[string]interface{}
-	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	var j otlptrace.ResourceSpans
+	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"attributes": []interface{}{map[string]interface{}{
-					"key": "resource-attr",
-					"value": map[string]interface{}{
-						"stringValue": "resource-attr-val-1"}}}},
-			"instrumentationLibrarySpans": []interface{}{
-				map[string]interface{}{
-					"spans": []interface{}{
-						map[string]interface{}{
-							"name":              "operationA",
-							"startTimeUnixNano": "1581452772000000321",
-							"status": map[string]interface{}{
-								"code":    "Cancelled",
-								"message": "status-cancelled"},
-							"droppedAttributesCount": float64(1),
-							"droppedEventsCount":     float64(1),
-							"endTimeUnixNano":        "1581452773000000789",
-							"events": []interface{}{
-								map[string]interface{}{
-									"attributes": []interface{}{
-										map[string]interface{}{
-											"key": "span-event-attr",
-											"value": map[string]interface{}{
-												"stringValue": "span-event-attr-val"}}},
-									"droppedAttributesCount": float64(2),
-									"name":                   "event-with-attr",
-									"timeUnixNano":           "1581452773000000123"},
-								map[string]interface{}{
-									"droppedAttributesCount": float64(2),
-									"name":                   "event",
-									"timeUnixNano":           "1581452773000000123"}}},
-						map[string]interface{}{
-							"name":              "operationB",
-							"startTimeUnixNano": "1581452772000000321",
-							"droppedLinksCount": float64(3),
-							"endTimeUnixNano":   "1581452773000000789",
-							"links": []interface{}{
-								map[string]interface{}{
-									"attributes": []interface{}{
-										map[string]interface{}{
-											"key": "span-link-attr",
-											"value": map[string]interface{}{
-												"stringValue": "span-link-attr-val"}}},
-									"droppedAttributesCount": float64(4)},
-								map[string]interface{}{
-									"droppedAttributesCount": float64(4)}}},
-					}}}}, j)
+	assert.EqualValues(t, pdata.TracesToOtlp(td)[0], &j)
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
@@ -105,64 +61,11 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
-	var j map[string]interface{}
-	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	var j otlpmetrics.ResourceMetrics
+	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"attributes": []interface{}{
-					map[string]interface{}{
-						"key": "resource-attr",
-						"value": map[string]interface{}{
-							"stringValue": "resource-attr-val-1"}}}},
-			"instrumentationLibraryMetrics": []interface{}{
-				map[string]interface{}{
-					"metrics": []interface{}{
-						map[string]interface{}{
-							"int64DataPoints": []interface{}{
-								map[string]interface{}{
-									"labels": []interface{}{
-										map[string]interface{}{
-											"key":   "label-1",
-											"value": "label-value-1"}},
-									"startTimeUnixNano": "1581452772000000321",
-									"timeUnixNano":      "1581452773000000789",
-									"value":             "123"},
-								map[string]interface{}{
-									"labels": []interface{}{
-										map[string]interface{}{
-											"key":   "label-2",
-											"value": "label-value-2"}},
-									"startTimeUnixNano": "1581452772000000321",
-									"timeUnixNano":      "1581452773000000789",
-									"value":             "456"}},
-							"metricDescriptor": map[string]interface{}{
-								"name": "counter-int",
-								"type": "MONOTONIC_INT64",
-								"unit": "1"}},
-						map[string]interface{}{
-							"int64DataPoints": []interface{}{
-								map[string]interface{}{
-									"labels": []interface{}{
-										map[string]interface{}{
-											"key":   "label-1",
-											"value": "label-value-1"}},
-									"startTimeUnixNano": "1581452772000000321",
-									"timeUnixNano":      "1581452773000000789",
-									"value":             "123"},
-								map[string]interface{}{
-									"labels": []interface{}{
-										map[string]interface{}{
-											"key":   "label-2",
-											"value": "label-value-2"}},
-									"startTimeUnixNano": "1581452772000000321",
-									"timeUnixNano":      "1581452773000000789",
-									"value":             "456"}},
-							"metricDescriptor": map[string]interface{}{
-								"name": "counter-int",
-								"type": "MONOTONIC_INT64",
-								"unit": "1"}}}}}}, j)
+	assert.EqualValues(t, data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))[0], &j)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
@@ -220,55 +123,16 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromOtlp(ld)))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
-	decoder := json.NewDecoder(mf)
-	var j map[string]interface{}
-	assert.NoError(t, decoder.Decode(&j))
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	var j logspb.ResourceLogs
 
-	assert.EqualValues(t,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"attributes": []interface{}{
-					map[string]interface{}{
-						"key": "attr1",
-						"value": map[string]interface{}{
-							"stringValue": "value1",
-						},
-					},
-				},
-			},
-			"logs": []interface{}{
-				map[string]interface{}{
-					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"name":         "logA",
-				},
-				map[string]interface{}{
-					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"name":         "logB",
-				},
-			},
-		}, j)
+	records := strings.Split(mf.String(), "\n")
 
-	require.NoError(t, decoder.Decode(&j))
+	assert.NoError(t, unmarshaler.Unmarshal(strings.NewReader(records[0]), &j))
+	assert.EqualValues(t, ld[0], &j)
 
-	assert.EqualValues(t,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"attributes": []interface{}{
-					map[string]interface{}{
-						"key": "attr2",
-						"value": map[string]interface{}{
-							"stringValue": "value2",
-						},
-					},
-				},
-			},
-			"logs": []interface{}{
-				map[string]interface{}{
-					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"name":         "logC",
-				},
-			},
-		}, j)
+	assert.NoError(t, unmarshaler.Unmarshal(strings.NewReader(records[1]), &j))
+	assert.EqualValues(t, ld[1], &j)
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
