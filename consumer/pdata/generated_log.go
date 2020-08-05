@@ -638,14 +638,14 @@ func (ms LogRecord) SetSeverityText(v string) {
 // SeverityNumber returns the severitynumber associated with this LogRecord.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms LogRecord) SeverityNumber() otlplogs.SeverityNumber {
-	return otlplogs.SeverityNumber((*ms.orig).SeverityNumber)
+func (ms LogRecord) SeverityNumber() SeverityNumber {
+	return SeverityNumber((*ms.orig).SeverityNumber)
 }
 
 // SetSeverityNumber replaces the severitynumber associated with this LogRecord.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms LogRecord) SetSeverityNumber(v otlplogs.SeverityNumber) {
+func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
 	(*ms.orig).SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
