@@ -58,7 +58,7 @@ type mockConsumer struct {
 	md *consumerdata.MetricsData
 }
 
-func (m *mockConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (m *mockConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
 	m.md = &md
 	return nil
 }

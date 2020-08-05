@@ -48,7 +48,7 @@ func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter,
 		ListenAddress: "127.0.0.1:0",
 	}
 
-	receiver, err := newFluentReceiver(ctx, logger, conf, next)
+	receiver, err := newFluentReceiver(logger, conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 
@@ -370,7 +370,7 @@ func TestUnixEndpoint(t *testing.T) {
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
 	}
 
-	receiver, err := newFluentReceiver(ctx, zap.NewNop(), conf, next)
+	receiver, err := newFluentReceiver(zap.NewNop(), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 

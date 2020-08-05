@@ -996,7 +996,7 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 
 const numStartTimeMetricPageTimeseries = 6
 
-func verifyStartTimeMetricPage(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
+func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []consumerdata.MetricsData) {
 	numTimeseries := 0
 	for _, cmd := range mds {
 		for _, metric := range cmd.Metrics {

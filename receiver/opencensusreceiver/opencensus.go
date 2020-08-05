@@ -99,7 +99,7 @@ func newOpenCensusReceiver(
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
+func (ocr *ocReceiver) Start(_ context.Context, host component.Host) error {
 	return ocr.start(host)
 }
 

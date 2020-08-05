@@ -613,7 +613,7 @@ type zipkinMockTraceConsumer struct {
 	err error
 }
 
-func (m *zipkinMockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (m *zipkinMockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err
 }

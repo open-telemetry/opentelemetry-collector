@@ -53,7 +53,7 @@ func createDefaultConfig() configmodels.Receiver {
 }
 
 func createTraceReceiver(
-	ctx context.Context,
+	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,

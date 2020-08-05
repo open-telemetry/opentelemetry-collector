@@ -58,7 +58,7 @@ func (c *Collector) processEvents(ctx context.Context) {
 			// efficiency on LogResource allocations.
 			buffered = fillBufferUntilChanEmpty(c.eventCh, buffered)
 
-			logs := collectLogRecords(buffered, c.logger)
+			logs := collectLogRecords(buffered)
 			c.nextConsumer.ConsumeLogs(ctx, logs)
 		}
 	}
@@ -75,7 +75,7 @@ func fillBufferUntilChanEmpty(eventCh <-chan Event, buf []Event) []Event {
 	}
 }
 
-func collectLogRecords(events []Event, logger *zap.Logger) pdata.Logs {
+func collectLogRecords(events []Event) pdata.Logs {
 	out := pdata.NewLogs()
 
 	logs := out.ResourceLogs()

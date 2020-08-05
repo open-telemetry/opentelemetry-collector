@@ -172,7 +172,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []c
 		zipkinSpans, err = zipkinproto.ParseSpans(blob, debugWasSet)
 
 	default: // By default, we'll assume using JSON
-		zipkinSpans, err = zr.deserializeFromJSON(blob, debugWasSet)
+		zipkinSpans, err = zr.deserializeFromJSON(blob)
 	}
 
 	if err != nil {
@@ -182,7 +182,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []c
 	return zipkin.V2BatchToOCProto(zipkinSpans)
 }
 
-func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
+func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte) (zs []*zipkinmodel.SpanModel, err error) {
 	if err = json.Unmarshal(jsonBlob, &zs); err != nil {
 		return nil, err
 	}

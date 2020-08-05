@@ -48,10 +48,7 @@ func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
 	if len(keyvals)%2 == 0 {
 		// Extract log level and message and log them using corresponding zap function
 		ld := extractLogData(keyvals)
-		logFunc, err := levelToFunc(w.l, ld.level)
-		if err != nil {
-			return err
-		}
+		logFunc := levelToFunc(w.l, ld.level)
 		logFunc(ld.msg, ld.otherFields...)
 	} else {
 		// in case something goes wrong
@@ -120,20 +117,20 @@ func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
 }
 
 // find a matching zap logging function to be used for a given level
-func levelToFunc(logger *zap.SugaredLogger, lvl level.Value) (func(string, ...interface{}), error) {
+func levelToFunc(logger *zap.SugaredLogger, lvl level.Value) func(string, ...interface{}) {
 	switch lvl {
 	case level.DebugValue():
-		return logger.Debugw, nil
+		return logger.Debugw
 	case level.InfoValue():
-		return logger.Infow, nil
+		return logger.Infow
 	case level.WarnValue():
-		return logger.Warnw, nil
+		return logger.Warnw
 	case level.ErrorValue():
-		return logger.Errorw, nil
+		return logger.Errorw
 	}
 
 	// default
-	return logger.Infof, nil
+	return logger.Infof
 }
 
 var _ gokitLog.Logger = (*zapToGokitLogAdapter)(nil)
