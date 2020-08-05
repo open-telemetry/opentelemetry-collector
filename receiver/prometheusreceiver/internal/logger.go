@@ -20,6 +20,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	levelKey = "level"
+	msgKey   = "msg"
+)
+
 // NewZapToGokitLogAdapter create an adapter for zap.Logger to gokitLog.Logger
 func NewZapToGokitLogAdapter(logger *zap.Logger) gokitLog.Logger {
 	// need to skip two levels in order to get the correct caller
@@ -87,7 +92,7 @@ func extractLogData(keyvals []interface{}) *logData {
 // check if a given key-value pair represents go-kit log message and return it
 func matchLogMessage(key interface{}, val interface{}) (string, bool) {
 	strKey, ok := key.(string)
-	if !ok || strKey != "msg" {
+	if !ok || strKey != msgKey {
 		return "", false
 	}
 
@@ -102,7 +107,7 @@ func matchLogMessage(key interface{}, val interface{}) (string, bool) {
 // check if a given key-value pair represents go-kit log level and return it
 func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
 	strKey, ok := key.(string)
-	if !ok || strKey != "level" {
+	if !ok || strKey != levelKey {
 		return nil, false
 	}
 
