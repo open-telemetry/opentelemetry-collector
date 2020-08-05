@@ -11,6 +11,9 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
+// CreateConfigYaml creates a yaml config for an otel collector given a testbed sender, testbed receiver, any
+// processors, and a pipeline type. A collector created from the resulting yaml string should be able to talk
+// the specified sender and receiver.
 func CreateConfigYaml(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
@@ -63,6 +66,7 @@ service:
 	)
 }
 
+// PipelineDef holds the information necessary to run a single testbed configuration.
 type PipelineDef struct {
 	Receiver     string
 	Exporter     string
@@ -72,6 +76,8 @@ type PipelineDef struct {
 	ResourceSpec testbed.ResourceSpec
 }
 
+// LoadPictOutputPipelineDefs generates a slice of PipelineDefs from the passed-in generated PICT file. The
+// result should be a set of PipelineDefs that covers all possible pipeline configurations.
 func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	file, err := os.Open(filepath.Clean(fileName))
 	if err != nil {
@@ -100,6 +106,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	return defs, err
 }
 
+// ConstructTraceSender creates a testbed trace sender from the passed-in trace sender identifier.
 func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	var sender testbed.DataSender
 	switch receiver {
@@ -117,6 +124,7 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	return sender
 }
 
+// ConstructMetricsSender creates a testbed metrics sender from the passed-in metrics sender identifier.
 func ConstructMetricsSender(t *testing.T, receiver string) testbed.DataSender {
 	var sender testbed.DataSender
 	switch receiver {
@@ -133,6 +141,7 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.DataSender {
 	return sender
 }
 
+// ConstructReceiver creates a testbed receiver from the passed-in recevier identifier.
 func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {
