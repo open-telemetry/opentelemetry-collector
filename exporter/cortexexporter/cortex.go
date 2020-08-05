@@ -325,9 +325,8 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 		httpReq.Header.Set(name, value)
 	}
 
-	//Add necessary headers
+	//Add necessary headers: https://cortexmetrics.io/docs/apis/#remote-api
 	httpReq.Header.Add("Content-Encoding", "snappy")
-	httpReq.Header.Add("Accept-Encoding", "snappy")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 
