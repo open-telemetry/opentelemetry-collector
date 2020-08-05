@@ -68,8 +68,8 @@ func TestLoadConfig(t *testing.T) {
 			Namespace: "test-space",
 
 			Headers: map[string]string{
-				"Prometheus-Remote-Write-Version": "0.1.0",
-				"Tenant-id":                       "234"},
+				"prometheus-remote-write-version": "0.1.0",
+				"tenant-id":                       "234"},
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
