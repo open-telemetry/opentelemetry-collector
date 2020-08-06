@@ -19,37 +19,28 @@ package processesscraper
 import (
 	"time"
 
-	"github.com/shirou/gopsutil/load"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
+	now := internal.TimeToUnixNano(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
 		return err
 	}
 
 	metrics.Resize(startIndex + 2)
-	initializeProcessesRunningMetric(metrics.At(startIndex+0), misc)
-	initializeProcessesBlockedMetric(metrics.At(startIndex+1), misc)
+	initializeProcessesMetric(metrics.At(startIndex+0), processesRunningDescriptor, now, int64(misc.ProcsRunning))
+	initializeProcessesMetric(metrics.At(startIndex+1), processesBlockedDescriptor, now, int64(misc.ProcsBlocked))
 	return nil
 }
 
-func initializeProcessesRunningMetric(metric pdata.Metric, misc *load.MiscStat) {
-	processesRunningDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeProcessesMetric(metric pdata.Metric, descriptor pdata.MetricDescriptor, now pdata.TimestampUnixNano, value int64) {
+	descriptor.CopyTo(metric.MetricDescriptor())
 
 	ddps := metric.Int64DataPoints()
 	ddps.Resize(1)
-	ddps.At(0).SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-	ddps.At(0).SetValue(int64(misc.ProcsRunning))
-}
-
-func initializeProcessesBlockedMetric(metric pdata.Metric, misc *load.MiscStat) {
-	processesBlockedDescriptor.CopyTo(metric.MetricDescriptor())
-
-	ddps := metric.Int64DataPoints()
-	ddps.Resize(1)
-	ddps.At(0).SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
-	ddps.At(0).SetValue(int64(misc.ProcsBlocked))
+	ddps.At(0).SetTimestamp(now)
+	ddps.At(0).SetValue(value)
 }

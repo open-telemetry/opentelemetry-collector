@@ -18,20 +18,25 @@ import (
 	"context"
 	"time"
 
+	"github.com/shirou/gopsutil/load"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // scraper for Load Metrics
 type scraper struct {
 	logger *zap.Logger
 	config *Config
+
+	// for mocking
+	load func() (*load.AvgStat, error)
 }
 
 // newLoadScraper creates a set of Load related metrics
 func newLoadScraper(_ context.Context, logger *zap.Logger, cfg *Config) *scraper {
-	return &scraper{logger: logger, config: cfg}
+	return &scraper{logger: logger, config: cfg, load: getSampledLoadAverages}
 }
 
 // Initialize
@@ -48,24 +53,25 @@ func (s *scraper) Close(ctx context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	avgLoadValues, err := getSampledLoadAverages()
+	now := internal.TimeToUnixNano(time.Now())
+	avgLoadValues, err := s.load()
 	if err != nil {
 		return metrics, err
 	}
 
 	metrics.Resize(3)
-	initializeLoadMetric(metrics.At(0), loadAvg1MDescriptor, avgLoadValues.Load1)
-	initializeLoadMetric(metrics.At(1), loadAvg5mDescriptor, avgLoadValues.Load5)
-	initializeLoadMetric(metrics.At(2), loadAvg15mDescriptor, avgLoadValues.Load15)
+	initializeLoadMetric(metrics.At(0), loadAvg1MDescriptor, now, avgLoadValues.Load1)
+	initializeLoadMetric(metrics.At(1), loadAvg5mDescriptor, now, avgLoadValues.Load5)
+	initializeLoadMetric(metrics.At(2), loadAvg15mDescriptor, now, avgLoadValues.Load15)
 	return metrics, nil
 }
 
-func initializeLoadMetric(metric pdata.Metric, metricDescriptor pdata.MetricDescriptor, value float64) {
+func initializeLoadMetric(metric pdata.Metric, metricDescriptor pdata.MetricDescriptor, now pdata.TimestampUnixNano, value float64) {
 	metricDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.DoubleDataPoints()
 	idps.Resize(1)
 	dp := idps.At(0)
-	dp.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dp.SetTimestamp(now)
 	dp.SetValue(value)
 }

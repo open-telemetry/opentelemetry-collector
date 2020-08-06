@@ -15,6 +15,8 @@
 package internal
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 )
@@ -28,4 +30,8 @@ func InitializeMetricSlice(metricData data.MetricData) pdata.MetricSlice {
 	ilms.Resize(1)
 	ilm := ilms.At(0)
 	return ilm.Metrics()
+}
+
+func TimeToUnixNano(t time.Time) pdata.TimestampUnixNano {
+	return pdata.TimestampUnixNano(uint64(t.UnixNano()))
 }
