@@ -155,16 +155,17 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		fallthrough
 	case metricspb.MetricDescriptor_SUMMARY:
-		if strings.HasSuffix(metricName, metricsSuffixSum) {
+		switch {
+		case strings.HasSuffix(metricName, metricsSuffixSum):
 			// always use the timestamp from sum (count is ok too), because the startTs from quantiles won't be reliable
 			// in cases like remote server restart
 			mg.ts = t
 			mg.sum = v
 			mg.hasSum = true
-		} else if strings.HasSuffix(metricName, metricsSuffixCount) {
+		case strings.HasSuffix(metricName, metricsSuffixCount):
 			mg.count = v
 			mg.hasCount = true
-		} else {
+		default:
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
 				mf.droppedTimeseries++

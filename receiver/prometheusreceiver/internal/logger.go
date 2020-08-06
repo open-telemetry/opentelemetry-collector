@@ -62,7 +62,7 @@ func extractLogData(keyvals []interface{}) *logData {
 	msg := ""
 
 	other := make([]interface{}, 0, len(keyvals))
-	for i := 0; i < len(keyvals); i = i + 2 {
+	for i := 0; i < len(keyvals); i += 2 {
 		key := keyvals[i]
 		val := keyvals[i+1]
 

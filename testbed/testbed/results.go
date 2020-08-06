@@ -103,7 +103,7 @@ func (r *PerformanceResults) Add(_ string, result interface{}) {
 			testResult.errorCause,
 		),
 	)
-	r.totalDuration = r.totalDuration + testResult.duration
+	r.totalDuration += testResult.duration
 }
 
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
@@ -183,8 +183,8 @@ func (r *CorrectnessResults) Add(_ string, result interface{}) {
 		),
 	)
 	r.perTestResults = append(r.perTestResults, testResult)
-	r.totalAssertionFailures = r.totalAssertionFailures + testResult.assertionFailureCount
-	r.totalDuration = r.totalDuration + testResult.duration
+	r.totalAssertionFailures += testResult.assertionFailureCount
+	r.totalDuration += testResult.duration
 }
 
 func (r *CorrectnessResults) Save() {

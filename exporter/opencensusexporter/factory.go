@@ -87,7 +87,8 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			}
 		}
 	}
-	if ocac.TLSSetting.CAFile != "" {
+	switch {
+	case ocac.TLSSetting.CAFile != "":
 		creds, err := credentials.NewClientTLSFromFile(ocac.TLSSetting.CAFile, "")
 		if err != nil {
 			return nil, &ocExporterError{
@@ -96,16 +97,17 @@ func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.Ex
 			}
 		}
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	} else if !ocac.TLSSetting.Insecure {
+	case !ocac.TLSSetting.Insecure:
 		tlsConf, err := ocac.TLSSetting.LoadTLSConfig()
 		if err != nil {
 			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
 		}
 		creds := credentials.NewTLS(tlsConf)
 		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	} else {
+	default:
 		opts = append(opts, ocagent.WithInsecure())
 	}
+
 	if len(ocac.Headers) > 0 {
 		opts = append(opts, ocagent.WithHeaders(ocac.Headers))
 	}

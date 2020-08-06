@@ -83,11 +83,12 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, logger *zap.Log
 // AddDataPoint is for feeding prometheus data complexValue in its processing order
 func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
 	metricName := ls.Get(model.MetricNameLabel)
-	if metricName == "" {
+	switch {
+	case metricName == "":
 		b.numTimeseries++
 		b.droppedTimeseries++
 		return errMetricNameNotFound
-	} else if isInternalMetric(metricName) {
+	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
 		lm := ls.Map()
 		delete(lm, model.MetricNameLabel)
@@ -103,7 +104,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 			b.scrapeLatencyMs = v * 1000
 		}
 		return nil
-	} else if b.useStartTimeMetric && metricName == startTimeMetricName {
+	case b.useStartTimeMetric && metricName == startTimeMetricName:
 		b.startTime = v
 	}
 
@@ -192,12 +193,13 @@ func normalizeMetricName(name string) string {
 
 func getBoundary(metricType metricspb.MetricDescriptor_Type, labels labels.Labels) (float64, error) {
 	labelName := ""
-	if metricType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION ||
-		metricType == metricspb.MetricDescriptor_GAUGE_DISTRIBUTION {
+	switch metricType {
+	case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+		metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 		labelName = model.BucketLabel
-	} else if metricType == metricspb.MetricDescriptor_SUMMARY {
+	case metricspb.MetricDescriptor_SUMMARY:
 		labelName = model.QuantileLabel
-	} else {
+	default:
 		return 0, errNoBoundaryLabel
 	}
 

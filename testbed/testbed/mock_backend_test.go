@@ -86,7 +86,7 @@ func WaitFor(t *testing.T, cond func() bool, errMsg ...interface{}) bool {
 
 		// Increase waiting interval exponentially up to 500 ms.
 		if waitInterval < time.Millisecond*500 {
-			waitInterval = waitInterval * 2
+			waitInterval *= 2
 		}
 
 		if cond() {

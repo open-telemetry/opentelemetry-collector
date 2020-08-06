@@ -211,7 +211,7 @@ func hash(key []byte, seed uint32) (hash uint32) {
 		remainingBytes += uint32(key[iByte])
 		remainingBytes *= c1
 		remainingBytes = (remainingBytes << r1) | (remainingBytes >> (32 - r1))
-		remainingBytes = remainingBytes * c2
+		remainingBytes *= c2
 		hash ^= remainingBytes
 	}
 

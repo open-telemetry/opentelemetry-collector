@@ -762,9 +762,7 @@ func TestValidConfiguration(t *testing.T) {
 	require.NoError(t, err)
 
 	av := pdata.NewAttributeValueInt(123)
-	compiledRegex, err := regexp.Compile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
-	require.NoError(t, err)
-
+	compiledRegex := regexp.MustCompile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
 		{Key: "two", Action: INSERT,
