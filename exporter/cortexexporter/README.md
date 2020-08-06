@@ -1,6 +1,6 @@
 Exporter to a Cortex instance, or any Prometheus Remote Write compatible backend.
 
-_here is a link to the overall project [design](https://github.com/open-telemetry/opentelemetry-collector/pull/1464)_
+_Here is a link to the overall project [design](https://github.com/open-telemetry/opentelemetry-collector/pull/1464)_
 
 File structure:
 

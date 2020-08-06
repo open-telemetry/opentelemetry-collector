@@ -18,15 +18,16 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
-	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/prompb"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
+	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -237,7 +238,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 		}
 
 		infBucket := &prompb.Sample{
-			Value: float64(totalCount),
+			Value:     float64(totalCount),
 			Timestamp: time,
 		}
 		infLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
@@ -293,7 +294,6 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 	return nil
 }
 
-
 // Because we are adhering closely to the Remote Write API, we must Export a
 // Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
 // for the Remote Write Endpoint to properly receive our Metrics data.
@@ -329,6 +329,7 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Add("Accept-Encoding", "snappy")
 	httpReq.Header.Set("User-Agent", "otel-collector")
+
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 

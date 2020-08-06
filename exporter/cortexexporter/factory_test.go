@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 )
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -39,7 +38,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	params := component.ExporterCreateParams{}
 	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-	assert.NoError(t, err, configerror.ErrDataTypeIsNotSupported)
+
+	assert.NoError(t, err)
+
 
 }
 

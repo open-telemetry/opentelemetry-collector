@@ -27,16 +27,16 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/stretchr/testify/require"
-	"github.com/golang/snappy"
-	"github.com/stretchr/testify/assert"
 	proto "github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	// "github.com/stretchr/testify/require"
 )
 
@@ -409,11 +409,13 @@ func Test_export(t *testing.T) {
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
+
 		dest,err := snappy.Decode(unzipped, body)
 		require.NoError(t,err)
 
 		ok := proto.Unmarshal(dest, writeReq)
 		require.NoError(t, ok)
+
 		assert.EqualValues(t, 1, len(writeReq.Timeseries))
 		require.NotNil(t, writeReq.GetTimeseries())
 		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
