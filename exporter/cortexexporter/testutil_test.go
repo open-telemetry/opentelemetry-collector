@@ -1,11 +1,27 @@
+// Copyright 2020 The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cortexexporter
 
 import (
+	"time"
+
 	"github.com/prometheus/prometheus/prompb"
+
 	"go.opentelemetry.io/collector/internal/data"
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	"time"
 )
 type combination struct {
 	ty   otlp.MetricDescriptor_Type
@@ -19,7 +35,6 @@ var (
 
 	typeInt64 = "INT64"
 	typeMonotonicInt64 = "MONOTONIC_INT64"
-	typeDouble = "DOUBLE"
 	typeHistogram = "HISTOGRAM"
 	typeSummary = "SUMMARY"
 
@@ -46,18 +61,15 @@ var (
 	lbs1 = getLabels(label11, value11, label12, value12)
 	lbs2 = getLabels(label21, value21, label22, value22)
 	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
-	lbs2Dirty = getLabels(label21+dirty1, value21, dirty2+label22, value22)
 
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
 	promLbs2 = getPromLabels(label21, value21, label22, value22)
-	promLbs3 = getPromLabels(label31, value31, label32, value32)
 
 	lb1Sig = "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12
 	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
 	ns1 = "test_ns"
 	name1 = "valid_single_int_point"
 
-	int64CumulativeComb = 9
 	monotonicInt64Comb = 0
 	histogramComb = 2
 	summaryComb = 3
@@ -135,16 +147,16 @@ func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64, ts uint64) *o
 	}
 }
 
-func getDoubleDataPoint(lbls []*commonpb.StringKeyValue, value float64, ts time.Time) *otlp.DoubleDataPoint {
+func getDoubleDataPoint(lbls []*commonpb.StringKeyValue, value float64, ts uint64) *otlp.DoubleDataPoint {
 	return &otlp.DoubleDataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(ts.Unix()),
+		TimeUnixNano:      ts,
 		Value:             value,
 	}
 }
 
-func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
 	bks := []*otlp.HistogramDataPoint_Bucket{}
 	for _, c := range buckets {
 		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
@@ -155,7 +167,7 @@ func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum fl
 	return &otlp.HistogramDataPoint{
 		Labels:            lbls,
 		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(ts.Unix()),
+		TimeUnixNano:      ts,
 		Count:             count,
 		Sum:               sum,
 		Buckets:           bks,

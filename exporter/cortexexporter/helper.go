@@ -1,14 +1,28 @@
+// Copyright 2020 The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cortexexporter
 
 import (
-	"fmt"
-	"github.com/pkg/errors"
 	"log"
 	"sort"
 	"strings"
 	"unicode"
 
+	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
+
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
@@ -50,23 +64,23 @@ func validateMetrics(desc *otlp.MetricDescriptor) bool {
 	return false
 }
 
-// addSample finds a TimeSeries in tsMap that corresponds to the label set lbs, and add sample to the TimeSeries; it
+// addSample finds a TimeSeries in tsMap that corresponds to the label set labels, and add sample to the TimeSeries; it
 // creates a new TimeSeries in the map if not found. tsMap is unmodified if either of its parameters is nil.
-func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs []prompb.Label,
+func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, labels []prompb.Label,
 	ty otlp.MetricDescriptor_Type) {
 
-	if sample == nil || lbs == nil || tsMap == nil {
+	if sample == nil || labels == nil || tsMap == nil {
 		return
 	}
 
-	sig := timeSeriesSignature(ty, &lbs)
+	sig := timeSeriesSignature(ty, &labels)
 	ts, ok := tsMap[sig]
 
 	if ok {
 		ts.Samples = append(ts.Samples, *sample)
 	} else {
 		newTs := &prompb.TimeSeries{
-			Labels:  lbs,
+			Labels:  labels,
 			Samples: []prompb.Sample{*sample},
 		}
 		tsMap[sig] = newTs
@@ -77,14 +91,17 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, lbs [
 // 		TYPE-label1-value1- ...  -labelN-valueN
 // the label slice should not contain duplicate label names; this method sorts the slice by label name before creating
 // the signature.
-func timeSeriesSignature(t otlp.MetricDescriptor_Type, lbs *[]prompb.Label) string {
+func timeSeriesSignature(t otlp.MetricDescriptor_Type, labels *[]prompb.Label) string {
 	b := strings.Builder{}
-	fmt.Fprintf(&b, t.String())
+	b.WriteString(t.String())
 
-	sort.Sort(ByLabelName(*lbs))
+	sort.Sort(ByLabelName(*labels))
 
-	for _, lb := range *lbs {
-		fmt.Fprintf(&b, "-%s-%s", lb.GetName(), lb.GetValue())
+	for _, lb := range *labels {
+		b.WriteString("-")
+		b.WriteString(lb.GetName())
+		b.WriteString("-")
+		b.WriteString(lb.GetValue())
 	}
 
 	return b.String()
@@ -141,12 +158,12 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 
 	b := strings.Builder{}
 
-	fmt.Fprintf(&b, ns)
+	b.WriteString(ns)
 
 	if b.Len() > 0 {
-		fmt.Fprintf(&b, delimeter)
+		b.WriteString(delimeter)
 	}
-	fmt.Fprintf(&b, sanitize(desc.GetName()))
+	b.WriteString(sanitize(desc.GetName()))
 
 	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
 	// units are different.
@@ -158,8 +175,8 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 	*/
 
 	if b.Len() > 0 && isCounter {
-		fmt.Fprintf(&b, delimeter)
-		fmt.Fprintf(&b, totalStr)
+		b.WriteString(delimeter)
+		b.WriteString(totalStr)
 	}
 	return b.String()
 }
@@ -192,7 +209,6 @@ func sanitize(s string) string {
 	// Note: No length limit for label keys because Prometheus doesn't
 	// define a length limit, thus we should NOT be truncating label keys.
 	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
-
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + delimeter + s

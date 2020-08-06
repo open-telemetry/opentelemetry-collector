@@ -339,7 +339,7 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	//Changing context of the httpreq to global context
 	httpReq = httpReq.WithContext(ctx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), ce.client.Timeout)
+	_, cancel := context.WithTimeout(context.Background(), ce.client.Timeout)
 	defer cancel()
 
 	httpResp, err := ce.client.Do(httpReq)

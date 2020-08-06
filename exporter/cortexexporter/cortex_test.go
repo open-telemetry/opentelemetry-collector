@@ -16,6 +16,7 @@ package cortexexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/internal/data"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -23,6 +24,12 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+
+	proto "github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -32,18 +39,9 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 
-	proto "github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	// "github.com/stretchr/testify/require"
 )
 
-// TODO: try to run Test_PushMetrics after export() is in
 // TODO: add bucket and histogram test cases for Test_PushMetrics
-// TODO: check that NoError instead of NoNil is used at the right places
-// TODO: add one line comment before each test stating criteria
 
 // Test_handleScalarMetric checks whether data points within a single scalar metric can be added to a map of
 // TimeSeries correctly.
@@ -496,10 +494,44 @@ func Test_pushMetrics(t *testing.T) {
 	setCumulative(&batch)
 	successBatch := pdatautil.MetricsFromInternalMetrics(batch)
 
+	hist := data.MetricDataToOtlp(testdata.GenerateMetricDataOneMetric())
+	hist[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric {
+		MetricDescriptor:getDescriptor("hist_test",  histogramComb,validCombinations),
+		HistogramDataPoints:[]*otlp.HistogramDataPoint{getHistogramDataPoint(
+				lbs1,
+				time1,
+				floatVal1,
+				uint64(intVal1),
+				[]float64{floatVal1},
+				[]uint64{uint64(intVal1)},
+			),
+		},
+	}
+
+	histBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(hist))
+	checkFunc := func(t *testing.T, r *http.Request, expected int) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		buf := make([]byte, len(body))
+		dest, err := snappy.Decode(buf, body)
+		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
+		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
+		assert.NotNil(t, r.Header.Get("tenant-id"))
+		require.NoError(t,err)
+		wr := &prompb.WriteRequest{}
+		ok  := proto.Unmarshal(dest, wr)
+		require.Nil(t, ok)
+		assert.EqualValues(t, expected, len(wr.Timeseries))
+	}
+
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
-		reqTestFunc          func(t *testing.T, r *http.Request)
+		reqTestFunc          func(t *testing.T, r *http.Request, expected int)
+		expected 			 int
 		httpResponseCode     int
 		numDroppedTimeSeries int
 		returnErr            bool
@@ -508,6 +540,7 @@ func Test_pushMetrics(t *testing.T) {
 			"no_desc_case",
 			&noDescBatch,
 			nil,
+			0,
 			http.StatusAccepted,
 			pdatautil.MetricCount(noDescBatch),
 			true,
@@ -516,6 +549,7 @@ func Test_pushMetrics(t *testing.T) {
 			"no_temp_case",
 			&noTempBatch,
 			nil,
+			0,
 			http.StatusAccepted,
 			pdatautil.MetricCount(noTempBatch),
 			true,
@@ -524,6 +558,7 @@ func Test_pushMetrics(t *testing.T) {
 			"http_error_case",
 			&noTempBatch,
 			nil,
+			0,
 			http.StatusForbidden,
 			pdatautil.MetricCount(noTempBatch),
 			true,
@@ -531,23 +566,16 @@ func Test_pushMetrics(t *testing.T) {
 		{
 			"success_case",
 			&successBatch,
-			func(t *testing.T, r *http.Request) {
-				body, err := ioutil.ReadAll(r.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				buf := make([]byte, len(body))
-				dest, err := snappy.Decode(buf, body)
-				assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
-				assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
-				assert.NotNil(t, r.Header.Get("tenant-id"))
-				require.NoError(t,err)
-				wr := &prompb.WriteRequest{}
-				ok  := proto.Unmarshal(dest, wr)
-				require.Nil(t, ok)
-				assert.EqualValues(t, 2, len(wr.Timeseries))
-			},
+			checkFunc,
+			2,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{"histogram_case",
+			&histBatch,
+			checkFunc,
+			4,
 			http.StatusAccepted,
 			0,
 			false,
@@ -558,7 +586,7 @@ func Test_pushMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r)
+					tt.reqTestFunc(t, r, tt.expected)
 				}
 				w.WriteHeader(tt.httpResponseCode)
 			}))

@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	confighttp "go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -47,6 +47,11 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	}
 
 	ce, err := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
+
+	if err != nil {
+		return nil,err
+	}
+
 	cexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		ce.pushMetrics,
@@ -80,6 +85,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   qs,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize: 0,
 			WriteBufferSize: 512 * 1024,

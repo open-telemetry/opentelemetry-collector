@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 )
@@ -40,10 +41,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 
 	assert.NoError(t, err)
-
-
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
-	return //Todo: finish this functionality
+	 //Todo: finish this functionality
 }
