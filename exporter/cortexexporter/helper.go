@@ -2,6 +2,7 @@ package cortexexporter
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"log"
 	"sort"
 	"strings"
@@ -168,7 +169,7 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 // and creates a WriteRequest from the struct -- can move to the helper.go file
 func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
 	if len(TsMap) == 0 {
-		return nil, fmt.Errorf("invalid TsMap: cannot be empty map")
+		return nil, errors.Errorf("invalid TsMap: cannot be empty map")
 	}
 	TsArray := []prompb.TimeSeries{}
 	for _, v := range TsMap {
