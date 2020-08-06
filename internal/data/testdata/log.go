@@ -266,7 +266,7 @@ func fillLogOne(log pdata.LogRecord) {
 	log.SetName("logA")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(otlplogs.SeverityNumber_INFO)
+	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
 	log.SetSpanID([]byte{0x01, 0x02, 0x04, 0x08})
 	log.SetTraceID([]byte{0x08, 0x04, 0x02, 0x01})
@@ -305,7 +305,7 @@ func fillLogTwo(log pdata.LogRecord) {
 	log.SetName("logB")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(otlplogs.SeverityNumber_INFO)
+	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
@@ -340,7 +340,7 @@ func fillLogThree(log pdata.LogRecord) {
 	log.SetName("logC")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(otlplogs.SeverityNumber_WARN)
+	log.SetSeverityNumber(pdata.SeverityNumberWARN)
 	log.SetSeverityText("Warning")
 
 	log.Body().SetStringVal("something else happened")

@@ -251,7 +251,7 @@ func Test${structName}_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= New${elementName}()
+	emptyVal2 := New${elementName}()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
