@@ -245,8 +245,7 @@ func shouldRetry(code codes.Code) bool {
 func getThrottleDuration(status *status.Status) time.Duration {
 	// See if throttling information is available.
 	for _, detail := range status.Details() {
-		switch t := detail.(type) {
-		case *errdetails.RetryInfo:
+		if t, ok := detail.(*errdetails.RetryInfo); ok {
 			if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
 				// We are throttled. Wait before retrying as requested by the server.
 				return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond

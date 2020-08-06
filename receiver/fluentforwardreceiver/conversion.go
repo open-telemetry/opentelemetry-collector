@@ -353,19 +353,20 @@ func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	// determine if it is gzipped by peeking and just ignoring options, but
 	// this seems simpler for now.
 	var entriesRaw []byte
-	if entriesType == msgp.StrType {
+	switch entriesType {
+	case msgp.StrType:
 		var entriesStr string
 		entriesStr, err = dc.ReadString()
 		if err != nil {
 			return msgp.WrapError(err, "EntriesRaw")
 		}
 		entriesRaw = []byte(entriesStr)
-	} else if entriesType == msgp.BinType {
+	case msgp.BinType:
 		entriesRaw, err = dc.ReadBytes(nil)
 		if err != nil {
 			return msgp.WrapError(err, "EntriesRaw")
 		}
-	} else {
+	default:
 		return msgp.WrapError(fmt.Errorf("invalid type %d", entriesType), "EntriesRaw")
 	}
 

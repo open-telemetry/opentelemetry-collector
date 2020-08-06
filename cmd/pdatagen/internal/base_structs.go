@@ -450,10 +450,7 @@ func (ms *messageStruct) generateStruct(sb *strings.Builder) {
 	}
 	sb.WriteString(newLine)
 	sb.WriteString(os.Expand(messageCopyToFooterTemplate, func(name string) string {
-		switch name {
-		default:
-			panic(name)
-		}
+		panic(name)
 	}))
 }
 
@@ -500,10 +497,7 @@ func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}
 	sb.WriteString(newLine)
 	sb.WriteString(os.Expand(messageFillTestFooterTemplate, func(name string) string {
-		switch name {
-		default:
-			panic(name)
-		}
+		panic(name)
 	}))
 }
 
