@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 

@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
@@ -28,17 +29,15 @@ const (
 	typeStr = "pprof"
 )
 
-// ExtensionFactory is the factory for the extension.
-type Factory struct {
+// NewFactory creates a factory for pprof extension.
+func NewFactory() component.ExtensionFactory {
+	return extensionhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		createExtension)
 }
 
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for the extension.
-func (f *Factory) CreateDefaultConfig() configmodels.Extension {
+func createDefaultConfig() configmodels.Extension {
 	return &Config{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: typeStr,
@@ -48,8 +47,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 	}
 }
 
-// CreateExtension creates the extension based on this config.
-func (f *Factory) CreateExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 	if config.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
@@ -62,6 +60,7 @@ func (f *Factory) CreateExtension(_ context.Context, params component.ExtensionC
 	// while keeping the private function that allow the creation of multiple
 	// instances for unit tests. Summary: only a single instance can be created
 	// via the factory.
+	// TODO: Move this as an option to extensionhelper.
 	if !atomic.CompareAndSwapInt32(&instanceState, instanceNotCreated, instanceCreated) {
 		return nil, errors.New("only a single instance can be created per process")
 	}

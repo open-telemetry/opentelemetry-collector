@@ -40,7 +40,6 @@ type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParam
 // CreateLogsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
 type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (component.LogsProcessor, error)
 
-// factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType                configmodels.Type
 	customUnmarshaler      component.CustomUnmarshaler
@@ -52,7 +51,7 @@ type factory struct {
 
 var _ component.LogsProcessorFactory = new(factory)
 
-// WithCustomUnmarshaler overrides the default "not available" CustomUnmarshaler.
+// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
 func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
@@ -80,7 +79,7 @@ func WithLogs(createLogsProcessor CreateLogsProcessor) FactoryOption {
 	}
 }
 
-// NewFactory returns a component.ProcessorFactory that only supports all types.
+// NewFactory returns a component.ProcessorFactory.
 func NewFactory(
 	cfgType configmodels.Type,
 	createDefaultConfig CreateDefaultConfig,
@@ -154,8 +153,7 @@ type factoryWithUnmarshaler struct {
 	*factory
 }
 
-// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-// there is no need for custom unmarshaling.
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
 func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
 	return f.customUnmarshaler(componentViperSection, intoCfg)
 }
