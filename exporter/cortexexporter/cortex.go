@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,12 +40,12 @@ import (
 
 // cortexExporter converts OTLP metrics to Cortex TimeSeries and sends them to a remote endpoint
 type cortexExporter struct {
-	namespace string
-	endpoint  string
-	client    *http.Client
-	headers   map[string]string
-	wg        *sync.WaitGroup
-	closeChan chan struct{}
+	namespace 		string
+	endpointURL 	*url.URL
+	client    	 	*http.Client
+	headers   	 	map[string]string
+	wg        	 	*sync.WaitGroup
+	closeChan 	  	chan struct{}
 }
 
 // newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
@@ -55,15 +56,17 @@ func newCortexExporter(namespace string, endpoint string, client *http.Client) (
 		return nil, errors.Errorf("http client cannot be nil")
 	}
 
-
-	// endpoint cannot be nil either
+	endpointURL, err := url.ParseRequestURI(endpoint);
+	if err != nil {
+		return nil, errors.Errorf("invalid endpoint")
+	}
 
 	return &cortexExporter{
-		namespace: namespace,
-		endpoint:  endpoint,
-		client:    client,
-		wg:        new(sync.WaitGroup),
-		closeChan: make(chan struct{}),
+		namespace: 	  	namespace,
+		endpointURL:  	endpointURL,
+		client:			client,
+		wg:        		new(sync.WaitGroup),
+		closeChan: 		make(chan struct{}),
 	}, nil
 }
 
@@ -89,32 +92,32 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 		dropped := 0
 		errs := []string{}
 
-		rms := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
-		for _, r := range rms {
+		resourceMetrics := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
+		for _, r := range resourceMetrics {
 			// TODO: add resource attributes as labels
-			for _, inst := range r.InstrumentationLibraryMetrics {
+			for _, instMetrics := range r.InstrumentationLibraryMetrics {
 				// TODO: add instrumentation library information as labels
-				for _, m := range inst.Metrics {
+				for _, metric := range instMetrics.Metrics {
 					// check for valid type and temporality combination
-					ok := validateMetrics(m.MetricDescriptor)
+					ok := validateMetrics(metric.MetricDescriptor)
 					if !ok {
 						dropped++
 						errs = append(errs, "invalid temporality and type combination")
 						continue
 					}
 					// handle individual metric based on type
-					switch m.GetMetricDescriptor().GetType() {
+					switch metric.GetMetricDescriptor().GetType() {
 					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
 						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
-						if err := ce.handleScalarMetric(tsMap, m); err != nil {
+						if err := ce.handleScalarMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					case otlp.MetricDescriptor_HISTOGRAM:
-						if err := ce.handleHistogramMetric(tsMap, m); err != nil {
+						if err := ce.handleHistogramMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					case otlp.MetricDescriptor_SUMMARY:
-						if err := ce.handleSummaryMetric(tsMap, m); err != nil {
+						if err := ce.handleSummaryMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					default:
@@ -157,13 +160,13 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 
 			// create parameters for addSample
 			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
-			lbs := createLabelSet(pt.GetLabels(), nameStr, name)
+			labels := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     float64(pt.Value),
 				Timestamp: int64(pt.TimeUnixNano),
 			}
 
-			addSample(tsMap, sample, lbs, metric.GetMetricDescriptor().GetType())
+			addSample(tsMap, sample, labels, metric.GetMetricDescriptor().GetType())
 		}
 		return nil
 
@@ -176,13 +179,13 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 
 			// create parameters for addSample
 			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
-			lbs := createLabelSet(pt.GetLabels(), nameStr, name)
+			labels := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     pt.Value,
 				Timestamp: int64(pt.TimeUnixNano),
 			}
 
-			addSample(tsMap, sample, lbs, metric.GetMetricDescriptor().GetType())
+			addSample(tsMap, sample, labels, metric.GetMetricDescriptor().GetType())
 		}
 		return nil
 	}
@@ -212,16 +215,16 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			Value:     pt.GetSum(),
 			Timestamp: time,
 		}
-		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumLbs, mType)
+		sumlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumlabels, mType)
 
 		// treat count as a sample in an individual TimeSeries
 		count := &prompb.Sample{
 			Value:     float64(pt.GetCount()),
 			Timestamp: time,
 		}
-		countLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, count, countLbs, mType)
+		countlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
+		addSample(tsMap, count, countlabels, mType)
 
 		// count for +Inf bound
 		var totalCount uint64
@@ -233,8 +236,8 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 				Timestamp: time,
 			}
 			boundStr := strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f', -1, 64)
-			lbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, boundStr)
-			addSample(tsMap, bucket, lbs, mType)
+			labels := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, boundStr)
+			addSample(tsMap, bucket, labels, mType)
 
 			totalCount += bk.GetCount()
 		}
@@ -243,8 +246,8 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 			Value:     float64(totalCount),
 			Timestamp: time,
 		}
-		infLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
-		addSample(tsMap, infBucket, infLbs, mType)
+		inflabels := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
+		addSample(tsMap, infBucket, inflabels, mType)
 	}
 	return nil
 }
@@ -271,16 +274,16 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 			Value:     pt.GetSum(),
 			Timestamp: time,
 		}
-		sumLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumLbs, mType)
+		sumlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumlabels, mType)
 
 		// treat count as a sample in an individual TimeSeries
 		count := &prompb.Sample{
 			Value:     float64(pt.GetCount()),
 			Timestamp: time,
 		}
-		countLbs := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, count, countLbs, mType)
+		countlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
+		addSample(tsMap, count, countlabels, mType)
 
 		// process each percentile/quantile
 		for _, qt := range pt.GetPercentileValues() {
@@ -289,8 +292,8 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 				Timestamp: time,
 			}
 			percentileStr := strconv.FormatFloat(qt.Percentile, 'f', -1, 64)
-			qtLbs := createLabelSet(pt.GetLabels(), nameStr, baseName, quantileStr, percentileStr)
-			addSample(tsMap, quantile, qtLbs, mType)
+			qtlabels := createLabelSet(pt.GetLabels(), nameStr, baseName, quantileStr, percentileStr)
+			addSample(tsMap, quantile, qtlabels, mType)
 		}
 	}
 	return nil
@@ -316,7 +319,7 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	compressedData := snappy.Encode(buf, data)
 
 	//Create the HTTP POST request to send to the endpoint
-	httpReq, err := http.NewRequest("POST", ce.endpoint, bytes.NewReader(compressedData))
+	httpReq, err := http.NewRequest("POST", ce.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
 		return err
 	}
@@ -326,12 +329,10 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 		httpReq.Header.Set(name, value)
 	}
 
-	// Add necessary headers
+	// Add necessary headers specified by:
  	// https://cortexmetrics.io/docs/apis/#remote-api
 	httpReq.Header.Add("Content-Encoding", "snappy")
-	httpReq.Header.Add("Accept-Encoding", "snappy")
 	httpReq.Header.Set("User-Agent", "otel-collector")
-
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 

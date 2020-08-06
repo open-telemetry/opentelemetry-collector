@@ -80,6 +80,7 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings:   qs,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			ReadBufferSize: 0,
 			WriteBufferSize: 512 * 1024,
 		},
 	}

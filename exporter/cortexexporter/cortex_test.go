@@ -347,15 +347,55 @@ func Test_newCortexExporter(t *testing.T) {
 		Namespace:          "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
-	c, _ := config.HTTPClientSettings.ToClient()
-	ce, err := newCortexExporter(config.HTTPClientSettings.Endpoint, config.Namespace, c)
-	require.NoError(t, err)
-	require.NotNil(t, ce)
-	assert.NotNil(t, ce.namespace)
-	assert.NotNil(t, ce.endpoint)
-	assert.NotNil(t, ce.client)
-	assert.NotNil(t, ce.closeChan)
-	assert.NotNil(t, ce.wg)
+	tests := []struct {
+		name 		string
+		config 		*Config
+		namespace 	string
+		endpoint 	string
+		client		*http.Client
+		returnError bool
+	} {
+		{
+			"invalid_URL",
+			config,
+			"test",
+		"invalid URL",
+		http.DefaultClient,
+		true,
+		},
+		{
+			"nil_client",
+			config,
+			"test",
+			"http://some.url:9411/api/prom/push",
+			nil,
+			true,
+		},
+		{
+			"success_case",
+			config,
+			"test",
+			"http://some.url:9411/api/prom/push",
+			http.DefaultClient,
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ce,err := newCortexExporter(tt.namespace,tt.endpoint,tt.client)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			require.NotNil(t, ce)
+			assert.NotNil(t, ce.namespace)
+			assert.NotNil(t, ce.endpointURL)
+			assert.NotNil(t, ce.client)
+			assert.NotNil(t, ce.closeChan)
+			assert.NotNil(t, ce.wg)
+		})
+	}
 }
 
 // Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.

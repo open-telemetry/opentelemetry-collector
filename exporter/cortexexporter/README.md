@@ -51,5 +51,3 @@ File structure:
 - config.go: configuration struct of the exporter
 
 - factory.go: initialization methods for creating default configuration and the exporter
-
-- tetsutil.go: helper methods for generating OTLP metrics and Cortex TimeSeries for testing.
