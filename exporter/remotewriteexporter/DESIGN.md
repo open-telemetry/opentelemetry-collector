@@ -1,6 +1,6 @@
 
 
-# **OpenTelemetry Collector Prometheus Remote Write Exporter Design**
+# **OpenTelemetry Collector Prometheus Remote Write/Cortex Exporter Design**
 
 Authors: @huyan0, @danielbang907
 
@@ -10,7 +10,7 @@ Date: July 30, 2020
 
 Prometheus can be integrated with remote storage systems that supports its remote write API. Existing remote storage integration support is included in [Cortex](https://cortexmetrics.io/docs/apis/), [influxDB](https://docs.influxdata.com/influxdb/v1.8/supported_protocols/prometheus/), and many [others](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage).
 
-The following diagram shows an example of Prometheus remote write API usage, with Cortex as a remote storage backend.
+The following diagram shows an example of Prometheus remote write API usage, with Cortex,n open source, horizontally scalable, highly available, multi-tenant, long term storage, as a remote storage backend.
 
 ![Cortex Archietecture](https://raw.githubusercontent.com/open-o11y/opentelemetry-collector/design-doc/exporter/cortexexporter/cortex.png)
 
@@ -18,7 +18,7 @@ Our project is focused on developing an exporter for the OpenTelemetry Collector
 
 ### **1.1 Remote Write API**
 
-The Prometheus remote write exporter should write metrics to a remote URL in a snappy-compressed, protocol buffer encoded HTTP request defined by the Prometheus remote write API. Each request should encode multiple Prometheus remote write TimeSeries, which are composed of a set of labels and a collection of samples. Each label contains a name-value pair of strings, and each sample contains a timestamp-value number pair.
+The Prometheus remote write/Cortex exporter should write metrics to a remote URL in a snappy-compressed, [protocol buffer](https://github.com/prometheus/prometheus/blob/master/prompb/remote.proto#L22) encoded HTTP request defined by the Prometheus remote write API. Each request should encode multiple Prometheus remote write TimeSeries, which are composed of a set of labels and a collection of samples. Each label contains a name-value pair of strings, and each sample contains a timestamp-value number pair.
 
 ![Image of TimeSeries](https://raw.githubusercontent.com/open-o11y/opentelemetry-collector/design-doc/exporter/cortexexporter/timeseries.png)
 
@@ -43,12 +43,12 @@ Another gap is that OTLP metric definition is still in development. This exporte
 **Assumptions:**
 Because of the gaps mentioned above, this project will convert from the current OTLP metrics and work under the assumption one of the above solutions will be implemented, and all incoming monotonic scalars/histogram/summary metrics should be cumulative or otherwise dropped. More details on the behavior of the exporter is in section 2.2.
 
-## **2. Prometheus Remote Write Exporter**
+## **2. Prometheus Remote Write/Cortex Exporter**
 
-The Prometheus remote write exporter should receive  OTLP metrics, group data points by metric name and label set, convert each group to a TimeSeries, and send all TimeSeries to a storage backend via HTTP. 
+The Prometheus remote write/Cortex exporter should receive  OTLP metrics, group data points by metric name and label set, convert each group to a TimeSeries, and send all TimeSeries to a storage backend via HTTP. 
 
 ### **2.1 Receiving Metrics**
-The  Prometheus remote write exporter receives a MetricsData instance in its PushMetrics() function. MetricsData contains a collection of Metric instances. Each Metric instance contains a series of data points, and each data point has a set of labels associated with it. Since Prometheus remote write TimeSeries are identified by unique sets of labels, the exporter needs to group data points within each Metric instance by their label set, and convert each group to a TimeSeries. 
+The  Prometheus remote write/Cortex exporter receives a MetricsData instance in its PushMetrics() function. MetricsData contains a collection of Metric instances. Each Metric instance contains a series of data points, and each data point has a set of labels associated with it. Since Prometheus remote write TimeSeries are identified by unique sets of labels, the exporter needs to group data points within each Metric instance by their label set, and convert each group to a TimeSeries. 
 
 To group data points by label set, the exporter should create a map with each PushMetrics() call. The key of the map should represent a combination of the following information: 
 
@@ -118,7 +118,7 @@ When adding a quantile of the summary data point to the map, the string signatur
 
 ### **2.3 Exporting Metrics**
 
-The Prometheus remote write exporter should call proto.Marshal() to convert multiple TimeSeries to a byte array. Then, the exporter should send the byte array to Prometheus remote storage in a HTTP request.
+The Prometheus remote write/Cortex exporter should call proto.Marshal() to convert multiple TimeSeries to a byte array. Then, the exporter should send the byte array to Prometheus remote storage in a HTTP request.
 
 
 Authentication credentials should be added to each request before sending to the backend. Basic auth and bearer token headers can be added using Golang http.Client’s default configuration options. Other authentication headers can be added by implementing a client interceptor.
@@ -220,12 +220,12 @@ This method will use the NewFactory method within the `exporterhelper` package t
 
     createDefaultConfig
 
-This method creates the default configuration for Prometheus remote write exporter.
+This method creates the default configuration for Prometheus remote write/Cortex exporter.
 
 
     createMetricsExporter
 
-This method constructs a new http.Client with interceptors that add headers to any request it sends. Then, this method initializes a new Prometheus remote write exporter exporter with the http.Client. This method constructs a collector Prometheus remote write exporter exporter with the created SDK exporter 
+This method constructs a new http.Client with interceptors that add headers to any request it sends. Then, this method initializes a new Prometheus remote write exporter/Cortex exporter with the http.Client. This method constructs a collector Prometheus remote write/Cortex exporter exporter with the created SDK exporter 
 
 
 
@@ -233,7 +233,7 @@ This method constructs a new http.Client with interceptors that add headers to a
 
 ### **4.1 Concurrency**
 
-The Prometheus remote write exporter should be thread-safe; In this design, the only resource shared across goroutines is the http.Client from the Golang library. It is thread-safe, thus, our code is thread-safe. 
+The Prometheus remote write/Cortex exporter should be thread-safe; In this design, the only resource shared across goroutines is the http.Client from the Golang library. It is thread-safe, thus, our code is thread-safe. 
 
 ### **4.2 Shutdown Behavior**
 
