@@ -22,15 +22,17 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	configmodels.ExporterSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	// squash ensures fields are correctly decoded in embedded struct.
+	configmodels.ExporterSettings  `mapstructure:",squash"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+
 	// Namespace if set, exports metrics under the provided value.*/
 	Namespace string `mapstructure:"namespace"`
 
 	// Optional headers configuration for authorization and security/extra metadata
 	Headers map[string]string `mapstructure:"headers"`
 
-	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:"http_setting"` // squash ensures fields are correctly decoded in embedded struct.
+	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:"http_setting"`
 }

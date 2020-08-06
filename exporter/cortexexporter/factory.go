@@ -35,7 +35,8 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
+	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
 	cCfg := cfg.(*Config)
 
