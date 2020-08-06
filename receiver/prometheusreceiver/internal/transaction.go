@@ -57,32 +57,34 @@ var errNoJobInstance = errors.New("job or instance cannot be found from labels")
 // will be flush to the downstream consumer, or Rollback, which means discard all the data, is called and all data
 // points are discarded.
 type transaction struct {
-	id                 int64
-	ctx                context.Context
-	isNew              bool
-	sink               consumer.MetricsConsumer
-	job                string
-	instance           string
-	jobsMap            *JobsMap
-	useStartTimeMetric bool
-	receiverName       string
-	ms                 MetadataService
-	node               *commonpb.Node
-	metricBuilder      *metricBuilder
-	logger             *zap.Logger
+	id                   int64
+	ctx                  context.Context
+	isNew                bool
+	sink                 consumer.MetricsConsumer
+	job                  string
+	instance             string
+	jobsMap              *JobsMap
+	useStartTimeMetric   bool
+	startTimeMetricRegex string
+	receiverName         string
+	ms                   MetadataService
+	node                 *commonpb.Node
+	metricBuilder        *metricBuilder
+	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
 	return &transaction{
-		id:                 atomic.AddInt64(&idSeq, 1),
-		ctx:                ctx,
-		isNew:              true,
-		sink:               sink,
-		jobsMap:            jobsMap,
-		useStartTimeMetric: useStartTimeMetric,
-		receiverName:       receiverName,
-		ms:                 ms,
-		logger:             logger,
+		id:                   atomic.AddInt64(&idSeq, 1),
+		ctx:                  ctx,
+		isNew:                true,
+		sink:                 sink,
+		jobsMap:              jobsMap,
+		useStartTimeMetric:   useStartTimeMetric,
+		startTimeMetricRegex: startTimeMetricRegex,
+		receiverName:         receiverName,
+		ms:                   ms,
+		logger:               logger,
 	}
 }
 
@@ -133,7 +135,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.logger)
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger)
 	tr.isNew = false
 	return nil
 }
