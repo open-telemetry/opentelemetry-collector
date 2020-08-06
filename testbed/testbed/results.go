@@ -84,7 +84,7 @@ func (r *PerformanceResults) Save() {
 }
 
 // Add results for one test.
-func (r *PerformanceResults) Add(testName string, result interface{}) {
+func (r *PerformanceResults) Add(_ string, result interface{}) {
 	testResult, ok := result.(*PerformanceTestResult)
 	if !ok {
 		return
@@ -160,7 +160,7 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 			"----------------------------------------|------|-------:|---------:|-------------:|------------:|--------\n")
 }
 
-func (r *CorrectnessResults) Add(testName string, result interface{}) {
+func (r *CorrectnessResults) Add(_ string, result interface{}) {
 	testResult, ok := result.(*CorrectnessTestResult)
 	if !ok {
 		return

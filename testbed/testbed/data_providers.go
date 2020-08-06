@@ -266,7 +266,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (data.MetricData, bool) {
 	return metricData, false
 }
 
-func (dp *PerfTestDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {
+func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span {
 	// function not supported for this data provider
 	return nil
 }
