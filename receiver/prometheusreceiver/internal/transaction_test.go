@@ -24,6 +24,9 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"google.golang.org/protobuf/proto"
+
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func Test_transaction(t *testing.T) {
@@ -60,16 +63,16 @@ func Test_transaction(t *testing.T) {
 	rn := "prometheus"
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
-		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, true, rn, ms, mcon, testLogger)
+		nomc := exportertest.NewNopMetricsExporter()
+		tr := newTransaction(context.Background(), nil, true, rn, ms, nomc, testLogger)
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
 	})
 
 	t.Run("Rollback dose nothing", func(t *testing.T) {
-		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, true, rn, ms, mcon, testLogger)
+		nomc := exportertest.NewNopMetricsExporter()
+		tr := newTransaction(context.Background(), nil, true, rn, ms, nomc, testLogger)
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
 		}
@@ -77,8 +80,8 @@ func Test_transaction(t *testing.T) {
 
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
-		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, true, rn, ms, mcon, testLogger)
+		nomc := exportertest.NewNopMetricsExporter()
+		tr := newTransaction(context.Background(), nil, true, rn, ms, nomc, testLogger)
 		if _, got := tr.Add(badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -89,8 +92,8 @@ func Test_transaction(t *testing.T) {
 		{Name: "job", Value: "test2"},
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
-		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, true, rn, ms, mcon, testLogger)
+		nomc := exportertest.NewNopMetricsExporter()
+		tr := newTransaction(context.Background(), nil, true, rn, ms, nomc, testLogger)
 		if _, got := tr.Add(jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -100,8 +103,8 @@ func Test_transaction(t *testing.T) {
 		{Name: "job", Value: "test"},
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
-		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, true, rn, ms, mcon, testLogger)
+		sink := new(exportertest.SinkMetricsExporter)
+		tr := newTransaction(context.Background(), nil, true, rn, ms, sink, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
@@ -110,28 +113,34 @@ func Test_transaction(t *testing.T) {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
 		expected := createNode("test", "localhost:8080", "http")
-		md := mcon.md
-		if !proto.Equal(md.Node, expected) {
-			t.Errorf("generated node %v and expected node %v is different\n", md.Node, expected)
+		mds := sink.AllMetrics()
+		if len(mds) != 1 {
+			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())
+		}
+		ocmds := pdatautil.MetricsToMetricsData(mds[0])
+		if len(ocmds) != 1 {
+			t.Fatalf("wanted one batch per node, got %v\n", sink.AllMetrics())
+		}
+		if !proto.Equal(ocmds[0].Node, expected) {
+			t.Errorf("generated node %v and expected node %v is different\n", ocmds[0].Node, expected)
 		}
 
-		if len(md.Metrics) != 1 {
-			t.Errorf("expecting one metrics, but got %v\n", len(md.Metrics))
+		if len(ocmds[0].Metrics) != 1 {
+			t.Errorf("expecting one metrics, but got %v\n", len(ocmds[0].Metrics))
 		}
 	})
 
 	t.Run("Drop NaN value", func(t *testing.T) {
-		mcon := newMockConsumer()
-		tr := newTransaction(context.Background(), nil, true, rn, ms, mcon, testLogger)
+		sink := new(exportertest.SinkMetricsExporter)
+		tr := newTransaction(context.Background(), nil, true, rn, ms, sink, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
-
-		if mcon.md != nil {
-			t.Errorf("wanted nil, got %v\n", mcon.md)
+		if len(sink.AllMetrics()) != 0 {
+			t.Errorf("wanted nil, got %v\n", sink.AllMetrics())
 		}
 	})
 

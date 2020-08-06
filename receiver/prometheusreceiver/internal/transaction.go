@@ -34,6 +34,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -59,7 +60,7 @@ type transaction struct {
 	id                 int64
 	ctx                context.Context
 	isNew              bool
-	sink               consumer.MetricsConsumerOld
+	sink               consumer.MetricsConsumer
 	job                string
 	instance           string
 	jobsMap            *JobsMap
@@ -71,7 +72,7 @@ type transaction struct {
 	logger             *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string, ms MetadataService, sink consumer.MetricsConsumerOld, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                 atomic.AddInt64(&idSeq, 1),
 		ctx:                ctx,
@@ -182,7 +183,7 @@ func (tr *transaction) Commit() error {
 			Metrics: metrics,
 		}
 		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
-		err = tr.sink.ConsumeMetricsData(ctx, md)
+		err = tr.sink.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
 	}
 	obsreport.EndMetricsReceiveOp(
 		ctx, dataformat, numPoints, numTimeseries, err)

@@ -15,13 +15,9 @@
 package internal
 
 import (
-	"context"
-
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 // test helpers
@@ -48,19 +44,6 @@ func (m *mockMetadataCache) Metadata(metricName string) (scrape.MetricMetadata, 
 
 func (m *mockMetadataCache) SharedLabels() labels.Labels {
 	return labels.FromStrings("__scheme__", "http")
-}
-
-func newMockConsumer() *mockConsumer {
-	return &mockConsumer{}
-}
-
-type mockConsumer struct {
-	md *consumerdata.MetricsData
-}
-
-func (m *mockConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
-	m.md = &md
-	return nil
 }
 
 type mockScrapeManager struct {

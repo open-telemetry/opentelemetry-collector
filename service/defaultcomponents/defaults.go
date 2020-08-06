@@ -70,7 +70,7 @@ func Components() (
 		jaegerreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
-		&prometheusreceiver.Factory{},
+		prometheusreceiver.NewFactory(),
 		&opencensusreceiver.Factory{},
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
