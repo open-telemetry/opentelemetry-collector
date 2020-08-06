@@ -138,25 +138,25 @@ func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescripto
 	}
 }
 
-func getIntDataPoint(lbls []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.Int64DataPoint{
+func getIntDataPoint(labels []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.Int64DataPoint{
 	return &otlp.Int64DataPoint{
-		Labels:            lbls,
+		Labels:            labels,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      ts,
 		Value:             value,
 	}
 }
 
-func getDoubleDataPoint(lbls []*commonpb.StringKeyValue, value float64, ts uint64) *otlp.DoubleDataPoint {
+func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uint64) *otlp.DoubleDataPoint {
 	return &otlp.DoubleDataPoint{
-		Labels:            lbls,
+		Labels:            labels,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      ts,
 		Value:             value,
 	}
 }
 
-func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+func getHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
 	bks := []*otlp.HistogramDataPoint_Bucket{}
 	for _, c := range buckets {
 		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
@@ -165,7 +165,7 @@ func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts uint64, sum float
 		})
 	}
 	return &otlp.HistogramDataPoint{
-		Labels:            lbls,
+		Labels:            labels,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      ts,
 		Count:             count,
@@ -175,7 +175,7 @@ func getHistogramDataPoint(lbls []*commonpb.StringKeyValue, ts uint64, sum float
 	}
 }
 
-func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
+func getSummaryDataPoint(labels []*commonpb.StringKeyValue, ts time.Time, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
 	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
 	for i, v := range values {
 		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
@@ -184,7 +184,7 @@ func getSummaryDataPoint(lbls []*commonpb.StringKeyValue, ts time.Time, sum floa
 			})
 	}
 	return &otlp.SummaryDataPoint{
-		Labels:            lbls,
+		Labels:            labels,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      uint64(ts.Unix()),
 		Count:             count,
@@ -228,9 +228,9 @@ func getSample(v float64, t uint64) prompb.Sample {
 	}
 }
 
-func getTimeSeries (lbls []prompb.Label, samples...prompb.Sample) *prompb.TimeSeries{
+func getTimeSeries (labels []prompb.Label, samples...prompb.Sample) *prompb.TimeSeries{
 	return &prompb.TimeSeries{
-		Labels:              lbls,
+		Labels:              labels,
 		Samples:              samples,
 		XXX_NoUnkeyedLiteral: struct{}{},
 		XXX_unrecognized:     nil,

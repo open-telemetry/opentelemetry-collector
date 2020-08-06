@@ -172,7 +172,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
 			"-name-" + name1 + "_bucket" + lb1Sig,
 	}
-	lbls := map[string][]prompb.Label{
+	labels := map[string][]prompb.Label{
 		sum:   append(promLbs1, getPromLabels("name", name1+"_sum")...),
 		count: append(promLbs1, getPromLabels("name", name1+"_count")...),
 		bucket1: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
@@ -211,11 +211,11 @@ func Test_handleHistogramMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				sigs[sum]:       getTimeSeries(lbls[sum], getSample(floatVal2, time1)),
-				sigs[count]:     getTimeSeries(lbls[count], getSample(float64(intVal2), time1)),
-				sigs[bucket1]:   getTimeSeries(lbls[bucket1], getSample(float64(intVal1), time1)),
-				sigs[bucket2]:   getTimeSeries(lbls[bucket2], getSample(float64(intVal1), time1)),
-				sigs[bucketInf]: getTimeSeries(lbls[bucketInf], getSample(float64(intVal2), time1)),
+				sigs[sum]:       getTimeSeries(labels[sum], getSample(floatVal2, time1)),
+				sigs[count]:     getTimeSeries(labels[count], getSample(float64(intVal2), time1)),
+				sigs[bucket1]:   getTimeSeries(labels[bucket1], getSample(float64(intVal1), time1)),
+				sigs[bucket2]:   getTimeSeries(labels[bucket2], getSample(float64(intVal1), time1)),
+				sigs[bucketInf]: getTimeSeries(labels[bucketInf], getSample(float64(intVal2), time1)),
 			},
 		},
 	}
@@ -257,7 +257,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 		q2: typeSummary + "-name-" + name1 + "-" + "quantile-" +
 			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
 	}
-	lbls := map[string][]prompb.Label{
+	labels := map[string][]prompb.Label{
 		sum:   append(promLbs1, getPromLabels("name", name1+"_sum")...),
 		count: append(promLbs1, getPromLabels("name", name1+"_count")...),
 		q1: append(promLbs1, getPromLabels("name", name1, "quantile",
@@ -309,10 +309,10 @@ func Test_handleSummaryMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				sigs[sum]:   getTimeSeries(lbls[sum], getSample(floatVal2, time1)),
-				sigs[count]: getTimeSeries(lbls[count], getSample(float64(intVal2), time1)),
-				sigs[q1]:    getTimeSeries(lbls[q1], getSample(float64(intVal1), time1)),
-				sigs[q2]:    getTimeSeries(lbls[q2], getSample(float64(intVal1), time1)),
+				sigs[sum]:   getTimeSeries(labels[sum], getSample(floatVal2, time1)),
+				sigs[count]: getTimeSeries(labels[count], getSample(float64(intVal2), time1)),
+				sigs[q1]:    getTimeSeries(labels[q1], getSample(float64(intVal1), time1)),
+				sigs[q2]:    getTimeSeries(labels[q2], getSample(float64(intVal1), time1)),
 			},
 		},
 	}
