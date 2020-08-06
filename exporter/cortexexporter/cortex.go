@@ -49,16 +49,18 @@ type cortexExporter struct {
 
 // newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func newCortexExporter(ns string, ep string, client *http.Client) (*cortexExporter, error) {
+func newCortexExporter(namespace string, endpoint string, client *http.Client) (*cortexExporter, error) {
 
 	if client == nil {
 		return nil, errors.Errorf("http client cannot be nil")
 	}
+
+
 	// endpoint cannot be nil either
 
 	return &cortexExporter{
-		namespace: ns,
-		endpoint:  ep,
+		namespace: namespace,
+		endpoint:  endpoint,
 		client:    client,
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
