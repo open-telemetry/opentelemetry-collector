@@ -244,7 +244,7 @@ func (v *CorrectnessTestValidator) diffSpanKind(sentSpan *otlptrace.Span, recdSp
 }
 
 func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if sentSpan.StartTimeUnixNano != recdSpan.StartTimeUnixNano {
+	if sentSpan.StartTimeUnixNano/1000000 != recdSpan.StartTimeUnixNano/1000000 {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
@@ -254,7 +254,7 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, 
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
-	if sentSpan.EndTimeUnixNano != recdSpan.EndTimeUnixNano {
+	if sentSpan.EndTimeUnixNano/1000000 != recdSpan.EndTimeUnixNano/1000000 {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
@@ -323,7 +323,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 			} else {
 				for i, sentEvent := range sentEvents {
 					recdEvent := recdEvents[i]
-					if sentEvent.TimeUnixNano != recdEvent.TimeUnixNano {
+					if sentEvent.TimeUnixNano/1000000 != recdEvent.TimeUnixNano/1000000 {
 						af := &AssertionFailure{
 							typeName:      "Span",
 							dataComboName: sentSpan.Name,
