@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Implements a factory interface and design pattern to efficiently instantiate metricsExporter
+// instances.
+
 package prometheusremotewriteexporter
 
 import (
@@ -70,7 +73,6 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings.
 	qs := exporterhelper.CreateDefaultQueueSettings()
 	qs.Enabled = false
 
