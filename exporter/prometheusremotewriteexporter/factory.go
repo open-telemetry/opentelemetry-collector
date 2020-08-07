@@ -72,6 +72,8 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	return prwexp, nil
 }
 
+// Instantiates the default version of a Remote Write Exporter config struct to
+// be used by the factory to build Exporter instances
 func createDefaultConfig() configmodels.Exporter {
 	qs := exporterhelper.CreateDefaultQueueSettings()
 	qs.Enabled = false
