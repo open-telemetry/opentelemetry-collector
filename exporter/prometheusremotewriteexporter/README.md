@@ -1,6 +1,6 @@
 This Exporter sends metrics data in Prometheus TimeSeries format to any Prometheus Remote Write compatible backend, such as Cortex.
 
-_TODO: derive namespace and tenant id from Resource attributes or metric labels_
+Non-cumulative monotonic, histogram, and summary OTLP metrics are dropped by this exporter. 
 
 The following settings are required:
 
@@ -45,3 +45,5 @@ File structure:
 - `config.go`: configuration struct of the exporter
 
 - `factory.go`: initialization methods for creating default configuration and the exporter
+
+Feature in development:  derive Prometheus `job` or `instance` label from Resource, or allow users to configure which Resource attributes needs to be added as metric label_
