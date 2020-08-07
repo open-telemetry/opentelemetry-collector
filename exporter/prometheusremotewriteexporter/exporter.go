@@ -52,6 +52,9 @@ func newPrwExporter(namespace string, endpoint string, client *http.Client) (*pr
 	if client == nil {
 		return nil, errors.Errorf("http client cannot be nil")
 	}
+	if len(endpoint) == 0 {
+		return nil, errors.Errorf("invalid endpoint")
+	}
 
 	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
