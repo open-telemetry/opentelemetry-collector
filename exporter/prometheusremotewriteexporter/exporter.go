@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cortexexporter
+package prometheusremotewriteexporter
 
 import (
 	"bufio"
@@ -38,8 +38,8 @@ import (
 
 // TODO: get default labels such as job or instance from Resource
 
-// cortexExporter converts OTLP metrics to Cortex TimeSeries and sends them to a remote endpoint
-type cortexExporter struct {
+// prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
+type prwExporter struct {
 	namespace   string
 	endpointURL *url.URL
 	client      *http.Client
@@ -48,9 +48,9 @@ type cortexExporter struct {
 	closeChan   chan struct{}
 }
 
-// newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
+// newPrwExporter initializes a new prwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func newCortexExporter(namespace string, endpoint string, client *http.Client) (*cortexExporter, error) {
+func newPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
 
 	if client == nil {
 		return nil, errors.Errorf("http client cannot be nil")
@@ -61,7 +61,7 @@ func newCortexExporter(namespace string, endpoint string, client *http.Client) (
 		return nil, errors.Errorf("invalid endpoint")
 	}
 
-	return &cortexExporter{
+	return &prwExporter{
 		namespace:   namespace,
 		endpointURL: endpointURL,
 		client:      client,
@@ -72,20 +72,20 @@ func newCortexExporter(namespace string, endpoint string, client *http.Client) (
 
 // shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (ce *cortexExporter) shutdown(context.Context) error {
-	close(ce.closeChan)
-	ce.wg.Wait()
+func (prwe *prwExporter) shutdown(context.Context) error {
+	close(prwe.closeChan)
+	prwe.wg.Wait()
 	return nil
 }
 
-// pushMetrics converts metrics to Cortex TimeSeries and send to remote endpoint. It maintain a map of TimeSeries,
-// validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
+// pushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
+// TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	ce.wg.Add(1)
-	defer ce.wg.Done()
+func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+	prwe.wg.Add(1)
+	defer prwe.wg.Done()
 	select {
-	case <-ce.closeChan:
+	case <-prwe.closeChan:
 		return pdatautil.MetricCount(md), errors.Errorf("shutdown has been called")
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
@@ -109,15 +109,15 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 					switch metric.GetMetricDescriptor().GetType() {
 					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
 						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
-						if err := ce.handleScalarMetric(tsMap, metric); err != nil {
+						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					case otlp.MetricDescriptor_HISTOGRAM:
-						if err := ce.handleHistogramMetric(tsMap, metric); err != nil {
+						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					case otlp.MetricDescriptor_SUMMARY:
-						if err := ce.handleSummaryMetric(tsMap, metric); err != nil {
+						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					default:
@@ -129,7 +129,7 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 			}
 		}
 
-		if err := ce.export(ctx, tsMap); err != nil {
+		if err := prwe.export(ctx, tsMap); err != nil {
 			return pdatautil.MetricCount(md), err
 		}
 
@@ -144,7 +144,7 @@ func (ce *cortexExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (in
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
-func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 	// add check for nil
 
 	mType := metric.MetricDescriptor.Type
@@ -159,7 +159,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		for _, pt := range metric.Int64DataPoints {
 
 			// create parameters for addSample
-			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
+			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 			labels := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     float64(pt.Value),
@@ -178,7 +178,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 		for _, pt := range metric.DoubleDataPoints {
 
 			// create parameters for addSample
-			name := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
+			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 			labels := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     pt.Value,
@@ -196,7 +196,7 @@ func (ce *cortexExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.HistogramDataPoints == nil {
 		return errors.Errorf("invalid metric type: wants histogram points")
@@ -208,7 +208,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 		mType := metric.GetMetricDescriptor().GetType()
 
 		// sum, count, and buckets of the histogram should append suffix to baseName
-		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
+		baseName := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 
 		// treat sum as sample in an individual TimeSeries
 		sum := &prompb.Sample{
@@ -255,7 +255,7 @@ func (ce *cortexExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSer
 // handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
 // quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *prwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.SummaryDataPoints == nil {
 		return errors.Errorf("invalid metric type: wants summary points")
@@ -267,7 +267,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 		mType := metric.GetMetricDescriptor().GetType()
 
 		// sum and count of the Summary should append suffix to baseName
-		baseName := getPromMetricName(metric.GetMetricDescriptor(), ce.namespace)
+		baseName := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 
 		// treat sum as sample in an individual TimeSeries
 		sum := &prompb.Sample{
@@ -302,7 +302,7 @@ func (ce *cortexExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSerie
 // Because we are adhering closely to the Remote Write API, we must Export a
 // Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
 // for the Remote Write Endpoint to properly receive our Metrics data.
-func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.TimeSeries) error {
+func (prwe *prwExporter) export(ctx context.Context, TsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(TsMap)
 	if err != nil {
@@ -319,13 +319,13 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	compressedData := snappy.Encode(buf, data)
 
 	//Create the HTTP POST request to send to the endpoint
-	httpReq, err := http.NewRequest("POST", ce.endpointURL.String(), bytes.NewReader(compressedData))
+	httpReq, err := http.NewRequest("POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
 		return err
 	}
 
 	//Add optional headers
-	for name, value := range ce.headers {
+	for name, value := range prwe.headers {
 		httpReq.Header.Set(name, value)
 	}
 
@@ -342,7 +342,7 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	_, cancel := context.WithTimeout(context.Background(), ce.client.Timeout)
 	defer cancel()
 
-	httpResp, err := ce.client.Do(httpReq)
+	httpResp, err := prwe.client.Do(httpReq)
 	if err != nil {
 		return err
 	}

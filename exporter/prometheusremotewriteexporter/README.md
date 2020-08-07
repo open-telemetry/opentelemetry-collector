@@ -1,17 +1,13 @@
 This Exporter sends metrics data in Prometheus TimeSeries format to Cortex or any Prometheus Remote Write compatible backend.
 
+_TODO: derive namespace and tenant id from Resource attributes or metric labels_
+
 The following settings are required:
 
 - `endpoint`: protocol:host:port to which the exporter is going to send traces or metrics, using 
 the HTTP/HTTPS protocol. 
 
-- `headers`
-    
-    - `X-Scope-OrgID`: tenant id attached with each request. Not required if Cortex components have the `-auth.enabled=false` argument.
-    
 - `namespace`: suffix to metric name attached to each metric.
-
-TODO: derive namespace and tenant id from Resource attributes or metric labels
 
 The following settings can be optionally configured:
 - `headers`: additional headers attached to each HTTP request. `X-Prometheus-Remote-Write-Version` cannot be set by users

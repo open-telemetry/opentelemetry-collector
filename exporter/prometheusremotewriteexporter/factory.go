@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cortexexporter
+package prometheusremotewriteexporter
 
 import (
 	"context"
@@ -47,26 +47,26 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		return nil, err
 	}
 
-	ce, err := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
+	prwe, err := newPrwExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
 
 	if err != nil {
 		return nil, err
 	}
 
-	cexp, err := exporterhelper.NewMetricsExporter(
+	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
-		ce.pushMetrics,
+		prwe.pushMetrics,
 		exporterhelper.WithTimeout(cCfg.TimeoutSettings),
 		exporterhelper.WithQueue(cCfg.QueueSettings),
 		exporterhelper.WithRetry(cCfg.RetrySettings),
-		exporterhelper.WithShutdown(ce.shutdown),
+		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return cexp, nil
+	return prwexp, nil
 }
 
 func createDefaultConfig() configmodels.Exporter {

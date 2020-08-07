@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cortexexporter
+package prometheusremotewriteexporter
 
 import (
 	"context"
@@ -116,8 +116,8 @@ func Test_handleScalarMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ce := &cortexExporter{}
-			ok := ce.handleScalarMetric(tsMap, tt.m)
+			prw := &prwExporter{}
+			ok := prw.handleScalarMetric(tsMap, tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
@@ -211,8 +211,8 @@ func Test_handleHistogramMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ce := &cortexExporter{}
-			ok := ce.handleHistogramMetric(tsMap, &tt.m)
+			prw := &prwExporter{}
+			ok := prw.handleHistogramMetric(tsMap, &tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
@@ -294,8 +294,8 @@ func Test_handleSummaryMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			ce := &cortexExporter{}
-			ok := ce.handleSummaryMetric(tsMap, &tt.m)
+			prw := &prwExporter{}
+			ok := prw.handleSummaryMetric(tsMap, &tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
 				return
@@ -310,8 +310,8 @@ func Test_handleSummaryMetric(t *testing.T) {
 	}
 }
 
-// Test_newCortexExporter checks that a new exporter instance with non-nil fields is initialized
-func Test_newCortexExporter(t *testing.T) {
+// Test_newPrwExporter checks that a new exporter instance with non-nil fields is initialized
+func Test_newPrwExporter(t *testing.T) {
 	config := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
@@ -356,37 +356,37 @@ func Test_newCortexExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ce, err := newCortexExporter(tt.namespace, tt.endpoint, tt.client)
+			prwe, err := newPrwExporter(tt.namespace, tt.endpoint, tt.client)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
-			require.NotNil(t, ce)
-			assert.NotNil(t, ce.namespace)
-			assert.NotNil(t, ce.endpointURL)
-			assert.NotNil(t, ce.client)
-			assert.NotNil(t, ce.closeChan)
-			assert.NotNil(t, ce.wg)
+			require.NotNil(t, prwe)
+			assert.NotNil(t, prwe.namespace)
+			assert.NotNil(t, prwe.endpointURL)
+			assert.NotNil(t, prwe.client)
+			assert.NotNil(t, prwe.closeChan)
+			assert.NotNil(t, prwe.wg)
 		})
 	}
 }
 
 // Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
-	ce := &cortexExporter{
+	prwe := &prwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
 	errChan := make(chan error, 5)
-	err := ce.shutdown(context.Background())
+	err := prwe.shutdown(context.Background())
 	require.NoError(t, err)
 	errChan = make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := ce.pushMetrics(context.Background(),
+			_, ok := prwe.pushMetrics(context.Background(),
 				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
 			errChan <- ok
 		}()
@@ -493,11 +493,11 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 	HTTPClient := http.DefaultClient
 	//after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	ce, err := newCortexExporter("test", endpoint.String(), HTTPClient)
+	prwe, err := newPrwExporter("test", endpoint.String(), HTTPClient)
 	if err != nil {
 		return err
 	}
-	err = ce.export(context.Background(), testmap)
+	err = prwe.export(context.Background(), testmap)
 	return err
 }
 
@@ -652,9 +652,9 @@ func Test_pushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			sender, nErr := newCortexExporter(config.Namespace, serverURL.String(), c)
+			prwe, nErr := newPrwExporter(config.Namespace, serverURL.String(), c)
 			require.NoError(t, nErr)
-			numDroppedTimeSeries, err := sender.pushMetrics(context.Background(), *tt.md)
+			numDroppedTimeSeries, err := prwe.pushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 			if tt.returnErr {
 				assert.Error(t, err)
