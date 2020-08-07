@@ -68,6 +68,7 @@ func Test_validateMetrics(t *testing.T) {
 		})
 	}
 }
+
 // Test_addSample checks addSample updates the map it receives correctly based on the sample and Label
 // set it receives.
 // Test cases are two samples belonging to the same TimeSeries,  two samples belong to different TimeSeries, and nil
@@ -131,6 +132,7 @@ func Test_addSample(t *testing.T) {
 		})
 	}
 }
+
 // Test_timeSeries checks timeSeriesSignature returns consistent and unique signatures for a distinct label set and
 // metric type combination.
 func Test_timeSeriesSignature(t *testing.T) {
@@ -208,6 +210,12 @@ func Test_createLabelSet(t *testing.T) {
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
+		{
+			"single_left_over_case",
+			lbs1,
+			[]string{label31, value31, label32},
+			getPromLabels(label11, value11, label12, value12, label31, value31),
+		},
 	}
 	// run tests
 	for _, tt := range tests {
@@ -216,16 +224,23 @@ func Test_createLabelSet(t *testing.T) {
 		})
 	}
 }
+
 // Tes_getPromMetricName checks if OTLP metric names are converted to Cortex metric names correctly.
 // Test cases are empty namespace, monotonic metrics that require a total suffix, and metric names that contains
 // invalid characters.
 func Test_getPromMetricName(t *testing.T) {
-	tests := []struct{
-		name 	string
-		desc 	*otlp.MetricDescriptor
-		ns		string
-		want	string
-	} {
+	tests := []struct {
+		name string
+		desc *otlp.MetricDescriptor
+		ns   string
+		want string
+	}{
+		{
+			"nil_case",
+			nil,
+			ns1,
+			"",
+		},
 		{
 			"normal_case",
 			getDescriptor(name1, histogramComb, validCombinations),
@@ -234,27 +249,27 @@ func Test_getPromMetricName(t *testing.T) {
 		},
 		{
 			"empty_namespace",
-			getDescriptor(name1, summaryComb,validCombinations),
+			getDescriptor(name1, summaryComb, validCombinations),
 			"",
 			"valid_single_int_point",
 		},
 		{
 			"total_suffix",
-			getDescriptor(name1, monotonicInt64Comb,validCombinations),
+			getDescriptor(name1, monotonicInt64Comb, validCombinations),
 			ns1,
 			"test_ns_valid_single_int_point_total",
 		},
 		{
 			"dirty_string",
-			getDescriptor(name1+dirty1, monotonicInt64Comb,validCombinations),
-			ns1,
-			"test_ns_valid_single_int_point__total",
+			getDescriptor(name1+dirty1, monotonicInt64Comb, validCombinations),
+			"7" + ns1,
+			"key_7test_ns_valid_single_int_point__total",
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t,tt.want, getPromMetricName(tt.desc,tt.ns))
+			assert.Equal(t, tt.want, getPromMetricName(tt.desc, tt.ns))
 		})
 	}
 

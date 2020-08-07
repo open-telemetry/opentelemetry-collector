@@ -49,7 +49,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	ce, err := newCortexExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	cexp, err := exporterhelper.NewMetricsExporter(
@@ -87,7 +87,7 @@ func createDefaultConfig() configmodels.Exporter {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			ReadBufferSize: 0,
+			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
 		},
 	}

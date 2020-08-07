@@ -18,6 +18,7 @@ package defaultcomponents
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/exporter/cortexexporter"
 	"go.opentelemetry.io/collector/exporter/fileexporter"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
@@ -88,6 +89,7 @@ func Components() (
 		&fileexporter.Factory{},
 		otlpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
+		cortexexporter.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

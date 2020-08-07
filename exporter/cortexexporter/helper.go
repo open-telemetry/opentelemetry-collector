@@ -42,6 +42,7 @@ const (
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
 type ByLabelName []prompb.Label
+
 func (a ByLabelName) Len() int           { return len(a) }
 func (a ByLabelName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -163,7 +164,7 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 	if b.Len() > 0 {
 		b.WriteString(delimeter)
 	}
-	b.WriteString(sanitize(desc.GetName()))
+	b.WriteString(desc.GetName())
 
 	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
 	// units are different.
@@ -178,9 +179,8 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 		b.WriteString(delimeter)
 		b.WriteString(totalStr)
 	}
-	return b.String()
+	return sanitize(b.String())
 }
-
 
 // Simple helper function that takes the <Signature String - *TimeSeries> map
 // and creates a WriteRequest from the struct -- can move to the helper.go file

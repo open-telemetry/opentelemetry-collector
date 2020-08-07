@@ -40,12 +40,12 @@ import (
 
 // cortexExporter converts OTLP metrics to Cortex TimeSeries and sends them to a remote endpoint
 type cortexExporter struct {
-	namespace 		string
-	endpointURL 	*url.URL
-	client    	 	*http.Client
-	headers   	 	map[string]string
-	wg        	 	*sync.WaitGroup
-	closeChan 	  	chan struct{}
+	namespace   string
+	endpointURL *url.URL
+	client      *http.Client
+	headers     map[string]string
+	wg          *sync.WaitGroup
+	closeChan   chan struct{}
 }
 
 // newCortexExporter initializes a new cortexExporter instance and sets fields accordingly.
@@ -56,17 +56,17 @@ func newCortexExporter(namespace string, endpoint string, client *http.Client) (
 		return nil, errors.Errorf("http client cannot be nil")
 	}
 
-	endpointURL, err := url.ParseRequestURI(endpoint);
+	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
 		return nil, errors.Errorf("invalid endpoint")
 	}
 
 	return &cortexExporter{
-		namespace: 	  	namespace,
-		endpointURL:  	endpointURL,
-		client:			client,
-		wg:        		new(sync.WaitGroup),
-		closeChan: 		make(chan struct{}),
+		namespace:   namespace,
+		endpointURL: endpointURL,
+		client:      client,
+		wg:          new(sync.WaitGroup),
+		closeChan:   make(chan struct{}),
 	}, nil
 }
 
@@ -330,7 +330,7 @@ func (ce *cortexExporter) export(ctx context.Context, TsMap map[string]*prompb.T
 	}
 
 	// Add necessary headers specified by:
- 	// https://cortexmetrics.io/docs/apis/#remote-api
+	// https://cortexmetrics.io/docs/apis/#remote-api
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Set("User-Agent", "otel-collector")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")

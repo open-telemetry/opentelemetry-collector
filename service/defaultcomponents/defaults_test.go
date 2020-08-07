@@ -61,6 +61,7 @@ func TestDefaultComponents(t *testing.T) {
 		"file",
 		"otlp",
 		"kafka",
+		"cortex",
 	}
 
 	factories, err := Components()

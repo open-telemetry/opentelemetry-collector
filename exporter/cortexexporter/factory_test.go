@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -35,14 +36,27 @@ func TestCreateDefaultConfig(t *testing.T) {
 //Tests whether or not a correct Metrics Exporter from the default Config parameters
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	params := component.ExporterCreateParams{}
-	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-
-	assert.NoError(t, err)
-}
-
-func TestCreateInstanceViaFactory(t *testing.T) {
-	 //Todo: finish this functionality
+	tests := []struct {
+		name        string
+		cfg         configmodels.Exporter
+		params      component.ExporterCreateParams
+		returnError bool
+	}{
+		{"success_case",
+			factory.CreateDefaultConfig(),
+			component.ExporterCreateParams{},
+			false,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := factory.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }

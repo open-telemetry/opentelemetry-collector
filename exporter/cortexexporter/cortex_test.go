@@ -16,7 +16,6 @@ package cortexexporter
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/internal/data"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -36,9 +35,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/data"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-
 )
 
 // TODO: add bucket and histogram test cases for Test_PushMetrics
@@ -56,12 +55,12 @@ func Test_handleScalarMetric(t *testing.T) {
 			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb1Sig: getTimeSeries(
-			getPromLabels(label11, value11, label12, value12, "name", "different_ts_int_points_total"),
-			getSample(float64(intVal1), time1)),
-		typeMonotonicInt64 + "-name-different_ts_int_points_total" + lb2Sig: getTimeSeries(
-			getPromLabels(label21, value21, label22, value22, "name", "different_ts_int_points_total"),
-			getSample(float64(intVal1), time2)),
+		typeMonotonicDouble + "-name-different_ts_double_points_total" + lb1Sig: getTimeSeries(
+			getPromLabels(label11, value11, label12, value12, "name", "different_ts_double_points_total"),
+			getSample(floatVal1, time1)),
+		typeMonotonicDouble + "-name-different_ts_double_points_total" + lb2Sig: getTimeSeries(
+			getPromLabels(label21, value21, label22, value22, "name", "different_ts_double_points_total"),
+			getSample(floatVal2, time2)),
 	}
 
 	tests := []struct {
@@ -98,14 +97,14 @@ func Test_handleScalarMetric(t *testing.T) {
 			sameTs,
 		},
 		{
-			"different_ts_int_points",
+			"different_ts_double_points",
 			&otlp.Metric{
-				MetricDescriptor: getDescriptor("different_ts_int_points", monotonicInt64Comb, validCombinations),
-				Int64DataPoints: []*otlp.Int64DataPoint{
-					getIntDataPoint(lbs1, intVal1, time1),
-					getIntDataPoint(lbs2, intVal1, time2),
+				MetricDescriptor: getDescriptor("different_ts_double_points", monotonicDoubleComb, validCombinations),
+				Int64DataPoints:  nil,
+				DoubleDataPoints: []*otlp.DoubleDataPoint{
+					getDoubleDataPoint(lbs1, floatVal1, time1),
+					getDoubleDataPoint(lbs2, floatVal2, time2),
 				},
-				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
 				SummaryDataPoints:   nil,
 			},
@@ -142,25 +141,13 @@ func Test_handleHistogramMetric(t *testing.T) {
 	bucket1 := "bucket1"
 	bucket2 := "bucket2"
 	bucketInf := "bucketInf"
-	histPoint := otlp.HistogramDataPoint{
-		Labels:            lbs1,
-		StartTimeUnixNano: 0,
-		TimeUnixNano:      time1,
-		Count:             uint64(intVal2),
-		Sum:               floatVal2,
-		Buckets: []*otlp.HistogramDataPoint_Bucket{
-			{uint64(intVal1),
-				nil,
-			},
-			{uint64(intVal1),
-				nil,
-			},
-		},
-		ExplicitBounds: []float64{
-			floatVal1,
-			floatVal2,
-		},
-	}
+	histPoint := getHistogramDataPoint(
+		lbs1,
+		time1,
+		floatVal2,
+		uint64(intVal2), []float64{floatVal1, floatVal2},
+		[]uint64{uint64(intVal1), uint64(intVal1)})
+
 	// string signature of the data point is the key of the map
 	sigs := map[string]string{
 		sum:   typeHistogram + "-name-" + name1 + "_sum" + lb1Sig,
@@ -206,7 +193,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 				MetricDescriptor:    getDescriptor(name1+"", histogramComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
-				HistogramDataPoints: []*otlp.HistogramDataPoint{&histPoint},
+				HistogramDataPoints: []*otlp.HistogramDataPoint{histPoint},
 				SummaryDataPoints:   nil,
 			},
 			false,
@@ -265,21 +252,9 @@ func Test_handleSummaryMetric(t *testing.T) {
 		q2: append(promLbs1, getPromLabels("name", name1, "quantile",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
-	summaryPoint := otlp.SummaryDataPoint{
-		Labels:            lbs1,
-		StartTimeUnixNano: 0,
-		TimeUnixNano:      uint64(time1),
-		Count:             uint64(intVal2),
-		Sum:               floatVal2,
-		PercentileValues: []*otlp.SummaryDataPoint_ValueAtPercentile{
-			{floatVal1,
-				floatVal1,
-			},
-			{floatVal2,
-				floatVal1,
-			},
-		},
-	}
+
+	summaryPoint := getSummaryDataPoint(lbs1, time1, floatVal2, uint64(intVal2), []float64{floatVal1, floatVal2}, []float64{floatVal1, floatVal1})
+
 	tests := []struct {
 		name        string
 		m           otlp.Metric
@@ -305,7 +280,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    nil,
 				HistogramDataPoints: nil,
-				SummaryDataPoints:   []*otlp.SummaryDataPoint{&summaryPoint},
+				SummaryDataPoints:   []*otlp.SummaryDataPoint{summaryPoint},
 			},
 			false,
 			map[string]*prompb.TimeSeries{
@@ -325,7 +300,7 @@ func Test_handleSummaryMetric(t *testing.T) {
 				assert.Error(t, ok)
 				return
 			}
-			assert.Exactly(t, len(tt.want), len(tsMap))
+			assert.Equal(t, len(tt.want), len(tsMap))
 			for k, v := range tsMap {
 				require.NotNil(t, tt.want[k], k)
 				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
@@ -346,20 +321,20 @@ func Test_newCortexExporter(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	tests := []struct {
-		name 		string
-		config 		*Config
-		namespace 	string
-		endpoint 	string
-		client		*http.Client
+		name        string
+		config      *Config
+		namespace   string
+		endpoint    string
+		client      *http.Client
 		returnError bool
-	} {
+	}{
 		{
 			"invalid_URL",
 			config,
 			"test",
-		"invalid URL",
-		http.DefaultClient,
-		true,
+			"invalid URL",
+			http.DefaultClient,
+			true,
 		},
 		{
 			"nil_client",
@@ -381,7 +356,7 @@ func Test_newCortexExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ce,err := newCortexExporter(tt.namespace,tt.endpoint,tt.client)
+			ce, err := newCortexExporter(tt.namespace, tt.endpoint, tt.client)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -432,24 +407,22 @@ func Test_export(t *testing.T) {
 	sample1 := getSample(floatVal1, time1)
 	sample2 := getSample(floatVal2, time2)
 	ts1 := getTimeSeries(labels, sample1, sample2)
-
-	//This is supposed to represent the Cortex gateway instance, and how the Cortex Gateway receives and parses the writeRequest
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
 		//The following is a handler function that reads the sent httpRequest, unmarshals, and checks if the WriteRequest
 		//preserves the TimeSeries data correctly
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
-		require.NotNil(t,body)
+		require.NotNil(t, body)
 		//Receives the http requests and unzip, unmarshals, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
 
-		dest,err := snappy.Decode(unzipped, body)
-		require.NoError(t,err)
+		dest, err := snappy.Decode(unzipped, body)
+		require.NoError(t, err)
 
 		ok := proto.Unmarshal(dest, writeReq)
 		require.NoError(t, ok)
@@ -457,25 +430,68 @@ func Test_export(t *testing.T) {
 		assert.EqualValues(t, 1, len(writeReq.Timeseries))
 		require.NotNil(t, writeReq.GetTimeseries())
 		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
-		w.WriteHeader(http.StatusAccepted)
-	}))
+		w.WriteHeader(code)
+	}
 
-	defer server.Close()
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
-	endpoint := serverURL.String()
-	err = runExportPipeline(t, ts1, endpoint)
-	assert.NoError(t, err)
+	tests := []struct {
+		name             string
+		ts               prompb.TimeSeries
+		serverUp         bool
+		httpResponseCode int
+		returnError      bool
+	}{
+		{"success_case",
+			*ts1,
+			true,
+			http.StatusAccepted,
+			false,
+		},
+		{
+			"server_no_response_case",
+			*ts1,
+			false,
+			http.StatusAccepted,
+			true,
+		}, {
+			"error_status_code_case",
+			*ts1,
+			true,
+			http.StatusForbidden,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if handleFunc != nil {
+					handleFunc(w, r, tt.httpResponseCode)
+				}
+			}))
+			defer server.Close()
+			serverURL, uErr := url.Parse(server.URL)
+			assert.NoError(t, uErr)
+			if !tt.serverUp {
+				server.Close()
+			}
+			err := runExportPipeline(t, ts1, serverURL)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }
 
-func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint string) error {
+func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) error {
 	//First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
 
 	HTTPClient := http.DefaultClient
 	//after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	ce, err := newCortexExporter("test", endpoint, HTTPClient)
+	ce, err := newCortexExporter("test", endpoint.String(), HTTPClient)
 	if err != nil {
 		return err
 	}
@@ -483,28 +499,29 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint string) err
 	return err
 }
 
-// Bug{@huyan0} success case pass but it should fail; this is because the server gets no request because export() is
-// empty. This test cannot run until export is finished.
-// Test_pushMetrics the correctness and the number of points
+// Test_pushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
+// expected
 func Test_pushMetrics(t *testing.T) {
 	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
-	noDescBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())
+	invalidTypeBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())
+	nilDescBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataNilMetricDescriptor())
+
 	// 10 counter metrics, 2 points in each. Two TimeSeries in total
 	batch := testdata.GenerateMetricDataManyMetricsSameResource(10)
 	setCumulative(&batch)
-	successBatch := pdatautil.MetricsFromInternalMetrics(batch)
+	scalarBatch := pdatautil.MetricsFromInternalMetrics(batch)
 
 	hist := data.MetricDataToOtlp(testdata.GenerateMetricDataOneMetric())
-	hist[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric {
-		MetricDescriptor:getDescriptor("hist_test",  histogramComb,validCombinations),
-		HistogramDataPoints:[]*otlp.HistogramDataPoint{getHistogramDataPoint(
-				lbs1,
-				time1,
-				floatVal1,
-				uint64(intVal1),
-				[]float64{floatVal1},
-				[]uint64{uint64(intVal1)},
-			),
+	hist[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
+		MetricDescriptor: getDescriptor("hist_test", histogramComb, validCombinations),
+		HistogramDataPoints: []*otlp.HistogramDataPoint{getHistogramDataPoint(
+			lbs1,
+			time1,
+			floatVal1,
+			uint64(intVal1),
+			[]float64{floatVal1},
+			[]uint64{uint64(intVal1)},
+		),
 		},
 	}
 
@@ -520,29 +537,53 @@ func Test_pushMetrics(t *testing.T) {
 		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
-		require.NoError(t,err)
+		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
-		ok  := proto.Unmarshal(dest, wr)
+		ok := proto.Unmarshal(dest, wr)
 		require.Nil(t, ok)
 		assert.EqualValues(t, expected, len(wr.Timeseries))
 	}
+
+	summary := data.MetricDataToOtlp(testdata.GenerateMetricDataOneMetric())
+	summary[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
+		MetricDescriptor: getDescriptor("summary_test", summaryComb, validCombinations),
+		SummaryDataPoints: []*otlp.SummaryDataPoint{getSummaryDataPoint(
+			lbs1,
+			time1,
+			floatVal1,
+			uint64(intVal1),
+			[]float64{floatVal1},
+			[]float64{floatVal2},
+		),
+		},
+	}
+	summaryBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(summary))
 
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
 		reqTestFunc          func(t *testing.T, r *http.Request, expected int)
-		expected 			 int
+		expected             int
 		httpResponseCode     int
 		numDroppedTimeSeries int
 		returnErr            bool
 	}{
 		{
-			"no_desc_case",
-			&noDescBatch,
+			"invalid_type_case",
+			&invalidTypeBatch,
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(noDescBatch),
+			pdatautil.MetricCount(invalidTypeBatch),
+			true,
+		},
+		{
+			"nil_desc_case",
+			&nilDescBatch,
+			nil,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilDescBatch),
 			true,
 		},
 		{
@@ -564,8 +605,8 @@ func Test_pushMetrics(t *testing.T) {
 			true,
 		},
 		{
-			"success_case",
-			&successBatch,
+			"scalar_case",
+			&scalarBatch,
 			checkFunc,
 			2,
 			http.StatusAccepted,
@@ -576,6 +617,14 @@ func Test_pushMetrics(t *testing.T) {
 			&histBatch,
 			checkFunc,
 			4,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{"summary_case",
+			&summaryBatch,
+			checkFunc,
+			3,
 			http.StatusAccepted,
 			0,
 			false,

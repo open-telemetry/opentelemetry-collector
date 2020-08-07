@@ -111,7 +111,7 @@ func (ze *zipkinExporter) PushTraceData(ctx context.Context, td consumerdata.Tra
 		return len(td.Spans), fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
 	}
 	_ = resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+	if resp.StatusCode/100 != 2 {
 		return len(td.Spans), fmt.Errorf("failed the request with status code %d", resp.StatusCode)
 	}
 	return 0, nil
