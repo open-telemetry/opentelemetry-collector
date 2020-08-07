@@ -35,13 +35,13 @@ type pReceiver struct {
 	startOnce sync.Once
 	stopOnce  sync.Once
 	cfg       *Config
-	consumer  consumer.MetricsConsumerOld
+	consumer  consumer.MetricsConsumer
 	cancel    context.CancelFunc
 	logger    *zap.Logger
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumerOld) *pReceiver {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *pReceiver {
 	pr := &pReceiver{
 		cfg:      cfg,
 		consumer: next,

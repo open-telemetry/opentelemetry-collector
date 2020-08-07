@@ -39,6 +39,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -1034,7 +1035,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(exportertest.SinkMetricsExporterOld)
+	cms := new(exportertest.SinkMetricsExporter)
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
@@ -1047,11 +1048,14 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	// split and store results by target name
 	results := make(map[string][]consumerdata.MetricsData)
 	for _, m := range metrics {
-		result, ok := results[m.Node.ServiceInfo.Name]
-		if !ok {
-			result = make([]consumerdata.MetricsData, 0)
+		ocmds := pdatautil.MetricsToMetricsData(m)
+		for _, ocmd := range ocmds {
+			result, ok := results[ocmd.Node.ServiceInfo.Name]
+			if !ok {
+				result = make([]consumerdata.MetricsData, 0)
+			}
+			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}
-		results[m.Node.ServiceInfo.Name] = append(result, m)
 	}
 
 	lres, lep := len(results), len(mp.endpoints)
