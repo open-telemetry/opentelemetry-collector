@@ -510,8 +510,8 @@ func TestLogRecord_SeverityText(t *testing.T) {
 func TestLogRecord_SeverityNumber(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, otlplogs.SeverityNumber_UNDEFINED_SEVERITY_NUMBER, ms.SeverityNumber())
-	testValSeverityNumber := otlplogs.SeverityNumber_INFO
+	assert.EqualValues(t, SeverityNumberUNDEFINED, ms.SeverityNumber())
+	testValSeverityNumber := SeverityNumberINFO
 	ms.SetSeverityNumber(testValSeverityNumber)
 	assert.EqualValues(t, testValSeverityNumber, ms.SeverityNumber())
 }
@@ -631,7 +631,7 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetFlags(uint32(0x01))
 	tv.SetSeverityText("INFO")
-	tv.SetSeverityNumber(otlplogs.SeverityNumber_INFO)
+	tv.SetSeverityNumber(SeverityNumberINFO)
 	tv.SetName("test_name")
 	tv.Body().InitEmpty()
 	fillTestAttributeValue(tv.Body())

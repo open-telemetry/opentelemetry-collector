@@ -111,7 +111,7 @@ func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilit
 }
 
 // Start is invoked during service startup.
-func (tsp *tracesamplerprocessor) Start(ctx context.Context, host component.Host) error {
+func (tsp *tracesamplerprocessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -211,7 +211,7 @@ func hash(key []byte, seed uint32) (hash uint32) {
 		remainingBytes += uint32(key[iByte])
 		remainingBytes *= c1
 		remainingBytes = (remainingBytes << r1) | (remainingBytes >> (32 - r1))
-		remainingBytes = remainingBytes * c2
+		remainingBytes *= c2
 		hash ^= remainingBytes
 	}
 

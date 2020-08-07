@@ -269,7 +269,7 @@ func getJaegerProtoSpanTags(span pdata.Span) []model.KeyValue {
 }
 
 func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
-	traceIDHigh, traceIDLow, err := tracetranslator.BytesToUInt64TraceID([]byte(traceID))
+	traceIDHigh, traceIDLow, err := tracetranslator.BytesToUInt64TraceID(traceID)
 	if err != nil {
 		return model.TraceID{}, err
 	}
@@ -283,7 +283,7 @@ func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
 }
 
 func spanIDToJaegerProto(spanID pdata.SpanID) (model.SpanID, error) {
-	uSpanID, err := tracetranslator.BytesToUInt64SpanID([]byte(spanID))
+	uSpanID, err := tracetranslator.BytesToUInt64SpanID(spanID)
 	if err != nil {
 		return model.SpanID(0), err
 	}

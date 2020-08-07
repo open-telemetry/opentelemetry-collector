@@ -27,14 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-func TestFactory_Type(t *testing.T) {
-	factory := Factory{}
-	require.Equal(t, configmodels.Type(typeStr), factory.Type())
-}
-
 func TestFactory_CreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			NameVal: typeStr,
@@ -44,16 +38,14 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		cfg)
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
-	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+	cfg := createDefaultConfig().(*Config)
+	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

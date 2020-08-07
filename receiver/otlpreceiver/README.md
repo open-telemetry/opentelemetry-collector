@@ -25,7 +25,7 @@ The following settings are optional:
   - `MaxConnectionAgeGrace` (default = infinity)
   - `Time` (default = 2h)
   - `Timeout` (default = 20s)
-- `max_recv_msg_size_mib` (default = infinity): sets the maximum size of messages accepted
+- `max_recv_msg_size_mib` (default = 4MB): sets the maximum size of messages accepted
 - `max_concurrent_streams`: sets the limit on the number of concurrent streams
 - `tls_credentials` (default = unset): configures the receiver to use TLS. See
   TLS section below.

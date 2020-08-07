@@ -35,14 +35,9 @@ const (
 type Factory struct {
 }
 
-// Type gets the type of the Receiver config created by this Factory.
+// Type gets the type of the ocReceiver config created by this Factory.
 func (f *Factory) Type() configmodels.Type {
 	return typeStr
-}
-
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
@@ -65,8 +60,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 
 // CreateTraceReceiver creates a  trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
+	_ context.Context,
+	_ *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
@@ -81,7 +76,7 @@ func (f *Factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (f *Factory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 
 	r, err := f.createReceiver(cfg)
 	if err != nil {
@@ -93,7 +88,7 @@ func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger,
 	return r, nil
 }
 
-func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
+func (f *Factory) createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -109,7 +104,7 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 		}
 
 		// We don't have a receiver, so create one.
-		receiver, err = New(
+		receiver, err = newOpenCensusReceiver(
 			rCfg.Name(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, opts...)
 		if err != nil {
 			return nil, err
@@ -123,5 +118,5 @@ func (f *Factory) createReceiver(cfg configmodels.Receiver) (*Receiver, error) {
 // This is the map of already created OpenCensus receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one Receiver object per configuration.
-var receivers = map[*Config]*Receiver{}
+// create separate objects, they must use one ocReceiver object per configuration.
+var receivers = map[*Config]*ocReceiver{}

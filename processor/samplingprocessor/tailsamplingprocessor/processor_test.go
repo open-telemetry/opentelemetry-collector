@@ -212,7 +212,7 @@ func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
 		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
 	}
 
-	tds := []consumerdata.TraceData{}
+	var tds []consumerdata.TraceData
 	for i := range traceIds {
 		spans := make([]*tracepb.Span, i+1)
 		for j := range spans {
@@ -243,17 +243,17 @@ type mockPolicyEvaluator struct {
 	OnDroppedSpansCount    int
 }
 
-var _ (sampling.PolicyEvaluator) = (*mockPolicyEvaluator)(nil)
+var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) OnLateArrivingSpans(earlyDecision sampling.Decision, spans []*tracepb.Span) error {
+func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*tracepb.Span) error {
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate(traceID []byte, trace *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate([]byte, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
-func (m *mockPolicyEvaluator) OnDroppedSpans(traceID []byte, trace *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) OnDroppedSpans([]byte, *sampling.TraceData) (sampling.Decision, error) {
 	m.OnDroppedSpansCount++
 	return m.NextDecision, m.NextError
 }
@@ -264,7 +264,7 @@ type manualTTicker struct {
 
 var _ tTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) Start(d time.Duration) {
+func (t *manualTTicker) Start(time.Duration) {
 	t.Started = true
 }
 
@@ -280,7 +280,7 @@ type syncIDBatcher struct {
 	batchPipe chan idbatcher.Batch
 }
 
-var _ (idbatcher.Batcher) = (*syncIDBatcher)(nil)
+var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
 
 func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 	batches := make(chan idbatcher.Batch, numBatches)
@@ -314,7 +314,7 @@ type mockSpanProcessor struct {
 	TotalSpans int
 }
 
-func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (p *mockSpanProcessor) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
 	p.TotalSpans += len(td.Spans)
 	return nil
 }

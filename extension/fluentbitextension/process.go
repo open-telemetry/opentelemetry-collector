@@ -68,7 +68,7 @@ func constructArgs(tcpEndpoint string) []string {
 	}
 }
 
-func (pm *processManager) Start(ctx context.Context, host component.Host) error {
+func (pm *processManager) Start(ctx context.Context, _ component.Host) error {
 	childCtx, cancel := context.WithCancel(ctx)
 	pm.cancel = cancel
 
@@ -84,7 +84,7 @@ func (pm *processManager) Start(ctx context.Context, host component.Host) error 
 }
 
 // Shutdown is invoked during service shutdown.
-func (pm *processManager) Shutdown(ctx context.Context) error {
+func (pm *processManager) Shutdown(context.Context) error {
 	pm.cancel()
 	t := time.NewTimer(5 * time.Second)
 

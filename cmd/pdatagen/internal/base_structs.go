@@ -251,7 +251,7 @@ func Test${structName}_Append(t *testing.T) {
 	es.Append(&emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
-	emptyVal2:= New${elementName}()
+	emptyVal2 := New${elementName}()
 	emptyVal2.InitEmpty()
 
 	es.Append(&emptyVal2)
@@ -450,10 +450,7 @@ func (ms *messageStruct) generateStruct(sb *strings.Builder) {
 	}
 	sb.WriteString(newLine)
 	sb.WriteString(os.Expand(messageCopyToFooterTemplate, func(name string) string {
-		switch name {
-		default:
-			panic(name)
-		}
+		panic(name)
 	}))
 }
 
@@ -500,10 +497,7 @@ func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}
 	sb.WriteString(newLine)
 	sb.WriteString(os.Expand(messageFillTestFooterTemplate, func(name string) string {
-		switch name {
-		default:
-			panic(name)
-		}
+		panic(name)
 	}))
 }
 

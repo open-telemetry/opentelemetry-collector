@@ -24,7 +24,7 @@ import (
 
 const memStatesLen = 2
 
-func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsageDataPoint(idps.At(0), usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.At(1), freeStateLabelValue, int64(memInfo.Available))
+func appendMemoryUsageStateDataPoints(idps pdata.Int64DataPointSlice, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
+	initializeMemoryUsageDataPoint(idps.At(0), now, usedStateLabelValue, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.At(1), now, freeStateLabelValue, int64(memInfo.Available))
 }

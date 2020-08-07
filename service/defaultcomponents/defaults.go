@@ -54,13 +54,13 @@ func Components() (
 	component.Factories,
 	error,
 ) {
-	errs := []error{}
+	var errs []error
 
 	extensions, err := component.MakeExtensionFactoryMap(
-		&healthcheckextension.Factory{},
-		&pprofextension.Factory{},
-		&zpagesextension.Factory{},
-		&fluentbitextension.Factory{},
+		healthcheckextension.NewFactory(),
+		pprofextension.NewFactory(),
+		zpagesextension.NewFactory(),
+		fluentbitextension.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -70,7 +70,7 @@ func Components() (
 		jaegerreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
-		&prometheusreceiver.Factory{},
+		prometheusreceiver.NewFactory(),
 		&opencensusreceiver.Factory{},
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
@@ -81,11 +81,11 @@ func Components() (
 
 	exporters, err := component.MakeExporterFactoryMap(
 		&opencensusexporter.Factory{},
-		&prometheusexporter.Factory{},
+		prometheusexporter.NewFactory(),
 		loggingexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
-		&fileexporter.Factory{},
+		fileexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 	)

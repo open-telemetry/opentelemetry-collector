@@ -15,138 +15,62 @@ package fileexporter
 
 import (
 	"context"
-	"encoding/json"
-	"strconv"
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
+	collectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
+	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
+	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestFileTraceExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	lte := &Exporter{file: mf}
+	lte := &fileExporter{file: mf}
 	require.NotNil(t, lte)
 
-	td := consumerdata.TraceData{
-		Resource: &resourcepb.Resource{
-			Type:   "ServiceA",
-			Labels: map[string]string{"attr1": "value1"},
-		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte("123"),
-				SpanId:  []byte("456"),
-				Name:    &tracepb.TruncatableString{Value: "Checkout"},
-				Kind:    tracepb.Span_CLIENT,
-			},
-			{
-				Name: &tracepb.TruncatableString{Value: "Frontend"},
-				Kind: tracepb.Span_SERVER,
-			},
-		},
-	}
-	assert.NoError(t, lte.ConsumeTraceData(context.Background(), td))
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
+
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
-	var j map[string]interface{}
-	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	var j collectortrace.ExportTraceServiceRequest
+	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, j,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"type":   "ServiceA",
-				"labels": map[string]interface{}{"attr1": "value1"},
-			},
-			"spans": []interface{}{
-				map[string]interface{}{
-					"traceId": "MTIz", // base64 encoding of "123"
-					"spanId":  "NDU2", // base64 encoding of "456"
-					"kind":    "CLIENT",
-					"name":    map[string]interface{}{"value": "Checkout"},
-				},
-				map[string]interface{}{
-					"kind": "SERVER",
-					"name": map[string]interface{}{"value": "Frontend"},
-				},
-			},
-		})
+	assert.EqualValues(t, pdata.TracesToOtlp(td), j.ResourceSpans)
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	lme := &Exporter{file: mf}
+	lme := &fileExporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := consumerdata.MetricsData{
-		Resource: &resourcepb.Resource{
-			Type:   "ServiceA",
-			Labels: map[string]string{"attr1": "value1"},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "my-metric",
-					Description: "My metric",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
-						},
-					},
-				},
-			},
-		},
-	}
-	assert.NoError(t, lme.ConsumeMetricsData(context.Background(), md))
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
-	var j map[string]interface{}
-	assert.NoError(t, json.Unmarshal(mf.Bytes(), &j))
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	var j collectormetrics.ExportMetricsServiceRequest
+	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, j,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"type":   "ServiceA",
-				"labels": map[string]interface{}{"attr1": "value1"},
-			},
-			"metrics": []interface{}{
-				map[string]interface{}{
-					"metricDescriptor": map[string]interface{}{
-						"name":        "my-metric",
-						"description": "My metric",
-						"type":        "GAUGE_INT64",
-					},
-					"timeseries": []interface{}{
-						map[string]interface{}{
-							"points": []interface{}{
-								map[string]interface{}{
-									"int64Value": "123",
-								},
-							},
-						},
-					},
-				},
-			},
-		})
+	assert.EqualValues(t, data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)), j.ResourceMetrics)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
 	mf := &testutil.LimitedWriter{}
-	exporter := &Exporter{file: mf}
+	exporter := &fileExporter{file: mf}
 	require.NotNil(t, exporter)
 
 	now := time.Now()
@@ -199,55 +123,11 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromOtlp(ld)))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
-	decoder := json.NewDecoder(mf)
-	var j map[string]interface{}
-	assert.NoError(t, decoder.Decode(&j))
+	var unmarshaler = &jsonpb.Unmarshaler{}
+	var j collectorlogs.ExportLogsServiceRequest
 
-	assert.EqualValues(t,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"attributes": []interface{}{
-					map[string]interface{}{
-						"key": "attr1",
-						"value": map[string]interface{}{
-							"stringValue": "value1",
-						},
-					},
-				},
-			},
-			"logs": []interface{}{
-				map[string]interface{}{
-					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"name":         "logA",
-				},
-				map[string]interface{}{
-					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"name":         "logB",
-				},
-			},
-		}, j)
-
-	require.NoError(t, decoder.Decode(&j))
-
-	assert.EqualValues(t,
-		map[string]interface{}{
-			"resource": map[string]interface{}{
-				"attributes": []interface{}{
-					map[string]interface{}{
-						"key": "attr2",
-						"value": map[string]interface{}{
-							"stringValue": "value2",
-						},
-					},
-				},
-			},
-			"logs": []interface{}{
-				map[string]interface{}{
-					"timeUnixNano": strconv.Itoa(int(now.UnixNano())),
-					"name":         "logC",
-				},
-			},
-		}, j)
+	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
+	assert.EqualValues(t, ld, j.ResourceLogs)
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
@@ -328,7 +208,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			mf := &testutil.LimitedWriter{
 				MaxLen: maxLen,
 			}
-			exporter := &Exporter{file: mf}
+			exporter := &fileExporter{file: mf}
 			require.NotNil(t, exporter)
 
 			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromOtlp(ld)))

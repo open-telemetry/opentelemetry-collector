@@ -427,10 +427,6 @@ func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &configmodels.ReceiverSettings{}
 }
 
-func (b *badReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
 func (b *badReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
 	_ *zap.Logger,
@@ -440,7 +436,7 @@ func (b *badReceiverFactory) CreateTraceReceiver(
 	return nil, nil
 }
 
-func (b *badReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (b *badReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
@@ -453,10 +449,6 @@ func (b *newStyleReceiverFactory) Type() configmodels.Type {
 
 func (b *newStyleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &configmodels.ReceiverSettings{}
-}
-
-func (b *newStyleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
 }
 
 func (b *newStyleReceiverFactory) CreateTraceReceiver(

@@ -17,6 +17,8 @@ package exporterhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -37,9 +39,9 @@ type CreateMetricsExporter func(context.Context, component.ExporterCreateParams,
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
 type CreateLogsExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogsExporter, error)
 
-// factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType               configmodels.Type
+	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
 	createTraceExporter   CreateTraceExporter
 	createMetricsExporter CreateMetricsExporter
@@ -69,7 +71,14 @@ func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
 	}
 }
 
-// NewFactory returns a component.ExporterFactory that only supports all types.
+// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+	return func(o *factory) {
+		o.customUnmarshaler = customUnmarshaler
+	}
+}
+
+// NewFactory returns a component.ExporterFactory.
 func NewFactory(
 	cfgType configmodels.Type,
 	createDefaultConfig CreateDefaultConfig,
@@ -81,7 +90,13 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ExporterFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Exporter config created by this factory.
@@ -126,4 +141,15 @@ func (f *factory) CreateLogsExporter(
 		return f.createLogsExporter(ctx, params, cfg)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

@@ -36,7 +36,7 @@ func BearerToken(t string) *PerRPCAuth {
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
-func (c *PerRPCAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
 	return c.metadata, nil
 }
 

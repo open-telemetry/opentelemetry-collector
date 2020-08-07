@@ -20,13 +20,12 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements config for Prometheus receiver.
@@ -43,22 +42,15 @@ var (
 	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
 )
 
-// Factory is the factory for receiver.
-type Factory struct {
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
-// Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return CustomUnmarshalerFunc
-}
-
-// CustomUnmarshalerFunc performs custom unmarshaling of config.
-func CustomUnmarshalerFunc(componentViperSection *viper.Viper, intoCfg interface{}) error {
+func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
 	if componentViperSection == nil {
 		return nil
 	}
@@ -91,8 +83,7 @@ func CustomUnmarshalerFunc(componentViperSection *viper.Viper, intoCfg interface
 	return nil
 }
 
-// CreateDefaultConfig creates the default configuration for receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -101,22 +92,15 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
+func createMetricsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
-) (component.TraceReceiver, error) {
-	// Prometheus does not support traces
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {
 		return nil, errNilScrapeConfig
 	}
-	return newPrometheusReceiver(logger, config, nextConsumer), nil
+	return newPrometheusReceiver(params.Logger, config, nextConsumer), nil
 }

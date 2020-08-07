@@ -16,6 +16,8 @@
 
 package fluentbitextension
 
-import "os/exec"
+import (
+	"os/exec"
+)
 
-func applyOSSpecificCmdModifications(cmd *exec.Cmd) {}
+func applyOSSpecificCmdModifications(_ *exec.Cmd) {}

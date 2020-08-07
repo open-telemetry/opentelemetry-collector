@@ -126,6 +126,8 @@ func TestScrapeMetrics(t *testing.T) {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
 				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor, test.expectedDeviceDataPoints*2)
 			}
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
 }

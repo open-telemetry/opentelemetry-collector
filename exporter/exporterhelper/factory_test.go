@@ -16,8 +16,10 @@ package exporterhelper
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
@@ -44,6 +46,8 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+	_, ok := factory.(component.ConfigUnmarshaler)
+	assert.False(t, ok)
 	_, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
@@ -59,9 +63,14 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 		defaultConfig,
 		WithTraces(createTraceExporter),
 		WithMetrics(createMetricsExporter),
-		WithLogs(createLogsExporter))
+		WithLogs(createLogsExporter),
+		WithCustomUnmarshaler(customUnmarshaler))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
+
+	fu, ok := factory.(component.ConfigUnmarshaler)
+	assert.True(t, ok)
+	assert.Equal(t, errors.New("my error"), fu.Unmarshal(nil, nil))
 
 	te, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
 	assert.NoError(t, err)
@@ -91,4 +100,8 @@ func createMetricsExporter(context.Context, component.ExporterCreateParams, conf
 
 func createLogsExporter(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.LogsExporter, error) {
 	return nopLogsExporter, nil
+}
+
+func customUnmarshaler(*viper.Viper, interface{}) error {
+	return errors.New("my error")
 }

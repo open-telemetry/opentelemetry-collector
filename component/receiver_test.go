@@ -34,29 +34,19 @@ func (f *TestReceiverFactory) Type() configmodels.Type {
 	return f.name
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this factory.
-func (f *TestReceiverFactory) CustomUnmarshaler() CustomUnmarshaler {
-	return nil
-}
-
 // CreateDefaultConfig creates the default configuration for the Receiver.
 func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
-) (TraceReceiver, error) {
+func (f *TestReceiverFactory) CreateTraceReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.TraceConsumerOld) (TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (MetricsReceiver, error) {
+func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }

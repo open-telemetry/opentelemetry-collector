@@ -17,6 +17,8 @@ package receiverhelper
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -26,7 +28,7 @@ import (
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption func(o *factory)
 
-// WithCustomUnmarshaler overrides the default "not available" CustomUnmarshaler.
+// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
 func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
@@ -66,7 +68,6 @@ type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams,
 // CreateLogsReceiver is the equivalent of component.ReceiverFactory.CreateLogsReceiver()
 type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.LogsConsumer) (component.LogsReceiver, error)
 
-// factory is the factory for Jaeger gRPC exporter.
 type factory struct {
 	cfgType               configmodels.Type
 	customUnmarshaler     component.CustomUnmarshaler
@@ -76,7 +77,7 @@ type factory struct {
 	createLogsReceiver    CreateLogsReceiver
 }
 
-// NewFactory returns a component.ReceiverFactory that only supports all types.
+// NewFactory returns a component.ReceiverFactory.
 func NewFactory(
 	cfgType configmodels.Type,
 	createDefaultConfig CreateDefaultConfig,
@@ -88,18 +89,18 @@ func NewFactory(
 	for _, opt := range options {
 		opt(f)
 	}
-	return f
+	var ret component.ReceiverFactory
+	if f.customUnmarshaler != nil {
+		ret = &factoryWithUnmarshaler{f}
+	} else {
+		ret = f
+	}
+	return ret
 }
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *factory) Type() configmodels.Type {
 	return f.cfgType
-}
-
-// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-// there is no need for custom unmarshaling.
-func (f *factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return f.customUnmarshaler
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
@@ -142,4 +143,15 @@ func (f *factory) CreateLogsReceiver(
 		return f.createLogsReceiver(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
+
+type factoryWithUnmarshaler struct {
+	*factory
+}
+
+// Unmarshal un-marshals the config using the provided custom unmarshaler.
+func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentViperSection, intoCfg)
 }

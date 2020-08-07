@@ -30,6 +30,7 @@ type ProcessMetricsViews struct {
 	ballastSizeBytes uint64
 	views            []*view.View
 	done             chan struct{}
+	proc             *procfs.Proc
 }
 
 var mRuntimeAllocMem = stats.Int64(
@@ -83,17 +84,27 @@ var viewCPUSeconds = &view.View{
 // NewProcessMetricsViews creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
 func NewProcessMetricsViews(ballastSizeBytes uint64) *ProcessMetricsViews {
-	return &ProcessMetricsViews{
+	pmv := &ProcessMetricsViews{
 		ballastSizeBytes: ballastSizeBytes,
 		views:            []*view.View{viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds},
 		done:             make(chan struct{}),
 	}
+
+	// procfs.Proc is not available on windows and expected to fail.
+	pid := os.Getpid()
+	proc, err := procfs.NewProc(pid)
+	if err == nil {
+		pmv.proc = &proc
+	}
+
+	return pmv
 }
 
 // StartCollection starts a ticker'd goroutine that will update the PMV measurements every 5 seconds
 func (pmv *ProcessMetricsViews) StartCollection() {
-	ticker := time.NewTicker(5 * time.Second)
 	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
@@ -105,12 +116,12 @@ func (pmv *ProcessMetricsViews) StartCollection() {
 	}()
 }
 
-// Views returns the views internal to the PMV
+// Views returns the views internal to the PMV.
 func (pmv *ProcessMetricsViews) Views() []*view.View {
 	return pmv.views
 }
 
-// StopCollection stops the collection of the process metric information
+// StopCollection stops the collection of the process metric information.
 func (pmv *ProcessMetricsViews) StopCollection() {
 	close(pmv.done)
 }
@@ -122,10 +133,8 @@ func (pmv *ProcessMetricsViews) updateViews() {
 	stats.Record(context.Background(), mRuntimeTotalAllocMem.M(int64(ms.TotalAlloc)))
 	stats.Record(context.Background(), mRuntimeSysMem.M(int64(ms.Sys)))
 
-	pid := os.Getpid()
-	proc, err := procfs.NewProc(pid)
-	if err == nil {
-		if procStat, err := proc.Stat(); err == nil {
+	if pmv.proc != nil {
+		if procStat, err := pmv.proc.Stat(); err == nil {
 			stats.Record(context.Background(), mCPUSeconds.M(int64(procStat.CPUTime())))
 		}
 	}

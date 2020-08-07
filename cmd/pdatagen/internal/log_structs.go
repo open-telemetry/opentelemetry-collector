@@ -112,10 +112,10 @@ var logRecord = &messageStruct{
 		&primitiveTypedField{
 			fieldMame:       "SeverityNumber",
 			originFieldName: "SeverityNumber",
-			returnType:      "otlplogs.SeverityNumber",
+			returnType:      "SeverityNumber",
 			rawType:         "otlplogs.SeverityNumber",
-			defaultVal:      `otlplogs.SeverityNumber_UNDEFINED_SEVERITY_NUMBER`,
-			testVal:         `otlplogs.SeverityNumber_INFO`,
+			defaultVal:      `SeverityNumberUNDEFINED`,
+			testVal:         `SeverityNumberINFO`,
 		},
 		&primitiveField{
 			fieldMame:       "Name",

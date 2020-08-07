@@ -48,7 +48,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 
 	spanSink := new(exportertest.SinkTraceExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
 	// Now the opencensus-agent exporter.
@@ -125,7 +125,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 			Kind:         tracepb.Span_SERVER,
 			StartTime:    internal.TimeToTimestamp(serverSpanData.StartTime),
 			EndTime:      internal.TimeToTimestamp(serverSpanData.EndTime),
-			Status:       &tracepb.Status{Code: int32(serverSpanData.Status.Code), Message: serverSpanData.Status.Message},
+			Status:       &tracepb.Status{Code: serverSpanData.Status.Code, Message: serverSpanData.Status.Message},
 			Tracestate:   &tracepb.Span_Tracestate{},
 			Links: &tracepb.Span_Links{
 				Link: []*tracepb.Span_Link{
@@ -145,7 +145,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 			Kind:         tracepb.Span_CLIENT,
 			StartTime:    internal.TimeToTimestamp(clientSpanData.StartTime),
 			EndTime:      internal.TimeToTimestamp(clientSpanData.EndTime),
-			Status:       &tracepb.Status{Code: int32(clientSpanData.Status.Code), Message: clientSpanData.Status.Message},
+			Status:       &tracepb.Status{Code: clientSpanData.Status.Code, Message: clientSpanData.Status.Message},
 		},
 	}
 
@@ -169,7 +169,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -295,7 +295,7 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -363,7 +363,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	spanSink := new(exportertest.SinkTraceExporterOld)
 
-	_, port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -438,24 +438,24 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...Option) (oci *Receiver, port int, done func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	doneFnList := []func(){func() { ln.Close() }}
-	done = func() {
+	done := func() {
 		for _, doneFn := range doneFnList {
 			doneFn()
 		}
 	}
 
-	_, port, err = testutil.HostPortFromAddr(ln.Addr())
+	_, port, err := testutil.HostPortFromAddr(ln.Addr())
 	if err != nil {
 		done()
 		t.Fatalf("Failed to parse host:port from listener address: %s error: %v", ln.Addr(), err)
 	}
 
-	oci, err = New(receiverTagValue, sr, opts...)
+	oci, err := New(receiverTagValue, sr)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
@@ -465,5 +465,5 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld, opts ...
 		_ = srv.Serve(ln)
 	}()
 
-	return oci, port, done
+	return port, done
 }

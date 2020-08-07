@@ -84,3 +84,34 @@ func (ld Logs) LogRecordCount() int {
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return ResourceLogsSlice(ld)
 }
+
+// SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.
+type SeverityNumber otlplogs.SeverityNumber
+
+const (
+	SeverityNumberUNDEFINED = SeverityNumber(otlplogs.SeverityNumber_UNDEFINED_SEVERITY_NUMBER)
+	SeverityNumberTRACE     = SeverityNumber(otlplogs.SeverityNumber_TRACE)
+	SeverityNumberTRACE2    = SeverityNumber(otlplogs.SeverityNumber_TRACE2)
+	SeverityNumberTRACE3    = SeverityNumber(otlplogs.SeverityNumber_TRACE3)
+	SeverityNumberTRACE4    = SeverityNumber(otlplogs.SeverityNumber_TRACE4)
+	SeverityNumberDEBUG     = SeverityNumber(otlplogs.SeverityNumber_DEBUG)
+	SeverityNumberDEBUG2    = SeverityNumber(otlplogs.SeverityNumber_DEBUG2)
+	SeverityNumberDEBUG3    = SeverityNumber(otlplogs.SeverityNumber_DEBUG3)
+	SeverityNumberDEBUG4    = SeverityNumber(otlplogs.SeverityNumber_DEBUG4)
+	SeverityNumberINFO      = SeverityNumber(otlplogs.SeverityNumber_INFO)
+	SeverityNumberINFO2     = SeverityNumber(otlplogs.SeverityNumber_INFO2)
+	SeverityNumberINFO3     = SeverityNumber(otlplogs.SeverityNumber_INFO3)
+	SeverityNumberINFO4     = SeverityNumber(otlplogs.SeverityNumber_INFO4)
+	SeverityNumberWARN      = SeverityNumber(otlplogs.SeverityNumber_WARN)
+	SeverityNumberWARN2     = SeverityNumber(otlplogs.SeverityNumber_WARN2)
+	SeverityNumberWARN3     = SeverityNumber(otlplogs.SeverityNumber_WARN3)
+	SeverityNumberWARN4     = SeverityNumber(otlplogs.SeverityNumber_WARN4)
+	SeverityNumberERROR     = SeverityNumber(otlplogs.SeverityNumber_ERROR)
+	SeverityNumberERROR2    = SeverityNumber(otlplogs.SeverityNumber_ERROR2)
+	SeverityNumberERROR3    = SeverityNumber(otlplogs.SeverityNumber_ERROR3)
+	SeverityNumberERROR4    = SeverityNumber(otlplogs.SeverityNumber_ERROR4)
+	SeverityNumberFATAL     = SeverityNumber(otlplogs.SeverityNumber_FATAL)
+	SeverityNumberFATAL2    = SeverityNumber(otlplogs.SeverityNumber_FATAL2)
+	SeverityNumberFATAL3    = SeverityNumber(otlplogs.SeverityNumber_FATAL3)
+	SeverityNumberFATAL4    = SeverityNumber(otlplogs.SeverityNumber_FATAL4)
+)

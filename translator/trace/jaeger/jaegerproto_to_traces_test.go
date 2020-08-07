@@ -721,7 +721,7 @@ func generateProtoFollowerSpan() *model.Span {
 		SpanID:        model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})),
 		OperationName: "operationC",
 		StartTime:     testSpanEndTime,
-		Duration:      time.Duration(time.Millisecond),
+		Duration:      time.Millisecond,
 		Tags: []model.KeyValue{
 			{
 				Key:   tracetranslator.TagSpanKind,

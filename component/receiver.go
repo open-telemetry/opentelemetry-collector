@@ -17,7 +17,6 @@ package component
 import (
 	"context"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -68,20 +67,7 @@ type ReceiverFactoryBase interface {
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Receiver
-
-	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-	// there is no need for custom unmarshaling. This is typically used if viper.UnmarshalExact()
-	// is not sufficient to unmarshal correctly.
-	CustomUnmarshaler() CustomUnmarshaler
 }
-
-// CustomUnmarshaler is a function that un-marshals a viper data into a config struct
-// in a custom way.
-// componentViperSection *viper.Viper
-//   The config for this specific component. May be nil or empty if no config available.
-// intoCfg interface{}
-//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-type CustomUnmarshaler func(componentViperSection *viper.Viper, intoCfg interface{}) error
 
 // ReceiverFactoryOld can create TraceReceiver and MetricsReceiver.
 type ReceiverFactoryOld interface {

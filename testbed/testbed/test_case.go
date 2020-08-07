@@ -303,7 +303,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg ..
 
 		// Increase waiting interval exponentially up to 500 ms.
 		if waitInterval < time.Millisecond*500 {
-			waitInterval = waitInterval * 2
+			waitInterval *= 2
 		}
 
 		if time.Since(startTime) > duration {

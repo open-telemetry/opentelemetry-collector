@@ -35,8 +35,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -84,8 +83,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	config := Config{
 		Port: uint16(port),
 	}
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	// Health check will report port already in use in a goroutine, use the error waiting
@@ -103,8 +101,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	mh := componenttest.NewErrorWaitingHost()
@@ -125,8 +122,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -139,8 +135,7 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Shutdown(context.Background()))

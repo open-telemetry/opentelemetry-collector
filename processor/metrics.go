@@ -135,17 +135,16 @@ func MetricViews(level telemetry.Level) []*view.View {
 
 // ServiceNameForNode gets the service name for a specified node.
 func ServiceNameForNode(node *commonpb.Node) string {
-	var serviceName string
-	if node == nil {
-		serviceName = "<nil-batch-node>"
-	} else if node.ServiceInfo == nil {
-		serviceName = "<nil-service-info>"
-	} else if node.ServiceInfo.Name == "" {
-		serviceName = "<empty-service-info-name>"
-	} else {
-		serviceName = node.ServiceInfo.Name
+	switch {
+	case node == nil:
+		return "<nil-batch-node>"
+	case node.ServiceInfo == nil:
+		return "<nil-service-info>"
+	case node.ServiceInfo.Name == "":
+		return "<empty-service-info-name>"
+	default:
+		return node.ServiceInfo.Name
 	}
-	return serviceName
 }
 
 // ServiceNameForResource gets the service name for a specified Resource.

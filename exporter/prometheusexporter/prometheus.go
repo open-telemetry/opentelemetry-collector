@@ -25,8 +25,8 @@ import (
 	"github.com/orijtech/prometheus-go-metrics-exporter"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
@@ -37,19 +37,20 @@ type prometheusExporter struct {
 	shutdownFunc func() error
 }
 
-var _ consumer.MetricsConsumerOld = (*prometheusExporter)(nil)
-
 func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (pe *prometheusExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	merged := make(map[string]*metricspb.Metric)
-	for _, metric := range md.Metrics {
-		merge(merged, metric)
-	}
-	for _, metric := range merged {
-		_ = pe.exporter.ExportMetric(ctx, md.Node, md.Resource, metric)
+func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	ocmds := pdatautil.MetricsToMetricsData(md)
+	for _, ocmd := range ocmds {
+		merged := make(map[string]*metricspb.Metric)
+		for _, metric := range ocmd.Metrics {
+			merge(merged, metric)
+		}
+		for _, metric := range merged {
+			_ = pe.exporter.ExportMetric(ctx, ocmd.Node, ocmd.Resource, metric)
+		}
 	}
 	return nil
 }

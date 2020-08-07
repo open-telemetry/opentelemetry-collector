@@ -62,11 +62,7 @@ func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, co
 		return nil, err
 	}
 
-	lexp, err := NewTraceExporter(config, cfg.LogLevel, exporterLogger)
-	if err != nil {
-		return nil, err
-	}
-	return lexp, nil
+	return newTraceExporter(config, cfg.LogLevel, exporterLogger)
 }
 
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
@@ -77,11 +73,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams, 
 		return nil, err
 	}
 
-	lexp, err := NewMetricsExporter(config, cfg.LogLevel, exporterLogger)
-	if err != nil {
-		return nil, err
-	}
-	return lexp, nil
+	return newMetricsExporter(config, cfg.LogLevel, exporterLogger)
 }
 
 func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
@@ -92,11 +84,7 @@ func createLogsExporter(_ context.Context, _ component.ExporterCreateParams, con
 		return nil, err
 	}
 
-	lexp, err := NewLogsExporter(config, cfg.LogLevel, exporterLogger)
-	if err != nil {
-		return nil, err
-	}
-	return lexp, nil
+	return newLogsExporter(config, cfg.LogLevel, exporterLogger)
 }
 
 func createLogger(cfg *Config) (*zap.Logger, error) {

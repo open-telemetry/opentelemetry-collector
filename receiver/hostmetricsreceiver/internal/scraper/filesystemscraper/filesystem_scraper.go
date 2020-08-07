@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // scraper for FileSystem Metrics
@@ -79,6 +80,8 @@ func (s *scraper) Close(_ context.Context) error {
 func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
+	now := internal.TimeToUnixNano(time.Now())
+
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
@@ -103,28 +106,28 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	if len(usages) > 0 {
 		metrics.Resize(1 + systemSpecificMetricsLen)
 
-		initializeFileSystemUsageMetric(metrics.At(0), usages)
-		appendSystemSpecificMetrics(metrics, 1, usages)
+		initializeFileSystemUsageMetric(metrics.At(0), now, usages)
+		appendSystemSpecificMetrics(metrics, 1, now, usages)
 	}
 
 	return metrics, componenterror.CombineErrors(errors)
 }
 
-func initializeFileSystemUsageMetric(metric pdata.Metric, deviceUsages []*deviceUsage) {
+func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
 	fileSystemUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(fileSystemStatesLen * len(deviceUsages))
 	for i, deviceUsage := range deviceUsages {
-		appendFileSystemUsageStateDataPoints(idps, i*fileSystemStatesLen, deviceUsage)
+		appendFileSystemUsageStateDataPoints(idps, i*fileSystemStatesLen, now, deviceUsage)
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, deviceLabel string, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(stateLabelName, stateLabel)
-	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
 

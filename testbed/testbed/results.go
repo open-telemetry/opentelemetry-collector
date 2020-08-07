@@ -84,7 +84,7 @@ func (r *PerformanceResults) Save() {
 }
 
 // Add results for one test.
-func (r *PerformanceResults) Add(testName string, result interface{}) {
+func (r *PerformanceResults) Add(_ string, result interface{}) {
 	testResult, ok := result.(*PerformanceTestResult)
 	if !ok {
 		return
@@ -103,7 +103,7 @@ func (r *PerformanceResults) Add(testName string, result interface{}) {
 			testResult.errorCause,
 		),
 	)
-	r.totalDuration = r.totalDuration + testResult.duration
+	r.totalDuration += testResult.duration
 }
 
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
@@ -160,7 +160,7 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 			"----------------------------------------|------|-------:|---------:|-------------:|------------:|--------\n")
 }
 
-func (r *CorrectnessResults) Add(testName string, result interface{}) {
+func (r *CorrectnessResults) Add(_ string, result interface{}) {
 	testResult, ok := result.(*CorrectnessTestResult)
 	if !ok {
 		return
@@ -183,8 +183,8 @@ func (r *CorrectnessResults) Add(testName string, result interface{}) {
 		),
 	)
 	r.perTestResults = append(r.perTestResults, testResult)
-	r.totalAssertionFailures = r.totalAssertionFailures + testResult.assertionFailureCount
-	r.totalDuration = r.totalDuration + testResult.duration
+	r.totalAssertionFailures += testResult.assertionFailureCount
+	r.totalDuration += testResult.duration
 }
 
 func (r *CorrectnessResults) Save() {

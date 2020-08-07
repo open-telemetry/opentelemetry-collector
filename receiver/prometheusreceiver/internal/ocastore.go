@@ -49,7 +49,7 @@ type OcaStore interface {
 type ocaStore struct {
 	running            int32
 	logger             *zap.Logger
-	sink               consumer.MetricsConsumerOld
+	sink               consumer.MetricsConsumer
 	mc                 *mService
 	once               *sync.Once
 	ctx                context.Context
@@ -59,7 +59,7 @@ type ocaStore struct {
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumerOld, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
 	return &ocaStore{
 		running:            runningStateInit,
 		ctx:                ctx,
@@ -99,11 +99,11 @@ func (o *ocaStore) Close() error {
 // noopAppender, always return error on any operations
 type noopAppender struct{}
 
-func (*noopAppender) Add(l labels.Labels, t int64, v float64) (uint64, error) {
+func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
 	return 0, componenterror.ErrAlreadyStopped
 }
 
-func (*noopAppender) AddFast(ref uint64, t int64, v float64) error {
+func (*noopAppender) AddFast(uint64, int64, float64) error {
 	return componenterror.ErrAlreadyStopped
 }
 
