@@ -15,13 +15,9 @@
 package opencensusexporter
 
 import (
-	"fmt"
+	"context"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -54,82 +50,18 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
+		NumWorkers: 2,
 	}
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
-	ocac := config.(*Config)
-	opts, err := f.OCAgentOptions(logger, ocac)
-	if err != nil {
-		return nil, err
-	}
-	return NewTraceExporter(logger, config, opts...)
-}
-
-// OCAgentOptions takes the oc exporter Config and generates ocagent Options
-func (f *Factory) OCAgentOptions(logger *zap.Logger, ocac *Config) ([]ocagent.ExporterOption, error) {
-	if ocac.Endpoint == "" {
-		return nil, &ocExporterError{
-			code: errEndpointRequired,
-			msg:  "OpenCensus exporter config requires an Endpoint",
-		}
-	}
-	// TODO(ccaraman): Clean up this usage of gRPC settings apart of PR to address issue #933.
-	opts := []ocagent.ExporterOption{ocagent.WithAddress(ocac.Endpoint)}
-	if ocac.Compression != "" {
-		if compressionKey := configgrpc.GetGRPCCompressionKey(ocac.Compression); compressionKey != configgrpc.CompressionUnsupported {
-			opts = append(opts, ocagent.UseCompressor(compressionKey))
-		} else {
-			return nil, &ocExporterError{
-				code: errUnsupportedCompressionType,
-				msg:  fmt.Sprintf("OpenCensus exporter unsupported compression type %q", ocac.Compression),
-			}
-		}
-	}
-	switch {
-	case ocac.TLSSetting.CAFile != "":
-		creds, err := credentials.NewClientTLSFromFile(ocac.TLSSetting.CAFile, "")
-		if err != nil {
-			return nil, &ocExporterError{
-				code: errUnableToGetTLSCreds,
-				msg:  fmt.Sprintf("OpenCensus exporter unable to read TLS credentials from pem file %q: %v", ocac.TLSSetting.CAFile, err),
-			}
-		}
-		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	case !ocac.TLSSetting.Insecure:
-		tlsConf, err := ocac.TLSSetting.LoadTLSConfig()
-		if err != nil {
-			return nil, fmt.Errorf("OpenCensus exporter failed to load TLS config: %w", err)
-		}
-		creds := credentials.NewTLS(tlsConf)
-		opts = append(opts, ocagent.WithTLSCredentials(creds))
-	default:
-		opts = append(opts, ocagent.WithInsecure())
-	}
-
-	if len(ocac.Headers) > 0 {
-		opts = append(opts, ocagent.WithHeaders(ocac.Headers))
-	}
-	if ocac.ReconnectionDelay > 0 {
-		opts = append(opts, ocagent.WithReconnectionPeriod(ocac.ReconnectionDelay))
-	}
-	if ocac.Keepalive != nil {
-		opts = append(opts, ocagent.WithGRPCDialOption(grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                ocac.Keepalive.Time,
-			Timeout:             ocac.Keepalive.Timeout,
-			PermitWithoutStream: ocac.Keepalive.PermitWithoutStream,
-		})))
-	}
-	return opts, nil
+func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+	oCfg := config.(*Config)
+	return newTraceExporter(context.Background(), oCfg)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *Factory) CreateMetricsExporter(_ *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
 	oCfg := config.(*Config)
-	opts, err := f.OCAgentOptions(logger, oCfg)
-	if err != nil {
-		return nil, err
-	}
-	return NewMetricsExporter(logger, config, opts...)
+	return newMetricsExporter(context.Background(), oCfg)
 }
