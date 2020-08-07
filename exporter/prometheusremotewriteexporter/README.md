@@ -52,4 +52,4 @@ Feature in development:  _derive Prometheus `job` or `instance` label from Resou
 
 Testing:
 
-Unit tests has 92% code coverage. There are tests with HTTP Server as mock backends. We will add end-to-end tests and pipeline testing with Cortex resource on this [link](https://cortexmetrics.io/docs/contributing/how-integration-tests-work/), and we’d like to here more suggestions and information on whether there are other existing testing environment for our use case, how to setup a complete pipeline with Cortex gateway.
+Unit tests for the entire project has 92% code coverage. This iteration has 86.2% code coverage. There are tests with HTTP Server as mock backends. We will add end-to-end tests and pipeline testing with Cortex resource on this [link](https://cortexmetrics.io/docs/contributing/how-integration-tests-work/), and we’d like to here more suggestions and information on whether there are other existing testing environment for our use case, how to setup a complete pipeline with Cortex gateway.
