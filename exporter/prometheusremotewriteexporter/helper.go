@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file defines helper functions which are used in cortex.go. All functions here
+// are not class functions, but rather standalone functions that mainly serve to help convert
+// metrics data into different formats (sanitizing and adding labels, functions that
+// help with creating an efficient <string: TimeSeries> map in cortex.go, etc.)
+
 package prometheusremotewriteexporter
 
 import (

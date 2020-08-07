@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file defines the prwExporter struct and its class functions.
+// The exporter is in charge of receiving data upstream from the Collector pipeline,
+// Converting the data to Prometheus TimeSeries data, and then sending to the configurable
+// Remote Write HTTP Endpoint.
+
 package prometheusremotewriteexporter
 
 import (
@@ -141,7 +146,9 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 	}
 }
 
-// handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
+// The following methods are called in the pushMetrics() method.
+
+// handleScalarMetric processes data points in a single OTLP scalar metric by adding each point as a Sample into
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
@@ -347,8 +354,8 @@ func (prwe *prwExporter) export(ctx context.Context, TsMap map[string]*prompb.Ti
 		return err
 	}
 
-	//Only even status codes < 400 are okay
-	if httpResp.StatusCode/100 != 2 || httpResp.StatusCode >= 400 {
+	//Only checking for unsuccessful status codes
+	if httpResp.StatusCode < 200 || httpResp.StatusCode > 226 {
 		scanner := bufio.NewScanner(io.LimitReader(httpResp.Body, 256))
 		line := ""
 		if scanner.Scan() {

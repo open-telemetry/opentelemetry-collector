@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This package defines the standard and necessary parameters of the exporter config struct.
+// The yaml file for the entire collector pipelne must include a section underneath
+// `exporters` titled `prometheusremotewrite(/#)`. Example in testdata/config.yaml.
+
 package prometheusremotewriteexporter
 
 import (
@@ -25,8 +29,9 @@ type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
 	configmodels.ExporterSettings  `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
 	// Namespace if set, exports metrics under the provided value.*/
 	Namespace string `mapstructure:"namespace"`

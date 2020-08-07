@@ -1,4 +1,4 @@
-This Exporter sends metrics data in Prometheus TimeSeries format to Cortex or any Prometheus Remote Write compatible backend.
+This Exporter sends metrics data in Prometheus TimeSeries format to any Prometheus Remote Write compatible backend, such as Cortex.
 
 _TODO: derive namespace and tenant id from Resource attributes or metric labels_
 

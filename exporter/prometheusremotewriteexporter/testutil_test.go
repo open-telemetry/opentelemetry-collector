@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Utility variables and functions to easily create test data, both OTLP and Prometheus TimeSeries
+
 package prometheusremotewriteexporter
 
 import (
