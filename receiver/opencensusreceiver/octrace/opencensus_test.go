@@ -21,142 +21,101 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
-	"go.opencensus.io/trace/tracestate"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
-	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
-
 	spanSink := new(exportertest.SinkTraceExporterOld)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
 
-	// Now the opencensus-agent exporter.
 	address := fmt.Sprintf("localhost:%d", port)
-	oce, err := ocagent.NewExporter(ocagent.WithAddress(address), ocagent.WithInsecure())
-	require.NoError(t, err, "Failed to create the ocagent-exporter: %v", err)
-
-	trace.RegisterExporter(oce)
+	expFactory := &opencensusexporter.Factory{}
+	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
+	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
+	expCfg.Endpoint = address
+	expCfg.WaitForReady = true
+	oce, err := expFactory.CreateTraceExporter(zap.NewNop(), expCfg)
+	require.NoError(t, err)
+	err = oce.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 
 	defer func() {
-		oce.Stop()
-		trace.UnregisterExporter(oce)
+		require.NoError(t, oce.Shutdown(context.Background()))
 	}()
 
 	now := time.Now().UTC()
-	clientSpanData := &trace.SpanData{
-		StartTime: now.Add(-10 * time.Second),
-		EndTime:   now.Add(20 * time.Second),
-		SpanContext: trace.SpanContext{
-			TraceID:      trace.TraceID{0x4F, 0x4E, 0x4D, 0x4C, 0x4B, 0x4A, 0x49, 0x48, 0x47, 0x46, 0x45, 0x44, 0x43, 0x42, 0x41},
-			SpanID:       trace.SpanID{0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78},
-			TraceOptions: trace.TraceOptions(0x01),
-		},
-		ParentSpanID: trace.SpanID{0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37},
-		Name:         "ClientSpan",
-		Status:       trace.Status{Code: trace.StatusCodeInternal, Message: "Blocked by firewall"},
-		SpanKind:     trace.SpanKindClient,
+	clientSpan := &tracepb.Span{
+		TraceId:      []byte{0x4F, 0x4E, 0x4D, 0x4C, 0x4B, 0x4A, 0x49, 0x48, 0x47, 0x46, 0x45, 0x44, 0x43, 0x42, 0x41},
+		SpanId:       []byte{0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78},
+		ParentSpanId: []byte{0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37},
+		Name:         &tracepb.TruncatableString{Value: "ClientSpan"},
+		Kind:         tracepb.Span_CLIENT,
+		StartTime:    internal.TimeToTimestamp(now.Add(-10 * time.Second)),
+		EndTime:      internal.TimeToTimestamp(now.Add(20 * time.Second)),
+		Status:       &tracepb.Status{Code: trace.StatusCodeInternal, Message: "Blocked by firewall"},
 	}
 
-	serverSpanData := &trace.SpanData{
-		StartTime: now.Add(-5 * time.Second),
-		EndTime:   now.Add(10 * time.Second),
-		SpanContext: trace.SpanContext{
-			TraceID:      trace.TraceID{0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E},
-			SpanID:       trace.SpanID{0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7},
-			TraceOptions: trace.TraceOptions(0x01),
-			Tracestate:   &tracestate.Tracestate{},
-		},
-		ParentSpanID: trace.SpanID{0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F},
-		Name:         "ServerSpan",
-		Status:       trace.Status{Code: trace.StatusCodeOK, Message: "OK"},
-		SpanKind:     trace.SpanKindServer,
-		Links: []trace.Link{
-			{
-				TraceID: trace.TraceID{0x4F, 0x4E, 0x4D, 0x4C, 0x4B, 0x4A, 0x49, 0x48, 0x47, 0x46, 0x45, 0x44, 0x43, 0x42, 0x41, 0x40},
-				SpanID:  trace.SpanID{0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78},
-				Type:    trace.LinkTypeParent,
-			},
-		},
-	}
-
-	oce.ExportSpan(serverSpanData)
-	oce.ExportSpan(clientSpanData)
-	// Give them some time to be exported.
-	<-time.After(100 * time.Millisecond)
-
-	oce.Flush()
-
-	// Give them some time to be exported.
-	<-time.After(150 * time.Millisecond)
-
-	// Now span inspection and verification time!
-	var gotSpans []*tracepb.Span
-	for _, td := range spanSink.AllTraces() {
-		gotSpans = append(gotSpans, td.Spans...)
-	}
-
-	wantSpans := []*tracepb.Span{
-		{
-			TraceId:      serverSpanData.TraceID[:],
-			SpanId:       serverSpanData.SpanID[:],
-			ParentSpanId: serverSpanData.ParentSpanID[:],
-			Name:         &tracepb.TruncatableString{Value: "ServerSpan"},
-			Kind:         tracepb.Span_SERVER,
-			StartTime:    internal.TimeToTimestamp(serverSpanData.StartTime),
-			EndTime:      internal.TimeToTimestamp(serverSpanData.EndTime),
-			Status:       &tracepb.Status{Code: serverSpanData.Status.Code, Message: serverSpanData.Status.Message},
-			Tracestate:   &tracepb.Span_Tracestate{},
-			Links: &tracepb.Span_Links{
-				Link: []*tracepb.Span_Link{
-					{
-						TraceId: []byte{0x4F, 0x4E, 0x4D, 0x4C, 0x4B, 0x4A, 0x49, 0x48, 0x47, 0x46, 0x45, 0x44, 0x43, 0x42, 0x41, 0x40},
-						SpanId:  []byte{0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78},
-						Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
-					},
+	serverSpan := &tracepb.Span{
+		TraceId:      []byte{0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E},
+		SpanId:       []byte{0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7},
+		ParentSpanId: []byte{0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F},
+		Name:         &tracepb.TruncatableString{Value: "ServerSpan"},
+		Kind:         tracepb.Span_SERVER,
+		StartTime:    internal.TimeToTimestamp(now.Add(-5 * time.Second)),
+		EndTime:      internal.TimeToTimestamp(now.Add(10 * time.Second)),
+		Status:       &tracepb.Status{Code: trace.StatusCodeOK, Message: ""},
+		Tracestate:   &tracepb.Span_Tracestate{},
+		Links: &tracepb.Span_Links{
+			Link: []*tracepb.Span_Link{
+				{
+					TraceId: []byte{0x4F, 0x4E, 0x4D, 0x4C, 0x4B, 0x4A, 0x49, 0x48, 0x47, 0x46, 0x45, 0x44, 0x43, 0x42, 0x41, 0x40},
+					SpanId:  []byte{0x7F, 0x7E, 0x7D, 0x7C, 0x7B, 0x7A, 0x79, 0x78},
+					Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
 				},
 			},
 		},
-		{
-			TraceId:      clientSpanData.TraceID[:],
-			SpanId:       clientSpanData.SpanID[:],
-			ParentSpanId: clientSpanData.ParentSpanID[:],
-			Name:         &tracepb.TruncatableString{Value: "ClientSpan"},
-			Kind:         tracepb.Span_CLIENT,
-			StartTime:    internal.TimeToTimestamp(clientSpanData.StartTime),
-			EndTime:      internal.TimeToTimestamp(clientSpanData.EndTime),
-			Status:       &tracepb.Status{Code: clientSpanData.Status.Code, Message: clientSpanData.Status.Message},
-		},
 	}
 
-	if g, w := len(gotSpans), len(wantSpans); g != w {
-		t.Errorf("SpanCount: got %d want %d", g, w)
+	wantSpans := []*tracepb.Span{
+		serverSpan,
+		clientSpan,
 	}
+	wantNode := &commonpb.Node{ServiceInfo: &commonpb.ServiceInfo{Name: "test"}}
+	td := consumerdata.TraceData{Node: wantNode, Spans: wantSpans}
+	assert.NoError(t, oce.ConsumeTraceData(context.Background(), td))
 
-	if !reflect.DeepEqual(gotSpans, wantSpans) {
-		gotBlob, _ := json.MarshalIndent(gotSpans, "", "  ")
-		wantBlob, _ := json.MarshalIndent(wantSpans, "", "  ")
-		t.Errorf("GotSpans:\n%s\nWantSpans:\n%s", gotBlob, wantBlob)
+	testutil.WaitFor(t, func() bool {
+		return len(spanSink.AllTraces()) != 0
+	})
+	gotTraces := spanSink.AllTraces()
+	assert.Len(t, gotTraces, 1)
+	assert.True(t, proto.Equal(wantNode, gotTraces[0].Node))
+	require.Equal(t, len(wantSpans), len(gotTraces[0].Spans))
+	for i := range gotTraces[0].Spans {
+		assert.True(t, proto.Equal(wantSpans[i], gotTraces[0].Spans[i]))
 	}
 }
 
@@ -442,7 +401,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld) (int, fu
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
-	doneFnList := []func(){func() { ln.Close() }}
+	doneFnList := []func(){func() { require.NoError(t, ln.Close()) }}
 	done := func() {
 		for _, doneFn := range doneFnList {
 			doneFn()
