@@ -433,6 +433,8 @@ func Test_export(t *testing.T) {
 		w.WriteHeader(code)
 	}
 
+	// Create in test table format to check if different HTTP response codes or server errors
+	// are properly identified
 	tests := []struct {
 		name             string
 		ts               prompb.TimeSeries

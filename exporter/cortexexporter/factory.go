@@ -35,6 +35,7 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
+// Instantiates a pseudo-Cortex Exporter that adheres to the component MetricsExporter interface
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 

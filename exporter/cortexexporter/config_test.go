@@ -42,9 +42,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
+	// From the default configurations -- checks if a correct exporter is instantiated
 	e0 := cfg.Exporters["cortex"]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
+	// checks if the correct Config struct can be instantiated from testdata/config.yaml
 	e1 := cfg.Exporters["cortex/2"]
 	assert.Equal(t, e1,
 		&Config{

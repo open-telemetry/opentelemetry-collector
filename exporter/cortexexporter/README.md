@@ -1,4 +1,4 @@
-Exporter metrics to Cortex or any Prometheus Remote Write compatible backend.
+This Exporter sends metrics data in Prometheus TimeSeries format to Cortex or any Prometheus Remote Write compatible backend.
 
 The following settings are required:
 
@@ -7,8 +7,7 @@ the HTTP/HTTPS protocol.
 
 - `headers`
     
-    - `X-Scope-OrgID`: tenant id attached with each request. Not required if Cortex components have the 
-    `-auth.enabled=false` argument.
+    - `X-Scope-OrgID`: tenant id attached with each request. Not required if Cortex components have the `-auth.enabled=false` argument.
     
 - `namespace`: suffix to metric name attached to each metric.
 
