@@ -45,6 +45,10 @@ type prwExporter struct {
 // client parameter cannot be nil.
 func newPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
 
+	if namespace == "" {
+		return nil, errors.Errorf("namespace cannot be empty")
+	}
+
 	if client == nil {
 		return nil, errors.Errorf("http client cannot be nil")
 	}
