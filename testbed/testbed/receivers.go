@@ -84,8 +84,6 @@ type OCDataReceiver struct {
 // Ensure OCDataReceiver implements DataReceiver.
 var _ DataReceiver = (*OCDataReceiver)(nil)
 
-const DefaultOCPort = 56565
-
 // NewOCDataReceiver creates a new OCDataReceiver that will listen on the specified port after Start
 // is called.
 func NewOCDataReceiver(port int) *OCDataReceiver {
@@ -138,8 +136,6 @@ type JaegerDataReceiver struct {
 	receiver component.TraceReceiver
 }
 
-const DefaultJaegerPort = 14250
-
 func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
@@ -186,8 +182,6 @@ type OTLPDataReceiver struct {
 
 // Ensure OTLPDataReceiver implements DataReceiver.
 var _ DataReceiver = (*OTLPDataReceiver)(nil)
-
-const DefaultOTLPPort = 55680
 
 // NewOTLPDataReceiver creates a new OTLPDataReceiver that will listen on the specified port after Start
 // is called.
@@ -242,8 +236,6 @@ type ZipkinDataReceiver struct {
 	DataReceiverBase
 	receiver component.TraceReceiver
 }
-
-const DefaultZipkinAddressPort = 9411
 
 func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}

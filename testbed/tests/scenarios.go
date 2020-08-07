@@ -194,8 +194,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc := testbed.NewTestCase(
 				t,
 				testbed.NewPerfTestDataProvider(options),
-				testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+				testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+				testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 				&testbed.ChildProcess{},
 				&testbed.PerfTestValidator{},
 				test.resultsSummary,

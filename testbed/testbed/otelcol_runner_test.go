@@ -27,7 +27,7 @@ func TestNewInProcessPipeline(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
 	sender := NewOTLPTraceDataSender(DefaultHost, GetAvailablePort(t))
-	receiver := NewOTLPDataReceiver(DefaultOTLPPort)
+	receiver := NewOTLPDataReceiver(GetAvailablePort(t))
 	runner := NewInProcessCollector(factories, sender.Port)
 
 	format := `

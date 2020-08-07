@@ -29,8 +29,8 @@ func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
-		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
-		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		&testbed.ChildProcess{},
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
