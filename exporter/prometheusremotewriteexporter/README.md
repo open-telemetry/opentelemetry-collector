@@ -28,7 +28,7 @@ Example:
 
 ```yaml
 exporters:
-cortex:
+prometheusremotewrite:
  endpoint: "http://some.url:9411/api/prom/push"
 ```
 The full list of settings exposed for this exporter are documented [here](./config.go)

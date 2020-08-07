@@ -339,7 +339,7 @@ func (prwe *prwExporter) export(ctx context.Context, TsMap map[string]*prompb.Ti
 	//Changing context of the httpreq to global context
 	httpReq = httpReq.WithContext(ctx)
 
-	_, cancel := context.WithTimeout(context.Background(), ce.client.Timeout)
+	_, cancel := context.WithTimeout(context.Background(), prwe.client.Timeout)
 	defer cancel()
 
 	httpResp, err := prwe.client.Do(httpReq)

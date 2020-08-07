@@ -5,8 +5,8 @@ processors:
     exampleprocessor:
  
 exporters:
-    cortex:
-    cortex/2:
+    prometheusremotewrite:
+    prometheusremotewrite/2:
         headers:
             Prometheus-Remote-Write-Version: "0.1.0"
             Tenant-id: 234
@@ -32,6 +32,6 @@ service:
         metrics:
             receivers: [examplereceiver]
             processors: [exampleprocessor]
-            exporters: [cortex]
+            exporters: [prometheusremotewrite]
     
     

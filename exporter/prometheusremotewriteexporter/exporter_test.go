@@ -647,7 +647,21 @@ func Test_pushMetrics(t *testing.T) {
 			serverURL, uErr := url.Parse(server.URL)
 			assert.NoError(t, uErr)
 
-			config := createDefaultConfig().(*Config)
+			config := &Config{
+				ExporterSettings: configmodels.ExporterSettings{
+					TypeVal: "prometheusremotewrite",
+					NameVal: "prometheusremotewrite",
+				},
+				Namespace: "",
+				Headers:   map[string]string{},
+
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://some.url:9411/api/prom/push",
+					// We almost read 0 bytes, so no need to tune ReadBufferSize.
+					ReadBufferSize:  0,
+					WriteBufferSize: 512 * 1024,
+				},
+			}
 			assert.NotNil(t, config)
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)

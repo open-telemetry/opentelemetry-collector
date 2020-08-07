@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "cortex"
+	typeStr = "prometheusremotewrite"
 )
 
 func NewFactory() component.ExporterFactory {

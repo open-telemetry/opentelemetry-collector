@@ -61,7 +61,7 @@ func TestDefaultComponents(t *testing.T) {
 		"file",
 		"otlp",
 		"kafka",
-		"cortex",
+		"prometheusremotewrite",
 	}
 
 	factories, err := Components()

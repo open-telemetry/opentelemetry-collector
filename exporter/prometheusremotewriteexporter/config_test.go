@@ -43,16 +43,16 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// From the default configurations -- checks if a correct exporter is instantiated
-	e0 := cfg.Exporters["cortex"]
+	e0 := cfg.Exporters["prometheusremotewrite"]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
-	e1 := cfg.Exporters["cortex/2"]
+	e1 := cfg.Exporters["prometheusremotewrite/2"]
 	assert.Equal(t, e1,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "cortex/2",
-				TypeVal: "cortex",
+				NameVal: "prometheusremotewrite/2",
+				TypeVal: "prometheusremotewrite",
 			},
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
