@@ -405,8 +405,7 @@ func zipkinEndpointFromTags(
 
 func isIPv6Address(ipStr string) bool {
 	for i := 0; i < len(ipStr); i++ {
-		switch ipStr[i] {
-		case ':':
+		if ipStr[i] == ':' {
 			return true
 		}
 	}

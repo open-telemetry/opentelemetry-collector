@@ -440,8 +440,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	body, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
 	require.NoError(t, err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans",
-		bytes.NewBuffer([]byte(body)))
+	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	next := &zipkinMockTraceConsumer{

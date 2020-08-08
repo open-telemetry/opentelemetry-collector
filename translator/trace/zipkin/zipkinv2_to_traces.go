@@ -31,29 +31,6 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-var floatRegex, _ = regexp.Compile(`^-?\d+\.\d+$`)
-
-var intAttributes = getIntAttributes()
-
-func getIntAttributes() map[string]struct{} {
-	attrs := make(map[string]struct{})
-	attrs[conventions.AttributeNetHostPort] = struct{}{}
-	attrs[conventions.AttributeNetPeerPort] = struct{}{}
-	attrs[conventions.AttributeHTTPHostPort] = struct{}{}
-	attrs[conventions.AttributeHTTPFlavor] = struct{}{}
-	attrs[conventions.AttributeHTTPRequestContentLength] = struct{}{}
-	attrs[conventions.AttributeHTTPRequestContentLengthUncompressed] = struct{}{}
-	attrs[conventions.AttributeHTTPResponseContentLength] = struct{}{}
-	attrs[conventions.AttributeHTTPResponseContentLengthUncompressed] = struct{}{}
-	attrs[conventions.AttributeMessageID] = struct{}{}
-	attrs[conventions.AttributeMessageCompressedSize] = struct{}{}
-	attrs[conventions.AttributeMessageUncompressedSize] = struct{}{}
-	attrs[conventions.AttributeMessagingConversationID] = struct{}{}
-	attrs[conventions.AttributeMessagingPayloadSize] = struct{}{}
-	attrs[conventions.AttributeMessagingPayloadCompressedSize] = struct{}{}
-	return attrs
-}
-
 var nonSpanAttributes = getNonSpanAttributes()
 
 func getNonSpanAttributes() map[string]struct{} {
@@ -69,6 +46,31 @@ func getNonSpanAttributes() map[string]struct{} {
 	attrs[conventions.OCAttributeProcessID] = struct{}{}
 	attrs[conventions.OCAttributeResourceType] = struct{}{}
 	return attrs
+}
+
+type AttrValDescript struct {
+	regex    *regexp.Regexp
+	attrType pdata.AttributeValueType
+}
+
+var attrValDescriptions = getAttrValDescripts()
+
+func getAttrValDescripts() []*AttrValDescript {
+	descriptions := make([]*AttrValDescript, 0, 5)
+	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueNULL))
+	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
+	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
+	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
+	descriptions = append(descriptions, constructAttrValDescript(`^\{.+\}$`, pdata.AttributeValueMAP))
+	return descriptions
+}
+
+func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *AttrValDescript {
+	regexc, _ := regexp.Compile(regex)
+	return &AttrValDescript{
+		regex:    regexc,
+		attrType: attrType,
+	}
 }
 
 // Custom Sort on
@@ -361,25 +363,39 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
 		if _, ok := nonSpanAttributes[key]; ok {
 			continue
 		}
-		if _, ok := intAttributes[key]; ok {
-			i, err := strconv.ParseInt(val, 10, 64)
-			if err == nil {
-				dest.InsertInt(key, i)
+		switch determineValueType(val) {
+		case pdata.AttributeValueINT:
+			if iVal, err := strconv.ParseInt(val, 10, 64); err == nil {
+				dest.UpsertInt(key, iVal)
 			} else {
 				parseErr = err
 			}
-		} else if floatRegex.MatchString(val) {
-			d, err := strconv.ParseFloat(val, 64)
-			if err == nil {
-				dest.InsertDouble(key, d)
+		case pdata.AttributeValueDOUBLE:
+			if fVal, err := strconv.ParseFloat(val, 64); err == nil {
+				dest.UpsertDouble(key, fVal)
 			} else {
 				parseErr = err
 			}
-		} else {
-			dest.InsertString(key, val)
+		case pdata.AttributeValueBOOL:
+			if bVal, err := strconv.ParseBool(val); err == nil {
+				dest.UpsertBool(key, bVal)
+			} else {
+				parseErr = err
+			}
+		default:
+			dest.UpsertString(key, val)
 		}
 	}
 	return parseErr
+}
+
+func determineValueType(value string) pdata.AttributeValueType {
+	for _, desc := range attrValDescriptions {
+		if desc.regex.MatchString(value) {
+			return desc.attrType
+		}
+	}
+	return pdata.AttributeValueSTRING
 }
 
 func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
