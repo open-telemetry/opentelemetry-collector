@@ -24,10 +24,7 @@ import (
 func V1ThriftBatchToInternalTraces(zSpans []*zipkincore.Span) (pdata.Traces, error) {
 	traces := pdata.NewTraces()
 
-	ocTraces, err := V1ThriftBatchToOCProto(zSpans)
-	if err != nil {
-		return traces, err
-	}
+	ocTraces, _ := V1ThriftBatchToOCProto(zSpans)
 
 	for _, td := range ocTraces {
 		tmp := internaldata.OCToTraceData(td)

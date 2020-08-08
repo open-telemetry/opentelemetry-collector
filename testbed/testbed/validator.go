@@ -254,11 +254,11 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, 
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
-	if sentSpan.EndTimeUnixNano/1000000 != recdSpan.EndTimeUnixNano/1000000 {
+	if notWithinOneMillisecond(sentSpan.EndTimeUnixNano, recdSpan.EndTimeUnixNano) {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
-			fieldPath:     "StartTimeUnixNano",
+			fieldPath:     "EndTimeUnixNano",
 			expectedValue: sentSpan.EndTimeUnixNano,
 			actualValue:   recdSpan.EndTimeUnixNano,
 		}
@@ -520,5 +520,5 @@ func notWithinOneMillisecond(sentNs uint64, recdNs uint64) bool {
 	} else {
 		diff = recdNs - sentNs
 	}
-	return diff > uint64(2000000)
+	return diff > uint64(1100000)
 }

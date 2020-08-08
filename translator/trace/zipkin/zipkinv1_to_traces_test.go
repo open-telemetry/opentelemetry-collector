@@ -31,3 +31,12 @@ func TestSingleJSONV1BatchToTraces(t *testing.T) {
 
 	assert.Equal(t, 5, got.SpanCount())
 }
+
+func TestErrorSpanToTraces(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_error_batch.json")
+	require.NoError(t, err, "Failed to load test data")
+
+	td, err := V1JSONBatchToInternalTraces(blob)
+	assert.Error(t, err, "Should have generated error")
+	assert.NotNil(t, td)
+}
