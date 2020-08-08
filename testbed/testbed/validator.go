@@ -520,5 +520,5 @@ func notWithinOneMillisecond(sentNs uint64, recdNs uint64) bool {
 	} else {
 		diff = recdNs - sentNs
 	}
-	return diff > uint64(1000000)
+	return diff > uint64(2000000)
 }
