@@ -244,7 +244,7 @@ func (v *CorrectnessTestValidator) diffSpanKind(sentSpan *otlptrace.Span, recdSp
 }
 
 func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if sentSpan.StartTimeUnixNano/1000000 != recdSpan.StartTimeUnixNano/1000000 {
+	if notWithinOneMillisecond(sentSpan.StartTimeUnixNano, recdSpan.StartTimeUnixNano) {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
@@ -323,7 +323,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 			} else {
 				for i, sentEvent := range sentEvents {
 					recdEvent := recdEvents[i]
-					if sentEvent.TimeUnixNano/1000000 != recdEvent.TimeUnixNano/1000000 {
+					if notWithinOneMillisecond(sentEvent.TimeUnixNano, recdEvent.TimeUnixNano) {
 						af := &AssertionFailure{
 							typeName:      "Span",
 							dataComboName: sentSpan.Name,
@@ -511,4 +511,14 @@ func convertLinksSliceToMap(links []*otlptrace.Span_Link) map[string]*otlptrace.
 		eventMap[hex.EncodeToString(link.SpanId)] = link
 	}
 	return eventMap
+}
+
+func notWithinOneMillisecond(sentNs uint64, recdNs uint64) bool {
+	var diff uint64
+	if sentNs > recdNs {
+		diff = sentNs - recdNs
+	} else {
+		diff = recdNs - sentNs
+	}
+	return diff > uint64(1000000)
 }
