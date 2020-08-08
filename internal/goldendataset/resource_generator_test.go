@@ -24,7 +24,7 @@ import (
 
 func TestGenerateResource(t *testing.T) {
 	resourceIds := []PICTInputResource{ResourceNil, ResourceEmpty, ResourceVMOnPrem, ResourceVMCloud, ResourceK8sOnPrem,
-		ResourceK8sCloud, ResourceFaas}
+		ResourceK8sCloud, ResourceFaas, ResourceExec}
 	for _, rscID := range resourceIds {
 		rsc := GenerateResource(rscID)
 		if rscID == ResourceNil {

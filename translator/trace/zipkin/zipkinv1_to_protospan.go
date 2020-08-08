@@ -256,17 +256,14 @@ func parseAnnotationValue(value string) *tracepb.AttributeValue {
 
 	switch determineValueType(value) {
 	case pdata.AttributeValueINT:
-		if iValue, err := strconv.ParseInt(value, 10, 64); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-		}
+		iValue, _ := strconv.ParseInt(value, 10, 64)
+		pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
 	case pdata.AttributeValueDOUBLE:
-		if fValue, err := strconv.ParseFloat(value, 64); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
-		}
+		fValue, _ := strconv.ParseFloat(value, 64)
+		pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
 	case pdata.AttributeValueBOOL:
-		if bValue, err := strconv.ParseBool(value); err == nil {
-			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
-		}
+		bValue, _ := strconv.ParseBool(value)
+		pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
 	default:
 		pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
 	}

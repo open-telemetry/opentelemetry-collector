@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -254,7 +255,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		if partCnt == 5 {
 			jsonStr = parts[3]
 		} else {
-			jsonParts := parts[3 : partCnt-2]
+			jsonParts := parts[3 : partCnt-1]
 			jsonStr = strings.Join(jsonParts, "|")
 		}
 		var attrs map[string]interface{}
@@ -292,7 +293,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlic
 		if partCnt == 3 {
 			jsonStr = parts[1]
 		} else {
-			jsonParts := parts[1 : partCnt-2]
+			jsonParts := parts[1 : partCnt-1]
 			jsonStr = strings.Join(jsonParts, "|")
 		}
 		var attrs map[string]interface{}
@@ -316,10 +317,12 @@ func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
 			dest.InsertString(key, s)
-		} else if i, ok := val.(int64); ok {
-			dest.InsertInt(key, i)
 		} else if d, ok := val.(float64); ok {
-			dest.InsertDouble(key, d)
+			if math.Mod(d, 1.0) == 0.0 {
+				dest.InsertInt(key, int64(d))
+			} else {
+				dest.InsertDouble(key, d)
+			}
 		} else if b, ok := val.(bool); ok {
 			dest.InsertBool(key, b)
 		}
@@ -365,23 +368,14 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
 		}
 		switch determineValueType(val) {
 		case pdata.AttributeValueINT:
-			if iVal, err := strconv.ParseInt(val, 10, 64); err == nil {
-				dest.UpsertInt(key, iVal)
-			} else {
-				parseErr = err
-			}
+			iVal, _ := strconv.ParseInt(val, 10, 64)
+			dest.UpsertInt(key, iVal)
 		case pdata.AttributeValueDOUBLE:
-			if fVal, err := strconv.ParseFloat(val, 64); err == nil {
-				dest.UpsertDouble(key, fVal)
-			} else {
-				parseErr = err
-			}
+			fVal, _ := strconv.ParseFloat(val, 64)
+			dest.UpsertDouble(key, fVal)
 		case pdata.AttributeValueBOOL:
-			if bVal, err := strconv.ParseBool(val); err == nil {
-				dest.UpsertBool(key, bVal)
-			} else {
-				parseErr = err
-			}
+			bVal, _ := strconv.ParseBool(val)
+			dest.UpsertBool(key, bVal)
 		default:
 			dest.UpsertString(key, val)
 		}

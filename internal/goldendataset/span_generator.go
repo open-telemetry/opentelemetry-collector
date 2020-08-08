@@ -247,6 +247,8 @@ func generateDatabaseSQLAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeDBSystem] = "mysql"
 	attrMap[conventions.AttributeDBConnectionString] = "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;"
 	attrMap[conventions.AttributeDBUser] = "billing_user"
+	attrMap[conventions.AttributeNetHostIP] = "192.0.3.122"
+	attrMap[conventions.AttributeNetHostPort] = int64(51306)
 	attrMap[conventions.AttributeNetPeerName] = "shopdb.example.com"
 	attrMap[conventions.AttributeNetPeerIP] = "192.0.2.12"
 	attrMap[conventions.AttributeNetPeerPort] = int64(3306)
@@ -426,6 +428,7 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36"
 	attrMap[conventions.AttributeHTTPRoute] = "/blog/posts"
 	attrMap[conventions.AttributeHTTPClientIP] = "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01"
+	attrMap[conventions.AttributePeerService] = "IdentifyImageService"
 	attrMap[conventions.AttributeNetPeerIP] = "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc"
 	attrMap[conventions.AttributeNetPeerPort] = int64(39111)
 	attrMap["ai-sampler.weight"] = 0.07
@@ -438,7 +441,6 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap["application.session"] = "233CC260-63A8-4ACA-A1C1-8F97AB4A2C01"
 	attrMap["application.persist.size"] = int64(1172184)
 	attrMap["application.queue.size"] = int64(0)
-	attrMap["application.validation.results"] = "Success"
 	attrMap["application.job.id"] = "0E38800B-9C4C-484E-8F2B-C7864D854321"
 	attrMap["application.service.sla"] = 0.34
 	attrMap["application.service.slo"] = 0.55
@@ -467,7 +469,7 @@ func generateSpanLinks(linkCnt PICTInputSpanChild, random io.Reader) []*otlptrac
 	listSize := calculateListSize(linkCnt)
 	linkList := make([]*otlptrace.Span_Link, listSize)
 	for i := 0; i < listSize; i++ {
-		linkList[i] = generateSpanLink(random)
+		linkList[i] = generateSpanLink(random, i)
 	}
 	return linkList
 }
@@ -507,20 +509,30 @@ func generateEventAttributes(index int) []*otlpcommon.KeyValue {
 	attrMap[conventions.AttributeMessageID] = int64(index)
 	attrMap[conventions.AttributeMessageCompressedSize] = int64(17 * index)
 	attrMap[conventions.AttributeMessageUncompressedSize] = int64(24 * index)
+	if index%4 == 1 {
+		attrMap["app.inretry"] = true
+		attrMap["app.progress"] = 0.6
+		attrMap["app.statemap"] = "14|5|202"
+	}
 	return convertMapToAttributeKeyValues(attrMap)
 }
 
-func generateSpanLink(random io.Reader) *otlptrace.Span_Link {
+func generateSpanLink(random io.Reader, index int) *otlptrace.Span_Link {
 	return &otlptrace.Span_Link{
 		TraceId:                generateTraceID(random),
 		SpanId:                 generateSpanID(random),
 		TraceState:             "",
-		Attributes:             generateLinkAttributes(),
+		Attributes:             generateLinkAttributes(index),
 		DroppedAttributesCount: 0,
 	}
 }
 
-func generateLinkAttributes() []*otlpcommon.KeyValue {
+func generateLinkAttributes(index int) []*otlpcommon.KeyValue {
 	attrMap := generateMessagingConsumerAttributes()
+	if index%4 == 1 {
+		attrMap["app.inretry"] = true
+		attrMap["app.progress"] = 0.6
+		attrMap["app.statemap"] = "14|5|202"
+	}
 	return convertMapToAttributeKeyValues(attrMap)
 }
