@@ -62,7 +62,7 @@ func (pr *pReceiver) Start(_ context.Context, host component.Host) error {
 		if !pr.cfg.UseStartTimeMetric {
 			jobsMap = internal.NewJobsMap(2 * time.Minute)
 		}
-		app := internal.NewOcaStore(c, pr.consumer, pr.logger, jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.Name())
+		app := internal.NewOcaStore(c, pr.consumer, pr.logger, jobsMap, pr.cfg.UseStartTimeMetric, pr.cfg.StartTimeMetricRegex, pr.cfg.Name())
 		// need to use a logger with the gokitLog interface
 		l := internal.NewZapToGokitLogAdapter(pr.logger)
 		scrapeManager := scrape.NewManager(l, app)

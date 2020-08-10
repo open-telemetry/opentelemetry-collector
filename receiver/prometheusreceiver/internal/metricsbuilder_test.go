@@ -29,6 +29,7 @@ import (
 
 const startTs = int64(1555366610000)
 const interval = int64(15 * 1000)
+const defaultBuilderStartTime = float64(1.0)
 
 var testMetadata = map[string]scrape.MetricMetadata{
 	"counter_test":    {Metric: "counter_test", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
@@ -44,6 +45,12 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"poor_name_count": {Metric: "poor_name_count", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"up":              {Metric: "up", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
+	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
+		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
+	"process_start_time_seconds": {Metric: "process_start_time_seconds",
+		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
+	"badprocess_start_time_seconds": {Metric: "badprocess_start_time_seconds",
+		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 }
 
 type testDataPoint struct {
@@ -90,8 +97,8 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, true, testLogger)
-				b.startTime = 1.0 // set to a non-zero value
+				b := newMetricBuilder(mc, true, "", testLogger)
+				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
 					pt.t = st
@@ -104,6 +111,85 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			}
 		})
 	}
+}
+
+func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
+	startTimeMetricRegex string, expectedBuilderStartTime float64) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mc := newMockMetadataCache(testMetadata)
+			st := startTs
+			for _, page := range tt.inputs {
+				b := newMetricBuilder(mc, true, startTimeMetricRegex,
+					testLogger)
+				b.startTime = defaultBuilderStartTime // set to a non-zero value
+				for _, pt := range page.pts {
+					// set ts for testing
+					pt.t = st
+					assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
+				}
+				_, _, _, err := b.Build()
+				assert.NoError(t, err)
+				assert.EqualValues(t, b.startTime, expectedBuilderStartTime)
+				st += interval
+			}
+		})
+	}
+}
+
+func Test_startTimeMetricMatch(t *testing.T) {
+	matchBuilderStartTime := float64(123.456)
+	matchTests := []buildTestData{
+		{
+			name: "prefix_match",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("example_process_start_time_seconds",
+							matchBuilderStartTime, "foo", "bar"),
+					},
+				},
+			},
+		},
+		{
+			name: "match",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("process_start_time_seconds",
+							matchBuilderStartTime, "foo", "bar"),
+					},
+				},
+			},
+		},
+	}
+	nomatchTests := []buildTestData{
+		{
+			name: "nomatch1",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("_process_start_time_seconds",
+							matchBuilderStartTime, "foo", "bar"),
+					},
+				},
+			},
+		},
+		{
+			name: "nomatch2",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("subprocess_start_time_seconds",
+							matchBuilderStartTime, "foo", "bar"),
+					},
+				},
+			},
+		},
+	}
+
+	runBuilderStartTimeTests(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
+	runBuilderStartTimeTests(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
 }
 
 func Test_metricBuilder_counters(t *testing.T) {
@@ -1055,7 +1141,7 @@ func Test_metricBuilder_skipped(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, testLogger)
+		b := newMetricBuilder(mc, true, "", testLogger)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1069,7 +1155,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, testLogger)
+		b := newMetricBuilder(mc, true, "", testLogger)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1078,7 +1164,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, testLogger)
+		b := newMetricBuilder(mc, true, "", testLogger)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
