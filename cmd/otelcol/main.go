@@ -46,12 +46,12 @@ func main() {
 func runInteractive(params service.Parameters) error {
 	app, err := service.New(params)
 	if err != nil {
-		return fmt.Errorf("failed to construct the application: %v", err)
+		return fmt.Errorf("failed to construct the application: %w", err)
 	}
 
 	err = app.Start()
 	if err != nil {
-		return fmt.Errorf("application run finished with error: %v", err)
+		return fmt.Errorf("application run finished with error: %w", err)
 	}
 
 	return nil
