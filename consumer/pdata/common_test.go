@@ -63,6 +63,16 @@ func TestAttributeValue(t *testing.T) {
 	assert.EqualValues(t, true, v.BoolVal())
 }
 
+func TestAttributeValueType(t *testing.T) {
+	assert.EqualValues(t, "NULL", AttributeValueNULL.String())
+	assert.EqualValues(t, "STRING", AttributeValueSTRING.String())
+	assert.EqualValues(t, "BOOL", AttributeValueBOOL.String())
+	assert.EqualValues(t, "INT", AttributeValueINT.String())
+	assert.EqualValues(t, "DOUBLE", AttributeValueDOUBLE.String())
+	assert.EqualValues(t, "MAP", AttributeValueMAP.String())
+	assert.EqualValues(t, "ARRAY", AttributeValueARRAY.String())
+}
+
 func fromVal(v interface{}) AttributeValue {
 	switch val := v.(type) {
 	case string:
@@ -73,8 +83,10 @@ func fromVal(v interface{}) AttributeValue {
 		return NewAttributeValueDouble(val)
 	case map[string]interface{}:
 		return fromMap(val)
+	case []interface{}:
+		return fromArray(val)
 	}
-	return NewAttributeValueNull()
+	panic("data type is not supported in fromVal()")
 }
 
 func fromMap(v map[string]interface{}) AttributeValue {
@@ -88,7 +100,7 @@ func fromMap(v map[string]interface{}) AttributeValue {
 	return av
 }
 
-func fromJSON(jsonStr string) AttributeValue {
+func fromJSONMap(jsonStr string) AttributeValue {
 	var src map[string]interface{}
 	err := json.Unmarshal([]byte(jsonStr), &src)
 	if err != nil {
@@ -98,12 +110,12 @@ func fromJSON(jsonStr string) AttributeValue {
 }
 
 func assertMapJSON(t *testing.T, expectedJSON string, actualMap AttributeValue) {
-	assert.EqualValues(t, fromJSON(expectedJSON).MapVal(), actualMap.MapVal().Sort())
+	assert.EqualValues(t, fromJSONMap(expectedJSON).MapVal(), actualMap.MapVal().Sort())
 }
 
 func TestAttributeValueMap(t *testing.T) {
 	m1 := NewAttributeValueMap()
-	assert.EqualValues(t, fromJSON(`{}`), m1)
+	assert.EqualValues(t, fromJSONMap(`{}`), m1)
 	assert.EqualValues(t, AttributeValueMAP, m1.Type())
 	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
 	assert.EqualValues(t, 0, m1.MapVal().Len())
@@ -1124,4 +1136,132 @@ func generateTestBoolAttributeMap() AttributeMap {
 		"k": NewAttributeValueBool(true),
 	})
 	return am
+}
+
+func fromArray(v []interface{}) AttributeValue {
+	arr := NewAnyValueArray()
+	for _, v := range v {
+		av := fromVal(v)
+		arr.Append(&av)
+	}
+	av := NewAttributeValueArray()
+	av.SetArrayVal(arr)
+	return av
+}
+
+func fromJSONArray(jsonStr string) AttributeValue {
+	var src []interface{}
+	err := json.Unmarshal([]byte(jsonStr), &src)
+	if err != nil {
+		panic("Invalid input jsonStr:" + jsonStr)
+	}
+	return fromArray(src)
+}
+
+func assertArrayJSON(t *testing.T, expectedJSON string, actualArray AttributeValue) {
+	assert.EqualValues(t, fromJSONArray(expectedJSON).ArrayVal(), actualArray.ArrayVal())
+}
+
+func TestAttributeValueArray(t *testing.T) {
+	a1 := NewAttributeValueArray()
+	assert.EqualValues(t, fromJSONArray(`[]`), a1)
+	assert.EqualValues(t, AttributeValueARRAY, a1.Type())
+	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
+	assert.EqualValues(t, 0, a1.ArrayVal().Len())
+
+	av := NewAttributeValueDouble(123)
+	a1.ArrayVal().Append(&av)
+	assertArrayJSON(t, `[123]`, a1)
+	assert.EqualValues(t, 1, a1.ArrayVal().Len())
+
+	v := a1.ArrayVal().At(0)
+	assert.EqualValues(t, AttributeValueDOUBLE, v.Type())
+	assert.EqualValues(t, 123, v.DoubleVal())
+
+	// Create a second array.
+	a2 := NewAttributeValueArray()
+	assertArrayJSON(t, `[]`, a2)
+	assert.EqualValues(t, 0, a2.ArrayVal().Len())
+
+	av = NewAttributeValueString("somestr")
+	a2.ArrayVal().Append(&av)
+	assertArrayJSON(t, `["somestr"]`, a2)
+	assert.EqualValues(t, 1, a2.ArrayVal().Len())
+
+	// Insert the second array as a child.
+	a1.ArrayVal().Append(&a2)
+	assertArrayJSON(t, `[123, ["somestr"]]`, a1)
+	assert.EqualValues(t, 2, a1.ArrayVal().Len())
+
+	// Check that the array was correctly inserted.
+	childArray := a1.ArrayVal().At(1)
+	assert.EqualValues(t, AttributeValueARRAY, childArray.Type())
+	assert.EqualValues(t, 1, childArray.ArrayVal().Len())
+
+	v = childArray.ArrayVal().At(0)
+	assert.EqualValues(t, AttributeValueSTRING, v.Type())
+	assert.EqualValues(t, "somestr", v.StringVal())
+
+	// Test nil values case for ArrayVal() func.
+	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
+	a1 = AttributeValue{orig: &orig}
+	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
+}
+
+func TestAttributeValueSetArrayVal(t *testing.T) {
+	var anyVal *otlpcommon.AnyValue
+	v := newAttributeValue(&anyVal)
+	assert.EqualValues(t, AttributeValueNULL, v.Type())
+
+	v.SetArrayVal(NewAnyValueArray())
+	assert.EqualValues(t, AttributeValueARRAY, v.Type())
+
+	anyVal = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{}}
+	v = newAttributeValue(&anyVal)
+	assert.EqualValues(t, AttributeValueARRAY, v.Type())
+
+	v.SetArrayVal(NewAnyValueArray())
+	assert.EqualValues(t, AttributeValueARRAY, v.Type())
+
+	v.SetIntVal(123)
+	assert.EqualValues(t, AttributeValueINT, v.Type())
+
+	v.SetArrayVal(NewAnyValueArray())
+	assert.EqualValues(t, AttributeValueARRAY, v.Type())
+	assert.EqualValues(t, 0, v.ArrayVal().Len())
+
+	av := NewAnyValueArray()
+	av.Resize(1)
+	v.SetArrayVal(av)
+	assert.EqualValues(t, AttributeValueARRAY, v.Type())
+	assert.EqualValues(t, 1, v.ArrayVal().Len())
+}
+
+func TestAnyValueArrayWithNilValues(t *testing.T) {
+	origWithNil := []*otlpcommon.AnyValue{
+		nil,
+		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+		nil,
+		{Value: nil},
+	}
+	sm := AnyValueArray{
+		orig: &origWithNil,
+	}
+	val := sm.At(1)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
+	assert.EqualValues(t, "test_value", val.StringVal())
+
+	val = sm.At(3)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
+
+	val = sm.At(0)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
+
+	av := NewAttributeValueString("other_value")
+	sm.Append(&av)
+	val = sm.At(4)
+	assert.EqualValues(t, AttributeValueSTRING, val.Type())
+	assert.EqualValues(t, "other_value", val.StringVal())
 }

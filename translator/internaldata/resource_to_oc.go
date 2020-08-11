@@ -185,11 +185,28 @@ func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		sb.WriteString("}")
 		return sb.String()
 
+	case pdata.AttributeValueARRAY:
+		// OpenCensus attributes cannot represent arrays natively. Convert the
+		// array to a JSON-like string.
+		var sb strings.Builder
+		sb.WriteString("[")
+		m := attr.ArrayVal()
+		first := true
+		len := m.Len()
+		for i := 0; i < len; i++ {
+			v := m.At(i)
+			if !first {
+				sb.WriteString(",")
+			}
+			first = false
+			sb.WriteString(attributeValueToString(v, true))
+		}
+		sb.WriteString("]")
+		return sb.String()
+
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
 	}
-
-	// TODO: Add support for ARRAY type.
 }
 
 func inferResourceType(labels map[string]string) (string, bool) {
