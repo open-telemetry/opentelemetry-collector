@@ -36,7 +36,7 @@ const (
 	defaultServiceName string = "<missing service name>"
 )
 
-// NewFactory creates a factory for OTLP exporter.
+// NewFactory creates a factory for Zipkin exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,

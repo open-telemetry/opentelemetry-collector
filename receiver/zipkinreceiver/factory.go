@@ -33,13 +33,16 @@ const (
 	defaultBindEndpoint = "0.0.0.0:9411"
 )
 
+// NewFactory creates a new Zipkin receiver factory
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver))
+		receiverhelper.WithTraces(createTraceReceiver),
+	)
 }
 
+// createDefaultConfig creates the default configuration for Zipkin receiver.
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -52,8 +55,9 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
+// createTraceReceiver creates a trace receiver based on provided config.
 func createTraceReceiver(
-	_ context.Context,
+	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,

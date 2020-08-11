@@ -12,20 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package goldendataset
+package zipkin
 
 import (
-	"io"
-	"math/rand"
+	"encoding/json"
+	"io/ioutil"
 	"testing"
 
+	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateTraces(t *testing.T) {
-	random := io.Reader(rand.New(rand.NewSource(42)))
-	rscSpans, err := GenerateResourceSpans("testdata/generated_pict_pairs_traces.txt",
-		"testdata/generated_pict_pairs_spans.txt", random)
-	assert.Nil(t, err)
-	assert.Equal(t, 32, len(rscSpans))
+func TestV1ThriftToTraces(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	require.NoError(t, err, "Failed to load test data")
+
+	var ztSpans []*zipkincore.Span
+	err = json.Unmarshal(blob, &ztSpans)
+	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
+
+	got, err := V1ThriftBatchToInternalTraces(ztSpans)
+	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
+
+	assert.Equal(t, 5, got.SpanCount())
 }

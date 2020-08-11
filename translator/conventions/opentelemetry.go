@@ -56,17 +56,58 @@ const (
 	AttributeHostImageName         = "host.image.name"
 	AttributeHostImageID           = "host.image.id"
 	AttributeHostImageVersion      = "host.image.version"
-	AttributeProcessID             = "process.id"
+	AttributeProcessID             = "process.pid"
 	AttributeProcessExecutableName = "process.executable.name"
 	AttributeProcessExecutablePath = "process.executable.path"
 	AttributeProcessCommand        = "process.command"
 	AttributeProcessCommandLine    = "process.command_line"
-	AttributeProcessUsername       = "process.username"
+	AttributeProcessOwner          = "process.owner"
 	AttributeCloudProvider         = "cloud.provider"
 	AttributeCloudAccount          = "cloud.account.id"
 	AttributeCloudRegion           = "cloud.region"
 	AttributeCloudZone             = "cloud.zone"
 )
+
+// GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
+func GetResourceSemanticConventionAttributeNames() []string {
+	return []string{
+		AttributeServiceName,
+		AttributeServiceNamespace,
+		AttributeServiceInstance,
+		AttributeServiceVersion,
+		AttributeTelemetrySDKName,
+		AttributeTelemetrySDKLanguage,
+		AttributeTelemetrySDKVersion,
+		AttributeContainerName,
+		AttributeContainerImage,
+		AttributeContainerTag,
+		AttributeFaasName,
+		AttributeFaasID,
+		AttributeFaasVersion,
+		AttributeFaasInstance,
+		AttributeK8sCluster,
+		AttributeK8sNamespace,
+		AttributeK8sPod,
+		AttributeK8sDeployment,
+		AttributeHostHostname,
+		AttributeHostID,
+		AttributeHostName,
+		AttributeHostType,
+		AttributeHostImageName,
+		AttributeHostImageID,
+		AttributeHostImageVersion,
+		AttributeProcessID,
+		AttributeProcessExecutableName,
+		AttributeProcessExecutablePath,
+		AttributeProcessCommand,
+		AttributeProcessCommandLine,
+		AttributeProcessOwner,
+		AttributeCloudProvider,
+		AttributeCloudAccount,
+		AttributeCloudRegion,
+		AttributeCloudZone,
+	}
+}
 
 // OpenTelemetry Semantic Convention values for general Span attribute names.
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md

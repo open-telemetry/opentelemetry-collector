@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package goldendataset
+package zipkin
 
 import (
-	"io"
-	"math/rand"
-	"testing"
+	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 
-	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func TestGenerateTraces(t *testing.T) {
-	random := io.Reader(rand.New(rand.NewSource(42)))
-	rscSpans, err := GenerateResourceSpans("testdata/generated_pict_pairs_traces.txt",
-		"testdata/generated_pict_pairs_spans.txt", random)
-	assert.Nil(t, err)
-	assert.Equal(t, 32, len(rscSpans))
+func V1ThriftBatchToInternalTraces(zSpans []*zipkincore.Span) (pdata.Traces, error) {
+	traces := pdata.NewTraces()
+
+	ocTraces, _ := V1ThriftBatchToOCProto(zSpans)
+
+	for _, td := range ocTraces {
+		tmp := internaldata.OCToTraceData(td)
+		tmp.ResourceSpans().MoveAndAppendTo(traces.ResourceSpans())
+	}
+	return traces, nil
 }

@@ -404,8 +404,8 @@ func (zs *ZipkinDataSender) Start() error {
 	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("http://localhost:%d/api/v2/spans", zs.Port)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+	params := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

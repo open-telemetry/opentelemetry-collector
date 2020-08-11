@@ -86,7 +86,7 @@ func (m *processMetadata) insertUsername(attr pdata.AttributeMap) {
 		return
 	}
 
-	attr.InsertString(conventions.AttributeProcessUsername, m.username)
+	attr.InsertString(conventions.AttributeProcessOwner, m.username)
 }
 
 // processHandles provides a wrapper around []*process.Process

@@ -104,8 +104,7 @@ func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 		}
 		v.assertSentRecdTracingDataEqual(tracesList)
 	}
-	// TODO enable once identified problems are fixed
-	//assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
+	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }
 
 func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
@@ -245,7 +244,7 @@ func (v *CorrectnessTestValidator) diffSpanKind(sentSpan *otlptrace.Span, recdSp
 }
 
 func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if sentSpan.StartTimeUnixNano != recdSpan.StartTimeUnixNano {
+	if notWithinOneMillisecond(sentSpan.StartTimeUnixNano, recdSpan.StartTimeUnixNano) {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
@@ -255,11 +254,11 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, 
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
-	if sentSpan.EndTimeUnixNano != recdSpan.EndTimeUnixNano {
+	if notWithinOneMillisecond(sentSpan.EndTimeUnixNano, recdSpan.EndTimeUnixNano) {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
-			fieldPath:     "StartTimeUnixNano",
+			fieldPath:     "EndTimeUnixNano",
 			expectedValue: sentSpan.EndTimeUnixNano,
 			actualValue:   recdSpan.EndTimeUnixNano,
 		}
@@ -324,7 +323,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 			} else {
 				for i, sentEvent := range sentEvents {
 					recdEvent := recdEvents[i]
-					if sentEvent.TimeUnixNano != recdEvent.TimeUnixNano {
+					if notWithinOneMillisecond(sentEvent.TimeUnixNano, recdEvent.TimeUnixNano) {
 						af := &AssertionFailure{
 							typeName:      "Span",
 							dataComboName: sentSpan.Name,
@@ -428,14 +427,18 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 			sentVal := retrieveAttributeValue(sentAttr)
 			recdVal := retrieveAttributeValue(recdAttr)
 			if !reflect.DeepEqual(sentVal, recdVal) {
-				af := &AssertionFailure{
-					typeName:      "Span",
-					dataComboName: spanName,
-					fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
-					expectedValue: sentVal,
-					actualValue:   recdVal,
+				sentStr := fmt.Sprintf("%v", sentVal)
+				recdStr := fmt.Sprintf("%v", recdVal)
+				if sentStr != recdStr {
+					af := &AssertionFailure{
+						typeName:      "Span",
+						dataComboName: spanName,
+						fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
+						expectedValue: sentVal,
+						actualValue:   recdVal,
+					}
+					v.assertionFailures = append(v.assertionFailures, af)
 				}
-				v.assertionFailures = append(v.assertionFailures, af)
 			}
 		} else {
 			af := &AssertionFailure{
@@ -508,4 +511,14 @@ func convertLinksSliceToMap(links []*otlptrace.Span_Link) map[string]*otlptrace.
 		eventMap[hex.EncodeToString(link.SpanId)] = link
 	}
 	return eventMap
+}
+
+func notWithinOneMillisecond(sentNs uint64, recdNs uint64) bool {
+	var diff uint64
+	if sentNs > recdNs {
+		diff = sentNs - recdNs
+	} else {
+		diff = recdNs - sentNs
+	}
+	return diff > uint64(1100000)
 }

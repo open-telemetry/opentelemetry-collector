@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 
-	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
@@ -28,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -84,38 +82,29 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 }
 
 func (ze *zipkinExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
-	numSpans := td.SpanCount()
-	octds := internaldata.TraceDataToOC(td)
-
-	tbatch := make([]*zipkinmodel.SpanModel, 0, numSpans)
-	for _, octd := range octds {
-		for _, span := range octd.Spans {
-			zs, err := zipkin.OCSpanProtoToZipkin(octd.Node, octd.Resource, span, ze.defaultServiceName)
-			if err != nil {
-				return numSpans, consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
-			}
-			tbatch = append(tbatch, zs)
-		}
+	tbatch, err := zipkin.InternalTracesToZipkinSpans(td)
+	if err != nil {
+		return td.SpanCount(), consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
 
 	body, err := ze.serializer.Serialize(tbatch)
 	if err != nil {
-		return numSpans, consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
+		return td.SpanCount(), consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", ze.url, bytes.NewReader(body))
 	if err != nil {
-		return numSpans, fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
+		return td.SpanCount(), fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
 	}
 	req.Header.Set("Content-Type", ze.serializer.ContentType())
 
 	resp, err := ze.client.Do(req)
 	if err != nil {
-		return numSpans, fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
+		return td.SpanCount(), fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return numSpans, fmt.Errorf("failed the request with status code %d", resp.StatusCode)
+		return td.SpanCount(), fmt.Errorf("failed the request with status code %d", resp.StatusCode)
 	}
 	return 0, nil
 }

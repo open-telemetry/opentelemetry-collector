@@ -34,6 +34,7 @@ const (
 	ResourceK8sOnPrem PICTInputResource = "K8sOnPrem"
 	ResourceK8sCloud  PICTInputResource = "K8sCloud"
 	ResourceFaas      PICTInputResource = "Faas"
+	ResourceExec      PICTInputResource = "Exec"
 )
 
 // Enumerates the number and kind of instrumentation library instances that can be generated.

@@ -84,7 +84,7 @@ func assertResourceAttributes(t *testing.T, resourceMetrics pdata.ResourceMetric
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessUsername)
+		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
 	}
 }
 

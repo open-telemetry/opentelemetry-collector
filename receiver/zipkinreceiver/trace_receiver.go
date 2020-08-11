@@ -31,15 +31,13 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	"github.com/pkg/errors"
-	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -85,7 +83,7 @@ func New(config *Config, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, 
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
+func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}
@@ -117,16 +115,16 @@ func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []consumerdata.TraceData, err error) {
+func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
 		zSpans, err := deserializeThrift(blob)
 		if err != nil {
-			return nil, err
+			return pdata.NewTraces(), err
 		}
 
-		return zipkin.V1ThriftBatchToOCProto(zSpans)
+		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
 	}
-	return zipkin.V1JSONBatchToOCProto(blob)
+	return zipkin.V1JSONBatchToInternalTraces(blob)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.
@@ -158,7 +156,7 @@ func deserializeThrift(b []byte) ([]*zipkincore.Span, error) {
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []consumerdata.TraceData, err error) {
+func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	// This flag's reference is from:
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
 	debugWasSet := hdr.Get("X-B3-Flags") == "1"
@@ -172,17 +170,17 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []c
 		zipkinSpans, err = zipkinproto.ParseSpans(blob, debugWasSet)
 
 	default: // By default, we'll assume using JSON
-		zipkinSpans, err = zr.deserializeFromJSON(blob)
+		zipkinSpans, err = zr.deserializeFromJSON(blob, debugWasSet)
 	}
 
 	if err != nil {
-		return nil, err
+		return pdata.Traces{}, err
 	}
 
-	return zipkin.V2BatchToOCProto(zipkinSpans)
+	return zipkin.V2SpansToInternalTraces(zipkinSpans)
 }
 
-func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte) (zs []*zipkinmodel.SpanModel, err error) {
+func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
 	if err = json.Unmarshal(jsonBlob, &zs); err != nil {
 		return nil, err
 	}
@@ -271,37 +269,22 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = r.Body.Close()
 
-	var tds []consumerdata.TraceData
+	var td pdata.Traces
 	var err error
 	if asZipkinv1 {
-		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
+		td, err = zr.v1ToTraceSpans(slurp, r.Header)
 	} else {
-		tds, err = zr.v2ToTraceSpans(slurp, r.Header)
+		td, err = zr.v2ToTraceSpans(slurp, r.Header)
 	}
 
 	if err != nil {
-		trace.FromContext(ctx).SetStatus(trace.Status{
-			Code:    trace.StatusCodeInvalidArgument,
-			Message: err.Error(),
-		})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var consumerErr error
-	tdsSize := 0
-	for _, td := range tds {
-		tdsSize += len(td.Spans)
-		if consumerErr != nil {
-			// Do not attempt the remaining data, continue on the loop just to
-			// count all the data on the request.
-			continue
-		}
-		td.SourceFormat = "zipkin"
-		consumerErr = zr.nextConsumer.ConsumeTraces(ctx, internaldata.OCToTraceData(td))
-	}
+	consumerErr := zr.nextConsumer.ConsumeTraces(ctx, td)
 
-	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, tdsSize, consumerErr)
+	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
 
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.
