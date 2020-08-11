@@ -12,7 +12,7 @@ Prometheus can be integrated with remote storage systems that supports its remot
 
 The following diagram shows an example of Prometheus remote write API usage, with Cortex,n open source, horizontally scalable, highly available, multi-tenant, long term storage, as a remote storage backend.
 
-![Cortex Archietecture](/img/cortex.png)
+![Cortex Archietecture](./img/cortex.png)
 
 Our project is focused on developing an exporter for the OpenTelemetry Collector to any Prometheus remote storage backend. 
 
@@ -20,7 +20,7 @@ Our project is focused on developing an exporter for the OpenTelemetry Collector
 
 The Prometheus remote write/Cortex exporter should write metrics to a remote URL in a snappy-compressed, [protocol buffer](https://github.com/prometheus/prometheus/blob/master/prompb/remote.proto#L22) encoded HTTP request defined by the Prometheus remote write API. Each request should encode multiple Prometheus remote write TimeSeries, which are composed of a set of labels and a collection of samples. Each label contains a name-value pair of strings, and each sample contains a timestamp-value number pair.
 
-![Image of TimeSeries](/img/timeseries.png)
+![Image of TimeSeries](./img/timeseries.png)
 
 TimeSeries stores its metric name in its labels and does not describe metric types or start timestamps. To convert to TimeSeries data, buckets of a Histogram are broken down into individual TimeSeries with a bound label(`le`), and a similar process happens with quantiles in a Summary.
 
