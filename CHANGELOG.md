@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## v0.8.0 Beta
+
+## 🚀 New components 🚀
+
+- `groupbytrace` processor that waits for a trace to be completed (#1362)
+
+## 💡 Enhancements 💡
+
+- Migrate `zipkin` receiver/exporter to the new interfaces (#1484)
+- Migrate `prometheus` receiver/exporter to the new interfaces (#1477, #1515)
+- Add new FactoryUnmarshaler support to all components, deprecate old way (#1468)
+- Update `fileexporter` to write data in OTLP (#1488)
+- Add extension factory helper (#1485)
+- Host scrapers: Use same scrape time for all data points coming from same source (#1473)
+- Make logs SeverityNumber publicly available (#1496)
+- Add recently included conventions for k8s and container resources (#1519)
+- Add new config StartTimeMetricRegex to `prometheus` receiver (#1511)
+- Convert Zipkin receiver and exporter to use OTLP (#1446)
+
+## 🧰 Bug fixes 🧰
+
+- Infer OpenCensus resource type based on OpenTelemetry's semantic conventions (#1462)
+- Fix log adapter in `prometheus` receiver (#1493)
+- Avoid frequent errors for process telemetry on Windows (#1487)
+
 ## v0.7.0 Beta
 
 ## 🚀 New components 🚀
@@ -13,7 +38,7 @@
 - Extensions
   - **Experimental** `fluentbit` facilitates running a FluentBit subprocess of the collector (#1381)
 
-## 💡 Enhancements 
+## 💡 Enhancements 💡
 
 - Updated `golang/protobuf` from v1.3.5 to v1.4.2 (#1308)
 - Updated `opencensus-proto` from v0.2.1 to v0.3.0 (#1308)
