@@ -184,12 +184,12 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 
 // Simple helper function that takes the <Signature String - *TimeSeries> map
 // and creates a WriteRequest from the struct -- can move to the helper.go file
-func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
-	if len(TsMap) == 0 {
+func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+	if len(tsMap) == 0 {
 		return nil, errors.Errorf("invalid TsMap: cannot be empty map")
 	}
 	TsArray := []prompb.TimeSeries{}
-	for _, v := range TsMap {
+	for _, v := range tsMap {
 		TsArray = append(TsArray, *v)
 	}
 	wrapped := prompb.WriteRequest{

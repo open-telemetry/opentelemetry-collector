@@ -284,7 +284,7 @@ func (prwe *prwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 		// process each percentile/quantile
 		for _, qt := range pt.GetPercentileValues() {
 			quantile := &prompb.Sample{
-				Value:     float64(qt.Value),
+				Value:     qt.Value,
 				Timestamp: time,
 			}
 			percentileStr := strconv.FormatFloat(qt.Percentile, 'f', -1, 64)
@@ -298,9 +298,9 @@ func (prwe *prwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 // Because we are adhering closely to the Remote Write API, we must Export a
 // Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
 // for the Remote Write Endpoint to properly receive our Metrics data.
-func (prwe *prwExporter) export(ctx context.Context, TsMap map[string]*prompb.TimeSeries) error {
+func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
-	req, err := wrapTimeSeries(TsMap)
+	req, err := wrapTimeSeries(tsMap)
 	if err != nil {
 		return err
 	}
