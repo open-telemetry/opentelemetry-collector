@@ -11,7 +11,7 @@
 - Exporters
   - `kafka` exports traces to Kafka (#1439)
 - Extensions
-  - **Experimental** `fluenetbit` facilitates running a FluentBit subprocess of the collector (#1381)
+  - **Experimental** `fluentbit` facilitates running a FluentBit subprocess of the collector (#1381)
 
 ## 💡 Enhancements 
 
