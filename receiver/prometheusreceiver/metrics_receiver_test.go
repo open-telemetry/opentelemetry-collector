@@ -1066,3 +1066,90 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 		target.validateFunc(t, target, results[target.name])
 	}
 }
+
+var startTimeMetricRegexPage = `
+# HELP go_threads Number of OS threads created
+# TYPE go_threads gauge
+go_threads 19
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{method="post",code="200"} 100
+http_requests_total{method="post",code="400"} 5
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.05"} 1000
+http_request_duration_seconds_bucket{le="0.5"} 1500
+http_request_duration_seconds_bucket{le="1"} 2000
+http_request_duration_seconds_bucket{le="+Inf"} 2500
+http_request_duration_seconds_sum 5000
+http_request_duration_seconds_count 2500
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{quantile="0.01"} 1
+rpc_duration_seconds{quantile="0.9"} 5
+rpc_duration_seconds{quantile="0.99"} 8
+rpc_duration_seconds_sum 5000
+rpc_duration_seconds_count 1000
+# HELP example_process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE example_process_start_time_seconds gauge
+example_process_start_time_seconds 400.8
+`
+
+// TestStartTimeMetricRegex validates that timeseries have start time regex set to 'process_start_time_seconds'
+func TestStartTimeMetricRegex(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: startTimeMetricRegexPage},
+			},
+			validateFunc: verifyStartTimeMetricPage,
+		},
+		{
+			name: "target2",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: startTimeMetricPage},
+			},
+			validateFunc: verifyStartTimeMetricPage,
+		},
+	}
+	testEndToEndRegex(t, targets, true, "^(.+_)*process_start_time_seconds$")
+}
+
+func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
+	// 1. setup mock server
+	mp, cfg, err := setupMockPrometheus(targets...)
+	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
+	defer mp.Close()
+
+	cms := new(exportertest.SinkMetricsExporter)
+	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric, StartTimeMetricRegex: startTimeMetricRegex}, cms)
+
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
+	defer rcvr.Shutdown(context.Background())
+
+	// wait for all provided data to be scraped
+	mp.wg.Wait()
+	metrics := cms.AllMetrics()
+
+	// split and store results by target name
+	results := make(map[string][]consumerdata.MetricsData)
+	for _, m := range metrics {
+		ocmds := pdatautil.MetricsToMetricsData(m)
+		for _, ocmd := range ocmds {
+			result, ok := results[ocmd.Node.ServiceInfo.Name]
+			if !ok {
+				result = make([]consumerdata.MetricsData, 0)
+			}
+			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
+		}
+	}
+
+	lres, lep := len(results), len(mp.endpoints)
+	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+
+	// loop to validate outputs for each targets
+	for _, target := range targets {
+		target.validateFunc(t, target, results[target.name])
+	}
+}

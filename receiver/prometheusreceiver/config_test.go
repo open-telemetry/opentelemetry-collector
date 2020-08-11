@@ -54,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
+	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
 }
 
 func TestLoadConfigWithEnvVar(t *testing.T) {

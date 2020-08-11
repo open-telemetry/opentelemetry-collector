@@ -38,7 +38,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/common v0.10.0
+	github.com/prometheus/common v0.11.1
 	github.com/prometheus/procfs v0.1.3
 	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83
 	github.com/rs/cors v1.7.0
@@ -57,7 +57,7 @@ require (
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200624020401-64a14ca9d1ad

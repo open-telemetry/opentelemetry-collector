@@ -47,28 +47,30 @@ type OcaStore interface {
 
 // OpenCensus Store for prometheus
 type ocaStore struct {
-	running            int32
-	logger             *zap.Logger
-	sink               consumer.MetricsConsumer
-	mc                 *mService
-	once               *sync.Once
-	ctx                context.Context
-	jobsMap            *JobsMap
-	useStartTimeMetric bool
-	receiverName       string
+	running              int32
+	logger               *zap.Logger
+	sink                 consumer.MetricsConsumer
+	mc                   *mService
+	once                 *sync.Once
+	ctx                  context.Context
+	jobsMap              *JobsMap
+	useStartTimeMetric   bool
+	startTimeMetricRegex string
+	receiverName         string
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string) OcaStore {
 	return &ocaStore{
-		running:            runningStateInit,
-		ctx:                ctx,
-		sink:               sink,
-		logger:             logger,
-		once:               &sync.Once{},
-		jobsMap:            jobsMap,
-		useStartTimeMetric: useStartTimeMetric,
-		receiverName:       receiverName,
+		running:              runningStateInit,
+		ctx:                  ctx,
+		sink:                 sink,
+		logger:               logger,
+		once:                 &sync.Once{},
+		jobsMap:              jobsMap,
+		useStartTimeMetric:   useStartTimeMetric,
+		startTimeMetricRegex: startTimeMetricRegex,
+		receiverName:         receiverName,
 	}
 }
 
@@ -83,7 +85,7 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *ocaStore) Appender() storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.receiverName, o.mc, o.sink, o.logger)
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}
