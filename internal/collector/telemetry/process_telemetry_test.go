@@ -50,7 +50,9 @@ func TestProcessTelemetry(t *testing.T) {
 	<-time.After(200 * time.Millisecond)
 
 	for _, viewName := range expectedViews {
-		if runtime.GOOS == "windows" && viewName == "process/cpu_seconds" {
+		if (runtime.GOOS == "windows" || runtime.GOOS == "darwin") && viewName == "process/cpu_seconds" {
+			// "process/cpu_seconds" is not supported on windows or darwin because there is
+			// no procfs which is used for reading that metric.
 			continue
 		}
 
