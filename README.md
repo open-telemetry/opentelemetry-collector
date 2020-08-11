@@ -59,7 +59,7 @@ Objectives:
 
 ### Community Roles
 
-Triagers ([](https://github.com/orgs/open-telemetry/teams/collector-triager))
+Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triager))
 - [Jay Camp](https://github.com/jrcamp), Splunk
 - [Steve Flanders](https://github.com/flands), Splunk
 
