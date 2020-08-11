@@ -252,8 +252,6 @@ func attributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 			rawMap[k] = v.DoubleVal()
 		case pdata.AttributeValueBOOL:
 			rawMap[k] = v.BoolVal()
-		case pdata.AttributeValueMAP:
-			rawMap[k] = attributeMapToMap(v.MapVal())
 		case pdata.AttributeValueNULL:
 			rawMap[k] = nil
 		}
@@ -273,10 +271,6 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 			rawMap[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
 		case pdata.AttributeValueBOOL:
 			rawMap[k] = strconv.FormatBool(v.BoolVal())
-		case pdata.AttributeValueMAP:
-			if jsonStr, jErr := json.Marshal(attributeMapToMap(v.MapVal())); jErr == nil {
-				rawMap[k] = string(jsonStr)
-			}
 		case pdata.AttributeValueNULL:
 			rawMap[k] = ""
 		}

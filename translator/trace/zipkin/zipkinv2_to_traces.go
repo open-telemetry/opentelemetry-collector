@@ -62,7 +62,6 @@ func getAttrValDescripts() []*AttrValDescript {
 	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
 	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
 	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
-	descriptions = append(descriptions, constructAttrValDescript(`^\{.+\}$`, pdata.AttributeValueMAP))
 	return descriptions
 }
 

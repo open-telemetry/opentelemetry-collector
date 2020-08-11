@@ -438,7 +438,7 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap["application.svcmap"] = "Blogosphere"
 	attrMap["application.abflags"] = "UIx=false,UI4=true,flow-alt3=false"
 	attrMap["application.thread"] = "proc-pool-14"
-	attrMap["application.session"] = "233CC260-63A8-4ACA-A1C1-8F97AB4A2C01"
+	attrMap["application.session"] = ""
 	attrMap["application.persist.size"] = int64(1172184)
 	attrMap["application.queue.size"] = int64(0)
 	attrMap["application.job.id"] = "0E38800B-9C4C-484E-8F2B-C7864D854321"
@@ -500,6 +500,9 @@ func generateSpanEvent(index int) *otlptrace.Span_Event {
 }
 
 func generateEventAttributes(index int) []*otlpcommon.KeyValue {
+	if index%4 == 2 {
+		return nil
+	}
 	attrMap := make(map[string]interface{})
 	if index%2 == 0 {
 		attrMap[conventions.AttributeMessageType] = "SENT"
@@ -528,6 +531,9 @@ func generateSpanLink(random io.Reader, index int) *otlptrace.Span_Link {
 }
 
 func generateLinkAttributes(index int) []*otlpcommon.KeyValue {
+	if index%4 == 2 {
+		return nil
+	}
 	attrMap := generateMessagingConsumerAttributes()
 	if index%4 == 1 {
 		attrMap["app.inretry"] = true
