@@ -152,15 +152,15 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces
 func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span) error {
 	dest.InitEmpty()
 
-	dest.SetTraceID(pdata.TraceID(tracetranslator.UInt64ToByteTraceID(zspan.TraceID.High, zspan.TraceID.Low)))
-	dest.SetSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(zspan.ID))))
+	dest.SetTraceID(tracetranslator.UInt64ToByteTraceID(zspan.TraceID.High, zspan.TraceID.Low))
+	dest.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(zspan.ID)))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
 		dest.SetTraceState(pdata.TraceState(value))
 		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
 	if parentID != nil && *parentID != zspan.ID {
-		dest.SetParentSpanID(pdata.SpanID(tracetranslator.UInt64ToByteSpanID(uint64(*parentID))))
+		dest.SetParentSpanID(tracetranslator.UInt64ToByteSpanID(uint64(*parentID)))
 	}
 
 	dest.SetName(zspan.Name)

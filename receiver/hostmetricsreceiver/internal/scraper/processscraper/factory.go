@@ -43,7 +43,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 
 // CreateMetricsScraper creates a resource scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
-	ctx context.Context,
+	_ context.Context,
 	_ *zap.Logger,
 	config internal.Config,
 ) (internal.ResourceScraper, error) {

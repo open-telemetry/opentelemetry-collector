@@ -159,7 +159,7 @@ type mockZipkinReporter struct {
 	serializer zipkinreporter.SpanSerializer
 }
 
-var _ (zipkinreporter.Reporter) = (*mockZipkinReporter)(nil)
+var _ zipkinreporter.Reporter = (*mockZipkinReporter)(nil)
 
 func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
 	r.batch = append(r.batch, &span)
