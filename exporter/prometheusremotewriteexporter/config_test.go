@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020 The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,7 +31,7 @@ import (
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
-func Test_loadConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -54,7 +54,9 @@ func Test_loadConfig(t *testing.T) {
 				NameVal: "prometheusremotewrite/2",
 				TypeVal: "prometheusremotewrite",
 			},
-			TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
 			QueueSettings: exporterhelper.QueueSettings{
 				Enabled:      true,
 				NumConsumers: 2,
@@ -67,6 +69,10 @@ func Test_loadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			Namespace: "test-space",
+
+			Headers: map[string]string{
+				"prometheus-remote-write-version": "0.1.0",
+				"tenant-id":                       "234"},
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
@@ -81,10 +87,6 @@ func Test_loadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 
 				Timeout: 5 * time.Second,
-
-				Headers: map[string]string{
-					"prometheus-remote-write-version": "0.1.0",
-					"x-scope-orgid":                   "234"},
 			},
 		})
 }

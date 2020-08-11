@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020 The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -36,21 +35,19 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
+// Instantiates a pseudo-Cortex Exporter that adheres to the component MetricsExporter interface
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
-	prwCfg, ok := cfg.(*Config)
-	if !ok {
-		return nil, errors.New("invalid configuration")
-	}
+	cCfg := cfg.(*Config)
 
-	client, err := prwCfg.HTTPClientSettings.ToClient()
+	client, err := cCfg.HTTPClientSettings.ToClient()
 
 	if err != nil {
 		return nil, err
 	}
 
-	prwe, err := newPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client)
+	prwe, err := newPrwExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client)
 
 	if err != nil {
 		return nil, err
@@ -59,13 +56,17 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		prwe.pushMetrics,
-		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(prwCfg.QueueSettings),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
+		exporterhelper.WithTimeout(cCfg.TimeoutSettings),
+		exporterhelper.WithQueue(cCfg.QueueSettings),
+		exporterhelper.WithRetry(cCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
-	return prwexp, err
+	if err != nil {
+		return nil, err
+	}
+
+	return prwexp, nil
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -79,6 +80,7 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		Namespace: "",
+		Headers:   map[string]string{},
 
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
@@ -88,8 +90,6 @@ func createDefaultConfig() configmodels.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
-			Headers:         map[string]string{},
 		},
 	}
 }

@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020 The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
 
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -27,9 +28,16 @@ import (
 )
 
 const (
-	totalStr  = "total"
-	delimeter = "_"
-	keyStr    = "key"
+	nameStr     = "name"
+	sumStr      = "_sum"
+	countStr    = "_count"
+	bucketStr   = "_bucket"
+	leStr       = "le"
+	quantileStr = "quantile"
+	pInfStr     = "+Inf"
+	totalStr    = "total"
+	delimeter   = "_"
+	keyStr      = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -123,13 +131,8 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 		if found {
 			log.Println("label " + extras[i] + " is overwritten. Check if Prometheus reserved labels are used.")
 		}
-		// internal labels should be maintained
-		name := extras[i]
-		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
-			name = sanitize(name)
-		}
 		l[extras[i]] = prompb.Label{
-			Name:  name,
+			Name:  sanitize(extras[i]),
 			Value: extras[i+1],
 		}
 	}
@@ -177,6 +180,23 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 		b.WriteString(totalStr)
 	}
 	return sanitize(b.String())
+}
+
+// Simple helper function that takes the <Signature String - *TimeSeries> map
+// and creates a WriteRequest from the struct -- can move to the helper.go file
+func wrapTimeSeries(TsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+	if len(TsMap) == 0 {
+		return nil, errors.Errorf("invalid TsMap: cannot be empty map")
+	}
+	TsArray := []prompb.TimeSeries{}
+	for _, v := range TsMap {
+		TsArray = append(TsArray, *v)
+	}
+	wrapped := prompb.WriteRequest{
+		Timeseries: TsArray,
+		//Other parameters of the WriteRequest are unnecessary for our Export
+	}
+	return &wrapped, nil
 }
 
 // copied from prometheus-go-metric-exporter

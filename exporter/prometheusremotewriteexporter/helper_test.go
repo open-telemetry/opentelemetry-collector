@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2020 The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -91,12 +91,12 @@ func Test_addSample(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), msTime1),
+					getSample(float64(intVal1), time1),
 					promLbs1,
 				},
 				{
 					otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal2), msTime2),
+					getSample(float64(intVal2), time2),
 					promLbs1,
 				},
 			},
@@ -107,11 +107,11 @@ func Test_addSample(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), msTime1),
+					getSample(float64(intVal1), time1),
 					promLbs1,
 				},
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), msTime2),
+					getSample(float64(intVal1), time2),
 					promLbs2,
 				},
 			},
@@ -205,16 +205,10 @@ func Test_createLabelSet(t *testing.T) {
 			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
-			"no_original_case",
+			"no_extras_case",
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
-		},
-		{
-			"empty_extra_case",
-			lbs1,
-			[]string{"", ""},
-			getPromLabels(label11, value11, label12, value12, "", ""),
 		},
 		{
 			"single_left_over_case",
