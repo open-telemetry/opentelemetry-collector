@@ -15,6 +15,7 @@ Supported processors (sorted alphabetically):
 - [Attributes Processor](attributesprocessor/README.md)
 - [Batch Processor](batchprocessor/README.md)
 - [Filter Processor](filterprocessor/README.md)
+- [Group by Trace Processor](groupbytraceprocessor/README.md)
 - [Memory Limiter Processor](memorylimiter/README.md)
 - [Queued Retry Processor](queuedprocessor/README.md)
 - [Resource Processor](resourceprocessor/README.md)
