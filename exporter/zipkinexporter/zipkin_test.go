@@ -36,8 +36,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -53,7 +51,7 @@ import (
 // The rest of the fields should match up exactly
 func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	buf := new(bytes.Buffer)
-	sizes := []int64{}
+	var sizes []int64
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := io.Copy(buf, r.Body)
 		sizes = append(sizes, s)
@@ -67,16 +65,15 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		},
 		Format: "json",
 	}
-	tes, err := newTraceExporter(config)
+	zexp, err := newTraceExporter(config)
 	assert.NoError(t, err)
-	require.NotNil(t, tes)
+	require.NotNil(t, zexp)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -316,7 +313,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 		},
 		Format: "proto",
 	}
-	tes, err := newTraceExporter(config)
+	zexp, err := newTraceExporter(config)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
@@ -326,7 +323,6 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	mzr.serializer = zipkinproto.SpanSerializer{}
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	zexp := processor.NewTraceFanOutConnector([]consumer.TraceConsumer{tes})
 	port := testutil.GetAvailablePort(t)
 	cfg := &zipkinreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{

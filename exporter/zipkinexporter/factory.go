@@ -36,7 +36,7 @@ const (
 	defaultServiceName string = "<missing service name>"
 )
 
-// NewFactory creates a factory for Zipkin exporter
+// NewFactory creates a factory for Zipkin exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -44,7 +44,6 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithTraces(createTraceExporter))
 }
 
-// CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
@@ -61,13 +60,12 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
 func createTraceExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	config configmodels.Exporter,
+	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
-	zc := config.(*Config)
+	zc := cfg.(*Config)
 
 	if zc.Endpoint == "" {
 		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215

@@ -49,7 +49,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-const zipkinReceiver = "zipkin_receiver_test"
+const zipkinReceiverName = "zipkin_receiver_test"
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -77,7 +77,7 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
-					NameVal: zipkinReceiver,
+					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: tt.args.address,
@@ -102,7 +102,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: zipkinReceiver,
+			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:" + portStr,
@@ -285,7 +285,7 @@ func TestStartTraceReception(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporter)
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
-					NameVal: zipkinReceiver,
+					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:0",
@@ -383,7 +383,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			}
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
-					NameVal: zipkinReceiver,
+					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "",
@@ -420,7 +420,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	}
 	cfg := &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: zipkinReceiver,
+			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
@@ -449,7 +449,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	}
 	cfg := &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			NameVal: zipkinReceiver,
+			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:9411",

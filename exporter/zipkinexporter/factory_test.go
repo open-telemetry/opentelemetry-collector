@@ -26,28 +26,24 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := NewFactory()
-
-	cfg := factory.CreateDefaultConfig()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	cfg := createDefaultConfig()
 
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
-	ze, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	ze, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, ze)
 
 	// URL doesn't have a default value so set it directly.
 	zeCfg := cfg.(*Config)
 	zeCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
-	ze, err = factory.CreateTraceExporter(context.Background(), params, cfg)
+	ze, err = createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ze)
 }

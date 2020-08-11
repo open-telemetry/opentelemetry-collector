@@ -49,7 +49,7 @@ func newTraceExporter(config *Config) (component.TraceExporter, error) {
 	if err != nil {
 		return nil, err
 	}
-	zexp, err := exporterhelper.NewTraceExporter(config, ze.PushTraceData)
+	zexp, err := exporterhelper.NewTraceExporter(config, ze.pushTraceData)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 	return ze, nil
 }
 
-func (ze *zipkinExporter) PushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (ze *zipkinExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
 	tbatch, err := zipkin.InternalTracesToZipkinSpans(td)
 	if err != nil {
 		return td.SpanCount(), consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
