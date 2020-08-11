@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestZipkinSpansToInternalTraces(t *testing.T) {
@@ -130,4 +131,14 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 	rsc.Attributes().InitEmptyWithCapacity(1)
 	rsc.Attributes().UpsertString(conventions.AttributeServiceName, "SoleAttr")
 	return td
+}
+
+func convertTraceID(t []byte) zipkinmodel.TraceID {
+	h, l, _ := tracetranslator.BytesToUInt64TraceID(t)
+	return zipkinmodel.TraceID{High: h, Low: l}
+}
+
+func convertSpanID(s []byte) zipkinmodel.ID {
+	id, _ := tracetranslator.BytesToUInt64SpanID(s)
+	return zipkinmodel.ID(id)
 }
