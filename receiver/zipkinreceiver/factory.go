@@ -57,7 +57,7 @@ func createDefaultConfig() configmodels.Receiver {
 
 // createTraceReceiver creates a trace receiver based on provided config.
 func createTraceReceiver(
-	ctx context.Context,
+	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,

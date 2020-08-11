@@ -138,7 +138,7 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 }
 
 func Test_startTimeMetricMatch(t *testing.T) {
-	matchBuilderStartTime := float64(123.456)
+	matchBuilderStartTime := 123.456
 	matchTests := []buildTestData{
 		{
 			name: "prefix_match",

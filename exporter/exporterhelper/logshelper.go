@@ -42,7 +42,7 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogsData) req
 	}
 }
 
-func (req *logsRequest) onPartialError(partialErr consumererror.PartialError) request {
+func (req *logsRequest) onPartialError(consumererror.PartialError) request {
 	// TODO: Implement this
 	return req
 }

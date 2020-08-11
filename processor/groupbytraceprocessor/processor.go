@@ -101,7 +101,7 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 }
 
 // Shutdown is invoked during service shutdown.
-func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
+func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 	sp.eventMachine.shutdown()
 	return nil
 }

@@ -42,7 +42,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
-	logger *zap.Logger,
+	_ *zap.Logger,
 	config internal.Config,
 ) (internal.Scraper, error) {
 	scraper, err := newNetworkScraper(ctx, config.(*Config))
