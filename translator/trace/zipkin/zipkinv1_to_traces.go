@@ -22,7 +22,7 @@ import (
 func V1JSONBatchToInternalTraces(blob []byte) (pdata.Traces, error) {
 	traces := pdata.NewTraces()
 
-	ocTraces, err := V1JSONBatchToOCProto(blob)
+	ocTraces, err := v1JSONBatchToOCProto(blob)
 	if err != nil {
 		return traces, err
 	}

@@ -31,8 +31,8 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-// V1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
-func V1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]consumerdata.TraceData, error) {
+// v1ThriftBatchToOCProto converts Zipkin v1 spans to OC Proto.
+func v1ThriftBatchToOCProto(zSpans []*zipkincore.Span) ([]consumerdata.TraceData, error) {
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
 		ocSpan, parsedAnnotations := zipkinV1ThriftToOCSpan(zSpan)

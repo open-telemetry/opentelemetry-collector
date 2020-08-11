@@ -86,8 +86,8 @@ type binaryAnnotation struct {
 	Endpoint *endpoint `json:"endpoint"`
 }
 
-// V1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func V1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
+// v1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
+func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)

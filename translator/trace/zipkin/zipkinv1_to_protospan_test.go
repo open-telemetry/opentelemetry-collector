@@ -145,7 +145,7 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_local_component.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	reqs, err := V1JSONBatchToOCProto(blob)
+	reqs, err := v1JSONBatchToOCProto(blob)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
 
@@ -167,7 +167,7 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	got, err := V1JSONBatchToOCProto(blob)
+	got, err := v1JSONBatchToOCProto(blob)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 	want := ocBatchesFromZipkinV1
@@ -191,7 +191,7 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 		jsonBatch, err := json.Marshal(batch)
 		require.NoError(t, err, "Failed to marshal interface back to blob")
 
-		g, err := V1JSONBatchToOCProto(jsonBatch)
+		g, err := v1JSONBatchToOCProto(jsonBatch)
 		require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 		// Coalesce the nodes otherwise they will differ due to multiple
@@ -502,7 +502,7 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 				t.Errorf("#%d: Unexpected error: %v", i, err)
 				return
 			}
-			gb, err := V1JSONBatchToOCProto(zBytes)
+			gb, err := v1JSONBatchToOCProto(zBytes)
 			if err != nil {
 				t.Errorf("#%d: Unexpected error: %v", i, err)
 				return
@@ -532,7 +532,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	testStart := time.Now()
 
-	gb, err := V1JSONBatchToOCProto(zBytes)
+	gb, err := v1JSONBatchToOCProto(zBytes)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -576,7 +576,7 @@ func TestJSONHTTPToGRPCStatusCode(t *testing.T) {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
 		}
-		gb, err := V1JSONBatchToOCProto(zBytes)
+		gb, err := v1JSONBatchToOCProto(zBytes)
 		if err != nil {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
@@ -766,11 +766,6 @@ func TestSpanKindTranslation(t *testing.T) {
 				}
 				assert.EqualValues(t, expected, ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind])
 			}
-
-			// Translate to Zipkin V2 (which is used for internal representation by Zipkin exporter).
-			zSpanTranslated, err := OCSpanProtoToZipkin(nil, nil, ocSpan, "")
-			assert.NoError(t, err)
-			assert.EqualValues(t, test.zipkinV2Kind, zSpanTranslated.Kind)
 		})
 	}
 }

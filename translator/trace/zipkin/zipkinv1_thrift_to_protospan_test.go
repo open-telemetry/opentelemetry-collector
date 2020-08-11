@@ -38,7 +38,7 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	reqs, err := V1ThriftBatchToOCProto(ztSpans)
+	reqs, err := v1ThriftBatchToOCProto(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
 
@@ -64,7 +64,7 @@ func TestV1ThriftToOCProto(t *testing.T) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(t, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	got, err := V1ThriftBatchToOCProto(ztSpans)
+	got, err := v1ThriftBatchToOCProto(ztSpans)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")
 
 	want := ocBatchesFromZipkinV1
@@ -83,7 +83,7 @@ func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	for n := 0; n < b.N; n++ {
-		V1ThriftBatchToOCProto(ztSpans)
+		v1ThriftBatchToOCProto(ztSpans)
 	}
 }
 
@@ -406,7 +406,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			TraceID:           1,
 			BinaryAnnotations: c.haveTags,
 		}}
-		gb, err := V1ThriftBatchToOCProto(zSpans)
+		gb, err := v1ThriftBatchToOCProto(zSpans)
 		if err != nil {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
@@ -420,7 +420,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 func TestThriftHTTPToGRPCStatusCode(t *testing.T) {
 	for i := int32(100); i <= 600; i++ {
 		wantStatus := tracetranslator.OCStatusCodeFromHTTP(i)
-		gb, err := V1ThriftBatchToOCProto([]*zipkincore.Span{{
+		gb, err := v1ThriftBatchToOCProto([]*zipkincore.Span{{
 			ID:      1,
 			TraceID: 1,
 			BinaryAnnotations: []*zipkincore.BinaryAnnotation{
