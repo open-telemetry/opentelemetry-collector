@@ -6,6 +6,7 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path '*/internal/data/opentelemetry-proto/*' \
 							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
 							-not -path './.circleci/scripts/reportgenerator/*' \
+							-not -path './examples/demo/app/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
