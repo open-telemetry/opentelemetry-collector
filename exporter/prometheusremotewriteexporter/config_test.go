@@ -1,4 +1,18 @@
-package cortexexporter
+// Copyright 2020 The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package prometheusremotewriteexporter
 
 import (
 	"path"
@@ -16,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+// TestLoadConfig checks whether yaml configuration can be loaded correctly
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
@@ -27,15 +42,17 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["cortex"]
+	// From the default configurations -- checks if a correct exporter is instantiated
+	e0 := cfg.Exporters["prometheusremotewrite"]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["cortex/2"]
+	// checks if the correct Config struct can be instantiated from testdata/config.yaml
+	e1 := cfg.Exporters["prometheusremotewrite/2"]
 	assert.Equal(t, e1,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "cortex/2",
-				TypeVal: "cortex",
+				NameVal: "prometheusremotewrite/2",
+				TypeVal: "prometheusremotewrite",
 			},
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
@@ -53,6 +70,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Namespace: "test-space",
 
+			Headers: map[string]string{
+				"prometheus-remote-write-version": "0.1.0",
+				"tenant-id":                       "234"},
+
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{
@@ -61,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				ReadBufferSize: 512 * 1024,
+				ReadBufferSize: 0,
 
 				WriteBufferSize: 512 * 1024,
 
