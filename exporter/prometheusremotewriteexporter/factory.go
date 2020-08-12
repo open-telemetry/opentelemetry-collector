@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
 )
 
 const (
@@ -98,7 +97,7 @@ func NewFactory() component.ExporterFactory {
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
-	cCfg, ok:= cfg.(*Config)
+	cCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.Errorf("invalid configuration")
 	}
