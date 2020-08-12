@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	nameStr     = "name"
+	nameStr     = "__name__"
 	sumStr      = "_sum"
 	countStr    = "_count"
 	bucketStr   = "_bucket"
@@ -131,8 +131,13 @@ func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.
 		if found {
 			log.Println("label " + extras[i] + " is overwritten. Check if Prometheus reserved labels are used.")
 		}
+		// internal labels should be maintained
+		name := extras[i]
+		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
+			name = sanitize(name)
+		}
 		l[extras[i]] = prompb.Label{
-			Name:  sanitize(extras[i]),
+			Name:  name,
 			Value: extras[i+1],
 		}
 	}

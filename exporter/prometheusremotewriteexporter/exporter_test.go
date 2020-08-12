@@ -49,17 +49,17 @@ import (
 func Test_handleScalarMetric(t *testing.T) {
 	sameTs := map[string]*prompb.TimeSeries{
 		// string signature of the data point is the key of the map
-		typeMonotonicInt64 + "-name-same_ts_int_points_total" + lb1Sig: getTimeSeries(
-			getPromLabels(label11, value11, label12, value12, "name", "same_ts_int_points_total"),
+		typeMonotonicInt64 + "-__name__-same_ts_int_points_total" + lb1Sig: getTimeSeries(
+			getPromLabels(label11, value11, label12, value12, nameStr, "same_ts_int_points_total"),
 			getSample(float64(intVal1), time1),
 			getSample(float64(intVal2), time1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicDouble + "-name-different_ts_double_points_total" + lb1Sig: getTimeSeries(
-			getPromLabels(label11, value11, label12, value12, "name", "different_ts_double_points_total"),
+		typeMonotonicDouble + "-__name__-different_ts_double_points_total" + lb1Sig: getTimeSeries(
+			getPromLabels(label11, value11, label12, value12, nameStr, "different_ts_double_points_total"),
 			getSample(floatVal1, time1)),
-		typeMonotonicDouble + "-name-different_ts_double_points_total" + lb2Sig: getTimeSeries(
-			getPromLabels(label21, value21, label22, value22, "name", "different_ts_double_points_total"),
+		typeMonotonicDouble + "-__name__-different_ts_double_points_total" + lb2Sig: getTimeSeries(
+			getPromLabels(label21, value21, label22, value22, nameStr, "different_ts_double_points_total"),
 			getSample(floatVal2, time2)),
 	}
 
@@ -150,23 +150,23 @@ func Test_handleHistogramMetric(t *testing.T) {
 
 	// string signature of the data point is the key of the map
 	sigs := map[string]string{
-		sum:   typeHistogram + "-name-" + name1 + "_sum" + lb1Sig,
-		count: typeHistogram + "-name-" + name1 + "_count" + lb1Sig,
-		bucket1: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal1, 'f', -1, 64) +
-			"-name-" + name1 + "_bucket" + lb1Sig,
-		bucket2: typeHistogram + "-" + "le-" + strconv.FormatFloat(floatVal2, 'f', -1, 64) +
-			"-name-" + name1 + "_bucket" + lb1Sig,
-		bucketInf: typeHistogram + "-" + "le-" + "+Inf" +
-			"-name-" + name1 + "_bucket" + lb1Sig,
+		sum:   typeHistogram + "-" + nameStr + "-" + name1 + "_sum" + lb1Sig,
+		count: typeHistogram + "-" + nameStr + "-" + name1 + "_count" + lb1Sig,
+		bucket1: typeHistogram + "-" + nameStr + "-" + name1 + "_bucket" + "-" + "le-" +
+			strconv.FormatFloat(floatVal1, 'f', -1, 64) + lb1Sig,
+		bucket2: typeHistogram + "-" + nameStr + "-" + name1 + "_bucket" + "-" + "le-" +
+			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
+		bucketInf: typeHistogram + "-" + nameStr + "-" + name1 + "_bucket" + "-" + "le-" +
+			"+Inf" + lb1Sig,
 	}
 	labels := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", name1+"_sum")...),
-		count: append(promLbs1, getPromLabels("name", name1+"_count")...),
-		bucket1: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
+		sum:   append(promLbs1, getPromLabels(nameStr, name1+"_sum")...),
+		count: append(promLbs1, getPromLabels(nameStr, name1+"_count")...),
+		bucket1: append(promLbs1, getPromLabels(nameStr, name1+"_bucket", "le",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		bucket2: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
+		bucket2: append(promLbs1, getPromLabels(nameStr, name1+"_bucket", "le",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-		bucketInf: append(promLbs1, getPromLabels("name", name1+"_bucket", "le",
+		bucketInf: append(promLbs1, getPromLabels(nameStr, name1+"_bucket", "le",
 			"+Inf")...),
 	}
 	tests := []struct {
@@ -237,19 +237,19 @@ func Test_handleSummaryMetric(t *testing.T) {
 	q2 := "quantile2"
 	// string signature is the key of the map
 	sigs := map[string]string{
-		sum:   typeSummary + "-name-" + name1 + "_sum" + lb1Sig,
-		count: typeSummary + "-name-" + name1 + "_count" + lb1Sig,
-		q1: typeSummary + "-name-" + name1 + "-" + "quantile-" +
+		sum:   typeSummary + "-" + nameStr + "-" + name1 + "_sum" + lb1Sig,
+		count: typeSummary + "-" + nameStr + "-" + name1 + "_count" + lb1Sig,
+		q1: typeSummary + "-" + nameStr + "-" + name1 + "-" + "quantile-" +
 			strconv.FormatFloat(floatVal1, 'f', -1, 64) + lb1Sig,
-		q2: typeSummary + "-name-" + name1 + "-" + "quantile-" +
+		q2: typeSummary + "-" + nameStr + "-" + name1 + "-" + "quantile-" +
 			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
 	}
 	labels := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels("name", name1+"_sum")...),
-		count: append(promLbs1, getPromLabels("name", name1+"_count")...),
-		q1: append(promLbs1, getPromLabels("name", name1, "quantile",
+		sum:   append(promLbs1, getPromLabels(nameStr, name1+"_sum")...),
+		count: append(promLbs1, getPromLabels(nameStr, name1+"_count")...),
+		q1: append(promLbs1, getPromLabels(nameStr, name1, "quantile",
 			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		q2: append(promLbs1, getPromLabels("name", name1, "quantile",
+		q2: append(promLbs1, getPromLabels(nameStr, name1, "quantile",
 			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
 	}
 
