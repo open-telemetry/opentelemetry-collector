@@ -91,12 +91,12 @@ func Test_addSample(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), time1),
+					getSample(float64(intVal1), msTime1),
 					promLbs1,
 				},
 				{
 					otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal2), time2),
+					getSample(float64(intVal2), msTime2),
 					promLbs1,
 				},
 			},
@@ -107,11 +107,11 @@ func Test_addSample(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), time1),
+					getSample(float64(intVal1), msTime1),
 					promLbs1,
 				},
 				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), time2),
+					getSample(float64(intVal1), msTime2),
 					promLbs2,
 				},
 			},

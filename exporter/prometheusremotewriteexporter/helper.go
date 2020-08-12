@@ -18,6 +18,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/pkg/errors"
@@ -202,6 +203,11 @@ func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, 
 		//Other parameters of the WriteRequest are unnecessary for our Export
 	}
 	return &wrapped, nil
+}
+
+// convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
+func convertTimeStamp(timestamp uint64) int64 {
+	return int64(timestamp / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 }
 
 // copied from prometheus-go-metric-exporter

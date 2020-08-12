@@ -30,9 +30,10 @@ type combination struct {
 }
 
 var (
-	time1 = uint64(time.Now().UnixNano())
-	time2 = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
-
+	time1       = uint64(time.Now().UnixNano())
+	time2       = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
+	msTime1     = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	msTime2     = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	testHeaders = map[string]string{"headerOne": "value1"}
 
 	typeInt64           = "INT64"
@@ -104,14 +105,14 @@ var (
 	}
 	twoPointsSameTs = map[string]*prompb.TimeSeries{
 		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(intVal1), time1),
-			getSample(float64(intVal2), time2)),
+			getSample(float64(intVal1), msTime1),
+			getSample(float64(intVal2), msTime2)),
 	}
 	twoPointsDifferentTs = map[string]*prompb.TimeSeries{
 		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(intVal1), time1)),
+			getSample(float64(intVal1), msTime1)),
 		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
-			getSample(float64(intVal1), time2)),
+			getSample(float64(intVal1), msTime2)),
 	}
 )
 
@@ -217,10 +218,10 @@ func getLabel(name string, value string) prompb.Label {
 	}
 }
 
-func getSample(v float64, t uint64) prompb.Sample {
+func getSample(v float64, t int64) prompb.Sample {
 	return prompb.Sample{
 		Value:                v,
-		Timestamp:            int64(t),
+		Timestamp:            t,
 		XXX_NoUnkeyedLiteral: struct{}{},
 		XXX_unrecognized:     nil,
 		XXX_sizecache:        0,

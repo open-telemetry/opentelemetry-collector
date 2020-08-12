@@ -51,16 +51,16 @@ func Test_handleScalarMetric(t *testing.T) {
 		// string signature of the data point is the key of the map
 		typeMonotonicInt64 + "-__name__-same_ts_int_points_total" + lb1Sig: getTimeSeries(
 			getPromLabels(label11, value11, label12, value12, nameStr, "same_ts_int_points_total"),
-			getSample(float64(intVal1), time1),
-			getSample(float64(intVal2), time1)),
+			getSample(float64(intVal1), msTime1),
+			getSample(float64(intVal2), msTime1)),
 	}
 	differentTs := map[string]*prompb.TimeSeries{
 		typeMonotonicDouble + "-__name__-different_ts_double_points_total" + lb1Sig: getTimeSeries(
 			getPromLabels(label11, value11, label12, value12, nameStr, "different_ts_double_points_total"),
-			getSample(floatVal1, time1)),
+			getSample(floatVal1, msTime1)),
 		typeMonotonicDouble + "-__name__-different_ts_double_points_total" + lb2Sig: getTimeSeries(
 			getPromLabels(label21, value21, label22, value22, nameStr, "different_ts_double_points_total"),
-			getSample(floatVal2, time2)),
+			getSample(floatVal2, msTime2)),
 	}
 
 	tests := []struct {
@@ -198,11 +198,11 @@ func Test_handleHistogramMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				sigs[sum]:       getTimeSeries(labels[sum], getSample(floatVal2, time1)),
-				sigs[count]:     getTimeSeries(labels[count], getSample(float64(intVal2), time1)),
-				sigs[bucket1]:   getTimeSeries(labels[bucket1], getSample(float64(intVal1), time1)),
-				sigs[bucket2]:   getTimeSeries(labels[bucket2], getSample(float64(intVal1), time1)),
-				sigs[bucketInf]: getTimeSeries(labels[bucketInf], getSample(float64(intVal2), time1)),
+				sigs[sum]:       getTimeSeries(labels[sum], getSample(floatVal2, msTime1)),
+				sigs[count]:     getTimeSeries(labels[count], getSample(float64(intVal2), msTime1)),
+				sigs[bucket1]:   getTimeSeries(labels[bucket1], getSample(float64(intVal1), msTime1)),
+				sigs[bucket2]:   getTimeSeries(labels[bucket2], getSample(float64(intVal1), msTime1)),
+				sigs[bucketInf]: getTimeSeries(labels[bucketInf], getSample(float64(intVal2), msTime1)),
 			},
 		},
 	}
@@ -284,10 +284,10 @@ func Test_handleSummaryMetric(t *testing.T) {
 			},
 			false,
 			map[string]*prompb.TimeSeries{
-				sigs[sum]:   getTimeSeries(labels[sum], getSample(floatVal2, time1)),
-				sigs[count]: getTimeSeries(labels[count], getSample(float64(intVal2), time1)),
-				sigs[q1]:    getTimeSeries(labels[q1], getSample(float64(intVal1), time1)),
-				sigs[q2]:    getTimeSeries(labels[q2], getSample(float64(intVal1), time1)),
+				sigs[sum]:   getTimeSeries(labels[sum], getSample(floatVal2, msTime1)),
+				sigs[count]: getTimeSeries(labels[count], getSample(float64(intVal2), msTime1)),
+				sigs[q1]:    getTimeSeries(labels[q1], getSample(float64(intVal1), msTime1)),
+				sigs[q2]:    getTimeSeries(labels[q2], getSample(float64(intVal1), msTime1)),
 			},
 		},
 	}
@@ -404,8 +404,8 @@ func Test_shutdown(t *testing.T) {
 func Test_export(t *testing.T) {
 	//First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
 	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
-	sample1 := getSample(floatVal1, time1)
-	sample2 := getSample(floatVal2, time2)
+	sample1 := getSample(floatVal1, msTime1)
+	sample2 := getSample(floatVal2, msTime2)
 	ts1 := getTimeSeries(labels, sample1, sample2)
 	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
 		//The following is a handler function that reads the sent httpRequest, unmarshals, and checks if the WriteRequest

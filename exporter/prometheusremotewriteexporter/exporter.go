@@ -159,8 +159,9 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 			labels := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
-				Value:     float64(pt.Value),
-				Timestamp: int64(pt.TimeUnixNano),
+				Value: float64(pt.Value),
+				// convert ns to ms
+				Timestamp: convertTimeStamp(pt.TimeUnixNano),
 			}
 
 			addSample(tsMap, sample, labels, metric.GetMetricDescriptor().GetType())
@@ -179,7 +180,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			labels := createLabelSet(pt.GetLabels(), nameStr, name)
 			sample := &prompb.Sample{
 				Value:     pt.Value,
-				Timestamp: int64(pt.TimeUnixNano),
+				Timestamp: convertTimeStamp(pt.TimeUnixNano),
 			}
 
 			addSample(tsMap, sample, labels, metric.GetMetricDescriptor().GetType())
@@ -201,7 +202,7 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 
 	for _, pt := range metric.HistogramDataPoints {
 
-		time := int64(pt.GetTimeUnixNano())
+		time := convertTimeStamp(pt.TimeUnixNano)
 		mType := metric.GetMetricDescriptor().GetType()
 
 		// sum, count, and buckets of the histogram should append suffix to baseName
@@ -260,7 +261,7 @@ func (prwe *prwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 
 	for _, pt := range metric.SummaryDataPoints {
 
-		time := int64(pt.GetTimeUnixNano())
+		time := convertTimeStamp(pt.TimeUnixNano)
 		mType := metric.GetMetricDescriptor().GetType()
 
 		// sum and count of the Summary should append suffix to baseName
