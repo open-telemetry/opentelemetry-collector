@@ -22,7 +22,13 @@ import (
 
 func TestMetrics(t *testing.T) {
 	metricViews := MetricViews()
-	viewNames := []string{"messages", "current_offset", "offset_lag", "partition_start", "partition_close"}
+	viewNames := []string{
+		"kafka_receiver_messages",
+		"kafka_receiver_current_offset",
+		"kafka_receiver_offset_lag",
+		"kafka_receiver_partition_start",
+		"kafka_receiver_partition_close",
+	}
 	for i, viewName := range viewNames {
 		assert.Equal(t, viewName, metricViews[i].Name)
 	}
