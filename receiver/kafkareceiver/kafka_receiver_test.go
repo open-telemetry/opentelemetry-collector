@@ -236,6 +236,10 @@ func (t testConsumerGroupClaim) Messages() <-chan *sarama.ConsumerMessage {
 type testConsumerGroupSession struct {
 }
 
+func (t testConsumerGroupSession) Commit() {
+	panic("implement me")
+}
+
 var _ sarama.ConsumerGroupSession = (*testConsumerGroupSession)(nil)
 
 func (t testConsumerGroupSession) Claims() map[string][]int32 {
