@@ -135,17 +135,14 @@ func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) erro
 func (c *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	c.logger.Info("Starting consumer group", zap.Int32("partition", claim.Partition()))
 	for message := range claim.Messages() {
-		session.MarkMessage(message, "")
-		ctx := obsreport.ReceiverContext(session.Context(), c.name, transport, c.name)
-		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.name, transport)
 		c.logger.Debug("Kafka message claimed",
 			zap.String("value", string(message.Value)),
 			zap.Time("timestamp", message.Timestamp),
 			zap.String("topic", message.Topic))
+		session.MarkMessage(message, "")
 
-		// TODO shall we use processor tag?
-		// TODO the metric is prefixed with processor
-		// TYPE otelcol_processor_kafka_current_offset gauge
+		ctx := obsreport.ReceiverContext(session.Context(), c.name, transport, c.name)
+		ctx = obsreport.StartTraceDataReceiveOp(ctx, c.name, transport)
 		statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
 		_ = stats.RecordWithTags(ctx, statsTags,
 			statMessageCount.M(1),

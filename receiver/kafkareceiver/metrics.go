@@ -18,19 +18,17 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 var (
 	tagInstanceName, _ = tag.NewKey("name")
 
-	statMessageCount     = stats.Int64("messages", "Number of received messages", stats.UnitDimensionless)
-	statMessageOffset    = stats.Int64("current_offset", "Current message offset", stats.UnitDimensionless)
-	statMessageOffsetLag = stats.Int64("offset_lag", "Current offset lag", stats.UnitDimensionless)
+	statMessageCount     = stats.Int64("kafka_receiver_messages", "Number of received messages", stats.UnitDimensionless)
+	statMessageOffset    = stats.Int64("kafka_receiver_current_offset", "Current message offset", stats.UnitDimensionless)
+	statMessageOffsetLag = stats.Int64("kafka_receiver_offset_lag", "Current offset lag", stats.UnitDimensionless)
 
-	statPartitionStart = stats.Int64("partition_start", "Number of started partitions", stats.UnitDimensionless)
-	statPartitionClose = stats.Int64("partition_close", "Number of finished partitions", stats.UnitDimensionless)
+	statPartitionStart = stats.Int64("kafka_receiver_partition_start", "Number of started partitions", stats.UnitDimensionless)
+	statPartitionClose = stats.Int64("kafka_receiver_partition_close", "Number of finished partitions", stats.UnitDimensionless)
 )
 
 // MetricViews return metric views for Kafka receiver.
@@ -77,12 +75,11 @@ func MetricViews() []*view.View {
 		Aggregation: view.Sum(),
 	}
 
-	views := []*view.View{
+	return []*view.View{
 		countMessages,
 		lastValueOffset,
 		lastValueOffsetLag,
 		countPartitionStart,
 		countPartitionClose,
 	}
-	return obsreport.ProcessorMetricViews(typeStr, views)
 }
