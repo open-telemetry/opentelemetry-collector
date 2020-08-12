@@ -31,7 +31,7 @@ import (
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
-func TestLoadConfig(t *testing.T) {
+func Test_loadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 

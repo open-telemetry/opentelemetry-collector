@@ -28,14 +28,14 @@ import (
 )
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
-func TestCreateDefaultConfig(t *testing.T) {
+func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 //Tests whether or not a correct Metrics Exporter from the default Config parameters
-func TestCreateMetricsExporter(t *testing.T) {
+func Test_createMetricsExporter(t *testing.T) {
 
 	invalidConfig := createDefaultConfig().(*Config)
 	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}
