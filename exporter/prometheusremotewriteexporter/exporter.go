@@ -50,7 +50,7 @@ type prwExporter struct {
 
 // newPrwExporter initializes a new prwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func newPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
+func newPrwExporter(namespace string, endpoint string, client *http.Client, headers map[string]string) (*prwExporter, error) {
 
 	if client == nil {
 		return nil, errors.Errorf("http client cannot be nil")
@@ -65,6 +65,7 @@ func newPrwExporter(namespace string, endpoint string, client *http.Client) (*pr
 		namespace:   namespace,
 		endpointURL: endpointURL,
 		client:      client,
+		headers:     headers,
 		wg:          new(sync.WaitGroup),
 		closeChan:   make(chan struct{}),
 	}, nil
