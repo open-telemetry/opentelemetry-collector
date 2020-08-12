@@ -56,6 +56,7 @@ func TestDefaultComponents(t *testing.T) {
 	expectedExporters := []configmodels.Type{
 		"opencensus",
 		"prometheus",
+		"prometheusremotewrite",
 		"logging",
 		"zipkin",
 		"jaeger",
