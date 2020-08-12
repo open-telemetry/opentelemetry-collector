@@ -222,7 +222,7 @@ func (mc *MockMetricConsumer) ConsumeMetricsData(_ context.Context, md consumerd
 	return nil
 }
 
-func (tc *MockTraceConsumer) Mock_ConsumeData(spansCount int) error {
+func (tc *MockTraceConsumer) MockConsumeData(spansCount int) error {
 	tc.spansReceived.Add(uint64(spansCount))
 	return nil
 }
