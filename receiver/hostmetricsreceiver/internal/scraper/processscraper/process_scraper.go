@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 // scraper for Process Metrics
@@ -98,15 +99,17 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.ResourceMetricsSlice, 
 		ilms.Resize(1)
 		metrics := ilms.At(0).Metrics()
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, md.handle); err != nil {
+		now := internal.TimeToUnixNano(time.Now())
+
+		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading cpu times for process %q (pid %v)", md.executable.name, md.pid))
 		}
 
-		if err = scrapeAndAppendMemoryUsageMetrics(metrics, md.handle); err != nil {
+		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading memory info for process %q (pid %v)", md.executable.name, md.pid))
 		}
 
-		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, md.handle); err != nil {
+		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
 			errs = append(errs, errors.Wrapf(err, "error reading disk usage for process %q (pid %v)", md.executable.name, md.pid))
 		}
 	}
@@ -166,7 +169,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, componenterror.CombineErrors(errs)
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, handle processHandle) error {
+func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
@@ -174,19 +177,19 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime pdata.Tim
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + 1)
-	initializeCPUTimeMetric(metrics.At(startIdx), startTime, times)
+	initializeCPUTimeMetric(metrics.At(startIdx), startTime, now, times)
 	return nil
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, times *cpu.TimesStat) {
+func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, times *cpu.TimesStat) {
 	cpuTimeDescriptor.CopyTo(metric.MetricDescriptor())
 
 	ddps := metric.DoubleDataPoints()
 	ddps.Resize(cpuStatesLen)
-	appendCPUTimeStateDataPoints(ddps, startTime, times)
+	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
 }
 
-func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, handle processHandle) error {
+func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.TimestampUnixNano, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
@@ -194,25 +197,25 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, handle process
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + 2)
-	initializeMemoryUsageMetric(metrics.At(startIdx+0), physicalMemoryUsageDescriptor, int64(mem.RSS))
-	initializeMemoryUsageMetric(metrics.At(startIdx+1), virtualMemoryUsageDescriptor, int64(mem.VMS))
+	initializeMemoryUsageMetric(metrics.At(startIdx+0), physicalMemoryUsageDescriptor, now, int64(mem.RSS))
+	initializeMemoryUsageMetric(metrics.At(startIdx+1), virtualMemoryUsageDescriptor, now, int64(mem.VMS))
 	return nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, descriptor pdata.MetricDescriptor, usage int64) {
+func initializeMemoryUsageMetric(metric pdata.Metric, descriptor pdata.MetricDescriptor, now pdata.TimestampUnixNano, usage int64) {
 	descriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(1)
-	initializeMemoryUsageDataPoint(idps.At(0), usage)
+	initializeMemoryUsageDataPoint(idps.At(0), now, usage)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, usage int64) {
-	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+func initializeMemoryUsageDataPoint(dataPoint pdata.Int64DataPoint, now pdata.TimestampUnixNano, usage int64) {
+	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(usage)
 }
 
-func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano, handle processHandle) error {
+func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {
 	io, err := handle.IOCounters()
 	if err != nil {
 		return err
@@ -220,23 +223,23 @@ func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime pdata.Time
 
 	startIdx := metrics.Len()
 	metrics.Resize(startIdx + 1)
-	initializeDiskIOMetric(metrics.At(startIdx), startTime, io)
+	initializeDiskIOMetric(metrics.At(startIdx), startTime, now, io)
 	return nil
 }
 
-func initializeDiskIOMetric(metric pdata.Metric, startTime pdata.TimestampUnixNano, io *process.IOCountersStat) {
+func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, io *process.IOCountersStat) {
 	diskIODescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
 	idps.Resize(2)
-	initializeDiskIODataPoint(idps.At(0), startTime, int64(io.ReadBytes), readDirectionLabelValue)
-	initializeDiskIODataPoint(idps.At(1), startTime, int64(io.WriteBytes), writeDirectionLabelValue)
+	initializeDiskIODataPoint(idps.At(0), startTime, now, int64(io.ReadBytes), readDirectionLabelValue)
+	initializeDiskIODataPoint(idps.At(1), startTime, now, int64(io.WriteBytes), writeDirectionLabelValue)
 }
 
-func initializeDiskIODataPoint(dataPoint pdata.Int64DataPoint, startTime pdata.TimestampUnixNano, value int64, directionLabel string) {
+func initializeDiskIODataPoint(dataPoint pdata.Int64DataPoint, startTime, now pdata.TimestampUnixNano, value int64, directionLabel string) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(directionLabelName, directionLabel)
 	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
