@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"context"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,16 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	invalidConfig := createDefaultConfig().(*Config)
 	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}
-
+	invalidTLSConfig := createDefaultConfig().(*Config)
+	invalidTLSConfig.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   "non-existent file",
+			CertFile: "",
+			KeyFile:  "",
+		},
+		Insecure:   false,
+		ServerName: "",
+	}
 	tests := []struct {
 		name        string
 		cfg         configmodels.Exporter
@@ -57,6 +67,11 @@ func TestCreateMetricsExporter(t *testing.T) {
 		},
 		{"invalid_config_case",
 			invalidConfig,
+			component.ExporterCreateParams{},
+			true,
+		},
+		{"invalid_tls_config_case",
+			invalidTLSConfig,
 			component.ExporterCreateParams{},
 			true,
 		},
