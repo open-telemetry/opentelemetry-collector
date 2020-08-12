@@ -206,3 +206,23 @@ func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics
 	mc.backend.ConsumeMetric(md)
 	return nil
 }
+
+func (mc *MockMetricConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
+	dataPoints := 0
+	for _, metric := range md.Metrics {
+		for _, ts := range metric.Timeseries {
+			dataPoints += len(ts.Points)
+		}
+	}
+
+	mc.metricsReceived.Add(uint64(dataPoints))
+
+	mc.backend.ConsumeMetricOld(md)
+
+	return nil
+}
+
+func (tc *MockTraceConsumer) Mock_ConsumeData(spansCount int) error {
+	tc.spansReceived.Add(uint64(spansCount))
+	return nil
+}
