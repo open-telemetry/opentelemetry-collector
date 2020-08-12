@@ -205,10 +205,16 @@ func Test_createLabelSet(t *testing.T) {
 			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
-			"no_extras_case",
+			"no_original_case",
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
+		},
+		{
+			"empty_extra_case",
+			lbs1,
+			[]string{"", ""},
+			getPromLabels(label11, value11, label12, value12, "", ""),
 		},
 		{
 			"single_left_over_case",

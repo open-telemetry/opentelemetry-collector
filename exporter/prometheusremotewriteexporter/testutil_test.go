@@ -33,6 +33,8 @@ var (
 	time1 = uint64(time.Now().UnixNano())
 	time2 = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
 
+	testHeaders = map[string]string{"headerOne": "value1"}
+
 	typeInt64           = "INT64"
 	typeMonotonicInt64  = "MONOTONIC_INT64"
 	typeMonotonicDouble = "MONOTONIC_DOUBLE"

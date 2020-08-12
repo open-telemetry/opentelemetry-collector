@@ -16,6 +16,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,15 +28,17 @@ import (
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 //Tests whether or not a correct Metrics Exporter from the default Config parameters
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := NewFactory()
+
+	invalidConfig := createDefaultConfig().(*Config)
+	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}
+
 	tests := []struct {
 		name        string
 		cfg         configmodels.Exporter
@@ -43,15 +46,25 @@ func TestCreateMetricsExporter(t *testing.T) {
 		returnError bool
 	}{
 		{"success_case",
-			factory.CreateDefaultConfig(),
+			createDefaultConfig(),
 			component.ExporterCreateParams{},
 			false,
+		},
+		{"fail_case",
+			nil,
+			component.ExporterCreateParams{},
+			true,
+		},
+		{"invalid_config_case",
+			invalidConfig,
+			component.ExporterCreateParams{},
+			true,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := factory.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
+			_, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
