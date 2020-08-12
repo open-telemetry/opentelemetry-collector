@@ -22,11 +22,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
 )
 
 const (
@@ -61,6 +63,9 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 // the following are methods we would reimplement
 func createClient(origClient *http.Client, region string) (*http.Client, error) {
+	if origClient == nil {
+		return nil, errors.Errorf("invalid http configuration")
+	}
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
@@ -93,8 +98,10 @@ func NewFactory() component.ExporterFactory {
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
-	cCfg := cfg.(*Config)
-
+	cCfg, ok:= cfg.(*Config)
+	if !ok {
+		return nil, errors.Errorf("invalid configuration")
+	}
 	client, _ := cCfg.HTTPClientSettings.ToClient()
 	client, err := createClient(client, cCfg.Region)
 
