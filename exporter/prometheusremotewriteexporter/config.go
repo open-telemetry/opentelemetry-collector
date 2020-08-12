@@ -31,6 +31,9 @@ type Config struct {
 	// Namespace if set, exports metrics under the provided value.*/
 	Namespace string `mapstructure:"namespace"`
 
+	// AWS region
+	Region string `mapstructure:"region"`
+
 	// Optional headers configuration for authorization and security/extra metadata
 	Headers map[string]string `mapstructure:"headers"`
 

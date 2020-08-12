@@ -16,8 +16,12 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"net/http"
+	"time"
 
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -27,8 +31,56 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "prometheusremotewrite"
+	typeStr    = "prometheusremotewrite"
+	serviceStr = "servicname"
 )
+
+// Custom RoundTripper
+type SigningRoundTripper struct {
+	transport http.RoundTripper
+	signer    *v4.Signer
+	cfg       *aws.Config
+}
+
+// Custom RoundTrip
+func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Sign the request
+	headers, err := si.signer.Sign(req, nil, serviceStr, *si.cfg.Region, time.Now())
+	if err != nil {
+		// might need a response here
+		return nil, err
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v[0])
+	}
+	// Send the request to Cortex
+	response, err := si.transport.RoundTrip(req)
+
+	return response, err
+}
+
+// the following are methods we would reimplement
+func createClient(origClient *http.Client, region string) (*http.Client, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(region)},
+	)
+	if err != nil {
+		return nil, err
+	}
+	// Get Credentials, either from ./aws or from environmental variables
+	creds := sess.Config.Credentials
+	signer := v4.NewSigner(creds)
+	// Initialize Client with interceptor
+	client := &http.Client{
+		Transport: &SigningRoundTripper{
+			transport: origClient.Transport,
+			signer:    signer,
+			cfg:       sess.Config,
+		},
+	}
+	return client, nil
+
+}
 
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
@@ -41,12 +93,10 @@ func NewFactory() component.ExporterFactory {
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
-	cCfg, ok := cfg.(*Config)
-	if !ok {
-		return nil, errors.Errorf("invalid configuration")
-	}
+	cCfg := cfg.(*Config)
 
-	client, err := cCfg.HTTPClientSettings.ToClient()
+	client, _ := cCfg.HTTPClientSettings.ToClient()
+	client, err := createClient(client, cCfg.Region)
 
 	if err != nil {
 		return nil, err
