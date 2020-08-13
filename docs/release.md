@@ -10,7 +10,7 @@ Note: You’ll need to be an approver for both the repos in order to be able to 
 
 ## Releasing OpenTelemetry Core
 
-1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes, submit a PR. Get the PR approved and merged. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later. Make sure contrib builds pass successfully after being merged and -dev docker images are published.
+1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes, submit a PR. Get the PR approved and merged. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later. Make sure contrib builds and end-to-end tests pass successfully after being merged and -dev docker images are published.
 
 1. Determine the version number that will be assigned to the release. Collector uses semver, with the exception that while we are still in Beta stage breaking changes are allowed without incrementing major version number. For breaking changes we increment the minor version number and set the patch number to 0.
 
@@ -30,7 +30,7 @@ Note: You’ll need to be an approver for both the repos in order to be able to 
 
 1. Prepare Contrib for release. Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Refer to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), and in addition to that list changes that happened in the Contrib repo.
 
-1. Update the Core dependency to the Core version we just released with `make update-otel` command, e.g, `make update-otel VERSION=v0.4.0`. Create a PR with both the changes, get it approved and merged.
+1. Update the Core dependency to the Core version we just released with `make update-otel` command, e.g, `make update-otel OTEL_VERSION=v0.4.0`. Create a PR with both the changes, get it approved and merged.
 
 1. Create a branch named release/<release-series> (e.g. release/v0.4.x) in Core from the changelog update commit and push to origin (not your fork). Wait for the release branch builds to pass successfully.
 
