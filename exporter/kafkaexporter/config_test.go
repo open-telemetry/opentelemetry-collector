@@ -17,6 +17,7 @@ package kafkaexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,6 +43,20 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: configmodels.ExporterSettings{
 			NameVal: typeStr,
 			TypeVal: typeStr,
+		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 10 * time.Second,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
 		},
 		Topic:   "spans",
 		Brokers: []string{"foo:123", "bar:456"},

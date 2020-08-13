@@ -46,7 +46,9 @@ func TestTraceDataPusher(t *testing.T) {
 		producer:   producer,
 		marshaller: &protoMarshaller{},
 	}
-	defer p.Close(context.Background())
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
 	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
 	assert.Equal(t, 0, droppedSpans)
@@ -63,7 +65,9 @@ func TestTraceDataPusher_err(t *testing.T) {
 		marshaller: &protoMarshaller{},
 		logger:     zap.NewNop(),
 	}
-	defer p.Close(context.Background())
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	droppedSpans, err := p.traceDataPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
@@ -78,6 +82,7 @@ func TestTraceDataPusher_marshall_error(t *testing.T) {
 	}
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
 	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
