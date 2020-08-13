@@ -18,7 +18,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
+	sd_config "github.com/prometheus/prometheus/discovery/config"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -28,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -37,7 +43,7 @@ import (
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
-	Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error
+	Start(tc TraceDualConsumer, mc MetricsDualConsumer) error
 	Stop() error
 
 	// Generate a config string to place in exporter part of collector config
@@ -92,7 +98,7 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+func (or *OCDataReceiver) Start(tc TraceDualConsumer, mc MetricsDualConsumer) error {
 	factory := opencensusreceiver.Factory{}
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.SetName(or.ProtocolName())
@@ -144,7 +150,7 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer) error {
+func (jr *JaegerDataReceiver) Start(tc TraceDualConsumer, _ MetricsDualConsumer) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
@@ -195,7 +201,7 @@ func NewOTLPDataReceiver(port int) *OTLPDataReceiver {
 	return &OTLPDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OTLPDataReceiver) Start(tc *MockTraceConsumer, mc *MockMetricConsumer) error {
+func (or *OTLPDataReceiver) Start(tc TraceDualConsumer, mc MetricsDualConsumer) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(or.ProtocolName())
@@ -249,7 +255,7 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (zr *ZipkinDataReceiver) Start(tc *MockTraceConsumer, _ *MockMetricConsumer) error {
+func (zr *ZipkinDataReceiver) Start(tc TraceDualConsumer, _ MetricsDualConsumer) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.SetName(zr.ProtocolName())
@@ -280,4 +286,62 @@ func (zr *ZipkinDataReceiver) GenConfigYAMLStr() string {
 
 func (zr *ZipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
+}
+
+// prometheus
+
+type PrometheusDataReceiver struct {
+	DataReceiverBase
+	receiver component.MetricsReceiver
+}
+
+var _ DataReceiver = (*PrometheusDataReceiver)(nil)
+
+func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
+	return &PrometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+}
+
+func (dr *PrometheusDataReceiver) Start(_ TraceDualConsumer, mc MetricsDualConsumer) error {
+	factory := prometheusreceiver.NewFactory()
+	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
+	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
+	cfg.PrometheusConfig = &config.Config{
+		ScrapeConfigs: []*config.ScrapeConfig{{
+			JobName:        "testbed-job",
+			ScrapeInterval: model.Duration(100 * time.Millisecond),
+			ScrapeTimeout:  model.Duration(time.Second),
+			ServiceDiscoveryConfig: sd_config.ServiceDiscoveryConfig{
+				StaticConfigs: []*targetgroup.Group{{
+					Targets: []model.LabelSet{{
+						"__address__":      model.LabelValue(addr),
+						"__scheme__":       "http",
+						"__metrics_path__": "/metrics",
+					}},
+				}},
+			},
+		}},
+	}
+	var err error
+	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, mc)
+	if err != nil {
+		return err
+	}
+	return dr.receiver.Start(context.Background(), dr)
+}
+
+func (dr *PrometheusDataReceiver) Stop() error {
+	return dr.receiver.Shutdown(context.Background())
+}
+
+// Generate exporter yaml
+func (dr *PrometheusDataReceiver) GenConfigYAMLStr() string {
+	format := `
+  prometheus:
+    endpoint: "localhost:%d"
+`
+	return fmt.Sprintf(format, dr.Port)
+}
+
+func (dr *PrometheusDataReceiver) ProtocolName() string {
+	return "prometheus"
 }

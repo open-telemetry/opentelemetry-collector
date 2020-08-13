@@ -141,7 +141,6 @@ func NewTestCase(
 func (tc *TestCase) composeTestResultFileName(fileName string) string {
 	fileName, err := filepath.Abs(path.Join(tc.resultDir, fileName))
 	require.NoError(tc.t, err, "Cannot resolve %s", fileName)
-
 	return fileName
 }
 
@@ -171,10 +170,10 @@ func (tc *TestCase) StartAgent(args ...string) {
 	logFileName := tc.composeTestResultFileName("agent.log")
 
 	_, err := tc.agentProc.Start(StartParams{
-		name:         "Agent",
-		logFilePath:  logFileName,
-		cmd:          testBedConfig.Agent,
-		cmdArgs:      args,
+		Name:         "Agent",
+		LogFilePath:  logFileName,
+		Cmd:          testBedConfig.Agent,
+		CmdArgs:      args,
 		resourceSpec: &tc.resourceSpec,
 	})
 

@@ -114,10 +114,10 @@ type ChildProcess struct {
 }
 
 type StartParams struct {
-	name         string
-	logFilePath  string
-	cmd          string
-	cmdArgs      []string
+	Name         string
+	LogFilePath  string
+	Cmd          string
+	CmdArgs      []string
 	resourceSpec *ResourceSpec
 }
 
@@ -167,23 +167,23 @@ func (cp *ChildProcess) PrepareConfig(configStr string) (configCleanup func(), e
 // cmdArgs is the command line arguments to pass to the process.
 func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err error) {
 
-	cp.name = params.name
+	cp.name = params.Name
 	cp.doneSignal = make(chan struct{})
 	cp.resourceSpec = params.resourceSpec
 
-	log.Printf("Starting %s (%s)", cp.name, params.cmd)
+	log.Printf("Starting %s (%s)", cp.name, params.Cmd)
 
 	// Prepare log file
 	var logFile *os.File
-	logFile, err = os.Create(params.logFilePath)
+	logFile, err = os.Create(params.LogFilePath)
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot create %s: %s", params.logFilePath, err.Error())
+		return receiverAddr, fmt.Errorf("cannot create %s: %s", params.LogFilePath, err.Error())
 	}
-	log.Printf("Writing %s log to %s", cp.name, params.logFilePath)
+	log.Printf("Writing %s log to %s", cp.name, params.LogFilePath)
 
 	// Prepare to start the process.
 	// #nosec
-	args := params.cmdArgs
+	args := params.CmdArgs
 	if !containsConfig(args) {
 		if cp.configFileName == "" {
 			configFile := path.Join("testdata", "agent-config.yaml")
@@ -195,21 +195,21 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 		args = append(args, "--config")
 		args = append(args, cp.configFileName)
 	}
-	cp.cmd = exec.Command(params.cmd, args...)
+	cp.cmd = exec.Command(params.Cmd, args...)
 
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot capture stdout of %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot capture stdout of %s: %s", params.Cmd, err.Error())
 	}
 	stderrIn, err := cp.cmd.StderrPipe()
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot capture stderr of %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot capture stderr of %s: %s", params.Cmd, err.Error())
 	}
 
 	// Start the process.
 	if err = cp.cmd.Start(); err != nil {
-		return receiverAddr, fmt.Errorf("cannot start executable at %s: %s", params.cmd, err.Error())
+		return receiverAddr, fmt.Errorf("cannot start executable at %s: %s", params.Cmd, err.Error())
 	}
 
 	cp.startTime = time.Now()

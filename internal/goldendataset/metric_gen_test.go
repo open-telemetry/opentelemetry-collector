@@ -42,7 +42,7 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, 1, ms.Len())
 	pdm := ms.At(0)
 	desc := pdm.MetricDescriptor()
-	require.Equal(t, "my-md-name", desc.Name())
+	require.Equal(t, "metric_0", desc.Name())
 	require.Equal(t, "my-md-description", desc.Description())
 	require.Equal(t, "my-md-units", desc.Unit())
 
