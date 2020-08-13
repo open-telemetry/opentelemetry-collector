@@ -129,6 +129,12 @@ func TestNewMetricsExporter_ProcessMetricsError(t *testing.T) {
 	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
 }
 
+func TestNewMetricsExporter_ProcessMetricsErrSkipProcessingData(t *testing.T) {
+	me, err := NewMetricsProcessor(testCfg, exportertest.NewNopMetricsExporter(), newTestMProcessor(ErrSkipProcessingData))
+	require.NoError(t, err)
+	assert.Equal(t, nil, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
+}
+
 func TestNewLogsExporter(t *testing.T) {
 	me, err := NewLogsProcessor(testCfg, exportertest.NewNopLogsExporter(), newTestLProcessor(nil))
 	require.NoError(t, err)
