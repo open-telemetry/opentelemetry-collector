@@ -69,14 +69,15 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 
 	require.Greater(t, resourceMetrics.Len(), 1)
-	assertResourceAttributes(t, resourceMetrics)
+	assertProcessResourceAttributesExist(t, resourceMetrics)
 	assertCPUTimeMetricValid(t, resourceMetrics, expectedStartTime)
 	assertMemoryUsageMetricValid(t, physicalMemoryUsageDescriptor, resourceMetrics)
 	assertMemoryUsageMetricValid(t, virtualMemoryUsageDescriptor, resourceMetrics)
 	assertDiskIOMetricValid(t, resourceMetrics, expectedStartTime)
+	assertSameTimeStampForAllMetricsWithinResource(t, resourceMetrics)
 }
 
-func assertResourceAttributes(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attr := resourceMetrics.At(0).Resource().Attributes()
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessID)
@@ -114,6 +115,15 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 	}
 	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 0, directionLabelName, readDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 1, directionLabelName, writeDirectionLabelValue)
+}
+
+func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		ilms := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			internal.AssertSameTimeStampForAllMetrics(t, ilms.At(j).Metrics())
+		}
+	}
 }
 
 func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.ResourceMetricsSlice) pdata.Metric {
