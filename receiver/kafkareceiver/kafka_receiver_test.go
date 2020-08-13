@@ -65,7 +65,7 @@ func TestReceiverStartConsume(t *testing.T) {
 		consumerGroup: testClient,
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	c.cancel = cancelFunc
+	c.cancelConsumeLoop = cancelFunc
 	c.Shutdown(context.Background())
 	err := c.consumeLoop(ctx, &consumerGroupHandler{
 		ready: make(chan bool),

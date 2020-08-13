@@ -33,12 +33,12 @@ const (
 
 // kafkaConsumer uses sarama to consume and handle messages from kafka.
 type kafkaConsumer struct {
-	name          string
-	consumerGroup sarama.ConsumerGroup
-	nextConsumer  consumer.TraceConsumer
-	topics        []string
-	cancel        context.CancelFunc
-	unmarshaller  unmarshaller
+	name              string
+	consumerGroup     sarama.ConsumerGroup
+	nextConsumer      consumer.TraceConsumer
+	topics            []string
+	cancelConsumeLoop context.CancelFunc
+	unmarshaller      unmarshaller
 
 	logger *zap.Logger
 }
@@ -74,7 +74,7 @@ func newReceiver(config Config, params component.ReceiverCreateParams, nextConsu
 
 func (c *kafkaConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	c.cancel = cancel
+	c.cancelConsumeLoop = cancel
 	consumerGroup := &consumerGroupHandler{
 		name:         c.name,
 		logger:       c.logger,
@@ -104,7 +104,7 @@ func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler sarama.Consumer
 }
 
 func (c *kafkaConsumer) Shutdown(context.Context) error {
-	c.cancel()
+	c.cancelConsumeLoop()
 	return c.consumerGroup.Close()
 }
 
