@@ -7,11 +7,7 @@ processors:
 exporters:
     prometheusremotewrite:
     prometheusremotewrite/2:
-        headers:
-            Prometheus-Remote-Write-Version: "0.1.0"
-            Tenant-id: 234
         namespace: "test-space"
-        timeout: 10s
         sending_queue:
             enabled: true
             num_consumers: 2
@@ -21,11 +17,12 @@ exporters:
             initial_interval: 10s
             max_interval: 60s
             max_elapsed_time: 10m
-        http_setting:
-            endpoint: "localhost:8888"
-            ca_file: "/var/lib/mycert.pem"
-            timeout: 5s
-            write_buffer_size: 524288
+        endpoint: "localhost:8888"
+        ca_file: "/var/lib/mycert.pem"
+        write_buffer_size: 524288
+        headers:
+            Prometheus-Remote-Write-Version: "0.1.0"
+            Tenant-id: 234
 
 service:
     pipelines:

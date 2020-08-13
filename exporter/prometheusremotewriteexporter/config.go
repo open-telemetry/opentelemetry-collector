@@ -34,5 +34,5 @@ type Config struct {
 	// Optional headers configuration for authorization and security/extra metadata
 	Headers map[string]string `mapstructure:"headers"`
 
-	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:"http_setting"`
+	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
 }

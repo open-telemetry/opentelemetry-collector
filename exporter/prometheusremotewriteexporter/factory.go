@@ -37,22 +37,21 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-// Instantiates a pseudo-Cortex Exporter that adheres to the component MetricsExporter interface
 func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
-	cCfg, ok := cfg.(*Config)
+	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.Errorf("invalid configuration")
 	}
 
-	client, err := cCfg.HTTPClientSettings.ToClient()
+	client, err := prwCfg.HTTPClientSettings.ToClient()
 
 	if err != nil {
 		return nil, err
 	}
 
-	prwe, err := newPrwExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client, cCfg.Headers)
+	prwe, err := newPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.Headers)
 
 	if err != nil {
 		return nil, err
@@ -61,9 +60,9 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		prwe.pushMetrics,
-		exporterhelper.WithTimeout(cCfg.TimeoutSettings),
-		exporterhelper.WithQueue(cCfg.QueueSettings),
-		exporterhelper.WithRetry(cCfg.RetrySettings),
+		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
+		exporterhelper.WithQueue(prwCfg.QueueSettings),
+		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
@@ -95,6 +94,7 @@ func createDefaultConfig() configmodels.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
+			Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
 		},
 	}
 }
