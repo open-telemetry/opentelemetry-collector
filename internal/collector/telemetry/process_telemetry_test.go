@@ -15,7 +15,6 @@
 package telemetry
 
 import (
-	"runtime"
 	"testing"
 	"time"
 
@@ -27,17 +26,20 @@ import (
 func TestProcessTelemetry(t *testing.T) {
 	const ballastSizeBytes uint64 = 0
 
-	pmv := NewProcessMetricsViews(ballastSizeBytes)
+	pmv, err := NewProcessMetricsViews(ballastSizeBytes)
+	require.NoError(t, err)
 	assert.NotNil(t, pmv)
 
 	expectedViews := []string{
 		// Changing a metric name is a breaking change.
 		// Adding new metrics is ok as long it follows the conventions described at
 		// https://pkg.go.dev/go.opentelemetry.io/collector/obsreport?tab=doc#hdr-Naming_Convention_for_New_Metrics
+		"process/uptime",
 		"process/runtime/heap_alloc_bytes",
 		"process/runtime/total_alloc_bytes",
 		"process/runtime/total_sys_memory_bytes",
 		"process/cpu_seconds",
+		"process/memory/rss",
 	}
 	processViews := pmv.Views()
 	assert.Len(t, processViews, len(expectedViews))
@@ -50,12 +52,6 @@ func TestProcessTelemetry(t *testing.T) {
 	<-time.After(200 * time.Millisecond)
 
 	for _, viewName := range expectedViews {
-		if (runtime.GOOS == "windows" || runtime.GOOS == "darwin") && viewName == "process/cpu_seconds" {
-			// "process/cpu_seconds" is not supported on windows or darwin because there is
-			// no procfs which is used for reading that metric.
-			continue
-		}
-
 		rows, err := view.RetrieveData(viewName)
 		require.NoError(t, err, viewName)
 
@@ -63,13 +59,19 @@ func TestProcessTelemetry(t *testing.T) {
 		row := rows[0]
 		assert.Len(t, row.Tags, 0)
 
-		lastValue := row.Data.(*view.LastValueData)
-		if viewName == "process/cpu_seconds" {
+		var value float64
+		if viewName == "process/uptime" {
+			value = row.Data.(*view.SumData).Value
+		} else {
+			value = row.Data.(*view.LastValueData).Value
+		}
+
+		if viewName == "process/uptime" || viewName == "process/cpu_seconds" {
 			// This likely will still be zero when running the test.
-			assert.True(t, lastValue.Value >= 0, viewName)
+			assert.True(t, value >= 0, viewName)
 			continue
 		}
 
-		assert.True(t, lastValue.Value > 0, viewName)
+		assert.True(t, value > 0, viewName)
 	}
 }

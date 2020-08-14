@@ -20,17 +20,30 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/prometheus/procfs"
+	"github.com/shirou/gopsutil/process"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )
 
 // ProcessMetricsViews is a struct that contains views related to process metrics (cpu, mem, etc)
 type ProcessMetricsViews struct {
+	prevTimeUnixNano int64
 	ballastSizeBytes uint64
 	views            []*view.View
 	done             chan struct{}
-	proc             *procfs.Proc
+	proc             *process.Process
+}
+
+var mUptime = stats.Float64(
+	"process/uptime",
+	"Uptime of the process",
+	stats.UnitSeconds)
+var viewProcessUptime = &view.View{
+	Name:        mUptime.Name(),
+	Description: mUptime.Description(),
+	Measure:     mUptime,
+	Aggregation: view.Sum(),
+	TagKeys:     nil,
 }
 
 var mRuntimeAllocMem = stats.Int64(
@@ -81,23 +94,37 @@ var viewCPUSeconds = &view.View{
 	TagKeys:     nil,
 }
 
+var mRSSMemory = stats.Int64(
+	"process/memory/rss",
+	"Total physical memory (resident set size)",
+	stats.UnitDimensionless)
+var viewRSSMemory = &view.View{
+	Name:        mRSSMemory.Name(),
+	Description: mRSSMemory.Description(),
+	Measure:     mRSSMemory,
+	Aggregation: view.LastValue(),
+	TagKeys:     nil,
+}
+
 // NewProcessMetricsViews creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func NewProcessMetricsViews(ballastSizeBytes uint64) *ProcessMetricsViews {
+func NewProcessMetricsViews(ballastSizeBytes uint64) (*ProcessMetricsViews, error) {
 	pmv := &ProcessMetricsViews{
+		prevTimeUnixNano: time.Now().UnixNano(),
 		ballastSizeBytes: ballastSizeBytes,
-		views:            []*view.View{viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds},
+		views:            []*view.View{viewProcessUptime, viewAllocMem, viewTotalAllocMem, viewSysMem, viewCPUSeconds, viewRSSMemory},
 		done:             make(chan struct{}),
 	}
 
-	// procfs.Proc is not available on windows and expected to fail.
 	pid := os.Getpid()
-	proc, err := procfs.NewProc(pid)
-	if err == nil {
-		pmv.proc = &proc
+
+	var err error
+	pmv.proc, err = process.NewProcess(int32(pid))
+	if err != nil {
+		return nil, err
 	}
 
-	return pmv
+	return pmv, nil
 }
 
 // StartCollection starts a ticker'd goroutine that will update the PMV measurements every 5 seconds
@@ -127,6 +154,10 @@ func (pmv *ProcessMetricsViews) StopCollection() {
 }
 
 func (pmv *ProcessMetricsViews) updateViews() {
+	now := time.Now().UnixNano()
+	stats.Record(context.Background(), mUptime.M(float64(now-pmv.prevTimeUnixNano)/1e9))
+	pmv.prevTimeUnixNano = now
+
 	ms := &runtime.MemStats{}
 	pmv.readMemStats(ms)
 	stats.Record(context.Background(), mRuntimeAllocMem.M(int64(ms.Alloc)))
@@ -134,8 +165,11 @@ func (pmv *ProcessMetricsViews) updateViews() {
 	stats.Record(context.Background(), mRuntimeSysMem.M(int64(ms.Sys)))
 
 	if pmv.proc != nil {
-		if procStat, err := pmv.proc.Stat(); err == nil {
-			stats.Record(context.Background(), mCPUSeconds.M(int64(procStat.CPUTime())))
+		if times, err := pmv.proc.Times(); err == nil {
+			stats.Record(context.Background(), mCPUSeconds.M(int64(times.Total())))
+		}
+		if mem, err := pmv.proc.MemoryInfo(); err == nil {
+			stats.Record(context.Background(), mRSSMemory.M(int64(mem.RSS)))
 		}
 	}
 }

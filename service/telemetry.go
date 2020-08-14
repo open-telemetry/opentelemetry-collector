@@ -61,6 +61,11 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
+	processMetricsViews, err := telemetry.NewProcessMetricsViews(ballastSizeBytes)
+	if err != nil {
+		return err
+	}
+
 	var views []*view.View
 	views = append(views, obsreport.Configure(telemetry.UseLegacyMetrics(), telemetry.UseNewMetrics())...)
 	views = append(views, processor.MetricViews(level)...)
@@ -68,7 +73,6 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
 	views = append(views, kafkareceiver.MetricViews()...)
-	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
 	views = append(views, fluentobserv.Views(level)...)
 	tel.views = views
