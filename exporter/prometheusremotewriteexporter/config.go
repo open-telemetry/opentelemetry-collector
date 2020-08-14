@@ -32,8 +32,5 @@ type Config struct {
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
 	Namespace string `mapstructure:"namespace"`
 
-	// Optional headers configuration for authorization and security/extra metadata
-	Headers map[string]string `mapstructure:"headers"`
-
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
 }

@@ -13,5 +13,3 @@
 // limitations under the License.
 
 package prometheusremotewriteexporter
-
-var testHeaders = map[string]string{"headerOne": "value1"}

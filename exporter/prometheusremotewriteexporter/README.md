@@ -9,7 +9,7 @@ The following settings are required:
 
 The following settings can be optionally configured:
 - `namespace`: prefix attached to each exported metric name.
-- `headers`: additional headers attached to each HTTP request. `X-Prometheus-Remote-Write-Version` cannot be set by users and is attached to each request. 
+- `headers`: additional headers attached to each HTTP request. If `X-Prometheus-Remote-Write-Version` is set by user, its value must be `0.1.0`
 - `insecure` (default = false): whether to enable client transport security for the exporter's connection.
 - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to true.
 - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to true.

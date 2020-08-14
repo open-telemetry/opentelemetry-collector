@@ -40,6 +40,9 @@ type HTTPClientSettings struct {
 
 	// Timeout parameter configures `http.Client.Timeout`.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+
+	// Additional headers attached to each HTTP request sent by the client
+	Headers map[string]string `mapstructure:"headers,omitempty"`
 }
 
 func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
@@ -57,10 +60,31 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
+	interceptor := &clientInterceptorRoundTripper{
+		transport: transport,
+		headers:   hcs.Headers,
+	}
 	return &http.Client{
-		Transport: transport,
+		Transport: interceptor,
 		Timeout:   hcs.Timeout,
 	}, nil
+}
+
+// Custom RoundTripper that add headers
+type clientInterceptorRoundTripper struct {
+	transport http.RoundTripper
+	headers   map[string]string
+}
+
+// Custom RoundTrip that add headers
+func (interceptor *clientInterceptorRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	for k, v := range interceptor.headers {
+		req.Header.Set(k, v)
+	}
+	// Send the request to Cortex
+	response, err := interceptor.transport.RoundTrip(req)
+
+	return response, err
 }
 
 type HTTPServerSettings struct {
