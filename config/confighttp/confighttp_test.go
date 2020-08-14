@@ -41,7 +41,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	}
 	client, err := hcs.ToClient()
 	assert.NoError(t, err)
-	transport := client.Transport.(*clientInterceptorRoundTripper).transport.(*http.Transport)
+	transport := client.Transport.(*http.Transport)
 	assert.EqualValues(t, 1024, transport.ReadBufferSize)
 	assert.EqualValues(t, 512, transport.WriteBufferSize)
 }

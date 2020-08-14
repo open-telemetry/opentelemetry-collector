@@ -41,7 +41,8 @@ type HTTPClientSettings struct {
 	// Timeout parameter configures `http.Client.Timeout`.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 
-	// Additional headers attached to each HTTP request sent by the client
+	// Additional headers attached to each HTTP request sent by the client.
+	// Existing header values are overwritten if collision happens.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 }
 
