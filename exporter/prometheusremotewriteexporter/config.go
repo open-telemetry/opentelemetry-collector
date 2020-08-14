@@ -28,7 +28,8 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
-	// Namespace if set, exports metrics under the provided value.*/
+	// prefix attached to each exported metric name
+	// See: https://prometheus.io/docs/practices/naming/#metric-names
 	Namespace string `mapstructure:"namespace"`
 
 	// Optional headers configuration for authorization and security/extra metadata
