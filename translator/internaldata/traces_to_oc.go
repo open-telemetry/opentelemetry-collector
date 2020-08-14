@@ -97,13 +97,11 @@ func spanToOC(span pdata.Span) *octrace.Span {
 	}
 
 	return &octrace.Span{
-		TraceId:      span.TraceID().Bytes(),
-		SpanId:       span.SpanID().Bytes(),
-		Tracestate:   traceStateToOC(span.TraceState()),
-		ParentSpanId: span.ParentSpanID().Bytes(),
-		Name: &octrace.TruncatableString{
-			Value: span.Name(),
-		},
+		TraceId:        span.TraceID().Bytes(),
+		SpanId:         span.SpanID().Bytes(),
+		Tracestate:     traceStateToOC(span.TraceState()),
+		ParentSpanId:   span.ParentSpanID().Bytes(),
+		Name:           stringToTruncatableString(span.Name()),
 		Kind:           spanKindToOC(span.Kind()),
 		StartTime:      internal.UnixNanoToTimestamp(span.StartTime()),
 		EndTime:        internal.UnixNanoToTimestamp(span.EndTime()),
@@ -144,9 +142,7 @@ func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
 	switch attr.Type() {
 	case pdata.AttributeValueSTRING:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: &octrace.TruncatableString{
-				Value: attr.StringVal(),
-			},
+			StringValue: stringToTruncatableString(attr.StringVal()),
 		}
 	case pdata.AttributeValueBOOL:
 		a.Value = &octrace.AttributeValue_BoolValue{
@@ -162,9 +158,7 @@ func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
 		}
 	default:
 		a.Value = &octrace.AttributeValue_StringValue{
-			StringValue: &octrace.TruncatableString{
-				Value: fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type()),
-			},
+			StringValue: stringToTruncatableString(fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())),
 		}
 	}
 
@@ -198,9 +192,7 @@ func spanKindToOCAttribute(kind pdata.SpanKind) *octrace.AttributeValue {
 func stringAttributeValue(val string) *octrace.AttributeValue {
 	return &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_StringValue{
-			StringValue: &octrace.TruncatableString{
-				Value: val,
-			},
+			StringValue: stringToTruncatableString(val),
 		},
 	}
 }
@@ -320,10 +312,8 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 		Time: internal.UnixNanoToTimestamp(event.Timestamp()),
 		Value: &octrace.Span_TimeEvent_Annotation_{
 			Annotation: &octrace.Span_TimeEvent_Annotation{
-				Description: &octrace.TruncatableString{
-					Value: event.Name(),
-				},
-				Attributes: ocAttributes,
+				Description: stringToTruncatableString(event.Name()),
+				Attributes:  ocAttributes,
 			},
 		},
 	}
@@ -365,5 +355,14 @@ func statusToOC(status pdata.SpanStatus) *octrace.Status {
 	return &octrace.Status{
 		Code:    int32(status.Code()),
 		Message: status.Message(),
+	}
+}
+
+func stringToTruncatableString(str string) *octrace.TruncatableString {
+	if str == "" {
+		return nil
+	}
+	return &octrace.TruncatableString{
+		Value: str,
 	}
 }
