@@ -68,10 +68,6 @@ func Test_loadConfig(t *testing.T) {
 			},
 			Namespace: "test-space",
 
-			Headers: map[string]string{
-				"prometheus-remote-write-version": "0.1.0",
-				"tenant-id":                       "234"},
-
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{
@@ -85,6 +81,10 @@ func Test_loadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 
 				Timeout: 5 * time.Second,
+
+				Headers: map[string]string{
+					"prometheus-remote-write-version": "0.1.0",
+					"x-scope-orgid":                   "234"},
 			},
 		})
 }

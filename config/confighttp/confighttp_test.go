@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"path"
 	"testing"
 	"time"
@@ -347,5 +349,45 @@ func ExampleHTTPServerSettings() {
 	}
 	if err = s.Serve(l); err != nil {
 		panic(err)
+	}
+}
+
+func TestHttpHeaders(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers map[string]string
+	}{
+		{
+			"with_headers",
+			map[string]string{
+				"header1": "value1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				for k, v := range tt.headers {
+					assert.Equal(t, r.Header.Get(k), v)
+				}
+				w.WriteHeader(200)
+			}))
+			defer server.Close()
+			serverURL, _ := url.Parse(server.URL)
+			setting := HTTPClientSettings{
+				Endpoint:        serverURL.String(),
+				TLSSetting:      configtls.TLSClientSetting{},
+				ReadBufferSize:  0,
+				WriteBufferSize: 0,
+				Timeout:         0,
+				Headers: map[string]string{
+					"header1": "value1",
+				},
+			}
+			client, _ := setting.ToClient()
+			req, err := http.NewRequest("GET", setting.Endpoint, nil)
+			assert.NoError(t, err)
+			client.Do(req)
+		})
 	}
 }

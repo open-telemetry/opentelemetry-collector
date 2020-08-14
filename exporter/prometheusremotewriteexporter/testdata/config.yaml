@@ -22,7 +22,7 @@ exporters:
         write_buffer_size: 524288
         headers:
             Prometheus-Remote-Write-Version: "0.1.0"
-            Tenant-id: 234
+            X-Scope-OrgID: 234
 
 service:
     pipelines:

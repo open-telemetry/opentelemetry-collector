@@ -76,7 +76,7 @@ func Test_newPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := newPrwExporter(tt.namespace, tt.endpoint, tt.client, testHeaders)
+			prwe, err := newPrwExporter(tt.namespace, tt.endpoint, tt.client)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
