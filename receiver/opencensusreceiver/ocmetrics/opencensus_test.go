@@ -34,6 +34,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/obsreport"
@@ -49,7 +50,7 @@ import (
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportMetrics request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	metricSink := new(exportertest.SinkMetricsExporterOld)
+	metricSink := new(exportertest.SinkMetricsExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -115,7 +116,10 @@ func TestExportMultiplexing(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		resultsMapping[nodeToKey(md.Node)] = append(resultsMapping[nodeToKey(md.Node)], md.Metrics...)
+		ocmds := pdatautil.MetricsToMetricsData(md)
+		for _, ocmd := range ocmds {
+			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
+		}
 	}
 
 	// First things first, we expect exactly 3 unique keys
@@ -158,7 +162,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	metricSink := new(exportertest.SinkMetricsExporterOld)
+	metricSink := new(exportertest.SinkMetricsExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -232,7 +236,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 		"https://github.com/census-instrumentation/opencensus-service/issues/225",
 	)
 
-	metricSink := new(exportertest.SinkMetricsExporterOld)
+	metricSink := new(exportertest.SinkMetricsExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -255,7 +259,10 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		resultsMapping[nodeToKey(md.Node)] = append(resultsMapping[nodeToKey(md.Node)], md.Metrics...)
+		ocmds := pdatautil.MetricsToMetricsData(md)
+		for _, ocmd := range ocmds {
+			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
+		}
 	}
 
 	if g, w := len(resultsMapping), 1; g != w {
@@ -309,7 +316,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumerOld) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

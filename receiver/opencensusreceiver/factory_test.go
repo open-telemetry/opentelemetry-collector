@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -33,30 +34,28 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 
 	config := cfg.(*Config)
 	config.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	tReceiver, err := createTraceReceiver(context.Background(), params, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	mReceiver, err := createMetricsReceiver(context.Background(), params, cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	factory := Factory{}
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
@@ -109,26 +108,23 @@ func TestCreateTraceReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	logger := zap.NewNop()
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporterOld)
-			tr, err := factory.CreateTraceReceiver(ctx, logger, tt.cfg, sink)
+			tr, err := createTraceReceiver(ctx, params, tt.cfg, exportertest.NewNopTraceExporter())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTraceReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tr != nil {
-				err := tr.Start(context.Background(), componenttest.NewNopHost())
-				require.NoError(t, err, "Start() error = %v", err)
-				tr.Shutdown(context.Background())
+				require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, tr.Shutdown(context.Background()))
 			}
 		})
 	}
 }
 
 func TestCreateMetricReceiver(t *testing.T) {
-	factory := Factory{}
 	defaultReceiverSettings := configmodels.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
@@ -188,19 +184,17 @@ func TestCreateMetricReceiver(t *testing.T) {
 			},
 		},
 	}
-	logger := zap.NewNop()
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporterOld)
-			tc, err := factory.CreateMetricsReceiver(context.Background(), logger, tt.cfg, sink)
+			tc, err := createMetricsReceiver(context.Background(), params, tt.cfg, exportertest.NewNopMetricsExporter())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tc != nil {
-				err := tc.Start(context.Background(), componenttest.NewNopHost())
-				require.NoError(t, err, "Start() error = %v", err)
-				tc.Shutdown(context.Background())
+				require.NoError(t, tc.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, tc.Shutdown(context.Background()))
 			}
 		})
 	}
