@@ -60,12 +60,19 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
-	interceptor := &clientInterceptorRoundTripper{
-		transport: transport,
-		headers:   hcs.Headers,
+	var clientTransport http.RoundTripper
+
+	if hcs.Headers != nil && len(hcs.Headers) > 0 {
+		clientTransport = &clientInterceptorRoundTripper{
+			transport: transport,
+			headers:   hcs.Headers,
+		}
+	} else {
+		clientTransport = transport
 	}
+
 	return &http.Client{
-		Transport: interceptor,
+		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
 }
