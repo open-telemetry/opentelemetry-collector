@@ -25,4 +25,4 @@ metrics:
     description: Bytes of memory in use.
     unit: By
     type: int64
-    labels: [mem.state, mem.asdf]
+    labels: [mem.state]

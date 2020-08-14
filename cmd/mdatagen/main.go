@@ -18,28 +18,45 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
+	"fmt"
 	"go/format"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"text/template"
 )
 
 func main() {
 	flag.Parse()
 	yml := flag.Arg(0)
-	if yml == "" {
-		log.Fatal("argument must be metadata.yaml file")
+	if err := run(yml); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run(ymlPath string) error {
+	if ymlPath == "" {
+		return errors.New("argument must be metadata.yaml file")
 	}
 
-	metadata := loadMetadata(yml)
+	ymlData, err := ioutil.ReadFile(ymlPath)
+	if err != nil {
+		return fmt.Errorf("unable to read file %v: %v", ymlPath, err)
+	}
+
+	metadata, err := loadMetadata(ymlData)
+	if err != nil {
+		return fmt.Errorf("failed loading %v: %v", ymlPath, err)
+	}
 
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		log.Fatal("unable to determine filename")
+		return errors.New("unable to determine filename")
 	}
 
 	thisDir := path.Dir(filename)
@@ -51,9 +68,6 @@ func main() {
 				"publicVar": func(s string) (string, error) {
 					return formatVar(s, true)
 				},
-				"privateVar": func(s string) (string, error) {
-					return formatVar(s, false)
-				},
 			}).ParseFiles(path.Join(thisDir, "metrics.tmpl")))
 	buf := bytes.Buffer{}
 
@@ -61,30 +75,29 @@ func main() {
 		metadata: metadata,
 		Package:  "metadata",
 	}); err != nil {
-		log.Fatalf("failed executing template: %v", err)
+		return fmt.Errorf("failed executing template: %v", err)
 	}
 
 	formatted, err := format.Source(buf.Bytes())
 
 	if err != nil {
-		// TODO: Remove or conditionalize later (for debugging).
-		log.Println("--- BEGIN SOURCE ---")
-		log.Print(buf.String())
-		log.Println("--- END SOURCE ---")
-		log.Fatalf("failed formatting source: %v", err)
+		errstr := strings.Builder{}
+		_, _ = fmt.Fprintf(&errstr, "failed formatting source: %v", err)
+		errstr.WriteString("--- BEGIN SOURCE ---")
+		errstr.Write(buf.Bytes())
+		errstr.WriteString("--- END SOURCE ---")
+		return errors.New(errstr.String())
 	}
 
-	if _, err := os.Stdout.Write(formatted); err != nil {
-		log.Fatalf("write failed: %v", err)
-	}
-
-	metadir := path.Dir(yml)
+	metadir := path.Dir(ymlPath)
 	outputDir := path.Join(metadir, "internal", "metadata")
 	outputFile := path.Join(outputDir, "generated_metrics.go")
 	if err := os.MkdirAll(outputDir, 0777); err != nil {
-		log.Fatalf("unable to create output directory %q: %v", outputDir, err)
+		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
 	}
 	if err := ioutil.WriteFile(outputFile, formatted, 0666); err != nil {
-		log.Fatalf("failed writing %q: %v", outputFile, err)
+		return fmt.Errorf("failed writing %q: %v", outputFile, err)
 	}
+
+	return nil
 }
