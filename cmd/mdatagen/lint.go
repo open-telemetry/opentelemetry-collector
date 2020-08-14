@@ -89,7 +89,9 @@ func formatVar(s string, exported bool) (string, error) {
 		}
 
 		if unicode.IsUpper(r) || unicode.IsNumber(r) {
-			if lintAcronyms[strings.ToUpper(word)] && output != "" {
+			// If the current word is an acronym and it's either exported or it's not the
+			// beginning of an unexported variable then upper case it.
+			if lintAcronyms[strings.ToUpper(word)] && (exported || output != "") {
 				output += strings.ToUpper(word)
 				word = string(r)
 			} else {

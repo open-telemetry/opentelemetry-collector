@@ -90,7 +90,7 @@ func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now 
 	if cpuLabel != gopsCPUTotal {
 		labelsMap.Insert(Labels.Cpu, cpuLabel)
 	}
-	labelsMap.Insert(Labels.State, stateLabel)
+	labelsMap.Insert(Labels.CPUState, stateLabel)
 
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)

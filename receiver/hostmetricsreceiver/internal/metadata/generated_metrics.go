@@ -23,12 +23,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// Type is the component type name.
 const Type configmodels.Type = "hostmetricsreceiver"
 
 // Metrics contains the metric descriptors for the possible metrics.
 var Metrics = struct {
 	// SystemCPUTime in s (Total CPU seconds broken down by different states.)
 	SystemCPUTime pdata.MetricDescriptor
+	// SystemMemoryUsage in By (Bytes of memory in use.)
+	SystemMemoryUsage pdata.MetricDescriptor
 }{
 	func() pdata.MetricDescriptor {
 		descriptor := pdata.NewMetricDescriptor()
@@ -39,21 +42,33 @@ var Metrics = struct {
 		descriptor.SetType(pdata.MetricTypeMonotonicDouble)
 		return descriptor
 	}(),
+	func() pdata.MetricDescriptor {
+		descriptor := pdata.NewMetricDescriptor()
+		descriptor.InitEmpty()
+		descriptor.SetName("system.memory.usage")
+		descriptor.SetDescription("Bytes of memory in use.")
+		descriptor.SetUnit("By")
+		descriptor.SetType(pdata.MetricTypeInt64)
+		return descriptor
+	}(),
 }
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
 	// Cpu (CPU number starting at 0.)
 	Cpu string
-	// State (Breakdown of CPU usage by type.)
-	State string
+	// CPUState (Breakdown of CPU usage by type.)
+	CPUState string
+	// MemState (Breakdown of memory usage by type.)
+	MemState string
 }{
 	"cpu",
 	"state",
+	"state",
 }
 
-// LabelState are the possible values that the label "state" can have.
-var LabelState = struct {
+// LabelCPUState are the possible values that the label "cpu.state" can have.
+var LabelCPUState = struct {
 	Idle      string
 	Interrupt string
 	Nice      string
@@ -71,4 +86,23 @@ var LabelState = struct {
 	"system",
 	"user",
 	"wait",
+}
+
+// LabelMemState are the possible values that the label "mem.state" can have.
+var LabelMemState = struct {
+	Buffered          string
+	Cached            string
+	Inactive          string
+	Free              string
+	SlabReclaimable   string
+	SlabUnreclaimable string
+	Used              string
+}{
+	"buffered",
+	"cached",
+	"inactive",
+	"free",
+	"slab_reclaimable",
+	"slab_unreclaimable",
+	"used",
 }

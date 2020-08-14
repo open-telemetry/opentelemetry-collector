@@ -105,15 +105,15 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 	}
 	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 4*runtime.NumCPU())
 	internal.AssertDoubleMetricLabelExists(t, metric, 0, Labels.Cpu)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, Labels.State, LabelState.User)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, Labels.State, LabelState.System)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, Labels.State, LabelState.Idle)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, Labels.State, LabelState.Interrupt)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, Labels.CPUState, LabelCPUState.User)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, Labels.CPUState, LabelCPUState.System)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, Labels.CPUState, LabelCPUState.Idle)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, Labels.CPUState, LabelCPUState.Interrupt)
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, Labels.State, LabelState.Nice)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, Labels.State, LabelState.Softirq)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, Labels.State, LabelState.Steal)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, Labels.State, LabelState.Wait)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, Labels.CPUState, LabelCPUState.Nice)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, Labels.CPUState, LabelCPUState.Softirq)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, Labels.CPUState, LabelCPUState.Steal)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, Labels.CPUState, LabelCPUState.Wait)
 }

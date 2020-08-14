@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// Type is the component type name.
 const Type configmodels.Type = "{{ .Name }}"
 
 {{- /* Renders metric descriptors. */}}
@@ -55,7 +56,11 @@ var Labels = struct {
     {{- end }}
 }{
     {{- range $name, $info := .Labels }}
+    {{- if $info.Value }}
+    "{{ $info.Value }}",
+    {{- else }}
     "{{ $name }}",
+    {{- end }}
     {{- end }}
 }
 
@@ -66,7 +71,7 @@ var Labels = struct {
 // Label{{ $name.Render }} are the possible values that the label "{{ $name }}" can have.
 var Label{{ $name.Render }} = struct {
     {{- range $info.Enum }}
-    {{ formatVar . true }} string
+    {{ . | publicVar }} string
     {{- end }}
 }{
     {{- range $info.Enum }}
