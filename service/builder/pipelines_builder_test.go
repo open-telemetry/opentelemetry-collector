@@ -18,24 +18,18 @@ import (
 	"context"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {
@@ -203,86 +197,13 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 	}
 }
 
-func assertEqualTraceData(t *testing.T, expected consumerdata.TraceData, actual consumerdata.TraceData) {
-	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
-	assert.True(t, proto.Equal(expected.Node, actual.Node))
-
-	for i := range expected.Spans {
-		assert.True(t, proto.Equal(expected.Spans[i], actual.Spans[i]))
-	}
-
-	// TODO: Source format is not very well supported in the new data, fix this.
-	// assert.EqualValues(t, expected.SourceFormat, actual.SourceFormat)
-}
-
-func generateTestTraceData() consumerdata.TraceData {
-	return consumerdata.TraceData{
-		SourceFormat: "test-source-format",
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: "servicename",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type: "resourcetype",
-		},
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "testspanname"},
-				StartTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-				EndTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-			},
-		},
-	}
-}
-
-func generateTestTraceDataWithAttributes() consumerdata.TraceData {
-	return consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: "servicename",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type: "resourcetype",
-		},
-		SourceFormat: "test-source-format",
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "testspanname"},
-				StartTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-				EndTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"attr1": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 12345},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, actual consumerdata.MetricsData) {
-	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
-	assert.True(t, proto.Equal(expected.Node, actual.Node))
-
-	for i := range expected.Metrics {
-		assert.True(t, proto.Equal(expected.Metrics[i], actual.Metrics[i]))
-	}
+func generateTestTracesWithAttributes() pdata.Traces {
+	traces := testdata.GenerateTraceDataOneSpan()
+	attrs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes()
+	attrs.InitFromMap(map[string]pdata.AttributeValue{
+		"attr1": pdata.NewAttributeValueInt(12345),
+	})
+	return traces
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
@@ -330,7 +251,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		require.Equal(t, len(consumer.Traces), 0)
 	}
 
-	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), internaldata.OCToTraceData(generateTestTraceData()))
+	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {
@@ -338,7 +259,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		require.Equal(t, 1, len(consumer.Traces))
 
 		// Verify that span is successfully delivered.
-		assertEqualTraceData(t, generateTestTraceDataWithAttributes(), consumer.Traces[0])
+		assert.EqualValues(t, generateTestTracesWithAttributes(), consumer.Traces[0])
 	}
 
 	err = pipelineProcessors.ShutdownProcessors(context.Background())

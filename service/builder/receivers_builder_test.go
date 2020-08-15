@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -28,8 +27,9 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
@@ -138,17 +138,13 @@ func testReceivers(
 
 	if test.hasTraces {
 		traceProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
-		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), generateTestTraceData())
+		traceProducer.TraceConsumer.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
 	}
 
-	metricsData := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			{MetricDescriptor: &metricspb.MetricDescriptor{Name: "testmetric"}},
-		},
-	}
+	metrics := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
 	if test.hasMetrics {
 		metricsProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
-		metricsProducer.MetricsConsumer.ConsumeMetricsData(context.Background(), metricsData)
+		metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), metrics)
 	}
 
 	// Now verify received data.
@@ -169,7 +165,7 @@ func testReceivers(
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
-				assertEqualTraceData(t, generateTestTraceDataWithAttributes(), traceConsumer.Traces[i])
+				assert.EqualValues(t, generateTestTracesWithAttributes(), traceConsumer.Traces[i])
 			}
 		}
 
@@ -177,7 +173,7 @@ func testReceivers(
 		if test.hasMetrics {
 			metricsConsumer := exporter.me.(*componenttest.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
-			assertEqualMetricsData(t, metricsData, metricsConsumer.Metrics[0])
+			assert.EqualValues(t, metrics, metricsConsumer.Metrics[0])
 		}
 	}
 }
