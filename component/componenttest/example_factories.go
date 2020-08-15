@@ -19,14 +19,12 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -81,9 +79,9 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
-	_ *zap.Logger,
+	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
@@ -111,7 +109,12 @@ func (f *ExampleReceiverFactory) createReceiver(cfg configmodels.Receiver) *Exam
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *ExampleReceiverFactory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (f *ExampleReceiverFactory) CreateMetricsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	if cfg.(*ExampleReceiver).FailMetricsCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -138,8 +141,8 @@ func (f *ExampleReceiverFactory) CreateLogsReceiver(
 type ExampleReceiverProducer struct {
 	Started         bool
 	Stopped         bool
-	TraceConsumer   consumer.TraceConsumerOld
-	MetricsConsumer consumer.MetricsConsumerOld
+	TraceConsumer   consumer.TraceConsumer
+	MetricsConsumer consumer.MetricsConsumer
 	LogConsumer     consumer.LogsConsumer
 }
 
@@ -211,16 +214,21 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver 
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
-	_ *zap.Logger,
+	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	_ consumer.TraceConsumerOld,
+	_ consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, _ configmodels.Receiver, _ consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
@@ -265,12 +273,20 @@ func (f *ExampleExporterFactory) CustomUnmarshaler() component.CustomUnmarshaler
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(_ *zap.Logger, _ configmodels.Exporter) (component.TraceExporterOld, error) {
+func (f *ExampleExporterFactory) CreateTraceExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ configmodels.Exporter,
+) (component.TraceExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *ExampleExporterFactory) CreateMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ configmodels.Exporter,
+) (component.MetricsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
@@ -284,8 +300,8 @@ func (f *ExampleExporterFactory) CreateLogsExporter(
 
 // ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
 type ExampleExporterConsumer struct {
-	Traces           []consumerdata.TraceData
-	Metrics          []consumerdata.MetricsData
+	Traces           []pdata.Traces
+	Metrics          []pdata.Metrics
 	Logs             []pdata.Logs
 	ExporterStarted  bool
 	ExporterShutdown bool
@@ -300,13 +316,13 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 }
 
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
-func (exp *ExampleExporterConsumer) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
+func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
 // ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
-func (exp *ExampleExporterConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
+func (exp *ExampleExporterConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }
@@ -355,19 +371,21 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
-	_ *zap.Logger,
-	_ consumer.TraceConsumerOld,
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	_ consumer.TraceConsumer,
 	_ configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
-	_ *zap.Logger,
-	_ consumer.MetricsConsumerOld,
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	_ consumer.MetricsConsumer,
 	_ configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+) (component.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

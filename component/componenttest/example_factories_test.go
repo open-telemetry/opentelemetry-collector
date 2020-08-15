@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestExampleExporterConsumer(t *testing.T) {
@@ -32,12 +32,12 @@ func TestExampleExporterConsumer(t *testing.T) {
 	assert.Equal(t, true, exp.ExporterStarted)
 
 	assert.Equal(t, 0, len(exp.Traces))
-	err = exp.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
+	err = exp.ConsumeTraces(context.Background(), pdata.Traces{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(exp.Traces))
 
 	assert.Equal(t, 0, len(exp.Metrics))
-	err = exp.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{})
+	err = exp.ConsumeMetrics(context.Background(), pdata.Metrics{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(exp.Metrics))
 
