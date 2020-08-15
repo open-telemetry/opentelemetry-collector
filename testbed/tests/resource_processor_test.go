@@ -22,6 +22,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -119,8 +120,8 @@ const (
 type resourceProcessorTestCase struct {
 	name                     string
 	resourceProcessorConfig  string
-	mockedConsumedMetricData data.MetricData
-	expectedMetricData       data.MetricData
+	mockedConsumedMetricData pdata.Metrics
+	expectedMetricData       pdata.Metrics
 }
 
 func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
@@ -206,17 +207,17 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 	return tests
 }
 
-func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) data.MetricData {
-	return data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
+func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
+	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
 }
 
-func getMetricDataFromJSON(t *testing.T, rmString string) data.MetricData {
+func getMetricDataFromJSON(t *testing.T, rmString string) pdata.Metrics {
 	var mockedResourceMetrics otlpmetrics.ResourceMetrics
 
 	err := jsonpb.UnmarshalString(rmString, &mockedResourceMetrics)
 	require.NoError(t, err, "failed to get mocked resource metrics object", err)
 
-	return data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics})
+	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
@@ -282,8 +283,9 @@ func TestMetricResourceProcessor(t *testing.T) {
 			rm := pdatautil.MetricsToInternalMetrics(m).ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
 
+			expectidMD := pdatautil.MetricsToInternalMetrics(test.expectedMetricData)
 			require.Equal(t,
-				attributesToMap(test.expectedMetricData.ResourceMetrics().At(0).Resource().Attributes()),
+				attributesToMap(expectidMD.ResourceMetrics().At(0).Resource().Attributes()),
 				attributesToMap(rm.At(0).Resource().Attributes()),
 			)
 		})
