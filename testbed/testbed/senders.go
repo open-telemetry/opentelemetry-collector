@@ -24,13 +24,11 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
@@ -100,7 +98,7 @@ type TraceDataSender interface {
 // to send a batch of Metrics to the DataSender interface.
 type MetricDataSender interface {
 	DataSender
-	SendMetrics(metrics data.MetricData) error
+	SendMetrics(metrics pdata.Metrics) error
 }
 
 // DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
@@ -360,8 +358,8 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	return nil
 }
 
-func (ome *OTLPMetricsDataSender) SendMetrics(metrics data.MetricData) error {
-	return ome.exporter.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(metrics))
+func (ome *OTLPMetricsDataSender) SendMetrics(md pdata.Metrics) error {
+	return ome.exporter.ConsumeMetrics(context.Background(), md)
 }
 
 func (ome *OTLPMetricsDataSender) Flush() {
@@ -463,9 +461,8 @@ func (pds *PrometheusDataSender) endpoint() string {
 	return fmt.Sprintf("%s:%d", pds.host, pds.port)
 }
 
-func (pds *PrometheusDataSender) SendMetrics(md data.MetricData) error {
-	pdm := pdatautil.MetricsFromInternalMetrics(md)
-	return pds.exporter.ConsumeMetrics(context.Background(), pdm)
+func (pds *PrometheusDataSender) SendMetrics(md pdata.Metrics) error {
+	return pds.exporter.ConsumeMetrics(context.Background(), md)
 }
 
 func (pds *PrometheusDataSender) Flush() {

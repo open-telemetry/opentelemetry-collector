@@ -31,6 +31,7 @@ import (
 	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -47,7 +48,7 @@ type DataProvider interface {
 	// GenerateTracesOld returns a slice of OpenCensus Span instances populated with test data.
 	GenerateTracesOld() ([]*tracepb.Span, bool)
 	// GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
-	GenerateMetrics() (data.MetricData, bool)
+	GenerateMetrics() (pdata.Metrics, bool)
 	// GenerateMetricsOld returns a slice of OpenCensus Metric instances populated with test data.
 	GenerateMetricsOld() ([]*metricspb.Metric, bool)
 	// GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
@@ -222,7 +223,7 @@ func (dp *PerfTestDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool)
 	return metrics, false
 }
 
-func (dp *PerfTestDataProvider) GenerateMetrics() (data.MetricData, bool) {
+func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 	// Generate 7 data points per metric.
 	const dataPointsPerMetric = 7
@@ -263,7 +264,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (data.MetricData, bool) {
 			})
 		}
 	}
-	return metricData, false
+	return pdatautil.MetricsFromInternalMetrics(metricData), false
 }
 
 func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span {
@@ -346,8 +347,8 @@ func (dp *GoldenDataProvider) GenerateTracesOld() ([]*tracepb.Span, bool) {
 	return spans, done
 }
 
-func (dp *GoldenDataProvider) GenerateMetrics() (data.MetricData, bool) {
-	return data.MetricData{}, true
+func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
+	return pdatautil.MetricsFromInternalMetrics(data.MetricData{}), true
 }
 
 func (dp *GoldenDataProvider) GenerateMetricsOld() ([]*metricspb.Metric, bool) {
