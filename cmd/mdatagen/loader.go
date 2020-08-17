@@ -61,9 +61,14 @@ func (mn labelName) Render() (string, error) {
 }
 
 type metric struct {
+	// Description of the metric.
 	Description string     `validate:"required,notblank"`
+	// Unit of the metric.
 	Unit        string     `validate:"oneof=s By"`
+	// Type is the data type of the metric. Can be one of:
+	//     int64, double, int64 mono, double mono, histogram, summary
 	Type        metricType `validate:"metrictype"`
+	// Labels is the list of labels that the metric emits.
 	Labels      []labelName
 }
 
@@ -79,13 +84,17 @@ type label struct {
 }
 
 type metadata struct {
+	// Name of the component.
 	Name    string                `validate:"notblank"`
+	// Labels emitted by one or more metrics.
 	Labels  map[labelName]label   `validate:"dive"`
+	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `validate:"dive"`
 }
 
 type templateContext struct {
 	metadata
+	// Package name for generated code.
 	Package string
 }
 
@@ -97,15 +106,23 @@ func loadMetadata(ymlData []byte) (metadata, error) {
 		return metadata{}, fmt.Errorf("unable to unmarshal yaml: %v", err)
 	}
 
-	// Perform validation of unmarshaled structs.
+	// Validate metadata.
+	if err := validateMetadata(out); err != nil {
+		return metadata{}, err
+	}
+
+	return out, nil
+}
+
+func validateMetadata(out metadata) (error) {
 	v := validator.New()
 	if err := v.RegisterValidation("notblank", validators.NotBlank); err != nil {
-		return metadata{}, fmt.Errorf("failed registering notblank validator: %v", err)
+		return fmt.Errorf("failed registering notblank validator: %v", err)
 	}
 	if err := v.RegisterValidation("metrictype", func(fl validator.FieldLevel) bool {
 		return metricTypeMapping[metricType(fl.Field().String())] != ""
 	}); err != nil {
-		return metadata{}, fmt.Errorf("failed registering metric-type validator: %v", err)
+		return fmt.Errorf("failed registering metric-type validator: %v", err)
 	}
 
 	// Provides better validation error messages.
@@ -114,11 +131,11 @@ func loadMetadata(ymlData []byte) (metadata, error) {
 
 	tr, ok := uni.GetTranslator("en")
 	if !ok {
-		return metadata{}, errors.New("unable to lookup en translator")
+		return errors.New("unable to lookup en translator")
 	}
 
 	if err := en_translations.RegisterDefaultTranslations(v, tr); err != nil {
-		return metadata{}, fmt.Errorf("failed registering translations: %v", err)
+		return fmt.Errorf("failed registering translations: %v", err)
 	}
 
 	if err := v.RegisterTranslation("nosuchlabel", tr, func(ut ut.Translator) error {
@@ -127,7 +144,7 @@ func loadMetadata(ymlData []byte) (metadata, error) {
 		t, _ := ut.T("nosuchlabel", fe.Field())
 		return t
 	}); err != nil {
-		return metadata{}, fmt.Errorf("failed registering nosuchlabel: %v", err)
+		return fmt.Errorf("failed registering nosuchlabel: %v", err)
 	}
 
 	v.RegisterStructValidation(metricValidation, metric{})
@@ -140,12 +157,12 @@ func loadMetadata(ymlData []byte) (metadata, error) {
 			for k, v := range m {
 				buf.WriteString(fmt.Sprintf("\t%v: %v\n", k, v))
 			}
-			return metadata{}, errors.New(buf.String())
+			return errors.New(buf.String())
 		}
-		return metadata{}, fmt.Errorf("unknown validation error: %v", err)
+		return fmt.Errorf("unknown validation error: %v", err)
 	}
 
-	return out, nil
+	return nil
 }
 
 // metricValidation validates metric structs.
