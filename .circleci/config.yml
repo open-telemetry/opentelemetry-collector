@@ -121,6 +121,12 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - correctness:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - test:
           requires:
             - setup-environment
@@ -148,8 +154,9 @@ workflows:
       - publish-check:
           requires:
             - cross-compile
-            - loadtest
+            - correctness
             - lint
+            - loadtest
             - test
             - gosec
             - coverage
@@ -160,8 +167,9 @@ workflows:
       - publish-stable:
           requires:
             - cross-compile
-            - loadtest
+            - correctness
             - lint
+            - loadtest
             - test
             - gosec
             - coverage
@@ -177,8 +185,9 @@ workflows:
       - publish-dev:
           requires:
             - cross-compile
-            - loadtest
+            - correctness
             - lint
+            - loadtest
             - test
             - gosec
             - coverage
@@ -267,17 +276,30 @@ jobs:
     executor: golang
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
-    parallelism: 10
+    parallelism: 6
     resource_class: medium+
     steps:
       - attach_to_workspace
       - run:
           name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -s testbed-listtests | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-runtests
+          command: TEST_ARGS="-test.run=$(make -s testbed-list-loadtest | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-loadtest
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+      - github_issue_generator
+
+  correctness:
+    executor: golang
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    parallelism: 4
+    resource_class: medium+
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness
       - github_issue_generator
 
   test:
