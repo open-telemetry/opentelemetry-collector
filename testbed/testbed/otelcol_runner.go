@@ -100,7 +100,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 
 func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err error) {
 	params := service.Parameters{
-		ApplicationStartInfo: service.ApplicationStartInfo{
+		ApplicationStartInfo: component.ApplicationStartInfo{
 			ExeName:  "otelcol",
 			LongName: "InProcess Collector",
 			Version:  version.Version,

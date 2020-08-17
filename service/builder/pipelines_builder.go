@@ -82,6 +82,7 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
 	logger    *zap.Logger
+	appInfo   component.ApplicationStartInfo
 	config    *configmodels.Config
 	exporters Exporters
 	factories map[configmodels.Type]component.ProcessorFactory
@@ -91,11 +92,12 @@ type PipelinesBuilder struct {
 // built via ExportersBuilder. Call BuildProcessors() on the returned value.
 func NewPipelinesBuilder(
 	logger *zap.Logger,
+	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	exporters Exporters,
 	factories map[configmodels.Type]component.ProcessorFactory,
 ) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, config, exporters, factories}
+	return &PipelinesBuilder{logger, appInfo, config, exporters, factories}
 }
 
 // BuildProcessors pipeline processors from config.
@@ -157,7 +159,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessor
-			proc, err = createTraceProcessor(factory, componentLogger, procCfg, tc)
+			proc, err = createTraceProcessor(factory, componentLogger, pb.appInfo, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -165,7 +167,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			tc = proc
 		case configmodels.MetricsDataType:
 			var proc component.MetricsProcessor
-			proc, err = createMetricsProcessor(factory, componentLogger, procCfg, mc)
+			proc, err = createMetricsProcessor(factory, componentLogger, pb.appInfo, procCfg, mc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -174,7 +176,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 
 		case configmodels.LogsDataType:
 			var proc component.LogsProcessor
-			proc, err = createLogsProcessor(factory, componentLogger, procCfg, lc)
+			proc, err = createLogsProcessor(factory, componentLogger, pb.appInfo, procCfg, lc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -282,11 +284,15 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 func createTraceProcessor(
 	factory component.ProcessorFactory,
 	logger *zap.Logger,
+	appInfo component.ApplicationStartInfo,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TraceConsumerBase,
 ) (component.TraceProcessor, error) {
-	creationParams := component.ProcessorCreateParams{Logger: logger}
 	ctx := context.Background()
+	creationParams := component.ProcessorCreateParams{
+		Logger:               logger,
+		ApplicationStartInfo: appInfo,
+	}
 
 	// If both processor and consumer are of the new type (can manipulate on internal data structure),
 	// use ProcessorFactory.CreateTraceProcessor.
@@ -305,11 +311,15 @@ func createTraceProcessor(
 func createMetricsProcessor(
 	factory component.ProcessorFactory,
 	logger *zap.Logger,
+	appInfo component.ApplicationStartInfo,
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumerBase,
 ) (component.MetricsProcessor, error) {
-	creationParams := component.ProcessorCreateParams{Logger: logger}
 	ctx := context.Background()
+	creationParams := component.ProcessorCreateParams{
+		Logger:               logger,
+		ApplicationStartInfo: appInfo,
+	}
 
 	// If both processor and consumer are of the new type (can manipulate on internal data structure),
 	// use ProcessorFactory.CreateMetricsProcessor.
@@ -327,6 +337,7 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	factoryBase component.Factory,
 	logger *zap.Logger,
+	appInfo component.ApplicationStartInfo,
 	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
@@ -335,7 +346,12 @@ func createLogsProcessor(
 		return nil, fmt.Errorf("processor %q does support data type %q",
 			cfg.Name(), configmodels.LogsDataType)
 	}
-	creationParams := component.ProcessorCreateParams{Logger: logger}
+
 	ctx := context.Background()
+	creationParams := component.ProcessorCreateParams{
+		Logger:               logger,
+		ApplicationStartInfo: appInfo,
+	}
+
 	return factory.CreateLogsProcessor(ctx, creationParams, cfg, nextConsumer)
 }

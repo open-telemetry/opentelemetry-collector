@@ -65,6 +65,9 @@ type ProcessorCreateParams struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
+
+	// ApplicationStartInfo can be used by components for informational purposes
+	ApplicationStartInfo ApplicationStartInfo
 }
 
 // ProcessorFactory is factory interface for processors. This is the

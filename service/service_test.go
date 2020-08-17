@@ -53,7 +53,7 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}, LoggingHooks: []func(entry zapcore.Entry) error{hook}})
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: component.ApplicationStartInfo{}, LoggingHooks: []func(entry zapcore.Entry) error{hook}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
@@ -113,7 +113,7 @@ func TestApplication_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}})
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: component.ApplicationStartInfo{}})
 	require.NoError(t, err)
 
 	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -137,7 +137,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	params := Parameters{
-		ApplicationStartInfo: ApplicationStartInfo{
+		ApplicationStartInfo: component.ApplicationStartInfo{
 			ExeName:  "otelcol",
 			LongName: "InProcess Collector",
 			Version:  version.Version,
