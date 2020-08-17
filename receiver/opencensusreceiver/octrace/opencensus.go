@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 const (
@@ -39,12 +40,12 @@ const (
 // Receiver is the type used to handle spans from OpenCensus exporters.
 type Receiver struct {
 	agenttracepb.UnimplementedTraceServiceServer
-	nextConsumer consumer.TraceConsumerOld
+	nextConsumer consumer.TraceConsumer
 	instanceName string
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(instanceName string, nextConsumer consumer.TraceConsumerOld, opts ...Option) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.TraceConsumer, opts ...Option) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -156,7 +157,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, traceda
 	var err error
 	numSpans := len(tracedata.Spans)
 	if numSpans != 0 {
-		err = ocr.nextConsumer.ConsumeTraceData(ctx, tracedata)
+		err = ocr.nextConsumer.ConsumeTraces(ctx, internaldata.OCToTraceData(tracedata))
 	}
 
 	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, numSpans, err)

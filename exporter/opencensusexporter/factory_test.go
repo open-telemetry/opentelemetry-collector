@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -54,16 +55,16 @@ func TestCreateTraceExporter(t *testing.T) {
 	// exporter keeps trying to update its connection state in the background
 	// so unless there is a receiver enabled the stop call can return different
 	// results. Standing up a receiver to ensure that stop don't report errors.
-	rcvFactory := &opencensusreceiver.Factory{}
+	rcvFactory := opencensusreceiver.NewFactory()
 	require.NotNil(t, rcvFactory)
 	rcvCfg := rcvFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	rcvCfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	rcv, err := rcvFactory.CreateTraceReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		rcvCfg,
-		new(exportertest.SinkTraceExporterOld))
+		new(exportertest.SinkTraceExporter))
 	require.NotNil(t, rcv)
 	require.Nil(t, err)
 	require.Nil(t, rcv.Start(context.Background(), componenttest.NewNopHost()))

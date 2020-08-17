@@ -17,13 +17,12 @@ package opencensusreceiver
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -31,17 +30,15 @@ const (
 	typeStr = "opencensus"
 )
 
-// Factory is the Factory for receiver.
-type Factory struct {
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-// Type gets the type of the ocReceiver config created by this Factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -58,14 +55,13 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a  trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
+func createTraceReceiver(
 	_ context.Context,
-	_ *zap.Logger,
+	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
-	r, err := f.createReceiver(cfg)
+	r, err := createReceiver(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +71,13 @@ func (f *Factory) CreateTraceReceiver(
 	return r, nil
 }
 
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
-
-	r, err := f.createReceiver(cfg)
+func createMetricsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
+	r, err := createReceiver(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func (f *Factory) CreateMetricsReceiver(_ context.Context, _ *zap.Logger, cfg co
 	return r, nil
 }
 
-func (f *Factory) createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
+func createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

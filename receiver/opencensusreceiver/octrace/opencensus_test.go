@@ -41,12 +41,13 @@ import (
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
 	t.Skip("This test is flaky due to timing slowdown due to -race. Will reenable in the future")
 
-	spanSink := new(exportertest.SinkTraceExporterOld)
+	spanSink := new(exportertest.SinkTraceExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -113,7 +114,10 @@ func TestReceiver_endToEnd(t *testing.T) {
 	// Now span inspection and verification time!
 	var gotSpans []*tracepb.Span
 	for _, td := range spanSink.AllTraces() {
-		gotSpans = append(gotSpans, td.Spans...)
+		octds := internaldata.TraceDataToOC(td)
+		for _, octd := range octds {
+			gotSpans = append(gotSpans, octd.Spans...)
+		}
 	}
 
 	wantSpans := []*tracepb.Span{
@@ -167,7 +171,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportTrace request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporterOld)
+	spanSink := new(exportertest.SinkTraceExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -198,7 +202,7 @@ func TestExportMultiplexing(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 9489, HostName: "nodejs-host"},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_NODE_JS},
 	}
-	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmno")}}
+	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmno"), Name: &tracepb.TruncatableString{Value: "test"}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node1, Spans: sL1})
 	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
@@ -233,7 +237,10 @@ func TestExportMultiplexing(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
 	for _, td := range spanSink.AllTraces() {
-		resultsMapping[nodeToKey(td.Node)] = append(resultsMapping[nodeToKey(td.Node)], td.Spans...)
+		octds := internaldata.TraceDataToOC(td)
+		for _, octd := range octds {
+			resultsMapping[nodeToKey(octd.Node)] = append(resultsMapping[nodeToKey(octd.Node)], octd.Spans...)
+		}
 	}
 
 	// First things first, we expect exactly 3 unique keys
@@ -293,7 +300,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporterOld)
+	spanSink := new(exportertest.SinkTraceExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -361,7 +368,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // spans should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporterOld)
+	spanSink := new(exportertest.SinkTraceExporter)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -384,7 +391,10 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
 	for _, td := range spanSink.AllTraces() {
-		resultsMapping[nodeToKey(td.Node)] = append(resultsMapping[nodeToKey(td.Node)], td.Spans...)
+		octds := internaldata.TraceDataToOC(td)
+		for _, octd := range octds {
+			resultsMapping[nodeToKey(octd.Node)] = append(resultsMapping[nodeToKey(octd.Node)], octd.Spans...)
+		}
 	}
 
 	if g, w := len(resultsMapping), 1; g != w {
@@ -438,7 +448,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumerOld) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

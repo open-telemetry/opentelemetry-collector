@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -33,11 +34,11 @@ import (
 type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
 	instanceName string
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(instanceName string, nextConsumer consumer.MetricsConsumerOld) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -146,7 +147,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md cons
 
 	var consumerErr error
 	if len(md.Metrics) > 0 {
-		consumerErr = ocr.nextConsumer.ConsumeMetricsData(ctx, md)
+		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
 	}
 
 	obsreport.EndMetricsReceiveOp(
