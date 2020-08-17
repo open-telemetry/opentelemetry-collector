@@ -55,15 +55,21 @@ all-pkgs:
 .PHONY: all
 all: checklicense impi lint misspell test otelcol
 
-.PHONY: testbed-runtests
-testbed-runtests: otelcol
-	cd ./testbed/correctness && ./runtests.sh
+.PHONY: testbed-loadtest
+testbed-loadtest: otelcol
 	cd ./testbed/tests && ./runtests.sh
 
-.PHONY: testbed-listtests
-testbed-listtests:
-	TESTBED_CONFIG=inprocess.yaml $(GOTEST) -v ./testbed/correctness --test.list '.*'|head -n 10
+.PHONY: testbed-correctness
+testbed-correctness: otelcol
+	cd ./testbed/correctness && ./runtests.sh
+
+.PHONY: testbed-list-loadtest
+testbed-list-loadtest:
 	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'|head -n 20
+
+.PHONY: testbed-list-correctness
+testbed-list-correctness:
+	TESTBED_CONFIG=inprocess.yaml $(GOTEST) -v ./testbed/correctness --test.list '.*'|head -n 10
 
 .PHONY: test
 test:
