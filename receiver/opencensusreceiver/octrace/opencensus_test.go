@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -51,12 +52,12 @@ func TestReceiver_endToEnd(t *testing.T) {
 	defer doneFn()
 
 	address := fmt.Sprintf("localhost:%d", port)
-	expFactory := &opencensusexporter.Factory{}
+	expFactory := opencensusexporter.NewFactory()
 	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
 	expCfg.Endpoint = address
 	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateTraceExporter(zap.NewNop(), expCfg)
+	oce, err := expFactory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
 	err = oce.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -66,9 +67,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	}()
 
 	td := testdata.GenerateTraceDataOneSpan()
-	octd := internaldata.TraceDataToOC(td)
-	require.Len(t, octd, 1)
-	assert.NoError(t, oce.ConsumeTraceData(context.Background(), octd[0]))
+	assert.NoError(t, oce.ConsumeTraces(context.Background(), td))
 
 	testutil.WaitFor(t, func() bool {
 		return len(spanSink.AllTraces()) != 0

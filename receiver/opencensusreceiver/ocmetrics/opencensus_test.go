@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -44,7 +45,6 @@ import (
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -54,12 +54,12 @@ func TestReceiver_endToEnd(t *testing.T) {
 	defer doneFn()
 
 	address := fmt.Sprintf("localhost:%d", port)
-	expFactory := &opencensusexporter.Factory{}
+	expFactory := opencensusexporter.NewFactory()
 	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
 	expCfg.Endpoint = address
 	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateMetricsExporter(zap.NewNop(), expCfg)
+	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
 	err = oce.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -69,9 +69,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	}()
 
 	md := testdata.GenerateMetricDataOneMetric()
-	ocmd := internaldata.MetricDataToOC(md)
-	require.Len(t, ocmd, 1)
-	assert.NoError(t, oce.ConsumeMetricsData(context.Background(), ocmd[0]))
+	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 
 	testutil.WaitFor(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0

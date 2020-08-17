@@ -22,12 +22,15 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // See https://godoc.org/google.golang.org/grpc#ClientConn.NewStream
@@ -104,7 +107,7 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newTraceExporter(ctx context.Context, cfg *Config) (component.TraceExporterOld, error) {
+func newTraceExporter(ctx context.Context, cfg *Config) (component.TraceExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -118,13 +121,13 @@ func newTraceExporter(ctx context.Context, cfg *Config) (component.TraceExporter
 		oce.tracesClients <- nil
 	}
 
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		cfg,
 		oce.pushTraceData,
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func newMetricsExporter(ctx context.Context, cfg *Config) (component.MetricsExporterOld, error) {
+func newMetricsExporter(ctx context.Context, cfg *Config) (component.MetricsExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -138,18 +141,18 @@ func newMetricsExporter(ctx context.Context, cfg *Config) (component.MetricsExpo
 		oce.metricsClients <- nil
 	}
 
-	return exporterhelper.NewMetricsExporterOld(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
 		oce.pushMetricsData,
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func (oce *ocExporter) pushTraceData(_ context.Context, td consumerdata.TraceData) (int, error) {
+func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) (int, error) {
 	// Get first available trace Client.
 	tClient, ok := <-oce.tracesClients
 	if !ok {
 		err := errors.New("failed to push traces, OpenCensus exporter was already stopped")
-		return len(td.Spans), err
+		return td.SpanCount(), err
 	}
 
 	// In any of the metricsClients channel we keep always NumWorkers object (sometimes nil),
@@ -162,37 +165,44 @@ func (oce *ocExporter) pushTraceData(_ context.Context, td consumerdata.TraceDat
 		if err != nil {
 			// Cannot create an RPC, put back nil to keep the number of workers constant.
 			oce.tracesClients <- nil
-			return len(td.Spans), err
+			return td.SpanCount(), err
 		}
 	}
 
-	// This is a hack because OC protocol expects a Node for the initial message.
-	node := td.Node
-	if node == nil {
-		node = &commonpb.Node{}
-	}
-	req := &agenttracepb.ExportTraceServiceRequest{
-		Spans:    td.Spans,
-		Resource: td.Resource,
-		Node:     node,
-	}
-	if err := tClient.tsec.Send(req); err != nil {
-		// Error received, cancel the context used to create the RPC to free all resources,
-		// put back nil to keep the number of workers constant.
-		tClient.cancel()
-		oce.tracesClients <- nil
-		return len(td.Spans), err
+	octds := internaldata.TraceDataToOC(td)
+	for _, octd := range octds {
+		// This is a hack because OC protocol expects a Node for the initial message.
+		node := octd.Node
+		if node == nil {
+			node = &commonpb.Node{}
+		}
+		resource := octd.Resource
+		if resource == nil {
+			resource = &resourcepb.Resource{}
+		}
+		req := &agenttracepb.ExportTraceServiceRequest{
+			Spans:    octd.Spans,
+			Resource: resource,
+			Node:     node,
+		}
+		if err := tClient.tsec.Send(req); err != nil {
+			// Error received, cancel the context used to create the RPC to free all resources,
+			// put back nil to keep the number of workers constant.
+			tClient.cancel()
+			oce.tracesClients <- nil
+			return td.SpanCount(), err
+		}
 	}
 	oce.tracesClients <- tClient
 	return 0, nil
 }
 
-func (oce *ocExporter) pushMetricsData(_ context.Context, md consumerdata.MetricsData) (int, error) {
+func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (int, error) {
 	// Get first available mClient.
 	mClient, ok := <-oce.metricsClients
 	if !ok {
 		err := errors.New("failed to push metrics, OpenCensus exporter was already stopped")
-		return exporterhelper.NumTimeSeries(md), err
+		return pdatautil.MetricPointCount(md), err
 	}
 
 	// In any of the metricsClients channel we keep always NumWorkers object (sometimes nil),
@@ -205,26 +215,33 @@ func (oce *ocExporter) pushMetricsData(_ context.Context, md consumerdata.Metric
 		if err != nil {
 			// Cannot create an RPC, put back nil to keep the number of workers constant.
 			oce.metricsClients <- nil
-			return exporterhelper.NumTimeSeries(md), err
+			return pdatautil.MetricPointCount(md), err
 		}
 	}
 
-	// This is a hack because OC protocol expects a Node for the initial message.
-	node := md.Node
-	if node == nil {
-		node = &commonpb.Node{}
-	}
-	req := &agentmetricspb.ExportMetricsServiceRequest{
-		Metrics:  md.Metrics,
-		Resource: md.Resource,
-		Node:     node,
-	}
-	if err := mClient.msec.Send(req); err != nil {
-		// Error received, cancel the context used to create the RPC to free all resources,
-		// put back nil to keep the number of workers constant.
-		mClient.cancel()
-		oce.metricsClients <- nil
-		return exporterhelper.NumTimeSeries(md), err
+	ocmds := pdatautil.MetricsToMetricsData(md)
+	for _, ocmd := range ocmds {
+		// This is a hack because OC protocol expects a Node for the initial message.
+		node := ocmd.Node
+		if node == nil {
+			node = &commonpb.Node{}
+		}
+		resource := ocmd.Resource
+		if resource == nil {
+			resource = &resourcepb.Resource{}
+		}
+		req := &agentmetricspb.ExportMetricsServiceRequest{
+			Metrics:  ocmd.Metrics,
+			Resource: resource,
+			Node:     node,
+		}
+		if err := mClient.msec.Send(req); err != nil {
+			// Error received, cancel the context used to create the RPC to free all resources,
+			// put back nil to keep the number of workers constant.
+			mClient.cancel()
+			oce.metricsClients <- nil
+			return pdatautil.MetricPointCount(md), err
+		}
 	}
 	oce.metricsClients <- mClient
 	return 0, nil

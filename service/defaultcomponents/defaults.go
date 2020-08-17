@@ -83,7 +83,7 @@ func Components() (
 	}
 
 	exporters, err := component.MakeExporterFactoryMap(
-		&opencensusexporter.Factory{},
+		opencensusexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		loggingexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
