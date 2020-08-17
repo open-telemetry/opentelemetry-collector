@@ -13,7 +13,6 @@ commands:
     parameters:
       files:
         type: string
-        # TODO: Add dist/otel-collector-*amd64.msi back
         default: |
             bin/otelcol_darwin_amd64
             bin/otelcol_linux_arm64
@@ -23,6 +22,7 @@ commands:
             dist/otel-collector_*amd64.deb
             dist/otel-collector-*x86_64.rpm
             dist/otel-collector_*arm64.deb
+            dist/otel-collector-*amd64.msi
     steps:
       - run:
           name: Check if files exist
@@ -145,6 +145,12 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
       - publish-check:
           requires:
             - cross-compile
@@ -155,6 +161,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
             - deb-package
             - rpm-package
       - publish-stable:
@@ -167,6 +174,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
             - deb-package
             - rpm-package
           filters:
@@ -184,6 +192,7 @@ workflows:
             - gosec
             - coverage
             - windows-test
+            - windows-msi
             - deb-package
             - rpm-package
           filters:
