@@ -66,10 +66,6 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
 	return prwexp, nil
 }
 
