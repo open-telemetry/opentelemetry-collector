@@ -1,0 +1,25 @@
+receivers:
+  kafka:
+    topic: spans
+    brokers:
+      - "foo:123"
+      - "bar:456"
+    client_id: otel-collector
+    group_id: otel-collector
+    metadata:
+      retry:
+        max: 10
+        backoff: 5s
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [kafka]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

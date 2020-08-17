@@ -11,6 +11,7 @@ Supported trace receivers (sorted alphabetically):
 - [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OpenTelemetry Receiver](otlpreceiver/README.md)
 - [Zipkin Receiver](zipkinreceiver/README.md)
+- [Kafka Receiver](kafkareceiver/README.md)
 
 Supported metric receivers (sorted alphabetically):
 - [Host Metrics Receiver](hostmetricsreceiver/README.md)
