@@ -269,8 +269,8 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 	}
 
 	exporters := make([]consumer.LogsConsumer, len(builtExporters))
-	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.le)
+	for i, builtExp := range builtExporters {
+		exporters[i] = builtExp.le
 	}
 
 	// Create a junction point that fans out to all exporters.
