@@ -149,6 +149,7 @@ workflows:
           requires:
             - cross-compile
             - loadtest
+            - lint
             - test
             - gosec
             - coverage
@@ -160,6 +161,7 @@ workflows:
           requires:
             - cross-compile
             - loadtest
+            - lint
             - test
             - gosec
             - coverage
@@ -176,6 +178,7 @@ workflows:
           requires:
             - cross-compile
             - loadtest
+            - lint
             - test
             - gosec
             - coverage
