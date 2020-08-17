@@ -16,183 +16,246 @@ package opencensusexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"sync"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-type ocAgentExporter struct {
-	exporters chan *ocagent.Exporter
+// See https://godoc.org/google.golang.org/grpc#ClientConn.NewStream
+// why we need to keep the cancel func to cancel the stream
+type tracesClientWithCancel struct {
+	cancel context.CancelFunc
+	tsec   agenttracepb.TraceService_ExportClient
 }
 
-type ocExporterErrorCode int
-type ocExporterError struct {
-	code ocExporterErrorCode
-	msg  string
+// See https://godoc.org/google.golang.org/grpc#ClientConn.NewStream
+// why we need to keep the cancel func to cancel the stream
+type metricsClientWithCancel struct {
+	cancel context.CancelFunc
+	msec   agentmetricspb.MetricsService_ExportClient
 }
 
-var _ error = (*ocExporterError)(nil)
-
-func (e *ocExporterError) Error() string {
-	return e.msg
+type ocExporter struct {
+	cfg *Config
+	// gRPC clients and connection.
+	traceSvcClient   agenttracepb.TraceServiceClient
+	metricsSvcClient agentmetricspb.MetricsServiceClient
+	// In any of the channels we keep always NumWorkers object (sometimes nil),
+	// to make sure we don't open more than NumWorkers RPCs at any moment.
+	tracesClients  chan *tracesClientWithCancel
+	metricsClients chan *metricsClientWithCancel
+	grpcClientConn *grpc.ClientConn
+	metadata       metadata.MD
 }
 
-const (
-	defaultNumWorkers int = 2
+func newOcExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
+	if cfg.Endpoint == "" {
+		return nil, errors.New("OpenCensus exporter cfg requires an Endpoint")
+	}
 
-	_ ocExporterErrorCode = iota // skip 0
-	// errEndpointRequired indicates that this exporter was not provided with an endpoint in its config.
-	errEndpointRequired
-	// errUnsupportedCompressionType indicates that this exporter was provided with a compression protocol it does not support.
-	errUnsupportedCompressionType
-	// errUnableToGetTLSCreds indicates that this exporter could not read the provided TLS credentials.
-	errUnableToGetTLSCreds
-	// errAlreadyStopped indicates that the exporter was already stopped.
-	errAlreadyStopped
-)
+	if cfg.NumWorkers <= 0 {
+		return nil, errors.New("OpenCensus exporter cfg requires at least one worker")
+	}
 
-// NewTraceExporter creates an Open Census trace exporter.
-func NewTraceExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (component.TraceExporterOld, error) {
-	oce, err := createOCAgentExporter(logger, config, opts...)
+	dialOpts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
 	}
-	oexp, err := exporterhelper.NewTraceExporterOld(
-		config,
-		oce.PushTraceData,
-		exporterhelper.WithShutdown(oce.Shutdown))
-	if err != nil {
+
+	var clientConn *grpc.ClientConn
+	if clientConn, err = grpc.DialContext(ctx, cfg.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
 		return nil, err
 	}
 
-	return oexp, nil
-}
-
-// createOCAgentExporter takes ocagent exporter options and create an OC exporter
-func createOCAgentExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (*ocAgentExporter, error) {
-	oCfg := config.(*Config)
-	numWorkers := defaultNumWorkers
-	if oCfg.NumWorkers > 0 {
-		numWorkers = oCfg.NumWorkers
+	oce := &ocExporter{
+		cfg:            cfg,
+		grpcClientConn: clientConn,
+		metadata:       metadata.New(cfg.GRPCClientSettings.Headers),
 	}
-
-	exportersChan := make(chan *ocagent.Exporter, numWorkers)
-	for exporterIndex := 0; exporterIndex < numWorkers; exporterIndex++ {
-		// TODO: ocagent.NewExporter blocks for connection. Now that we have ability
-		// to report errors asynchronously using Host.ReportFatalError we can move this
-		// code to Start() and do it in background to avoid blocking Collector startup
-		// as we do now.
-		exporter, serr := ocagent.NewExporter(opts...)
-		if serr != nil {
-			return nil, fmt.Errorf("cannot configure OpenCensus exporter: %v", serr)
-		}
-		exportersChan <- exporter
-	}
-	oce := &ocAgentExporter{exporters: exportersChan}
 	return oce, nil
 }
 
-// NewMetricsExporter creates an Open Census metrics exporter.
-func NewMetricsExporter(logger *zap.Logger, config configmodels.Exporter, opts ...ocagent.ExporterOption) (component.MetricsExporterOld, error) {
-	oce, err := createOCAgentExporter(logger, config, opts...)
-	if err != nil {
-		return nil, err
-	}
-	oexp, err := exporterhelper.NewMetricsExporterOld(
-		config,
-		oce.PushMetricsData,
-		exporterhelper.WithShutdown(oce.Shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
-}
-
-func (oce *ocAgentExporter) Shutdown(context.Context) error {
-	wg := &sync.WaitGroup{}
-	var errors []error
-	var errorsMu sync.Mutex
-	visitedCnt := 0
-	for currExporter := range oce.exporters {
-		wg.Add(1)
-		go func(exporter *ocagent.Exporter) {
-			defer wg.Done()
-			err := exporter.Stop()
-			if err != nil {
-				errorsMu.Lock()
-				errors = append(errors, err)
-				errorsMu.Unlock()
-			}
-		}(currExporter)
-		visitedCnt++
-		if visitedCnt == cap(oce.exporters) {
-			// Visited and started Stop on all exporters, just wait for the stop to finish.
-			break
+func (oce *ocExporter) shutdown(context.Context) error {
+	if oce.tracesClients != nil {
+		// First remove all the clients from the channel.
+		for i := 0; i < oce.cfg.NumWorkers; i++ {
+			<-oce.tracesClients
 		}
+		// Now close the channel
+		close(oce.tracesClients)
 	}
-
-	wg.Wait()
-	close(oce.exporters)
-
-	return componenterror.CombineErrors(errors)
+	if oce.metricsClients != nil {
+		// First remove all the clients from the channel.
+		for i := 0; i < oce.cfg.NumWorkers; i++ {
+			<-oce.metricsClients
+		}
+		// Now close the channel
+		close(oce.metricsClients)
+	}
+	return oce.grpcClientConn.Close()
 }
 
-func (oce *ocAgentExporter) PushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
-	// Get first available exporter.
-	exporter, ok := <-oce.exporters
+func newTraceExporter(ctx context.Context, cfg *Config) (component.TraceExporterOld, error) {
+	oce, err := newOcExporter(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	oce.traceSvcClient = agenttracepb.NewTraceServiceClient(oce.grpcClientConn)
+	oce.tracesClients = make(chan *tracesClientWithCancel, cfg.NumWorkers)
+	// Try to create rpc clients now.
+	for i := 0; i < cfg.NumWorkers; i++ {
+		// Populate the channel with NumWorkers nil RPCs to keep the number of workers
+		// constant in the channel.
+		oce.tracesClients <- nil
+	}
+
+	return exporterhelper.NewTraceExporterOld(
+		cfg,
+		oce.pushTraceData,
+		exporterhelper.WithShutdown(oce.shutdown))
+}
+
+func newMetricsExporter(ctx context.Context, cfg *Config) (component.MetricsExporterOld, error) {
+	oce, err := newOcExporter(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	oce.metricsSvcClient = agentmetricspb.NewMetricsServiceClient(oce.grpcClientConn)
+	oce.metricsClients = make(chan *metricsClientWithCancel, cfg.NumWorkers)
+	// Try to create rpc clients now.
+	for i := 0; i < cfg.NumWorkers; i++ {
+		// Populate the channel with NumWorkers nil RPCs to keep the number of workers
+		// constant in the channel.
+		oce.metricsClients <- nil
+	}
+
+	return exporterhelper.NewMetricsExporterOld(
+		cfg,
+		oce.pushMetricsData,
+		exporterhelper.WithShutdown(oce.shutdown))
+}
+
+func (oce *ocExporter) pushTraceData(_ context.Context, td consumerdata.TraceData) (int, error) {
+	// Get first available trace Client.
+	tClient, ok := <-oce.tracesClients
 	if !ok {
-		err := &ocExporterError{
-			code: errAlreadyStopped,
-			msg:  "OpenCensus exporter was already stopped.",
-		}
-		return len(td.Spans), fmt.Errorf("failed to push trace data via OpenCensus exporter: %w", err)
+		err := errors.New("failed to push traces, OpenCensus exporter was already stopped")
+		return len(td.Spans), err
 	}
 
-	err := exporter.ExportTraceServiceRequest(
-		&agenttracepb.ExportTraceServiceRequest{
-			Spans:    td.Spans,
-			Resource: td.Resource,
-			Node:     td.Node,
-		},
-	)
-	oce.exporters <- exporter
-	if err != nil {
-		return len(td.Spans), fmt.Errorf("failed to push trace data via OpenCensus exporter: %w", err)
+	// In any of the metricsClients channel we keep always NumWorkers object (sometimes nil),
+	// to make sure we don't open more than NumWorkers RPCs at any moment.
+	// Here check if the client is nil and create a new one if that is the case. A nil
+	// object means that an error happened: could not connect, service went down, etc.
+	if tClient == nil {
+		var err error
+		tClient, err = oce.createTraceServiceRPC()
+		if err != nil {
+			// Cannot create an RPC, put back nil to keep the number of workers constant.
+			oce.tracesClients <- nil
+			return len(td.Spans), err
+		}
 	}
+
+	// This is a hack because OC protocol expects a Node for the initial message.
+	node := td.Node
+	if node == nil {
+		node = &commonpb.Node{}
+	}
+	req := &agenttracepb.ExportTraceServiceRequest{
+		Spans:    td.Spans,
+		Resource: td.Resource,
+		Node:     node,
+	}
+	if err := tClient.tsec.Send(req); err != nil {
+		// Error received, cancel the context used to create the RPC to free all resources,
+		// put back nil to keep the number of workers constant.
+		tClient.cancel()
+		oce.tracesClients <- nil
+		return len(td.Spans), err
+	}
+	oce.tracesClients <- tClient
 	return 0, nil
 }
 
-func (oce *ocAgentExporter) PushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-	// Get first available exporter.
-	exporter, ok := <-oce.exporters
+func (oce *ocExporter) pushMetricsData(_ context.Context, md consumerdata.MetricsData) (int, error) {
+	// Get first available mClient.
+	mClient, ok := <-oce.metricsClients
 	if !ok {
-		err := &ocExporterError{
-			code: errAlreadyStopped,
-			msg:  "OpenCensus exporter was already stopped.",
-		}
-		return exporterhelper.NumTimeSeries(md), fmt.Errorf("failed to push metrics data via OpenCensus exporter: %w", err)
+		err := errors.New("failed to push metrics, OpenCensus exporter was already stopped")
+		return exporterhelper.NumTimeSeries(md), err
 	}
 
+	// In any of the metricsClients channel we keep always NumWorkers object (sometimes nil),
+	// to make sure we don't open more than NumWorkers RPCs at any moment.
+	// Here check if the client is nil and create a new one if that is the case. A nil
+	// object means that an error happened: could not connect, service went down, etc.
+	if mClient == nil {
+		var err error
+		mClient, err = oce.createMetricsServiceRPC()
+		if err != nil {
+			// Cannot create an RPC, put back nil to keep the number of workers constant.
+			oce.metricsClients <- nil
+			return exporterhelper.NumTimeSeries(md), err
+		}
+	}
+
+	// This is a hack because OC protocol expects a Node for the initial message.
+	node := md.Node
+	if node == nil {
+		node = &commonpb.Node{}
+	}
 	req := &agentmetricspb.ExportMetricsServiceRequest{
 		Metrics:  md.Metrics,
 		Resource: md.Resource,
-		Node:     md.Node,
+		Node:     node,
 	}
-	err := exporter.ExportMetricsServiceRequest(req)
-	oce.exporters <- exporter
-	if err != nil {
-		return exporterhelper.NumTimeSeries(md), fmt.Errorf("failed to push metrics data via OpenCensus exporter: %w", err)
+	if err := mClient.msec.Send(req); err != nil {
+		// Error received, cancel the context used to create the RPC to free all resources,
+		// put back nil to keep the number of workers constant.
+		mClient.cancel()
+		oce.metricsClients <- nil
+		return exporterhelper.NumTimeSeries(md), err
 	}
+	oce.metricsClients <- mClient
 	return 0, nil
+}
+
+func (oce *ocExporter) createTraceServiceRPC() (*tracesClientWithCancel, error) {
+	// Initiate the trace service by sending over node identifier info.
+	ctx, cancel := context.WithCancel(context.Background())
+	if len(oce.cfg.Headers) > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+	}
+	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
+	traceClient, err := oce.traceSvcClient.Export(ctx)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("TraceServiceClient: %w", err)
+	}
+	return &tracesClientWithCancel{cancel: cancel, tsec: traceClient}, nil
+}
+
+func (oce *ocExporter) createMetricsServiceRPC() (*metricsClientWithCancel, error) {
+	// Initiate the trace service by sending over node identifier info.
+	ctx, cancel := context.WithCancel(context.Background())
+	if len(oce.cfg.Headers) > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+	}
+	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
+	metricsClient, err := oce.metricsSvcClient.Export(ctx)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("MetricsServiceClient: %w", err)
+	}
+	return &metricsClientWithCancel{cancel: cancel, msec: metricsClient}, nil
 }

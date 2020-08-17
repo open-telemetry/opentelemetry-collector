@@ -27,10 +27,9 @@ The following settings can be optionally configured:
   [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 - `num_workers` (default = 2): number of workers that send the gRPC requests.
   Optional.
-- `reconnection_delay` (default = unset): time period between each reconnection
-  performed by the exporter.
 - `balancer_name`(default = pick_first): Sets the balancer in grpclb_policy to discover the servers.
 See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md).
+- `wait_for_ready`: Option not supported.
 
 Example:
 

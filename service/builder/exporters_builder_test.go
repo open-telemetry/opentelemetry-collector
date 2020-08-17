@@ -45,6 +45,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "0.0.0.0:12345",
 				},
+				NumWorkers: 2,
 			},
 		},
 

@@ -29,19 +29,58 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-// TODO: add E2E tests once ocagent implements metric service client.
+func TestReceiver_endToEnd(t *testing.T) {
+	metricSink := new(exportertest.SinkMetricsExporter)
+
+	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
+	defer doneFn()
+
+	address := fmt.Sprintf("localhost:%d", port)
+	expFactory := &opencensusexporter.Factory{}
+	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
+	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
+	expCfg.Endpoint = address
+	expCfg.WaitForReady = true
+	oce, err := expFactory.CreateMetricsExporter(zap.NewNop(), expCfg)
+	require.NoError(t, err)
+	err = oce.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, oce.Shutdown(context.Background()))
+	}()
+
+	md := testdata.GenerateMetricDataOneMetric()
+	ocmd := internaldata.MetricDataToOC(md)
+	require.Len(t, ocmd, 1)
+	assert.NoError(t, oce.ConsumeMetricsData(context.Background(), ocmd[0]))
+
+	testutil.WaitFor(t, func() bool {
+		return len(metricSink.AllMetrics()) != 0
+	})
+	gotMetrics := metricSink.AllMetrics()
+	require.Len(t, gotMetrics, 1)
+	gotMd := pdatautil.MetricsToInternalMetrics(gotMetrics[0])
+	assert.Equal(t, md, gotMd)
+}
 
 // Issue #43. Export should support node multiplexing.
 // The goal is to ensure that Receiver can always support
