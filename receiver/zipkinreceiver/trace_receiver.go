@@ -30,7 +30,7 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -167,7 +167,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 	switch hdr.Get("Content-Type") {
 	// TODO: (@odeke-em) record the unique types of Content-Type uploads
 	case "application/x-protobuf":
-		zipkinSpans, err = zipkinproto.ParseSpans(blob, debugWasSet)
+		zipkinSpans, err = zipkin_proto3.ParseSpans(blob, debugWasSet)
 
 	default: // By default, we'll assume using JSON
 		zipkinSpans, err = zr.deserializeFromJSON(blob, debugWasSet)

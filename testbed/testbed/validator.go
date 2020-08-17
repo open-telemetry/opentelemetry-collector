@@ -20,6 +20,7 @@ import (
 	"log"
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -210,7 +211,8 @@ func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan *otlptrace.Span
 }
 
 func (v *CorrectnessTestValidator) diffSpanName(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if sentSpan.Name != recdSpan.Name {
+	// Because of https://github.com/openzipkin/zipkin-go/pull/166 compare lower cases.
+	if !strings.EqualFold(sentSpan.Name, recdSpan.Name) {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
@@ -461,7 +463,8 @@ func retrieveAttributeValue(attribute *otlpcommon.KeyValue) interface{} {
 	var attrVal interface{}
 	switch val := attribute.Value.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
-		attrVal = val.StringValue
+		// Because of https://github.com/openzipkin/zipkin-go/pull/166 compare lower cases.
+		attrVal = strings.ToLower(val.StringValue)
 	case *otlpcommon.AnyValue_IntValue:
 		attrVal = val.IntValue
 	case *otlpcommon.AnyValue_DoubleValue:

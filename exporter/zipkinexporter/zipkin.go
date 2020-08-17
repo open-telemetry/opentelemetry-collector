@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
 	"go.opentelemetry.io/collector/component"
@@ -73,7 +73,7 @@ func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 	case "json":
 		ze.serializer = zipkinreporter.JSONSerializer{}
 	case "proto":
-		ze.serializer = zipkinproto.SpanSerializer{}
+		ze.serializer = zipkin_proto3.SpanSerializer{}
 	default:
 		return nil, fmt.Errorf("%s is not one of json or proto", cfg.Format)
 	}
