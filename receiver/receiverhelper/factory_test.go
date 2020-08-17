@@ -46,8 +46,7 @@ func TestNewFactory(t *testing.T) {
 	assert.Error(t, err)
 	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.Error(t, err)
-	lfactory := factory.(component.LogsReceiverFactory)
-	_, err = lfactory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.Error(t, err)
 }
 
@@ -72,8 +71,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.NoError(t, err)
 
-	lfactory := factory.(component.LogsReceiverFactory)
-	_, err = lfactory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.NoError(t, err)
 }
 

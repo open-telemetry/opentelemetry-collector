@@ -49,8 +49,6 @@ type factory struct {
 	createLogsProcessor    CreateLogsProcessor
 }
 
-var _ component.LogsProcessorFactory = new(factory)
-
 // WithCustomUnmarshaler implements component.ConfigUnmarshaler.
 func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {

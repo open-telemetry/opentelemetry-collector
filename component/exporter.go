@@ -116,11 +116,6 @@ type ExporterFactory interface {
 	// error will be returned instead.
 	CreateMetricsExporter(ctx context.Context, params ExporterCreateParams,
 		cfg configmodels.Exporter) (MetricsExporter, error)
-}
-
-// LogsExporterFactory can create a LogsExporter.
-type LogsExporterFactory interface {
-	ExporterFactoryBase
 
 	// CreateLogsExporter creates an exporter based on the config.
 	// If the exporter type does not support logs or if the config is not valid

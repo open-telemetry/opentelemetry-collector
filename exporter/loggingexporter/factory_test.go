@@ -51,7 +51,7 @@ func TestCreateTraceExporter(t *testing.T) {
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	factory := NewFactory().(component.LogsExporterFactory)
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	te, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)

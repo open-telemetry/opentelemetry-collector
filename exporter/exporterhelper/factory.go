@@ -48,8 +48,6 @@ type factory struct {
 	createLogsExporter    CreateLogsExporter
 }
 
-var _ component.LogsExporterFactory = new(factory)
-
 // WithTraces overrides the default "error not supported" implementation for CreateTraceReceiver.
 func WithTraces(createTraceExporter CreateTraceExporter) FactoryOption {
 	return func(o *factory) {

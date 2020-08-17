@@ -87,28 +87,10 @@ type ReceiverFactory interface {
 	// error will be returned instead.
 	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
 		cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (MetricsReceiver, error)
-}
-
-// LogsReceiverFactory can create a LogsReceiver.
-type LogsReceiverFactory interface {
-	Factory
-
-	// CreateDefaultConfig creates the default configuration for the Receiver.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Receiver.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Receiver
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// error will be returned instead.
-	CreateLogsReceiver(
-		ctx context.Context,
-		params ReceiverCreateParams,
-		cfg configmodels.Receiver,
-		nextConsumer consumer.LogsConsumer,
-	) (LogsReceiver, error)
+	CreateLogsReceiver(ctx context.Context, params ReceiverCreateParams,
+		cfg configmodels.Receiver, nextConsumer consumer.LogsConsumer) (LogsReceiver, error)
 }

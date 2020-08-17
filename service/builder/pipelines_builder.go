@@ -330,7 +330,7 @@ func createLogsProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
-	factory, ok := factoryBase.(component.LogsProcessorFactory)
+	factory, ok := factoryBase.(component.ProcessorFactory)
 	if !ok {
 		return nil, fmt.Errorf("processor %q does support data type %q",
 			cfg.Name(), configmodels.LogsDataType)

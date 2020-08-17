@@ -92,20 +92,6 @@ type ProcessorFactory interface {
 	// error will be returned instead.
 	CreateMetricsProcessor(ctx context.Context, params ProcessorCreateParams,
 		nextConsumer consumer.MetricsConsumer, cfg configmodels.Processor) (MetricsProcessor, error)
-}
-
-// LogsProcessorFactory can create LogsProcessor.
-type LogsProcessorFactory interface {
-	Factory
-
-	// CreateDefaultConfig creates the default configuration for the Processor.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Processor.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Processor
 
 	// CreateLogsProcessor creates a processor based on the config.
 	// If the processor type does not support logs or if the config is not valid

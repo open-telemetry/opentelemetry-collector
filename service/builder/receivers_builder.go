@@ -399,7 +399,7 @@ func createLogsReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsReceiver, error) {
-	factory, ok := factoryBase.(component.LogsReceiverFactory)
+	factory, ok := factoryBase.(component.ReceiverFactory)
 	if !ok {
 		return nil, fmt.Errorf("receiver %q does support data type %q",
 			cfg.Name(), configmodels.LogsDataType)

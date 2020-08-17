@@ -334,7 +334,7 @@ func TestCreateLogReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mr, err := factory.(component.LogsReceiverFactory).CreateLogsReceiver(ctx, creationParams, tt.cfg, tt.sink)
+			mr, err := factory.CreateLogsReceiver(ctx, creationParams, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
