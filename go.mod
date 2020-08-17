@@ -38,7 +38,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/common v0.11.1
+	github.com/prometheus/common v0.12.0
 	github.com/prometheus/procfs v0.1.3
 	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83
 	github.com/rs/cors v1.7.0
