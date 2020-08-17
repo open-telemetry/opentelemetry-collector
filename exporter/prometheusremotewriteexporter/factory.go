@@ -66,7 +66,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
-	return prwexp, nil
+	return prwexp, err
 }
 
 func createDefaultConfig() configmodels.Exporter {
