@@ -33,7 +33,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	oceFactory := &opencensusexporter.Factory{}
+	oceFactory := opencensusexporter.NewFactory()
 	factories.Exporters[oceFactory.Type()] = oceFactory
 	cfg := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{

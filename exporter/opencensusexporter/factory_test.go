@@ -31,20 +31,9 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
-}
-
-func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
-
-	oexp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	require.Nil(t, err)
-	require.NotNil(t, oexp)
 }
 
 func TestCreateTraceExporter(t *testing.T) {
@@ -170,11 +159,10 @@ func TestCreateTraceExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &Factory{}
-
-			tReceiver, tErr := factory.CreateTraceExporter(zap.NewNop(), &tt.config)
+			params := component.ExporterCreateParams{Logger: zap.NewNop()}
+			tReceiver, tErr := createTraceExporter(context.Background(), params, &tt.config)
 			checkErrorsAndShutdown(t, tReceiver, tErr, tt.mustFail)
-			mReceiver, mErr := factory.CreateMetricsExporter(zap.NewNop(), &tt.config)
+			mReceiver, mErr := createMetricsExporter(context.Background(), params, &tt.config)
 			checkErrorsAndShutdown(t, mReceiver, mErr, tt.mustFail)
 		})
 	}

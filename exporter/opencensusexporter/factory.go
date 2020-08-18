@@ -17,11 +17,10 @@ package opencensusexporter
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -29,17 +28,16 @@ const (
 	typeStr = "opencensus"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
+// NewFactory creates a factory for OTLP exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -54,14 +52,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
+func createTraceExporter(ctx context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
 	oCfg := config.(*Config)
-	return newTraceExporter(context.Background(), oCfg)
+	return newTraceExporter(ctx, oCfg)
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(_ *zap.Logger, config configmodels.Exporter) (component.MetricsExporterOld, error) {
+func createMetricsExporter(ctx context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
 	oCfg := config.(*Config)
-	return newMetricsExporter(context.Background(), oCfg)
+	return newMetricsExporter(ctx, oCfg)
 }

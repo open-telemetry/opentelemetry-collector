@@ -70,13 +70,13 @@ type MetricDataSenderOld interface {
 
 // DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
 type DataSenderOverTraceExporterOld struct {
-	exporter component.TraceExporterOld
+	exporter component.TraceExporter
 	Host     string
 	Port     int
 }
 
-func (ds *DataSenderOverTraceExporterOld) SendSpans(traces consumerdata.TraceData) error {
-	return ds.exporter.ConsumeTraceData(context.Background(), traces)
+func (ds *DataSenderOverTraceExporterOld) SendSpans(td pdata.Traces) error {
+	return ds.exporter.ConsumeTraces(context.Background(), td)
 }
 
 func (ds *DataSenderOverTraceExporterOld) Flush() {
@@ -175,7 +175,7 @@ type OCTraceDataSender struct {
 }
 
 // Ensure OCTraceDataSender implements TraceDataSender.
-var _ TraceDataSenderOld = (*OCTraceDataSender)(nil)
+var _ TraceDataSender = (*OCTraceDataSender)(nil)
 
 // NewOCTraceDataSender creates a new OCTraceDataSender that will send
 // to the specified port after Start is called.
@@ -187,14 +187,15 @@ func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
 }
 
 func (ote *OCTraceDataSender) Start() error {
-	factory := opencensusexporter.Factory{}
+	factory := opencensusexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("%s:%d", ote.Host, ote.Port)
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
 
-	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -216,13 +217,13 @@ func (ote *OCTraceDataSender) ProtocolName() string {
 
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
 type OCMetricsDataSender struct {
-	exporter component.MetricsExporterOld
+	exporter component.MetricsExporter
 	host     string
 	port     int
 }
 
 // Ensure OCMetricsDataSender implements MetricDataSender.
-var _ MetricDataSenderOld = (*OCMetricsDataSender)(nil)
+var _ MetricDataSender = (*OCMetricsDataSender)(nil)
 
 // NewOCMetricDataSender creates a new OpenCensus metric protocol sender that will send
 // to the specified port after Start is called.
@@ -234,14 +235,15 @@ func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 }
 
 func (ome *OCMetricsDataSender) Start() error {
-	factory := opencensusexporter.Factory{}
+	factory := opencensusexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("%s:%d", ome.host, ome.port)
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
 
-	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -250,8 +252,8 @@ func (ome *OCMetricsDataSender) Start() error {
 	return nil
 }
 
-func (ome *OCMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
-	return ome.exporter.ConsumeMetricsData(context.Background(), metrics)
+func (ome *OCMetricsDataSender) SendMetrics(md pdata.Metrics) error {
+	return ome.exporter.ConsumeMetrics(context.Background(), md)
 }
 
 func (ome *OCMetricsDataSender) Flush() {

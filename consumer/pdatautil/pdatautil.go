@@ -116,6 +116,11 @@ func MetricAndDataPointCount(md pdata.Metrics) (int, int) {
 	panic("Unsupported metrics type.")
 }
 
+func MetricPointCount(md pdata.Metrics) int {
+	_, points := MetricAndDataPointCount(md)
+	return points
+}
+
 // CloneMetricsDataOld copied from processors.cloneMetricsDataOld
 func CloneMetricsDataOld(md consumerdata.MetricsData) consumerdata.MetricsData {
 	clone := consumerdata.MetricsData{

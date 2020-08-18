@@ -26,12 +26,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestSendTraces(t *testing.T) {
@@ -48,7 +48,7 @@ func TestSendTraces(t *testing.T) {
 		assert.NoError(t, recv.Shutdown(context.Background()))
 	})
 
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: endpoint,
@@ -57,7 +57,7 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -67,9 +67,7 @@ func TestSendTraces(t *testing.T) {
 	})
 
 	td := testdata.GenerateTraceDataOneSpan()
-	octd := internaldata.TraceDataToOC(testdata.GenerateTraceDataOneSpan())
-	require.Len(t, octd, 1)
-	assert.NoError(t, exp.ConsumeTraceData(context.Background(), octd[0]))
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllTraces()) == 1
 	})
@@ -77,19 +75,22 @@ func TestSendTraces(t *testing.T) {
 	require.Len(t, traces, 1)
 	assert.Equal(t, td, traces[0])
 
+	sink.Reset()
 	// Sending data no Node.
-	octd[0].Node = nil
-	assert.NoError(t, exp.ConsumeTraceData(context.Background(), octd[0]))
+	pdata.NewResource().CopyTo(td.ResourceSpans().At(0).Resource())
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 	testutil.WaitFor(t, func() bool {
-		return len(sink.AllTraces()) == 2
+		return len(sink.AllTraces()) == 1
 	})
 	traces = sink.AllTraces()
-	require.Len(t, traces, 2)
-	assert.Equal(t, td, traces[1])
+	require.Len(t, traces, 1)
+	// The conversion will initialize the Resource
+	td.ResourceSpans().At(0).Resource().InitEmpty()
+	assert.Equal(t, td, traces[0])
 }
 
 func TestSendTraces_NoBackend(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
@@ -97,7 +98,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -106,14 +107,14 @@ func TestSendTraces_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	td := internaldata.TraceDataToOC(testdata.GenerateTraceDataOneSpan())
+	td := testdata.GenerateTraceDataOneSpan()
 	for i := 0; i < 10000; i++ {
-		assert.Error(t, exp.ConsumeTraceData(context.Background(), td[0]))
+		assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 	}
 }
 
 func TestSendTraces_AfterStop(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
@@ -121,15 +122,15 @@ func TestSendTraces_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	td := internaldata.TraceDataToOC(testdata.GenerateTraceDataOneSpan())
-	assert.Error(t, exp.ConsumeTraceData(context.Background(), td[0]))
+	td := testdata.GenerateTraceDataOneSpan()
+	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
 func TestSendMetrics(t *testing.T) {
@@ -146,7 +147,7 @@ func TestSendMetrics(t *testing.T) {
 		assert.NoError(t, recv.Shutdown(context.Background()))
 	})
 
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: endpoint,
@@ -155,7 +156,7 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -165,9 +166,7 @@ func TestSendMetrics(t *testing.T) {
 	})
 
 	md := testdata.GenerateMetricDataOneMetric()
-	ocmd := internaldata.MetricDataToOC(testdata.GenerateMetricDataOneMetric())
-	require.Len(t, ocmd, 1)
-	assert.NoError(t, exp.ConsumeMetricsData(context.Background(), ocmd[0]))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	})
@@ -176,18 +175,21 @@ func TestSendMetrics(t *testing.T) {
 	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[0]))
 
 	// Sending data no node.
-	ocmd[0].Node = nil
-	assert.NoError(t, exp.ConsumeMetricsData(context.Background(), ocmd[0]))
+	sink.Reset()
+	pdata.NewResource().CopyTo(md.ResourceMetrics().At(0).Resource())
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	testutil.WaitFor(t, func() bool {
-		return len(sink.AllMetrics()) == 2
+		return len(sink.AllMetrics()) == 1
 	})
 	metrics = sink.AllMetrics()
-	require.Len(t, metrics, 2)
-	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[1]))
+	require.Len(t, metrics, 1)
+	// The conversion will initialize the Resource
+	md.ResourceMetrics().At(0).Resource().InitEmpty()
+	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[0]))
 }
 
 func TestSendMetrics_NoBackend(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
@@ -195,7 +197,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -204,14 +206,14 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := internaldata.MetricDataToOC(testdata.GenerateMetricDataOneMetric())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
 	for i := 0; i < 10000; i++ {
-		assert.Error(t, exp.ConsumeMetricsData(context.Background(), md[0]))
+		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 	}
 }
 
 func TestSendMetrics_AfterStop(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: "localhost:56569",
@@ -219,13 +221,13 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	md := internaldata.MetricDataToOC(testdata.GenerateMetricDataOneMetric())
-	assert.Error(t, exp.ConsumeMetricsData(context.Background(), md[0]))
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
+	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 }
