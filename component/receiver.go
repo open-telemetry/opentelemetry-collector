@@ -55,37 +55,6 @@ type LogsReceiver interface {
 	Receiver
 }
 
-// ReceiverFactoryBase defines the common functions for all receiver factories.
-type ReceiverFactoryBase interface {
-	Factory
-
-	// CreateDefaultConfig creates the default configuration for the Receiver.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Receiver.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Receiver
-}
-
-// ReceiverFactoryOld can create TraceReceiver and MetricsReceiver.
-type ReceiverFactoryOld interface {
-	ReceiverFactoryBase
-
-	// CreateTraceReceiver creates a trace receiver based on this config.
-	// If the receiver type does not support tracing or if the config is not valid
-	// error will be returned instead.
-	CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
-		nextConsumer consumer.TraceConsumerOld) (TraceReceiver, error)
-
-	// CreateMetricsReceiver creates a metrics receiver based on this config.
-	// If the receiver type does not support metrics or if the config is not valid
-	// error will be returned instead.
-	CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
-		nextConsumer consumer.MetricsConsumerOld) (MetricsReceiver, error)
-}
-
 // ReceiverCreateParams is passed to ReceiverFactory.Create* functions.
 type ReceiverCreateParams struct {
 	// Logger that the factory can use during creation and can pass to the created
@@ -96,7 +65,16 @@ type ReceiverCreateParams struct {
 // ReceiverFactory can create TraceReceiver and MetricsReceiver. This is the
 // new factory type that can create new style receivers.
 type ReceiverFactory interface {
-	ReceiverFactoryBase
+	Factory
+
+	// CreateDefaultConfig creates the default configuration for the Receiver.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Receiver.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() configmodels.Receiver
 
 	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
@@ -113,7 +91,16 @@ type ReceiverFactory interface {
 
 // LogsReceiverFactory can create a LogsReceiver.
 type LogsReceiverFactory interface {
-	ReceiverFactoryBase
+	Factory
+
+	// CreateDefaultConfig creates the default configuration for the Receiver.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Receiver.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() configmodels.Receiver
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid

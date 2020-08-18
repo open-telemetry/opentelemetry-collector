@@ -63,7 +63,7 @@ func createExampleFactories() component.Factories {
 	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
 
 	factories := component.Factories{
-		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
+		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
 		Processors: map[configmodels.Type]component.ProcessorFactoryBase{

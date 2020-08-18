@@ -424,15 +424,20 @@ func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 func (b *badReceiverFactory) CreateTraceReceiver(
-	_ context.Context,
-	_ *zap.Logger,
-	_ configmodels.Receiver,
-	_ consumer.TraceConsumerOld,
+	context.Context,
+	component.ReceiverCreateParams,
+	configmodels.Receiver,
+	consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	return nil, nil
 }
 
-func (b *badReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (b *badReceiverFactory) CreateMetricsReceiver(
+	context.Context,
+	component.ReceiverCreateParams,
+	configmodels.Receiver,
+	consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
