@@ -96,6 +96,12 @@ func run(ymlPath string) error {
 	if err := ioutil.WriteFile(outputFile, formatted, 0666); err != nil {
 		return fmt.Errorf("failed writing %q: %v", outputFile, err)
 	}
+	// Exclude generated code from coverage and testing requirements.
+	nocoverFile := path.Join(outputDir, ".nocover")
+	if err := ioutil.WriteFile(nocoverFile, []byte("We test the generated code in the package it is used."),
+		0666); err != nil {
+		return fmt.Errorf("failed writing %v: %v", nocoverFile, err)
+	}
 
 	return nil
 }
