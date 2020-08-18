@@ -22,7 +22,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sd_config "github.com/prometheus/prometheus/discovery/config"
+	sdConfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.uber.org/zap"
 
@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -43,7 +44,7 @@ import (
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
-	Start(tc TraceDualConsumer, mc MetricsDualConsumer) error
+	Start(tc consumer.TraceConsumer, mc consumer.MetricsConsumer) error
 	Stop() error
 
 	// Generate a config string to place in exporter part of collector config
@@ -98,7 +99,7 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc TraceDualConsumer, mc MetricsDualConsumer) error {
+func (or *OCDataReceiver) Start(tc consumer.TraceConsumer, mc consumer.MetricsConsumer) error {
 	factory := opencensusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.SetName(or.ProtocolName())
@@ -151,7 +152,7 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc TraceDualConsumer, _ MetricsDualConsumer) error {
+func (jr *JaegerDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.MetricsConsumer) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
@@ -202,7 +203,7 @@ func NewOTLPDataReceiver(port int) *OTLPDataReceiver {
 	return &OTLPDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OTLPDataReceiver) Start(tc TraceDualConsumer, mc MetricsDualConsumer) error {
+func (or *OTLPDataReceiver) Start(tc consumer.TraceConsumer, mc consumer.MetricsConsumer) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(or.ProtocolName())
@@ -256,7 +257,7 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (zr *ZipkinDataReceiver) Start(tc TraceDualConsumer, _ MetricsDualConsumer) error {
+func (zr *ZipkinDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.MetricsConsumer) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.SetName(zr.ProtocolName())
@@ -302,7 +303,7 @@ func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
 	return &PrometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (dr *PrometheusDataReceiver) Start(_ TraceDualConsumer, mc MetricsDualConsumer) error {
+func (dr *PrometheusDataReceiver) Start(_ consumer.TraceConsumer, mc consumer.MetricsConsumer) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
@@ -311,7 +312,7 @@ func (dr *PrometheusDataReceiver) Start(_ TraceDualConsumer, mc MetricsDualConsu
 			JobName:        "testbed-job",
 			ScrapeInterval: model.Duration(100 * time.Millisecond),
 			ScrapeTimeout:  model.Duration(time.Second),
-			ServiceDiscoveryConfig: sd_config.ServiceDiscoveryConfig{
+			ServiceDiscoveryConfig: sdConfig.ServiceDiscoveryConfig{
 				StaticConfigs: []*targetgroup.Group{{
 					Targets: []model.LabelSet{{
 						"__address__":      model.LabelValue(addr),

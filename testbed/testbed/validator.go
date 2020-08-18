@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // TestCaseValidator defines the interface for validating and reporting test results.
@@ -96,13 +95,6 @@ func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	}
 	if len(tc.MockBackend.ReceivedTraces) > 0 {
 		v.assertSentRecdTracingDataEqual(tc.MockBackend.ReceivedTraces)
-	}
-	if len(tc.MockBackend.ReceivedTracesOld) > 0 {
-		tracesList := make([]pdata.Traces, 0, len(tc.MockBackend.ReceivedTracesOld))
-		for _, td := range tc.MockBackend.ReceivedTracesOld {
-			tracesList = append(tracesList, internaldata.OCToTraceData(td))
-		}
-		v.assertSentRecdTracingDataEqual(tracesList)
 	}
 	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }
