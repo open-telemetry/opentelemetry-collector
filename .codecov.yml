@@ -18,4 +18,4 @@ coverage:
         target: 95%
 
 ignore:
-  - generated_metrics.go
+  - metadata/generated_metrics.go

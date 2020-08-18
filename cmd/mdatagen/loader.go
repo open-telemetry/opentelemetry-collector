@@ -114,7 +114,7 @@ func loadMetadata(ymlData []byte) (metadata, error) {
 	return out, nil
 }
 
-func validateMetadata(out metadata) (error) {
+func validateMetadata(out metadata) error {
 	v := validator.New()
 	if err := v.RegisterValidation("notblank", validators.NotBlank); err != nil {
 		return fmt.Errorf("failed registering notblank validator: %v", err)
