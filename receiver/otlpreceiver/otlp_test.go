@@ -16,6 +16,7 @@ package otlpreceiver
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -55,6 +56,19 @@ import (
 const otlpReceiverName = "otlp_receiver_test"
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding string
+	}{
+		{
+			name:     "JSONUncompressed",
+			encoding: "",
+		},
+		{
+			name:     "JSONGzipCompressed",
+			encoding: "gzip",
+		},
+	}
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
@@ -104,75 +118,101 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 		}
 	  ]
 	}`)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(traceJSON))
-	require.NoError(t, err, "Error creating trace POST request: %v", err)
-	req.Header.Set("Content-Type", "application/json")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var buf *bytes.Buffer
+			var err error
+			switch test.encoding {
+			case "gzip":
+				buf, err = compressGzip(traceJSON)
+				require.NoError(t, err, "Error while gzip compressing trace: %v", err)
+			default:
+				buf = bytes.NewBuffer(traceJSON)
+			}
+			req, err := http.NewRequest("POST", url, buf)
+			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Content-Encoding", test.encoding)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
-	}
-	respStr := string(respBytes)
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Errorf("Error reading response from trace grpc-gateway, %v", err)
+			}
+			respStr := string(respBytes)
 
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+			err = resp.Body.Close()
+			if err != nil {
+				t.Errorf("Error closing response body, %v", err)
+			}
 
-	if resp.StatusCode != 200 {
-		t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
-	}
+			if resp.StatusCode != 200 {
+				t.Errorf("Unexpected status from trace grpc-gateway: %v", resp.StatusCode)
+			}
 
-	var respJSON map[string]interface{}
-	err = json.Unmarshal([]byte(respStr), &respJSON)
-	assert.NoError(t, err)
+			var respJSON map[string]interface{}
+			err = json.Unmarshal([]byte(respStr), &respJSON)
+			assert.NoError(t, err)
 
-	if len(respJSON) != 0 {
-		t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
-	}
+			if len(respJSON) != 0 {
+				t.Errorf("Got unexpected response from trace grpc-gateway: %v", respStr)
+			}
 
-	got := sink.AllTraces()[0]
+			got := sink.AllTraces()[0]
 
-	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
-		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
-					{
-						Key:   conventions.AttributeHostHostname,
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 				{
-					Spans: []*otlptrace.Span{
+					Resource: &otlpresource.Resource{
+						Attributes: []*otlpcommon.KeyValue{
+							{
+								Key:   conventions.AttributeHostHostname,
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
+							},
+						},
+					},
+					InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 						{
-							TraceId:           []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
-							SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
-							Name:              "testSpan",
-							StartTimeUnixNano: 1544712660000000000,
-							EndTimeUnixNano:   1544712661000000000,
-							Attributes: []*otlpcommon.KeyValue{
+							Spans: []*otlptrace.Span{
 								{
-									Key:   "attr1",
-									Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
+									TraceId:           []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
+									SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
+									Name:              "testSpan",
+									StartTimeUnixNano: 1544712660000000000,
+									EndTimeUnixNano:   1544712661000000000,
+									Attributes: []*otlpcommon.KeyValue{
+										{
+											Key:   "attr1",
+											Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
+										},
+									},
 								},
 							},
 						},
 					},
 				},
-			},
-		},
-	})
-
-	assert.EqualValues(t, got, want)
+			})
+			assert.EqualValues(t, got, want)
+		})
+	}
 }
 
 func TestProtoHttp(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding string
+	}{
+		{
+			name:     "ProtoUncompressed",
+			encoding: "",
+		},
+		{
+			name:     "ProtoGzipCompressed",
+			encoding: "gzip",
+		},
+	}
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
@@ -197,39 +237,131 @@ func TestProtoHttp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var buf *bytes.Buffer
+			var err error
+			switch test.encoding {
+			case "gzip":
+				buf, err = compressGzip(traceBytes)
+				require.NoError(t, err, "Error while gzip compressing trace: %v", err)
+			default:
+				buf = bytes.NewBuffer(traceBytes)
+			}
+			req, err := http.NewRequest("POST", url, buf)
+			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			req.Header.Set("Content-Type", "application/x-protobuf")
+			req.Header.Set("Content-Encoding", test.encoding)
 
-	buf := bytes.NewBuffer(traceBytes)
-	resp, err := http.Post(url, "application/x-protobuf", buf)
-	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err, "Error reading response from trace grpc-gateway")
-	require.NoError(t, resp.Body.Close(), "Error closing response body")
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			require.NoError(t, err, "Error reading response from trace grpc-gateway")
+			require.NoError(t, resp.Body.Close(), "Error closing response body")
 
-	require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+			require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
+			require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
-	tmp := &collectortrace.ExportTraceServiceResponse{}
-	err = tmp.Unmarshal(respBytes)
-	require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
+			tmp := &collectortrace.ExportTraceServiceResponse{}
+			err = tmp.Unmarshal(respBytes)
+			require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
-	gotOtlp := pdata.TracesToOtlp(tSink.AllTraces()[0])
+			gotOtlp := pdata.TracesToOtlp(tSink.AllTraces()[0])
 
-	if len(gotOtlp) != len(wantOtlp) {
-		t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
+			if len(gotOtlp) != len(wantOtlp) {
+				t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
+			}
+
+			got := gotOtlp[0]
+			want := wantOtlp[0]
+
+			// assert.Equal doesn't work on protos, see:
+			// https://github.com/stretchr/testify/issues/758
+			if !proto.Equal(got, want) {
+				t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
+					got.String(),
+					want.String())
+			}
+		})
 	}
+}
 
-	got := gotOtlp[0]
-	want := wantOtlp[0]
-
-	// assert.Equal doesn't work on protos, see:
-	// https://github.com/stretchr/testify/issues/758
-	if !proto.Equal(got, want) {
-		t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
-			got.String(),
-			want.String())
+func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		encoding    string
+		reqBodyFunc func() (*bytes.Buffer, error)
+		resBodyFunc func() ([]byte, error)
+		status      int
+	}{
+		{
+			name:     "JsonGzipUncompressed",
+			content:  "application/json",
+			encoding: "gzip",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
+			},
+			resBodyFunc: func() ([]byte, error) {
+				return json.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			},
+			status: 400,
+		},
+		{
+			name:     "ProtoGzipUncompressed",
+			content:  "application/x-protobuf",
+			encoding: "gzip",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
+			},
+			resBodyFunc: func() ([]byte, error) {
+				return proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			},
+			status: 400,
+		},
 	}
+	addr := testutil.GetAvailableLocalAddress(t)
 
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	tSink := new(exportertest.SinkTraceExporter)
+	mSink := new(exportertest.SinkMetricsExporter)
+	ocr := newHTTPReceiver(t, addr, tSink, mSink)
+
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	defer ocr.Shutdown(context.Background())
+
+	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body, err := test.reqBodyFunc()
+			require.NoError(t, err, "Error creating request body: %v", err)
+
+			req, err := http.NewRequest("POST", url, body)
+			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			req.Header.Set("Content-Type", test.content)
+			req.Header.Set("Content-Encoding", test.encoding)
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			require.NoError(t, err, "Error reading response from trace grpc-gateway")
+			exRespBytes, err := test.resBodyFunc()
+			require.NoError(t, err, "Error creating expecting response body")
+			require.NoError(t, resp.Body.Close(), "Error closing response body")
+
+			require.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
+			require.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+			require.Equal(t, exRespBytes, respBytes, "Unexpected response content")
+		})
+	}
 }
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
@@ -472,4 +604,18 @@ func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, t
 		require.NoError(t, err)
 	}
 	return r
+}
+
+func compressGzip(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	gw := gzip.NewWriter(&buf)
+	defer gw.Close()
+
+	_, err := gw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
 }
