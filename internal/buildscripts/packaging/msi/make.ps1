@@ -17,7 +17,7 @@
     Makefile like build commands for the Collector on Windows.
     
     Usage:   .\make.ps1 <Command> [-<Param> <Value> ...]
-    Example: .\make.ps1 New-MSI -Config "./my-config.yaml"
+    Example: .\make.ps1 New-MSI -Config "./my-config.yaml" -Version "v0.0.2"
 .PARAMETER Target
     Build target to run (Install-Tools, New-MSI)
 #>
@@ -28,6 +28,12 @@ Param(
 $ErrorActionPreference = "Stop"
 
 function Install-Tools {
+    # disable progress bar support as this causes CircleCI to crash
+    $OriginalPref = $ProgressPreference
+    $ProgressPreference = "SilentlyContinue"
+    Install-WindowsFeature Net-Framework-Core
+    $ProgressPreference = $OriginalPref
+
     choco install wixtoolset -y
     setx /m PATH "%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin"
     refreshenv
