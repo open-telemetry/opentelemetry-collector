@@ -310,7 +310,7 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
+func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactory) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetType(typeStr)
@@ -326,7 +326,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	return receiverCfg, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	receiversConfig := ViperSub(v, receiversKeyName)
 	expandEnvConfig(receiversConfig)

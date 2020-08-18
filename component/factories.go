@@ -24,7 +24,7 @@ import (
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[configmodels.Type]ReceiverFactoryBase
+	Receivers map[configmodels.Type]ReceiverFactory
 
 	// Processors maps processor type names in the config to the respective factory.
 	Processors map[configmodels.Type]ProcessorFactoryBase
@@ -39,8 +39,8 @@ type Factories struct {
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeReceiverFactoryMap(factories ...ReceiverFactoryBase) (map[configmodels.Type]ReceiverFactoryBase, error) {
-	fMap := map[configmodels.Type]ReceiverFactoryBase{}
+func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[configmodels.Type]ReceiverFactory, error) {
+	fMap := map[configmodels.Type]ReceiverFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())

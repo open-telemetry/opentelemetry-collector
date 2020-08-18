@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -40,36 +39,36 @@ func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTraceReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.TraceConsumerOld) (TraceReceiver, error) {
+func (f *TestReceiverFactory) CreateTraceReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.TraceConsumer) (TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (MetricsReceiver, error) {
+func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (MetricsReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
 
 func TestBuildReceivers(t *testing.T) {
 	type testCase struct {
-		in  []ReceiverFactoryBase
-		out map[configmodels.Type]ReceiverFactoryBase
+		in  []ReceiverFactory
+		out map[configmodels.Type]ReceiverFactory
 	}
 
 	testCases := []testCase{
 		{
-			in: []ReceiverFactoryBase{
+			in: []ReceiverFactory{
 				&TestReceiverFactory{"e1"},
 				&TestReceiverFactory{"e2"},
 			},
-			out: map[configmodels.Type]ReceiverFactoryBase{
+			out: map[configmodels.Type]ReceiverFactory{
 				"e1": &TestReceiverFactory{"e1"},
 				"e2": &TestReceiverFactory{"e2"},
 			},
 		},
 		{
-			in: []ReceiverFactoryBase{
+			in: []ReceiverFactory{
 				&TestReceiverFactory{"e1"},
 				&TestReceiverFactory{"e1"},
 			},

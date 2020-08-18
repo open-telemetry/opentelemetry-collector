@@ -50,6 +50,8 @@ type ExampleReceiver struct {
 type ExampleReceiverFactory struct {
 }
 
+var _ component.ReceiverFactory = (*ExampleReceiverFactory)(nil)
+
 // Type gets the type of the Receiver config created by this factory.
 func (f *ExampleReceiverFactory) Type() configmodels.Type {
 	return "examplereceiver"
@@ -159,7 +161,7 @@ func (erp *ExampleReceiverProducer) Shutdown(context.Context) error {
 }
 
 // This is the map of already created example receivers for particular configurations.
-// We maintain this map because the ReceiverFactoryBase is asked trace and metric receivers separately
+// We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
 // when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
@@ -180,6 +182,8 @@ type MultiProtoReceiverOneCfg struct {
 // MultiProtoReceiverFactory is factory for MultiProtoReceiver.
 type MultiProtoReceiverFactory struct {
 }
+
+var _ component.ReceiverFactory = (*MultiProtoReceiverFactory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *MultiProtoReceiverFactory) Type() configmodels.Type {

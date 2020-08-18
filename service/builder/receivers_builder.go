@@ -83,7 +83,7 @@ type ReceiversBuilder struct {
 	logger         *zap.Logger
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
-	factories      map[configmodels.Type]component.ReceiverFactoryBase
+	factories      map[configmodels.Type]component.ReceiverFactory
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
@@ -91,7 +91,7 @@ func NewReceiversBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
-	factories map[configmodels.Type]component.ReceiverFactoryBase,
+	factories map[configmodels.Type]component.ReceiverFactory,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), config, builtPipelines, factories}
 }
@@ -164,7 +164,7 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 
 func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	logger *zap.Logger,
-	factory component.ReceiverFactoryBase,
+	factory component.ReceiverFactory,
 	dataType configmodels.DataType,
 	config configmodels.Receiver,
 	rcv *builtReceiver,
@@ -351,82 +351,50 @@ func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
 // and type of the next consumer.
 func createTraceReceiver(
 	ctx context.Context,
-	factoryBase component.ReceiverFactoryBase,
+	factory component.ReceiverFactory,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerBase,
 ) (component.TraceReceiver, error) {
-	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
-		creationParams := component.ReceiverCreateParams{Logger: logger}
+	creationParams := component.ReceiverCreateParams{Logger: logger}
 
-		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
-		// use ProcessorFactory.CreateTraceReceiver.
-		if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
-			return factory.CreateTraceReceiver(ctx, creationParams, cfg, nextConsumer)
-		}
-
-		// If receiver is of the new type, but downstream consumer is of the old type,
-		// use internalToOCTraceConverter compatibility shim.
-		traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
-		return factory.CreateTraceReceiver(ctx, creationParams, cfg, traceConverter)
+	// If consumer is of the new type (can manipulate on internal data structure),
+	// use ProcessorFactory.CreateTraceReceiver.
+	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
+		return factory.CreateTraceReceiver(ctx, creationParams, cfg, nextConsumer)
 	}
 
-	factoryOld := factoryBase.(component.ReceiverFactoryOld)
-
-	// If both receiver and consumer are of the old type (can manipulate on OC traces only),
-	// use Factory.CreateTraceReceiver.
-	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumerOld); ok {
-		return factoryOld.CreateTraceReceiver(ctx, logger, cfg, nextConsumer)
-	}
-
-	// If receiver is of the old type, but downstream consumer is of the new type,
-	// use NewInternalToOCTraceConverter compatibility shim to convert traces from internal format to OC.
-	traceConverter := converter.NewOCToInternalTraceConverter(nextConsumer.(consumer.TraceConsumer))
-	return factoryOld.CreateTraceReceiver(ctx, logger, cfg, traceConverter)
+	// If consumer is of the old type, use internalToOCTraceConverter compatibility shim.
+	traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
+	return factory.CreateTraceReceiver(ctx, creationParams, cfg, traceConverter)
 }
 
 // createMetricsReceiver is a helper function that creates metric receiver based
 // on the current receiver type and type of the next consumer.
 func createMetricsReceiver(
 	ctx context.Context,
-	factoryBase component.ReceiverFactoryBase,
+	factory component.ReceiverFactory,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumerBase,
 ) (component.MetricsReceiver, error) {
-	if factory, ok := factoryBase.(component.ReceiverFactory); ok {
-		creationParams := component.ReceiverCreateParams{Logger: logger}
+	creationParams := component.ReceiverCreateParams{Logger: logger}
 
-		// If both receiver and consumer are of the new type (can manipulate on internal data structure),
-		// use ProcessorFactory.CreateMetricsReceiver.
-		if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
-			return factory.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumer)
-		}
-
-		// If receiver is of the new type, but downstream consumer is of the old type,
-		// use internalToOCMetricsConverter compatibility shim.
-		metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
-		return factory.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
+	// If consumer is of the new type (can manipulate on internal data structure),
+	// use ProcessorFactory.CreateTraceReceiver.
+	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
+		return factory.CreateMetricsReceiver(ctx, creationParams, cfg, nextConsumer)
 	}
 
-	factoryOld := factoryBase.(component.ReceiverFactoryOld)
-
-	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
-	// use Factory.CreateMetricsReceiver.
-	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factoryOld.CreateMetricsReceiver(context.Background(), logger, cfg, nextConsumer)
-	}
-
-	// If receiver is of the old type, but downstream consumer is of the new type,
-	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
-	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
-	return factoryOld.CreateMetricsReceiver(context.Background(), logger, cfg, metricsConverter)
+	// If consumer is of the old type, use internalToOCTraceConverter compatibility shim.
+	metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
+	return factory.CreateMetricsReceiver(ctx, creationParams, cfg, metricsConverter)
 }
 
 // createLogsReceiver creates a log receiver using given factory and next consumer.
 func createLogsReceiver(
 	ctx context.Context,
-	factoryBase component.ReceiverFactoryBase,
+	factoryBase component.Factory,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.LogsConsumer,
