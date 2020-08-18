@@ -18,10 +18,10 @@ import (
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
-	goproto "github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
-	otlptracegoproto "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	goproto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
@@ -123,18 +123,18 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.NotNil(t, wire1)
 
 	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoRS otlptracegoproto.ResourceSpans
-	err = goproto.Unmarshal(wire1, &goprotoRS)
+	var goprotoMessage emptypb.Empty
+	err = goproto.Unmarshal(wire1, &goprotoMessage)
 	assert.NoError(t, err)
 
 	// Marshal to the wire again.
-	wire2, err := goproto.Marshal(&goprotoRS)
+	wire2, err := goproto.Marshal(&goprotoMessage)
 	assert.NoError(t, err)
 	assert.NotNil(t, wire2)
 
 	// Unmarshal from the wire into gogoproto's representation.
 	var gogoprotoRS2 otlptrace.ResourceSpans
-	err = gogoproto.Unmarshal(wire1, &gogoprotoRS2)
+	err = gogoproto.Unmarshal(wire2, &gogoprotoRS2)
 	assert.NoError(t, err)
 
 	// Now compare that the original and final ProtoBuf messages are the same.
