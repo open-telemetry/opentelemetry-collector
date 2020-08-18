@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -41,7 +42,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
@@ -403,14 +403,14 @@ func makeMetric(val int) *metricspb.Metric {
 
 	now := time.Now().UTC()
 	point := &metricspb.Point{
-		Timestamp: internal.TimeToTimestamp(now.Add(20 * time.Second)),
+		Timestamp: timestamppb.New(now.Add(20 * time.Second)),
 		Value: &metricspb.Point_Int64Value{
 			Int64Value: int64(val),
 		},
 	}
 
 	ts := &metricspb.TimeSeries{
-		StartTimestamp: internal.TimeToTimestamp(now.Add(-10 * time.Second)),
+		StartTimestamp: timestamppb.New(now.Add(-10 * time.Second)),
 		LabelValues:    []*metricspb.LabelValue{value},
 		Points:         []*metricspb.Point{point},
 	}

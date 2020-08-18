@@ -20,8 +20,8 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -194,12 +194,9 @@ func TestInternalToOC(t *testing.T) {
 	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
 	ocResource2 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-2"}}
 
-	startTime, err := ptypes.TimestampProto(testdata.TestSpanStartTime)
-	assert.NoError(t, err)
-	eventTime, err := ptypes.TimestampProto(testdata.TestSpanEventTime)
-	assert.NoError(t, err)
-	endTime, err := ptypes.TimestampProto(testdata.TestSpanEndTime)
-	assert.NoError(t, err)
+	startTime := timestamppb.New(testdata.TestSpanStartTime)
+	eventTime := timestamppb.New(testdata.TestSpanEventTime)
+	endTime := timestamppb.New(testdata.TestSpanEndTime)
 
 	ocSpan1 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationA"},
