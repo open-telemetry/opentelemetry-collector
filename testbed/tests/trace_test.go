@@ -364,12 +364,6 @@ func verifySingleSpan(
 			}
 		}
 	}
-	for _, td := range tc.MockBackend.ReceivedTracesOld {
-		for _, span := range td.Spans {
-			verifyReceivedOld(span)
-			count++
-		}
-	}
 	assert.EqualValues(t, 1, count, "must receive one span")
 }
 

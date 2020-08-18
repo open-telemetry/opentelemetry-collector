@@ -68,25 +68,6 @@ type MetricDataSenderOld interface {
 	SendMetrics(metrics consumerdata.MetricsData) error
 }
 
-// DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
-type DataSenderOverTraceExporterOld struct {
-	exporter component.TraceExporter
-	Host     string
-	Port     int
-}
-
-func (ds *DataSenderOverTraceExporterOld) SendSpans(td pdata.Traces) error {
-	return ds.exporter.ConsumeTraces(context.Background(), td)
-}
-
-func (ds *DataSenderOverTraceExporterOld) Flush() {
-	// TraceExporter interface does not support Flush, so nothing to do.
-}
-
-func (ds *DataSenderOverTraceExporterOld) GetCollectorPort() int {
-	return ds.Port
-}
-
 // TraceDataSender defines the interface that allows sending trace data. It adds ability
 // to send a batch of Spans to the DataSender interface.
 type TraceDataSender interface {
@@ -171,7 +152,7 @@ func (je *JaegerGRPCDataSender) ProtocolName() string {
 
 // OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
 type OCTraceDataSender struct {
-	DataSenderOverTraceExporterOld
+	DataSenderOverTraceExporter
 }
 
 // Ensure OCTraceDataSender implements TraceDataSender.
@@ -180,7 +161,7 @@ var _ TraceDataSender = (*OCTraceDataSender)(nil)
 // NewOCTraceDataSender creates a new OCTraceDataSender that will send
 // to the specified port after Start is called.
 func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
-	return &OCTraceDataSender{DataSenderOverTraceExporterOld{
+	return &OCTraceDataSender{DataSenderOverTraceExporter{
 		Host: host,
 		Port: port,
 	}}
