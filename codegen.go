@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
+// +build !windows
+
 package opentelemetry_collector
 
 // Ensures latest version of metric metadata generator is present for other go generate calls to use.
-//go:generate go install ./cmd/mdatagen
+// TODO: Figure out how to make this run on Windows for dev use. Not required since generated files are checked in.
+//go:generate env GOOS= GOARCH= go install ./cmd/mdatagen

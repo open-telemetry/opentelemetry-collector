@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// +build !windows
+
 package hostmetricsreceiver
 
 //go:generate mdatagen metadata.yaml
