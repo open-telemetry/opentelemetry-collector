@@ -1,4 +1,4 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,11 +66,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		exporterhelper.WithShutdown(prwe.shutdown),
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return prwexp, nil
+	return prwexp, err
 }
 
 func createDefaultConfig() configmodels.Exporter {
