@@ -16,8 +16,8 @@ package attributesprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/pkg/processor/attraction"
 )
 
 // Config specifies the set of attributes to be inserted, updated, upserted and

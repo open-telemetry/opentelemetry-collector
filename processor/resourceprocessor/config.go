@@ -16,7 +16,7 @@ package resourceprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/pkg/processor/attraction"
 )
 
 // Config defines configuration for Resource processor.
