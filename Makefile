@@ -65,11 +65,11 @@ testbed-correctness: otelcol
 
 .PHONY: testbed-list-loadtest
 testbed-list-loadtest:
-	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'|head -n 20
+	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./testbed/tests --test.list '.*'| grep "^Test"
 
 .PHONY: testbed-list-correctness
 testbed-list-correctness:
-	TESTBED_CONFIG=inprocess.yaml $(GOTEST) -v ./testbed/correctness --test.list '.*'|head -n 10
+	TESTBED_CONFIG=inprocess.yaml $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
 
 .PHONY: test
 test:
