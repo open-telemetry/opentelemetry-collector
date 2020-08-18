@@ -19,11 +19,11 @@ import (
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // MetricFamily is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
@@ -335,8 +335,8 @@ func (mg *metricGroup) toSummaryTimeSeries(orderedLabelKeys []string) *metricspb
 	// at the global level of the metricspb.SummaryValue
 
 	summaryValue := &metricspb.SummaryValue{
-		Sum:      &wrappers.DoubleValue{Value: mg.sum},
-		Count:    &wrappers.Int64Value{Value: int64(mg.count)},
+		Sum:      &wrapperspb.DoubleValue{Value: mg.sum},
+		Count:    &wrapperspb.Int64Value{Value: int64(mg.count)},
 		Snapshot: snapshot,
 	}
 	return &metricspb.TimeSeries{
@@ -349,7 +349,7 @@ func (mg *metricGroup) toSummaryTimeSeries(orderedLabelKeys []string) *metricspb
 }
 
 func (mg *metricGroup) toDoubleValueTimeSeries(orderedLabelKeys []string) *metricspb.TimeSeries {
-	var startTs *timestamp.Timestamp
+	var startTs *timestamppb.Timestamp
 	// gauge/undefined types has no start time
 	if mg.family.isCumulativeType() {
 		startTs = timestampFromMs(mg.ts)

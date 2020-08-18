@@ -21,8 +21,8 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // Notes on garbage collection (gc):
@@ -349,9 +349,9 @@ func (ma *MetricsAdjuster) adjustPoint(metricType metricspb.MetricDescriptor_Typ
 			return false
 		}
 		current.GetSummaryValue().Count =
-			&wrappers.Int64Value{Value: currentCount - initialCount}
+			&wrapperspb.Int64Value{Value: currentCount - initialCount}
 		current.GetSummaryValue().Sum =
-			&wrappers.DoubleValue{Value: currentSum - initialSum}
+			&wrapperspb.DoubleValue{Value: currentSum - initialSum}
 	default:
 		// this shouldn't happen
 		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", metricType.String()))
