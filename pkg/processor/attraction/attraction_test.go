@@ -875,6 +875,6 @@ func TestValidConfiguration(t *testing.T) {
 
 func sha1Hash(b []byte) string {
 	h := sha1.New()
-	h.Write([]byte(b))
+	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
