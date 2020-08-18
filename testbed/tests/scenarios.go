@@ -71,9 +71,9 @@ func createConfigYaml(
 	// Set pipeline based on DataSender type
 	var pipeline string
 	switch sender.(type) {
-	case testbed.TraceDataSender, testbed.TraceDataSenderOld:
+	case testbed.TraceDataSender:
 		pipeline = "traces"
-	case testbed.MetricDataSender, testbed.MetricDataSenderOld:
+	case testbed.MetricDataSender:
 		pipeline = "metrics"
 	default:
 		t.Error("Invalid DataSender type")

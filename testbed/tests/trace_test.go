@@ -26,14 +26,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -313,7 +311,6 @@ func verifySingleSpan(
 	serviceName string,
 	spanName string,
 	verifyReceived func(span pdata.Span),
-	verifyReceivedOld func(span *tracepb.Span),
 ) {
 
 	// Clear previously received traces.
@@ -334,12 +331,8 @@ func verifySingleSpan(
 	spans.At(0).SetSpanID(testbed.GenerateSequentialSpanID(1))
 	spans.At(0).SetName(spanName)
 
-	if sender, ok := tc.Sender.(testbed.TraceDataSender); ok {
-		sender.SendSpans(td)
-	} else {
-		senderOld := tc.Sender.(testbed.TraceDataSenderOld)
-		senderOld.SendSpans(internaldata.TraceDataToOC(td)[0])
-	}
+	sender := tc.Sender.(testbed.TraceDataSender)
+	sender.SendSpans(td)
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.
@@ -452,18 +445,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				assert.EqualValues(t, "string value", attrVal.StringVal())
 			}
 
-			// verifySpanOld verifies that attributes was added to the OC data span.
-			verifySpanOld := func(span *tracepb.Span) {
-				require.NotNil(t, span)
-				require.NotNil(t, span.Attributes)
-				require.NotNil(t, span.Attributes.AttributeMap)
-				attrVal, ok := span.Attributes.AttributeMap["new_attr"]
-				assert.True(t, ok)
-				assert.NotNil(t, attrVal)
-				assert.EqualValues(t, "string value", attrVal.GetStringValue().Value)
-			}
-
-			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan, verifySpanOld)
+			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)
 
 			// Create a service name that does not match "include" filter.
 			nodeToExclude := "service-not-to-add-attr"
@@ -471,9 +453,6 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span pdata.Span) {
 				// Verify attributes was not added to the new internal data span.
 				assert.Equal(t, span.Attributes().Len(), 0)
-			}, func(span *tracepb.Span) {
-				// Verify attributes was not added to the OC span.
-				assert.Nil(t, span.Attributes)
 			})
 
 			// Create another span that does not match "include" filter.
@@ -481,9 +460,6 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span pdata.Span) {
 				// Verify attributes was not added to the new internal data span.
 				assert.Equal(t, span.Attributes().Len(), 0)
-			}, func(span *tracepb.Span) {
-				// Verify attributes was not added to the OC span.
-				assert.Nil(t, span.Attributes)
 			})
 		})
 	}

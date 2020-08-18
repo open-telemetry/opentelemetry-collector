@@ -20,11 +20,8 @@ import (
 	"sync"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.uber.org/atomic"
 	"golang.org/x/text/message"
-
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 var printer = message.NewPrinter(message.MatchLanguage("en"))
@@ -171,12 +168,8 @@ func (lg *LoadGenerator) generate() {
 					switch lg.sender.(type) {
 					case TraceDataSender:
 						lg.generateTrace()
-					case TraceDataSenderOld:
-						lg.generateTraceOld()
 					case MetricDataSender:
 						lg.generateMetrics()
-					case MetricDataSenderOld:
-						lg.generateMetricsOld()
 					default:
 						log.Printf("Invalid type of LoadGenerator sender")
 					}
@@ -210,56 +203,12 @@ func (lg *LoadGenerator) generateTrace() {
 	}
 }
 
-func (lg *LoadGenerator) generateTraceOld() {
-	traceSender := lg.sender.(TraceDataSenderOld)
-
-	spans, done := lg.dataProvider.GenerateTracesOld()
-	if done {
-		return
-	}
-	traceData := consumerdata.TraceData{
-		Spans: spans,
-	}
-
-	err := traceSender.SendSpans(traceData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send traces: %v", err)
-	}
-}
-
 func (lg *LoadGenerator) generateMetrics() {
 	metricSender := lg.sender.(MetricDataSender)
 
 	metricData, done := lg.dataProvider.GenerateMetrics()
 	if done {
 		return
-	}
-
-	err := metricSender.SendMetrics(metricData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send metrics: %v", err)
-	}
-}
-
-func (lg *LoadGenerator) generateMetricsOld() {
-	metricSender := lg.sender.(MetricDataSenderOld)
-
-	resource := &resourcepb.Resource{
-		Labels: lg.options.Attributes,
-	}
-	metrics, done := lg.dataProvider.GenerateMetricsOld()
-	if done {
-		return
-	}
-	metricData := consumerdata.MetricsData{
-		Resource: resource,
-		Metrics:  metrics,
 	}
 
 	err := metricSender.SendMetrics(metricData)
