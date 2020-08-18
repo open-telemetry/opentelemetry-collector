@@ -28,6 +28,8 @@ type Config struct {
 	ProtocolVersion string `mapstructure:"protocol_version"`
 	// The name of the kafka topic to consume from (default "otlp_spans")
 	Topic string `mapstructure:"topic"`
+	// Encoding of the messages (default "otlp_proto")
+	Encoding string `mapstructure:"encoding"`
 	// The consumer group that receiver will be consuming messages from (default "otel-collector")
 	GroupID string `mapstructure:"group_id"`
 	// The consumer client ID that receiver will use (default "otel-collector")

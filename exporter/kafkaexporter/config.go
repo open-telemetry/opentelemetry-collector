@@ -34,6 +34,8 @@ type Config struct {
 	ProtocolVersion string `mapstructure:"protocol_version"`
 	// The name of the kafka topic to export to (default "otlp_spans")
 	Topic string `mapstructure:"topic"`
+	// Encoding of the messages (default "otlp_proto")
+	Encoding string `mapstructure:"encoding"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.

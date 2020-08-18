@@ -18,33 +18,28 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-func TestUnmarshall(t *testing.T) {
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
-	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
-	}
-	expected, err := request.Marshal()
-	require.NoError(t, err)
+const testEncoding = "test"
 
-	p := protoUnmarshaller{}
-	got, err := p.Unmarshal(expected)
-	require.NoError(t, err)
-	assert.Equal(t, td, got)
-	assert.Equal(t, "otlp_proto", p.Format())
+func TestRegisterUnmarshaller(t *testing.T) {
+	tun := &testUnmarshaller{}
+	RegisterUnmarshaller(tun)
+	unmarshaller := GetUnmarshaller(testEncoding)
+	assert.Equal(t, tun, unmarshaller)
 }
 
-func TestUnmarshall_error(t *testing.T) {
-	p := protoUnmarshaller{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
-	assert.Error(t, err)
+type testUnmarshaller struct {
+}
+
+var _ Unmarshaller = (*testUnmarshaller)(nil)
+
+func (t testUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+	panic("implement me")
+}
+
+func (t testUnmarshaller) Encoding() string {
+	return testEncoding
 }

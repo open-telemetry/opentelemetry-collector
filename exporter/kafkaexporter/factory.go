@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	typeStr       = "kafka"
-	defaultTopic  = "otlp_spans"
-	defaultBroker = "localhost:9092"
+	typeStr         = "kafka"
+	defaultTopic    = "otlp_spans"
+	defaultEncoding = "otlp_proto"
+	defaultBroker   = "localhost:9092"
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
 	// default from sarama.NewConfig()
@@ -57,6 +58,7 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings:   qs,
 		Brokers:         []string{defaultBroker},
 		Topic:           defaultTopic,
+		Encoding:        defaultEncoding,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{

@@ -18,32 +18,28 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-func TestMarshall(t *testing.T) {
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
-	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
-	m := protoMarshaller{}
-	bts, err := m.Marshal(td)
-	require.NoError(t, err)
+const testEncoding = "test"
 
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
-	}
-	expected, err := request.Marshal()
-	require.NoError(t, err)
-	assert.Equal(t, expected, bts)
+func TestRegisterMarshaller(t *testing.T) {
+	sender := &testMarshaller{}
+	RegisterMarshaller(sender)
+	unmarshaller := GetMarshaller(testEncoding)
+	assert.Equal(t, sender, unmarshaller)
 }
 
-func TestMarshall_empty(t *testing.T) {
-	m := protoMarshaller{}
-	bts, err := m.Marshal(pdata.NewTraces())
-	require.NoError(t, err)
-	assert.NotNil(t, bts)
+type testMarshaller struct {
+}
+
+var _ Marshaller = (*testMarshaller)(nil)
+
+func (t testMarshaller) Marshal(pdata.Traces) ([]Message, error) {
+	panic("implement me")
+}
+
+func (t testMarshaller) Encoding() string {
+	return testEncoding
 }

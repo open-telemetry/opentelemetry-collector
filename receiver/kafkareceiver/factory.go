@@ -28,6 +28,7 @@ import (
 const (
 	typeStr         = "kafka"
 	defaultTopic    = "otlp_spans"
+	defaultEncoding = "otlp_proto"
 	defaultBroker   = "localhost:9092"
 	defaultClientID = "otel-collector"
 	defaultGroupID  = defaultClientID
@@ -55,6 +56,7 @@ func createDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		Topic:    defaultTopic,
+		Encoding: defaultEncoding,
 		Brokers:  []string{defaultBroker},
 		ClientID: defaultClientID,
 		GroupID:  defaultGroupID,
