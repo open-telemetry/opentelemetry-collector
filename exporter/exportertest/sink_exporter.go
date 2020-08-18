@@ -121,6 +121,15 @@ func (ste *SinkTraceExporter) SpansCount() int {
 	return ste.spansCount
 }
 
+// Reset deletes any existing metrics.
+func (ste *SinkTraceExporter) Reset() {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
+	ste.traces = nil
+	ste.spansCount = 0
+}
+
 // SetConsumeTraceError sets an error that will be returned by ConsumeTraces
 func (ste *SinkTraceExporter) SetConsumeTraceError(err error) {
 	ste.mu.Lock()
@@ -235,6 +244,15 @@ func (sme *SinkMetricsExporter) MetricsCount() int {
 	return sme.metricsCount
 }
 
+// Reset deletes any existing metrics.
+func (sme *SinkMetricsExporter) Reset() {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
+	sme.metrics = nil
+	sme.metricsCount = 0
+}
+
 // Shutdown stops the exporter and is invoked during shutdown.
 func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
 	return nil
@@ -301,6 +319,7 @@ func (sle *SinkLogsExporter) Reset() {
 	defer sle.mu.Unlock()
 
 	sle.logs = nil
+	sle.logRecordsCount = 0
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.

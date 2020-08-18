@@ -68,6 +68,9 @@ func TestSinkTraceExporter(t *testing.T) {
 	}
 	assert.Equal(t, want, sink.AllTraces())
 	assert.Equal(t, len(want), sink.SpansCount())
+	sink.Reset()
+	assert.Equal(t, 0, len(sink.AllTraces()))
+	assert.Equal(t, 0, sink.SpansCount())
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
@@ -120,6 +123,9 @@ func TestSinkMetricsExporter(t *testing.T) {
 	}
 	assert.Equal(t, want, sink.AllMetrics())
 	assert.Equal(t, len(want), sink.MetricsCount())
+	sink.Reset()
+	assert.Equal(t, 0, len(sink.AllMetrics()))
+	assert.Equal(t, 0, sink.MetricsCount())
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
@@ -145,10 +151,9 @@ func TestSinkLogsExporter(t *testing.T) {
 	}
 	assert.Equal(t, want, sink.AllLogs())
 	assert.Equal(t, len(want), sink.LogRecordsCount())
-
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllLogs()))
-
+	assert.Equal(t, 0, sink.LogRecordsCount())
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 
