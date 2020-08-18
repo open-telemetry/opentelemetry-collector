@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	. "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrapeMetrics(t *testing.T) {
@@ -87,7 +87,7 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertCPUMetricValid(t, metrics.At(0), Metrics.SystemCPUTime, test.expectedStartTime)
+			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime, test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
@@ -104,16 +104,16 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 		internal.AssertDoubleMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertDoubleMetricLabelExists(t, metric, 0, Labels.Cpu)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, Labels.CPUState, LabelCPUState.User)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, Labels.CPUState, LabelCPUState.System)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, Labels.CPUState, LabelCPUState.Idle)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, Labels.CPUState, LabelCPUState.Interrupt)
+	internal.AssertDoubleMetricLabelExists(t, metric, 0, metadata.Labels.Cpu)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, metadata.Labels.CPUState, metadata.LabelCPUState.User)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, metadata.Labels.CPUState, metadata.LabelCPUState.System)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, metadata.Labels.CPUState, metadata.LabelCPUState.Idle)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, metadata.Labels.CPUState, metadata.LabelCPUState.Interrupt)
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, Labels.CPUState, LabelCPUState.Nice)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, Labels.CPUState, LabelCPUState.Softirq)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, Labels.CPUState, LabelCPUState.Steal)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, Labels.CPUState, LabelCPUState.Wait)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, metadata.Labels.CPUState, metadata.LabelCPUState.Nice)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, metadata.Labels.CPUState, metadata.LabelCPUState.Softirq)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, metadata.Labels.CPUState, metadata.LabelCPUState.Steal)
+	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, metadata.Labels.CPUState, metadata.LabelCPUState.Wait)
 }

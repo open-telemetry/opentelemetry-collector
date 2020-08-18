@@ -26,7 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	. "go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrapeMetrics(t *testing.T) {
@@ -67,12 +67,12 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertMemoryUsageMetricValid(t, metrics.At(0), Metrics.SystemMemoryUsage)
+			assertMemoryUsageMetricValid(t, metrics.At(0), metadata.Metrics.SystemMemoryUsage)
 
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertInt64MetricLabelHasValue(t, metrics.At(0), 2, Labels.MemState, LabelMemState.Inactive)
+				internal.AssertInt64MetricLabelHasValue(t, metrics.At(0), 2, metadata.Labels.MemState, metadata.LabelMemState.Inactive)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -83,13 +83,13 @@ func TestScrapeMetrics(t *testing.T) {
 func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 0, Labels.MemState, LabelMemState.Used)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 1, Labels.MemState, LabelMemState.Free)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 0, metadata.Labels.MemState, metadata.LabelMemState.Used)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 1, metadata.Labels.MemState, metadata.LabelMemState.Free)
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertInt64MetricLabelHasValue(t, metric, 2, Labels.MemState, LabelMemState.Buffered)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 3, Labels.MemState, LabelMemState.Cached)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 4, Labels.MemState, LabelMemState.SlabReclaimable)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 5, Labels.MemState, LabelMemState.SlabUnreclaimable)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 2, metadata.Labels.MemState, metadata.LabelMemState.Buffered)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 3, metadata.Labels.MemState, metadata.LabelMemState.Cached)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 4, metadata.Labels.MemState, metadata.LabelMemState.SlabReclaimable)
+	internal.AssertInt64MetricLabelHasValue(t, metric, 5, metadata.Labels.MemState, metadata.LabelMemState.SlabUnreclaimable)
 }
