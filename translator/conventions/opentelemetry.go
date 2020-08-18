@@ -24,6 +24,7 @@ const (
 	AttributeTelemetrySDKName      = "telemetry.sdk.name"
 	AttributeTelemetrySDKLanguage  = "telemetry.sdk.language"
 	AttributeTelemetrySDKVersion   = "telemetry.sdk.version"
+	AttributeTelemetryAutoVersion  = "telemetry.auto.version"
 	AttributeContainerName         = "container.name"
 	AttributeContainerID           = "container.id"
 	AttributeContainerImage        = "container.image.name"
