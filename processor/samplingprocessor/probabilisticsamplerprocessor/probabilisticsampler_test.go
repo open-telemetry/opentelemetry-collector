@@ -29,17 +29,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestNewTraceProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
-		nextConsumer consumer.TraceConsumerOld
+		nextConsumer consumer.TraceConsumer
 		cfg          Config
-		want         component.TraceProcessorOld
+		want         component.TraceProcessor
 		wantErr      bool
 	}{
 		{
@@ -48,23 +50,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: &exportertest.SinkTraceExporterOld{},
+			nextConsumer: exportertest.NewNopTraceExporter(),
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: &exportertest.SinkTraceExporterOld{},
+				nextConsumer: exportertest.NewNopTraceExporter(),
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: &exportertest.SinkTraceExporterOld{},
+			nextConsumer: exportertest.NewNopTraceExporter(),
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: &exportertest.SinkTraceExporterOld{},
+				nextConsumer: exportertest.NewNopTraceExporter(),
 				hashSeed:     4321,
 			},
 		},
@@ -146,14 +148,14 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporterOld{}
+			sink := &exportertest.SinkTraceExporter{}
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
 			}
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName) {
-				if err := tsp.ConsumeTraceData(context.Background(), td); err != nil {
+				if err := tsp.ConsumeTraces(context.Background(), internaldata.OCToTraceData(td)); err != nil {
 					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
 					return
 				}
@@ -274,16 +276,16 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporterOld{}
+			sink := &exportertest.SinkTraceExporter{}
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
-			err = tsp.ConsumeTraceData(context.Background(), tt.td)
+			err = tsp.ConsumeTraces(context.Background(), internaldata.OCToTraceData(tt.td))
 			require.NoError(t, err)
 
 			sampledData := sink.AllTraces()
 			require.Equal(t, 1, len(sampledData))
-			assert.Equal(t, tt.sampled, len(sampledData[0].Spans) == 1)
+			assert.Equal(t, tt.sampled, sink.SpansCount() == 1)
 		})
 	}
 }
@@ -518,20 +520,23 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
-func assertSampledData(t *testing.T, sampled []consumerdata.TraceData, serviceName string) (traceIDs map[string]bool, spanCount int) {
+func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[string]bool, spanCount int) {
 	traceIDs = make(map[string]bool)
 	for _, td := range sampled {
-		if processor.ServiceNameForNode(td.Node) != serviceName {
-			continue
-		}
-		for _, span := range td.Spans {
-			spanCount++
-			key := string(span.TraceId)
-			if traceIDs[key] {
-				t.Errorf("same traceID used more than once %q", key)
-				return
+		octds := internaldata.TraceDataToOC(td)
+		for _, octd := range octds {
+			if processor.ServiceNameForNode(octd.Node) != serviceName {
+				continue
 			}
-			traceIDs[key] = true
+			for _, span := range octd.Spans {
+				spanCount++
+				key := string(span.TraceId)
+				if traceIDs[key] {
+					t.Errorf("same traceID used more than once %q", key)
+					return
+				}
+				traceIDs[key] = true
+			}
 		}
 	}
 	return

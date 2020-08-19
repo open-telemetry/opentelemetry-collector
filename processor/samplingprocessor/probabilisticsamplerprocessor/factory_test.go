@@ -15,33 +15,27 @@
 package probabilisticsamplerprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
-
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := &Factory{}
-
-	cfg := factory.CreateDefaultConfig()
-
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporterOld(), cfg)
+	cfg := createDefaultConfig()
+	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	tp, err := createTraceProcessor(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
-
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
-	assert.Nil(t, mp)
-	assert.Error(t, err, "should not be able to create metric processor")
 }
