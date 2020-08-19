@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestLoadingConifg(t *testing.T) {
@@ -45,10 +45,10 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/insert",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "attribute1", Value: 123, Action: attraction.INSERT},
-				{Key: "string key", FromAttribute: "anotherkey", Action: attraction.INSERT},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "attribute1", Value: 123, Action: processorhelper.INSERT},
+				{Key: "string key", FromAttribute: "anotherkey", Action: processorhelper.INSERT},
 			},
 		},
 	})
@@ -59,10 +59,10 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/update",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "boo", FromAttribute: "foo", Action: attraction.UPDATE},
-				{Key: "db.secret", Value: "redacted", Action: attraction.UPDATE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "boo", FromAttribute: "foo", Action: processorhelper.UPDATE},
+				{Key: "db.secret", Value: "redacted", Action: processorhelper.UPDATE},
 			},
 		},
 	})
@@ -73,10 +73,10 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/upsert",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "region", Value: "planet-earth", Action: attraction.UPSERT},
-				{Key: "new_user_key", FromAttribute: "user_key", Action: attraction.UPSERT},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "region", Value: "planet-earth", Action: processorhelper.UPSERT},
+				{Key: "new_user_key", FromAttribute: "user_key", Action: processorhelper.UPSERT},
 			},
 		},
 	})
@@ -87,10 +87,10 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/delete",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "credit_card", Action: attraction.DELETE},
-				{Key: "duplicate_key", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "credit_card", Action: processorhelper.DELETE},
+				{Key: "duplicate_key", Action: processorhelper.DELETE},
 			},
 		},
 	})
@@ -101,9 +101,9 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/hash",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "user.email", Action: attraction.HASH},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "user.email", Action: processorhelper.HASH},
 			},
 		},
 	})
@@ -124,10 +124,10 @@ func TestLoadingConifg(t *testing.T) {
 				},
 			},
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "credit_card", Action: attraction.DELETE},
-				{Key: "duplicate_key", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "credit_card", Action: processorhelper.DELETE},
+				{Key: "duplicate_key", Action: processorhelper.DELETE},
 			},
 		},
 	})
@@ -144,10 +144,10 @@ func TestLoadingConifg(t *testing.T) {
 				Services: []string{"auth.*", "login.*"},
 			},
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "credit_card", Action: attraction.DELETE},
-				{Key: "duplicate_key", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "credit_card", Action: processorhelper.DELETE},
+				{Key: "duplicate_key", Action: processorhelper.DELETE},
 			},
 		},
 	})
@@ -170,10 +170,10 @@ func TestLoadingConifg(t *testing.T) {
 				},
 			},
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "credit_card", Action: attraction.DELETE},
-				{Key: "duplicate_key", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "credit_card", Action: processorhelper.DELETE},
+				{Key: "duplicate_key", Action: processorhelper.DELETE},
 			},
 		},
 	})
@@ -184,11 +184,11 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "operation", Value: "default", Action: attraction.INSERT},
-				{Key: "svc.operation", FromAttribute: "operation", Action: attraction.UPSERT},
-				{Key: "operation", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "operation", Value: "default", Action: processorhelper.INSERT},
+				{Key: "svc.operation", FromAttribute: "operation", Action: processorhelper.UPSERT},
+				{Key: "operation", Action: processorhelper.DELETE},
 			},
 		},
 	})
@@ -199,13 +199,13 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/example",
 			TypeVal: typeStr,
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "db.table", Action: attraction.DELETE},
-				{Key: "redacted_span", Value: true, Action: attraction.UPSERT},
-				{Key: "copy_key", FromAttribute: "key_original", Action: attraction.UPDATE},
-				{Key: "account_id", Value: 2245, Action: attraction.INSERT},
-				{Key: "account_password", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "db.table", Action: processorhelper.DELETE},
+				{Key: "redacted_span", Value: true, Action: processorhelper.UPSERT},
+				{Key: "copy_key", FromAttribute: "key_original", Action: processorhelper.UPDATE},
+				{Key: "account_id", Value: 2245, Action: processorhelper.INSERT},
+				{Key: "account_password", Action: processorhelper.DELETE},
 			},
 		},
 	})
@@ -226,10 +226,10 @@ func TestLoadingConifg(t *testing.T) {
 				SpanNames: []string{"login.*"},
 			},
 		},
-		Settings: attraction.Settings{
-			Actions: []attraction.ActionKeyValue{
-				{Key: "password", Action: attraction.UPDATE, Value: "obfuscated"},
-				{Key: "token", Action: attraction.DELETE},
+		Settings: processorhelper.Settings{
+			Actions: []processorhelper.ActionKeyValue{
+				{Key: "password", Action: processorhelper.UPDATE, Value: "obfuscated"},
+				{Key: "token", Action: processorhelper.DELETE},
 			},
 		},
 	})

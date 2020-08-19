@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package attraction
+package processorhelper
 
 import (
+	"crypto/sha1"
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"math"
 	"regexp"
 	"testing"
 
@@ -531,6 +535,100 @@ func TestAttributes_Delete(t *testing.T) {
 	}
 }
 
+func TestAttributes_HashValue(t *testing.T) {
+
+	intVal := int64(24)
+	intBytes := make([]byte, int64ByteSize)
+	binary.LittleEndian.PutUint64(intBytes, uint64(intVal))
+
+	doubleVal := 2.4
+	doubleBytes := make([]byte, float64ByteSize)
+	binary.LittleEndian.PutUint64(doubleBytes, math.Float64bits(doubleVal))
+
+	testCases := []testCase{
+		// Ensure no changes to the span as there is no attributes map.
+		{
+			name:               "HashNoAttributes",
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
+		},
+		// Ensure no changes to the span as the key does not exist.
+		{
+			name: "HashKeyNoExist",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
+			},
+		},
+		// Ensure string data types are hashed correctly
+		{
+			name: "HashString",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueString("foo"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueString(sha1Hash([]byte("foo"))),
+			},
+		},
+		// Ensure int data types are hashed correctly
+		{
+			name: "HashInt",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueInt(intVal),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueString(sha1Hash(intBytes)),
+			},
+		},
+		// Ensure double data types are hashed correctly
+		{
+			name: "HashDouble",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueDouble(doubleVal),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueString(sha1Hash(doubleBytes)),
+			},
+		},
+		// Ensure bool data types are hashed correctly
+		{
+			name: "HashBoolTrue",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueBool(true),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueString(sha1Hash([]byte{1})),
+			},
+		},
+		// Ensure bool data types are hashed correctly
+		{
+			name: "HashBoolFalse",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueBool(false),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"updateme": pdata.NewAttributeValueString(sha1Hash([]byte{0})),
+			},
+		},
+	}
+
+	cfg := &Settings{
+		Actions: []ActionKeyValue{
+			{Key: "updateme", Action: HASH},
+		},
+	}
+
+	ap, err := NewAttrProc(cfg)
+	require.Nil(t, err)
+	require.NotNil(t, ap)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, ap)
+	}
+}
+
 func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	tc := testCase{
 		name: "FromAttributeNoChange",
@@ -773,4 +871,10 @@ func TestValidConfiguration(t *testing.T) {
 		{Key: "two", Regex: compiledRegex, AttrNames: []string{"", "documentId"}, Action: EXTRACT},
 	}, ap.actions)
 
+}
+
+func sha1Hash(b []byte) string {
+	h := sha1.New()
+	h.Write(b)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,10 +41,10 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
-			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
-			{Key: "redundant-attribute", Action: attraction.DELETE},
+		AttributesActions: []processorhelper.ActionKeyValue{
+			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
+			{Key: "redundant-attribute", Action: processorhelper.DELETE},
 		},
 	})
 
