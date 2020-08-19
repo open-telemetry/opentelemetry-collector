@@ -15,3 +15,4 @@
 package internal
 
 //go:generate esc -pkg internal -o resources.go templates/
+//go:generate addlicense -c "The OpenTelemetry Authors" resources.go
