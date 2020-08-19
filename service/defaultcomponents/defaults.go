@@ -102,7 +102,7 @@ func Components() (
 		queuedprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiter.NewFactory(),
-		&tailsamplingprocessor.Factory{},
+		tailsamplingprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		filterprocessor.NewFactory(),

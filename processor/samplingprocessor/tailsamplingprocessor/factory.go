@@ -15,14 +15,13 @@
 package tailsamplingprocessor
 
 import (
+	"context"
 	"time"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -30,34 +29,27 @@ const (
 	typeStr = "tail_sampling"
 )
 
-// Factory is the factory for Tail Sampling processor.
-type Factory struct {
+// NewFactory returns a new factory for the Tail Sampling processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraces(createTraceProcessor))
 }
 
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		DecisionWait: 30 * time.Second,
 		NumTraces:    50000,
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+func createTraceProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+	nextConsumer consumer.TraceConsumer,
+) (component.TraceProcessor, error) {
 	tCfg := cfg.(*Config)
-	return newTraceProcessor(logger, nextConsumer, *tCfg)
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(*zap.Logger, consumer.MetricsConsumerOld, configmodels.Processor) (component.MetricsProcessorOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return newTraceProcessor(params.Logger, nextConsumer, *tCfg)
 }

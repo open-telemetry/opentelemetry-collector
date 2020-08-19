@@ -24,8 +24,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -45,10 +46,10 @@ func TestSequentialTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporterOld{}, cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
-		tsp.ConsumeTraceData(context.Background(), batch)
+		tsp.ConsumeTraces(context.Background(), batch)
 	}
 
 	for i := range traceIds {
@@ -69,19 +70,17 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporterOld{}, cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
-		go func(td consumerdata.TraceData) {
-			td.SourceFormat = "test-0"
-			tsp.ConsumeTraceData(context.Background(), td)
+		go func(td pdata.Traces) {
+			tsp.ConsumeTraces(context.Background(), td)
 			wg.Done()
 		}(batch)
-		go func(td consumerdata.TraceData) {
-			td.SourceFormat = "test-1"
-			tsp.ConsumeTraceData(context.Background(), td)
+		go func(td pdata.Traces) {
+			tsp.ConsumeTraces(context.Background(), td)
 			wg.Done()
 		}(batch)
 	}
@@ -105,10 +104,10 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporterOld{}, cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
-		tsp.ConsumeTraceData(context.Background(), batch)
+		tsp.ConsumeTraces(context.Background(), batch)
 	}
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
@@ -128,12 +127,12 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), &exportertest.SinkTraceExporterOld{}, cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
-		go func(td consumerdata.TraceData) {
-			tsp.ConsumeTraceData(context.Background(), td)
+		go func(td pdata.Traces) {
+			tsp.ConsumeTraces(context.Background(), td)
 			wg.Done()
 		}(batch)
 	}
@@ -155,7 +154,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := &mockSpanProcessor{}
+	msp := new(exportertest.SinkTraceExporter)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
@@ -175,13 +174,13 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
 	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
 		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
-			tsp.ConsumeTraceData(context.Background(), batches[currItem])
+			tsp.ConsumeTraces(context.Background(), batches[currItem])
 			require.True(t, mtt.Started, "Time ticker was expected to have started")
 		}
 		tsp.samplingPolicyOnTick()
 		require.False(
 			t,
-			msp.TotalSpans != 0 || mpe.EvaluationCount != 0,
+			msp.SpansCount() != 0 || mpe.EvaluationCount != 0,
 			"policy for initial items was evaluated before decision wait period",
 		)
 	}
@@ -191,43 +190,32 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	tsp.samplingPolicyOnTick()
 	require.False(
 		t,
-		msp.TotalSpans == 0 || mpe.EvaluationCount == 0,
+		msp.SpansCount() == 0 || mpe.EvaluationCount == 0,
 		"policy should have been evaluated totalspans == %d and evaluationcount == %d",
-		msp.TotalSpans,
+		msp.SpansCount(),
 		mpe.EvaluationCount,
 	)
 
-	require.Equal(t, numSpansPerBatchWindow, msp.TotalSpans, "not all spans of first window were accounted for")
+	require.Equal(t, numSpansPerBatchWindow, msp.SpansCount(), "not all spans of first window were accounted for")
 
 	// Late span of a sampled trace should be sent directly down the pipeline exporter
-	tsp.ConsumeTraceData(context.Background(), batches[0])
+	tsp.ConsumeTraces(context.Background(), batches[0])
 	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
-	require.Equal(t, expectedNumWithLateSpan, msp.TotalSpans, "late span was not accounted for")
+	require.Equal(t, expectedNumWithLateSpan, msp.SpansCount(), "late span was not accounted for")
 	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
 }
 
-func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
+func generateIdsAndBatches(numIds int) ([][]byte, []pdata.Traces) {
 	traceIds := make([][]byte, numIds)
+	var tds []pdata.Traces
 	for i := 0; i < numIds; i++ {
 		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
-	}
-
-	var tds []consumerdata.TraceData
-	for i := range traceIds {
-		spans := make([]*tracepb.Span, i+1)
-		for j := range spans {
-			spans[j] = &tracepb.Span{
-				TraceId: traceIds[i],
-				SpanId:  tracetranslator.UInt64ToByteSpanID(uint64(i + 1)),
-			}
-		}
-
 		// Send each span in a separate batch
-		for _, span := range spans {
-			td := consumerdata.TraceData{
-				Spans:        []*tracepb.Span{span},
-				SourceFormat: "test",
-			}
+		for j := 0; j <= i; j++ {
+			td := testdata.GenerateTraceDataOneSpan()
+			span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+			span.SetTraceID(traceIds[i])
+			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(i + 1)))
 			tds = append(tds, td)
 		}
 	}
@@ -308,13 +296,4 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 }
 
 func (s *syncIDBatcher) Stop() {
-}
-
-type mockSpanProcessor struct {
-	TotalSpans int
-}
-
-func (p *mockSpanProcessor) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
-	p.TotalSpans += len(td.Spans)
-	return nil
 }
