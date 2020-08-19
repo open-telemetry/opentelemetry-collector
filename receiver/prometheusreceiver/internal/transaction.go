@@ -23,7 +23,6 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -31,6 +30,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -210,10 +210,10 @@ func adjustStartTime(startTime float64, metrics []*metricspb.Metric) {
 	}
 }
 
-func timestampFromFloat64(ts float64) *timestamp.Timestamp {
+func timestampFromFloat64(ts float64) *timestamppb.Timestamp {
 	secs := int64(ts)
 	nanos := int64((ts - float64(secs)) * 1e9)
-	return &timestamp.Timestamp{
+	return &timestamppb.Timestamp{
 		Seconds: secs,
 		Nanos:   int32(nanos),
 	}

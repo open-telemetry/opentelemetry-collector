@@ -17,39 +17,24 @@ package internal
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
-func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
+func TimestampToUnixNano(ts *timestamppb.Timestamp) (t pdata.TimestampUnixNano) {
+	if ts == nil {
+		return
+	}
+	return pdata.TimestampUnixNano(uint64(ts.AsTime().UnixNano()))
+}
+
+func UnixNanoToTimestamp(u pdata.TimestampUnixNano) *timestamppb.Timestamp {
+	// 0 is a special case and want to make sure we return nil.
+	if u == 0 {
 		return nil
 	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
-	}
-}
-
-func TimestampToTime(ts *timestamp.Timestamp) (t time.Time) {
-	if ts == nil {
-		return
-	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos))
-}
-
-func TimestampToUnixNano(ts *timestamp.Timestamp) (t pdata.TimestampUnixNano) {
-	if ts == nil {
-		return
-	}
-	return pdata.TimestampUnixNano(uint64(TimestampToTime(ts).UnixNano()))
-}
-
-func UnixNanoToTimestamp(u pdata.TimestampUnixNano) *timestamp.Timestamp {
-	return TimeToTimestamp(UnixNanoToTime(u))
+	return timestamppb.New(UnixNanoToTime(u))
 }
 
 func UnixNanoToTime(u pdata.TimestampUnixNano) time.Time {

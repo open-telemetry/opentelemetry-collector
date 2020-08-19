@@ -15,9 +15,10 @@
 package internaldata
 
 import (
+	"time"
+
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -79,7 +80,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		}
 		if ocNode.Identifier != nil {
 			if ocNode.Identifier.StartTimestamp != nil {
-				attrs.UpsertString(conventions.OCAttributeProcessStartTime, ptypes.TimestampString(ocNode.Identifier.StartTimestamp))
+				attrs.UpsertString(conventions.OCAttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
 			}
 			if ocNode.Identifier.HostName != "" {
 				attrs.UpsertString(conventions.AttributeHostHostname, ocNode.Identifier.HostName)

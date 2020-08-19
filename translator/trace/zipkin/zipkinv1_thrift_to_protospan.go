@@ -23,9 +23,9 @@ import (
 	"net"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -69,7 +69,7 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 		parsedAnnotations.Endpoint.ServiceName = localComponent
 	}
 
-	var startTime, endTime *timestamp.Timestamp
+	var startTime, endTime *timestamppb.Timestamp
 	if zSpan.Timestamp == nil {
 		startTime = parsedAnnotations.EarlyAnnotationTime
 		endTime = parsedAnnotations.LateAnnotationTime

@@ -42,11 +42,11 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -137,8 +137,8 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 				TraceId:   []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
 				SpanId:    []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
 				Name:      &tracepb.TruncatableString{Value: "testSpan"},
-				StartTime: internal.TimeToTimestamp(time.Unix(1544712660, 0).UTC()),
-				EndTime:   internal.TimeToTimestamp(time.Unix(1544712661, 0).UTC()),
+				StartTime: timestamppb.New(time.Unix(1544712660, 0).UTC()),
+				EndTime:   timestamppb.New(time.Unix(1544712661, 0).UTC()),
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"attr1": {
@@ -608,7 +608,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 	}
 	point := &metricspb.Point{
-		Timestamp: internal.TimeToTimestamp(time.Now().UTC()),
+		Timestamp: timestamppb.New(time.Now().UTC()),
 		Value: &metricspb.Point_Int64Value{
 			Int64Value: int64(1),
 		},

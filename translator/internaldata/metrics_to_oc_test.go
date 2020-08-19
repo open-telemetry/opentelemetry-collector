@@ -21,8 +21,8 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -149,7 +149,7 @@ func TestMetricsDataToOC(t *testing.T) {
 			name:     "sample-metric",
 			internal: sampleMetricData,
 			oc: []consumerdata.MetricsData{
-				generateOCTestData(t),
+				generateOCTestData(),
 			},
 		},
 	}
@@ -162,9 +162,8 @@ func TestMetricsDataToOC(t *testing.T) {
 	}
 }
 
-func generateOCTestData(t *testing.T) consumerdata.MetricsData {
-	ts, err := ptypes.TimestampProto(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
-	assert.NoError(t, err)
+func generateOCTestData() consumerdata.MetricsData {
+	ts := timestamppb.New(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 
 	return consumerdata.MetricsData{
 		Node: &occommon.Node{

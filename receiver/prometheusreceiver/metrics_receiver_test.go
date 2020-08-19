@@ -29,12 +29,12 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	timestamppb "github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -379,8 +379,8 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 							{
 								Timestamp: ts2, Value: &metricspb.Point_SummaryValue{
 									SummaryValue: &metricspb.SummaryValue{
-										Sum:   &wrappers.DoubleValue{Value: 2.0},
-										Count: &wrappers.Int64Value{Value: 1},
+										Sum:   &wrapperspb.DoubleValue{Value: 2.0},
+										Count: &wrapperspb.Int64Value{Value: 1},
 										Snapshot: &metricspb.SummaryValue_Snapshot{
 											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
 												{Percentile: 1.0, Value: 1},
@@ -889,8 +889,8 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 							{
 								Timestamp: ts2, Value: &metricspb.Point_SummaryValue{
 									SummaryValue: &metricspb.SummaryValue{
-										Sum:   &wrappers.DoubleValue{Value: 100.0},
-										Count: &wrappers.Int64Value{Value: 50},
+										Sum:   &wrapperspb.DoubleValue{Value: 100.0},
+										Count: &wrapperspb.Int64Value{Value: 50},
 										Snapshot: &metricspb.SummaryValue_Snapshot{
 											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
 												{Percentile: 1.0, Value: 32},
@@ -912,8 +912,8 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 							{
 								Timestamp: ts2, Value: &metricspb.Point_SummaryValue{
 									SummaryValue: &metricspb.SummaryValue{
-										Sum:   &wrappers.DoubleValue{Value: 1.0},
-										Count: &wrappers.Int64Value{Value: 5},
+										Sum:   &wrapperspb.DoubleValue{Value: 1.0},
+										Count: &wrapperspb.Int64Value{Value: 5},
 									},
 								},
 							},

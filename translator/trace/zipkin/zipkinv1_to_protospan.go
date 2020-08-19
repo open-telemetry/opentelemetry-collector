@@ -23,13 +23,12 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -152,7 +151,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	if parsedAnnotations.Endpoint.ServiceName == unknownServiceName && localComponent != "" {
 		parsedAnnotations.Endpoint.ServiceName = localComponent
 	}
-	var startTime, endTime *timestamp.Timestamp
+	var startTime, endTime *timestamppb.Timestamp
 	if zSpan.Timestamp == 0 {
 		startTime = parsedAnnotations.EarlyAnnotationTime
 		endTime = parsedAnnotations.LateAnnotationTime
@@ -278,8 +277,8 @@ type annotationParseResult struct {
 	TimeEvents          *tracepb.Span_TimeEvents
 	Kind                tracepb.Span_SpanKind
 	ExtendedKind        tracetranslator.OpenTracingSpanKind
-	EarlyAnnotationTime *timestamp.Timestamp
-	LateAnnotationTime  *timestamp.Timestamp
+	EarlyAnnotationTime *timestamppb.Timestamp
+	LateAnnotationTime  *timestamppb.Timestamp
 }
 
 // Unknown service name works both as a default value and a flag to indicate that a valid endpoint was found.
@@ -433,11 +432,11 @@ func hexIDToOCID(hex string) ([]byte, error) {
 	return tracetranslator.UInt64ToByteSpanID(idValue), nil
 }
 
-func epochMicrosecondsToTimestamp(msecs int64) *timestamp.Timestamp {
+func epochMicrosecondsToTimestamp(msecs int64) *timestamppb.Timestamp {
 	if msecs <= 0 {
 		return nil
 	}
-	t := &timestamp.Timestamp{}
+	t := &timestamppb.Timestamp{}
 	t.Seconds = msecs / 1e6
 	t.Nanos = int32(msecs%1e6) * 1e3
 	return t
@@ -494,7 +493,7 @@ func setTimestampsIfUnset(span *tracepb.Span) {
 	// If this is unset, the conversion from open census to the internal trace format breaks
 	// what should be an identity transformation oc -> internal -> oc
 	if span.StartTime == nil {
-		now := internal.TimeToTimestamp(time.Now())
+		now := timestamppb.New(time.Now())
 		span.StartTime = now
 		span.EndTime = now
 

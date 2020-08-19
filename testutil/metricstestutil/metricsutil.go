@@ -18,8 +18,8 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	timestamppb "github.com/golang/protobuf/ptypes/timestamp"
-	wrapperspb "github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // Gauge creates a gauge metric.
