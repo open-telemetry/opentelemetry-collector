@@ -90,7 +90,7 @@ test-with-cover:
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENSE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
+	$(ADDLICENSE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC)
 
 .PHONY: checklicense
 checklicense:
