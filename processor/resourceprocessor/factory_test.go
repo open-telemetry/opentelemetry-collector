@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -42,8 +42,8 @@ func TestCreateProcessor(t *testing.T) {
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
+		AttributesActions: []processorhelper.ActionKeyValue{
+			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
 		},
 	}
 
@@ -74,7 +74,7 @@ func TestInvalidAttributeActions(t *testing.T) {
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
-		AttributesActions: []attraction.ActionKeyValue{
+		AttributesActions: []processorhelper.ActionKeyValue{
 			{Key: "k", Value: "v", Action: "invalid-action"},
 		},
 	}
@@ -109,9 +109,9 @@ func TestDeprecatedConfig(t *testing.T) {
 		Labels: map[string]string{
 			"cloud.zone": "zone-1",
 		},
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "opencensus.resourcetype", Value: "host", Action: attraction.UPSERT},
-			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
+		AttributesActions: []processorhelper.ActionKeyValue{
+			{Key: "opencensus.resourcetype", Value: "host", Action: processorhelper.UPSERT},
+			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
 		},
 	}, cfg)
 }

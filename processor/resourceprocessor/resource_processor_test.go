@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 var (
@@ -37,10 +37,10 @@ var (
 
 	cfg = &Config{
 		ProcessorSettings: processorSettings,
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: attraction.UPSERT},
-			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
-			{Key: "redundant-attribute", Action: attraction.DELETE},
+		AttributesActions: []processorhelper.ActionKeyValue{
+			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
+			{Key: "redundant-attribute", Action: processorhelper.DELETE},
 		},
 	}
 )
@@ -86,9 +86,9 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			name: "config_attributes_replacement",
 			config: &Config{
 				ProcessorSettings: processorSettings,
-				AttributesActions: []attraction.ActionKeyValue{
-					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
-					{Key: "k8s-cluster", Action: attraction.DELETE},
+				AttributesActions: []processorhelper.ActionKeyValue{
+					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
+					{Key: "k8s-cluster", Action: processorhelper.DELETE},
 				},
 			},
 			sourceAttributes: map[string]string{

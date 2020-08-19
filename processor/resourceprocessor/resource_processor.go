@@ -19,11 +19,11 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 type resourceProcessor struct {
-	attrProc *attraction.AttrProc
+	attrProc *processorhelper.AttrProc
 }
 
 // ProcessTraces implements the TProcessor interface

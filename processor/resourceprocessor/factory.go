@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -86,12 +85,12 @@ func createMetricsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createAttrProcessor(cfg *Config, logger *zap.Logger) (*attraction.AttrProc, error) {
+func createAttrProcessor(cfg *Config, logger *zap.Logger) (*processorhelper.AttrProc, error) {
 	handleDeprecatedFields(cfg, logger)
 	if len(cfg.AttributesActions) == 0 {
 		return nil, fmt.Errorf("error creating \"%q\" processor due to missing required field \"attributes\"", cfg.Name())
 	}
-	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.AttributesActions})
+	attrProc, err := processorhelper.NewAttrProc(&processorhelper.Settings{Actions: cfg.AttributesActions})
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"%q\" processor: %w", cfg.Name(), err)
 	}
@@ -105,8 +104,8 @@ func handleDeprecatedFields(cfg *Config, logger *zap.Logger) {
 	if cfg.ResourceType != "" {
 		logger.Warn("[DEPRECATED] \"type\" field is deprecated and will be removed in future release. " +
 			"Please set the value to \"attributes\" with key=opencensus.type and action=upsert.")
-		upsertResourceType := attraction.ActionKeyValue{
-			Action: attraction.UPSERT,
+		upsertResourceType := processorhelper.ActionKeyValue{
+			Action: processorhelper.UPSERT,
 			Key:    conventions.OCAttributeResourceType,
 			Value:  cfg.ResourceType,
 		}
@@ -118,7 +117,7 @@ func handleDeprecatedFields(cfg *Config, logger *zap.Logger) {
 		logger.Warn("[DEPRECATED] \"labels\" field is deprecated and will be removed in future release. " +
 			"Please use \"attributes\" field instead.")
 		for k, v := range cfg.Labels {
-			action := attraction.ActionKeyValue{Action: attraction.UPSERT, Key: k, Value: v}
+			action := processorhelper.ActionKeyValue{Action: processorhelper.UPSERT, Key: k, Value: v}
 			cfg.AttributesActions = append(cfg.AttributesActions, action)
 		}
 	}

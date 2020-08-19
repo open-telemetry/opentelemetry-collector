@@ -40,7 +40,7 @@ endif
 BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
-RUN_CONFIG=local/config.yaml
+RUN_CONFIG?=local/config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 

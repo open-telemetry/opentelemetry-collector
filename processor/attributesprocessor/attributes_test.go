@@ -26,9 +26,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -138,9 +138,9 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Settings.Actions = []attraction.ActionKeyValue{
-		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
-		{Key: "attribute1", Action: attraction.DELETE},
+	oCfg.Settings.Actions = []processorhelper.ActionKeyValue{
+		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
+		{Key: "attribute1", Action: processorhelper.DELETE},
 	}
 
 	tp, err := factory.CreateTraceProcessor(
@@ -198,8 +198,8 @@ func TestAttributes_FilterSpans(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterspan.MatchProperties{
 		Services: []string{"svcA", "svcB.*"},
@@ -268,8 +268,8 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterspan.MatchProperties{
 		SpanNames: []string{"apply", "dont_apply"},
@@ -336,8 +336,8 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterspan.MatchProperties{
 		SpanNames: []string{"^apply.*"},
@@ -399,11 +399,11 @@ func TestAttributes_Hash(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "user.email", Action: attraction.HASH},
-		{Key: "user.id", Action: attraction.HASH},
-		{Key: "user.balance", Action: attraction.HASH},
-		{Key: "user.authenticated", Action: attraction.HASH},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "user.email", Action: processorhelper.HASH},
+		{Key: "user.id", Action: processorhelper.HASH},
+		{Key: "user.balance", Action: processorhelper.HASH},
+		{Key: "user.authenticated", Action: processorhelper.HASH},
 	}
 
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
@@ -444,8 +444,8 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterspan.MatchProperties{
 		SpanNames: []string{"^apply.*"},
