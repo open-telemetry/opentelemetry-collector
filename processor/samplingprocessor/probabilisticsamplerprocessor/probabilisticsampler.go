@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -51,14 +53,14 @@ const (
 )
 
 type tracesamplerprocessor struct {
-	nextConsumer       consumer.TraceConsumerOld
+	nextConsumer       consumer.TraceConsumer
 	scaledSamplingRate uint32
 	hashSeed           uint32
 }
 
 // newTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
 // configuration.
-func newTraceProcessor(nextConsumer consumer.TraceConsumerOld, cfg Config) (component.TraceProcessorOld, error) {
+func newTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (component.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -71,7 +73,18 @@ func newTraceProcessor(nextConsumer consumer.TraceConsumerOld, cfg Config) (comp
 	}, nil
 }
 
-func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	octds := internaldata.TraceDataToOC(td)
+	var errs []error
+	for _, octd := range octds {
+		if err := tsp.processTraces(ctx, octd); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return componenterror.CombineErrors(errs)
+}
+
+func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td consumerdata.TraceData) error {
 	scaledSamplingRate := tsp.scaledSamplingRate
 
 	sampledTraceData := consumerdata.TraceData{
@@ -103,7 +116,7 @@ func (tsp *tracesamplerprocessor) ConsumeTraceData(ctx context.Context, td consu
 
 	sampledTraceData.Spans = sampledSpans
 
-	return tsp.nextConsumer.ConsumeTraceData(ctx, sampledTraceData)
+	return tsp.nextConsumer.ConsumeTraces(ctx, internaldata.OCToTraceData(sampledTraceData))
 }
 
 func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilities {
