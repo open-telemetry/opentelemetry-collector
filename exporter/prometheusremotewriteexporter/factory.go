@@ -16,8 +16,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -42,7 +41,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
-		return nil, errors.Errorf("invalid configuration")
+		return nil, errors.New("invalid configuration")
 	}
 
 	client, err := prwCfg.HTTPClientSettings.ToClient()

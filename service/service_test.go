@@ -18,6 +18,7 @@ package service
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -26,7 +27,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
