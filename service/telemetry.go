@@ -15,13 +15,13 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
@@ -52,7 +52,7 @@ type appTelemetry struct {
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	level, err := telemetry.GetLevel()
 	if err != nil {
-		return errors.Wrap(err, "failed to parse metrics level")
+		return fmt.Errorf("failed to parse metrics level: %w", err)
 	}
 
 	metricsAddr := telemetry.GetMetricsAddr()

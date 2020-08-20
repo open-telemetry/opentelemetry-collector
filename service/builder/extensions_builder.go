@@ -16,8 +16,8 @@ package builder
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -133,7 +133,7 @@ func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 	for _, extName := range eb.config.Service.Extensions {
 		extCfg, exists := eb.config.Extensions[extName]
 		if !exists {
-			return nil, errors.Errorf("extension %q is not configured", extName)
+			return nil, fmt.Errorf("extension %q is not configured", extName)
 		}
 
 		componentLogger := eb.logger.With(zap.String(typeLogKey, string(extCfg.Type())), zap.String(nameLogKey, extCfg.Name()))
@@ -151,7 +151,7 @@ func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, cfg configmodels.Extension) (*builtExtension, error) {
 	factory := eb.factories[cfg.Type()]
 	if factory == nil {
-		return nil, errors.Errorf("extension factory for type %q is not configured", cfg.Type())
+		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.Type())
 	}
 
 	ext := &builtExtension{
@@ -160,12 +160,12 @@ func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, cfg configmodels
 
 	ex, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: eb.logger}, cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create extension %q", cfg.Name())
+		return nil, fmt.Errorf("failed to create extension %q: %w", cfg.Name(), err)
 	}
 
 	// Check if the factory really created the extension.
 	if ex == nil {
-		return nil, errors.Errorf("factory for %q produced a nil extension", cfg.Name())
+		return nil, fmt.Errorf("factory for %q produced a nil extension", cfg.Name())
 	}
 
 	ext.extension = ex
