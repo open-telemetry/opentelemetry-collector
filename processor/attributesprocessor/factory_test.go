@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -59,8 +59,8 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	// Missing key
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "", Value: 123, Action: attraction.UPSERT},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
 	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
 	assert.Error(t, err)
@@ -71,8 +71,8 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "a key", Action: attraction.DELETE},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "a key", Action: processorhelper.DELETE},
 	}
 
 	tp, err := factory.CreateTraceProcessor(
@@ -85,8 +85,8 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
-	oCfg.Actions = []attraction.ActionKeyValue{
-		{Action: attraction.DELETE},
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Action: processorhelper.DELETE},
 	}
 	tp, err = factory.CreateTraceProcessor(
 		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -61,7 +60,7 @@ func createTraceProcessor(
 	if len(oCfg.Actions) == 0 {
 		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", cfg.Name())
 	}
-	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
+	attrProc, err := processorhelper.NewAttrProc(&oCfg.Settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %q", err, cfg.Name())
 	}

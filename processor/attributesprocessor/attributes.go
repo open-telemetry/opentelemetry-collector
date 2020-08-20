@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,13 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 type attributesProcessor struct {
-	attrProc *attraction.AttrProc
+	attrProc *processorhelper.AttrProc
 	include  filterspan.Matcher
 	exclude  filterspan.Matcher
 }
@@ -32,7 +32,7 @@ type attributesProcessor struct {
 // newTraceProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filterspan.Matcher) *attributesProcessor {
+func newAttributesProcessor(attrProc *processorhelper.AttrProc, include, exclude filterspan.Matcher) *attributesProcessor {
 	return &attributesProcessor{
 		attrProc: attrProc,
 		include:  include,

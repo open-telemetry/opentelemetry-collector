@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@ package resourceprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // Config defines configuration for Resource processor.
@@ -25,7 +25,7 @@ type Config struct {
 
 	// AttributesActions specifies the list of actions to be applied on resource attributes.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
-	AttributesActions []attraction.ActionKeyValue `mapstructure:"attributes"`
+	AttributesActions []processorhelper.ActionKeyValue `mapstructure:"attributes"`
 
 	// ResourceType field is deprecated. Set "opencensus.type" key in "attributes.upsert" map instead.
 	ResourceType string `mapstructure:"type"`
