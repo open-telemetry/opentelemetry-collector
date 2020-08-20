@@ -417,7 +417,7 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactoryBase) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactory) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	processorsConfig := ViperSub(v, processorsKeyName)
 	expandEnvConfig(processorsConfig)

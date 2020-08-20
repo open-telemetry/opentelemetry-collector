@@ -32,38 +32,16 @@ type Processor interface {
 	GetCapabilities() ProcessorCapabilities
 }
 
-// TraceProcessorBase is a common interface for TraceProcessor and TraceProcessorOld
-type TraceProcessorBase interface {
-	Processor
-}
-
-// TraceProcessorOld is a processor that can consume old-style traces.
-type TraceProcessorOld interface {
-	consumer.TraceConsumerOld
-	TraceProcessorBase
-}
-
 // TraceProcessor is a processor that can consume traces.
 type TraceProcessor interface {
-	consumer.TraceConsumer
-	TraceProcessorBase
-}
-
-// MetricsProcessorBase is a common interface for MetricsProcessor and MetricsProcessorV2
-type MetricsProcessorBase interface {
 	Processor
-}
-
-// MetricsProcessor is a processor that can consume old-style metrics.
-type MetricsProcessorOld interface {
-	consumer.MetricsConsumerOld
-	MetricsProcessorBase
+	consumer.TraceConsumer
 }
 
 // MetricsProcessor is a processor that can consume metrics.
 type MetricsProcessor interface {
+	Processor
 	consumer.MetricsConsumer
-	MetricsProcessorBase
 }
 
 // LogsProcessor is a processor that can consume logs.
@@ -82,37 +60,6 @@ type ProcessorCapabilities struct {
 	MutatesConsumedData bool
 }
 
-// ProcessorFactoryBase defines the common functions for all processor factories.
-type ProcessorFactoryBase interface {
-	Factory
-
-	// CreateDefaultConfig creates the default configuration for the Processor.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Processor.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Processor
-}
-
-// ProcessorFactoryOld is factory interface for processors.
-type ProcessorFactoryOld interface {
-	ProcessorFactoryBase
-
-	// CreateTraceProcessor creates a trace processor based on this config.
-	// If the processor type does not support tracing or if the config is not valid
-	// error will be returned instead.
-	CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumerOld,
-		cfg configmodels.Processor) (TraceProcessorOld, error)
-
-	// CreateMetricsProcessor creates a metrics processor based on this config.
-	// If the processor type does not support metrics or if the config is not valid
-	// error will be returned instead.
-	CreateMetricsProcessor(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld,
-		cfg configmodels.Processor) (MetricsProcessorOld, error)
-}
-
 // ProcessorCreateParams is passed to Create* functions in ProcessorFactory.
 type ProcessorCreateParams struct {
 	// Logger that the factory can use during creation and can pass to the created
@@ -123,7 +70,16 @@ type ProcessorCreateParams struct {
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
 type ProcessorFactory interface {
-	ProcessorFactoryBase
+	Factory
+
+	// CreateDefaultConfig creates the default configuration for the Processor.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Processor.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() configmodels.Processor
 
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
@@ -140,7 +96,16 @@ type ProcessorFactory interface {
 
 // LogsProcessorFactory can create LogsProcessor.
 type LogsProcessorFactory interface {
-	ProcessorFactoryBase
+	Factory
+
+	// CreateDefaultConfig creates the default configuration for the Processor.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Processor.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() configmodels.Processor
 
 	// CreateLogsProcessor creates a processor based on the config.
 	// If the processor type does not support logs or if the config is not valid

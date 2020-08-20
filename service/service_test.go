@@ -357,7 +357,7 @@ func TestApplication_GetFactory(t *testing.T) {
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
 		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
@@ -405,7 +405,7 @@ func createExampleApplication(t *testing.T) *Application {
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
 		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
