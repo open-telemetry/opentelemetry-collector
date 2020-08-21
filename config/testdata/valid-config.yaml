@@ -27,3 +27,6 @@ service:
       processors: [exampleprocessor]
       exporters: [exampleexporter]
 
+    traces/second-stage-exporters:
+      exporters: [exampleexporter]
+

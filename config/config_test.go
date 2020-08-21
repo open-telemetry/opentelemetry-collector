@@ -118,7 +118,7 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Service.Pipelines), "Incorrect pipelines count")
+	assert.Equal(t, 2, len(config.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
 		&configmodels.Pipeline{
@@ -130,6 +130,18 @@ func TestDecodeConfig(t *testing.T) {
 		},
 		config.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
+
+	assert.Equal(t,
+		&configmodels.Pipeline{
+			Name:       "traces/second-stage-exporters",
+			InputType:  configmodels.TracesDataType,
+			Receivers:  nil,
+			Processors: nil,
+			Exporters:  []string{"exampleexporter"},
+		},
+		config.Service.Pipelines["traces/second-stage-exporters"],
+		"Did not load pipeline config correctly")
+
 }
 
 func TestSimpleConfig(t *testing.T) {
@@ -482,8 +494,6 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "missing-pipelines", expected: errMissingPipelines},
 		{name: "pipeline-must-have-exporter", expected: errPipelineMustHaveExporter},
 		{name: "pipeline-must-have-exporter2", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-receiver", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-must-have-receiver2", expected: errPipelineMustHaveReceiver},
 		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
 		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},

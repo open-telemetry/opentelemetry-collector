@@ -598,13 +598,6 @@ func validatePipeline(cfg *configmodels.Config, pipeline *configmodels.Pipeline)
 }
 
 func validatePipelineReceivers(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
-	if len(pipeline.Receivers) == 0 {
-		return &configError{
-			code: errPipelineMustHaveReceiver,
-			msg:  fmt.Sprintf("pipeline %q must have at least one receiver", pipeline.Name),
-		}
-	}
-
 	// Validate pipeline receiver name references.
 	for _, ref := range pipeline.Receivers {
 		// Check that the name referenced in the pipeline's Receivers exists in the top-level Receivers
