@@ -42,7 +42,6 @@ const (
 	errUnknownType
 	errDuplicateName
 	errMissingPipelines
-	errPipelineMustHaveReceiver
 	errPipelineMustHaveExporter
 	errExtensionNotExists
 	errPipelineReceiverNotExists
