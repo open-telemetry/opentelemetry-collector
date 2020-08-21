@@ -61,7 +61,7 @@ testbed-loadtest: otelcol
 
 .PHONY: testbed-correctness
 testbed-correctness: otelcol
-	cd ./testbed/correctness && ./runtests.sh
+	cd ./testbed/correctness/traces && ./runtests.sh
 
 .PHONY: testbed-list-loadtest
 testbed-list-loadtest:
