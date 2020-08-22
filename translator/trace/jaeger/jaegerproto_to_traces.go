@@ -194,7 +194,7 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case model.ValueType_STRING:
-			dest.UpsertString(tag.Key, tag.GetVStr())
+			tracetranslator.UpsertStringToAttributeMap(tag.Key, tag.GetVStr(), dest)
 		case model.ValueType_BOOL:
 			dest.UpsertBool(tag.Key, tag.GetVBool())
 		case model.ValueType_INT64:
@@ -202,7 +202,8 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 		case model.ValueType_FLOAT64:
 			dest.UpsertDouble(tag.Key, tag.GetVFloat64())
 		case model.ValueType_BINARY:
-			dest.UpsertString(tag.Key, base64.StdEncoding.EncodeToString(tag.GetVBinary()))
+			b64Str := base64.StdEncoding.EncodeToString(tag.GetVBinary())
+			tracetranslator.UpsertStringToAttributeMap(tag.Key, b64Str, dest)
 		default:
 			dest.UpsertString(tag.Key, fmt.Sprintf("<Unknown Jaeger TagType %q>", tag.GetVType()))
 		}

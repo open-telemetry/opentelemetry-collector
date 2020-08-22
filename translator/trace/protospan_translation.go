@@ -15,9 +15,11 @@
 package tracetranslator
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
+	"regexp"
 	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -78,6 +80,31 @@ const (
 	SpanEventDataFormat = "%s|%s|%d"
 )
 
+type attrValDescript struct {
+	regex    *regexp.Regexp
+	attrType pdata.AttributeValueType
+}
+
+var attrValDescriptions = getAttrValDescripts()
+
+func getAttrValDescripts() []*attrValDescript {
+	descriptions := make([]*attrValDescript, 0, 5)
+	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueNULL))
+	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
+	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
+	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
+	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueMAP))
+	return descriptions
+}
+
+func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *attrValDescript {
+	regexc := regexp.MustCompile(regex)
+	return &attrValDescript{
+		regex:    regexc,
+		attrType: attrType,
+	}
+}
+
 // AttributeValueToString converts an OTLP AttributeValue object to its equivalent string representation
 func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 	switch attr.Type() {
@@ -102,25 +129,85 @@ func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		return strconv.FormatInt(attr.IntVal(), 10)
 
 	case pdata.AttributeValueMAP:
-		// OpenCensus attributes cannot represent maps natively. Convert the
-		// map to a JSON-like string.
-		var sb strings.Builder
-		sb.WriteString("{")
-		m := attr.MapVal()
-		first := true
-		m.ForEach(func(k string, v pdata.AttributeValue) {
-			if !first {
-				sb.WriteString(",")
-			}
-			first = false
-			sb.WriteString(fmt.Sprintf("%q:%s", k, AttributeValueToString(v, true)))
-		})
-		sb.WriteString("}")
-		return sb.String()
+		jsonStr, _ := json.Marshal(AttributeMapToMap(attr.MapVal()))
+		return string(jsonStr)
 
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
 	}
 
 	// TODO: Add support for ARRAY type.
+}
+
+// AttributeMapToMap converts an OTLP AttributeMap to a standard go map
+func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
+	rawMap := make(map[string]interface{})
+	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			rawMap[k] = v.StringVal()
+		case pdata.AttributeValueINT:
+			rawMap[k] = v.IntVal()
+		case pdata.AttributeValueDOUBLE:
+			rawMap[k] = v.DoubleVal()
+		case pdata.AttributeValueBOOL:
+			rawMap[k] = v.BoolVal()
+		case pdata.AttributeValueNULL:
+			rawMap[k] = nil
+		}
+	})
+	return rawMap
+}
+
+// UpsertStringToAttributeMap upserts a string value to the specified key as it's native OTLP type
+func UpsertStringToAttributeMap(key string, val string, dest pdata.AttributeMap) {
+	switch DetermineValueType(val) {
+	case pdata.AttributeValueINT:
+		iVal, _ := strconv.ParseInt(val, 10, 64)
+		dest.UpsertInt(key, iVal)
+	case pdata.AttributeValueDOUBLE:
+		fVal, _ := strconv.ParseFloat(val, 64)
+		dest.UpsertDouble(key, fVal)
+	case pdata.AttributeValueBOOL:
+		bVal, _ := strconv.ParseBool(val)
+		dest.UpsertBool(key, bVal)
+	case pdata.AttributeValueMAP:
+		var attrs map[string]interface{}
+		err := json.Unmarshal([]byte(val), &attrs)
+		if err == nil {
+			attrMap := pdata.NewAttributeValueMap()
+			jsonMapToAttributeMap(attrs, attrMap.MapVal())
+			dest.Upsert(key, attrMap)
+		} else {
+			dest.UpsertString(key, "")
+		}
+	default:
+		dest.UpsertString(key, val)
+	}
+}
+
+// DetermineValueType returns the native OTLP attribute type the string translates to.
+func DetermineValueType(value string) pdata.AttributeValueType {
+	for _, desc := range attrValDescriptions {
+		if desc.regex.MatchString(value) {
+			return desc.attrType
+		}
+	}
+	return pdata.AttributeValueSTRING
+}
+
+func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) {
+	for key, val := range attrs {
+		if s, ok := val.(string); ok {
+			dest.InsertString(key, s)
+		} else if d, ok := val.(float64); ok {
+			if math.Mod(d, 1.0) == 0.0 {
+				dest.InsertInt(key, int64(d))
+			} else {
+				dest.InsertDouble(key, d)
+			}
+		} else if b, ok := val.(bool); ok {
+			dest.InsertBool(key, b)
+		}
+	}
 }

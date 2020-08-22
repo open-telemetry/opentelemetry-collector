@@ -20,6 +20,7 @@ import (
 	"log"
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -210,7 +211,7 @@ func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan *otlptrace.Span
 }
 
 func (v *CorrectnessTestValidator) diffSpanName(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if sentSpan.Name != recdSpan.Name {
+	if !strings.EqualFold(sentSpan.Name, recdSpan.Name) {
 		af := &AssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
@@ -418,20 +419,15 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 		if ok {
 			sentVal := retrieveAttributeValue(sentAttr)
 			recdVal := retrieveAttributeValue(recdAttr)
-			if !reflect.DeepEqual(sentVal, recdVal) {
-				sentStr := fmt.Sprintf("%v", sentVal)
-				recdStr := fmt.Sprintf("%v", recdVal)
-				if sentStr != recdStr {
-					af := &AssertionFailure{
-						typeName:      "Span",
-						dataComboName: spanName,
-						fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
-						expectedValue: sentVal,
-						actualValue:   recdVal,
-					}
-					v.assertionFailures = append(v.assertionFailures, af)
-				}
+			switch val := sentVal.(type) {
+			case *otlpcommon.KeyValueList:
+				v.compareKeyValueList(spanName, val, recdVal, fmtStr, sentAttr.Key)
+			case *otlpcommon.ArrayValue:
+				v.compareArrayList(spanName, val, recdVal, fmtStr, sentAttr.Key)
+			default:
+				v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentAttr.Key)
 			}
+
 		} else {
 			af := &AssertionFailure{
 				typeName:      "Span",
@@ -442,6 +438,58 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
 		}
+	}
+}
+
+func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal interface{}, recdVal interface{},
+	fmtStr string, attrKey string) {
+	if !reflect.DeepEqual(sentVal, recdVal) {
+		sentStr := fmt.Sprintf("%v", sentVal)
+		recdStr := fmt.Sprintf("%v", recdVal)
+		if !strings.EqualFold(sentStr, recdStr) {
+			af := &AssertionFailure{
+				typeName:      "Span",
+				dataComboName: spanName,
+				fieldPath:     fmt.Sprintf(fmtStr, attrKey),
+				expectedValue: sentVal,
+				actualValue:   recdVal,
+			}
+			v.assertionFailures = append(v.assertionFailures, af)
+		}
+	}
+}
+
+func (v *CorrectnessTestValidator) compareKeyValueList(spanName string, sentKVList *otlpcommon.KeyValueList,
+	recdVal interface{}, fmtStr string, attrKey string) {
+	recdKVList, ok := recdVal.(*otlpcommon.KeyValueList)
+	if ok {
+		v.diffAttributesSlice(spanName, recdKVList.Values, sentKVList.Values, fmtStr)
+	} else {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: spanName,
+			fieldPath:     fmt.Sprintf(fmtStr, attrKey),
+			expectedValue: sentKVList,
+			actualValue:   recdVal,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
+	}
+}
+
+func (v *CorrectnessTestValidator) compareArrayList(spanName string, sentArray *otlpcommon.ArrayValue,
+	recdVal interface{}, fmtStr string, attrKey string) {
+	recdArray, ok := recdVal.(*otlpcommon.ArrayValue)
+	if ok {
+		v.compareSimpleValues(spanName, sentArray.Values, recdArray.Values, fmtStr, attrKey)
+	} else {
+		af := &AssertionFailure{
+			typeName:      "Span",
+			dataComboName: spanName,
+			fieldPath:     fmt.Sprintf(fmtStr, attrKey),
+			expectedValue: sentArray,
+			actualValue:   recdVal,
+		}
+		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
