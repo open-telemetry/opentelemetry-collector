@@ -89,7 +89,7 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpa
 	scaledSamplingRate := tsp.scaledSamplingRate
 
 	sampledTraceData.ResourceSpans().Resize(sampledTraceData.ResourceSpans().Len() + 1)
-	rs := sampledTraceData.ResourceSpans().At(sampledTraceData.ResourceSpans().Len())
+	rs := sampledTraceData.ResourceSpans().At(sampledTraceData.ResourceSpans().Len() - 1)
 	rs.Resource().InitEmpty()
 	resourceSpans.Resource().CopyTo(rs.Resource())
 	rs.InstrumentationLibrarySpans().Resize(1)

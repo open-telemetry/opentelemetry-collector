@@ -16,19 +16,18 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"encoding/binary"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"math"
 	"math/rand"
 	"reflect"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor"
@@ -155,7 +154,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 				return
 			}
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName) {
-				if err := tsp.ConsumeTraces(context.Background(), internaldata.OCToTraceData(td)); err != nil {
+				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
 					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
 					return
 				}
@@ -399,41 +398,49 @@ func Test_hash(t *testing.T) {
 // genRandomTestData generates a slice of consumerdata.TraceData with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
 // serviceName.
-func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (tdd []consumerdata.TraceData) {
+func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (tdd []pdata.Traces) {
 	r := rand.New(rand.NewSource(1))
+	var traceBatches []pdata.Traces
+	for i := 1; i <= numBatches; i++ {
+		traces := pdata.NewTraces()
+		traces.ResourceSpans().Resize(1)
+		rs := traces.ResourceSpans().At(0)
+		rs.Resource().InitEmpty()
+		rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
+		rs.Resource().Attributes().InsertBool("bool", true)
+		rs.Resource().Attributes().InsertString("string", "yes")
+		rs.Resource().Attributes().InsertInt("int64", 10000000)
+		rs.InstrumentationLibrarySpans().Resize(1)
 
-	for i := 0; i < numBatches; i++ {
-		var spans []*tracepb.Span
-		for j := 0; j < numTracesPerBatch; j++ {
-			span := &tracepb.Span{
-				TraceId: tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()),
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						tracetranslator.TagHTTPStatusCode: {
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 404,
-							},
-						},
-						tracetranslator.TagHTTPStatusMsg: {
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-							},
-						},
-					},
-				},
-			}
-			spans = append(spans, span)
+		for j := 1; j <= numTracesPerBatch; j++ {
+			span := pdata.NewSpan()
+			span.InitEmpty()
+			span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
+			span.SetSpanID(GenerateSequentialSpanID(uint64(j + i)))
+			attributes := make(map[string]pdata.AttributeValue)
+			attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
+			attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")
+			rs.InstrumentationLibrarySpans().At(0).Spans().Append(&span)
+			span.Attributes().InitFromMap(attributes)
 		}
-		td := consumerdata.TraceData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: serviceName},
-			},
-			Spans: spans,
-		}
-		tdd = append(tdd, td)
+		traceBatches = append(traceBatches, traces)
 	}
 
-	return tdd
+	return traceBatches
+}
+
+func GenerateSequentialTraceID(id uint64) []byte {
+	//var traceID [16]byte
+	//binary.PutUvarint(traceID[:], id)
+	token := make([]byte, 16)
+	rand.Read(token)
+	return token
+}
+
+func GenerateSequentialSpanID(id uint64) []byte {
+	var spanID [8]byte
+	binary.PutUvarint(spanID[:], id)
+	return spanID[:]
 }
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
