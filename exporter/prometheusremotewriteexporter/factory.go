@@ -17,10 +17,10 @@ package prometheusremotewriteexporter
 import (
 	"context"
 	"net/http"
+	"plugin"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/pkg/errors"
 
@@ -60,32 +60,6 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return response, err
 }
 
-// the following are methods we would reimplement
-func createClient(origClient *http.Client, region string) (*http.Client, error) {
-	if origClient == nil {
-		return nil, errors.Errorf("invalid http configuration")
-	}
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
-	)
-	if err != nil {
-		return nil, err
-	}
-	// Get Credentials, either from ./aws or from environmental variables
-	creds := sess.Config.Credentials
-	signer := v4.NewSigner(creds)
-	// Initialize Client with interceptor
-	client := &http.Client{
-		Transport: &SigningRoundTripper{
-			transport: origClient.Transport,
-			signer:    signer,
-			cfg:       sess.Config,
-		},
-	}
-	return client, nil
-
-}
-
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -102,14 +76,24 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		return nil, errors.Errorf("invalid configuration")
 	}
 	client, _ := cCfg.HTTPClientSettings.ToClient()
-	client, err := createClient(client, cCfg.Region)
 
-	if err != nil {
-		return nil, err
+	if len(cCfg.AuthPath) != 0 {
+		auth, err := plugin.Open(cCfg.AuthPath)
+		if err != nil {
+			return nil, err
+		}
+
+		newAuth, err := auth.Lookup("NewAuth")
+		if err != nil {
+			return nil, err
+		}
+
+		client, err = newAuth.(func(*http.Client, string) (*http.Client, error))(client, cCfg.Region)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	prwe, err := newPrwExporter(cCfg.Namespace, cCfg.HTTPClientSettings.Endpoint, client, cCfg.Headers)
-
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +124,10 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Namespace: "",
-		Headers:   map[string]string{},
-
+		Namespace:       "",
+		Headers:         map[string]string{},
+		AuthPath:        "",
+		Region:          "",
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   qs,

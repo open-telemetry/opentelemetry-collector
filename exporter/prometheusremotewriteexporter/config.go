@@ -34,6 +34,9 @@ type Config struct {
 	// AWS region
 	Region string `mapstructure:"region"`
 
+	// Path to Auth plugin
+	AuthPath string `mapstructure:"plugin"`
+
 	// Optional headers configuration for authorization and security/extra metadata
 	Headers map[string]string `mapstructure:"headers"`
 

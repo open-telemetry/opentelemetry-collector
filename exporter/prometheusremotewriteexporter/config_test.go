@@ -73,8 +73,8 @@ func TestLoadConfig(t *testing.T) {
 			Headers: map[string]string{
 				"prometheus-remote-write-version": "0.1.0",
 				"tenant-id":                       "234"},
-			Region: "us-west-2",
-
+			Region:   "us-west-1",
+			AuthPath: "auth.so",
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{

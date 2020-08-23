@@ -26,7 +26,8 @@ exporters:
             ca_file: "/var/lib/mycert.pem"
             timeout: 5s
             write_buffer_size: 524288
-        region: "us-west-2"
+        plugin: "auth.so"
+        region: "us-west-1"
 
 service:
     pipelines:

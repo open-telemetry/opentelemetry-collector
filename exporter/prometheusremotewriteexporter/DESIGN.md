@@ -25,7 +25,7 @@ The Prometheus remote write/Cortex exporter should write metrics to a remote URL
 TimeSeries stores its metric name in its labels and does not describe metric types or start timestamps. To convert to TimeSeries data, buckets of a Histogram are broken down into individual TimeSeries with a bound label(`le`), and a similar process happens with quantiles in a Summary.
 
 
-More details of Prometheus remote write API can be found in Prometheus [documentation](https://prometheus.io/docs/prometheus/latest/storage/#overview) and Cortex [documentation](https://cortexmetrics.io/docs/apis/).
+More details of Prometheus remote write API can be found in Prometheus [documentation](https://prometheus.io/docs/prometheus/latest/storage/#overview) and Cortex [documentation](https://cortexmetrics.io/docs/api/).
 
 ### **1.2 Gaps and Assumptions**
 
