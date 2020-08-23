@@ -178,23 +178,23 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 
 // Test_tracesamplerprocessor_SpanSamplingPriority checks if handling of "sampling.priority" is correct.
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
-	singleSpanWithAttrib := func(key string, attribValue *tracepb.AttributeValue) consumerdata.TraceData {
-		return consumerdata.TraceData{
-			Spans: []*tracepb.Span{
-				{
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							key: {Value: attribValue.Value},
-						},
-					},
-				},
-			},
-		}
+	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
+
+		span := getSpanWithAttributes(key, attribValue)
+		traces := pdata.NewTraces()
+		traces.ResourceSpans().Resize(1)
+		rs := traces.ResourceSpans().At(0)
+		rs.Resource().InitEmpty()
+		instrLibrarySpans := pdata.NewInstrumentationLibrarySpans()
+		instrLibrarySpans.InitEmpty()
+		rs.InstrumentationLibrarySpans().Append(&instrLibrarySpans)
+		instrLibrarySpans.Spans().Append(&span)
+		return traces
 	}
 	tests := []struct {
 		name    string
 		cfg     Config
-		td      consumerdata.TraceData
+		td      pdata.Traces
 		sampled bool
 	}{
 		{
@@ -204,7 +204,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 2}}),
+				pdata.NewAttributeValueInt(2)),
 			sampled: true,
 		},
 		{
@@ -214,7 +214,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1}}),
+				pdata.NewAttributeValueDouble(1)),
 			sampled: true,
 		},
 		{
@@ -224,7 +224,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "1"}}}),
+				pdata.NewAttributeValueString("1")),
 			sampled: true,
 		},
 		{
@@ -234,7 +234,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 0}}),
+				pdata.NewAttributeValueInt(0)),
 		},
 		{
 			name: "must_not_sample_double",
@@ -243,7 +243,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 0}}),
+				pdata.NewAttributeValueDouble(0)),
 		},
 		{
 			name: "must_not_sample_string",
@@ -252,7 +252,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "0"}}}),
+				pdata.NewAttributeValueString("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -261,7 +261,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 2}}),
+				pdata.NewAttributeValueInt(2)),
 		},
 		{
 			name: "defer_sample_expect_sampled",
@@ -270,7 +270,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 2}}),
+				pdata.NewAttributeValueInt(2)),
 			sampled: true,
 		},
 	}
@@ -280,7 +280,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
-			err = tsp.ConsumeTraces(context.Background(), internaldata.OCToTraceData(tt.td))
+			err = tsp.ConsumeTraces(context.Background(), tt.td)
 			require.NoError(t, err)
 
 			sampledData := sink.AllTraces()
@@ -295,162 +295,72 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 func Test_parseSpanSamplingPriority(t *testing.T) {
 	tests := []struct {
 		name string
-		span *tracepb.Span
+		span pdata.Span
 		want samplingPriority
 	}{
 		{
 			name: "nil_span",
-			span: &tracepb.Span{},
+			span: pdata.NewSpan(),
 			want: deferDecision,
 		},
 		{
 			name: "nil_attributes",
-			span: &tracepb.Span{},
-			want: deferDecision,
-		},
-		{
-			name: "nil_attribute_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{},
-			},
-			want: deferDecision,
-		},
-		{
-			name: "empty_attribute_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
+			span: pdata.NewSpan(),
 			want: deferDecision,
 		},
 		{
 			name: "no_sampling_priority",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key": {Value: &tracepb.AttributeValue_BoolValue{BoolValue: true}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("key", pdata.NewAttributeValueBool(true)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_int_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: 0}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_gt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: 1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_lt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: -1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_double_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_gt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_lt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: -1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "0.0"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "0.5"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "-0.5"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NaN"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("NaN")),
 			want: deferDecision,
 		},
 	}
@@ -459,6 +369,14 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 			assert.Equal(t, tt.want, parseSpanSamplingPriority(tt.span))
 		})
 	}
+}
+
+func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("spanName")
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
+	return span
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
