@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,13 +15,13 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
 
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
@@ -52,13 +52,18 @@ type appTelemetry struct {
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
 	level, err := telemetry.GetLevel()
 	if err != nil {
-		return errors.Wrap(err, "failed to parse metrics level")
+		return fmt.Errorf("failed to parse metrics level: %w", err)
 	}
 
 	metricsAddr := telemetry.GetMetricsAddr()
 
 	if level == telemetry.None || metricsAddr == "" {
 		return nil
+	}
+
+	processMetricsViews, err := telemetry.NewProcessMetricsViews(ballastSizeBytes)
+	if err != nil {
+		return err
 	}
 
 	var views []*view.View
@@ -68,7 +73,6 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
 	views = append(views, kafkareceiver.MetricViews()...)
-	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
 	views = append(views, fluentobserv.Views(level)...)
 	tel.views = views

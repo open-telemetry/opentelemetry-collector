@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,8 +22,8 @@ import (
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
 	"go.opencensus.io/resource/resourcekeys"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -92,10 +92,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			if err != nil {
 				return
 			}
-			ts, err := ptypes.TimestampProto(t)
-			if err != nil {
-				return
-			}
+			ts := timestamppb.New(t)
 			if ocNode.Identifier == nil {
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}

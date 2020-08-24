@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -310,7 +310,7 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactoryBase) (configmodels.Receiver, error) {
+func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactory) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetType(typeStr)
@@ -326,7 +326,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	return receiverCfg, nil
 }
 
-func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactoryBase) (configmodels.Receivers, error) {
+func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
 	receiversConfig := ViperSub(v, receiversKeyName)
 	expandEnvConfig(receiversConfig)
@@ -417,7 +417,7 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactoryBase) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactory) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	processorsConfig := ViperSub(v, processorsKeyName)
 	expandEnvConfig(processorsConfig)

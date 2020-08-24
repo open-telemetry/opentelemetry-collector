@@ -18,7 +18,6 @@ import (
 	"context"
 
 	stanza "github.com/observiq/stanza/agent"
-	"github.com/observiq/stanza/entry"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -56,21 +55,21 @@ func createLogsReceiver(
 ) (component.LogsReceiver, error) {
 
 	obsConfig := cfg.(*Config)
-	logsChan := make(chan *entry.Entry)
-	buildParams := map[string]interface{}{logsChannelID: logsChan}
-	logAgent, err := stanza.NewLogAgent(
-		&stanza.Config{Pipeline: obsConfig.Pipeline},
-		params.Logger.Sugar(),
-		obsConfig.PluginsDir,
-		obsConfig.OffsetsFile,
-		buildParams)
+
+	emitter := NewLogEmitter(params.Logger.Sugar())
+
+	logAgent, err := stanza.NewBuilder(&stanza.Config{Pipeline: obsConfig.Pipeline}, params.Logger.Sugar()).
+		WithPluginDir(obsConfig.PluginsDir).
+		WithDatabaseFile(obsConfig.OffsetsFile).
+		WithDefaultOutput(emitter).
+		Build()
 	if err != nil {
 		return nil, err
 	}
 
 	return &stanzareceiver{
 		agent:    logAgent,
-		logsChan: logsChan,
+		emitter:  emitter,
 		consumer: nextConsumer,
 		logger:   params.Logger,
 		done:     make(chan struct{}),

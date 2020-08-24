@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -327,9 +326,6 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	npf := &processortest.NopProcessorFactory{}
-	factories.Processors[npf.Type()] = npf
-
 	bf := &badReceiverFactory{}
 	factories.Receivers[bf.Type()] = bf
 
@@ -390,9 +386,6 @@ func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	npf := &processortest.NopProcessorFactory{}
-	factories.Processors[npf.Type()] = npf
-
 	newStyleReceiver := &newStyleReceiverFactory{}
 	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver
 
@@ -424,15 +417,20 @@ func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 func (b *badReceiverFactory) CreateTraceReceiver(
-	_ context.Context,
-	_ *zap.Logger,
-	_ configmodels.Receiver,
-	_ consumer.TraceConsumerOld,
+	context.Context,
+	component.ReceiverCreateParams,
+	configmodels.Receiver,
+	consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	return nil, nil
 }
 
-func (b *badReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+func (b *badReceiverFactory) CreateMetricsReceiver(
+	context.Context,
+	component.ReceiverCreateParams,
+	configmodels.Receiver,
+	consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 

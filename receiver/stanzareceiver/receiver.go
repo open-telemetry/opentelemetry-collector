@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	stanza "github.com/observiq/stanza/agent"
-	"github.com/observiq/stanza/entry"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -35,7 +34,7 @@ type stanzareceiver struct {
 	wg        sync.WaitGroup
 
 	agent    *stanza.LogAgent
-	logsChan chan *entry.Entry
+	emitter  *LogEmitter
 	consumer consumer.LogsConsumer
 	logger   *zap.Logger
 }
@@ -61,7 +60,7 @@ func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
 				select {
 				case <-r.done:
 					return
-				case obsLog := <-r.logsChan:
+				case obsLog := <-r.emitter.LogChan():
 					if consumeErr := r.consumer.ConsumeLogs(ctx, convert(obsLog)); consumeErr != nil {
 						r.logger.Error("ConsumeLogs() error", zap.String("error", consumeErr.Error()))
 					}
@@ -79,6 +78,7 @@ func (r *stanzareceiver) Shutdown(context.Context) error {
 		r.logger.Info("Shutting down observiq receiver")
 		close(r.done)
 		r.wg.Wait()
+		r.emitter.Stop()
 	})
 	return nil
 }

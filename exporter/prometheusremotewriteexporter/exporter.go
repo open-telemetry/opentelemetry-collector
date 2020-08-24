@@ -1,10 +1,10 @@
-// Copyright 2020 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,10 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -40,12 +39,12 @@ type prwExporter struct {
 func newPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
 
 	if client == nil {
-		return nil, errors.Errorf("http client cannot be nil")
+		return nil, errors.New("http client cannot be nil")
 	}
 
 	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
-		return nil, errors.Errorf("invalid endpoint")
+		return nil, errors.New("invalid endpoint")
 	}
 
 	return &prwExporter{

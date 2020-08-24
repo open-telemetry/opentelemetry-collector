@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package service
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -26,7 +27,6 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -354,10 +354,10 @@ func TestApplication_GetFactory(t *testing.T) {
 	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{}
 
 	factories := component.Factories{
-		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
+		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
 		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
@@ -402,10 +402,10 @@ func createExampleApplication(t *testing.T) *Application {
 	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
 	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{}
 	factories := component.Factories{
-		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
+		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
 		Exporters: map[configmodels.Type]component.ExporterFactoryBase{

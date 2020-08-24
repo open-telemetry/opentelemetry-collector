@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -51,6 +51,20 @@ func TestScrapeMetrics(t *testing.T) {
 			config: Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}}},
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
+			},
+			usageFunc: func(string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+		},
+		{
+			name: "No duplicate metrics for devices having many mount point",
+			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{Device: "a", Mountpoint: "/mnt/a1"},
+					{Device: "a", Mountpoint: "/mnt/a2"},
+				}, nil
 			},
 			usageFunc: func(string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{}, nil

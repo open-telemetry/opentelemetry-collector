@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,11 +22,11 @@ import (
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -293,9 +293,9 @@ func heuristicalMetricAndKnownUnits(metricName, parsedUnit string) string {
 	return unit
 }
 
-func timestampFromMs(timeAtMs int64) *timestamp.Timestamp {
+func timestampFromMs(timeAtMs int64) *timestamppb.Timestamp {
 	secs, ns := timeAtMs/1e3, (timeAtMs%1e3)*1e6
-	return &timestamp.Timestamp{
+	return &timestamppb.Timestamp{
 		Seconds: secs,
 		Nanos:   int32(ns),
 	}

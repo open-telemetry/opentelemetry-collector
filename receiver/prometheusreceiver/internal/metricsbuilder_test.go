@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,12 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const startTs = int64(1555366610000)
@@ -1050,8 +1050,8 @@ func Test_metricBuilder_summary(t *testing.T) {
 									{
 										Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
 											SummaryValue: &metricspb.SummaryValue{
-												Sum:   &wrappers.DoubleValue{Value: 100.0},
-												Count: &wrappers.Int64Value{Value: 500},
+												Sum:   &wrapperspb.DoubleValue{Value: 100.0},
+												Count: &wrapperspb.Int64Value{Value: 500},
 											},
 										},
 									},
@@ -1089,8 +1089,8 @@ func Test_metricBuilder_summary(t *testing.T) {
 								Points: []*metricspb.Point{
 									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
 										SummaryValue: &metricspb.SummaryValue{
-											Sum:   &wrappers.DoubleValue{Value: 100.0},
-											Count: &wrappers.Int64Value{Value: 500},
+											Sum:   &wrapperspb.DoubleValue{Value: 100.0},
+											Count: &wrapperspb.Int64Value{Value: 500},
 											Snapshot: &metricspb.SummaryValue_Snapshot{
 												PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
 													{Percentile: 50.0, Value: 1},

@@ -172,30 +172,28 @@ func convertSeverity(s entry.Severity) (string, pdata.SeverityNumber) {
 	switch {
 
 	// Handle standard severity levels
-	case s == entry.Default:
-		return "Undefined", pdata.SeverityNumberUNDEFINED
-	case s == entry.Trace:
-		return "Trace", pdata.SeverityNumberTRACE2
-	case s == entry.Debug:
-		return "Debug", pdata.SeverityNumberDEBUG
-	case s == entry.Info:
-		return "Info", pdata.SeverityNumberINFO
-	case s == entry.Notice:
-		return "Info", pdata.SeverityNumberINFO3
-	case s == entry.Warning:
-		return "Info", pdata.SeverityNumberINFO4
-	case s == entry.Error:
-		return "Error", pdata.SeverityNumberERROR
-	case s == entry.Critical:
-		return "Error", pdata.SeverityNumberERROR2
-	case s == entry.Alert:
-		return "Error", pdata.SeverityNumberERROR3
-	case s == entry.Emergency:
-		return "Error", pdata.SeverityNumberFATAL
 	case s == entry.Catastrophe:
 		return "Fatal", pdata.SeverityNumberFATAL4
+	case s == entry.Emergency:
+		return "Error", pdata.SeverityNumberFATAL
+	case s == entry.Alert:
+		return "Error", pdata.SeverityNumberERROR3
+	case s == entry.Critical:
+		return "Error", pdata.SeverityNumberERROR2
+	case s == entry.Error:
+		return "Error", pdata.SeverityNumberERROR
+	case s == entry.Warning:
+		return "Info", pdata.SeverityNumberINFO4
+	case s == entry.Notice:
+		return "Info", pdata.SeverityNumberINFO3
+	case s == entry.Info:
+		return "Info", pdata.SeverityNumberINFO
+	case s == entry.Debug:
+		return "Debug", pdata.SeverityNumberDEBUG
+	case s == entry.Trace:
+		return "Trace", pdata.SeverityNumberTRACE2
 
-		// Handle custom severity levels
+	// Handle custom severity levels
 	case s > entry.Emergency:
 		return "Fatal", pdata.SeverityNumberFATAL2
 	case s > entry.Alert:

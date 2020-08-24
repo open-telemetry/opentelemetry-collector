@@ -45,7 +45,7 @@ func TestStart(t *testing.T) {
 	require.NoError(t, err, "receiver start failed")
 
 	obsReceiver := receiver.(*stanzareceiver)
-	obsReceiver.logsChan <- entry.New()
+	obsReceiver.emitter.LogChan() <- entry.New()
 	receiver.Shutdown(context.Background())
 	require.Equal(t, 1, mockConsumer.received, "one log entry expected")
 }
@@ -77,7 +77,7 @@ func TestHandleConsumeError(t *testing.T) {
 	require.NoError(t, err, "receiver start failed")
 
 	obsReceiver := receiver.(*stanzareceiver)
-	obsReceiver.logsChan <- entry.New()
+	obsReceiver.emitter.LogChan() <- entry.New()
 	receiver.Shutdown(context.Background())
 	require.Equal(t, 1, mockConsumer.rejected, "one log entry expected")
 }
@@ -92,26 +92,23 @@ func BenchmarkPipelineSimple(b *testing.B) {
 
 	filePath := filepath.Join(tempDir, "bench.log")
 
-	logsChan := make(chan *entry.Entry)
-	defer close(logsChan)
-
-	buildContext := testutil.NewBuildContext(b)
-	buildContext.Logger = zap.NewNop().Sugar() // be quiet
-	buildContext.Parameters = map[string]interface{}{"logs_channel": logsChan}
-
 	pipelineYaml := fmt.Sprintf(`
 - type: file_input
   include:
     - %s
-  start_at: beginning
-  output: receiver_output
-- type: receiver_output`,
+  start_at: beginning`,
 		filePath)
 
 	pipelineCfg := pipeline.Config{}
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
 
-	pl, err := pipelineCfg.BuildPipeline(buildContext)
+	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	defer emitter.Stop()
+
+	buildContext := testutil.NewBuildContext(b)
+	buildContext.Logger = zap.NewNop().Sugar() // be quiet
+
+	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -125,7 +122,7 @@ func BenchmarkPipelineSimple(b *testing.B) {
 	b.ResetTimer()
 	require.NoError(b, pl.Start())
 	for i := 0; i < b.N; i++ {
-		<-logsChan
+		<-emitter.LogChan()
 	}
 }
 
@@ -138,13 +135,6 @@ func BenchmarkPipelineComplex(b *testing.B) {
 	}
 
 	filePath := filepath.Join(tempDir, "bench.log")
-
-	logsChan := make(chan *entry.Entry)
-	defer close(logsChan)
-
-	buildContext := testutil.NewBuildContext(b)
-	buildContext.Logger = zap.NewNop().Sugar() // be quiet
-	buildContext.Parameters = map[string]interface{}{"logs_channel": logsChan}
 
 	fileInputYaml := fmt.Sprintf(`
 - type: file_input
@@ -165,16 +155,20 @@ func BenchmarkPipelineComplex(b *testing.B) {
       critical: 5xx
       error: 4xx
       info: 3xx
-      debug: 2xx
-  output: receiver_output
-- type: receiver_output`
+      debug: 2xx`
 
 	pipelineYaml := fmt.Sprintf("%s%s", fileInputYaml, regexParserYaml)
 
 	pipelineCfg := pipeline.Config{}
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
 
-	pl, err := pipelineCfg.BuildPipeline(buildContext)
+	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	defer emitter.Stop()
+
+	buildContext := testutil.NewBuildContext(b)
+	buildContext.Logger = zap.NewNop().Sugar() // be quiet
+
+	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -188,6 +182,6 @@ func BenchmarkPipelineComplex(b *testing.B) {
 	b.ResetTimer()
 	require.NoError(b, pl.Start())
 	for i := 0; i < b.N; i++ {
-		<-logsChan
+		<-emitter.LogChan()
 	}
 }

@@ -1,10 +1,10 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,10 +24,10 @@ import (
 // can be handled by the Config.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
-	Receivers map[configmodels.Type]ReceiverFactoryBase
+	Receivers map[configmodels.Type]ReceiverFactory
 
 	// Processors maps processor type names in the config to the respective factory.
-	Processors map[configmodels.Type]ProcessorFactoryBase
+	Processors map[configmodels.Type]ProcessorFactory
 
 	// Exporters maps exporter type names in the config to the respective factory.
 	Exporters map[configmodels.Type]ExporterFactoryBase
@@ -39,8 +39,8 @@ type Factories struct {
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeReceiverFactoryMap(factories ...ReceiverFactoryBase) (map[configmodels.Type]ReceiverFactoryBase, error) {
-	fMap := map[configmodels.Type]ReceiverFactoryBase{}
+func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[configmodels.Type]ReceiverFactory, error) {
+	fMap := map[configmodels.Type]ReceiverFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())
@@ -53,8 +53,8 @@ func MakeReceiverFactoryMap(factories ...ReceiverFactoryBase) (map[configmodels.
 // MakeProcessorFactoryMap takes a list of processor factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeProcessorFactoryMap(factories ...ProcessorFactoryBase) (map[configmodels.Type]ProcessorFactoryBase, error) {
-	fMap := map[configmodels.Type]ProcessorFactoryBase{}
+func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[configmodels.Type]ProcessorFactory, error) {
+	fMap := map[configmodels.Type]ProcessorFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())

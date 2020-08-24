@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove `reconnection_delay` from OpenCensus exporter #1516.
+- Remove old receiver factories and receiver base factory #1583.
 
 ## v0.8.0 Beta
 

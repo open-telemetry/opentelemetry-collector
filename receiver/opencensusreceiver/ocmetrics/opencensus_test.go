@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,17 +34,17 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -54,12 +54,12 @@ func TestReceiver_endToEnd(t *testing.T) {
 	defer doneFn()
 
 	address := fmt.Sprintf("localhost:%d", port)
-	expFactory := &opencensusexporter.Factory{}
+	expFactory := opencensusexporter.NewFactory()
 	expCfg := expFactory.CreateDefaultConfig().(*opencensusexporter.Config)
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
 	expCfg.Endpoint = address
 	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateMetricsExporter(zap.NewNop(), expCfg)
+	oce, err := expFactory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
 	err = oce.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -69,9 +69,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	}()
 
 	md := testdata.GenerateMetricDataOneMetric()
-	ocmd := internaldata.MetricDataToOC(md)
-	require.Len(t, ocmd, 1)
-	assert.NoError(t, oce.ConsumeMetricsData(context.Background(), ocmd[0]))
+	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 
 	testutil.WaitFor(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0
@@ -405,14 +403,14 @@ func makeMetric(val int) *metricspb.Metric {
 
 	now := time.Now().UTC()
 	point := &metricspb.Point{
-		Timestamp: internal.TimeToTimestamp(now.Add(20 * time.Second)),
+		Timestamp: timestamppb.New(now.Add(20 * time.Second)),
 		Value: &metricspb.Point_Int64Value{
 			Int64Value: int64(val),
 		},
 	}
 
 	ts := &metricspb.TimeSeries{
-		StartTimestamp: internal.TimeToTimestamp(now.Add(-10 * time.Second)),
+		StartTimestamp: timestamppb.New(now.Add(-10 * time.Second)),
 		LabelValues:    []*metricspb.LabelValue{value},
 		Points:         []*metricspb.Point{point},
 	}

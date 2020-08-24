@@ -41,12 +41,12 @@ func BenchmarkConvertComplex(b *testing.B) {
 }
 
 func complexEntry() *entry.Entry {
-	entry := entry.New()
-	entry.Severity = entry.Error
-	entry.AddResourceKey("type", "global")
-	entry.AddLabel("one", "two")
-	entry.AddLabel("two", "three")
-	entry.Record = map[string]interface{}{
+	e := entry.New()
+	e.Severity = entry.Error
+	e.AddResourceKey("type", "global")
+	e.AddLabel("one", "two")
+	e.AddLabel("two", "three")
+	e.Record = map[string]interface{}{
 		"bool":   true,
 		"int":    123,
 		"double": 12.34,
@@ -67,7 +67,7 @@ func complexEntry() *entry.Entry {
 			},
 		},
 	}
-	return entry
+	return e
 }
 
 func TestConvertMetadata(t *testing.T) {

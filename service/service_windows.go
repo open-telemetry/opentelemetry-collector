@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -114,7 +113,7 @@ func (s *WindowsService) stop(appErrorChannel chan error) error {
 func openEventLog(serviceName string) (*eventlog.Log, error) {
 	elog, err := eventlog.Open(serviceName)
 	if err != nil {
-		return nil, errors.Wrap(err, "service failed to open event log: %v")
+		return nil, fmt.Errorf("service failed to open event log: %w", err)
 	}
 
 	return elog, nil
