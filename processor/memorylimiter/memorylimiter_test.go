@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/processor/memorylimiter/internal/iruntime"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -57,7 +58,7 @@ func TestNew(t *testing.T) {
 				nextConsumer:  sink,
 				checkInterval: 100 * time.Millisecond,
 			},
-			wantErr: errMemAllocLimitOutOfRange,
+			wantErr: errLimitOutOfRange,
 		},
 		{
 			name: "memSpikeLimit_gt_memAllocLimit",
@@ -99,9 +100,12 @@ func TestNew(t *testing.T) {
 // TestMetricsMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestMetricsMemoryPressureResponse(t *testing.T) {
+	d := &fixedDecision{
+		memAllocLimit: 1024,
+	}
 	var currentMemAlloc uint64
 	ml := &memoryLimiter{
-		memAllocLimit: 1024,
+		decision: d,
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -149,7 +153,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	ml.ballastSize = 0
 
 	// Check spike limit
-	ml.memSpikeLimit = 512
+	d.memSpikeLimit = 512
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -166,9 +170,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 // TestTraceMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestTraceMemoryPressureResponse(t *testing.T) {
+	d := &fixedDecision{
+		memAllocLimit: 1024,
+	}
 	var currentMemAlloc uint64
 	ml := &memoryLimiter{
-		memAllocLimit: 1024,
+		decision: d,
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -216,7 +223,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	ml.ballastSize = 0
 
 	// Check spike limit
-	ml.memSpikeLimit = 512
+	d.memSpikeLimit = 512
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -233,9 +240,12 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 // TestLogMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestLogMemoryPressureResponse(t *testing.T) {
+	d := &fixedDecision{
+		memAllocLimit: 1024,
+	}
 	var currentMemAlloc uint64
 	ml := &memoryLimiter{
-		memAllocLimit: 1024,
+		decision: d,
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -283,7 +293,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	ml.ballastSize = 0
 
 	// Check spike limit
-	ml.memSpikeLimit = 512
+	d.memSpikeLimit = 512
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -294,4 +304,85 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	currentMemAlloc = 550
 	ml.memCheck()
 	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
+}
+
+func TestGetDecision(t *testing.T) {
+	d, err := getDecision(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, &fixedDecision{
+		memAllocLimit: 100 * mibBytes,
+		memSpikeLimit: 20 * mibBytes,
+	}, d)
+	d, err = getDecision(&Config{MemoryLimitMiB: 20, MemorySpikeLimitMiB: 100}, zap.NewNop())
+	require.Error(t, err)
+	assert.Nil(t, d)
+
+	t.Cleanup(func() {
+		getMemoryFn = iruntime.TotalMemory
+	})
+	getMemoryFn = func() (int64, error) {
+		return 100 * mibBytes, nil
+	}
+	d, err = getDecision(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, &fixedDecision{
+		memAllocLimit: 50 * mibBytes,
+		memSpikeLimit: 10 * mibBytes,
+	}, d)
+}
+
+func TestDropDecision(t *testing.T) {
+	decison1000Limit30Spike30, err := newPercentrageDecision(1000, 60, 30)
+	require.NoError(t, err)
+	decison1000Limit60Spike50, err := newPercentrageDecision(1000, 60, 50)
+	require.NoError(t, err)
+	decison1000Limit40Spike20, err := newPercentrageDecision(1000, 40, 20)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name       string
+		decision   dropDecision
+		ms         *runtime.MemStats
+		shouldDrop bool
+	}{
+		{
+			name:       "should drop over limit",
+			decision:   decison1000Limit30Spike30,
+			ms:         &runtime.MemStats{Alloc: 600},
+			shouldDrop: true,
+		},
+		{
+			name:       "should not drop",
+			decision:   decison1000Limit30Spike30,
+			ms:         &runtime.MemStats{Alloc: 100},
+			shouldDrop: false,
+		},
+		{
+			name: "should not drop spike, fixed decision",
+			decision: &fixedDecision{
+				memAllocLimit: 600,
+				memSpikeLimit: 500,
+			},
+			ms:         &runtime.MemStats{Alloc: 300},
+			shouldDrop: true,
+		},
+		{
+			name:       "should drop, spike, percentage decision",
+			decision:   decison1000Limit60Spike50,
+			ms:         &runtime.MemStats{Alloc: 300},
+			shouldDrop: true,
+		},
+		{
+			name:       "should drop, spike, percentage decision",
+			decision:   decison1000Limit40Spike20,
+			ms:         &runtime.MemStats{Alloc: 250},
+			shouldDrop: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			shouldDrop := test.decision.shouldDrop(test.ms)
+			assert.Equal(t, test.shouldDrop, shouldDrop)
+		})
+	}
 }
