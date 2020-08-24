@@ -1,0 +1,27 @@
+# Required: name of the receiver.
+name:
+
+# Optional: map of label definitions with the key being the label name and value
+# being described below.
+labels:
+  label.name:
+    # Optional: if the label name as described by the key is not the actual label
+    # value to be reported that value can be overriden here.
+    value:
+    # Required: description of the label.
+    description:
+    # Optional: array of label values if they are static values.
+    enum:
+
+# Required: map of metric names with the key being the metric name and value
+# being described below.
+metrics:
+  metric.name:
+    # Required: metric description
+    description:
+    # Required: metric type as defined by https://ucum.org/ucum.html
+    unit:
+    # Required: metric type that is one of: int64, double, int64 mono, double mono, histogram, summary.
+    type:
+    # Optional: array of labels that were defined in the labels section that are emitted by this metric.
+    labels:

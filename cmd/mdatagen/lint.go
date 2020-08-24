@@ -62,8 +62,8 @@ var lintAcronyms = map[string]bool{
 	"XSS":   true,
 }
 
-// format variable in a go-safe way
-func formatVar(s string, exported bool) (string, error) {
+// formatIdentifier variable in a go-safe way
+func formatIdentifier(s string, exported bool) (string, error) {
 	if s == "" {
 		return "", errors.New("string cannot be empty")
 	}

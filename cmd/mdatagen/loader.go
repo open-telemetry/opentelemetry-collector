@@ -49,13 +49,13 @@ func (mt metricType) Render() (string, error) {
 type metricName string
 
 func (mn metricName) Render() (string, error) {
-	return formatVar(string(mn), true)
+	return formatIdentifier(string(mn), true)
 }
 
 type labelName string
 
 func (mn labelName) Render() (string, error) {
-	return formatVar(string(mn), true)
+	return formatIdentifier(string(mn), true)
 }
 
 type metric struct {

@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_formatVariable(t *testing.T) {
+func Test_formatIdentifier(t *testing.T) {
 	var tests = []struct {
 		input    string
 		want     string
@@ -48,7 +48,7 @@ func Test_formatVariable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			got, err := formatVar(tt.input, tt.exported)
+			got, err := formatIdentifier(tt.input, tt.exported)
 
 			if tt.wantErr != "" {
 				require.EqualError(t, err, tt.wantErr)

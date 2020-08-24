@@ -64,7 +64,7 @@ func run(ymlPath string) error {
 			Option("missingkey=error").
 			Funcs(map[string]interface{}{
 				"publicVar": func(s string) (string, error) {
-					return formatVar(s, true)
+					return formatIdentifier(s, true)
 				},
 			}).ParseFiles(path.Join(thisDir, "metrics.tmpl")))
 	buf := bytes.Buffer{}
