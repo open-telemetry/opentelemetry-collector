@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
+	"go.opentelemetry.io/collector/receiver/stanzareceiver"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -77,6 +78,7 @@ func Components() (
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
+		stanzareceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

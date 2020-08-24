@@ -1,0 +1,29 @@
+receivers:
+  observiq/hello:
+    pipeline:
+      - type: generate_input
+        entry:
+          record:
+            message: Hello, World!
+      - type: rate_limit
+        interval: 1s
+      - type: receiver_output
+  observiq/plugin:
+    plugins_dir: receiver/stanzareceiver/testdata/plugins
+    pipeline:
+      - type: say_hello
+        name: Tom
+      - type: receiver_output
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    logs:
+      receivers: [observiq/hello, observiq/plugin]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
