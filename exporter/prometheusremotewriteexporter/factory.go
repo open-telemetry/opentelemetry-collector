@@ -18,10 +18,7 @@ import (
 	"context"
 	"net/http"
 	"plugin"
-	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,33 +29,8 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr    = "prometheusremotewrite"
-	serviceStr = "servicname"
+	typeStr = "prometheusremotewrite"
 )
-
-// Custom RoundTripper
-type SigningRoundTripper struct {
-	transport http.RoundTripper
-	signer    *v4.Signer
-	cfg       *aws.Config
-}
-
-// Custom RoundTrip
-func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Sign the request
-	headers, err := si.signer.Sign(req, nil, serviceStr, *si.cfg.Region, time.Now())
-	if err != nil {
-		// might need a response here
-		return nil, err
-	}
-	for k, v := range headers {
-		req.Header.Set(k, v[0])
-	}
-	// Send the request to Cortex
-	response, err := si.transport.RoundTrip(req)
-
-	return response, err
-}
 
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
