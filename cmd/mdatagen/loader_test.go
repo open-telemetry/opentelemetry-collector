@@ -20,7 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const allOptions = `
+const (
+	allOptions = `
 name: metricreceiver
 labels:
   freeFormLabel:
@@ -42,7 +43,7 @@ metrics:
     labels: [freeFormLabel, freeFormLabelWithValue, enumLabel]
 `
 
-const unknownMetricLabel = `
+	unknownMetricLabel = `
 name: metricreceiver
 metrics:
   system.cpu.time:
@@ -51,6 +52,16 @@ metrics:
     type: double mono
     labels: [missing]
 `
+	unknownMetricType = `
+name: metricreceiver
+metrics:
+  system.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    type: invalid
+    labels:
+`
+)
 
 func Test_loadMetadata(t *testing.T) {
 	tests := []struct {
@@ -88,6 +99,12 @@ func Test_loadMetadata(t *testing.T) {
 			yml:     unknownMetricLabel,
 			want:    metadata{},
 			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Labels[missing]: unknown label value\n",
+		},
+		{
+			name:    "unknownMetricType",
+			yml:     unknownMetricType,
+			want:    metadata{},
+			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Type: Key: 'metadata.Metrics[system.cpu.time].Type' Error:Field validation for 'Type' failed on the 'metrictype' tag\n",
 		},
 	}
 	for _, tt := range tests {
