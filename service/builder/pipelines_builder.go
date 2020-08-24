@@ -84,7 +84,7 @@ type PipelinesBuilder struct {
 	logger    *zap.Logger
 	config    *configmodels.Config
 	exporters Exporters
-	factories map[configmodels.Type]component.ProcessorFactoryBase
+	factories map[configmodels.Type]component.ProcessorFactory
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
@@ -93,7 +93,7 @@ func NewPipelinesBuilder(
 	logger *zap.Logger,
 	config *configmodels.Config,
 	exporters Exporters,
-	factories map[configmodels.Type]component.ProcessorFactoryBase,
+	factories map[configmodels.Type]component.ProcessorFactory,
 ) *PipelinesBuilder {
 	return &PipelinesBuilder{logger, config, exporters, factories}
 }
@@ -156,7 +156,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogsProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
-			var proc component.TraceProcessorBase
+			var proc component.TraceProcessor
 			proc, err = createTraceProcessor(factory, componentLogger, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
@@ -164,7 +164,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			processors[i] = proc
 			tc = proc
 		case configmodels.MetricsDataType:
-			var proc component.MetricsProcessorBase
+			var proc component.MetricsProcessor
 			proc, err = createMetricsProcessor(factory, componentLogger, procCfg, mc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
@@ -280,82 +280,52 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 // createTraceProcessor creates trace processor based on type of the current processor
 // and type of the downstream consumer.
 func createTraceProcessor(
-	factoryBase component.ProcessorFactoryBase,
+	factory component.ProcessorFactory,
 	logger *zap.Logger,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TraceConsumerBase,
-) (component.TraceProcessorBase, error) {
-	if factory, ok := factoryBase.(component.ProcessorFactory); ok {
-		creationParams := component.ProcessorCreateParams{Logger: logger}
-		ctx := context.Background()
+) (component.TraceProcessor, error) {
+	creationParams := component.ProcessorCreateParams{Logger: logger}
+	ctx := context.Background()
 
-		// If both processor and consumer are of the new type (can manipulate on internal data structure),
-		// use ProcessorFactory.CreateTraceProcessor.
-		if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
-			return factory.CreateTraceProcessor(ctx, creationParams, nextConsumer, cfg)
-		}
-
-		// If processor is of the new type, but downstream consumer is of the old type,
-		// use internalToOCTraceConverter compatibility shim.
-		traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
-		return factory.CreateTraceProcessor(ctx, creationParams, traceConverter, cfg)
+	// If both processor and consumer are of the new type (can manipulate on internal data structure),
+	// use ProcessorFactory.CreateTraceProcessor.
+	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
+		return factory.CreateTraceProcessor(ctx, creationParams, nextConsumer, cfg)
 	}
 
-	factoryOld := factoryBase.(component.ProcessorFactoryOld)
-
-	// If both processor and consumer are of the old type (can manipulate on OC traces only),
-	// use ProcessorFactoryOld.CreateTraceProcessor.
-	if nextConsumerOld, ok := nextConsumer.(consumer.TraceConsumerOld); ok {
-		return factoryOld.CreateTraceProcessor(logger, nextConsumerOld, cfg)
-	}
-
-	// If processor is of the old type, but downstream consumer is of the new type,
-	// use NewInternalToOCTraceConverter compatibility shim to convert traces from internal format to OC.
-	traceConverter := converter.NewOCToInternalTraceConverter(nextConsumer.(consumer.TraceConsumer))
-	return factoryOld.CreateTraceProcessor(logger, traceConverter, cfg)
+	// If processor is of the new type, but downstream consumer is of the old type,
+	// use internalToOCTraceConverter compatibility shim.
+	traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
+	return factory.CreateTraceProcessor(ctx, creationParams, traceConverter, cfg)
 }
 
 // createMetricsProcessor creates metric processor based on type of the current processor
 // and type of the downstream consumer.
 func createMetricsProcessor(
-	factoryBase component.ProcessorFactoryBase,
+	factory component.ProcessorFactory,
 	logger *zap.Logger,
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumerBase,
-) (component.MetricsProcessorBase, error) {
-	if factory, ok := factoryBase.(component.ProcessorFactory); ok {
-		creationParams := component.ProcessorCreateParams{Logger: logger}
-		ctx := context.Background()
+) (component.MetricsProcessor, error) {
+	creationParams := component.ProcessorCreateParams{Logger: logger}
+	ctx := context.Background()
 
-		// If both processor and consumer are of the new type (can manipulate on internal data structure),
-		// use ProcessorFactory.CreateMetricsProcessor.
-		if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
-			return factory.CreateMetricsProcessor(ctx, creationParams, nextConsumer, cfg)
-		}
-
-		// If processor is of the new type, but downstream consumer is of the old type,
-		// use internalToOCMetricsConverter compatibility shim.
-		metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
-		return factory.CreateMetricsProcessor(ctx, creationParams, metricsConverter, cfg)
+	// If both processor and consumer are of the new type (can manipulate on internal data structure),
+	// use ProcessorFactory.CreateMetricsProcessor.
+	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
+		return factory.CreateMetricsProcessor(ctx, creationParams, nextConsumer, cfg)
 	}
 
-	factoryOld := factoryBase.(component.ProcessorFactoryOld)
-
-	// If both processor and consumer are of the old type (can manipulate on OC metrics only),
-	// use ProcessorFactoryOld.CreateMetricsProcessor.
-	if nextConsumerOld, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factoryOld.CreateMetricsProcessor(logger, nextConsumerOld, cfg)
-	}
-
-	// If processor is of the old type, but downstream consumer is of the new type,
-	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
-	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
-	return factoryOld.CreateMetricsProcessor(logger, metricsConverter, cfg)
+	// If processor is of the new type, but downstream consumer is of the old type,
+	// use internalToOCMetricsConverter compatibility shim.
+	metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
+	return factory.CreateMetricsProcessor(ctx, creationParams, metricsConverter, cfg)
 }
 
 // createLogsProcessor creates a log processor using given factory and next consumer.
 func createLogsProcessor(
-	factoryBase component.ProcessorFactoryBase,
+	factoryBase component.Factory,
 	logger *zap.Logger,
 	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,

@@ -27,7 +27,7 @@ type Factories struct {
 	Receivers map[configmodels.Type]ReceiverFactory
 
 	// Processors maps processor type names in the config to the respective factory.
-	Processors map[configmodels.Type]ProcessorFactoryBase
+	Processors map[configmodels.Type]ProcessorFactory
 
 	// Exporters maps exporter type names in the config to the respective factory.
 	Exporters map[configmodels.Type]ExporterFactoryBase
@@ -53,8 +53,8 @@ func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[configmodels.Type
 // MakeProcessorFactoryMap takes a list of processor factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeProcessorFactoryMap(factories ...ProcessorFactoryBase) (map[configmodels.Type]ProcessorFactoryBase, error) {
-	fMap := map[configmodels.Type]ProcessorFactoryBase{}
+func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[configmodels.Type]ProcessorFactory, error) {
+	fMap := map[configmodels.Type]ProcessorFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())

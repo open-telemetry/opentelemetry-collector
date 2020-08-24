@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -327,9 +326,6 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	npf := &processortest.NopProcessorFactory{}
-	factories.Processors[npf.Type()] = npf
-
 	bf := &badReceiverFactory{}
 	factories.Receivers[bf.Type()] = bf
 
@@ -389,9 +385,6 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
-
-	npf := &processortest.NopProcessorFactory{}
-	factories.Processors[npf.Type()] = npf
 
 	newStyleReceiver := &newStyleReceiverFactory{}
 	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver

@@ -16,9 +16,9 @@ package processscraper
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/process"
@@ -50,14 +50,14 @@ func newProcessScraper(cfg *Config) (*scraper, error) {
 	if len(cfg.Include.Names) > 0 {
 		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Names, &cfg.Include.Config)
 		if err != nil {
-			return nil, errors.Wrap(err, "error creating process include filters")
+			return nil, fmt.Errorf("error creating process include filters: %w", err)
 		}
 	}
 
 	if len(cfg.Exclude.Names) > 0 {
 		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Names, &cfg.Exclude.Config)
 		if err != nil {
-			return nil, errors.Wrap(err, "error creating process exclude filters")
+			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
 		}
 	}
 
@@ -102,15 +102,15 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.ResourceMetricsSlice, 
 		now := internal.TimeToUnixNano(time.Now())
 
 		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading cpu times for process %q (pid %v)", md.executable.name, md.pid))
+			errs = append(errs, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading memory info for process %q (pid %v)", md.executable.name, md.pid))
+			errs = append(errs, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading disk usage for process %q (pid %v)", md.executable.name, md.pid))
+			errs = append(errs, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 	}
 
@@ -135,7 +135,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		executable, err := getProcessExecutable(handle)
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading process name for pid %v", pid))
+			errs = append(errs, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
 			continue
 		}
 
@@ -147,12 +147,12 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		command, err := getProcessCommand(handle)
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading command for process %q (pid %v)", executable.name, pid))
+			errs = append(errs, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
 		username, err := handle.Username()
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "error reading username for process %q (pid %v)", executable.name, pid))
+			errs = append(errs, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
 		md := &processMetadata{

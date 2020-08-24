@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -114,7 +113,7 @@ func (s *WindowsService) stop(appErrorChannel chan error) error {
 func openEventLog(serviceName string) (*eventlog.Log, error) {
 	elog, err := eventlog.Open(serviceName)
 	if err != nil {
-		return nil, errors.Wrap(err, "service failed to open event log: %v")
+		return nil, fmt.Errorf("service failed to open event log: %w", err)
 	}
 
 	return elog, nil

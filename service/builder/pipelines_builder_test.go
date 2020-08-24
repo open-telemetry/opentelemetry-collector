@@ -66,7 +66,7 @@ func createExampleFactories() component.Factories {
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
-		Processors: map[configmodels.Type]component.ProcessorFactoryBase{
+		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
 		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
@@ -334,17 +334,19 @@ func (b *badProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 func (b *badProcessorFactory) CreateTraceProcessor(
-	_ *zap.Logger,
-	_ consumer.TraceConsumerOld,
-	_ configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+	context.Context,
+	component.ProcessorCreateParams,
+	consumer.TraceConsumer,
+	configmodels.Processor,
+) (component.TraceProcessor, error) {
 	return nil, nil
 }
 
 func (b *badProcessorFactory) CreateMetricsProcessor(
-	_ *zap.Logger,
-	_ consumer.MetricsConsumerOld,
-	_ configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+	context.Context,
+	component.ProcessorCreateParams,
+	consumer.MetricsConsumer,
+	configmodels.Processor,
+) (component.MetricsProcessor, error) {
 	return nil, nil
 }

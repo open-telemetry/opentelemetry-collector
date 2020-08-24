@@ -16,6 +16,7 @@ package zipkin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -24,7 +25,6 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -44,7 +44,7 @@ var (
 	errHexTraceIDZero     = errors.New("traceId is zero")
 	errHexIDWrongLen      = errors.New("hex Id has wrong length (expected 16)")
 	errHexIDParsing       = errors.New("failed to parse hex Id")
-	errHexIDZero          = errors.New("Id is zero")
+	errHexIDZero          = errors.New("ID is zero")
 )
 
 // Trace translation from Zipkin V1 is a bit of special case since there is no model
@@ -89,7 +89,7 @@ type binaryAnnotation struct {
 func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
-		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", msgZipkinV1JSONUnmarshalError, err)
 	}
 
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
@@ -131,17 +131,17 @@ func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotatio
 func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResult, error) {
 	traceID, err := hexTraceIDToOCTraceID(zSpan.TraceID)
 	if err != nil {
-		return nil, nil, errors.WithMessage(err, msgZipkinV1TraceIDError)
+		return nil, nil, fmt.Errorf("%s: %w", msgZipkinV1TraceIDError, err)
 	}
 	spanID, err := hexIDToOCID(zSpan.ID)
 	if err != nil {
-		return nil, nil, errors.WithMessage(err, msgZipkinV1SpanIDError)
+		return nil, nil, fmt.Errorf("%s: %w", msgZipkinV1SpanIDError, err)
 	}
 	var parentID []byte
 	if zSpan.ParentID != "" {
 		id, err := hexIDToOCID(zSpan.ParentID)
 		if err != nil {
-			return nil, nil, errors.WithMessage(err, msgZipkinV1ParentIDError)
+			return nil, nil, fmt.Errorf("%s: %w", msgZipkinV1ParentIDError, err)
 		}
 		parentID = id
 	}

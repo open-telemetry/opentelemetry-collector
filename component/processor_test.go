@@ -15,10 +15,10 @@
 package component
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -40,34 +40,34 @@ func (f *TestProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *TestProcessorFactory) CreateTraceProcessor(*zap.Logger, consumer.TraceConsumerOld, configmodels.Processor) (TraceProcessorOld, error) {
+func (f *TestProcessorFactory) CreateTraceProcessor(context.Context, ProcessorCreateParams, consumer.TraceConsumer, configmodels.Processor) (TraceProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateMetricsProcessor(*zap.Logger, consumer.MetricsConsumerOld, configmodels.Processor) (MetricsProcessorOld, error) {
+func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, consumer.MetricsConsumer, configmodels.Processor) (MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func TestFactoriesBuilder(t *testing.T) {
 	type testCase struct {
-		in  []ProcessorFactoryBase
-		out map[configmodels.Type]ProcessorFactoryBase
+		in  []ProcessorFactory
+		out map[configmodels.Type]ProcessorFactory
 	}
 
 	testCases := []testCase{
 		{
-			in: []ProcessorFactoryBase{
+			in: []ProcessorFactory{
 				&TestProcessorFactory{"p1"},
 				&TestProcessorFactory{"p2"},
 			},
-			out: map[configmodels.Type]ProcessorFactoryBase{
+			out: map[configmodels.Type]ProcessorFactory{
 				"p1": &TestProcessorFactory{"p1"},
 				"p2": &TestProcessorFactory{"p2"},
 			},
 		},
 		{
-			in: []ProcessorFactoryBase{
+			in: []ProcessorFactory{
 				&TestProcessorFactory{"p1"},
 				&TestProcessorFactory{"p1"},
 			},

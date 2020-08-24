@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -28,7 +29,6 @@ import (
 	"sort"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -246,7 +246,7 @@ func (app *Application) SignalTestComplete() {
 func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
 	l, err := newLogger(hooks...)
 	if err != nil {
-		return errors.Wrap(err, "failed to get logger")
+		return fmt.Errorf("failed to get logger: %w", err)
 	}
 	app.logger = l
 	return nil
@@ -257,7 +257,7 @@ func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 
 	err := applicationTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize telemetry")
+		return fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 
 	return nil
@@ -293,11 +293,11 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 	app.logger.Info("Loading configuration...")
 	cfg, err := factory(app.v, app.factories)
 	if err != nil {
-		return errors.Wrap(err, "cannot load configuration")
+		return fmt.Errorf("cannot load configuration: %w", err)
 	}
 	err = config.ValidateConfig(cfg, app.logger)
 	if err != nil {
-		return errors.Wrap(err, "cannot load configuration")
+		return fmt.Errorf("cannot load configuration: %w", err)
 	}
 
 	app.config = cfg
@@ -305,12 +305,12 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 	err = app.setupExtensions(ctx)
 	if err != nil {
-		return errors.Wrap(err, "cannot setup extensions")
+		return fmt.Errorf("cannot setup extensions: %w", err)
 	}
 
 	err = app.setupPipelines(ctx)
 	if err != nil {
-		return errors.Wrap(err, "cannot setup pipelines")
+		return fmt.Errorf("cannot setup pipelines: %w", err)
 	}
 
 	return nil
@@ -320,7 +320,7 @@ func (app *Application) setupExtensions(ctx context.Context) error {
 	var err error
 	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.config, app.factories.Extensions).Build()
 	if err != nil {
-		return errors.Wrap(err, "cannot build builtExtensions")
+		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
 	app.logger.Info("Starting extensions...")
 	return app.builtExtensions.StartAll(ctx, app)
@@ -334,38 +334,38 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	var err error
 	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
 	if err != nil {
-		return errors.Wrap(err, "cannot build builtExporters")
+		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
 
 	app.logger.Info("Starting exporters...")
 	err = app.builtExporters.StartAll(ctx, app)
 	if err != nil {
-		return errors.Wrap(err, "cannot start builtExporters")
+		return fmt.Errorf("cannot start builtExporters: %w", err)
 	}
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
 	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.builtExporters, app.factories.Processors).Build()
 	if err != nil {
-		return errors.Wrap(err, "cannot build pipelines")
+		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
 	app.logger.Info("Starting processors...")
 	err = app.builtPipelines.StartProcessors(ctx, app)
 	if err != nil {
-		return errors.Wrap(err, "cannot start processors")
+		return fmt.Errorf("cannot start processors: %w", err)
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
 	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories.Receivers).Build()
 	if err != nil {
-		return errors.Wrap(err, "cannot build receivers")
+		return fmt.Errorf("cannot build receivers: %w", err)
 	}
 
 	app.logger.Info("Starting receivers...")
 	err = app.builtReceivers.StartAll(ctx, app)
 	if err != nil {
-		return errors.Wrap(err, "cannot start receivers")
+		return fmt.Errorf("cannot start receivers: %w", err)
 	}
 
 	return nil
@@ -381,19 +381,19 @@ func (app *Application) shutdownPipelines(ctx context.Context) error {
 	app.logger.Info("Stopping receivers...")
 	err := app.builtReceivers.ShutdownAll(ctx)
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to stop receivers"))
+		errs = append(errs, fmt.Errorf("failed to stop receivers: %w", err))
 	}
 
 	app.logger.Info("Stopping processors...")
 	err = app.builtPipelines.ShutdownProcessors(ctx)
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to shutdown processors"))
+		errs = append(errs, fmt.Errorf("failed to shutdown processors: %w", err))
 	}
 
 	app.logger.Info("Stopping exporters...")
 	err = app.builtExporters.ShutdownAll(ctx)
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to shutdown exporters"))
+		errs = append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
 	}
 
 	return componenterror.CombineErrors(errs)
@@ -403,7 +403,7 @@ func (app *Application) shutdownExtensions(ctx context.Context) error {
 	app.logger.Info("Stopping extensions...")
 	err := app.builtExtensions.ShutdownAll(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to shutdown extensions")
+		return fmt.Errorf("failed to shutdown extensions: %w", err)
 	}
 	return nil
 }
@@ -449,22 +449,22 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 
 	err = app.builtExtensions.NotifyPipelineNotReady()
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to notify that pipeline is not ready"))
+		errs = append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
 	err = app.shutdownPipelines(ctx)
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to shutdown pipelines"))
+		errs = append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
 	err = app.shutdownExtensions(ctx)
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
+		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
 	err = applicationTelemetry.shutdown()
 	if err != nil {
-		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
+		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
 	app.logger.Info("Shutdown complete.")
