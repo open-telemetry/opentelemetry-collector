@@ -19,11 +19,6 @@ import (
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-func init() {
-	protoMarshaller := &protoMarshaller{}
-	RegisterMarshaller(protoMarshaller)
-}
-
 type protoMarshaller struct {
 }
 

@@ -48,8 +48,8 @@ type kafkaConsumer struct {
 
 var _ component.Receiver = (*kafkaConsumer)(nil)
 
-func newReceiver(config Config, params component.ReceiverCreateParams, nextConsumer consumer.TraceConsumer) (*kafkaConsumer, error) {
-	unmarshaller := GetUnmarshaller(config.Encoding)
+func newReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]Unmarshaller, nextConsumer consumer.TraceConsumer) (*kafkaConsumer, error) {
+	unmarshaller := unmarshalers[config.Encoding]
 	if unmarshaller == nil {
 		return nil, errUnrecognizedEncoding
 	}

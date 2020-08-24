@@ -25,13 +25,6 @@ import (
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
-func init() {
-	zipkinThrift := &zipkinThriftSpanUnmarshaller{}
-	RegisterUnmarshaller(zipkinThrift)
-	zipkinJSON := &zipkinJSONSpanUnmarshaller{}
-	RegisterUnmarshaller(zipkinJSON)
-}
-
 type zipkinJSONSpanUnmarshaller struct {
 }
 

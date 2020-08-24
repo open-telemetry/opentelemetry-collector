@@ -27,14 +27,18 @@ type Unmarshaller interface {
 	Encoding() string
 }
 
-var unmarshallers = map[string]Unmarshaller{}
-
-// GetUnmarshaller returns unmarshaller for given encoding or nil if not found.
-func GetUnmarshaller(encoding string) Unmarshaller {
-	return unmarshallers[encoding]
-}
-
-// RegisterUnmarshaller registers unmarshaller.
-func RegisterUnmarshaller(unmarshaller Unmarshaller) {
-	unmarshallers[unmarshaller.Encoding()] = unmarshaller
+// DefaultUnmarshallers returns map of supported encodings with Unmarshaller.
+func DefaultUnmarshallers() map[string]Unmarshaller {
+	otlp := &protoUnmarshaller{}
+	jaegerProto := jaegerProtoSpanUnmarshaller{}
+	jaegerJSON := jaegerJSONSpanUnmarshaller{}
+	zipkinJSON := zipkinJSONSpanUnmarshaller{}
+	zipkinThrift := zipkinThriftSpanUnmarshaller{}
+	return map[string]Unmarshaller{
+		otlp.Encoding():         otlp,
+		jaegerProto.Encoding():  jaegerProto,
+		jaegerJSON.Encoding():   jaegerJSON,
+		zipkinJSON.Encoding():   zipkinJSON,
+		zipkinThrift.Encoding(): zipkinThrift,
+	}
 }

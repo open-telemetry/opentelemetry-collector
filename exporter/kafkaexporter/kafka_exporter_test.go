@@ -32,14 +32,14 @@ import (
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	exp, err := newExporter(c, component.ExporterCreateParams{})
+	exp, err := newExporter(c, component.ExporterCreateParams{}, DefaultMarshallers())
 	assert.Error(t, err)
 	assert.Nil(t, exp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	exp, err := newExporter(c, component.ExporterCreateParams{})
+	exp, err := newExporter(c, component.ExporterCreateParams{}, map[string]Marshaller{})
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, exp)
 }

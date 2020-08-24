@@ -42,11 +42,14 @@ const (
 )
 
 // NewFactory creates Kafka receiver factory.
-func NewFactory() component.ReceiverFactory {
+// encodingMarshaller is a map with supported encodings for this factory.
+// See DefaultUnmarshallers.
+func NewFactory(encodingUnmarshaler map[string]Unmarshaller) component.ReceiverFactory {
+	f := &kafkaReceiverFactory{unmarshalers: encodingUnmarshaler}
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver))
+		receiverhelper.WithTraces(f.createTraceReceiver))
 }
 
 func createDefaultConfig() configmodels.Receiver {
@@ -70,14 +73,18 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
-func createTraceReceiver(
+type kafkaReceiverFactory struct {
+	unmarshalers map[string]Unmarshaller
+}
+
+func (f *kafkaReceiverFactory) createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newReceiver(*c, params, nextConsumer)
+	r, err := newReceiver(*c, params, f.unmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

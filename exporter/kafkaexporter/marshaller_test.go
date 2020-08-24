@@ -18,28 +18,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"github.com/stretchr/testify/require"
 )
 
-const testEncoding = "test"
-
-func TestRegisterMarshaller(t *testing.T) {
-	sender := &testMarshaller{}
-	RegisterMarshaller(sender)
-	unmarshaller := GetMarshaller(testEncoding)
-	assert.Equal(t, sender, unmarshaller)
-}
-
-type testMarshaller struct {
-}
-
-var _ Marshaller = (*testMarshaller)(nil)
-
-func (t testMarshaller) Marshal(pdata.Traces) ([]Message, error) {
-	panic("implement me")
-}
-
-func (t testMarshaller) Encoding() string {
-	return testEncoding
+func TestDefaultMarshallers(t *testing.T) {
+	expectedEncodings := []string{
+		"otlp_proto",
+		"jaeger_proto",
+		"jaeger_json",
+	}
+	marshallers := DefaultMarshallers()
+	assert.Equal(t, len(expectedEncodings), len(marshallers))
+	for _, e := range expectedEncodings {
+		t.Run(e, func(t *testing.T) {
+			m, ok := marshallers[e]
+			require.True(t, ok)
+			assert.NotNil(t, m)
+		})
+	}
 }

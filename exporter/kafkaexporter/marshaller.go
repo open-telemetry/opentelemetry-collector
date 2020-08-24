@@ -18,18 +18,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-var marshallers = map[string]Marshaller{}
-
-// GetMarshaller gets a Marshaller for encoding or nil if no marshaller is registered.
-func GetMarshaller(encoding string) Marshaller {
-	return marshallers[encoding]
-}
-
-// RegisterMarshaller register marshaller.
-func RegisterMarshaller(marshaller Marshaller) {
-	marshallers[marshaller.Encoding()] = marshaller
-}
-
 // Marshaller marshals traces into Message array.
 type Marshaller interface {
 	// Marshal serializes spans into Messages
@@ -42,4 +30,16 @@ type Marshaller interface {
 // Message encapsulates Kafka's message payload.
 type Message struct {
 	Value []byte
+}
+
+// DefaultMarshallers returns map of supported encodings with Marshaller.
+func DefaultMarshallers() map[string]Marshaller {
+	otlp := &protoMarshaller{}
+	jaegerProto := jaegerMarshaller{marshaller: jaegerProtoSpanMarshaller{}}
+	jaegerJSON := jaegerMarshaller{marshaller: newJaegerJSONMarshaller()}
+	return map[string]Marshaller{
+		otlp.Encoding():        otlp,
+		jaegerProto.Encoding(): jaegerProto,
+		jaegerJSON.Encoding():  jaegerJSON,
+	}
 }

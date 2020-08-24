@@ -25,19 +25,6 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-func init() {
-	jaegerProtoMarshaller := &jaegerMarshaller{
-		marshaller: jaegerProtoSpanMarshaller{},
-	}
-	RegisterMarshaller(jaegerProtoMarshaller)
-	jaegerJSONMarshaller := &jaegerMarshaller{
-		marshaller: jaegerJSONSpanMarshaller{
-			pbMarshaller: &jsonpb.Marshaler{},
-		},
-	}
-	RegisterMarshaller(jaegerJSONMarshaller)
-}
-
 type jaegerMarshaller struct {
 	marshaller jaegerSpanMarshaller
 }
@@ -93,6 +80,12 @@ type jaegerJSONSpanMarshaller struct {
 }
 
 var _ jaegerSpanMarshaller = (*jaegerJSONSpanMarshaller)(nil)
+
+func newJaegerJSONMarshaller() *jaegerJSONSpanMarshaller {
+	return &jaegerJSONSpanMarshaller{
+		pbMarshaller: &jsonpb.Marshaler{},
+	}
+}
 
 func (p jaegerJSONSpanMarshaller) marshall(span *jaegerproto.Span) ([]byte, error) {
 	out := new(bytes.Buffer)

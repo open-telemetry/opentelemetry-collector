@@ -37,8 +37,8 @@ type kafkaProducer struct {
 }
 
 // newExporter creates Kafka exporter.
-func newExporter(config Config, params component.ExporterCreateParams) (*kafkaProducer, error) {
-	marshaller := GetMarshaller(config.Encoding)
+func newExporter(config Config, params component.ExporterCreateParams, marshallers map[string]Marshaller) (*kafkaProducer, error) {
+	marshaller := marshallers[config.Encoding]
 	if marshaller == nil {
 		return nil, errUnrecognizedEncoding
 	}

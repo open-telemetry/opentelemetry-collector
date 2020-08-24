@@ -37,11 +37,16 @@ const (
 )
 
 // NewFactory creates Kafka exporter factory.
-func NewFactory() component.ExporterFactory {
+// encodingMarshaller is a map with supported encodings for this factory.
+// See DefaultMarshallers.
+func NewFactory(encodingMarshaller map[string]Marshaller) component.ExporterFactory {
+	k := kafkaExporterFactory{
+		marshallers: encodingMarshaller,
+	}
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(k.createTraceExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -69,13 +74,17 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
+type kafkaExporterFactory struct {
+	marshallers map[string]Marshaller
+}
+
+func (f *kafkaExporterFactory) createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	oCfg := cfg.(*Config)
-	exp, err := newExporter(*oCfg, params)
+	exp, err := newExporter(*oCfg, params, f.marshallers)
 	if err != nil {
 		return nil, err
 	}

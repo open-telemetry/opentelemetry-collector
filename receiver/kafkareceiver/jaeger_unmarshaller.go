@@ -24,13 +24,6 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-func init() {
-	jaegerJSON := &jaegerJSONSpanUnmarshaller{}
-	RegisterUnmarshaller(jaegerJSON)
-	jaegerProto := &jaegerProtoSpanUnmarshaller{}
-	RegisterUnmarshaller(jaegerProto)
-}
-
 type jaegerProtoSpanUnmarshaller struct {
 }
 

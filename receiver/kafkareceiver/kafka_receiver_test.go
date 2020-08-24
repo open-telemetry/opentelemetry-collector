@@ -40,7 +40,7 @@ func TestNewReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, DefaultUnmarshallers(), exportertest.NewNopTraceExporter())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -49,7 +49,7 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, DefaultUnmarshallers(), exportertest.NewNopTraceExporter())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
