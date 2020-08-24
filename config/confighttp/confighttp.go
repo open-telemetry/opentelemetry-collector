@@ -89,7 +89,7 @@ func (interceptor *clientInterceptorRoundTripper) RoundTrip(req *http.Request) (
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, v)
 	}
-	// Send the request to Cortex
+
 	response, err := interceptor.transport.RoundTrip(req)
 
 	return response, err
