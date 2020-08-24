@@ -14,8 +14,6 @@ The following settings can be optionally configured:
   - `otlp_proto`: the payload is serialized to `ExportTraceServiceRequest`.
   - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`.
   - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`.
-  - `zipkin_thrift`: the payload is serialized into Zipkin Thrift spans.
-  - `zipkin_json`: the payload is serialized into Zipkin V2 JSON spans.
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. 
                                     When disabled the client does not make the initial request to broker at the startup.
