@@ -805,6 +805,8 @@ github.com/observiq/stanza v0.9.12-0.20200824195849-075b8f495ba8 h1:sLfhYe0mSOq3
 github.com/observiq/stanza v0.9.12-0.20200824195849-075b8f495ba8/go.mod h1:inITJwTRBVEQSIraZITXojHlgdoR0aEmLZrE/krpalo=
 github.com/observiq/stanza v0.9.12-0.20200824203310-37ccc90c4ef5 h1:ch1F8bcn+B2qcRi3CYMSJoQOq4RIhTfbHwG/AOktJCE=
 github.com/observiq/stanza v0.9.12-0.20200824203310-37ccc90c4ef5/go.mod h1:inITJwTRBVEQSIraZITXojHlgdoR0aEmLZrE/krpalo=
+github.com/observiq/stanza v0.9.12-0.20200824234230-e010fa6724e8 h1:sOCf7XeVIKDnjBr5zHFIvXIt6ELsiTSMDUMYwDgC//U=
+github.com/observiq/stanza v0.9.12-0.20200824234230-e010fa6724e8/go.mod h1:inITJwTRBVEQSIraZITXojHlgdoR0aEmLZrE/krpalo=
 github.com/oklog/oklog v0.3.2/go.mod h1:FCV+B7mhrz4o+ueLpx+KqkyXRGMWOYEvfiXtdGtbWGs=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
 github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
