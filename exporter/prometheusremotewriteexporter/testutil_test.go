@@ -20,7 +20,6 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/internal/data"
-
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 )
@@ -31,12 +30,10 @@ type combination struct {
 }
 
 var (
-
-	time1       = uint64(time.Now().UnixNano())
-	time2       = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
-	msTime1     = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
-	msTime2     = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
-	testHeaders = map[string]string{"headerOne": "value1"}
+	time1   = uint64(time.Now().UnixNano())
+	time2   = uint64(time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).UnixNano())
+	msTime1 = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
+	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
 	typeInt64           = "INT64"
 	typeMonotonicInt64  = "MONOTONIC_INT64"
@@ -59,7 +56,6 @@ var (
 	dirty1  = "%"
 	dirty2  = "?"
 
-
 	intVal1   int64 = 1
 	intVal2   int64 = 2
 	floatVal1       = 1.0
@@ -76,7 +72,6 @@ var (
 	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
 	ns1    = "test_ns"
 	name1  = "valid_single_int_point"
-
 
 	monotonicInt64Comb  = 0
 	monotonicDoubleComb = 1
@@ -201,7 +196,7 @@ func getSummaryDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float
 // Prometheus TimeSeries
 func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
-		Labels:               []prompb.Label{},
+		Labels: []prompb.Label{},
 	}
 	for i := 0; i < len(lbs); i += 2 {
 		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[i], lbs[i+1]))

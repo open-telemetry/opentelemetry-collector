@@ -16,7 +16,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -34,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/data"

@@ -15,7 +15,7 @@
 package prometheusremotewriteexporter
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"log"
 	"sort"
 	"strings"
@@ -29,7 +29,6 @@ import (
 )
 
 const (
-
 	nameStr     = "__name__"
 	sumStr      = "_sum"
 	countStr    = "_count"
@@ -189,12 +188,11 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 	return sanitize(b.String())
 }
 
-
 // Simple helper function that takes the <Signature String - *TimeSeries> map
 // and creates a WriteRequest from the struct -- can move to the helper.go file
 func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
-		return nil, errors.Errorf("invalid TsMap: cannot be empty map")
+		return nil, errors.New("invalid TsMap: cannot be empty map")
 	}
 	TsArray := []prompb.TimeSeries{}
 	for _, v := range tsMap {

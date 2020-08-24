@@ -17,7 +17,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"github.com/pkg/errors"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -35,7 +35,6 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
-
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
 type prwExporter struct {
 	namespace   string
@@ -50,12 +49,12 @@ type prwExporter struct {
 func newPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
 
 	if client == nil {
-		return nil, errors.Errorf("http client cannot be nil")
+		return nil, errors.New("http client cannot be nil")
 	}
 
 	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
-		return nil, errors.Errorf("invalid endpoint")
+		return nil, errors.New("invalid endpoint")
 	}
 
 	return &prwExporter{
@@ -84,7 +83,7 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 	defer prwe.wg.Done()
 	select {
 	case <-prwe.closeChan:
-		return pdatautil.MetricCount(md), errors.Errorf("shutdown has been called")
+		return pdatautil.MetricCount(md), errors.New("shutdown has been called")
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
@@ -126,7 +125,7 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 		}
 
 		if dropped != 0 {
-			return dropped, errors.Errorf(strings.Join(errs, "\n"))
+			return dropped, errors.New(strings.Join(errs, "\n"))
 		}
 
 		return 0, nil
@@ -145,7 +144,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 	// int points
 	case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64:
 		if metric.Int64DataPoints == nil {
-			return errors.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
+			return errors.New("nil data point field in metric" + metric.GetMetricDescriptor().Name)
 		}
 
 		for _, pt := range metric.Int64DataPoints {
@@ -166,7 +165,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 	// double points
 	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
 		if metric.DoubleDataPoints == nil {
-			return errors.Errorf("nil data point field in metric" + metric.GetMetricDescriptor().Name)
+			return errors.New("nil data point field in metric" + metric.GetMetricDescriptor().Name)
 		}
 		for _, pt := range metric.DoubleDataPoints {
 
@@ -183,7 +182,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 		return nil
 	}
 
-	return errors.Errorf("invalid metric type: wants int or double data points")
+	return errors.New("invalid metric type: wants int or double data points")
 }
 
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
@@ -192,7 +191,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.HistogramDataPoints == nil {
-		return errors.Errorf("invalid metric type: wants histogram points")
+		return errors.New("invalid metric type: wants histogram points")
 	}
 
 	for _, pt := range metric.HistogramDataPoints {
@@ -251,7 +250,7 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 func (prwe *prwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.SummaryDataPoints == nil {
-		return errors.Errorf("invalid metric type: wants summary points")
+		return errors.New("invalid metric type: wants summary points")
 	}
 
 	for _, pt := range metric.SummaryDataPoints {
@@ -342,7 +341,7 @@ func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		if scanner.Scan() {
 			line = scanner.Text()
 		}
-		err = errors.Errorf("server returned HTTP status %s: %s", httpResp.Status, line)
+		err = errors.New("server returned HTTP status: " + httpResp.Status + ", " + line)
 	}
 	return err
 }
