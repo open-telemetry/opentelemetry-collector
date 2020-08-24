@@ -16,8 +16,6 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
-	"encoding/binary"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"math"
 	"math/rand"
 	"reflect"
@@ -30,8 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -406,7 +402,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 		traces.ResourceSpans().Resize(1)
 		rs := traces.ResourceSpans().At(0)
 		rs.Resource().InitEmpty()
-		rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
+		rs.Resource().Attributes().InsertString("service.name", serviceName)
 		rs.Resource().Attributes().InsertBool("bool", true)
 		rs.Resource().Attributes().InsertString("string", "yes")
 		rs.Resource().Attributes().InsertInt("int64", 10000000)
@@ -416,7 +412,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 			span := pdata.NewSpan()
 			span.InitEmpty()
 			span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
-			span.SetSpanID(GenerateSequentialSpanID(uint64(j + i)))
+			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
 			attributes := make(map[string]pdata.AttributeValue)
 			attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
 			attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")
@@ -429,38 +425,37 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 	return traceBatches
 }
 
-func GenerateSequentialTraceID(id uint64) []byte {
-	//var traceID [16]byte
-	//binary.PutUvarint(traceID[:], id)
-	token := make([]byte, 16)
-	rand.Read(token)
-	return token
-}
-
-func GenerateSequentialSpanID(id uint64) []byte {
-	var spanID [8]byte
-	binary.PutUvarint(spanID[:], id)
-	return spanID[:]
-}
-
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
 func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[string]bool, spanCount int) {
 	traceIDs = make(map[string]bool)
 	for _, td := range sampled {
-		octds := internaldata.TraceDataToOC(td)
-		for _, octd := range octds {
-			if processor.ServiceNameForNode(octd.Node) != serviceName {
+		rspans := td.ResourceSpans()
+		for i := 0; i < rspans.Len(); i++ {
+			rspan := rspans.At(i)
+			if rspan.IsNil() {
 				continue
 			}
-			for _, span := range octd.Spans {
-				spanCount++
-				key := string(span.TraceId)
-				if traceIDs[key] {
-					t.Errorf("same traceID used more than once %q", key)
-					return
+			ilss := rspans.At(i).InstrumentationLibrarySpans()
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				if ils.IsNil() {
+					continue
 				}
-				traceIDs[key] = true
+
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
+					continue
+				}
+				for k := 0; k < ils.Spans().Len(); k++ {
+					spanCount++
+					span := ils.Spans().At(k)
+					key := string(span.TraceID())
+					if traceIDs[key] {
+						t.Errorf("same traceID used more than once %q", key)
+						return
+					}
+					traceIDs[key] = true
+				}
 			}
 		}
 	}
