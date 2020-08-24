@@ -91,6 +91,11 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	var errors []error
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
+		// Skip partition stats having more than one mount point for the same device
+		if deviceUsageAlreadySet(partition.Device, usages) {
+			continue
+		}
+
 		usage, err := s.usage(partition.Mountpoint)
 		if err != nil {
 			errors = append(errors, err)
@@ -111,6 +116,15 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	}
 
 	return metrics, componenterror.CombineErrors(errors)
+}
+
+func deviceUsageAlreadySet(device string, usages []*deviceUsage) bool {
+	for _, usage := range usages {
+		if device == usage.deviceName {
+			return true
+		}
+	}
+	return false
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
