@@ -19,6 +19,7 @@ import (
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -154,6 +155,7 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	ocEventsToInternal(src.TimeEvents, dest)
 	ocLinksToInternal(src.Links, dest)
 	ocStatusToInternal(src.Status, dest.Status())
+	ocSameProcessAsParentSpanToInternal(src.SameProcessAsParentSpan, dest)
 }
 
 func hasBytesValue(s []byte) bool {
@@ -359,4 +361,11 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	dest.UpsertInt(conventions.OCTimeEventMessageEventID, int64(msgEvent.Id))
 	dest.UpsertInt(conventions.OCTimeEventMessageEventUSize, int64(msgEvent.UncompressedSize))
 	dest.UpsertInt(conventions.OCTimeEventMessageEventCSize, int64(msgEvent.CompressedSize))
+}
+
+func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata.Span) {
+	if spaps == nil {
+		return
+	}
+	dest.Attributes().UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, spaps.Value)
 }

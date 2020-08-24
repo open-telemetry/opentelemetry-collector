@@ -21,11 +21,14 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -130,6 +133,20 @@ func TestSpanKindToOC(t *testing.T) {
 			assert.EqualValues(t, test.ocKind, got, "Expected "+test.ocKind.String()+", got "+got.String())
 		})
 	}
+}
+
+func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
+	attr := pdata.NewAttributeMap()
+	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
+
+	attr.UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, true)
+	assert.True(t, proto.Equal(wrapperspb.Bool(true), attributesMapToOCSameProcessAsParentSpan(attr)))
+
+	attr.UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, false)
+	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
+
+	attr.UpdateInt(conventions.OCAttributeSameProcessAsParentSpan, 13)
+	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 
 func TestSpanKindToOCAttribute(t *testing.T) {
