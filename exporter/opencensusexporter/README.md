@@ -37,7 +37,6 @@ Example:
 exporters:
   opencensus:
     endpoint: otelcol2:55678
-    reconnection_delay: 60s
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
