@@ -59,6 +59,20 @@ func TestScrapeMetrics(t *testing.T) {
 			expectedDeviceDataPoints: 1,
 		},
 		{
+			name: "No duplicate metrics for devices having many mount point",
+			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{Device: "a", Mountpoint: "/mnt/a1"},
+					{Device: "a", Mountpoint: "/mnt/a2"},
+				}, nil
+			},
+			usageFunc: func(string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+		},
+		{
 			name:          "Include Filter that matches nothing",
 			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
 			expectMetrics: false,

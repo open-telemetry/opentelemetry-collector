@@ -251,6 +251,7 @@ func TestGRPCReception(t *testing.T) {
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
+	t.Skip("Expired certificates: https://github.com/open-telemetry/opentelemetry-collector/issues/1627")
 	// prepare
 	var grpcServerOptions []grpc.ServerOption
 	tlsCreds := configtls.TLSServerSetting{
