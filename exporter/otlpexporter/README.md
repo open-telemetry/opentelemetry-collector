@@ -24,8 +24,6 @@ The following settings can be optionally configured:
 - `headers` the headers associated with gRPC requests.
 - `keepalive` keepalive parameters for client gRPC. See
   [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-- `reconnection_delay`: time period between each reconnection performed by the
-  exporter.
 - `insecure` whether to enable client transport security for the exporter's
   gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
@@ -51,7 +49,6 @@ Example:
 exporters:
   otlp:
     endpoint: otelcol2:55680
-    reconnection_delay: 60s
     insecure: true
 ```
 
