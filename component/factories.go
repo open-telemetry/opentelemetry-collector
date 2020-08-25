@@ -30,7 +30,7 @@ type Factories struct {
 	Processors map[configmodels.Type]ProcessorFactory
 
 	// Exporters maps exporter type names in the config to the respective factory.
-	Exporters map[configmodels.Type]ExporterFactoryBase
+	Exporters map[configmodels.Type]ExporterFactory
 
 	// Extensions maps extension type names in the config to the respective factory.
 	Extensions map[configmodels.Type]ExtensionFactory
@@ -67,8 +67,8 @@ func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[configmodels.Ty
 // MakeExporterFactoryMap takes a list of exporter factories and returns a map
 // with factory type as keys. It returns a non-nil error when more than one factories
 // have the same type.
-func MakeExporterFactoryMap(factories ...ExporterFactoryBase) (map[configmodels.Type]ExporterFactoryBase, error) {
-	fMap := map[configmodels.Type]ExporterFactoryBase{}
+func MakeExporterFactoryMap(factories ...ExporterFactory) (map[configmodels.Type]ExporterFactory, error) {
+	fMap := map[configmodels.Type]ExporterFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate exporter factory %q", f.Type())

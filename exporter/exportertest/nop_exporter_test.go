@@ -17,35 +17,12 @@ import (
 	"context"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
 )
-
-func TestNopTraceExporterOld(t *testing.T) {
-	nte := NewNopTraceExporterOld()
-	require.NoError(t, nte.Start(context.Background(), nil))
-	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
-	}
-	require.NoError(t, nte.ConsumeTraceData(context.Background(), td))
-	require.NoError(t, nte.Shutdown(context.Background()))
-}
-
-func TestNopMetricsExporterOld(t *testing.T) {
-	nme := NewNopMetricsExporterOld()
-	require.NoError(t, nme.Start(context.Background(), nil))
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, 7),
-	}
-	require.NoError(t, nme.ConsumeMetricsData(context.Background(), md))
-	require.NoError(t, nme.Shutdown(context.Background()))
-}
 
 func TestNopTraceExporter(t *testing.T) {
 	nte := NewNopTraceExporter()

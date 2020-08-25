@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 )
 
@@ -205,8 +206,8 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 }
 
 func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
-	bf := &badExporterFactory{}
-	fm := map[configmodels.Type]component.ExporterFactoryBase{
+	bf := newBadExporterFactory()
+	fm := map[configmodels.Type]component.ExporterFactory{
 		bf.Type(): bf,
 	}
 
@@ -247,21 +248,8 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 	}
 }
 
-// badExporterFactory is a factory that returns no error but returns a nil object.
-type badExporterFactory struct{}
-
-func (b *badExporterFactory) Type() configmodels.Type {
-	return "bf"
-}
-
-func (b *badExporterFactory) CreateDefaultConfig() configmodels.Exporter {
-	return &configmodels.ExporterSettings{}
-}
-
-func (b *badExporterFactory) CreateTraceExporter(_ *zap.Logger, _ configmodels.Exporter) (component.TraceExporterOld, error) {
-	return nil, nil
-}
-
-func (b *badExporterFactory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
-	return nil, nil
+func newBadExporterFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory("bf", func() configmodels.Exporter {
+		return &configmodels.ExporterSettings{}
+	})
 }

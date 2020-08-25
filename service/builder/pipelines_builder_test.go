@@ -70,7 +70,7 @@ func createExampleFactories() component.Factories {
 		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
-		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
+		Exporters: map[configmodels.Type]component.ExporterFactory{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 		},
 	}

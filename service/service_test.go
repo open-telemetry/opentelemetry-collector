@@ -360,7 +360,7 @@ func TestApplication_GetFactory(t *testing.T) {
 		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
-		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
+		Exporters: map[configmodels.Type]component.ExporterFactory{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 		},
 		Extensions: map[configmodels.Type]component.ExtensionFactory{
@@ -408,7 +408,7 @@ func createExampleApplication(t *testing.T) *Application {
 		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
-		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
+		Exporters: map[configmodels.Type]component.ExporterFactory{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 		},
 		Extensions: map[configmodels.Type]component.ExtensionFactory{
