@@ -278,8 +278,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 	return processor.NewLogsFanOutConnector(exporters)
 }
 
-// createTraceProcessor creates trace processor based on type of the current processor
-// and type of the downstream consumer.
+// createTraceProcessor creates trace processor using given factory and next consumer.
 func createTraceProcessor(
 	factory component.ProcessorFactory,
 	logger *zap.Logger,
@@ -294,8 +293,7 @@ func createTraceProcessor(
 	return factory.CreateTraceProcessor(context.Background(), creationParams, nextConsumer, cfg)
 }
 
-// createMetricsProcessor creates metric processor based on type of the current processor
-// and type of the downstream consumer.
+// createMetricsProcessor creates metric processor using given factory and next consumer.
 func createMetricsProcessor(
 	factory component.ProcessorFactory,
 	logger *zap.Logger,

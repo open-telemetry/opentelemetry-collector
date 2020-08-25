@@ -25,7 +25,7 @@ import (
 // This file contains implementations of Trace/Metrics connectors
 // that fan out the data to multiple other consumers.
 
-// NewMetricsFanOutConnector wraps multiple new type metrics consumers in a single one.
+// NewMetricsFanOutConnector wraps multiple metrics consumers in a single one.
 func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	if len(mcs) == 1 {
 		// Don't wrap if no need to do it.
@@ -49,7 +49,7 @@ func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.M
 	return componenterror.CombineErrors(errs)
 }
 
-// NewTracesFanOutConnector wraps multiple new type trace consumers in a single one.
+// NewTracesFanOutConnector wraps multiple trace consumers in a single one.
 func NewTracesFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
@@ -73,7 +73,7 @@ func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Trac
 	return componenterror.CombineErrors(errs)
 }
 
-// NewLogsFanOutConnector wraps multiple new type  consumers in a single one.
+// NewLogsFanOutConnector wraps multiple log consumers in a single one.
 func NewLogsFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	if len(lcs) == 1 {
 		// Don't wrap if no need to do it.
@@ -86,7 +86,7 @@ type logsFanOutConnector []consumer.LogsConsumer
 
 var _ consumer.LogsConsumer = (*logsFanOutConnector)(nil)
 
-// Consume exports the span data to all  consumers wrapped by the current one.
+// Consume exports the log data to all consumers wrapped by the current one.
 func (fc logsFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 	for _, tc := range fc {

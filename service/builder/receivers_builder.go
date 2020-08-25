@@ -349,8 +349,7 @@ func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
 	return processor.NewLogsFanOutConnector(pipelineConsumers)
 }
 
-// createTraceReceiver is a helper function that creates trace receiver based on the current receiver type
-// and type of the next consumer.
+// createTraceReceiver creates a trace receiver using given factory and next consumer.
 func createTraceReceiver(
 	ctx context.Context,
 	factory component.ReceiverFactory,
@@ -366,8 +365,7 @@ func createTraceReceiver(
 	return factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nextConsumer)
 }
 
-// createMetricsReceiver is a helper function that creates metric receiver based
-// on the current receiver type and type of the next consumer.
+// createMetricsReceiver creates a metric receiver using given factory and next consumer.
 func createMetricsReceiver(
 	ctx context.Context,
 	factory component.ReceiverFactory,

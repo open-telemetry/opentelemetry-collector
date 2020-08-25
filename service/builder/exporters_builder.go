@@ -315,7 +315,7 @@ func exporterTypeMismatchErr(
 	)
 }
 
-// createTraceProcessor creates a trace exporter based on provided factory type.
+// createTraceProcessor creates a trace exporter using given factory.
 func createTraceExporter(
 	factory component.ExporterFactory,
 	logger *zap.Logger,
@@ -329,7 +329,7 @@ func createTraceExporter(
 	return factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 }
 
-// createMetricsExporter creates a metrics exporter based on provided factory type.
+// createMetricsExporter creates a metrics exporter using given factory.
 func createMetricsExporter(
 	factory component.ExporterFactory,
 	logger *zap.Logger,
@@ -343,7 +343,7 @@ func createMetricsExporter(
 	return factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 }
 
-// createLogsExporter creates a data exporter based on provided factory type.
+// createLogsExporter creates a log exporter using given factory.
 func createLogsExporter(
 	factory component.ExporterFactory,
 	logger *zap.Logger,

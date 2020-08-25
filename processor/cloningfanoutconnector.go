@@ -28,7 +28,7 @@ import (
 // clones of data before fanning out, which ensures each consumer gets their
 // own copy of data and is free to modify it.
 
-// NewMetricsCloningFanOutConnector wraps multiple new type metrics consumers in a single one and clones the data
+// NewMetricsCloningFanOutConnector wraps multiple metrics consumers in a single one and clones the data
 // before fanning out.
 func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	if len(mcs) == 1 {
@@ -66,7 +66,7 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md 
 	return componenterror.CombineErrors(errs)
 }
 
-// NewTracesCloningFanOutConnector wraps multiple new type traces consumers in a single one and clones the data
+// NewTracesCloningFanOutConnector wraps multiple traces consumers in a single one and clones the data
 // before fanning out.
 func NewTracesCloningFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
 	if len(tcs) == 1 {
@@ -117,7 +117,7 @@ type logsCloningFanOutConnector []consumer.LogsConsumer
 
 var _ consumer.LogsConsumer = (*logsCloningFanOutConnector)(nil)
 
-// ConsumeLogs exports the span data to all  consumers wrapped by the current one.
+// ConsumeLogs exports the log data to all consumers wrapped by the current one.
 func (lfc logsCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 
