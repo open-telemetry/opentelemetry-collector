@@ -14,7 +14,7 @@ It can also be easily configured to tail and parse any structured or unstructure
 
 ## Optional Parameters
 
-- `plugins_dir` is the path to a directory which contains `stanza` [plugins](https://github.com/observIQ/stanza/blob/master/docs/plugins.md). Plugins are parameterized pipelines that are designed for specific use cases.
+- `plugin_dir` is the path to a directory which contains `stanza` [plugins](https://github.com/observIQ/stanza/blob/master/docs/plugins.md). Plugins are parameterized pipelines that are designed for specific use cases.
 - `offsets_file` is the path to a file that `stanza` will use to remember where it left off when reading from files or other persistent input sources. If specified, `stanza` will create and manage this file.
 
 ## Operator Basics

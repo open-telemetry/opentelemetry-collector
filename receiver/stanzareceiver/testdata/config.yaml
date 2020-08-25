@@ -12,7 +12,7 @@ receivers:
         severity:
           parse_from: sev
   stanza/plugin:
-    plugins_dir: receiver/stanzareceiver/testdata/plugins
+    plugin_dir: receiver/stanzareceiver/testdata/plugins
     pipeline:
       - type: say_hello
         name: Tom

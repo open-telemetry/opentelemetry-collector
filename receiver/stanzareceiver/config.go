@@ -24,6 +24,6 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	OffsetsFile                   string          `mapstructure:"offsets_file"`
-	PluginsDir                    string          `mapstructure:"plugins_dir"`
+	PluginDir                     string          `mapstructure:"plugin_dir"`
 	Pipeline                      pipeline.Config `mapstructure:"pipeline"`
 }
