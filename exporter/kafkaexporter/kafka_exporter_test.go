@@ -39,8 +39,23 @@ func TestNewExporter_err_version(t *testing.T) {
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, map[string]Marshaller{})
+	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, exp)
+}
+
+func TestNewExporter_err_auth_type(t *testing.T) {
+	c := Config{
+		ProtocolVersion: "2.0.0",
+		Authentication:  Authentication{Type: AuthType("foo")},
+		Encoding:        defaultEncoding,
+		Metadata: Metadata{
+			Full: false,
+		},
+	}
+	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown/unsupported authentication method")
 	assert.Nil(t, exp)
 }
 

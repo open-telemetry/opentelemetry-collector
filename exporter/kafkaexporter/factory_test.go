@@ -32,6 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
 	assert.Equal(t, defaultTopic, cfg.Topic)
+	assert.Equal(t, AuthTypeNone, cfg.Authentication.Type)
 }
 
 func TestCreateTracesExporter(t *testing.T) {

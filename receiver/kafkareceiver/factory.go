@@ -78,6 +78,9 @@ func createDefaultConfig() configmodels.Receiver {
 		Brokers:  []string{defaultBroker},
 		ClientID: defaultClientID,
 		GroupID:  defaultGroupID,
+		Authentication: kafkaexporter.Authentication{
+			Type: kafkaexporter.AuthTypeNone,
+		},
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{
