@@ -206,3 +206,13 @@ func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics
 	mc.backend.ConsumeMetric(md)
 	return nil
 }
+
+func (tc *MockTraceConsumer) MockConsumeTraceData(spansCount int) error {
+	tc.numSpansReceived.Add(uint64(spansCount))
+	return nil
+}
+
+func (mc *MockMetricConsumer) MockConsumeMetricData(metricsCount int) error {
+	mc.numMetricsReceived.Add(uint64(metricsCount))
+	return nil
+}
