@@ -27,7 +27,13 @@ import (
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
-func TestTraceProcessorMultiplexing(t *testing.T) {
+func TestTracesProcessorNotMultiplexing(t *testing.T) {
+	nop := exportertest.NewNopTraceExporter()
+	tfc := NewTracesFanOutConnector([]consumer.TraceConsumer{nop})
+	assert.Same(t, nop, tfc)
+}
+
+func TestTracesProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
 		processors[i] = new(exportertest.SinkTraceExporter)
@@ -80,6 +86,12 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	assert.Equal(t, wantSpansCount, processors[2].(*exportertest.SinkTraceExporter).SpansCount())
 }
 
+func TestMetricsProcessorNotMultiplexing(t *testing.T) {
+	nop := exportertest.NewNopMetricsExporter()
+	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
+	assert.Same(t, nop, mfc)
+}
+
 func TestMetricsProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
@@ -88,12 +100,11 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 
 	mfc := NewMetricsFanOutConnector(processors)
 	md := testdata.GenerateMetricDataOneMetric()
-	pmd := pdatautil.MetricsFromInternalMetrics(md)
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pmd)
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -118,12 +129,11 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 
 	mfc := NewMetricsFanOutConnector(processors)
 	md := testdata.GenerateMetricDataOneMetric()
-	pmd := pdatautil.MetricsFromInternalMetrics(md)
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pmd)
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
@@ -133,4 +143,63 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	assert.Equal(t, 0, processors[1].(*exportertest.SinkMetricsExporter).MetricsCount())
 	assert.Equal(t, wantMetricsCount, processors[0].(*exportertest.SinkMetricsExporter).MetricsCount())
 	assert.Equal(t, wantMetricsCount, processors[2].(*exportertest.SinkMetricsExporter).MetricsCount())
+}
+
+func TestLogsProcessorNotMultiplexing(t *testing.T) {
+	nop := exportertest.NewNopLogsExporter()
+	lfc := NewLogsFanOutConnector([]consumer.LogsConsumer{nop})
+	assert.Same(t, nop, lfc)
+}
+
+func TestLogsProcessorMultiplexing(t *testing.T) {
+	processors := make([]consumer.LogsConsumer, 3)
+	for i := range processors {
+		processors[i] = new(exportertest.SinkLogsExporter)
+	}
+
+	lfc := NewLogsFanOutConnector(processors)
+	ld := testdata.GenerateLogDataOneLog()
+
+	var wantMetricsCount = 0
+	for i := 0; i < 2; i++ {
+		wantMetricsCount += ld.LogRecordCount()
+		err := lfc.ConsumeLogs(context.Background(), ld)
+		if err != nil {
+			t.Errorf("Wanted nil got error")
+			return
+		}
+	}
+
+	for _, p := range processors {
+		m := p.(*exportertest.SinkLogsExporter)
+		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
+		assert.EqualValues(t, ld, m.AllLogs()[0])
+	}
+}
+
+func TestLogsProcessorWhenOneErrors(t *testing.T) {
+	processors := make([]consumer.LogsConsumer, 3)
+	for i := range processors {
+		processors[i] = new(exportertest.SinkLogsExporter)
+	}
+
+	// Make one processor return error
+	processors[1].(*exportertest.SinkLogsExporter).SetConsumeLogError(errors.New("my_error"))
+
+	lfc := NewLogsFanOutConnector(processors)
+	ld := testdata.GenerateLogDataOneLog()
+
+	var wantMetricsCount = 0
+	for i := 0; i < 2; i++ {
+		wantMetricsCount += ld.LogRecordCount()
+		err := lfc.ConsumeLogs(context.Background(), ld)
+		if err == nil {
+			t.Errorf("Wanted error got nil")
+			return
+		}
+	}
+
+	assert.Equal(t, 0, processors[1].(*exportertest.SinkLogsExporter).LogRecordsCount())
+	assert.Equal(t, wantMetricsCount, processors[0].(*exportertest.SinkLogsExporter).LogRecordsCount())
+	assert.Equal(t, wantMetricsCount, processors[2].(*exportertest.SinkLogsExporter).LogRecordsCount())
 }
