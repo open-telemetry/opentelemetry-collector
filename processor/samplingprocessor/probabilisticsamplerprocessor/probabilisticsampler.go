@@ -70,7 +70,6 @@ func newTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (compone
 }
 
 func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	var errs []error
 	rspans := td.ResourceSpans()
 	sampledTraceData := pdata.NewTraces()
 	for i := 0; i < rspans.Len(); i++ {
@@ -78,17 +77,12 @@ func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Tr
 		if rspan.IsNil() {
 			continue
 		}
-		if err := tsp.processTraces(ctx, rspan, sampledTraceData); err != nil {
-			errs = append(errs, err)
-		}
+		tsp.processTraces(ctx, rspan, sampledTraceData)
 	}
-	if err := tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData); err != nil {
-		errs = append(errs, err)
-	}
-	return componenterror.CombineErrors(errs)
+	return tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData)
 }
 
-func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpans pdata.ResourceSpans, sampledTraceData pdata.Traces) error {
+func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpans pdata.ResourceSpans, sampledTraceData pdata.Traces) {
 	scaledSamplingRate := tsp.scaledSamplingRate
 
 	sampledTraceData.ResourceSpans().Resize(sampledTraceData.ResourceSpans().Len() + 1)
@@ -125,7 +119,6 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpa
 			}
 		}
 	}
-	return nil
 }
 
 func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilities {
