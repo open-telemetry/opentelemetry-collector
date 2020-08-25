@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -334,7 +334,7 @@ func TestCreateLogReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mr, err := factory.(component.LogsReceiverFactory).CreateLogsReceiver(ctx, creationParams, tt.cfg, tt.sink)
+			mr, err := factory.CreateLogsReceiver(ctx, creationParams, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

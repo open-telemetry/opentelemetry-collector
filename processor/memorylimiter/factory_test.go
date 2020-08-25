@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,8 +52,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.Nil(t, mp)
 	assert.Error(t, err, "created processor with invalid settings")
 
-	lfactory := factory.(component.LogsProcessorFactory)
-	lp, err := lfactory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
+	lp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
 	assert.Nil(t, lp)
 	assert.Error(t, err, "created processor with invalid settings")
 
@@ -74,7 +73,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, mp)
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	lp, err = lfactory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
+	lp, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopLogsExporter())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.NoError(t, lp.Shutdown(context.Background()))

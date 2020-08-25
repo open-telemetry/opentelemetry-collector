@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@ package attributesprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/processor/attraction"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // Config specifies the set of attributes to be inserted, updated, upserted and
@@ -35,5 +35,5 @@ type Config struct {
 	// Specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	// This is a required field.
-	attraction.Settings `mapstructure:",squash"`
+	processorhelper.Settings `mapstructure:",squash"`
 }

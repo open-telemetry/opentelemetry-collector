@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -367,7 +367,7 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactoryBase) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactory) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
 	exportersConfig := ViperSub(v, exportersKeyName)
 	expandEnvConfig(exportersConfig)
@@ -417,7 +417,7 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 	return exporters, nil
 }
 
-func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactoryBase) (configmodels.Processors, error) {
+func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactory) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
 	processorsConfig := ViperSub(v, processorsKeyName)
 	expandEnvConfig(processorsConfig)

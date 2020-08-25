@@ -40,7 +40,7 @@ endif
 BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
-RUN_CONFIG=local/config.yaml
+RUN_CONFIG?=local/config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
@@ -90,7 +90,7 @@ test-with-cover:
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENSE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
+	$(ADDLICENSE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC)
 
 .PHONY: checklicense
 checklicense:
@@ -144,14 +144,15 @@ fmt:
 .PHONY: install-tools
 install-tools:
 	go install github.com/client9/misspell/cmd/misspell
-	go install github.com/google/addlicense
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	go install github.com/google/addlicense
 	go install github.com/jstemmer/go-junit-report
+	go install github.com/mjibson/esc
 	go install github.com/ory/go-acc
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/securego/gosec/cmd/gosec
-	go install honnef.co/go/tools/cmd/staticcheck
 	go install github.com/tcnksm/ghr
+	go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: otelcol
 otelcol:

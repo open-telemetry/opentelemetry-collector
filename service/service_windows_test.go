@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/windows/svc"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
@@ -33,7 +34,7 @@ func TestWindowsService_Execute(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	s := NewWindowsService(Parameters{Factories: factories, ApplicationStartInfo: ApplicationStartInfo{}})
+	s := NewWindowsService(Parameters{Factories: factories, ApplicationStartInfo: componenttest.TestApplicationStartInfo()})
 
 	appDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

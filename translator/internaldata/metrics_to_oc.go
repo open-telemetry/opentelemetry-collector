@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ import (
 	"sort"
 
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -440,14 +440,14 @@ func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.
 	return labelValues
 }
 
-func int64Value(val uint64) *wrappers.Int64Value {
-	return &wrappers.Int64Value{
+func int64Value(val uint64) *wrapperspb.Int64Value {
+	return &wrapperspb.Int64Value{
 		Value: int64(val),
 	}
 }
 
-func doubleValue(val float64) *wrappers.DoubleValue {
-	return &wrappers.DoubleValue{
+func doubleValue(val float64) *wrapperspb.DoubleValue {
+	return &wrapperspb.DoubleValue{
 		Value: val,
 	}
 }

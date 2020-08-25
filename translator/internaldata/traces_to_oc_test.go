@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,12 +24,16 @@ import (
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -136,6 +140,20 @@ func TestSpanKindToOC(t *testing.T) {
 	}
 }
 
+func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
+	attr := pdata.NewAttributeMap()
+	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
+
+	attr.UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, true)
+	assert.True(t, proto.Equal(wrapperspb.Bool(true), attributesMapToOCSameProcessAsParentSpan(attr)))
+
+	attr.UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, false)
+	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
+
+	attr.UpdateInt(conventions.OCAttributeSameProcessAsParentSpan, 13)
+	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
+}
+
 func TestSpanKindToOCAttribute(t *testing.T) {
 	tests := []struct {
 		kind        pdata.SpanKind
@@ -198,12 +216,9 @@ func TestInternalToOC(t *testing.T) {
 	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
 	ocResource2 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-2"}}
 
-	startTime, err := ptypes.TimestampProto(testdata.TestSpanStartTime)
-	assert.NoError(t, err)
-	eventTime, err := ptypes.TimestampProto(testdata.TestSpanEventTime)
-	assert.NoError(t, err)
-	endTime, err := ptypes.TimestampProto(testdata.TestSpanEndTime)
-	assert.NoError(t, err)
+	startTime := timestamppb.New(testdata.TestSpanStartTime)
+	eventTime := timestamppb.New(testdata.TestSpanEventTime)
+	endTime := timestamppb.New(testdata.TestSpanEndTime)
 
 	ocSpan1 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationA"},

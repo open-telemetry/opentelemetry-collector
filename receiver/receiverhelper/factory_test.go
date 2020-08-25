@@ -1,10 +1,10 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,8 +46,7 @@ func TestNewFactory(t *testing.T) {
 	assert.Error(t, err)
 	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.Error(t, err)
-	lfactory := factory.(component.LogsReceiverFactory)
-	_, err = lfactory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.Error(t, err)
 }
 
@@ -72,8 +71,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.NoError(t, err)
 
-	lfactory := factory.(component.LogsReceiverFactory)
-	_, err = lfactory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.NoError(t, err)
 }
 

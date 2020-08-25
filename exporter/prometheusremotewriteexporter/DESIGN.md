@@ -8,7 +8,7 @@ Date: July 30, 2020
 
 ## **1. Introduction**
 
-Prometheus can be integrated with remote storage systems that supports its remote write API. Existing remote storage integration support is included in [Cortex](https://cortexmetrics.io/docs/apis/), [influxDB](https://docs.influxdata.com/influxdb/v1.8/supported_protocols/prometheus/), and many [others](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage).
+Prometheus can be integrated with remote storage systems that supports its remote write API. Existing remote storage integration support is included in [Cortex](https://cortexmetrics.io/docs/api/), [influxDB](https://docs.influxdata.com/influxdb/v1.8/supported_protocols/prometheus/), and many [others](https://prometheus.io/docs/operating/integrations/#remote-endpoints-and-storage).
 
 The following diagram shows an example of Prometheus remote write API usage, with Cortex,n open source, horizontally scalable, highly available, multi-tenant, long term storage, as a remote storage backend.
 
@@ -25,7 +25,7 @@ The Prometheus remote write/Cortex exporter should write metrics to a remote URL
 TimeSeries stores its metric name in its labels and does not describe metric types or start timestamps. To convert to TimeSeries data, buckets of a Histogram are broken down into individual TimeSeries with a bound label(`le`), and a similar process happens with quantiles in a Summary.
 
 
-More details of Prometheus remote write API can be found in Prometheus [documentation](https://prometheus.io/docs/prometheus/latest/storage/#overview) and Cortex [documentation](https://cortexmetrics.io/docs/apis/).
+More details of Prometheus remote write API can be found in Prometheus [documentation](https://prometheus.io/docs/prometheus/latest/storage/#overview) and Cortex [documentation](https://cortexmetrics.io/docs/api/).
 
 ### **1.2 Gaps and Assumptions**
 

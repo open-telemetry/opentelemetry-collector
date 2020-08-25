@@ -1,14 +1,7 @@
 receivers:
   examplereceiver:
-  zipkin:
-
+  multireceiver:
 processors:
-  attributes:
-    actions:
-      - key: attr1
-        value: 12345
-        action: insert
-
 exporters:
   exampleexporter:
 
@@ -16,5 +9,4 @@ service:
   pipelines:
     traces:
       receivers: [examplereceiver]
-      processors: [attributes]
       exporters: [exampleexporter]

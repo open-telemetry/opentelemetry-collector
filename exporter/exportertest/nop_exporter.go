@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,53 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-type nopExporterOld struct {
-	name     string
-	retError error
-}
-
-func (ne *nopExporterOld) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (ne *nopExporterOld) ConsumeTraceData(context.Context, consumerdata.TraceData) error {
-	return ne.retError
-}
-
-func (ne *nopExporterOld) ConsumeMetricsData(context.Context, consumerdata.MetricsData) error {
-	return ne.retError
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (ne *nopExporterOld) Shutdown(context.Context) error {
-	return nil
-}
 
 const (
 	nopTraceExporterName   = "nop_trace"
 	nopMetricsExporterName = "nop_metrics"
 	nopLogsExporterName    = "nop_log"
 )
-
-// NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
-func NewNopTraceExporterOld() component.TraceExporterOld {
-	ne := &nopExporterOld{
-		name: nopTraceExporterName,
-	}
-	return ne
-}
-
-// NewNopMetricsExporterOld creates an MetricsExporter that just drops the received data.
-func NewNopMetricsExporterOld() component.MetricsExporterOld {
-	ne := &nopExporterOld{
-		name: nopMetricsExporterName,
-	}
-	return ne
-}
 
 type nopExporter struct {
 	name     string
@@ -92,7 +53,7 @@ func (ne *nopExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-// NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
+// NewNopTraceExporter creates an TraceExporter that just drops the received data.
 func NewNopTraceExporter() component.TraceExporter {
 	ne := &nopExporter{
 		name: nopTraceExporterName,
@@ -100,7 +61,7 @@ func NewNopTraceExporter() component.TraceExporter {
 	return ne
 }
 
-// NewNopMetricsExporterOld creates an MetricsExporter that just drops the received data.
+// NewNopMetricsExporter creates an MetricsExporter that just drops the received data.
 func NewNopMetricsExporter() component.MetricsExporter {
 	ne := &nopExporter{
 		name: nopMetricsExporterName,
@@ -108,7 +69,7 @@ func NewNopMetricsExporter() component.MetricsExporter {
 	return ne
 }
 
-// NewNopLogsExporterOld creates an LogsExporter that just drops the received data.
+// NewNopLogsExporter creates an LogsExporter that just drops the received data.
 func NewNopLogsExporter() component.LogsExporter {
 	ne := &nopExporter{
 		name: nopLogsExporterName,

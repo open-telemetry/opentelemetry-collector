@@ -5,11 +5,7 @@ receivers:
   examplereceiver/multi:
 
 processors:
-  attributes:
-    actions:
-      - key: attr1
-        value: 12345
-        action: insert
+  exampleprocessor:
 
 exporters:
   exampleexporter:
@@ -19,12 +15,12 @@ service:
   pipelines:
     traces:
       receivers: [examplereceiver, examplereceiver/multi]
-      processors: [attributes]
+      processors: [exampleprocessor]
       exporters: [exampleexporter]
 
     traces/2:
       receivers: [examplereceiver/2, examplereceiver/multi]
-      processors: [attributes]
+      processors: [exampleprocessor]
       exporters: [exampleexporter, exampleexporter/2]
 
     metrics:

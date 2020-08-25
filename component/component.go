@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -107,3 +107,19 @@ type ConfigUnmarshaler interface {
 // intoCfg interface{}
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
 type CustomUnmarshaler func(componentViperSection *viper.Viper, intoCfg interface{}) error
+
+// ApplicationStartInfo is the information that is logged at the application start and
+// passed into each component. This information can be overridden in custom builds.
+type ApplicationStartInfo struct {
+	// Executable file name, e.g. "otelcol".
+	ExeName string
+
+	// Long name, used e.g. in the logs.
+	LongName string
+
+	// Version string.
+	Version string
+
+	// Git hash of the source code.
+	GitHash string
+}

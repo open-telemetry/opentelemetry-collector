@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -237,6 +237,17 @@ func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 	return nil, nil
 }
 
+// CreateMetricsReceiver creates a metrics receiver based on this config.
+func (f *MultiProtoReceiverFactory) CreateLogsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	// Not used for this test, just return nil
+	return nil, nil
+}
+
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.
 type ExampleExporter struct {
@@ -377,20 +388,20 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 func (f *ExampleProcessorFactory) CreateTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	_ consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumer,
 	_ configmodels.Processor,
 ) (component.TraceProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return &ExampleProcessor{nextTraces: nextConsumer}, nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	_ consumer.MetricsConsumer,
+	nextConsumer consumer.MetricsConsumer,
 	_ configmodels.Processor,
 ) (component.MetricsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return &ExampleProcessor{nextMetrics: nextConsumer}, nil
 }
 
 func (f *ExampleProcessorFactory) CreateLogsProcessor(
@@ -399,11 +410,13 @@ func (f *ExampleProcessorFactory) CreateLogsProcessor(
 	_ configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
-	return &ExampleProcessor{nextConsumer}, nil
+	return &ExampleProcessor{nextLogs: nextConsumer}, nil
 }
 
 type ExampleProcessor struct {
-	nextConsumer consumer.LogsConsumer
+	nextTraces  consumer.TraceConsumer
+	nextMetrics consumer.MetricsConsumer
+	nextLogs    consumer.LogsConsumer
 }
 
 func (ep *ExampleProcessor) Start(_ context.Context, _ component.Host) error {
@@ -418,8 +431,16 @@ func (ep *ExampleProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
+func (ep *ExampleProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	return ep.nextTraces.ConsumeTraces(ctx, td)
+}
+
+func (ep *ExampleProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	return ep.nextMetrics.ConsumeMetrics(ctx, md)
+}
+
 func (ep *ExampleProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	return ep.nextConsumer.ConsumeLogs(ctx, ld)
+	return ep.nextLogs.ConsumeLogs(ctx, ld)
 }
 
 // ExampleExtensionCfg is for testing purposes. We are defining an example config and factory
