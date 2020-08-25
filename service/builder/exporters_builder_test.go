@@ -61,7 +61,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 		},
 	}
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -89,7 +89,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "trace")
-	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	exporters, err = NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
@@ -129,7 +129,7 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 		},
 	}
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -154,7 +154,7 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "logs")
-	exporters, err = NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	exporters, err = NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
@@ -241,7 +241,7 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 				},
 			}
 
-			exporters, err := NewExportersBuilder(zap.NewNop(), cfg, fm).Build()
+			exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, fm).Build()
 			assert.Error(t, err)
 			assert.Zero(t, len(exporters))
 		})

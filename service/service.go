@@ -68,7 +68,7 @@ func (app *Application) GetStateChannel() chan State {
 
 // Application represents a collector application
 type Application struct {
-	info            ApplicationStartInfo
+	info            component.ApplicationStartInfo
 	rootCmd         *cobra.Command
 	v               *viper.Viper
 	logger          *zap.Logger
@@ -96,28 +96,12 @@ func (app *Application) Command() *cobra.Command {
 	return app.rootCmd
 }
 
-// ApplicationStartInfo is the information that is logged at the application start.
-// This information can be overridden in custom builds.
-type ApplicationStartInfo struct {
-	// Executable file name, e.g. "otelcol".
-	ExeName string
-
-	// Long name, used e.g. in the logs.
-	LongName string
-
-	// Version string.
-	Version string
-
-	// Git hash of the source code.
-	GitHash string
-}
-
 // Parameters holds configuration for creating a new Application.
 type Parameters struct {
 	// Factories component factories.
 	Factories component.Factories
 	// ApplicationStartInfo provides application start information.
-	ApplicationStartInfo ApplicationStartInfo
+	ApplicationStartInfo component.ApplicationStartInfo
 	// ConfigFactory that creates the configuration.
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
@@ -318,7 +302,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 func (app *Application) setupExtensions(ctx context.Context) error {
 	var err error
-	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.config, app.factories.Extensions).Build()
+	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.info, app.config, app.factories.Extensions).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -332,7 +316,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// First create exporters.
 	var err error
-	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.config, app.factories.Exporters).Build()
+	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.info, app.config, app.factories.Exporters).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
@@ -345,7 +329,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.config, app.builtExporters, app.factories.Processors).Build()
+	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
@@ -357,7 +341,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.config, app.builtPipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build receivers: %w", err)
 	}
