@@ -53,7 +53,7 @@ func (ne *nopExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-// NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
+// NewNopTraceExporter creates an TraceExporter that just drops the received data.
 func NewNopTraceExporter() component.TraceExporter {
 	ne := &nopExporter{
 		name: nopTraceExporterName,
@@ -61,7 +61,7 @@ func NewNopTraceExporter() component.TraceExporter {
 	return ne
 }
 
-// NewNopMetricsExporterOld creates an MetricsExporter that just drops the received data.
+// NewNopMetricsExporter creates an MetricsExporter that just drops the received data.
 func NewNopMetricsExporter() component.MetricsExporter {
 	ne := &nopExporter{
 		name: nopMetricsExporterName,
@@ -69,7 +69,7 @@ func NewNopMetricsExporter() component.MetricsExporter {
 	return ne
 }
 
-// NewNopLogsExporterOld creates an LogsExporter that just drops the received data.
+// NewNopLogsExporter creates an LogsExporter that just drops the received data.
 func NewNopLogsExporter() component.LogsExporter {
 	ne := &nopExporter{
 		name: nopLogsExporterName,

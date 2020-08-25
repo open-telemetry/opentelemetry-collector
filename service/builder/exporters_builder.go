@@ -326,7 +326,6 @@ func createTraceExporter(
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
 	}
-
 	return factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 }
 
@@ -341,22 +340,16 @@ func createMetricsExporter(
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
 	}
-
 	return factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 }
 
 // createLogsExporter creates a data exporter based on provided factory type.
 func createLogsExporter(
-	factoryBase component.ExporterFactory,
+	factory component.ExporterFactory,
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	factory, ok := factoryBase.(component.ExporterFactory)
-	if !ok {
-		return nil, fmt.Errorf("exporter %q does not support data type %q", factoryBase.Type(), configmodels.LogsDataType)
-	}
-
 	creationParams := component.ExporterCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
