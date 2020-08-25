@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -27,13 +28,12 @@ import (
 	"testing"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
 	"github.com/apache/thrift/lib/go/thrift"
 	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/model"
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
-	tJaeger "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
@@ -53,6 +53,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
 const jaegerReceiver = "jaeger_receiver_test"
@@ -73,7 +74,7 @@ func (t traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 	return nil
 }
 
-func jaegerBatchToHTTPBody(b *tJaeger.Batch) (*http.Request, error) {
+func jaegerBatchToHTTPBody(b *jaegerthrift.Batch) (*http.Request, error) {
 	body, err := thrift.NewTSerializer().Write(context.Background(), b)
 	if err != nil {
 		return nil, err
@@ -85,9 +86,9 @@ func jaegerBatchToHTTPBody(b *tJaeger.Batch) (*http.Request, error) {
 
 func TestThriftHTTPBodyDecode(t *testing.T) {
 	jr := jReceiver{}
-	batch := &tJaeger.Batch{
-		Process: tJaeger.NewProcess(),
-		Spans:   []*tJaeger.Span{tJaeger.NewSpan()},
+	batch := &jaegerthrift.Batch{
+		Process: jaegerthrift.NewProcess(),
+		Spans:   []*jaegerthrift.Span{jaegerthrift.NewSpan()},
 	}
 	r, err := jaegerBatchToHTTPBody(batch)
 	require.NoError(t, err, "failed to prepare http body")
@@ -106,9 +107,9 @@ func TestClientIPDetection(t *testing.T) {
 			},
 		},
 	}
-	batch := &tJaeger.Batch{
-		Process: tJaeger.NewProcess(),
-		Spans:   []*tJaeger.Span{tJaeger.NewSpan()},
+	batch := &jaegerthrift.Batch{
+		Process: jaegerthrift.NewProcess(),
+		Spans:   []*jaegerthrift.Span{jaegerthrift.NewSpan()},
 	}
 	r, err := jaegerBatchToHTTPBody(batch)
 	require.NoError(t, err)
@@ -129,9 +130,10 @@ func TestClientIPDetection(t *testing.T) {
 }
 
 func TestReception(t *testing.T) {
+	port := testutil.GetAvailablePort(t)
 	// 1. Create the Jaeger receiver aka "server"
 	config := &configuration{
-		CollectorHTTPPort: 14268, // that's the only one used by this test
+		CollectorHTTPPort: int(port), // that's the only one used by this test
 	}
 	sink := new(exportertest.SinkTraceExporter)
 
@@ -146,35 +148,21 @@ func TestReception(t *testing.T) {
 
 	t.Log("Start")
 
-	now := time.Unix(1542158650, 536343000).UTC()
-	nowPlus10min := now.Add(10 * time.Minute)
-	nowPlus10min2sec := now.Add(10 * time.Minute).Add(2 * time.Second)
-
-	// 2. Then with a "live application", send spans to the Jaeger exporter.
-	jexp, err := jaeger.NewExporter(jaeger.Options{
-		Process: jaeger.Process{
-			ServiceName: "issaTest",
-			Tags: []jaeger.Tag{
-				jaeger.BoolTag("bool", true),
-				jaeger.StringTag("string", "yes"),
-				jaeger.Int64Tag("int64", 1e7),
-			},
-		},
-		CollectorEndpoint: fmt.Sprintf("http://localhost:%d/api/traces", config.CollectorHTTPPort),
-	})
-	assert.NoError(t, err, "should not have failed to create the Jaeger OpenCensus exporter")
-
-	// 3. Now finally send some spans
-	for _, sd := range traceFixture(now, nowPlus10min, nowPlus10min2sec) {
-		jexp.ExportSpan(sd)
+	// 2. Then send spans to the Jaeger receiver.
+	collectorAddr := fmt.Sprintf("http://localhost:%d/api/traces", port)
+	td := generateTraceData()
+	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	require.NoError(t, err)
+	for _, batch := range batches {
+		require.NoError(t, sendToCollector(collectorAddr, modelToThrift(batch)))
 	}
-	jexp.Flush()
+
+	assert.NoError(t, err, "should not have failed to create the Jaeger OpenCensus exporter")
 
 	gotTraces := sink.AllTraces()
 	assert.Equal(t, 1, len(gotTraces))
-	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
-	assert.EqualValues(t, want, gotTraces[0])
+	assert.EqualValues(t, td, gotTraces[0])
 }
 
 func TestPortsNotOpen(t *testing.T) {
@@ -281,7 +269,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
-	conn, err := grpc.Dial(jr.(*jReceiver).collectorGRPCAddr(), grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(jr.collectorGRPCAddr(), grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -348,49 +336,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces
-}
-
-func traceFixture(t1, t2, t3 time.Time) []*trace.SpanData {
-	traceID := trace.TraceID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}
-	parentSpanID := trace.SpanID{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}
-	childSpanID := trace.SpanID{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}
-
-	return []*trace.SpanData{
-		{
-			SpanContext: trace.SpanContext{
-				TraceID: traceID,
-				SpanID:  childSpanID,
-			},
-			ParentSpanID: parentSpanID,
-			Name:         "DBSearch",
-			StartTime:    t1,
-			EndTime:      t2,
-			Status: trace.Status{
-				Code:    trace.StatusCodeNotFound,
-				Message: "Stale indices",
-			},
-			Links: []trace.Link{
-				{
-					TraceID: traceID,
-					SpanID:  parentSpanID,
-					Type:    trace.LinkTypeParent,
-				},
-			},
-		},
-		{
-			SpanContext: trace.SpanContext{
-				TraceID: traceID,
-				SpanID:  parentSpanID,
-			},
-			Name:      "ProxyFetch",
-			StartTime: t2,
-			EndTime:   t3,
-			Status: trace.Status{
-				Code:    trace.StatusCodeInternal,
-				Message: "Frontend crash",
-			},
-		},
-	}
 }
 
 func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
@@ -624,14 +569,14 @@ func randomAvailablePort() (int, error) {
 
 func TestConsumeThriftTrace(t *testing.T) {
 	tests := []struct {
-		batch    *tJaeger.Batch
+		batch    *jaegerthrift.Batch
 		numSpans int
 	}{
 		{
 			batch: nil,
 		},
 		{
-			batch:    &tJaeger.Batch{Spans: []*tJaeger.Span{{}}},
+			batch:    &jaegerthrift.Batch{Spans: []*jaegerthrift.Span{{}}},
 			numSpans: 1,
 		},
 	}
@@ -640,4 +585,29 @@ func TestConsumeThriftTrace(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, test.numSpans, numSpans)
 	}
+}
+
+func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
+	buf, err := thrift.NewTSerializer().Write(context.Background(), batch)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(buf))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-thrift")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	io.Copy(ioutil.Discard, resp.Body)
+	resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("failed to upload traces; HTTP status code: %d", resp.StatusCode)
+	}
+	return nil
 }
