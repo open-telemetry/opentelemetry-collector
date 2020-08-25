@@ -315,7 +315,7 @@ func exporterTypeMismatchErr(
 	)
 }
 
-// createTraceProcessor creates a trace exporter based on provided factory type.
+// createTraceProcessor creates a trace exporter using given factory.
 func createTraceExporter(
 	factory component.ExporterFactory,
 	logger *zap.Logger,
@@ -326,11 +326,10 @@ func createTraceExporter(
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
 	}
-
 	return factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 }
 
-// createMetricsExporter creates a metrics exporter based on provided factory type.
+// createMetricsExporter creates a metrics exporter using given factory.
 func createMetricsExporter(
 	factory component.ExporterFactory,
 	logger *zap.Logger,
@@ -341,22 +340,16 @@ func createMetricsExporter(
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
 	}
-
 	return factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 }
 
-// createLogsExporter creates a data exporter based on provided factory type.
+// createLogsExporter creates a log exporter using given factory.
 func createLogsExporter(
-	factoryBase component.ExporterFactory,
+	factory component.ExporterFactory,
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	factory, ok := factoryBase.(component.ExporterFactory)
-	if !ok {
-		return nil, fmt.Errorf("exporter %q does not support data type %q", factoryBase.Type(), configmodels.LogsDataType)
-	}
-
 	creationParams := component.ExporterCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
