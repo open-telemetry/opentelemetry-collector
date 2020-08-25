@@ -149,7 +149,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
 			}
-			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName) {
+			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
 				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
 					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
 					return
@@ -167,6 +167,60 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 					delta,
 				)
 			}
+		})
+	}
+}
+
+// Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans checks for number of spans sent to xt consumer. This is to avoid duplicate spans
+func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t *testing.T) {
+	tests := []struct {
+		name                 string
+		cfg                  Config
+		numBatches           int
+		numTracesPerBatch    int
+		acceptableDelta      float64
+		resourceSpanPerTrace int
+	}{
+		{
+			name: "single_batch_single_trace_two_resource_spans",
+			cfg: Config{
+				SamplingPercentage: 100.0,
+			},
+			numBatches:           1,
+			numTracesPerBatch:    1,
+			acceptableDelta:      0.0,
+			resourceSpanPerTrace: 2,
+		},
+		{
+			name: "single_batch_two_traces_two_resource_spans",
+			cfg: Config{
+				SamplingPercentage: 100.0,
+			},
+			numBatches:           1,
+			numTracesPerBatch:    2,
+			acceptableDelta:      0.0,
+			resourceSpanPerTrace: 2,
+		},
+	}
+	const testSvcName = "test-svc"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := &exportertest.SinkTraceExporter{}
+			tsp, err := newTraceProcessor(sink, tt.cfg)
+			if err != nil {
+				t.Errorf("error when creating tracesamplerprocessor: %v", err)
+				return
+			}
+
+			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, tt.resourceSpanPerTrace) {
+				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
+					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
+					return
+				}
+				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpansCount())
+				sink.Reset()
+			}
+
 		})
 	}
 }
@@ -394,30 +448,32 @@ func Test_hash(t *testing.T) {
 // genRandomTestData generates a slice of consumerdata.TraceData with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
 // serviceName.
-func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (tdd []pdata.Traces) {
+func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []pdata.Traces) {
 	r := rand.New(rand.NewSource(1))
 	var traceBatches []pdata.Traces
 	for i := 1; i <= numBatches; i++ {
 		traces := pdata.NewTraces()
-		traces.ResourceSpans().Resize(1)
-		rs := traces.ResourceSpans().At(0)
-		rs.Resource().InitEmpty()
-		rs.Resource().Attributes().InsertString("service.name", serviceName)
-		rs.Resource().Attributes().InsertBool("bool", true)
-		rs.Resource().Attributes().InsertString("string", "yes")
-		rs.Resource().Attributes().InsertInt("int64", 10000000)
-		rs.InstrumentationLibrarySpans().Resize(1)
+		traces.ResourceSpans().Resize(resourceSpanCount)
+		for j := 0; j < resourceSpanCount; j++ {
+			rs := traces.ResourceSpans().At(j)
+			rs.Resource().InitEmpty()
+			rs.Resource().Attributes().InsertString("service.name", serviceName)
+			rs.Resource().Attributes().InsertBool("bool", true)
+			rs.Resource().Attributes().InsertString("string", "yes")
+			rs.Resource().Attributes().InsertInt("int64", 10000000)
+			rs.InstrumentationLibrarySpans().Resize(1)
 
-		for j := 1; j <= numTracesPerBatch; j++ {
-			span := pdata.NewSpan()
-			span.InitEmpty()
-			span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
-			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
-			attributes := make(map[string]pdata.AttributeValue)
-			attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
-			attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")
-			rs.InstrumentationLibrarySpans().At(0).Spans().Append(&span)
-			span.Attributes().InitFromMap(attributes)
+			for j := 1; j <= numTracesPerBatch; j++ {
+				span := pdata.NewSpan()
+				span.InitEmpty()
+				span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
+				span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
+				attributes := make(map[string]pdata.AttributeValue)
+				attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
+				attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")
+				rs.InstrumentationLibrarySpans().At(0).Spans().Append(&span)
+				span.Attributes().InitFromMap(attributes)
+			}
 		}
 		traceBatches = append(traceBatches, traces)
 	}

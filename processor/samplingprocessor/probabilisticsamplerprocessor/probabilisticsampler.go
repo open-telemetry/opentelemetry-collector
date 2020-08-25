@@ -82,6 +82,9 @@ func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Tr
 			errs = append(errs, err)
 		}
 	}
+	if err := tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData); err != nil {
+		errs = append(errs, err)
+	}
 	return componenterror.CombineErrors(errs)
 }
 
@@ -122,7 +125,7 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpa
 			}
 		}
 	}
-	return tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData)
+	return nil
 }
 
 func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilities {
