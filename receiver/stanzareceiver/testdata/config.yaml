@@ -1,19 +1,21 @@
 receivers:
-  observiq/hello:
+  stanza/simple:
     pipeline:
-      - type: generate_input
-        entry:
-          record:
-            message: Hello, World!
-      - type: rate_limit
-        interval: 1s
-      - type: receiver_output
-  observiq/plugin:
+      - type: file_input
+        include: [ receiver/stanzareceiver/testdata/simple.log ]
+        start_at: beginning
+      - type: regex_parser
+        regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
+        timestamp:
+          parse_from: time
+          layout: '%Y-%m-%d'
+        severity:
+          parse_from: sev
+  stanza/plugin:
     plugins_dir: receiver/stanzareceiver/testdata/plugins
     pipeline:
       - type: say_hello
         name: Tom
-      - type: receiver_output
 
 processors:
   exampleprocessor:
@@ -24,6 +26,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [observiq/hello, observiq/plugin]
+      receivers: [stanza/simple, stanza/plugin]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
