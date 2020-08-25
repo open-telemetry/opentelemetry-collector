@@ -21,18 +21,13 @@ import (
 	"reflect"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -154,8 +149,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
 			}
-			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName) {
-				if err := tsp.ConsumeTraces(context.Background(), internaldata.OCToTraceData(td)); err != nil {
+			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
+				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
 					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
 					return
 				}
@@ -176,25 +171,79 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	}
 }
 
+// Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans checks for number of spans sent to xt consumer. This is to avoid duplicate spans
+func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t *testing.T) {
+	tests := []struct {
+		name                 string
+		cfg                  Config
+		numBatches           int
+		numTracesPerBatch    int
+		acceptableDelta      float64
+		resourceSpanPerTrace int
+	}{
+		{
+			name: "single_batch_single_trace_two_resource_spans",
+			cfg: Config{
+				SamplingPercentage: 100.0,
+			},
+			numBatches:           1,
+			numTracesPerBatch:    1,
+			acceptableDelta:      0.0,
+			resourceSpanPerTrace: 2,
+		},
+		{
+			name: "single_batch_two_traces_two_resource_spans",
+			cfg: Config{
+				SamplingPercentage: 100.0,
+			},
+			numBatches:           1,
+			numTracesPerBatch:    2,
+			acceptableDelta:      0.0,
+			resourceSpanPerTrace: 2,
+		},
+	}
+	const testSvcName = "test-svc"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := &exportertest.SinkTraceExporter{}
+			tsp, err := newTraceProcessor(sink, tt.cfg)
+			if err != nil {
+				t.Errorf("error when creating tracesamplerprocessor: %v", err)
+				return
+			}
+
+			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, tt.resourceSpanPerTrace) {
+				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
+					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
+					return
+				}
+				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpansCount())
+				sink.Reset()
+			}
+
+		})
+	}
+}
+
 // Test_tracesamplerprocessor_SpanSamplingPriority checks if handling of "sampling.priority" is correct.
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
-	singleSpanWithAttrib := func(key string, attribValue *tracepb.AttributeValue) consumerdata.TraceData {
-		return consumerdata.TraceData{
-			Spans: []*tracepb.Span{
-				{
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							key: {Value: attribValue.Value},
-						},
-					},
-				},
-			},
-		}
+	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
+
+		span := getSpanWithAttributes(key, attribValue)
+		traces := pdata.NewTraces()
+		traces.ResourceSpans().Resize(1)
+		rs := traces.ResourceSpans().At(0)
+		rs.Resource().InitEmpty()
+		instrLibrarySpans := pdata.NewInstrumentationLibrarySpans()
+		instrLibrarySpans.InitEmpty()
+		rs.InstrumentationLibrarySpans().Append(&instrLibrarySpans)
+		instrLibrarySpans.Spans().Append(&span)
+		return traces
 	}
 	tests := []struct {
 		name    string
 		cfg     Config
-		td      consumerdata.TraceData
+		td      pdata.Traces
 		sampled bool
 	}{
 		{
@@ -204,7 +253,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 2}}),
+				pdata.NewAttributeValueInt(2)),
 			sampled: true,
 		},
 		{
@@ -214,7 +263,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1}}),
+				pdata.NewAttributeValueDouble(1)),
 			sampled: true,
 		},
 		{
@@ -224,7 +273,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "1"}}}),
+				pdata.NewAttributeValueString("1")),
 			sampled: true,
 		},
 		{
@@ -234,7 +283,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 0}}),
+				pdata.NewAttributeValueInt(0)),
 		},
 		{
 			name: "must_not_sample_double",
@@ -243,7 +292,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 0}}),
+				pdata.NewAttributeValueDouble(0)),
 		},
 		{
 			name: "must_not_sample_string",
@@ -252,7 +301,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "0"}}}),
+				pdata.NewAttributeValueString("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -261,7 +310,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 2}}),
+				pdata.NewAttributeValueInt(2)),
 		},
 		{
 			name: "defer_sample_expect_sampled",
@@ -270,7 +319,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 2}}),
+				pdata.NewAttributeValueInt(2)),
 			sampled: true,
 		},
 	}
@@ -280,7 +329,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
-			err = tsp.ConsumeTraces(context.Background(), internaldata.OCToTraceData(tt.td))
+			err = tsp.ConsumeTraces(context.Background(), tt.td)
 			require.NoError(t, err)
 
 			sampledData := sink.AllTraces()
@@ -295,162 +344,72 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 func Test_parseSpanSamplingPriority(t *testing.T) {
 	tests := []struct {
 		name string
-		span *tracepb.Span
+		span pdata.Span
 		want samplingPriority
 	}{
 		{
 			name: "nil_span",
-			span: &tracepb.Span{},
+			span: pdata.NewSpan(),
 			want: deferDecision,
 		},
 		{
 			name: "nil_attributes",
-			span: &tracepb.Span{},
-			want: deferDecision,
-		},
-		{
-			name: "nil_attribute_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{},
-			},
-			want: deferDecision,
-		},
-		{
-			name: "empty_attribute_map",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{},
-				},
-			},
+			span: pdata.NewSpan(),
 			want: deferDecision,
 		},
 		{
 			name: "no_sampling_priority",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"key": {Value: &tracepb.AttributeValue_BoolValue{BoolValue: true}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("key", pdata.NewAttributeValueBool(true)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_int_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: 0}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_gt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: 1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_lt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_IntValue{IntValue: -1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_double_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_gt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_lt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: -1}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "0.0"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "0.5"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "-0.5"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: &tracepb.Span{
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"sampling.priority": {Value: &tracepb.AttributeValue_StringValue{
-							StringValue: &tracepb.TruncatableString{Value: "NaN"},
-						}},
-					},
-				},
-			},
+			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("NaN")),
 			want: deferDecision,
 		},
 	}
@@ -459,6 +418,14 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 			assert.Equal(t, tt.want, parseSpanSamplingPriority(tt.span))
 		})
 	}
+}
+
+func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("spanName")
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
+	return span
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -481,41 +448,37 @@ func Test_hash(t *testing.T) {
 // genRandomTestData generates a slice of consumerdata.TraceData with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
 // serviceName.
-func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (tdd []consumerdata.TraceData) {
+func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []pdata.Traces) {
 	r := rand.New(rand.NewSource(1))
+	var traceBatches []pdata.Traces
+	for i := 1; i <= numBatches; i++ {
+		traces := pdata.NewTraces()
+		traces.ResourceSpans().Resize(resourceSpanCount)
+		for j := 0; j < resourceSpanCount; j++ {
+			rs := traces.ResourceSpans().At(j)
+			rs.Resource().InitEmpty()
+			rs.Resource().Attributes().InsertString("service.name", serviceName)
+			rs.Resource().Attributes().InsertBool("bool", true)
+			rs.Resource().Attributes().InsertString("string", "yes")
+			rs.Resource().Attributes().InsertInt("int64", 10000000)
+			rs.InstrumentationLibrarySpans().Resize(1)
 
-	for i := 0; i < numBatches; i++ {
-		var spans []*tracepb.Span
-		for j := 0; j < numTracesPerBatch; j++ {
-			span := &tracepb.Span{
-				TraceId: tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()),
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						tracetranslator.TagHTTPStatusCode: {
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 404,
-							},
-						},
-						tracetranslator.TagHTTPStatusMsg: {
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "NotFound"},
-							},
-						},
-					},
-				},
+			for j := 1; j <= numTracesPerBatch; j++ {
+				span := pdata.NewSpan()
+				span.InitEmpty()
+				span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
+				span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
+				attributes := make(map[string]pdata.AttributeValue)
+				attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
+				attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")
+				rs.InstrumentationLibrarySpans().At(0).Spans().Append(&span)
+				span.Attributes().InitFromMap(attributes)
 			}
-			spans = append(spans, span)
 		}
-		td := consumerdata.TraceData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: serviceName},
-			},
-			Spans: spans,
-		}
-		tdd = append(tdd, td)
+		traceBatches = append(traceBatches, traces)
 	}
 
-	return tdd
+	return traceBatches
 }
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
@@ -523,19 +486,32 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string) (t
 func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[string]bool, spanCount int) {
 	traceIDs = make(map[string]bool)
 	for _, td := range sampled {
-		octds := internaldata.TraceDataToOC(td)
-		for _, octd := range octds {
-			if processor.ServiceNameForNode(octd.Node) != serviceName {
+		rspans := td.ResourceSpans()
+		for i := 0; i < rspans.Len(); i++ {
+			rspan := rspans.At(i)
+			if rspan.IsNil() {
 				continue
 			}
-			for _, span := range octd.Spans {
-				spanCount++
-				key := string(span.TraceId)
-				if traceIDs[key] {
-					t.Errorf("same traceID used more than once %q", key)
-					return
+			ilss := rspans.At(i).InstrumentationLibrarySpans()
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				if ils.IsNil() {
+					continue
 				}
-				traceIDs[key] = true
+
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
+					continue
+				}
+				for k := 0; k < ils.Spans().Len(); k++ {
+					spanCount++
+					span := ils.Spans().At(k)
+					key := string(span.TraceID())
+					if traceIDs[key] {
+						t.Errorf("same traceID used more than once %q", key)
+						return
+					}
+					traceIDs[key] = true
+				}
 			}
 		}
 	}
