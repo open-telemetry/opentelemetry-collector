@@ -49,6 +49,11 @@ func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, Processor
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
+// CreateMetricsProcessor creates a metrics processor based on this config.
+func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (LogsProcessor, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
 func TestFactoriesBuilder(t *testing.T) {
 	type testCase struct {
 		in  []ProcessorFactory

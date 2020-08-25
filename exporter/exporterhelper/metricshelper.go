@@ -26,55 +26,6 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushMetricsDataOld is a helper function that is similar to ConsumeMetricsData but also returns
-// the number of dropped metrics.
-type PushMetricsDataOld func(ctx context.Context, td consumerdata.MetricsData) (droppedTimeSeries int, err error)
-
-type metricsExporterOld struct {
-	*baseExporter
-	pushMetricsData PushMetricsDataOld
-}
-
-func (mexp *metricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
-	_, err := mexp.pushMetricsData(exporterCtx, md)
-	return err
-}
-
-// NewMetricsExporterOld creates an MetricsExporter that records observability metrics and wraps every request with a Span.
-// TODO: Add support for retries.
-func NewMetricsExporterOld(cfg configmodels.Exporter, pushMetricsData PushMetricsDataOld, options ...ExporterOption) (component.MetricsExporterOld, error) {
-	if cfg == nil {
-		return nil, errNilConfig
-	}
-
-	if pushMetricsData == nil {
-		return nil, errNilPushMetricsData
-	}
-
-	pushMetricsData = pushMetricsWithObservabilityOld(pushMetricsData, cfg.Name())
-
-	return &metricsExporterOld{
-		baseExporter:    newBaseExporter(cfg, options...),
-		pushMetricsData: pushMetricsData,
-	}, nil
-}
-
-func pushMetricsWithObservabilityOld(next PushMetricsDataOld, exporterName string) PushMetricsDataOld {
-	return func(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-		ctx = obsreport.StartMetricsExportOp(ctx, exporterName)
-		numDroppedTimeSeries, err := next(ctx, md)
-
-		// TODO: this is not ideal: it should come from the next function itself.
-		// 	temporarily loading it from internal format. Once full switch is done
-		// 	to new metrics will remove this.
-		numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
-
-		obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
-		return numDroppedTimeSeries, err
-	}
-}
-
 // NumTimeSeries returns the number of timeseries in a MetricsData.
 func NumTimeSeries(md consumerdata.MetricsData) int {
 	receivedTimeSeries := 0

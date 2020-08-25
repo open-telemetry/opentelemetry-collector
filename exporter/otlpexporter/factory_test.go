@@ -186,7 +186,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.(component.LogsExporterFactory).CreateLogsExporter(context.Background(), creationParams, cfg)
+	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }

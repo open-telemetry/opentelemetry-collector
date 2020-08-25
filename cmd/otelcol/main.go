@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
@@ -31,7 +32,7 @@ func main() {
 		log.Fatalf("failed to build default components: %v", err)
 	}
 
-	info := service.ApplicationStartInfo{
+	info := component.ApplicationStartInfo{
 		ExeName:  "otelcol",
 		LongName: "OpenTelemetry Collector",
 		Version:  version.Version,

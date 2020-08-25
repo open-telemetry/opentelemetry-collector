@@ -367,7 +367,7 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 	return receivers, nil
 }
 
-func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactoryBase) (configmodels.Exporters, error) {
+func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactory) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
 	exportersConfig := ViperSub(v, exportersKeyName)
 	expandEnvConfig(exportersConfig)
