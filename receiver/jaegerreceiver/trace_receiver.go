@@ -124,7 +124,7 @@ func newJaegerReceiver(
 	config *configuration,
 	nextConsumer consumer.TraceConsumer,
 	params component.ReceiverCreateParams,
-) (component.TraceReceiver, error) {
+) (*jReceiver, error) {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
