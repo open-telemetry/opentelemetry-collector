@@ -18,44 +18,14 @@ import (
 	"errors"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
-
-func TestSinkTraceExporterOld(t *testing.T) {
-	sink := new(SinkTraceExporterOld)
-	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
-	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
-	}
-	want := make([]consumerdata.TraceData, 0, 7)
-	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeTraceData(context.Background(), td))
-		want = append(want, td)
-	}
-	assert.Equal(t, want, sink.AllTraces())
-	require.NoError(t, sink.Shutdown(context.Background()))
-}
-
-func TestSinkTraceExporterOld_Error(t *testing.T) {
-	sink := new(SinkTraceExporterOld)
-	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
-	sink.SetConsumeTraceError(errors.New("my error"))
-	td := consumerdata.TraceData{
-		Spans: make([]*tracepb.Span, 7),
-	}
-	require.Error(t, sink.ConsumeTraceData(context.Background(), td))
-	assert.Len(t, sink.AllTraces(), 0)
-	require.NoError(t, sink.Shutdown(context.Background()))
-}
 
 func TestSinkTraceExporter(t *testing.T) {
 	sink := new(SinkTraceExporter)
@@ -82,33 +52,6 @@ func TestSinkTraceExporter_Error(t *testing.T) {
 	require.Error(t, sink.ConsumeTraces(context.Background(), td))
 	assert.Len(t, sink.AllTraces(), 0)
 	assert.Equal(t, 0, sink.SpansCount())
-	require.NoError(t, sink.Shutdown(context.Background()))
-}
-
-func TestSinkMetricsExporterOld(t *testing.T) {
-	sink := new(SinkMetricsExporterOld)
-	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, 7),
-	}
-	want := make([]consumerdata.MetricsData, 0, 7)
-	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeMetricsData(context.Background(), md))
-		want = append(want, md)
-	}
-	assert.Equal(t, want, sink.AllMetrics())
-	require.NoError(t, sink.Shutdown(context.Background()))
-}
-
-func TestSinkMetricsExporterOld_Error(t *testing.T) {
-	sink := new(SinkMetricsExporterOld)
-	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
-	sink.SetConsumeMetricsError(errors.New("my error"))
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, 7),
-	}
-	require.Error(t, sink.ConsumeMetricsData(context.Background(), md))
-	assert.Len(t, sink.AllMetrics(), 0)
 	require.NoError(t, sink.Shutdown(context.Background()))
 }
 

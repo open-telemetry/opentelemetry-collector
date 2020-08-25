@@ -18,45 +18,18 @@ package consumer
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-// MetricsConsumerBase defines a common interface for MetricsConsumerOld and MetricsConsumer.
-type MetricsConsumerBase interface{}
-
-// MetricsConsumerOld is an interface that receives consumerdata.MetricsData, process it as needed, and
-// sends it to the next processing node if any or to the destination.
-//
-// ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
-type MetricsConsumerOld interface {
-	MetricsConsumerBase
-	ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error
-}
 
 // MetricsConsumer is the new metrics consumer interface that receives pdata.MetricData, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type MetricsConsumer interface {
-	MetricsConsumerBase
 	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
-}
-
-// TraceConsumerBase defines a common interface for TraceConsumerOld and TraceConsumer.
-type TraceConsumerBase interface{}
-
-// TraceConsumerOld is an interface that receives consumerdata.TraceData, process it as needed, and
-// sends it to the next processing node if any or to the destination.
-//
-// ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
-type TraceConsumerOld interface {
-	TraceConsumerBase
-	ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error
 }
 
 // TraceConsumer is an interface that receives pdata.Traces, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type TraceConsumer interface {
-	TraceConsumerBase
 	// ConsumeTraces receives pdata.Traces for processing.
 	ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }

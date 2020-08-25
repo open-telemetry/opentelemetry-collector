@@ -23,7 +23,7 @@ require (
 	github.com/google/go-cmp v0.5.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/mux v1.7.4
+	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/jaegertracing/jaeger v1.18.2-0.20200707061226-97d2319ff2be

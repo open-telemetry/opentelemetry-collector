@@ -451,7 +451,7 @@ func TestSendLogData(t *testing.T) {
 	defer rcv.srv.GracefulStop()
 
 	// Start an OTLP exporter and point to the receiver.
-	factory := NewFactory().(component.LogsExporterFactory)
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: ln.Addr().String(),

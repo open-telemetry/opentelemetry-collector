@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {
@@ -69,7 +70,7 @@ func createExampleFactories() component.Factories {
 		Processors: map[configmodels.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 		},
-		Exporters: map[configmodels.Type]component.ExporterFactoryBase{
+		Exporters: map[configmodels.Type]component.ExporterFactory{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 		},
 	}
@@ -133,7 +134,7 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			cfg := createExampleConfig(dataType)
 
 			// BuildProcessors the pipeline
-			allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+			allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
@@ -141,7 +142,7 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 
 			require.NoError(t, err)
 			require.EqualValues(t, 1, len(allExporters))
-			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 
 			assert.NoError(t, err)
 			require.NotNil(t, pipelineProcessors)
@@ -216,9 +217,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	require.Nil(t, err)
 
 	// BuildProcessors the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -280,12 +281,12 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 	pipeline := cfg.Service.Pipelines["traces"]
 	pipeline.InputType = configmodels.MetricsDataType
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
 
 	// This should fail because "attributes" processor defined in the config does
 	// not support metrics data type.
-	_, err = NewPipelinesBuilder(zap.NewNop(), cfg, exporters, factories.Processors).Build()
+	_, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, exporters, factories.Processors).Build()
 
 	assert.NotNil(t, err)
 }
@@ -294,13 +295,13 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	bf := &badProcessorFactory{}
+	bf := newBadProcessorFactory()
 	factories.Processors[bf.Type()] = bf
 
 	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
 	require.Nil(t, err)
 
-	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
 
 	// First test only trace receivers by removing the metrics pipeline.
@@ -308,7 +309,7 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	delete(cfg.Service.Pipelines, "metrics")
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 
@@ -317,36 +318,13 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	cfg.Service.Pipelines["metrics"] = metricsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 }
 
-// badProcessorFactory is a factory that returns no error but returns a nil object.
-type badProcessorFactory struct{}
-
-func (b *badProcessorFactory) Type() configmodels.Type {
-	return "bf"
-}
-
-func (b *badProcessorFactory) CreateDefaultConfig() configmodels.Processor {
-	return &configmodels.ProcessorSettings{}
-}
-
-func (b *badProcessorFactory) CreateTraceProcessor(
-	context.Context,
-	component.ProcessorCreateParams,
-	consumer.TraceConsumer,
-	configmodels.Processor,
-) (component.TraceProcessor, error) {
-	return nil, nil
-}
-
-func (b *badProcessorFactory) CreateMetricsProcessor(
-	context.Context,
-	component.ProcessorCreateParams,
-	consumer.MetricsConsumer,
-	configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	return nil, nil
+func newBadProcessorFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory("bf", func() configmodels.Processor {
+		return &configmodels.ProcessorSettings{}
+	})
 }
