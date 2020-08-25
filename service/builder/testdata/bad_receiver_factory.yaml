@@ -11,3 +11,6 @@ service:
     metrics:
       receivers: [bf]
       exporters: [exampleexporter]
+    logs:
+      receivers: [bf]
+      exporters: [exampleexporter]
