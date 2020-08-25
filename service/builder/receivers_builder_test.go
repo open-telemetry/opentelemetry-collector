@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
 )
 
@@ -326,7 +327,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	bf := &badReceiverFactory{}
+	bf := newBadReceiverFactory()
 	factories.Receivers[bf.Type()] = bf
 
 	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
@@ -405,33 +406,10 @@ func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	assert.NotNil(t, receiver)
 }
 
-// badReceiverFactory is a factory that returns no error but returns a nil object.
-type badReceiverFactory struct{}
-
-func (b *badReceiverFactory) Type() configmodels.Type {
-	return "bf"
-}
-
-func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
-	return &configmodels.ReceiverSettings{}
-}
-
-func (b *badReceiverFactory) CreateTraceReceiver(
-	context.Context,
-	component.ReceiverCreateParams,
-	configmodels.Receiver,
-	consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
-	return nil, nil
-}
-
-func (b *badReceiverFactory) CreateMetricsReceiver(
-	context.Context,
-	component.ReceiverCreateParams,
-	configmodels.Receiver,
-	consumer.MetricsConsumer,
-) (component.MetricsReceiver, error) {
-	return nil, nil
+func newBadReceiverFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory("bf", func() configmodels.Receiver {
+		return &configmodels.ReceiverSettings{}
+	})
 }
 
 // newStyleReceiverFactory defines FactoryV2 interface
@@ -440,6 +418,8 @@ type newStyleReceiverFactory struct{}
 func (b *newStyleReceiverFactory) Type() configmodels.Type {
 	return "newstylereceiver"
 }
+
+var _ component.ReceiverFactory = (*newStyleReceiverFactory)(nil)
 
 func (b *newStyleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &configmodels.ReceiverSettings{}
@@ -460,5 +440,14 @@ func (b *newStyleReceiverFactory) CreateMetricsReceiver(
 	_ configmodels.Receiver,
 	_ consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
+	return &componenttest.ExampleReceiverProducer{}, nil
+}
+
+func (b *newStyleReceiverFactory) CreateLogsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
 	return &componenttest.ExampleReceiverProducer{}, nil
 }

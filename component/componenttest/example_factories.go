@@ -237,6 +237,17 @@ func (f *MultiProtoReceiverFactory) CreateMetricsReceiver(
 	return nil, nil
 }
 
+// CreateMetricsReceiver creates a metrics receiver based on this config.
+func (f *MultiProtoReceiverFactory) CreateLogsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	// Not used for this test, just return nil
+	return nil, nil
+}
+
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.
 type ExampleExporter struct {

@@ -357,7 +357,7 @@ func createLogsExporter(
 	logger *zap.Logger,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	factory, ok := factoryBase.(component.LogsExporterFactory)
+	factory, ok := factoryBase.(component.ExporterFactory)
 	if !ok {
 		return nil, fmt.Errorf("exporter %q does not support data type %q", factoryBase.Type(), configmodels.LogsDataType)
 	}

@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {
@@ -294,7 +295,7 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	bf := &badProcessorFactory{}
+	bf := newBadProcessorFactory()
 	factories.Processors[bf.Type()] = bf
 
 	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
@@ -322,31 +323,8 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	assert.Zero(t, len(pipelineProcessors))
 }
 
-// badProcessorFactory is a factory that returns no error but returns a nil object.
-type badProcessorFactory struct{}
-
-func (b *badProcessorFactory) Type() configmodels.Type {
-	return "bf"
-}
-
-func (b *badProcessorFactory) CreateDefaultConfig() configmodels.Processor {
-	return &configmodels.ProcessorSettings{}
-}
-
-func (b *badProcessorFactory) CreateTraceProcessor(
-	context.Context,
-	component.ProcessorCreateParams,
-	consumer.TraceConsumer,
-	configmodels.Processor,
-) (component.TraceProcessor, error) {
-	return nil, nil
-}
-
-func (b *badProcessorFactory) CreateMetricsProcessor(
-	context.Context,
-	component.ProcessorCreateParams,
-	consumer.MetricsConsumer,
-	configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	return nil, nil
+func newBadProcessorFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory("bf", func() configmodels.Processor {
+		return &configmodels.ProcessorSettings{}
+	})
 }
