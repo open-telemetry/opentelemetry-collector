@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -198,20 +197,9 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 	}
 }
 
-func generateTestTracesWithAttributes() pdata.Traces {
-	traces := testdata.GenerateTraceDataOneSpan()
-	attrs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes()
-	attrs.InitFromMap(map[string]pdata.AttributeValue{
-		"attr1": pdata.NewAttributeValueInt(12345),
-	})
-	return traces
-}
-
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
-	attrFactory := attributesprocessor.NewFactory()
-	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	// Load the config
 	require.Nil(t, err)
@@ -252,7 +240,8 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		require.Equal(t, len(consumer.Traces), 0)
 	}
 
-	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
+	td := testdata.GenerateTraceDataOneSpan()
+	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), td)
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {
@@ -260,38 +249,14 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		require.Equal(t, 1, len(consumer.Traces))
 
 		// Verify that span is successfully delivered.
-		assert.EqualValues(t, generateTestTracesWithAttributes(), consumer.Traces[0])
+		assert.EqualValues(t, td, consumer.Traces[0])
 	}
 
 	err = pipelineProcessors.ShutdownProcessors(context.Background())
 	assert.NoError(t, err)
 }
 
-func TestPipelinesBuilder_Error(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-	attrFactory := attributesprocessor.NewFactory()
-	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
-	require.Nil(t, err)
-
-	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
-	// since there is no way to have such config loaded by LoadConfigFile, it would not
-	// pass validation. We are doing this to test failure mode of PipelinesBuilder.
-	pipeline := cfg.Service.Pipelines["traces"]
-	pipeline.InputType = configmodels.MetricsDataType
-
-	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
-	assert.NoError(t, err)
-
-	// This should fail because "attributes" processor defined in the config does
-	// not support metrics data type.
-	_, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, exporters, factories.Processors).Build()
-
-	assert.NotNil(t, err)
-}
-
-func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
+func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -306,7 +271,9 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 
 	// First test only trace receivers by removing the metrics pipeline.
 	metricsPipeline := cfg.Service.Pipelines["metrics"]
+	logsPipeline := cfg.Service.Pipelines["logs"]
 	delete(cfg.Service.Pipelines, "metrics")
+	delete(cfg.Service.Pipelines, "logs")
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
 	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
@@ -316,6 +283,15 @@ func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
 	// Now test the metric pipeline.
 	delete(cfg.Service.Pipelines, "traces")
 	cfg.Service.Pipelines["metrics"] = metricsPipeline
+	require.Equal(t, 1, len(cfg.Service.Pipelines))
+
+	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	assert.Error(t, err)
+	assert.Zero(t, len(pipelineProcessors))
+
+	// Now test the logs pipeline.
+	delete(cfg.Service.Pipelines, "metrics")
+	cfg.Service.Pipelines["logs"] = logsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
 	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()

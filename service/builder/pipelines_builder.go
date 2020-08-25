@@ -104,7 +104,7 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 	pipelineProcessors := make(BuiltPipelines)
 
 	for _, pipeline := range pb.config.Service.Pipelines {
-		firstProcessor, err := pb.buildPipeline(pipeline)
+		firstProcessor, err := pb.buildPipeline(context.Background(), pipeline)
 		if err != nil {
 			return nil, err
 		}
@@ -117,8 +117,7 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
-) (*builtPipeline, error) {
+func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *configmodels.Pipeline) (*builtPipeline, error) {
 
 	// BuildProcessors the pipeline backwards.
 
@@ -155,10 +154,15 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		// which we will build in the next loop iteration).
 		var err error
 		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogsProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
+		creationParams := component.ProcessorCreateParams{
+			Logger:               componentLogger,
+			ApplicationStartInfo: pb.appInfo,
+		}
+
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessor
-			proc, err = createTraceProcessor(factory, componentLogger, pb.appInfo, procCfg, tc)
+			proc, err = factory.CreateTraceProcessor(ctx, creationParams, tc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -166,7 +170,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			tc = proc
 		case configmodels.MetricsDataType:
 			var proc component.MetricsProcessor
-			proc, err = createMetricsProcessor(factory, componentLogger, pb.appInfo, procCfg, mc)
+			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, mc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -175,7 +179,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 
 		case configmodels.LogsDataType:
 			var proc component.LogsProcessor
-			proc, err = createLogsProcessor(factory, componentLogger, pb.appInfo, procCfg, lc)
+			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -276,49 +280,4 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 
 	// Create a junction point that fans out to all exporters.
 	return processor.NewLogsFanOutConnector(exporters)
-}
-
-// createTraceProcessor creates trace processor using given factory and next consumer.
-func createTraceProcessor(
-	factory component.ProcessorFactory,
-	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceProcessor, error) {
-	creationParams := component.ProcessorCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
-	}
-	return factory.CreateTraceProcessor(context.Background(), creationParams, nextConsumer, cfg)
-}
-
-// createMetricsProcessor creates metric processor using given factory and next consumer.
-func createMetricsProcessor(
-	factory component.ProcessorFactory,
-	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
-) (component.MetricsProcessor, error) {
-	creationParams := component.ProcessorCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
-	}
-	return factory.CreateMetricsProcessor(context.Background(), creationParams, nextConsumer, cfg)
-}
-
-// createLogsProcessor creates a log processor using given factory and next consumer.
-func createLogsProcessor(
-	factory component.ProcessorFactory,
-	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
-) (component.LogsProcessor, error) {
-	creationParams := component.ProcessorCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
-	}
-	return factory.CreateLogsProcessor(context.Background(), creationParams, cfg, nextConsumer)
 }
