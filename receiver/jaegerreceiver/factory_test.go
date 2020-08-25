@@ -94,8 +94,8 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 		},
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
-				CertFile: "./testdata/certificate.pem",
-				KeyFile:  "./testdata/key.pem",
+				CertFile: "./testdata/server.crt",
+				KeyFile:  "./testdata/server.key",
 			},
 		},
 	}
