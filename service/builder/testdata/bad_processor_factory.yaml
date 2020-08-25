@@ -3,6 +3,7 @@ receivers:
 processors:
   bf/traces: # this is the bad processor factory
   bf/metrics:
+  bf/logs:
 exporters:
   exampleexporter:
 
@@ -15,4 +16,8 @@ service:
     metrics:
       receivers: [examplereceiver]
       processors: [bf/metrics]
+      exporters: [exampleexporter]
+    logs:
+      receivers: [examplereceiver]
+      processors: [bf/logs]
       exporters: [exampleexporter]

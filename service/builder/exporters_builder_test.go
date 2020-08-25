@@ -222,6 +222,11 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 			InputType: configmodels.MetricsDataType,
 			Exporters: []string{string(bf.Type())},
 		},
+		{
+			Name:      "logs",
+			InputType: configmodels.LogsDataType,
+			Exporters: []string{string(bf.Type())},
+		},
 	}
 
 	for _, pipeline := range pipelines {

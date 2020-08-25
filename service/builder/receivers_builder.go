@@ -104,7 +104,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
 		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
-		rcv, err := rb.buildReceiver(logger, rb.appInfo, cfg)
+		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
@@ -164,6 +164,7 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 }
 
 func (rb *ReceiversBuilder) attachReceiverToPipelines(
+	ctx context.Context,
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	factory component.ReceiverFactory,
@@ -177,22 +178,23 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	// sure its output is fanned out to all attached pipelines.
 	var err error
 	var createdReceiver component.Receiver
+	creationParams := component.ReceiverCreateParams{
+		Logger:               logger,
+		ApplicationStartInfo: appInfo,
+	}
 
 	switch dataType {
 	case configmodels.TracesDataType:
-		// First, create the fan out junction point.
 		junction := buildFanoutTraceConsumer(builtPipelines)
-
-		// Now create the receiver and tell it to send to the junction point.
-		createdReceiver, err = createTraceReceiver(context.Background(), factory, logger, appInfo, config, junction)
+		createdReceiver, err = factory.CreateTraceReceiver(ctx, creationParams, config, junction)
 
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
-		createdReceiver, err = createMetricsReceiver(context.Background(), factory, logger, appInfo, config, junction)
+		createdReceiver, err = factory.CreateMetricsReceiver(ctx, creationParams, config, junction)
 
 	case configmodels.LogsDataType:
 		junction := buildFanoutLogConsumer(builtPipelines)
-		createdReceiver, err = createLogsReceiver(context.Background(), factory, logger, appInfo, config, junction)
+		createdReceiver, err = factory.CreateLogsReceiver(ctx, creationParams, config, junction)
 
 	default:
 		err = configerror.ErrDataTypeIsNotSupported
@@ -235,7 +237,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver) (*builtReceiver, error) {
+func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)
@@ -261,7 +263,7 @@ func (rb *ReceiversBuilder) buildReceiver(logger *zap.Logger, appInfo component.
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := rb.attachReceiverToPipelines(logger, appInfo, factory, dataType, config, rcv, pipelines)
+		err := rb.attachReceiverToPipelines(ctx, logger, appInfo, factory, dataType, config, rcv, pipelines)
 		if err != nil {
 			return nil, err
 		}
@@ -347,52 +349,4 @@ func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
 		return processor.NewLogsCloningFanOutConnector(pipelineConsumers)
 	}
 	return processor.NewLogsFanOutConnector(pipelineConsumers)
-}
-
-// createTraceReceiver creates a trace receiver using given factory and next consumer.
-func createTraceReceiver(
-	ctx context.Context,
-	factory component.ReceiverFactory,
-	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
-	creationParams := component.ReceiverCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
-	}
-	return factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nextConsumer)
-}
-
-// createMetricsReceiver creates a metric receiver using given factory and next consumer.
-func createMetricsReceiver(
-	ctx context.Context,
-	factory component.ReceiverFactory,
-	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
-) (component.MetricsReceiver, error) {
-	creationParams := component.ReceiverCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
-	}
-	return factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nextConsumer)
-}
-
-// createLogsReceiver creates a log receiver using given factory and next consumer.
-func createLogsReceiver(
-	ctx context.Context,
-	factory component.ReceiverFactory,
-	logger *zap.Logger,
-	appInfo component.ApplicationStartInfo,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.LogsConsumer,
-) (component.LogsReceiver, error) {
-	creationParams := component.ReceiverCreateParams{
-		Logger:               logger,
-		ApplicationStartInfo: appInfo,
-	}
-	return factory.CreateLogsReceiver(context.Background(), creationParams, cfg, nextConsumer)
 }

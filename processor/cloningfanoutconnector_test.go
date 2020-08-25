@@ -27,13 +27,9 @@ import (
 )
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
-	processors := []consumer.TraceConsumer{
-		new(exportertest.SinkTraceExporter),
-	}
-
-	tfc := NewTracesCloningFanOutConnector(processors)
-
-	assert.Same(t, processors[0], tfc)
+	nop := exportertest.NewNopTraceExporter()
+	tfc := NewTracesCloningFanOutConnector([]consumer.TraceConsumer{nop})
+	assert.Same(t, nop, tfc)
 }
 
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
@@ -74,13 +70,9 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 }
 
 func TestMetricsProcessorCloningNotMultiplexing(t *testing.T) {
-	processors := []consumer.MetricsConsumer{
-		new(exportertest.SinkMetricsExporter),
-	}
-
-	tfc := NewMetricsCloningFanOutConnector(processors)
-
-	assert.Same(t, processors[0], tfc)
+	nop := exportertest.NewNopMetricsExporter()
+	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
+	assert.Same(t, nop, mfc)
 }
 
 func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
@@ -116,6 +108,49 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 			assert.True(t, metricOrig == metricClone)
 		}
 		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+		assert.EqualValues(t, metricOrig, metricClone)
+	}
+}
+
+func TestLogsProcessorCloningNotMultiplexing(t *testing.T) {
+	nop := exportertest.NewNopLogsExporter()
+	lfc := NewLogsCloningFanOutConnector([]consumer.LogsConsumer{nop})
+	assert.Same(t, nop, lfc)
+}
+
+func TestLogsProcessorCloningMultiplexing(t *testing.T) {
+	processors := make([]consumer.LogsConsumer, 3)
+	for i := range processors {
+		processors[i] = new(exportertest.SinkLogsExporter)
+	}
+
+	mfc := NewLogsCloningFanOutConnector(processors)
+	ld := testdata.GenerateLogDataOneLog()
+
+	var wantMetricsCount = 0
+	for i := 0; i < 2; i++ {
+		wantMetricsCount += ld.LogRecordCount()
+		err := mfc.ConsumeLogs(context.Background(), ld)
+		if err != nil {
+			t.Errorf("Wanted nil got error")
+			return
+		}
+	}
+
+	for i, p := range processors {
+		m := p.(*exportertest.SinkLogsExporter)
+		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
+		metricOrig := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+		allLogs := m.AllLogs()
+		metricClone := allLogs[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+		if i < len(processors)-1 {
+			assert.True(t, ld.ResourceLogs().At(0).Resource() != allLogs[0].ResourceLogs().At(0).Resource())
+			assert.True(t, metricOrig != metricClone)
+		} else {
+			assert.True(t, ld.ResourceLogs().At(0).Resource() == allLogs[0].ResourceLogs().At(0).Resource())
+			assert.True(t, metricOrig == metricClone)
+		}
+		assert.EqualValues(t, ld.ResourceLogs().At(0).Resource(), allLogs[0].ResourceLogs().At(0).Resource())
 		assert.EqualValues(t, metricOrig, metricClone)
 	}
 }
