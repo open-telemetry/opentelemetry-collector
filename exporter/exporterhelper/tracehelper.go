@@ -19,66 +19,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
-
-// traceDataPusherOld is a helper function that is similar to ConsumeTraceData but also
-// returns the number of dropped spans.
-type traceDataPusherOld func(ctx context.Context, td consumerdata.TraceData) (droppedSpans int, err error)
-
-type traceExporterOld struct {
-	*baseExporter
-	dataPusher traceDataPusherOld
-}
-
-func (texp *traceExporterOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	exporterCtx := obsreport.ExporterContext(ctx, texp.cfg.Name())
-	_, err := texp.dataPusher(exporterCtx, td)
-	return err
-}
-
-// NewTraceExporterOld creates an TraceExporterOld that records observability metrics and wraps every request with a Span.
-func NewTraceExporterOld(
-	cfg configmodels.Exporter,
-	dataPusher traceDataPusherOld,
-	options ...ExporterOption,
-) (component.TraceExporterOld, error) {
-
-	if cfg == nil {
-		return nil, errNilConfig
-	}
-
-	if dataPusher == nil {
-		return nil, errNilPushTraceData
-	}
-
-	dataPusher = dataPusher.withObservability(cfg.Name())
-
-	return &traceExporterOld{
-		baseExporter: newBaseExporter(cfg, options...),
-		dataPusher:   dataPusher,
-	}, nil
-}
-
-// withObservability wraps the current pusher into a function that records
-// the observability signals during the pusher execution.
-func (p traceDataPusherOld) withObservability(exporterName string) traceDataPusherOld {
-	return func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-		ctx = obsreport.StartTraceDataExportOp(ctx, exporterName)
-		// Forward the data to the next consumer (this pusher is the next).
-		droppedSpans, err := p(ctx, td)
-
-		// TODO: this is not ideal: it should come from the next function itself.
-		// 	temporarily loading it from internal format. Once full switch is done
-		// 	to new metrics will remove this.
-		numSpans := len(td.Spans)
-		obsreport.EndTraceDataExportOp(ctx, numSpans, droppedSpans, err)
-		return droppedSpans, err
-	}
-}
 
 // traceDataPusher is a helper function that is similar to ConsumeTraceData but also
 // returns the number of dropped spans.

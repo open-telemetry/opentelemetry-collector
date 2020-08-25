@@ -18,53 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-type nopExporterOld struct {
-	name     string
-	retError error
-}
-
-func (ne *nopExporterOld) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (ne *nopExporterOld) ConsumeTraceData(context.Context, consumerdata.TraceData) error {
-	return ne.retError
-}
-
-func (ne *nopExporterOld) ConsumeMetricsData(context.Context, consumerdata.MetricsData) error {
-	return ne.retError
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (ne *nopExporterOld) Shutdown(context.Context) error {
-	return nil
-}
 
 const (
 	nopTraceExporterName   = "nop_trace"
 	nopMetricsExporterName = "nop_metrics"
 	nopLogsExporterName    = "nop_log"
 )
-
-// NewNopTraceExporterOld creates an TraceExporter that just drops the received data.
-func NewNopTraceExporterOld() component.TraceExporterOld {
-	ne := &nopExporterOld{
-		name: nopTraceExporterName,
-	}
-	return ne
-}
-
-// NewNopMetricsExporterOld creates an MetricsExporter that just drops the received data.
-func NewNopMetricsExporterOld() component.MetricsExporterOld {
-	ne := &nopExporterOld{
-		name: nopMetricsExporterName,
-	}
-	return ne
-}
 
 type nopExporter struct {
 	name     string
