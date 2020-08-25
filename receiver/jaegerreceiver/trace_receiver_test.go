@@ -251,13 +251,12 @@ func TestGRPCReception(t *testing.T) {
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
-	t.Skip("Expired certificates: https://github.com/open-telemetry/opentelemetry-collector/issues/1627")
 	// prepare
 	var grpcServerOptions []grpc.ServerOption
 	tlsCreds := configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
-			CertFile: path.Join(".", "testdata", "certificate.pem"),
-			KeyFile:  path.Join(".", "testdata", "key.pem"),
+			CertFile: path.Join(".", "testdata", "server.crt"),
+			KeyFile:  path.Join(".", "testdata", "server.key"),
 		},
 	}
 
@@ -280,7 +279,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Log("Start")
 
-	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "certificate.pem"), "opentelemetry.io")
+	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
 	conn, err := grpc.Dial(jr.(*jReceiver).collectorGRPCAddr(), grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
