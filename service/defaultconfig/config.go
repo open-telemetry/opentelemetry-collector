@@ -20,6 +20,7 @@ import (
 )
 
 // CreateDefaultConfig creates default configuration for a given configuration.
+// The default configuration is not created if the pipeline does not exist.
 func CreateDefaultConfig(factories component.Factories, forConfig *configmodels.Config) *configmodels.Config {
 	// the default config cannot be installed to the missing pipeline
 	// because the service will fail to start as there is no default exporter.
