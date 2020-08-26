@@ -29,7 +29,7 @@ require (
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
-	github.com/observiq/stanza v0.9.12
+	github.com/observiq/stanza v0.9.13-0.20200826141353-0e4d4767db69
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.5
@@ -62,4 +62,5 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.5
+	k8s.io/client-go v0.18.6 // indirect
 )
