@@ -75,7 +75,7 @@ func TestApplication_Start(t *testing.T) {
 	require.True(t, isAppAvailable(t, "http://localhost:13133"))
 	assert.Equal(t, app.logger, app.GetLogger())
 	assert.True(t, loggingHookCalled)
-	assert.Equal(t, []string{"batch"}, app.config.Service.Pipelines["traces"].Processors)
+	assert.Equal(t, []string{"attributes", "batch", "queued_retry"}, app.config.Service.Pipelines["traces"].Processors)
 
 	// All labels added to all collector metrics by default are listed below.
 	// These labels are hard coded here in order to avoid inadvertent changes:
