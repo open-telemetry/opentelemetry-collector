@@ -21,7 +21,8 @@ import (
 )
 
 // MergeConfigs merges two configs.
-// The src is merged into dst.
+// The src is merged into dst. The src overrides dst.
+// The maps are merged and arrays are overridden.
 func MergeConfigs(dst, src *configmodels.Config) error {
 	if src == nil || dst == nil {
 		return nil
