@@ -131,6 +131,17 @@ func TestAttributeValueToString(t *testing.T) {
 	v.MapVal().Insert("d", pdata.NewAttributeValueNull())
 	v.MapVal().Insert("e", v)
 	assert.EqualValues(t, `{"a\"\\":"b\"\\","c":123,"d":null,"e":{"a\"\\":"b\"\\","c":123,"d":null}}`, attributeValueToString(v, false))
+
+	v = pdata.NewAttributeValueArray()
+	av := pdata.NewAttributeValueString(`b"\`)
+	v.ArrayVal().Append(&av)
+	av = pdata.NewAttributeValueInt(123)
+	v.ArrayVal().Append(&av)
+	av = pdata.NewAttributeValueNull()
+	v.ArrayVal().Append(&av)
+	av = pdata.NewAttributeValueArray()
+	v.ArrayVal().Append(&av)
+	assert.EqualValues(t, `["b\"\\",123,null,[]]`, attributeValueToString(v, false))
 }
 
 func TestInferResourceType(t *testing.T) {

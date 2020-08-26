@@ -16,30 +16,29 @@ package kafkareceiver
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-// unmarshaller deserializes the message body.
-type unmarshaller interface {
+// Unmarshaller deserializes the message body.
+type Unmarshaller interface {
 	// Unmarshal deserializes the message body into traces.
 	Unmarshal([]byte) (pdata.Traces, error)
 
-	// Format of the encoding.
-	Format() string
+	// Encoding of the serialized messages.
+	Encoding() string
 }
 
-type protoUnmarshaller struct {
-}
-
-func (p *protoUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
-	request := &otlptrace.ExportTraceServiceRequest{}
-	err := request.Unmarshal(bytes)
-	if err != nil {
-		return pdata.NewTraces(), err
+// defaultUnmarshallers returns map of supported encodings with Unmarshaller.
+func defaultUnmarshallers() map[string]Unmarshaller {
+	otlp := &otlpProtoUnmarshaller{}
+	jaegerProto := jaegerProtoSpanUnmarshaller{}
+	jaegerJSON := jaegerJSONSpanUnmarshaller{}
+	zipkinJSON := zipkinJSONSpanUnmarshaller{}
+	zipkinThrift := zipkinThriftSpanUnmarshaller{}
+	return map[string]Unmarshaller{
+		otlp.Encoding():         otlp,
+		jaegerProto.Encoding():  jaegerProto,
+		jaegerJSON.Encoding():   jaegerJSON,
+		zipkinJSON.Encoding():   zipkinJSON,
+		zipkinThrift.Encoding(): zipkinThrift,
 	}
-	return pdata.TracesFromOtlp(request.GetResourceSpans()), nil
-}
-
-func (*protoUnmarshaller) Format() string {
-	return "otlp_proto"
 }

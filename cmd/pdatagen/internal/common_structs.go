@@ -23,9 +23,12 @@ var commonFile = &File{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
+		``,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
 	},
 	structs: []baseStruct{
 		instrumentationLibrary,
+		anyValueArray,
 	},
 }
 
@@ -113,4 +116,9 @@ var nameField = &primitiveField{
 var anyValue = &messageStruct{
 	structName:     "AttributeValue",
 	originFullName: "otlpcommon.AnyValue",
+}
+
+var anyValueArray = &sliceStruct{
+	structName: "AnyValueArray",
+	element:    anyValue,
 }

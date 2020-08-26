@@ -219,6 +219,59 @@ func (b *logDataBuffer) logLogRecord(lr pdata.LogRecord) {
 	b.logAttributeMap("Attributes", lr.Attributes())
 }
 
+func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
+	if se.Len() == 0 {
+		return
+	}
+
+	b.logEntry("%s:", description)
+	for i := 0; i < se.Len(); i++ {
+		e := se.At(i)
+		if e.IsNil() {
+			continue
+		}
+		b.logEntry("SpanEvent #%d", i)
+		b.logEntry("     -> Name: %s", e.Name())
+		b.logEntry("     -> Timestamp: %d", e.Timestamp())
+		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
+
+		if e.Attributes().Len() == 0 {
+			return
+		}
+		b.logEntry("     -> Attributes:")
+		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		})
+	}
+}
+
+func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
+	if sl.Len() == 0 {
+		return
+	}
+
+	b.logEntry("%s:", description)
+
+	for i := 0; i < sl.Len(); i++ {
+		l := sl.At(i)
+		if l.IsNil() {
+			continue
+		}
+		b.logEntry("SpanLink #%d", i)
+		b.logEntry("     -> Trace ID: %s", l.TraceID().String())
+		b.logEntry("     -> ID: %s", l.SpanID().String())
+		b.logEntry("     -> TraceState: %s", l.TraceState())
+		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
+		if l.Attributes().Len() == 0 {
+			return
+		}
+		b.logEntry("     -> Attributes:")
+		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		})
+	}
+}
+
 func attributeValueToString(av pdata.AttributeValue) string {
 	switch av.Type() {
 	case pdata.AttributeValueSTRING:
@@ -296,8 +349,8 @@ func (s *loggingExporter) pushTraceData(
 				}
 
 				buf.logAttributeMap("Attributes", span.Attributes())
-
-				// TODO: Add logging for the rest of the span properties: events, links.
+				buf.logEvents("Events", span.Events())
+				buf.logLinks("Links", span.Links())
 			}
 		}
 	}

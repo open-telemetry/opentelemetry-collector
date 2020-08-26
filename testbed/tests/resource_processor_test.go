@@ -235,7 +235,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
-			configStr := createConfigYaml(t, sender, receiver, resultDir, processors)
+			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()

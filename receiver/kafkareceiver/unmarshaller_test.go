@@ -19,32 +19,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-func TestUnmarshall(t *testing.T) {
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
-	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
+func TestDefaultUnMarshaller(t *testing.T) {
+	expectedEncodings := []string{
+		"otlp_proto",
+		"jaeger_proto",
+		"jaeger_json",
+		"zipkin_json",
+		"zipkin_thrift",
 	}
-	expected, err := request.Marshal()
-	require.NoError(t, err)
-
-	p := protoUnmarshaller{}
-	got, err := p.Unmarshal(expected)
-	require.NoError(t, err)
-	assert.Equal(t, td, got)
-	assert.Equal(t, "otlp_proto", p.Format())
-}
-
-func TestUnmarshall_error(t *testing.T) {
-	p := protoUnmarshaller{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
-	assert.Error(t, err)
+	marshallers := defaultUnmarshallers()
+	assert.Equal(t, len(expectedEncodings), len(marshallers))
+	for _, e := range expectedEncodings {
+		t.Run(e, func(t *testing.T) {
+			m, ok := marshallers[e]
+			require.True(t, ok)
+			assert.NotNil(t, m)
+		})
+	}
 }

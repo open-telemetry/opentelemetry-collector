@@ -28,6 +28,7 @@ import (
 const (
 	typeStr         = "kafka"
 	defaultTopic    = "otlp_spans"
+	defaultEncoding = "otlp_proto"
 	defaultBroker   = "localhost:9092"
 	defaultClientID = "otel-collector"
 	defaultGroupID  = defaultClientID
@@ -40,12 +41,30 @@ const (
 	defaultMetadataFull = true
 )
 
+// FactoryOption applies changes to kafkaExporterFactory.
+type FactoryOption func(factory *kafkaReceiverFactory)
+
+// WithAddUnmarshallers adds marshallers.
+func WithAddUnmarshallers(encodingMarshaller map[string]Unmarshaller) FactoryOption {
+	return func(factory *kafkaReceiverFactory) {
+		for encoding, unmarshaller := range encodingMarshaller {
+			factory.unmarshalers[encoding] = unmarshaller
+		}
+	}
+}
+
 // NewFactory creates Kafka receiver factory.
-func NewFactory() component.ReceiverFactory {
+func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+	f := &kafkaReceiverFactory{
+		unmarshalers: defaultUnmarshallers(),
+	}
+	for _, o := range options {
+		o(f)
+	}
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver))
+		receiverhelper.WithTraces(f.createTraceReceiver))
 }
 
 func createDefaultConfig() configmodels.Receiver {
@@ -55,6 +74,7 @@ func createDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		Topic:    defaultTopic,
+		Encoding: defaultEncoding,
 		Brokers:  []string{defaultBroker},
 		ClientID: defaultClientID,
 		GroupID:  defaultGroupID,
@@ -68,14 +88,18 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
-func createTraceReceiver(
+type kafkaReceiverFactory struct {
+	unmarshalers map[string]Unmarshaller
+}
+
+func (f *kafkaReceiverFactory) createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newReceiver(*c, params, nextConsumer)
+	r, err := newReceiver(*c, params, f.unmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

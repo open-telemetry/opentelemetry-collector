@@ -16,6 +16,7 @@ package kafkareceiver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Shopify/sarama"
 	"go.opencensus.io/stats"
@@ -31,6 +32,8 @@ const (
 	transport = "kafka"
 )
 
+var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+
 // kafkaConsumer uses sarama to consume and handle messages from kafka.
 type kafkaConsumer struct {
 	name              string
@@ -38,14 +41,19 @@ type kafkaConsumer struct {
 	nextConsumer      consumer.TraceConsumer
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaller      unmarshaller
+	unmarshaller      Unmarshaller
 
 	logger *zap.Logger
 }
 
 var _ component.Receiver = (*kafkaConsumer)(nil)
 
-func newReceiver(config Config, params component.ReceiverCreateParams, nextConsumer consumer.TraceConsumer) (*kafkaConsumer, error) {
+func newReceiver(config Config, params component.ReceiverCreateParams, unmarshalers map[string]Unmarshaller, nextConsumer consumer.TraceConsumer) (*kafkaConsumer, error) {
+	unmarshaller := unmarshalers[config.Encoding]
+	if unmarshaller == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
 	c := sarama.NewConfig()
 	c.ClientID = config.ClientID
 	c.Metadata.Full = config.Metadata.Full
@@ -67,7 +75,7 @@ func newReceiver(config Config, params component.ReceiverCreateParams, nextConsu
 		consumerGroup: client,
 		topics:        []string{config.Topic},
 		nextConsumer:  nextConsumer,
-		unmarshaller:  &protoUnmarshaller{},
+		unmarshaller:  unmarshaller,
 		logger:        params.Logger,
 	}, nil
 }
@@ -110,7 +118,7 @@ func (c *kafkaConsumer) Shutdown(context.Context) error {
 
 type consumerGroupHandler struct {
 	name         string
-	unmarshaller unmarshaller
+	unmarshaller Unmarshaller
 	nextConsumer consumer.TraceConsumer
 	ready        chan bool
 
@@ -156,7 +164,7 @@ func (c *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 		}
 
 		err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaller.Format(), traces.SpanCount(), err)
+		obsreport.EndTraceDataReceiveOp(ctx, c.unmarshaller.Encoding(), traces.SpanCount(), err)
 		if err != nil {
 			return err
 		}

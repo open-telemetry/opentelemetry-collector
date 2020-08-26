@@ -99,3 +99,126 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 }
+
+// AnyValueArray logically represents a slice of AttributeValue.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewAnyValueArray function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type AnyValueArray struct {
+	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	orig *[]*otlpcommon.AnyValue
+}
+
+func newAnyValueArray(orig *[]*otlpcommon.AnyValue) AnyValueArray {
+	return AnyValueArray{orig}
+}
+
+// NewAnyValueArray creates a AnyValueArray with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewAnyValueArray() AnyValueArray {
+	orig := []*otlpcommon.AnyValue(nil)
+	return AnyValueArray{&orig}
+}
+
+// Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewAnyValueArray()".
+func (es AnyValueArray) Len() int {
+	return len(*es.orig)
+}
+
+// At returns the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     ... // Do something with the element
+// }
+func (es AnyValueArray) At(ix int) AttributeValue {
+	return newAttributeValue(&(*es.orig)[ix])
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
+// CopyTo copies all elements from the current slice to the dest.
+func (es AnyValueArray) CopyTo(dest AnyValueArray) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpcommon.AnyValue(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newAttributeValue(&el).CopyTo(newAttributeValue(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpcommon.AnyValue, newLen)
+	wrappers := make([]*otlpcommon.AnyValue, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newAttributeValue(&el).CopyTo(newAttributeValue(&wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new AnyValueArray can be initialized:
+// es := NewAnyValueArray()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es AnyValueArray) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlpcommon.AnyValue(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlpcommon.AnyValue, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the AnyValueArray by one and set the
+// given AttributeValue at that new position.  The original AttributeValue
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es AnyValueArray) Append(e *AttributeValue) {
+	(*es.orig) = append((*es.orig), *e.orig)
+}

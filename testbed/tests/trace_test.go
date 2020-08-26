@@ -99,6 +99,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.resourceSpec,
 				performanceResultsSummary,
 				processors,
+				nil,
 			)
 		})
 	}
@@ -405,7 +406,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			}
 
 			agentProc := &testbed.ChildProcess{}
-			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors)
+			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()

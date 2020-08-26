@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,7 +40,9 @@ func TestCreateTraceReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	r, err := createTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
+	r, err := f.createTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -49,7 +52,43 @@ func TestCreateTraceReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	r, err := createTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	f := kafkaReceiverFactory{unmarshalers: defaultUnmarshallers()}
+	r, err := f.createTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
+}
+
+func TestWithUnmarshallers(t *testing.T) {
+	cum := &customUnamarshaller{}
+	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{cum.Encoding(): cum}))
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker
+	cfg.Metadata.Full = false
+	cfg.ProtocolVersion = "2.0.0"
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		cfg.Encoding = cum.Encoding()
+		exporter, err := f.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		require.NoError(t, err)
+		require.NotNil(t, exporter)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		cfg.Encoding = new(otlpProtoUnmarshaller).Encoding()
+		exporter, err := f.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		require.NoError(t, err)
+		assert.NotNil(t, exporter)
+	})
+}
+
+type customUnamarshaller struct {
+}
+
+var _ Unmarshaller = (*customUnamarshaller)(nil)
+
+func (c customUnamarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+	panic("implement me")
+}
+
+func (c customUnamarshaller) Encoding() string {
+	return "custom"
 }

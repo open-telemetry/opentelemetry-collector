@@ -36,13 +36,13 @@ func (ts TimestampUnixNano) String() string {
 type AttributeValueType int
 
 const (
-	AttributeValueNULL = iota
+	AttributeValueNULL AttributeValueType = iota
 	AttributeValueSTRING
 	AttributeValueINT
 	AttributeValueDOUBLE
 	AttributeValueBOOL
 	AttributeValueMAP
-	// TODO: add ARRAY value types.
+	AttributeValueARRAY
 )
 
 func (avt AttributeValueType) String() string {
@@ -59,8 +59,9 @@ func (avt AttributeValueType) String() string {
 		return "DOUBLE"
 	case AttributeValueMAP:
 		return "MAP"
+	case AttributeValueARRAY:
+		return "ARRAY"
 	}
-	// TODO: add cases for ARRAY value types.
 	return ""
 }
 
@@ -100,6 +101,10 @@ func NewAttributeValueNull() AttributeValue {
 	return AttributeValue{orig: &orig}
 }
 
+func NewAttributeValue() AttributeValue {
+	return NewAttributeValueNull()
+}
+
 // NewAttributeValueString creates a new AttributeValue with the given string value.
 func NewAttributeValueString(v string) AttributeValue {
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}
@@ -124,9 +129,15 @@ func NewAttributeValueBool(v bool) AttributeValue {
 	return AttributeValue{orig: &orig}
 }
 
-// NewAttributeValueMap creates a new AttributeValue of array type.
+// NewAttributeValueMap creates a new AttributeValue of map type.
 func NewAttributeValueMap() AttributeValue {
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}}
+	return AttributeValue{orig: &orig}
+}
+
+// NewAttributeValueArray creates a new AttributeValue of array type.
+func NewAttributeValueArray() AttributeValue {
+	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}
 	return AttributeValue{orig: &orig}
 }
 
@@ -171,40 +182,41 @@ func (a AttributeValue) Type() AttributeValueType {
 		return AttributeValueDOUBLE
 	case *otlpcommon.AnyValue_KvlistValue:
 		return AttributeValueMAP
+	case *otlpcommon.AnyValue_ArrayValue:
+		return AttributeValueARRAY
 	}
-	// TODO: add cases for ARRAY value types.
 	return AttributeValueNULL
 }
 
-// Value returns the string value associated with this AttributeValue.
+// StringVal returns the string value associated with this AttributeValue.
 // If the Type() is not AttributeValueSTRING then returns empty string.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) StringVal() string {
 	return (*a.orig).GetStringValue()
 }
 
-// Value returns the int64 value associated with this AttributeValue.
+// IntVal returns the int64 value associated with this AttributeValue.
 // If the Type() is not AttributeValueINT then returns int64(0).
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) IntVal() int64 {
 	return (*a.orig).GetIntValue()
 }
 
-// Value returns the float64 value associated with this AttributeValue.
+// DoubleVal returns the float64 value associated with this AttributeValue.
 // If the Type() is not AttributeValueDOUBLE then returns float64(0).
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) DoubleVal() float64 {
 	return (*a.orig).GetDoubleValue()
 }
 
-// Value returns the bool value associated with this AttributeValue.
+// BoolVal returns the bool value associated with this AttributeValue.
 // If the Type() is not AttributeValueBOOL then returns false.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) BoolVal() bool {
 	return (*a.orig).GetBoolValue()
 }
 
-// Value returns the map value associated with this AttributeValue.
+// MapVal returns the map value associated with this AttributeValue.
 // If the Type() is not AttributeValueMAP then returns an empty map. Note that modifying
 // such empty map has no effect on this AttributeValue.
 //
@@ -215,6 +227,19 @@ func (a AttributeValue) MapVal() AttributeMap {
 		return NewAttributeMap()
 	}
 	return newAttributeMap(&kvlist.Values)
+}
+
+// ArrayVal returns the array value associated with this AttributeValue.
+// If the Type() is not AttributeValueARRAY then returns an empty array. Note that modifying
+// such empty array has no effect on this AttributeValue.
+//
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) ArrayVal() AnyValueArray {
+	arr := (*a.orig).GetArrayValue()
+	if arr == nil {
+		return NewAnyValueArray()
+	}
+	return newAnyValueArray(&arr.Values)
 }
 
 // SetStringVal replaces the string value associated with this AttributeValue,
@@ -284,6 +309,32 @@ func (a AttributeValue) SetMapVal(m AttributeMap) {
 	destMap.InitFromAttributeMap(m)
 }
 
+// SetArrayVal replaces the value associated with this AttributeValue,
+// it also changes the type to be AttributeValueARRAY. The `arr` argument will be deep
+// copied into this AttributeValue.
+//
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetArrayVal(arr AnyValueArray) {
+	if *a.orig == nil {
+		*a.orig = &otlpcommon.AnyValue{}
+	}
+	var dest *otlpcommon.ArrayValue
+	switch v := (*a.orig).Value.(type) {
+	case *otlpcommon.AnyValue_ArrayValue:
+		if v.ArrayValue == nil {
+			v.ArrayValue = &otlpcommon.ArrayValue{}
+		}
+		dest = v.ArrayValue
+
+	default:
+		dest = &otlpcommon.ArrayValue{}
+		(*a.orig).Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: dest}
+	}
+
+	destArr := newAnyValueArray(&dest.Values)
+	arr.CopyTo(destArr)
+}
+
 // copyTo copies the value to AnyValue. Will panic if dest is nil.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
@@ -302,7 +353,13 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 			AttributeValue{&dest}.SetMapVal(newAttributeMap(&v.KvlistValue.Values))
 		}
 	case *otlpcommon.AnyValue_ArrayValue:
-		// TODO: handle ARRAY data type. We need to make a deep copy.
+		if v.ArrayValue == nil {
+			// Source is empty.
+			AttributeValue{&dest}.SetArrayVal(NewAnyValueArray())
+		} else {
+			// Deep copy to dest.
+			AttributeValue{&dest}.SetArrayVal(newAnyValueArray(&v.ArrayValue.Values))
+		}
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = (*a.orig).Value
@@ -660,7 +717,7 @@ func (am AttributeMap) Len() int {
 //
 // Example:
 //
-// it := sm.ForEach(func(k string, v StringValue) {
+// it := sm.ForEach(func(k string, v AttributeValue) {
 //   ...
 // })
 func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
