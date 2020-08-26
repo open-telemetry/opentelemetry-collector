@@ -76,7 +76,7 @@ func Components() (
 		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
-		kafkareceiver.NewFactory(kafkareceiver.DefaultUnmarshallers()),
+		kafkareceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -90,7 +90,7 @@ func Components() (
 		jaegerexporter.NewFactory(),
 		fileexporter.NewFactory(),
 		otlpexporter.NewFactory(),
-		kafkaexporter.NewFactory(kafkaexporter.DefaultMarshallers()),
+		kafkaexporter.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

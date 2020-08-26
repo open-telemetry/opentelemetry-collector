@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,7 +40,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	f := kafkaExporterFactory{marshallers: DefaultMarshallers()}
+	f := kafkaExporterFactory{marshallers: defaultMarshallers()}
 	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -49,9 +50,43 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaExporterFactory{marshallers: DefaultMarshallers()}
+	f := kafkaExporterFactory{marshallers: defaultMarshallers()}
 	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
+}
+
+func TestWithMarshallers(t *testing.T) {
+	cm := &customMarshaller{}
+	f := NewFactory(WithAddMarshallers(map[string]Marshaller{cm.Encoding(): cm}))
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker
+	cfg.Metadata.Full = false
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		cfg.Encoding = cm.Encoding()
+		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+		require.NoError(t, err)
+		require.NotNil(t, exporter)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		cfg.Encoding = new(otlpProtoMarshaller).Encoding()
+		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+		require.NoError(t, err)
+		assert.NotNil(t, exporter)
+	})
+}
+
+type customMarshaller struct {
+}
+
+var _ Marshaller = (*customMarshaller)(nil)
+
+func (c customMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+	panic("implement me")
+}
+
+func (c customMarshaller) Encoding() string {
+	return "custom"
 }

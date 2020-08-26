@@ -36,7 +36,7 @@ func TestOTLPMarshaller(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, expected)
 
-	m := protoMarshaller{}
+	m := otlpProtoMarshaller{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(td)
 	require.NoError(t, err)

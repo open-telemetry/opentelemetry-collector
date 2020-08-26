@@ -27,9 +27,9 @@ type Unmarshaller interface {
 	Encoding() string
 }
 
-// DefaultUnmarshallers returns map of supported encodings with Unmarshaller.
-func DefaultUnmarshallers() map[string]Unmarshaller {
-	otlp := &protoUnmarshaller{}
+// defaultUnmarshallers returns map of supported encodings with Unmarshaller.
+func defaultUnmarshallers() map[string]Unmarshaller {
+	otlp := &otlpProtoUnmarshaller{}
 	jaegerProto := jaegerProtoSpanUnmarshaller{}
 	jaegerJSON := jaegerJSONSpanUnmarshaller{}
 	zipkinJSON := zipkinJSONSpanUnmarshaller{}

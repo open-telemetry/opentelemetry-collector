@@ -41,11 +41,26 @@ const (
 	defaultMetadataFull = true
 )
 
+// FactoryOption applies changes to kafkaExporterFactory.
+type FactoryOption func(factory *kafkaReceiverFactory)
+
+// WithAddUnmarshallers adds marshallers.
+func WithAddUnmarshallers(encodingMarshaller map[string]Unmarshaller) FactoryOption {
+	return func(factory *kafkaReceiverFactory) {
+		for encoding, unmarshaller := range encodingMarshaller {
+			factory.unmarshalers[encoding] = unmarshaller
+		}
+	}
+}
+
 // NewFactory creates Kafka receiver factory.
-// encodingMarshaller is a map with supported encodings for this factory.
-// See DefaultUnmarshallers.
-func NewFactory(encodingUnmarshaler map[string]Unmarshaller) component.ReceiverFactory {
-	f := &kafkaReceiverFactory{unmarshalers: encodingUnmarshaler}
+func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+	f := &kafkaReceiverFactory{
+		unmarshalers: defaultUnmarshallers(),
+	}
+	for _, o := range options {
+		o(f)
+	}
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,

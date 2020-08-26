@@ -29,7 +29,7 @@ func TestDefaultUnMarshaller(t *testing.T) {
 		"zipkin_json",
 		"zipkin_thrift",
 	}
-	marshallers := DefaultUnmarshallers()
+	marshallers := defaultUnmarshallers()
 	assert.Equal(t, len(expectedEncodings), len(marshallers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {

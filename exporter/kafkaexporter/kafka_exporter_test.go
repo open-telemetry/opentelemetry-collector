@@ -32,7 +32,7 @@ import (
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, DefaultMarshallers())
+	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
 	assert.Error(t, err)
 	assert.Nil(t, exp)
 }
@@ -51,7 +51,7 @@ func TestTraceDataPusher(t *testing.T) {
 
 	p := kafkaProducer{
 		producer:   producer,
-		marshaller: &protoMarshaller{},
+		marshaller: &otlpProtoMarshaller{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -69,7 +69,7 @@ func TestTraceDataPusher_err(t *testing.T) {
 
 	p := kafkaProducer{
 		producer:   producer,
-		marshaller: &protoMarshaller{},
+		marshaller: &otlpProtoMarshaller{},
 		logger:     zap.NewNop(),
 	}
 	t.Cleanup(func() {

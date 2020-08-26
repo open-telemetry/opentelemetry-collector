@@ -27,7 +27,7 @@ func TestDefaultMarshallers(t *testing.T) {
 		"jaeger_proto",
 		"jaeger_json",
 	}
-	marshallers := DefaultMarshallers()
+	marshallers := defaultMarshallers()
 	assert.Equal(t, len(expectedEncodings), len(marshallers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {

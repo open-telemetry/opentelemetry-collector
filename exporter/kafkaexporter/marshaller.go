@@ -32,9 +32,9 @@ type Message struct {
 	Value []byte
 }
 
-// DefaultMarshallers returns map of supported encodings with Marshaller.
-func DefaultMarshallers() map[string]Marshaller {
-	otlp := &protoMarshaller{}
+// defaultMarshallers returns map of supported encodings with Marshaller.
+func defaultMarshallers() map[string]Marshaller {
+	otlp := &otlpProtoMarshaller{}
 	jaegerProto := jaegerMarshaller{marshaller: jaegerProtoSpanMarshaller{}}
 	jaegerJSON := jaegerMarshaller{marshaller: newJaegerJSONMarshaller()}
 	return map[string]Marshaller{

@@ -40,7 +40,7 @@ func TestNewReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, DefaultUnmarshallers(), exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -49,7 +49,7 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, DefaultUnmarshallers(), exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -111,7 +111,7 @@ func TestConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := consumerGroupHandler{
-		unmarshaller: &protoUnmarshaller{},
+		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: exportertest.NewNopTraceExporter(),
@@ -155,7 +155,7 @@ func TestConsumerGroupHandler(t *testing.T) {
 
 func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 	c := consumerGroupHandler{
-		unmarshaller: &protoUnmarshaller{},
+		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: exportertest.NewNopTraceExporter(),
@@ -181,7 +181,7 @@ func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := fmt.Errorf("failed to consumer")
 	nextConsumer.SetConsumeTraceError(consumerError)
 	c := consumerGroupHandler{
-		unmarshaller: &protoUnmarshaller{},
+		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: nextConsumer,

@@ -19,16 +19,16 @@ import (
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-type protoMarshaller struct {
+type otlpProtoMarshaller struct {
 }
 
-var _ Marshaller = (*protoMarshaller)(nil)
+var _ Marshaller = (*otlpProtoMarshaller)(nil)
 
-func (m *protoMarshaller) Encoding() string {
+func (m *otlpProtoMarshaller) Encoding() string {
 	return defaultEncoding
 }
 
-func (m *protoMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+func (m *otlpProtoMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 	request := otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(traces),
 	}

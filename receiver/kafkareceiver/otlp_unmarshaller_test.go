@@ -35,7 +35,7 @@ func TestUnmarshallOTLP(t *testing.T) {
 	expected, err := request.Marshal()
 	require.NoError(t, err)
 
-	p := protoUnmarshaller{}
+	p := otlpProtoUnmarshaller{}
 	got, err := p.Unmarshal(expected)
 	require.NoError(t, err)
 	assert.Equal(t, td, got)
@@ -43,7 +43,7 @@ func TestUnmarshallOTLP(t *testing.T) {
 }
 
 func TestUnmarshallOTLP_error(t *testing.T) {
-	p := protoUnmarshaller{}
+	p := otlpProtoUnmarshaller{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)

@@ -36,17 +36,30 @@ const (
 	defaultMetadataFull = true
 )
 
+// FactoryOption applies changes to kafkaExporterFactory.
+type FactoryOption func(factory *kafkaExporterFactory)
+
+// WithAddMarshallers adds marshallers.
+func WithAddMarshallers(encodingMarshaller map[string]Marshaller) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for encoding, marshaller := range encodingMarshaller {
+			factory.marshallers[encoding] = marshaller
+		}
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
-// encodingMarshaller is a map with supported encodings for this factory.
-// See DefaultMarshallers.
-func NewFactory(encodingMarshaller map[string]Marshaller) component.ExporterFactory {
-	k := kafkaExporterFactory{
-		marshallers: encodingMarshaller,
+func NewFactory(options ...FactoryOption) component.ExporterFactory {
+	f := &kafkaExporterFactory{
+		marshallers: defaultMarshallers(),
+	}
+	for _, o := range options {
+		o(f)
 	}
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(k.createTraceExporter))
+		exporterhelper.WithTraces(f.createTraceExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {

@@ -19,12 +19,12 @@ import (
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-type protoUnmarshaller struct {
+type otlpProtoUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*protoUnmarshaller)(nil)
+var _ Unmarshaller = (*otlpProtoUnmarshaller)(nil)
 
-func (p *protoUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (p *otlpProtoUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	request := &otlptrace.ExportTraceServiceRequest{}
 	err := request.Unmarshal(bytes)
 	if err != nil {
@@ -33,6 +33,6 @@ func (p *protoUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	return pdata.TracesFromOtlp(request.GetResourceSpans()), nil
 }
 
-func (*protoUnmarshaller) Encoding() string {
+func (*otlpProtoUnmarshaller) Encoding() string {
 	return defaultEncoding
 }
