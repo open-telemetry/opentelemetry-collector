@@ -2,16 +2,18 @@
 
 Kafka exporter exports traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
-processors for higher throughput and resiliency.
+processors for higher throughput and resiliency. Message payload encoding is configurable.
  
-Message payloads are serialized OTLP `ExportTraceServiceRequest`.
-
 The following settings are required:
 - `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
 
 The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `topic` (default = otlp_spans): The name of the kafka topic to export to
+- `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
+  - `otlp_proto`: the payload is serialized to `ExportTraceServiceRequest`.
+  - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`.
+  - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`.
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. 
                                     When disabled the client does not make the initial request to broker at the startup.

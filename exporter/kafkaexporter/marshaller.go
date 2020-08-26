@@ -16,21 +16,30 @@ package kafkaexporter
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
-// marshaller encodes traces into a byte array to be sent to Kafka.
-type marshaller interface {
-	// Marshal serializes spans into byte array
-	Marshal(traces pdata.Traces) ([]byte, error)
+// Marshaller marshals traces into Message array.
+type Marshaller interface {
+	// Marshal serializes spans into Messages
+	Marshal(traces pdata.Traces) ([]Message, error)
+
+	// Encoding returns encoding name
+	Encoding() string
 }
 
-type protoMarshaller struct {
+// Message encapsulates Kafka's message payload.
+type Message struct {
+	Value []byte
 }
 
-func (m *protoMarshaller) Marshal(traces pdata.Traces) ([]byte, error) {
-	request := otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(traces),
+// defaultMarshallers returns map of supported encodings with Marshaller.
+func defaultMarshallers() map[string]Marshaller {
+	otlp := &otlpProtoMarshaller{}
+	jaegerProto := jaegerMarshaller{marshaller: jaegerProtoSpanMarshaller{}}
+	jaegerJSON := jaegerMarshaller{marshaller: newJaegerJSONMarshaller()}
+	return map[string]Marshaller{
+		otlp.Encoding():        otlp,
+		jaegerProto.Encoding(): jaegerProto,
+		jaegerJSON.Encoding():  jaegerJSON,
 	}
-	return request.Marshal()
 }

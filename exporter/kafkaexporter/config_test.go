@@ -58,8 +58,9 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
-		Topic:   "spans",
-		Brokers: []string{"foo:123", "bar:456"},
+		Topic:    "spans",
+		Encoding: "otlp_proto",
+		Brokers:  []string{"foo:123", "bar:456"},
 		Metadata: Metadata{
 			Full: false,
 			Retry: MetadataRetry{
