@@ -43,9 +43,16 @@ func TestMergeConfigs_nil(t *testing.T) {
 			},
 		},
 	}
-	err := MergeConfigs(cfg, nil)
-	require.NoError(t, err)
-	assert.Equal(t, cfg, cfg)
+	t.Run("src_nil", func(t *testing.T) {
+		err := MergeConfigs(cfg, nil)
+		require.NoError(t, err)
+		assert.Equal(t, cfg, cfg)
+	})
+	t.Run("dest_nil", func(t *testing.T) {
+		err := MergeConfigs(nil, cfg)
+		require.NoError(t, err)
+		assert.Equal(t, cfg, cfg)
+	})
 }
 
 func TestMergeConfigs(t *testing.T) {

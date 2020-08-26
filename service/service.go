@@ -131,7 +131,7 @@ func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*co
 		return nil, err
 	}
 	defaultConfig := defaultconfig.CreateDefaultConfig(factories, cfg)
-	err = defaultconfig.MergeConfigs(cfg, defaultConfig)
+	err = defaultconfig.MergeConfigs(defaultConfig, cfg)
 	if err != nil {
 		return nil, err
 	}

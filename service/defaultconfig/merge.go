@@ -23,7 +23,7 @@ import (
 // MergeConfigs merges two configs.
 // The src is merged into dst.
 func MergeConfigs(dst, src *configmodels.Config) error {
-	if src == nil {
+	if src == nil || dst == nil {
 		return nil
 	}
 	return mergo.Merge(dst, src, mergo.WithOverride)
