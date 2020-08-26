@@ -28,6 +28,7 @@ type LogEmitter struct {
 	helper.OutputOperator
 	logChan  chan *entry.Entry
 	stopOnce sync.Once
+	done     bool
 }
 
 // NewLogEmitter creates a new receiver output
@@ -45,7 +46,11 @@ func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
 }
 
 // Process will emit an entry to the output channel
-func (e *LogEmitter) Process(ctx context.Context, entry *entry.Entry) error {
+func (e *LogEmitter) Process(_ context.Context, entry *entry.Entry) error {
+	if e.done {
+		close(e.logChan)
+		return nil
+	}
 	e.logChan <- entry
 	return nil
 }
@@ -53,7 +58,7 @@ func (e *LogEmitter) Process(ctx context.Context, entry *entry.Entry) error {
 // Stop will close the log channel
 func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
-		close(e.logChan)
+		e.done = true
 	})
 	return nil
 }
