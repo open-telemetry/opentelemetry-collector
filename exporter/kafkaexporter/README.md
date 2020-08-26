@@ -30,7 +30,6 @@ The following settings can be optionally configured:
       name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client
       in order to support virtual hosting.
->>>>>>> Add authentication support to kafka
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. 
                                     When disabled the client does not make the initial request to broker at the startup.

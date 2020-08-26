@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
@@ -53,6 +54,21 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+}
+
+func TestNewExporter_err_auth_type(t *testing.T) {
+	c := Config{
+		ProtocolVersion: "2.0.0",
+		Authentication:  kafkaexporter.Authentication{Type: kafkaexporter.AuthType("foo")},
+		Encoding:        defaultEncoding,
+		Metadata: kafkaexporter.Metadata{
+			Full: false,
+		},
+	}
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown/unsupported authentication method")
+	assert.Nil(t, r)
 }
 
 func TestReceiverStart(t *testing.T) {
