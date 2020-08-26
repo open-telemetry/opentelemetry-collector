@@ -50,12 +50,13 @@ type LoadGenerator struct {
 
 // LoadOptions defines the options to use for generating the load.
 type LoadOptions struct {
-	// DataItemsPerSecond specifies how many spans or metric data points to generate each second.
+	// DataItemsPerSecond specifies how many spans, metric data points, or log
+	// records to generate each second.
 	DataItemsPerSecond int
 
-	// ItemsPerBatch specifies how many spans or metric data points per batch to generate.
-	// Should be greater than zero. The number of batches generated per second will be
-	// DataItemsPerSecond/ItemsPerBatch.
+	// ItemsPerBatch specifies how many spans, metric data points, or log
+	// records per batch to generate. Should be greater than zero. The number
+	// of batches generated per second will be DataItemsPerSecond/ItemsPerBatch.
 	ItemsPerBatch int
 
 	// Attributes to add to each generated data item. Can be empty.
@@ -170,6 +171,8 @@ func (lg *LoadGenerator) generate() {
 						lg.generateTrace()
 					case MetricDataSender:
 						lg.generateMetrics()
+					case LogDataSender:
+						lg.generateLog()
 					default:
 						log.Printf("Invalid type of LoadGenerator sender")
 					}
@@ -217,5 +220,22 @@ func (lg *LoadGenerator) generateMetrics() {
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
 		lg.prevErr = err
 		log.Printf("Cannot send metrics: %v", err)
+	}
+}
+
+func (lg *LoadGenerator) generateLog() {
+	logSender := lg.sender.(LogDataSender)
+
+	logData, done := lg.dataProvider.GenerateLogs()
+	if done {
+		return
+	}
+
+	err := logSender.SendLogs(logData)
+	if err == nil {
+		lg.prevErr = nil
+	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+		lg.prevErr = err
+		log.Printf("Cannot send logs: %v", err)
 	}
 }

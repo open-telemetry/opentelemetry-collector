@@ -33,6 +33,7 @@ type MockBackend struct {
 	// Metric and trace consumers
 	tc *MockTraceConsumer
 	mc *MockMetricConsumer
+	lc *MockLogConsumer
 
 	receiver DataReceiver
 
@@ -50,6 +51,7 @@ type MockBackend struct {
 	recordMutex     sync.Mutex
 	ReceivedTraces  []pdata.Traces
 	ReceivedMetrics []pdata.Metrics
+	ReceivedLogs    []pdata.Logs
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -59,9 +61,11 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 		receiver:    receiver,
 		tc:          &MockTraceConsumer{},
 		mc:          &MockMetricConsumer{},
+		lc:          &MockLogConsumer{},
 	}
 	mb.tc.backend = mb
 	mb.mc.backend = mb
+	mb.lc.backend = mb
 	return mb
 }
 
@@ -81,7 +85,7 @@ func (mb *MockBackend) Start() error {
 		return err
 	}
 
-	err = mb.receiver.Start(mb.tc, mb.mc)
+	err = mb.receiver.Start(mb.tc, mb.mc, mb.lc)
 	if err != nil {
 		return err
 	}
@@ -122,7 +126,7 @@ func (mb *MockBackend) GetStats() string {
 
 // DataItemsReceived returns total number of received spans and metrics.
 func (mb *MockBackend) DataItemsReceived() uint64 {
-	return mb.tc.numSpansReceived.Load() + mb.mc.numMetricsReceived.Load()
+	return mb.tc.numSpansReceived.Load() + mb.mc.numMetricsReceived.Load() + mb.lc.numLogRecordsReceived.Load()
 }
 
 // ClearReceivedItems clears the list of received traces and metrics. Note: counters
@@ -132,6 +136,7 @@ func (mb *MockBackend) ClearReceivedItems() {
 	defer mb.recordMutex.Unlock()
 	mb.ReceivedTraces = nil
 	mb.ReceivedMetrics = nil
+	mb.ReceivedLogs = nil
 }
 
 func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
@@ -151,6 +156,14 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 }
 
 var _ consumer.TraceConsumer = (*MockTraceConsumer)(nil)
+
+func (mb *MockBackend) ConsumeLogs(ld pdata.Logs) {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	if mb.isRecording {
+		mb.ReceivedLogs = append(mb.ReceivedLogs, ld)
+	}
+}
 
 type MockTraceConsumer struct {
 	numSpansReceived atomic.Uint64
@@ -214,5 +227,17 @@ func (tc *MockTraceConsumer) MockConsumeTraceData(spansCount int) error {
 
 func (mc *MockMetricConsumer) MockConsumeMetricData(metricsCount int) error {
 	mc.numMetricsReceived.Add(uint64(metricsCount))
+	return nil
+}
+
+type MockLogConsumer struct {
+	numLogRecordsReceived atomic.Uint64
+	backend               *MockBackend
+}
+
+func (mc *MockLogConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+	recordCount := ld.LogRecordCount()
+	mc.numLogRecordsReceived.Add(uint64(recordCount))
+	mc.backend.ConsumeLogs(ld)
 	return nil
 }

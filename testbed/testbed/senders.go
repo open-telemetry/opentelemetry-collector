@@ -16,7 +16,12 @@ package testbed
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -65,6 +70,13 @@ type TraceDataSender interface {
 type MetricDataSender interface {
 	DataSender
 	SendMetrics(metrics pdata.Metrics) error
+}
+
+// LogDataSender defines the interface that allows sending log data. It adds ability
+// to send a batch of Logs to the DataSender interface.
+type LogDataSender interface {
+	DataSender
+	SendLogs(logs pdata.Logs) error
 }
 
 // DataSenderOverTraceExporter partially implements TraceDataSender via a TraceExporter.
@@ -455,4 +467,137 @@ func (pds *PrometheusDataSender) GetCollectorPort() int {
 
 func (pds *PrometheusDataSender) ProtocolName() string {
 	return "prometheus"
+}
+
+type FluentBitFileLogWriter struct {
+	file        *os.File
+	parsersFile *os.File
+	host        string
+	port        int
+}
+
+// Ensure FluentBitFileLogWriter implements LogDataSender.
+var _ LogDataSender = (*FluentBitFileLogWriter)(nil)
+
+// NewFluentBitFileLogWriter creates a new data sender that will write log entries to a
+// file, to be tailed by FluentBit and sent to the collector.
+func NewFluentBitFileLogWriter(host string, port int) *FluentBitFileLogWriter {
+	file, err := ioutil.TempFile("", "perf-logs.json")
+	if err != nil {
+		panic("failed to create temp file")
+	}
+
+	parsersFile, err := ioutil.TempFile("", "parsers.json")
+	if err != nil {
+		panic("failed to create temp file")
+	}
+
+	f := &FluentBitFileLogWriter{
+		host:        host,
+		port:        port,
+		file:        file,
+		parsersFile: parsersFile,
+	}
+	f.setupParsers()
+	return f
+}
+
+func (f *FluentBitFileLogWriter) Start() error {
+	return nil
+}
+
+func (f *FluentBitFileLogWriter) setupParsers() {
+	_, err := f.parsersFile.Write([]byte(`
+[PARSER]
+    Name   json
+    Format json
+    Time_Key time
+    Time_Format %d/%m/%Y:%H:%M:%S %z
+`))
+	if err != nil {
+		panic("failed to write parsers")
+	}
+
+	f.parsersFile.Close()
+}
+
+func (f *FluentBitFileLogWriter) SendLogs(logs pdata.Logs) error {
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
+			for k := 0; k < ills.Logs().Len(); k++ {
+				_, err := f.file.Write(append(f.convertLogToJSON(ills.Logs().At(k)), '\n'))
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
+	rec := map[string]string{
+		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
+	}
+
+	if !lr.Body().IsNil() {
+		rec["log"] = lr.Body().StringVal()
+	}
+
+	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			rec[k] = v.StringVal()
+		case pdata.AttributeValueINT:
+			rec[k] = strconv.FormatInt(v.IntVal(), 10)
+		case pdata.AttributeValueDOUBLE:
+			rec[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+		case pdata.AttributeValueBOOL:
+			rec[k] = strconv.FormatBool(v.BoolVal())
+		default:
+			panic("missing case")
+		}
+	})
+	b, err := json.Marshal(rec)
+	if err != nil {
+		panic("failed to write log: " + err.Error())
+	}
+	return b
+}
+
+func (f *FluentBitFileLogWriter) Flush() {
+	_ = f.file.Sync()
+}
+
+func (f *FluentBitFileLogWriter) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  fluentforward:
+    endpoint: "%s:%d"`, f.host, f.port)
+}
+
+func (f *FluentBitFileLogWriter) Extensions() map[string]string {
+	return map[string]string{
+		"fluentbit": fmt.Sprintf(`
+  fluentbit:
+    executable_path: fluent-bit
+    tcp_endpoint: "%s:%d"
+    config: |
+      [SERVICE]
+        parsers_file %s
+      [INPUT]
+        Name tail
+        parser json
+        path %s
+`, f.host, f.port, f.parsersFile.Name(), f.file.Name()),
+	}
+}
+
+func (f *FluentBitFileLogWriter) GetCollectorPort() int {
+	return f.port
+}
+
+func (f *FluentBitFileLogWriter) ProtocolName() string {
+	return "fluentforward"
 }

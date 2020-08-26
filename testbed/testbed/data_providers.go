@@ -44,6 +44,8 @@ type DataProvider interface {
 	GenerateMetrics() (pdata.Metrics, bool)
 	// GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
 	GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span
+	// GenerateLogs returns the internal pdata.Logs format
+	GenerateLogs() (pdata.Logs, bool)
 }
 
 // PerfTestDataProvider in an implementation of the DataProvider for use in performance tests.
@@ -165,6 +167,46 @@ func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span
 	return nil
 }
 
+func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	if dp.options.Attributes != nil {
+		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		for k, v := range dp.options.Attributes {
+			attrs.UpsertString(k, v)
+		}
+	}
+	logRecords := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logRecords.Resize(dp.options.ItemsPerBatch)
+
+	now := pdata.TimestampUnixNano(time.Now().UnixNano())
+
+	batchIndex := dp.batchesGenerated.Inc()
+
+	for i := 0; i < dp.options.ItemsPerBatch; i++ {
+		itemIndex := dp.dataItemsGenerated.Inc()
+		record := logRecords.At(i)
+		record.InitEmpty()
+		record.SetSeverityNumber(pdata.SeverityNumberINFO3)
+		record.SetSeverityText("INFO3")
+		record.SetName("load_generator_" + strconv.Itoa(i))
+		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
+		record.SetFlags(uint32(2))
+		record.SetTimestamp(now)
+
+		attrs := record.Attributes()
+		attrs.UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+		attrs.UpsertString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
+		attrs.UpsertString("a", "test")
+		attrs.UpsertDouble("b", 5.0)
+		attrs.UpsertInt("c", 3)
+		attrs.UpsertBool("d", true)
+	}
+	return logs, false
+}
+
 // GoldenDataProvider is an implementation of DataProvider for use in correctness tests.
 // Provided data from the "Golden" dataset generated using pairwise combinatorial testing techniques.
 type GoldenDataProvider struct {
@@ -220,6 +262,10 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return pdatautil.MetricsFromInternalMetrics(data.MetricData{}), true
+}
+
+func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
+	return pdata.Logs{}, true
 }
 
 func (dp *GoldenDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {
