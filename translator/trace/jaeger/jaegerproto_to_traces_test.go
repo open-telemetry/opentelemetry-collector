@@ -499,6 +499,17 @@ func generateTraceDataOneSpanNoResource() pdata.Traces {
 	return td
 }
 
+func generateTraceDataWithLibraryInfo() pdata.Traces {
+	td := generateTraceDataOneSpanNoResource()
+	rs0 := td.ResourceSpans().At(0)
+	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
+
+	rs0ils0.InstrumentationLibrary().InitEmpty()
+	rs0ils0.InstrumentationLibrary().SetName("io.opentelemetry.test")
+	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
+	return td
+}
+
 func generateTraceDataOneSpanNoResourceWithTraceState() pdata.Traces {
 	td := generateTraceDataOneSpanNoResource()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
@@ -568,6 +579,22 @@ func generateProtoSpan() *model.Span {
 	}
 }
 
+func generateProtoSpanWithLibraryInfo() *model.Span {
+	span := generateProtoSpan()
+	span.Tags = append([]model.KeyValue{
+		{
+			Key:   tracetranslator.TagInstrumentationName,
+			VType: model.ValueType_STRING,
+			VStr:  "io.opentelemetry.test",
+		}, {
+			Key:   tracetranslator.TagInstrumentationVersion,
+			VType: model.ValueType_STRING,
+			VStr:  "0.42.0",
+		},
+	}, span.Tags...)
+
+	return span
+}
 func generateProtoSpanWithTraceState() *model.Span {
 	return &model.Span{
 		TraceID: model.NewTraceID(

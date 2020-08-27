@@ -81,7 +81,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 			continue
 		}
 
-		// TODO: Handle instrumentation library name and version.
+		libraryTags := extractInstrumentationLibraryTags(ils.InstrumentationLibrary())
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span := spans.At(j)
@@ -89,7 +89,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 				continue
 			}
 
-			jSpan, err := spanToJaegerProto(span)
+			jSpan, err := spanToJaegerProto(span, libraryTags)
 			if err != nil {
 				return nil, err
 			}
@@ -156,6 +156,19 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) [
 	return dest
 }
 
+func appendTagsFromMap(dest []model.KeyValue, tags map[string]string) []model.KeyValue {
+	if len(tags) == 0 {
+		return dest
+	}
+	for key, val := range tags {
+		tag := model.KeyValue{Key: key}
+		tag.VType = model.ValueType_STRING
+		tag.VStr = val
+		dest = append(dest, tag)
+	}
+	return dest
+}
+
 func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyValue {
 	tag := model.KeyValue{Key: key}
 	switch attr.Type() {
@@ -177,7 +190,21 @@ func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyV
 	return tag
 }
 
-func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
+func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary) map[string]string {
+	tags := make(map[string]string)
+	if il.IsNil() {
+		return tags
+	}
+	if ilName := il.Name(); ilName != "" {
+		tags[tracetranslator.TagInstrumentationName] = ilName
+	}
+	if ilVer := il.Version(); ilVer != "" {
+		tags[tracetranslator.TagInstrumentationVersion] = ilVer
+	}
+	return tags
+}
+
+func spanToJaegerProto(span pdata.Span, libraryTags map[string]string) (*model.Span, error) {
 	if span.IsNil() {
 		return nil, nil
 	}
@@ -206,16 +233,16 @@ func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
 		References:    jReferences,
 		StartTime:     startTime,
 		Duration:      internal.UnixNanoToTime(span.EndTime()).Sub(startTime),
-		Tags:          getJaegerProtoSpanTags(span),
+		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil
 }
 
-func getJaegerProtoSpanTags(span pdata.Span) []model.KeyValue {
+func getJaegerProtoSpanTags(span pdata.Span, libraryTags map[string]string) []model.KeyValue {
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
 
-	tagsCount := span.Attributes().Len()
+	tagsCount := span.Attributes().Len() + len(libraryTags)
 
 	spanKindTag, spanKindTagFound = getTagFromSpanKind(span.Kind())
 	if spanKindTagFound {
@@ -249,6 +276,7 @@ func getJaegerProtoSpanTags(span pdata.Span) []model.KeyValue {
 	}
 
 	tags := make([]model.KeyValue, 0, tagsCount)
+	tags = appendTagsFromMap(tags, libraryTags)
 	tags = appendTagsFromAttributes(tags, span.Attributes())
 	if spanKindTagFound {
 		tags = append(tags, spanKindTag)
