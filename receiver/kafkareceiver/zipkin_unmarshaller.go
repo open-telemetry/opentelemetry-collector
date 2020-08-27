@@ -34,7 +34,7 @@ var _ Unmarshaller = (*zipkinProtoSpanUnmarshaller)(nil)
 func (z zipkinProtoSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	parseSpans, err := zipkinproto.ParseSpans(bytes, false)
 	if err != nil {
-		return pdata.Traces{}, err
+		return pdata.NewTraces(), err
 	}
 	return zipkintranslator.V2SpansToInternalTraces(parseSpans)
 }
