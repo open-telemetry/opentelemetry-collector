@@ -29,16 +29,15 @@ import (
 )
 
 const (
-	nameStr     = "__name__"
-	sumStr      = "_sum"
-	countStr    = "_count"
-	bucketStr   = "_bucket"
-	leStr       = "le"
-	quantileStr = "quantile"
-	pInfStr     = "+Inf"
-	totalStr    = "total"
-	delimeter   = "_"
-	keyStr      = "key"
+	nameStr   = "__name__"
+	sumStr    = "_sum"
+	countStr  = "_count"
+	bucketStr = "_bucket"
+	leStr     = "le"
+	pInfStr   = "+Inf"
+	totalStr  = "total"
+	delimeter = "_"
+	keyStr    = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
