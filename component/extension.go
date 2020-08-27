@@ -30,7 +30,7 @@ type ServiceExtension interface {
 }
 
 // PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
-// Service that is to be implemented by extensions interested in changes to pipeline
+// Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
 type PipelineWatcher interface {

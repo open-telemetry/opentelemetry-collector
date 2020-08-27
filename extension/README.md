@@ -7,7 +7,7 @@ Supported service extensions (sorted alphabetically):
 - [Performance Profiler](pprofextension/README.md)
 - [zPages](zpagesextension/README.md)
 
-The [contributors repository](https://github.com/open-telemetry/opentelemetry-service-contrib)
+The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  may have more extensions that can be added to custom builds of the Collector.
 
 ## Ordering Extensions
