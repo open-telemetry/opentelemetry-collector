@@ -244,53 +244,6 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 	return nil
 }
 
-// handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
-// quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
-// tsMap and metric cannot be nil.
-func (prwe *prwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-
-	if metric.SummaryDataPoints == nil {
-		return errors.New("invalid metric type: wants summary points")
-	}
-
-	for _, pt := range metric.SummaryDataPoints {
-
-		time := convertTimeStamp(pt.TimeUnixNano)
-		mType := metric.GetMetricDescriptor().GetType()
-
-		// sum and count of the Summary should append suffix to baseName
-		baseName := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
-
-		// treat sum as sample in an individual TimeSeries
-		sum := &prompb.Sample{
-			Value:     pt.GetSum(),
-			Timestamp: time,
-		}
-		sumlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumlabels, mType)
-
-		// treat count as a sample in an individual TimeSeries
-		count := &prompb.Sample{
-			Value:     float64(pt.GetCount()),
-			Timestamp: time,
-		}
-		countlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, count, countlabels, mType)
-
-		// process each percentile/quantile
-		for _, qt := range pt.GetPercentileValues() {
-			quantile := &prompb.Sample{
-				Value:     qt.Value,
-				Timestamp: time,
-			}
-			percentileStr := strconv.FormatFloat(qt.Percentile, 'f', -1, 64)
-			qtlabels := createLabelSet(pt.GetLabels(), nameStr, baseName, quantileStr, percentileStr)
-			addSample(tsMap, quantile, qtlabels, mType)
-		}
-	}
-	return nil
-}
-
 // Because we are adhering closely to the Remote Write API, we must Export a
 // Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
 // for the Remote Write Endpoint to properly receive our Metrics data.

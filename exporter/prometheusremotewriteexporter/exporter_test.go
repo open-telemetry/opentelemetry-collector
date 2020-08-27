@@ -227,89 +227,6 @@ func Test_handleHistogramMetric(t *testing.T) {
 	}
 }
 
-// Test_handleSummaryMetric checks whether data points(sum, count, quantiles) within a single Summary metric can be
-// added to a map of TimeSeries correctly.
-// Test cases are a summary data point with two quantiles and nil data points case.
-func Test_handleSummaryMetric(t *testing.T) {
-	sum := "sum"
-	count := "count"
-	q1 := "quantile1"
-	q2 := "quantile2"
-	// string signature is the key of the map
-	sigs := map[string]string{
-		sum:   typeSummary + "-" + nameStr + "-" + name1 + "_sum" + lb1Sig,
-		count: typeSummary + "-" + nameStr + "-" + name1 + "_count" + lb1Sig,
-		q1: typeSummary + "-" + nameStr + "-" + name1 + "-" + "quantile-" +
-			strconv.FormatFloat(floatVal1, 'f', -1, 64) + lb1Sig,
-		q2: typeSummary + "-" + nameStr + "-" + name1 + "-" + "quantile-" +
-			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
-	}
-	labels := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels(nameStr, name1+"_sum")...),
-		count: append(promLbs1, getPromLabels(nameStr, name1+"_count")...),
-		q1: append(promLbs1, getPromLabels(nameStr, name1, "quantile",
-			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		q2: append(promLbs1, getPromLabels(nameStr, name1, "quantile",
-			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-	}
-
-	summaryPoint := getSummaryDataPoint(lbs1, time1, floatVal2, uint64(intVal2), []float64{floatVal1, floatVal2}, []float64{floatVal1, floatVal1})
-
-	tests := []struct {
-		name        string
-		m           otlp.Metric
-		returnError bool
-		want        map[string]*prompb.TimeSeries
-	}{
-		{
-			"invalid_nil_array",
-			otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_nil_array", summaryComb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			true,
-			map[string]*prompb.TimeSeries{},
-		},
-		{
-			"single_summary_point",
-			otlp.Metric{
-				MetricDescriptor:    getDescriptor(name1, summaryComb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   []*otlp.SummaryDataPoint{summaryPoint},
-			},
-			false,
-			map[string]*prompb.TimeSeries{
-				sigs[sum]:   getTimeSeries(labels[sum], getSample(floatVal2, msTime1)),
-				sigs[count]: getTimeSeries(labels[count], getSample(float64(intVal2), msTime1)),
-				sigs[q1]:    getTimeSeries(labels[q1], getSample(float64(intVal1), msTime1)),
-				sigs[q2]:    getTimeSeries(labels[q2], getSample(float64(intVal1), msTime1)),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &prwExporter{}
-			ok := prw.handleSummaryMetric(tsMap, &tt.m)
-			if tt.returnError {
-				assert.Error(t, ok)
-				return
-			}
-			assert.Equal(t, len(tt.want), len(tsMap))
-			for k, v := range tsMap {
-				require.NotNil(t, tt.want[k], k)
-				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
-			}
-		})
-	}
-}
-
 // Test_newPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_newPrwExporter(t *testing.T) {
 	config := &Config{
@@ -533,7 +450,6 @@ func Test_pushMetrics(t *testing.T) {
 	nilIntDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch1)
 	nilDoubleDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch2)
 	nilHistogramDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch3)
-	nilSummaryDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch4)
 
 	hist := data.MetricDataToOtlp(testdata.GenerateMetricDataOneMetric())
 	hist[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
@@ -567,22 +483,6 @@ func Test_pushMetrics(t *testing.T) {
 		require.Nil(t, ok)
 		assert.EqualValues(t, expected, len(wr.Timeseries))
 	}
-
-	summary := data.MetricDataToOtlp(testdata.GenerateMetricDataOneMetric())
-	summary[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
-		MetricDescriptor: getDescriptor("summary_test", summaryComb, validCombinations),
-		SummaryDataPoints: []*otlp.SummaryDataPoint{getSummaryDataPoint(
-			lbs1,
-			time1,
-			floatVal1,
-			uint64(intVal1),
-			[]float64{floatVal1},
-			[]float64{floatVal2},
-		),
-		},
-	}
-	summaryBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(summary))
-
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
@@ -638,15 +538,6 @@ func Test_pushMetrics(t *testing.T) {
 			true,
 		},
 		{
-			"nil_summary_point_case",
-			&nilSummaryDataPointsBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(nilSummaryDataPointsBatch),
-			true,
-		},
-		{
 			"no_temp_case",
 			&noTempBatch,
 			nil,
@@ -677,14 +568,6 @@ func Test_pushMetrics(t *testing.T) {
 			&histBatch,
 			checkFunc,
 			4,
-			http.StatusAccepted,
-			0,
-			false,
-		},
-		{"summary_case",
-			&summaryBatch,
-			checkFunc,
-			3,
 			http.StatusAccepted,
 			0,
 			false,
