@@ -91,9 +91,18 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		resourceMetrics := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
 		for _, r := range resourceMetrics {
+			if resourceMetrics == nil {
+				continue
+			}
 			for _, instMetrics := range r.InstrumentationLibraryMetrics {
+				if instMetrics == nil {
+					continue
+				}
 				// TODO: decide if instrumentation library information should be exported as labels
 				for _, metric := range instMetrics.Metrics {
+					if metric == nil {
+						continue
+					}
 					// check for valid type and temporality combination
 					if ok := validateMetrics(metric.MetricDescriptor); !ok {
 						dropped++
@@ -109,10 +118,6 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 						}
 					case otlp.MetricDescriptor_HISTOGRAM:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
-							errs = append(errs, err.Error())
-						}
-					case otlp.MetricDescriptor_SUMMARY:
-						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
 							errs = append(errs, err.Error())
 						}
 					}
