@@ -130,11 +130,11 @@ const (
 
 const (
 	SpanKindUNSPECIFIED = SpanKind(0)
-	SpanKindINTERNAL    = SpanKind(otlptrace.Span_INTERNAL)
-	SpanKindSERVER      = SpanKind(otlptrace.Span_SERVER)
-	SpanKindCLIENT      = SpanKind(otlptrace.Span_CLIENT)
-	SpanKindPRODUCER    = SpanKind(otlptrace.Span_PRODUCER)
-	SpanKindCONSUMER    = SpanKind(otlptrace.Span_CONSUMER)
+	SpanKindINTERNAL    = SpanKind(otlptrace.Span_SPAN_KIND_INTERNAL)
+	SpanKindSERVER      = SpanKind(otlptrace.Span_SPAN_KIND_SERVER)
+	SpanKindCLIENT      = SpanKind(otlptrace.Span_SPAN_KIND_CLIENT)
+	SpanKindPRODUCER    = SpanKind(otlptrace.Span_SPAN_KIND_PRODUCER)
+	SpanKindCONSUMER    = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
 // StatusCode mirrors the codes defined at

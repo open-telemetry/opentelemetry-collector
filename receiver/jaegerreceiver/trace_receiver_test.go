@@ -322,7 +322,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span0.Status().InitEmpty()
-	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND))
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
@@ -332,7 +332,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
 	span1.Status().InitEmpty()
-	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_InternalError))
+	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_INTERNAL_ERROR))
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces

@@ -419,7 +419,7 @@ func getTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
 }
 
 func getErrorTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
-	if statusCode == pdata.StatusCode(otlptrace.Status_Ok) {
+	if statusCode == pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK) {
 		return model.KeyValue{}, false
 	}
 	return model.KeyValue{

@@ -25,23 +25,23 @@ import (
 )
 
 var statusCodeMap = map[PICTInputStatus]otlptrace.Status_StatusCode{
-	SpanStatusOk:                 otlptrace.Status_Ok,
-	SpanStatusCancelled:          otlptrace.Status_Cancelled,
-	SpanStatusUnknownError:       otlptrace.Status_UnknownError,
-	SpanStatusInvalidArgument:    otlptrace.Status_InvalidArgument,
-	SpanStatusDeadlineExceeded:   otlptrace.Status_DeadlineExceeded,
-	SpanStatusNotFound:           otlptrace.Status_NotFound,
-	SpanStatusAlreadyExists:      otlptrace.Status_AlreadyExists,
-	SpanStatusPermissionDenied:   otlptrace.Status_PermissionDenied,
-	SpanStatusResourceExhausted:  otlptrace.Status_ResourceExhausted,
-	SpanStatusFailedPrecondition: otlptrace.Status_FailedPrecondition,
-	SpanStatusAborted:            otlptrace.Status_Aborted,
-	SpanStatusOutOfRange:         otlptrace.Status_OutOfRange,
-	SpanStatusUnimplemented:      otlptrace.Status_Unimplemented,
-	SpanStatusInternalError:      otlptrace.Status_InternalError,
-	SpanStatusUnavailable:        otlptrace.Status_Unavailable,
-	SpanStatusDataLoss:           otlptrace.Status_DataLoss,
-	SpanStatusUnauthenticated:    otlptrace.Status_Unauthenticated,
+	SpanStatusOk:                 otlptrace.Status_STATUS_CODE_OK,
+	SpanStatusCancelled:          otlptrace.Status_STATUS_CODE_CANCELLED,
+	SpanStatusUnknownError:       otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR,
+	SpanStatusInvalidArgument:    otlptrace.Status_STATUS_CODE_INVALID_ARGUMENT,
+	SpanStatusDeadlineExceeded:   otlptrace.Status_STATUS_CODE_DEADLINE_EXCEEDED,
+	SpanStatusNotFound:           otlptrace.Status_STATUS_CODE_NOT_FOUND,
+	SpanStatusAlreadyExists:      otlptrace.Status_STATUS_CODE_ALREADY_EXISTS,
+	SpanStatusPermissionDenied:   otlptrace.Status_STATUS_CODE_PERMISSION_DENIED,
+	SpanStatusResourceExhausted:  otlptrace.Status_STATUS_CODE_RESOURCE_EXHAUSTED,
+	SpanStatusFailedPrecondition: otlptrace.Status_STATUS_CODE_FAILED_PRECONDITION,
+	SpanStatusAborted:            otlptrace.Status_STATUS_CODE_ABORTED,
+	SpanStatusOutOfRange:         otlptrace.Status_STATUS_CODE_OUT_OF_RANGE,
+	SpanStatusUnimplemented:      otlptrace.Status_STATUS_CODE_UNIMPLEMENTED,
+	SpanStatusInternalError:      otlptrace.Status_STATUS_CODE_INTERNAL_ERROR,
+	SpanStatusUnavailable:        otlptrace.Status_STATUS_CODE_UNAVAILABLE,
+	SpanStatusDataLoss:           otlptrace.Status_STATUS_CODE_DATA_LOSS,
+	SpanStatusUnauthenticated:    otlptrace.Status_STATUS_CODE_UNAUTHENTICATED,
 }
 
 var statusMsgMap = map[PICTInputStatus]string{
@@ -172,15 +172,15 @@ func generateTraceState(tracestate PICTInputTracestate) string {
 func lookupSpanKind(kind PICTInputKind) otlptrace.Span_SpanKind {
 	switch kind {
 	case SpanKindClient:
-		return otlptrace.Span_CLIENT
+		return otlptrace.Span_SPAN_KIND_CLIENT
 	case SpanKindServer:
-		return otlptrace.Span_SERVER
+		return otlptrace.Span_SPAN_KIND_SERVER
 	case SpanKindProducer:
-		return otlptrace.Span_PRODUCER
+		return otlptrace.Span_SPAN_KIND_PRODUCER
 	case SpanKindConsumer:
-		return otlptrace.Span_CONSUMER
+		return otlptrace.Span_SPAN_KIND_CONSUMER
 	case SpanKindInternal:
-		return otlptrace.Span_INTERNAL
+		return otlptrace.Span_SPAN_KIND_INTERNAL
 	case SpanKindUnspecified:
 		fallthrough
 	default:
