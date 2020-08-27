@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package correctness
+package traces
 
 import (
 	"fmt"
@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/testbed/correctness"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -32,7 +33,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestTracingGoldenData(t *testing.T) {
-	tests, err := LoadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
+	tests, err := correctness.LoadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
 	assert.NoError(t, err)
 	processors := map[string]string{
 		"batch": `
@@ -42,8 +43,8 @@ func TestTracingGoldenData(t *testing.T) {
 	}
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
-		test.DataSender = ConstructTraceSender(t, test.Receiver)
-		test.DataReceiver = ConstructReceiver(t, test.Exporter)
+		test.DataSender = correctness.ConstructTraceSender(t, test.Receiver)
+		test.DataReceiver = correctness.ConstructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
 			testWithTracingGoldenDataset(t, test.DataSender, test.DataReceiver, test.ResourceSpec, processors)
 		})
@@ -58,14 +59,14 @@ func testWithTracingGoldenDataset(
 	processors map[string]string,
 ) {
 	dataProvider := testbed.NewGoldenDataProvider(
-		"../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 		161803)
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
 	runner := testbed.NewInProcessCollector(factories, sender.GetCollectorPort())
 	validator := testbed.NewCorrectTestValidator(dataProvider)
-	config := CreateConfigYaml(sender, receiver, processors, "traces")
+	config := correctness.CreateConfigYaml(sender, receiver, processors, "traces")
 	configCleanup, cfgErr := runner.PrepareConfig(config)
 	assert.NoError(t, cfgErr)
 	defer configCleanup()
