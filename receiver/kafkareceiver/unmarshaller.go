@@ -32,12 +32,14 @@ func defaultUnmarshallers() map[string]Unmarshaller {
 	otlp := &otlpProtoUnmarshaller{}
 	jaegerProto := jaegerProtoSpanUnmarshaller{}
 	jaegerJSON := jaegerJSONSpanUnmarshaller{}
+	zipkinProto := zipkinProtoSpanUnmarshaller{}
 	zipkinJSON := zipkinJSONSpanUnmarshaller{}
 	zipkinThrift := zipkinThriftSpanUnmarshaller{}
 	return map[string]Unmarshaller{
 		otlp.Encoding():         otlp,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
+		zipkinProto.Encoding():  zipkinProto,
 		zipkinJSON.Encoding():   zipkinJSON,
 		zipkinThrift.Encoding(): zipkinThrift,
 	}

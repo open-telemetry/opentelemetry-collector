@@ -19,6 +19,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,6 +38,7 @@ func TestUnmarshallZipkin(t *testing.T) {
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().InitEmptyWithCapacity(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetParentSpanID(pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0}))
 	spans, err := zipkintranslator.InternalTracesToZipkinSpans(td)
 	require.NoError(t, err)
 
@@ -54,12 +56,22 @@ func TestUnmarshallZipkin(t *testing.T) {
 
 	tdThrift, err := zipkintranslator.V1ThriftBatchToInternalTraces([]*zipkincore.Span{tSpan})
 	require.NoError(t, err)
+
+	protoBytes, err := new(zipkinproto.SpanSerializer).Serialize(spans)
+	require.NoError(t, err)
+
 	tests := []struct {
 		unmarshaller Unmarshaller
 		encoding     string
 		bytes        []byte
 		expected     pdata.Traces
 	}{
+		{
+			unmarshaller: zipkinProtoSpanUnmarshaller{},
+			encoding:     "zipkin_proto",
+			bytes:        protoBytes,
+			expected:     td,
+		},
 		{
 			unmarshaller: zipkinJSONSpanUnmarshaller{},
 			encoding:     "zipkin_json",
@@ -92,6 +104,13 @@ func TestUnmarshallZipkinThrift_error(t *testing.T) {
 
 func TestUnmarshallZipkinJSON_error(t *testing.T) {
 	p := zipkinJSONSpanUnmarshaller{}
+	got, err := p.Unmarshal([]byte("+$%"))
+	assert.Equal(t, pdata.NewTraces(), got)
+	assert.Error(t, err)
+}
+
+func TestUnmarshallZipkinProto_error(t *testing.T) {
+	p := zipkinProtoSpanUnmarshaller{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)
