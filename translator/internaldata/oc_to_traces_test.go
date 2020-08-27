@@ -131,11 +131,11 @@ func TestOcSpanKindToInternal(t *testing.T) {
 	}{
 		{
 			ocKind:   octrace.Span_CLIENT,
-			otlpKind: otlptrace.Span_CLIENT,
+			otlpKind: otlptrace.Span_SPAN_KIND_CLIENT,
 		},
 		{
 			ocKind:   octrace.Span_SERVER,
-			otlpKind: otlptrace.Span_SERVER,
+			otlpKind: otlptrace.Span_SPAN_KIND_SERVER,
 		},
 		{
 			ocKind:   octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -149,7 +149,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_CONSUMER,
+			otlpKind: otlptrace.Span_SPAN_KIND_CONSUMER,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -159,7 +159,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "producer"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_PRODUCER,
+			otlpKind: otlptrace.Span_SPAN_KIND_PRODUCER,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -179,7 +179,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_CLIENT,
+			otlpKind: otlptrace.Span_SPAN_KIND_CLIENT,
 		},
 		{
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
@@ -189,7 +189,7 @@ func TestOcSpanKindToInternal(t *testing.T) {
 						StringValue: &octrace.TruncatableString{Value: "internal"}}},
 				},
 			},
-			otlpKind: otlptrace.Span_INTERNAL,
+			otlpKind: otlptrace.Span_SPAN_KIND_INTERNAL,
 		},
 	}
 

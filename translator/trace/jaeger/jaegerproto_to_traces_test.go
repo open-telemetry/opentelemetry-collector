@@ -105,30 +105,30 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 		{
 			name: "string-unknown",
 			attr: pdata.NewAttributeValueString("10"),
-			code: pdata.StatusCode(otlptrace.Status_UnknownError),
+			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR),
 		},
 
 		{
 			name: "string-ok",
 			attr: pdata.NewAttributeValueString("101"),
-			code: pdata.StatusCode(otlptrace.Status_Ok),
+			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK),
 		},
 
 		{
 			name: "int-not-found",
 			attr: pdata.NewAttributeValueInt(404),
-			code: pdata.StatusCode(otlptrace.Status_NotFound),
+			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND),
 		},
 		{
 			name: "int-invalid-arg",
 			attr: pdata.NewAttributeValueInt(408),
-			code: pdata.StatusCode(otlptrace.Status_InvalidArgument),
+			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_INVALID_ARGUMENT),
 		},
 
 		{
 			name: "int-internal",
 			attr: pdata.NewAttributeValueInt(500),
-			code: pdata.StatusCode(otlptrace.Status_InternalError),
+			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_INTERNAL_ERROR),
 		},
 	}
 
@@ -269,28 +269,28 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	okStatus := pdata.NewSpanStatus()
 	okStatus.InitEmpty()
-	okStatus.SetCode(pdata.StatusCode(otlptrace.Status_Ok))
+	okStatus.SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK))
 
 	unknownStatus := pdata.NewSpanStatus()
 	unknownStatus.InitEmpty()
-	unknownStatus.SetCode(pdata.StatusCode(otlptrace.Status_UnknownError))
+	unknownStatus.SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR))
 
 	canceledStatus := pdata.NewSpanStatus()
 	canceledStatus.InitEmpty()
-	canceledStatus.SetCode(pdata.StatusCode(otlptrace.Status_Cancelled))
+	canceledStatus.SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_CANCELLED))
 
 	invalidStatusWithMessage := pdata.NewSpanStatus()
 	invalidStatusWithMessage.InitEmpty()
-	invalidStatusWithMessage.SetCode(pdata.StatusCode(otlptrace.Status_InvalidArgument))
+	invalidStatusWithMessage.SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_INVALID_ARGUMENT))
 	invalidStatusWithMessage.SetMessage("Error: Invalid argument")
 
 	notFoundStatus := pdata.NewSpanStatus()
 	notFoundStatus.InitEmpty()
-	notFoundStatus.SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	notFoundStatus.SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND))
 
 	notFoundStatusWithMessage := pdata.NewSpanStatus()
 	notFoundStatusWithMessage.InitEmpty()
-	notFoundStatusWithMessage.SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	notFoundStatusWithMessage.SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND))
 	notFoundStatusWithMessage.SetMessage("HTTP 404: Not Found")
 
 	tests := []struct {
@@ -649,7 +649,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetStartTime(spans.At(0).StartTime())
 	span.SetEndTime(spans.At(0).EndTime())
 	span.Status().InitEmpty()
-	span.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	span.Status().SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND))
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
 	})
@@ -703,7 +703,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetEndTime(spans.At(0).EndTime() + 1000000)
 	span.SetKind(pdata.SpanKindCONSUMER)
 	span.Status().InitEmpty()
-	span.Status().SetCode(pdata.StatusCode(otlptrace.Status_Ok))
+	span.Status().SetCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK))
 	span.Status().SetMessage("status-ok")
 	span.Links().Resize(1)
 	span.Links().At(0).SetTraceID(span.TraceID())

@@ -211,13 +211,13 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 
-	statusCode := pdata.StatusCode(otlptrace.Status_Ok)
+	statusCode := pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK)
 	statusMessage := ""
 	statusExists := false
 
 	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
-			statusCode = pdata.StatusCode(otlptrace.Status_UnknownError)
+			statusCode = pdata.StatusCode(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR)
 			attrs.Delete(tracetranslator.TagError)
 			statusExists = true
 		}
@@ -238,7 +238,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 
 			// Do not set status code to OK in case it was set to Unknown based on "error" tag
-			if code != pdata.StatusCode(otlptrace.Status_Ok) {
+			if code != pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK) {
 				statusCode = code
 			}
 
