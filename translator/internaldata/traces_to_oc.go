@@ -163,6 +163,10 @@ func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(tracetranslator.AttributeValueToString(attr, true)),
 		}
+	case pdata.AttributeValueARRAY:
+		a.Value = &octrace.AttributeValue_StringValue{
+			StringValue: stringToTruncatableString(tracetranslator.AttributeValueToString(attr, true)),
+		}
 	default:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())),

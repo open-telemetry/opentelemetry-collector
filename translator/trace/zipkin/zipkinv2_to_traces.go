@@ -340,7 +340,7 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
 		if _, ok := nonSpanAttributes[key]; ok {
 			continue
 		}
-		tracetranslator.UpsertStringToAttributeMap(key, val, dest)
+		tracetranslator.UpsertStringToAttributeMap(key, val, dest, false)
 	}
 	return parseErr
 }

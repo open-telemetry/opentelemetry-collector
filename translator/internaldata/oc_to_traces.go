@@ -15,9 +15,6 @@
 package internaldata
 
 import (
-	"encoding/json"
-	"math"
-	"regexp"
 	"strings"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -30,8 +27,6 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
-
-var jsonMapRegex = regexp.MustCompile(`^\{"\w+":.+\}$`)
 
 // OCToTraceData converts OC data format to Traces.
 func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
@@ -218,19 +213,7 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.Attribu
 			switch attribValue := ocAttr.Value.(type) {
 			case *octrace.AttributeValue_StringValue:
 				strVal := attribValue.StringValue.GetValue()
-				if jsonMapRegex.Match([]byte(strVal)) {
-					var attrs map[string]interface{}
-					err := json.Unmarshal([]byte(strVal), &attrs)
-					if err == nil {
-						attrMap := pdata.NewAttributeValueMap()
-						jsonMapToAttributeMap(attrs, attrMap.MapVal())
-						dest.Insert(key, attrMap)
-					} else {
-						dest.UpsertString(key, strVal)
-					}
-				} else {
-					dest.UpsertString(key, strVal)
-				}
+				tracetranslator.UpsertStringToAttributeMap(key, strVal, dest, true)
 
 			case *octrace.AttributeValue_IntValue:
 				dest.UpsertInt(key, attribValue.IntValue)
@@ -386,20 +369,4 @@ func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata
 		return
 	}
 	dest.Attributes().UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, spaps.Value)
-}
-
-func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) {
-	for key, val := range attrs {
-		if s, ok := val.(string); ok {
-			dest.InsertString(key, s)
-		} else if d, ok := val.(float64); ok {
-			if math.Mod(d, 1.0) == 0.0 {
-				dest.InsertInt(key, int64(d))
-			} else {
-				dest.InsertDouble(key, d)
-			}
-		} else if b, ok := val.(bool); ok {
-			dest.InsertBool(key, b)
-		}
-	}
 }

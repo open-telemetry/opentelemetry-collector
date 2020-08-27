@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, dest pdata.Resource) {
@@ -69,7 +70,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocNode != nil {
 		// Copy all Attributes.
 		for k, v := range ocNode.Attributes {
-			attrs.InsertString(k, v)
+			tracetranslator.UpsertStringToAttributeMap(k, v, attrs, true)
 		}
 
 		// Add all special fields.
@@ -105,7 +106,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocResource != nil {
 		// Copy resource Labels.
 		for k, v := range ocResource.Labels {
-			attrs.InsertString(k, v)
+			tracetranslator.UpsertStringToAttributeMap(k, v, attrs, true)
 		}
 		// Add special fields.
 		if ocResource.Type != "" {

@@ -17,7 +17,6 @@ package internaldata
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -27,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type ocInferredResourceType struct {
@@ -169,40 +169,10 @@ func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		return strconv.FormatInt(attr.IntVal(), 10)
 
 	case pdata.AttributeValueMAP:
-		// OpenCensus attributes cannot represent maps natively. Convert the
-		// map to a JSON-like string.
-		var sb strings.Builder
-		sb.WriteString("{")
-		m := attr.MapVal()
-		first := true
-		m.ForEach(func(k string, v pdata.AttributeValue) {
-			if !first {
-				sb.WriteString(",")
-			}
-			first = false
-			sb.WriteString(fmt.Sprintf("%q:%s", k, attributeValueToString(v, true)))
-		})
-		sb.WriteString("}")
-		return sb.String()
+		return tracetranslator.AttributeValueToString(attr, true)
 
 	case pdata.AttributeValueARRAY:
-		// OpenCensus attributes cannot represent arrays natively. Convert the
-		// array to a JSON-like string.
-		var sb strings.Builder
-		sb.WriteString("[")
-		m := attr.ArrayVal()
-		first := true
-		len := m.Len()
-		for i := 0; i < len; i++ {
-			v := m.At(i)
-			if !first {
-				sb.WriteString(",")
-			}
-			first = false
-			sb.WriteString(attributeValueToString(v, true))
-		}
-		sb.WriteString("]")
-		return sb.String()
+		return tracetranslator.AttributeValueToString(attr, true)
 
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())

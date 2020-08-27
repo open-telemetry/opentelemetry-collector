@@ -435,14 +435,13 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap["ai-sampler.absolute"] = false
 	attrMap["ai-sampler.maxhops"] = int64(6)
 	attrMap["application.create.location"] = "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE"
-	//stages := make([]*otlpcommon.AnyValue, 3)
-	//stages[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Launch"}}
-	//stages[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Injestion"}}
-	//stages[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Validation"}}
-	//attrMap["application.stages"] = &otlpcommon.ArrayValue{
-	//	Values: stages,
-	//}
-	attrMap["application.stages"] = "Launch,Injection,Validation" // TODO switch to code above after ARRAYType merged
+	stages := make([]*otlpcommon.AnyValue, 3)
+	stages[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Launch"}}
+	stages[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Injestion"}}
+	stages[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Validation"}}
+	attrMap["application.stages"] = &otlpcommon.ArrayValue{
+		Values: stages,
+	}
 	subMap := make(map[string]interface{})
 	subMap["UIx"] = false
 	subMap["UI4"] = true

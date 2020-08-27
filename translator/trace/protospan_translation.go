@@ -86,6 +86,7 @@ type attrValDescript struct {
 }
 
 var attrValDescriptions = getAttrValDescripts()
+var complexAttrValDescriptions = getComplexAttrValDescripts()
 
 func getAttrValDescripts() []*attrValDescript {
 	descriptions := make([]*attrValDescript, 0, 5)
@@ -94,7 +95,13 @@ func getAttrValDescripts() []*attrValDescript {
 	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
 	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
 	descriptions = append(descriptions, constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueMAP))
+	descriptions = append(descriptions, constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueARRAY))
 	return descriptions
+}
+
+func getComplexAttrValDescripts() []*attrValDescript {
+	descriptions := getAttrValDescripts()
+	return descriptions[4:]
 }
 
 func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *attrValDescript {
@@ -132,11 +139,13 @@ func AttributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		jsonStr, _ := json.Marshal(AttributeMapToMap(attr.MapVal()))
 		return string(jsonStr)
 
+	case pdata.AttributeValueARRAY:
+		jsonStr, _ := json.Marshal(AttributeArrayToSlice(attr.ArrayVal()))
+		return string(jsonStr)
+
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
 	}
-
-	// TODO: Add support for ARRAY type.
 }
 
 // AttributeMapToMap converts an OTLP AttributeMap to a standard go map
@@ -154,14 +163,42 @@ func AttributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
 			rawMap[k] = v.BoolVal()
 		case pdata.AttributeValueNULL:
 			rawMap[k] = nil
+		case pdata.AttributeValueMAP:
+			rawMap[k] = AttributeMapToMap(v.MapVal())
+		case pdata.AttributeValueARRAY:
+			rawMap[k] = AttributeArrayToSlice(v.ArrayVal())
 		}
 	})
 	return rawMap
 }
 
+func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
+	rawSlice := make([]interface{}, 0, attrArray.Len())
+	for i := 0; i < attrArray.Len(); i++ {
+		v := attrArray.At(i)
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			rawSlice = append(rawSlice, v.StringVal())
+		case pdata.AttributeValueINT:
+			rawSlice = append(rawSlice, v.IntVal())
+		case pdata.AttributeValueDOUBLE:
+			rawSlice = append(rawSlice, v.DoubleVal())
+		case pdata.AttributeValueBOOL:
+			rawSlice = append(rawSlice, v.BoolVal())
+		case pdata.AttributeValueNULL:
+			rawSlice = append(rawSlice, nil)
+		case pdata.AttributeValueMAP:
+			rawSlice = append(rawSlice, AttributeMapToMap(v.MapVal()))
+		case pdata.AttributeValueARRAY:
+			rawSlice = append(rawSlice, AttributeArrayToSlice(v.ArrayVal()))
+		}
+	}
+	return rawSlice
+}
+
 // UpsertStringToAttributeMap upserts a string value to the specified key as it's native OTLP type
-func UpsertStringToAttributeMap(key string, val string, dest pdata.AttributeMap) {
-	switch DetermineValueType(val) {
+func UpsertStringToAttributeMap(key string, val string, dest pdata.AttributeMap, omitSimpleTypes bool) {
+	switch DetermineValueType(val, omitSimpleTypes) {
 	case pdata.AttributeValueINT:
 		iVal, _ := strconv.ParseInt(val, 10, 64)
 		dest.UpsertInt(key, iVal)
@@ -181,16 +218,34 @@ func UpsertStringToAttributeMap(key string, val string, dest pdata.AttributeMap)
 		} else {
 			dest.UpsertString(key, "")
 		}
+	case pdata.AttributeValueARRAY:
+		var jArray []interface{}
+		err := json.Unmarshal([]byte(val), &jArray)
+		if err == nil {
+			attrArr := pdata.NewAttributeValueArray()
+			jsonArrayToAttributeArray(jArray, attrArr.ArrayVal())
+			dest.Upsert(key, attrArr)
+		} else {
+			dest.UpsertString(key, "")
+		}
 	default:
 		dest.UpsertString(key, val)
 	}
 }
 
 // DetermineValueType returns the native OTLP attribute type the string translates to.
-func DetermineValueType(value string) pdata.AttributeValueType {
-	for _, desc := range attrValDescriptions {
-		if desc.regex.MatchString(value) {
-			return desc.attrType
+func DetermineValueType(value string, omitSimpleTypes bool) pdata.AttributeValueType {
+	if omitSimpleTypes {
+		for _, desc := range complexAttrValDescriptions {
+			if desc.regex.MatchString(value) {
+				return desc.attrType
+			}
+		}
+	} else {
+		for _, desc := range attrValDescriptions {
+			if desc.regex.MatchString(value) {
+				return desc.attrType
+			}
 		}
 	}
 	return pdata.AttributeValueSTRING
@@ -208,6 +263,26 @@ func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap
 			}
 		} else if b, ok := val.(bool); ok {
 			dest.InsertBool(key, b)
+		}
+	}
+}
+
+func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
+	for _, val := range jArray {
+		if s, ok := val.(string); ok {
+			av := pdata.NewAttributeValueString(s)
+			dest.Append(&av)
+		} else if d, ok := val.(float64); ok {
+			if math.Mod(d, 1.0) == 0.0 {
+				av := pdata.NewAttributeValueInt(int64(d))
+				dest.Append(&av)
+			} else {
+				av := pdata.NewAttributeValueDouble(d)
+				dest.Append(&av)
+			}
+		} else if b, ok := val.(bool); ok {
+			av := pdata.NewAttributeValueBool(b)
+			dest.Append(&av)
 		}
 	}
 }
