@@ -38,6 +38,7 @@ type configErrorCode int
 
 const (
 	_ configErrorCode = iota // skip 0, start errors codes from 1.
+	errInvalidSubConfig
 	errInvalidTypeAndNameKey
 	errUnknownType
 	errDuplicateName
@@ -233,8 +234,11 @@ func errorDuplicateName(component string, fullName string) error {
 }
 
 func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.ExtensionFactory) (configmodels.Extensions, error) {
-	// Get the list of all "extensions" sub vipers from config source.
-	extensionsConfig := ViperSub(v, extensionsKeyName)
+	// Get the list of all "receivers" sub vipers from config source.
+	extensionsConfig, err := ViperSubExact(v, extensionsKeyName)
+	if err != nil {
+		return nil, err
+	}
 	expandEnvConfig(extensionsConfig)
 
 	// Get the map of "extensions" sub-keys.
@@ -263,7 +267,10 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 		extensionCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		componentConfig := ViperSub(extensionsConfig, key)
+		componentConfig, err := ViperSubExact(extensionsConfig, key)
+		if err != nil {
+			return nil, err
+		}
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -284,7 +291,10 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 
 func loadService(v *viper.Viper) (configmodels.Service, error) {
 	var service configmodels.Service
-	serviceSub := ViperSub(v, serviceKeyName)
+	serviceSub, err := ViperSubExact(v, serviceKeyName)
+	if err != nil {
+		return service, err
+	}
 	expandEnvConfig(serviceSub)
 
 	// Process the pipelines first so in case of error on them it can be properly
@@ -328,7 +338,10 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 
 func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.ReceiverFactory) (configmodels.Receivers, error) {
 	// Get the list of all "receivers" sub vipers from config source.
-	receiversConfig := ViperSub(v, receiversKeyName)
+	receiversConfig, err := ViperSubExact(v, receiversKeyName)
+	if err != nil {
+		return nil, err
+	}
 	expandEnvConfig(receiversConfig)
 
 	// Get the map of "receivers" sub-keys.
@@ -351,7 +364,13 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 			return nil, errorUnknownType(receiversKeyName, typeStr, fullName)
 		}
 
-		receiverCfg, err := LoadReceiver(ViperSub(receiversConfig, key), typeStr, fullName, factory)
+		// Unmarshal only the subconfig for this exporter.
+		componentConfig, err := ViperSubExact(receiversConfig, key)
+		if err != nil {
+			return nil, err
+		}
+
+		receiverCfg, err := LoadReceiver(componentConfig, typeStr, fullName, factory)
 
 		if err != nil {
 			// LoadReceiver already wraps the error.
@@ -369,7 +388,10 @@ func loadReceivers(v *viper.Viper, factories map[configmodels.Type]component.Rec
 
 func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.ExporterFactory) (configmodels.Exporters, error) {
 	// Get the list of all "exporters" sub vipers from config source.
-	exportersConfig := ViperSub(v, exportersKeyName)
+	exportersConfig, err := ViperSubExact(v, exportersKeyName)
+	if err != nil {
+		return nil, err
+	}
 	expandEnvConfig(exportersConfig)
 
 	// Get the map of "exporters" sub-keys.
@@ -398,7 +420,10 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 		exporterCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
-		componentConfig := ViperSub(exportersConfig, key)
+		componentConfig, err := ViperSubExact(exportersConfig, key)
+		if err != nil {
+			return nil, err
+		}
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -419,7 +444,10 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 
 func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.ProcessorFactory) (configmodels.Processors, error) {
 	// Get the list of all "processors" sub vipers from config source.
-	processorsConfig := ViperSub(v, processorsKeyName)
+	processorsConfig, err := ViperSubExact(v, processorsKeyName)
+	if err != nil {
+		return nil, err
+	}
 	expandEnvConfig(processorsConfig)
 
 	// Get the map of "processors" sub-keys.
@@ -448,7 +476,10 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 		processorCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this processor.
-		componentConfig := ViperSub(processorsConfig, key)
+		componentConfig, vsErr := ViperSubExact(processorsConfig, key)
+		if vsErr != nil {
+			return nil, vsErr
+		}
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -469,7 +500,10 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 
 func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 	// Get the list of all "pipelines" sub vipers from config source.
-	pipelinesConfig := ViperSub(v, pipelinesKeyName)
+	pipelinesConfig, err := ViperSubExact(v, pipelinesKeyName)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get the map of "pipelines" sub-keys.
 	keyMap := v.GetStringMap(pipelinesKeyName)
@@ -498,7 +532,10 @@ func loadPipelines(v *viper.Viper) (configmodels.Pipelines, error) {
 			return nil, errorUnknownType(pipelinesKeyName, typeStr, fullName)
 		}
 
-		pipelineConfig := ViperSub(pipelinesConfig, key)
+		pipelineConfig, err := ViperSubExact(pipelinesConfig, key)
+		if err != nil {
+			return nil, err
+		}
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -744,18 +781,23 @@ func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{})
 	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
-// Copied from the Viper but changed to use the same delimiter.
+// Copied from the Viper but changed to use the same delimiter
+// and return error if the sub is not a map.
 // See https://github.com/spf13/viper/issues/871
-func ViperSub(v *viper.Viper, key string) *viper.Viper {
-	subv := NewViper()
+func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
 	data := v.Get(key)
 	if data == nil {
-		return subv
+		return NewViper(), nil
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv.MergeConfigMap(cast.ToStringMap(data))
-		return subv
+		subv := NewViper()
+		// Cannot return error because the subv is empty.
+		_ = subv.MergeConfigMap(cast.ToStringMap(data))
+		return subv, nil
 	}
-	return subv
+	return nil, &configError{
+		code: errInvalidSubConfig,
+		msg:  fmt.Sprintf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind()),
+	}
 }
