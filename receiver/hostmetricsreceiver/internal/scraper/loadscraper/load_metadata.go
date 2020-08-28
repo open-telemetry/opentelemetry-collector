@@ -15,37 +15,37 @@
 package loadscraper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // descriptors
 
-var loadAvg1MDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var loadAvg1MDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.cpu.load_average.1m")
 	descriptor.SetDescription("Average CPU Load over 1 minute.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeDouble)
+	descriptor.SetType(dataold.MetricTypeDouble)
 	return descriptor
 }()
 
-var loadAvg5mDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var loadAvg5mDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.cpu.load_average.5m")
 	descriptor.SetDescription("Average CPU Load over 5 minutes.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeDouble)
+	descriptor.SetType(dataold.MetricTypeDouble)
 	return descriptor
 }()
 
-var loadAvg15mDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var loadAvg15mDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.cpu.load_average.15m")
 	descriptor.SetDescription("Average CPU Load over 15 minutes.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeDouble)
+	descriptor.SetType(dataold.MetricTypeDouble)
 	return descriptor
 }()

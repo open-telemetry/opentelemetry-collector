@@ -22,7 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -33,13 +33,13 @@ func TestSameMetrics(t *testing.T) {
 	assert.Nil(t, diffs)
 }
 
-func diffMetricData(expected data.MetricData, actual data.MetricData) []*MetricDiff {
+func diffMetricData(expected dataold.MetricData, actual dataold.MetricData) []*MetricDiff {
 	expectedRMSlice := expected.ResourceMetrics()
 	actualRMSlice := actual.ResourceMetrics()
 	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
 }
 
-func toSlice(s pdata.ResourceMetricsSlice) (out []pdata.ResourceMetrics) {
+func toSlice(s dataold.ResourceMetricsSlice) (out []dataold.ResourceMetrics) {
 	for i := 0; i < s.Len(); i++ {
 		out = append(out, s.At(i))
 	}
@@ -67,7 +67,7 @@ func TestDifferentNumPts(t *testing.T) {
 func TestDifferentPtTypes(t *testing.T) {
 	expected := goldendataset.DefaultMetricData()
 	cfg := goldendataset.DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricTypeDouble
+	cfg.MetricDescriptorType = dataold.MetricTypeDouble
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Equal(t, 3, len(diffs))
@@ -75,10 +75,10 @@ func TestDifferentPtTypes(t *testing.T) {
 
 func TestHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricTypeHistogram
+	cfg1.MetricDescriptorType = dataold.MetricTypeHistogram
 	expected := goldendataset.MetricDataFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricTypeHistogram
+	cfg2.MetricDescriptorType = dataold.MetricTypeHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
@@ -87,10 +87,10 @@ func TestHistogram(t *testing.T) {
 
 func TestSummary(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricTypeSummary
+	cfg1.MetricDescriptorType = dataold.MetricTypeSummary
 	expected := goldendataset.MetricDataFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricTypeSummary
+	cfg2.MetricDescriptorType = dataold.MetricTypeSummary
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
@@ -98,7 +98,7 @@ func TestSummary(t *testing.T) {
 }
 
 func TestPDMToPDRM(t *testing.T) {
-	md := data.NewMetricData()
+	md := dataold.NewMetricData()
 	md.ResourceMetrics().Resize(1)
 	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromInternalMetrics(md)})
 	require.Equal(t, 1, len(rm))

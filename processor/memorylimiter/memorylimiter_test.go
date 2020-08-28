@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -122,7 +122,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	md := data.NewMetricData()
+	md := dataold.NewMetricData()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800

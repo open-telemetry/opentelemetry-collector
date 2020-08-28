@@ -42,7 +42,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -68,7 +68,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 		require.NoError(t, oce.Shutdown(context.Background()))
 	}()
 
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdataold.GenerateMetricDataOneMetric()
 	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 
 	testutil.WaitFor(t, func() bool {

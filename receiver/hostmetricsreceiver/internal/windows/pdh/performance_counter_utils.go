@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
@@ -29,10 +30,10 @@ import (
 // The performance counters' "instance" will be recorded
 // against the supplied label name
 func InitializeMetric(
-	metric pdata.Metric,
+	metric dataold.Metric,
 	vals []win_perf_counters.CounterValue,
 	instanceNameLabel string,
-) pdata.Metric {
+) dataold.Metric {
 	ddps := metric.DoubleDataPoints()
 	ddps.Resize(len(vals))
 

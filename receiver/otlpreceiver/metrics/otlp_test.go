@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/data"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -99,7 +99,7 @@ func TestExport(t *testing.T) {
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := data.MetricDataFromOtlp(resourceMetrics).Clone()
+	metricData := dataold.MetricDataFromOtlp(resourceMetrics).Clone()
 
 	req := &collectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: resourceMetrics,

@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -146,7 +147,7 @@ func generateTraceData(attributes map[string]string) pdata.Traces {
 }
 
 func generateMetricData(attributes map[string]string) pdata.Metrics {
-	md := testdata.GenerateMetricDataOneMetricNoResource()
+	md := testdataold.GenerateMetricDataOneMetricNoResource()
 	if attributes == nil {
 		return pdatautil.MetricsFromInternalMetrics(md)
 	}

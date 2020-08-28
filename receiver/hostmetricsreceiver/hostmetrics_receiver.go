@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -162,7 +162,7 @@ func (hmr *receiver) scrapeMetrics(ctx context.Context) {
 	defer span.End()
 
 	var errors []error
-	metricData := data.NewMetricData()
+	metricData := dataold.NewMetricData()
 
 	if err := hmr.scrapeAndAppendHostMetrics(ctx, metricData); err != nil {
 		errors = append(errors, err)
@@ -182,7 +182,7 @@ func (hmr *receiver) scrapeMetrics(ctx context.Context) {
 	}
 }
 
-func (hmr *receiver) scrapeAndAppendHostMetrics(ctx context.Context, metricData data.MetricData) error {
+func (hmr *receiver) scrapeAndAppendHostMetrics(ctx context.Context, metricData dataold.MetricData) error {
 	if len(hmr.hostMetricScrapers) == 0 {
 		return nil
 	}
@@ -202,7 +202,7 @@ func (hmr *receiver) scrapeAndAppendHostMetrics(ctx context.Context, metricData 
 	return componenterror.CombineErrors(errors)
 }
 
-func (hmr *receiver) scrapeAndAppendResourceMetrics(ctx context.Context, metricData data.MetricData) error {
+func (hmr *receiver) scrapeAndAppendResourceMetrics(ctx context.Context, metricData dataold.MetricData) error {
 	if len(hmr.resourceMetricScrapers) == 0 {
 		return nil
 	}

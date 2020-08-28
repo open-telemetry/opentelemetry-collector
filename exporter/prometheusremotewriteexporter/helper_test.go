@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 )
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false

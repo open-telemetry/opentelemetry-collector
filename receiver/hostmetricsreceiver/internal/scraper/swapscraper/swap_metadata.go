@@ -15,7 +15,7 @@
 package swapscraper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // labels
@@ -49,32 +49,32 @@ const (
 	minorTypeLabelValue = "minor"
 )
 
-var swapUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var swapUsageDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.swap.usage")
 	descriptor.SetDescription("Swap (unix) or pagefile (windows) usage.")
 	descriptor.SetUnit("pages")
-	descriptor.SetType(pdata.MetricTypeInt64)
+	descriptor.SetType(dataold.MetricTypeInt64)
 	return descriptor
 }()
 
-var swapPagingDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var swapPagingDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.swap.paging_ops")
 	descriptor.SetDescription("The number of paging operations.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
 	return descriptor
 }()
 
-var swapPageFaultsDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var swapPageFaultsDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.swap.page_faults")
 	descriptor.SetDescription("The number of page faults.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
 	return descriptor
 }()

@@ -21,6 +21,7 @@ import (
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // scraper for Processes Metrics
@@ -56,8 +57,8 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) {
+	metrics := dataold.NewMetricSlice()
 	err := appendSystemSpecificProcessesMetrics(metrics, 0, s.misc)
 	return metrics, err
 }

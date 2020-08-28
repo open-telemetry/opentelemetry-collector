@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
@@ -82,7 +83,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewMetricsCloningFanOutConnector(processors)
-	md := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
+	md := testdataold.GenerateMetricDataWithCountersHistogramAndSummary()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {

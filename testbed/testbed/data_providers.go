@@ -28,8 +28,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -123,7 +123,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	// Generate 7 data points per metric.
 	const dataPointsPerMetric = 7
 
-	metricData := data.NewMetricData()
+	metricData := dataold.NewMetricData()
 	metricData.ResourceMetrics().Resize(1)
 	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	if dp.options.Attributes != nil {
@@ -142,7 +142,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		metricDescriptor.InitEmpty()
 		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
 		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(pdata.MetricTypeInt64)
+		metricDescriptor.SetType(dataold.MetricTypeInt64)
 
 		batchIndex := dp.batchesGenerated.Inc()
 
@@ -261,7 +261,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-	return pdatautil.MetricsFromInternalMetrics(data.MetricData{}), true
+	return pdatautil.MetricsFromInternalMetrics(dataold.MetricData{}), true
 }
 
 func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {

@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testdata
+package testdataold
 
 import (
 	"time"
 
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 var (
@@ -44,8 +43,8 @@ const (
 	NumMetricTests                    = 14
 )
 
-func GenerateMetricDataEmpty() data.MetricData {
-	md := data.NewMetricData()
+func GenerateMetricDataEmpty() dataold.MetricData {
+	md := dataold.NewMetricData()
 	return md
 }
 
@@ -53,7 +52,7 @@ func generateMetricOtlpEmpty() []*otlpmetrics.ResourceMetrics {
 	return []*otlpmetrics.ResourceMetrics(nil)
 }
 
-func GenerateMetricDataOneEmptyResourceMetrics() data.MetricData {
+func GenerateMetricDataOneEmptyResourceMetrics() dataold.MetricData {
 	md := GenerateMetricDataEmpty()
 	md.ResourceMetrics().Resize(1)
 	return md
@@ -65,8 +64,8 @@ func generateMetricOtlpOneEmptyResourceMetrics() []*otlpmetrics.ResourceMetrics 
 	}
 }
 
-func GenerateMetricDataOneEmptyOneNilResourceMetrics() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricOtlpOneEmptyOneNilResourceMetrics())
+func GenerateMetricDataOneEmptyOneNilResourceMetrics() dataold.MetricData {
+	return dataold.MetricDataFromOtlp(generateMetricOtlpOneEmptyOneNilResourceMetrics())
 }
 
 func generateMetricOtlpOneEmptyOneNilResourceMetrics() []*otlpmetrics.ResourceMetrics {
@@ -76,7 +75,7 @@ func generateMetricOtlpOneEmptyOneNilResourceMetrics() []*otlpmetrics.ResourceMe
 	}
 }
 
-func GenerateMetricDataNoLibraries() data.MetricData {
+func GenerateMetricDataNoLibraries() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyResourceMetrics()
 	ms0 := md.ResourceMetrics().At(0)
 	initResource1(ms0.Resource())
@@ -91,7 +90,7 @@ func generateMetricOtlpNoLibraries() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricDataOneEmptyInstrumentationLibrary() data.MetricData {
+func GenerateMetricDataOneEmptyInstrumentationLibrary() dataold.MetricData {
 	md := GenerateMetricDataNoLibraries()
 	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	return md
@@ -109,8 +108,8 @@ func generateMetricOtlpOneEmptyInstrumentationLibrary() []*otlpmetrics.ResourceM
 	}
 }
 
-func GenerateMetricDataOneEmptyOneNilInstrumentationLibrary() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricOtlpOneEmptyOneNilInstrumentationLibrary())
+func GenerateMetricDataOneEmptyOneNilInstrumentationLibrary() dataold.MetricData {
+	return dataold.MetricDataFromOtlp(generateMetricOtlpOneEmptyOneNilInstrumentationLibrary())
 }
 
 func generateMetricOtlpOneEmptyOneNilInstrumentationLibrary() []*otlpmetrics.ResourceMetrics {
@@ -125,7 +124,7 @@ func generateMetricOtlpOneEmptyOneNilInstrumentationLibrary() []*otlpmetrics.Res
 	}
 }
 
-func GenerateMetricDataOneMetricNoResource() data.MetricData {
+func GenerateMetricDataOneMetricNoResource() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyResourceMetrics()
 	rm0 := md.ResourceMetrics().At(0)
 	rm0.InstrumentationLibraryMetrics().Resize(1)
@@ -149,7 +148,7 @@ func generateMetricOtlpOneMetricNoResource() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricDataOneMetric() data.MetricData {
+func GenerateMetricDataOneMetric() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rm0ils0.Metrics().Resize(1)
@@ -172,7 +171,7 @@ func generateMetricOtlpOneMetric() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricDataOneMetricOneDataPoint() data.MetricData {
+func GenerateMetricDataOneMetricOneDataPoint() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rm0ils0.Metrics().Resize(1)
@@ -180,7 +179,7 @@ func GenerateMetricDataOneMetricOneDataPoint() data.MetricData {
 	return md
 }
 
-func GenerateMetricDataTwoMetrics() data.MetricData {
+func GenerateMetricDataTwoMetrics() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rm0ils0.Metrics().Resize(2)
@@ -205,8 +204,8 @@ func GenerateMetricOtlpTwoMetrics() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricDataOneMetricOneNil() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricOtlpOneMetricOneNil())
+func GenerateMetricDataOneMetricOneNil() dataold.MetricData {
+	return dataold.MetricDataFromOtlp(generateMetricOtlpOneMetricOneNil())
 }
 
 func generateMetricOtlpOneMetricOneNil() []*otlpmetrics.ResourceMetrics {
@@ -225,7 +224,7 @@ func generateMetricOtlpOneMetricOneNil() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricDataOneMetricNoLabels() data.MetricData {
+func GenerateMetricDataOneMetricNoLabels() dataold.MetricData {
 	md := GenerateMetricDataOneMetric()
 	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Int64DataPoints()
 	dps.At(0).LabelsMap().InitFromMap(map[string]string{})
@@ -241,8 +240,8 @@ func generateMetricOtlpOneMetricNoLabels() []*otlpmetrics.ResourceMetrics {
 	return md
 }
 
-func GenerateMetricDataOneMetricOneNilPoint() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricOtlpOneMetricOneNilPoint())
+func GenerateMetricDataOneMetricOneNilPoint() dataold.MetricData {
+	return dataold.MetricDataFromOtlp(generateMetricOtlpOneMetricOneNilPoint())
 }
 
 func generateMetricOtlpOneMetricOneNilPoint() []*otlpmetrics.ResourceMetrics {
@@ -252,95 +251,95 @@ func generateMetricOtlpOneMetricOneNilPoint() []*otlpmetrics.ResourceMetrics {
 	return md
 }
 
-func GenerateMetricDataAllTypesNoDataPoints() data.MetricData {
+func GenerateMetricDataAllTypesNoDataPoints() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
 	ms.Resize(6)
 	initMetricDescriptor(
-		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, pdata.MetricTypeDouble)
+		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, dataold.MetricTypeDouble)
 	initMetricDescriptor(
-		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, pdata.MetricTypeInt64)
+		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, dataold.MetricTypeInt64)
 	initMetricDescriptor(
-		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, pdata.MetricTypeMonotonicDouble)
+		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, dataold.MetricTypeMonotonicDouble)
 	initMetricDescriptor(
-		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeMonotonicInt64)
+		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, dataold.MetricTypeMonotonicInt64)
 	initMetricDescriptor(
-		ms.At(4).MetricDescriptor(), TestCumulativeHistogramMetricName, pdata.MetricTypeHistogram)
+		ms.At(4).MetricDescriptor(), TestCumulativeHistogramMetricName, dataold.MetricTypeHistogram)
 	initMetricDescriptor(
-		ms.At(5).MetricDescriptor(), TestSummaryMetricName, pdata.MetricTypeSummary)
+		ms.At(5).MetricDescriptor(), TestSummaryMetricName, dataold.MetricTypeSummary)
 	return md
 }
 
-func GenerateMetricDataAllTypesNilDataPoint() data.MetricData {
+func GenerateMetricDataAllTypesNilDataPoint() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
 	ms.Resize(6)
 
-	nilInt64 := pdata.NewInt64DataPoint()
-	nilDouble := pdata.NewDoubleDataPoint()
-	nilHistogram := pdata.NewHistogramDataPoint()
-	nilSummary := pdata.NewSummaryDataPoint()
+	nilInt64 := dataold.NewInt64DataPoint()
+	nilDouble := dataold.NewDoubleDataPoint()
+	nilHistogram := dataold.NewHistogramDataPoint()
+	nilSummary := dataold.NewSummaryDataPoint()
 
 	initMetricDescriptor(
-		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, pdata.MetricTypeDouble)
+		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, dataold.MetricTypeDouble)
 	ms.At(0).DoubleDataPoints().Append(&nilDouble)
 	initMetricDescriptor(
-		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, pdata.MetricTypeInt64)
+		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, dataold.MetricTypeInt64)
 	ms.At(1).Int64DataPoints().Append(&nilInt64)
 	initMetricDescriptor(
-		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, pdata.MetricTypeMonotonicDouble)
+		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, dataold.MetricTypeMonotonicDouble)
 	ms.At(2).DoubleDataPoints().Append(&nilDouble)
 	initMetricDescriptor(
-		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeMonotonicInt64)
+		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, dataold.MetricTypeMonotonicInt64)
 	ms.At(3).Int64DataPoints().Append(&nilInt64)
 	initMetricDescriptor(
-		ms.At(4).MetricDescriptor(), TestCumulativeHistogramMetricName, pdata.MetricTypeHistogram)
+		ms.At(4).MetricDescriptor(), TestCumulativeHistogramMetricName, dataold.MetricTypeHistogram)
 	ms.At(4).HistogramDataPoints().Append(&nilHistogram)
 	initMetricDescriptor(
-		ms.At(5).MetricDescriptor(), TestSummaryMetricName, pdata.MetricTypeSummary)
+		ms.At(5).MetricDescriptor(), TestSummaryMetricName, dataold.MetricTypeSummary)
 	ms.At(5).SummaryDataPoints().Append(&nilSummary)
 	return md
 }
 
-func GenerateMetricDataAllTypesEmptyDataPoint() data.MetricData {
+func GenerateMetricDataAllTypesEmptyDataPoint() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
 	ms.Resize(6)
 
-	emptyInt64 := pdata.NewInt64DataPoint()
+	emptyInt64 := dataold.NewInt64DataPoint()
 	emptyInt64.InitEmpty()
-	emptyDouble := pdata.NewDoubleDataPoint()
+	emptyDouble := dataold.NewDoubleDataPoint()
 	emptyDouble.InitEmpty()
-	emptyHistogram := pdata.NewHistogramDataPoint()
+	emptyHistogram := dataold.NewHistogramDataPoint()
 	emptyHistogram.InitEmpty()
-	emptySummary := pdata.NewSummaryDataPoint()
+	emptySummary := dataold.NewSummaryDataPoint()
 	emptySummary.InitEmpty()
 
 	initMetricDescriptor(
-		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, pdata.MetricTypeDouble)
+		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, dataold.MetricTypeDouble)
 	ms.At(0).DoubleDataPoints().Append(&emptyDouble)
 	initMetricDescriptor(
-		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, pdata.MetricTypeInt64)
+		ms.At(1).MetricDescriptor(), TestGaugeIntMetricName, dataold.MetricTypeInt64)
 	ms.At(1).Int64DataPoints().Append(&emptyInt64)
 	initMetricDescriptor(
-		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, pdata.MetricTypeMonotonicDouble)
+		ms.At(2).MetricDescriptor(), TestCounterDoubleMetricName, dataold.MetricTypeMonotonicDouble)
 	ms.At(2).DoubleDataPoints().Append(&emptyDouble)
 	initMetricDescriptor(
-		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeMonotonicInt64)
+		ms.At(3).MetricDescriptor(), TestCounterIntMetricName, dataold.MetricTypeMonotonicInt64)
 	ms.At(3).Int64DataPoints().Append(&emptyInt64)
 	initMetricDescriptor(
-		ms.At(4).MetricDescriptor(), TestCumulativeHistogramMetricName, pdata.MetricTypeHistogram)
+		ms.At(4).MetricDescriptor(), TestCumulativeHistogramMetricName, dataold.MetricTypeHistogram)
 	ms.At(4).HistogramDataPoints().Append(&emptyHistogram)
 	initMetricDescriptor(
-		ms.At(5).MetricDescriptor(), TestSummaryMetricName, pdata.MetricTypeSummary)
+		ms.At(5).MetricDescriptor(), TestSummaryMetricName, dataold.MetricTypeSummary)
 	ms.At(5).SummaryDataPoints().Append(&emptySummary)
 	return md
 }
 
-func GenerateMetricDataNilMetricDescriptor() data.MetricData {
+func GenerateMetricDataNilMetricDescriptor() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
@@ -348,14 +347,14 @@ func GenerateMetricDataNilMetricDescriptor() data.MetricData {
 	return md
 }
 
-func GenerateMetricDataMetricTypeInvalid() data.MetricData {
+func GenerateMetricDataMetricTypeInvalid() dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
 	ms.Resize(1)
 
 	initMetricDescriptor(
-		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, pdata.MetricTypeInvalid)
+		ms.At(0).MetricDescriptor(), TestGaugeDoubleMetricName, dataold.MetricTypeInvalid)
 	return md
 }
 
@@ -367,22 +366,22 @@ func generateMetricOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
 				{
 					Metrics: []*otlpmetrics.Metric{
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeDoubleMetricName, pdata.MetricTypeDouble),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeDoubleMetricName, dataold.MetricTypeDouble),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeIntMetricName, pdata.MetricTypeInt64),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestGaugeIntMetricName, dataold.MetricTypeInt64),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, pdata.MetricTypeMonotonicDouble),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, dataold.MetricTypeMonotonicDouble),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, pdata.MetricTypeMonotonicInt64),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, dataold.MetricTypeMonotonicInt64),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, pdata.MetricTypeHistogram),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, dataold.MetricTypeHistogram),
 						},
 						{
-							MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, pdata.MetricTypeSummary),
+							MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, dataold.MetricTypeSummary),
 						},
 					},
 				},
@@ -391,8 +390,8 @@ func generateMetricOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricDataWithCountersHistogramAndSummary() data.MetricData {
-	metricData := data.NewMetricData()
+func GenerateMetricDataWithCountersHistogramAndSummary() dataold.MetricData {
+	metricData := dataold.NewMetricData()
 	metricData.ResourceMetrics().Resize(1)
 
 	rms := metricData.ResourceMetrics()
@@ -429,8 +428,8 @@ func generateMetricOtlpWithCountersHistogramAndSummary() []*otlpmetrics.Resource
 	}
 }
 
-func initCounterIntMetric(im pdata.Metric) {
-	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeMonotonicInt64)
+func initCounterIntMetric(im dataold.Metric) {
+	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, dataold.MetricTypeMonotonicInt64)
 
 	idps := im.Int64DataPoints()
 	idps.Resize(2)
@@ -446,8 +445,8 @@ func initCounterIntMetric(im pdata.Metric) {
 	idp1.SetValue(456)
 }
 
-func initGaugeIntMetricOneDataPoint(im pdata.Metric) {
-	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, pdata.MetricTypeInt64)
+func initGaugeIntMetricOneDataPoint(im dataold.Metric) {
+	initMetricDescriptor(im.MetricDescriptor(), TestCounterIntMetricName, dataold.MetricTypeInt64)
 	idps := im.Int64DataPoints()
 	idps.Resize(1)
 	idp0 := idps.At(0)
@@ -459,7 +458,7 @@ func initGaugeIntMetricOneDataPoint(im pdata.Metric) {
 
 func generateOtlpCounterIntMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, pdata.MetricTypeMonotonicInt64),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterIntMetricName, dataold.MetricTypeMonotonicInt64),
 		Int64DataPoints: []*otlpmetrics.Int64DataPoint{
 			{
 				Labels:            generateOtlpMetricLabels1(),
@@ -477,8 +476,8 @@ func generateOtlpCounterIntMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initCounterDoubleMetric(dm pdata.Metric) {
-	initMetricDescriptor(dm.MetricDescriptor(), TestCounterDoubleMetricName, pdata.MetricTypeMonotonicDouble)
+func initCounterDoubleMetric(dm dataold.Metric) {
+	initMetricDescriptor(dm.MetricDescriptor(), TestCounterDoubleMetricName, dataold.MetricTypeMonotonicDouble)
 
 	ddps := dm.DoubleDataPoints()
 	ddps.Resize(2)
@@ -498,7 +497,7 @@ func initCounterDoubleMetric(dm pdata.Metric) {
 
 func generateOtlpCounterDoubleMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, pdata.MetricTypeMonotonicDouble),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestCounterDoubleMetricName, dataold.MetricTypeMonotonicDouble),
 		DoubleDataPoints: []*otlpmetrics.DoubleDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels12(),
@@ -516,8 +515,8 @@ func generateOtlpCounterDoubleMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initCumulativeHistogramMetric(hm pdata.Metric) {
-	initMetricDescriptor(hm.MetricDescriptor(), TestCumulativeHistogramMetricName, pdata.MetricTypeHistogram)
+func initCumulativeHistogramMetric(hm dataold.Metric) {
+	initMetricDescriptor(hm.MetricDescriptor(), TestCumulativeHistogramMetricName, dataold.MetricTypeHistogram)
 
 	hdps := hm.HistogramDataPoints()
 	hdps.Resize(2)
@@ -546,7 +545,7 @@ func initCumulativeHistogramMetric(hm pdata.Metric) {
 
 func generateOtlpCumulativeHistogramMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, pdata.MetricTypeHistogram),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestCumulativeHistogramMetricName, dataold.MetricTypeHistogram),
 		HistogramDataPoints: []*otlpmetrics.HistogramDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels13(),
@@ -580,8 +579,8 @@ func generateOtlpCumulativeHistogramMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initSummaryMetric(sm pdata.Metric) {
-	initMetricDescriptor(sm.MetricDescriptor(), TestSummaryMetricName, pdata.MetricTypeSummary)
+func initSummaryMetric(sm dataold.Metric) {
+	initMetricDescriptor(sm.MetricDescriptor(), TestSummaryMetricName, dataold.MetricTypeSummary)
 
 	sdps := sm.SummaryDataPoints()
 	sdps.Resize(2)
@@ -604,7 +603,7 @@ func initSummaryMetric(sm pdata.Metric) {
 
 func generateOtlpSummaryMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
-		MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, pdata.MetricTypeSummary),
+		MetricDescriptor: generateOtlpMetricDescriptor(TestSummaryMetricName, dataold.MetricTypeSummary),
 		SummaryDataPoints: []*otlpmetrics.SummaryDataPoint{
 			{
 				Labels:            generateOtlpMetricLabelValue1(),
@@ -630,7 +629,7 @@ func generateOtlpSummaryMetric() *otlpmetrics.Metric {
 	}
 }
 
-func initMetricDescriptor(md pdata.MetricDescriptor, name string, ty pdata.MetricType) {
+func initMetricDescriptor(md dataold.MetricDescriptor, name string, ty dataold.MetricType) {
 	md.InitEmpty()
 	md.SetName(name)
 	md.SetDescription("")
@@ -638,7 +637,7 @@ func initMetricDescriptor(md pdata.MetricDescriptor, name string, ty pdata.Metri
 	md.SetType(ty)
 }
 
-func generateOtlpMetricDescriptor(name string, ty pdata.MetricType) *otlpmetrics.MetricDescriptor {
+func generateOtlpMetricDescriptor(name string, ty dataold.MetricType) *otlpmetrics.MetricDescriptor {
 	return &otlpmetrics.MetricDescriptor{
 		Name:        name,
 		Description: "",
@@ -647,7 +646,7 @@ func generateOtlpMetricDescriptor(name string, ty pdata.MetricType) *otlpmetrics
 	}
 }
 
-func GenerateMetricDataManyMetricsSameResource(metricsCount int) data.MetricData {
+func GenerateMetricDataManyMetricsSameResource(metricsCount int) dataold.MetricData {
 	md := GenerateMetricDataOneEmptyInstrumentationLibrary()
 	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rs0ilm0.Metrics().Resize(metricsCount)

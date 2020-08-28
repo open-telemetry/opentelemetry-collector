@@ -23,7 +23,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 )
 
 const (

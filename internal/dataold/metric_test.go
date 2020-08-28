@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package data
+package dataold
 
 import (
 	"testing"
 
+	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	goproto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 )
 
@@ -30,6 +33,39 @@ const (
 	startTime = uint64(12578940000000012345)
 	endTime   = uint64(12578940000000054321)
 )
+
+func TestResourceMetricsWireCompatibility(t *testing.T) {
+	// This test verifies that OTLP ProtoBufs generated using goproto lib in
+	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
+	// this repository are wire compatible.
+
+	// Generate ResourceMetrics as pdata struct.
+	pdataRM := generateTestResourceMetrics()
+
+	// Marshal its underlying ProtoBuf to wire.
+	wire1, err := gogoproto.Marshal(*pdataRM.orig)
+	assert.NoError(t, err)
+	assert.NotNil(t, wire1)
+
+	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
+	var goprotoMessage emptypb.Empty
+	err = goproto.Unmarshal(wire1, &goprotoMessage)
+	assert.NoError(t, err)
+
+	// Marshal to the wire again.
+	wire2, err := goproto.Marshal(&goprotoMessage)
+	assert.NoError(t, err)
+	assert.NotNil(t, wire2)
+
+	// Unmarshal from the wire into gogoproto's representation.
+	var gogoprotoRM otlpmetrics.ResourceMetrics
+	err = gogoproto.Unmarshal(wire2, &gogoprotoRM)
+	assert.NoError(t, err)
+
+	// Now compare that the original and final ProtoBuf messages are the same.
+	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
+	assert.True(t, gogoproto.Equal(*pdataRM.orig, &gogoprotoRM))
+}
 
 func TestMetricCount(t *testing.T) {
 	md := NewMetricData()
@@ -223,7 +259,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_int", metricInt.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricInt.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricInt.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeMonotonicInt64, metricInt.MetricDescriptor().Type())
+	assert.EqualValues(t, MetricTypeMonotonicInt64, metricInt.MetricDescriptor().Type())
 	int64DataPoints := metricInt.Int64DataPoints()
 	assert.EqualValues(t, 2, int64DataPoints.Len())
 	// First point
@@ -242,7 +278,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_double", metricDouble.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricDouble.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricDouble.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeMonotonicDouble, metricDouble.MetricDescriptor().Type())
+	assert.EqualValues(t, MetricTypeMonotonicDouble, metricDouble.MetricDescriptor().Type())
 	doubleDataPoints := metricDouble.DoubleDataPoints()
 	assert.EqualValues(t, 2, doubleDataPoints.Len())
 	// First point
@@ -261,7 +297,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricHistogram.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricHistogram.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeHistogram, metricHistogram.MetricDescriptor().Type())
+	assert.EqualValues(t, MetricTypeHistogram, metricHistogram.MetricDescriptor().Type())
 	histogramDataPoints := metricHistogram.HistogramDataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
@@ -290,7 +326,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_summary", metricSummary.MetricDescriptor().Name())
 	assert.EqualValues(t, "My metric", metricSummary.MetricDescriptor().Description())
 	assert.EqualValues(t, "ms", metricSummary.MetricDescriptor().Unit())
-	assert.EqualValues(t, pdata.MetricTypeSummary, metricSummary.MetricDescriptor().Type())
+	assert.EqualValues(t, MetricTypeSummary, metricSummary.MetricDescriptor().Type())
 	summaryDataPoints := metricSummary.SummaryDataPoints()
 	assert.EqualValues(t, 2, summaryDataPoints.Len())
 	// First point
@@ -361,8 +397,8 @@ func TestOtlpToFromInternalIntPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetType(pdata.MetricTypeInt64)
-	assert.EqualValues(t, pdata.MetricTypeInt64, metric.MetricDescriptor().Type())
+	metric.MetricDescriptor().SetType(MetricTypeInt64)
+	assert.EqualValues(t, MetricTypeInt64, metric.MetricDescriptor().Type())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.Int64DataPoints().Len())
 	metric.Int64DataPoints().Resize(1)
@@ -437,8 +473,8 @@ func TestOtlpToFromInternalDoublePointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetType(pdata.MetricTypeDouble)
-	assert.EqualValues(t, pdata.MetricTypeDouble, metric.MetricDescriptor().Type())
+	metric.MetricDescriptor().SetType(MetricTypeDouble)
+	assert.EqualValues(t, MetricTypeDouble, metric.MetricDescriptor().Type())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.DoubleDataPoints().Len())
 	metric.DoubleDataPoints().Resize(1)
@@ -513,8 +549,8 @@ func TestOtlpToFromInternalHistogramPointsMutating(t *testing.T) {
 	assert.EqualValues(t, "My new metric", metric.MetricDescriptor().Description())
 	metric.MetricDescriptor().SetUnit("1")
 	assert.EqualValues(t, "1", metric.MetricDescriptor().Unit())
-	metric.MetricDescriptor().SetType(pdata.MetricTypeHistogram)
-	assert.EqualValues(t, pdata.MetricTypeHistogram, metric.MetricDescriptor().Type())
+	metric.MetricDescriptor().SetType(MetricTypeHistogram)
+	assert.EqualValues(t, MetricTypeHistogram, metric.MetricDescriptor().Type())
 	// Mutate DataPoints
 	assert.EqualValues(t, 2, metric.HistogramDataPoints().Len())
 	metric.HistogramDataPoints().Resize(1)

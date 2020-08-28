@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
@@ -99,7 +100,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewMetricsFanOutConnector(processors)
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdataold.GenerateMetricDataOneMetric()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
@@ -128,7 +129,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	processors[1].(*exportertest.SinkMetricsExporter).SetConsumeMetricsError(errors.New("my_error"))
 
 	mfc := NewMetricsFanOutConnector(processors)
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdataold.GenerateMetricDataOneMetric()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
@@ -95,7 +96,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+func assertInt64DiskMetricValid(t *testing.T, metric dataold.Metric, expectedDescriptor dataold.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
@@ -106,7 +107,7 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
-func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+func assertDoubleDiskMetricValid(t *testing.T, metric dataold.Metric, expectedDescriptor dataold.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
@@ -117,7 +118,7 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 	internal.AssertDoubleMetricLabelHasValue(t, metric, metric.DoubleDataPoints().Len()-1, directionLabelName, writeDirectionLabelValue)
 }
 
-func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
+func assertDiskPendingOperationsMetricValid(t *testing.T, metric dataold.Metric) {
 	internal.AssertDescriptorEqual(t, diskPendingOperationsDescriptor, metric.MetricDescriptor())
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 1)
 	internal.AssertInt64MetricLabelExists(t, metric, 0, deviceLabelName)

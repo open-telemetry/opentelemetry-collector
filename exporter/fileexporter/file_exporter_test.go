@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	collectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -32,6 +31,8 @@ import (
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -57,7 +58,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	lme := &fileExporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
@@ -65,7 +66,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	var j collectormetrics.ExportMetricsServiceRequest
 	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)), j.ResourceMetrics)
+	assert.EqualValues(t, dataold.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)), j.ResourceMetrics)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {

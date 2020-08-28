@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // Simple utilities for generating metrics for testing
@@ -27,7 +27,7 @@ import (
 // metrics with the corresponding number/type of attributes and pass into MetricDataFromCfg to generate metrics.
 type MetricCfg struct {
 	// The type of metric to generate
-	MetricDescriptorType pdata.MetricType
+	MetricDescriptorType dataold.MetricType
 	// A prefix for every metric name
 	MetricNamePrefix string
 	// The number of instrumentation library metrics per resource
@@ -54,7 +54,7 @@ type MetricCfg struct {
 // (but boring) metrics, and can be used as a starting point for making alterations.
 func DefaultCfg() MetricCfg {
 	return MetricCfg{
-		MetricDescriptorType: pdata.MetricTypeInt64,
+		MetricDescriptorType: dataold.MetricTypeInt64,
 		MetricNamePrefix:     "",
 		NumILMPerResource:    1,
 		NumMetricsPerILM:     1,
@@ -69,12 +69,12 @@ func DefaultCfg() MetricCfg {
 }
 
 // DefaultMetricData produces MetricData with a default config.
-func DefaultMetricData() data.MetricData {
+func DefaultMetricData() dataold.MetricData {
 	return MetricDataFromCfg(DefaultCfg())
 }
 
 // MetricDataFromCfg produces MetricData with the passed-in config.
-func MetricDataFromCfg(cfg MetricCfg) data.MetricData {
+func MetricDataFromCfg(cfg MetricCfg) dataold.MetricData {
 	return newMetricGenerator().genMetricDataFromCfg(cfg)
 }
 
@@ -86,8 +86,8 @@ func newMetricGenerator() *metricGenerator {
 	return &metricGenerator{}
 }
 
-func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) data.MetricData {
-	md := data.NewMetricData()
+func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) dataold.MetricData {
+	md := dataold.NewMetricData()
 	rms := md.ResourceMetrics()
 	rms.Resize(cfg.NumResourceMetrics)
 	for i := 0; i < cfg.NumResourceMetrics; i++ {
@@ -105,7 +105,7 @@ func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) data.MetricData {
 	return md
 }
 
-func (g *metricGenerator) populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
+func (g *metricGenerator) populateIlm(cfg MetricCfg, rm dataold.ResourceMetrics) {
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilms.Resize(cfg.NumILMPerResource)
 	for i := 0; i < cfg.NumILMPerResource; i++ {
@@ -114,7 +114,7 @@ func (g *metricGenerator) populateIlm(cfg MetricCfg, rm pdata.ResourceMetrics) {
 	}
 }
 
-func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.InstrumentationLibraryMetrics) {
+func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm dataold.InstrumentationLibraryMetrics) {
 	metrics := ilm.Metrics()
 	metrics.Resize(cfg.NumMetricsPerILM)
 	for i := 0; i < cfg.NumMetricsPerILM; i++ {
@@ -122,19 +122,19 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 		metric.InitEmpty()
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
-		case pdata.MetricTypeInt64, pdata.MetricTypeMonotonicInt64:
+		case dataold.MetricTypeInt64, dataold.MetricTypeMonotonicInt64:
 			populateIntPoints(cfg, metric)
-		case pdata.MetricTypeDouble, pdata.MetricTypeMonotonicDouble:
+		case dataold.MetricTypeDouble, dataold.MetricTypeMonotonicDouble:
 			populateDblPoints(cfg, metric)
-		case pdata.MetricTypeHistogram:
+		case dataold.MetricTypeHistogram:
 			populateHistogramPoints(cfg, metric)
-		case pdata.MetricTypeSummary:
+		case dataold.MetricTypeSummary:
 			populateSummaryPoints(cfg, metric)
 		}
 	}
 }
 
-func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
+func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric dataold.Metric) {
 	desc := metric.MetricDescriptor()
 	desc.InitEmpty()
 	desc.SetName(fmt.Sprintf("%smetric_%d", cfg.MetricNamePrefix, g.metricID))
@@ -144,7 +144,7 @@ func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric pdata.Metric)
 	desc.SetType(cfg.MetricDescriptorType)
 }
 
-func populateIntPoints(cfg MetricCfg, metric pdata.Metric) {
+func populateIntPoints(cfg MetricCfg, metric dataold.Metric) {
 	pts := metric.Int64DataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
@@ -156,7 +156,7 @@ func populateIntPoints(cfg MetricCfg, metric pdata.Metric) {
 	}
 }
 
-func populateDblPoints(cfg MetricCfg, metric pdata.Metric) {
+func populateDblPoints(cfg MetricCfg, metric dataold.Metric) {
 	pts := metric.DoubleDataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
@@ -168,7 +168,7 @@ func populateDblPoints(cfg MetricCfg, metric pdata.Metric) {
 	}
 }
 
-func populateHistogramPoints(cfg MetricCfg, metric pdata.Metric) {
+func populateHistogramPoints(cfg MetricCfg, metric dataold.Metric) {
 	pts := metric.HistogramDataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
@@ -186,12 +186,12 @@ func populateHistogramPoints(cfg MetricCfg, metric pdata.Metric) {
 	}
 }
 
-func setHistogramBounds(hdp pdata.HistogramDataPoint, bounds ...float64) {
+func setHistogramBounds(hdp dataold.HistogramDataPoint, bounds ...float64) {
 	hdp.Buckets().Resize(len(bounds))
 	hdp.SetExplicitBounds(bounds)
 }
 
-func addHistogramVal(hdp pdata.HistogramDataPoint, val float64, ts pdata.TimestampUnixNano) {
+func addHistogramVal(hdp dataold.HistogramDataPoint, val float64, ts pdata.TimestampUnixNano) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
 	buckets := hdp.Buckets()
@@ -210,7 +210,7 @@ func addHistogramVal(hdp pdata.HistogramDataPoint, val float64, ts pdata.Timesta
 	}
 }
 
-func populateSummaryPoints(cfg MetricCfg, metric pdata.Metric) {
+func populateSummaryPoints(cfg MetricCfg, metric dataold.Metric) {
 	pts := metric.SummaryDataPoints()
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
@@ -227,7 +227,7 @@ func populateSummaryPoints(cfg MetricCfg, metric pdata.Metric) {
 	}
 }
 
-func setSummaryPercentiles(pt pdata.SummaryDataPoint, pctiles ...float64) {
+func setSummaryPercentiles(pt dataold.SummaryDataPoint, pctiles ...float64) {
 	vap := pt.ValueAtPercentiles()
 	l := len(pctiles)
 	vap.Resize(l)
@@ -236,7 +236,7 @@ func setSummaryPercentiles(pt pdata.SummaryDataPoint, pctiles ...float64) {
 	}
 }
 
-func addSummaryValue(pt pdata.SummaryDataPoint, value float64, pctileIndex int) {
+func addSummaryValue(pt dataold.SummaryDataPoint, value float64, pctileIndex int) {
 	pt.SetCount(pt.Count() + 1)
 	pt.SetSum(pt.Sum() + value)
 	vap := pt.ValueAtPercentiles().At(pctileIndex)

@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -77,7 +78,7 @@ func TestScrapeMetrics(t *testing.T) {
 	assertSameTimeStampForAllMetricsWithinResource(t, resourceMetrics)
 }
 
-func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics dataold.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attr := resourceMetrics.At(0).Resource().Attributes()
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessID)
@@ -89,7 +90,7 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 	}
 }
 
-func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertCPUTimeMetricValid(t *testing.T, resourceMetrics dataold.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
 	cpuTimeMetric := getMetric(t, cpuTimeDescriptor, resourceMetrics)
 	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric.MetricDescriptor())
 	if startTime != 0 {
@@ -102,12 +103,12 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.MetricDescriptor, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertMemoryUsageMetricValid(t *testing.T, descriptor dataold.MetricDescriptor, resourceMetrics dataold.ResourceMetricsSlice) {
 	memoryUsageMetric := getMetric(t, descriptor, resourceMetrics)
 	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric.MetricDescriptor())
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics dataold.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
 	diskIOMetric := getMetric(t, diskIODescriptor, resourceMetrics)
 	internal.AssertDescriptorEqual(t, diskIODescriptor, diskIOMetric.MetricDescriptor())
 	if startTime != 0 {
@@ -117,7 +118,7 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
-func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics dataold.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		ilms := resourceMetrics.At(i).InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
@@ -126,7 +127,7 @@ func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetric
 	}
 }
 
-func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.ResourceMetricsSlice) pdata.Metric {
+func getMetric(t *testing.T, descriptor dataold.MetricDescriptor, rms dataold.ResourceMetricsSlice) dataold.Metric {
 	for i := 0; i < rms.Len(); i++ {
 		metrics := getMetricSlice(t, rms.At(i))
 		for j := 0; j < metrics.Len(); j++ {
@@ -138,10 +139,10 @@ func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.Resour
 	}
 
 	require.Fail(t, fmt.Sprintf("no metric with name %s was returned", descriptor.Name()))
-	return pdata.NewMetric()
+	return dataold.NewMetric()
 }
 
-func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
+func getMetricSlice(t *testing.T, rm dataold.ResourceMetrics) dataold.MetricSlice {
 	ilms := rm.InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilms.Len())
 	return ilms.At(0).Metrics()

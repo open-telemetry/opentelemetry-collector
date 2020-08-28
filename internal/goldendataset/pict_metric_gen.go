@@ -17,18 +17,17 @@ package goldendataset
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // GenerateMetricDatas takes the filename of a PICT-generated file, walks through all of the rows in the PICT
 // file and for each row, generates a MetricData object, collecting them and returning them to the caller.
-func GenerateMetricDatas(metricPairsFile string) ([]data.MetricData, error) {
+func GenerateMetricDatas(metricPairsFile string) ([]dataold.MetricData, error) {
 	pictData, err := loadPictOutputFile(metricPairsFile)
 	if err != nil {
 		return nil, err
 	}
-	var out []data.MetricData
+	var out []dataold.MetricData
 	for i, values := range pictData {
 		if i == 0 {
 			continue
@@ -66,17 +65,17 @@ func pictToCfg(inputs PICTMetricInputs) MetricCfg {
 
 	switch inputs.MetricType {
 	case MetricTypeInt:
-		cfg.MetricDescriptorType = pdata.MetricTypeInt64
+		cfg.MetricDescriptorType = dataold.MetricTypeInt64
 	case MetricTypeMonotonicInt:
-		cfg.MetricDescriptorType = pdata.MetricTypeMonotonicInt64
+		cfg.MetricDescriptorType = dataold.MetricTypeMonotonicInt64
 	case MetricTypeDouble:
-		cfg.MetricDescriptorType = pdata.MetricTypeDouble
+		cfg.MetricDescriptorType = dataold.MetricTypeDouble
 	case MetricTypeMonotonicDouble:
-		cfg.MetricDescriptorType = pdata.MetricTypeMonotonicDouble
+		cfg.MetricDescriptorType = dataold.MetricTypeMonotonicDouble
 	case MetricTypeHistogram:
-		cfg.MetricDescriptorType = pdata.MetricTypeHistogram
+		cfg.MetricDescriptorType = dataold.MetricTypeHistogram
 	case MetricTypeSummary:
-		cfg.MetricDescriptorType = pdata.MetricTypeSummary
+		cfg.MetricDescriptorType = dataold.MetricTypeSummary
 	}
 
 	switch inputs.NumPtLabels {

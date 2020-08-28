@@ -24,10 +24,10 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -208,7 +208,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 }
 
 func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
+	return pdatautil.MetricsFromInternalMetrics(dataold.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
 }
 
 func getMetricDataFromJSON(t *testing.T, rmString string) pdata.Metrics {
@@ -217,7 +217,7 @@ func getMetricDataFromJSON(t *testing.T, rmString string) pdata.Metrics {
 	err := jsonpb.UnmarshalString(rmString, &mockedResourceMetrics)
 	require.NoError(t, err, "failed to get mocked resource metrics object", err)
 
-	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics}))
+	return pdatautil.MetricsFromInternalMetrics(dataold.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
