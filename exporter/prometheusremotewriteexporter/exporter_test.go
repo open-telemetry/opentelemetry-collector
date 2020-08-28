@@ -469,7 +469,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 // Test_pushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
-func Test_pushMetrics(t *testing.T) {
+func Test_PushMetrics(t *testing.T) {
 
 	noTempBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataManyMetricsSameResource(10)))
 	invalidTypeBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataMetricTypeInvalid()))
