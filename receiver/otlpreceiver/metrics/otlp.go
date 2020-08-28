@@ -73,7 +73,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md dataold.MetricData
 	}
 
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
-	err := r.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md))
+	err := r.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md))
 	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, metricCount, err)
 
 	return err

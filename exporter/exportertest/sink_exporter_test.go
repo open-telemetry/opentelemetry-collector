@@ -62,8 +62,8 @@ func TestSinkMetricsExporter(t *testing.T) {
 	md := testdataold.GenerateMetricDataOneMetric()
 	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
-		want = append(want, pdatautil.MetricsFromInternalMetrics(md))
+		require.NoError(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
+		want = append(want, pdatautil.MetricsFromOldInternalMetrics(md))
 	}
 	assert.Equal(t, want, sink.AllMetrics())
 	assert.Equal(t, len(want), sink.MetricsCount())
@@ -78,7 +78,7 @@ func TestSinkMetricsExporter_Error(t *testing.T) {
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	sink.SetConsumeMetricsError(errors.New("my error"))
 	md := testdataold.GenerateMetricDataOneMetric()
-	require.Error(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	require.Error(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 	assert.Len(t, sink.AllMetrics(), 0)
 	assert.Equal(t, 0, sink.MetricsCount())
 	require.NoError(t, sink.Shutdown(context.Background()))

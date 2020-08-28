@@ -100,6 +100,6 @@ func TestSummary(t *testing.T) {
 func TestPDMToPDRM(t *testing.T) {
 	md := dataold.NewMetricData()
 	md.ResourceMetrics().Resize(1)
-	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromInternalMetrics(md)})
+	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromOldInternalMetrics(md)})
 	require.Equal(t, 1, len(rm))
 }

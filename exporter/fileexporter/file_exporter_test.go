@@ -58,7 +58,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	lme := &fileExporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
@@ -66,7 +66,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	var j collectormetrics.ExportMetricsServiceRequest
 	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, dataold.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)), j.ResourceMetrics)
+	assert.EqualValues(t, dataold.MetricDataToOtlp(pdatautil.MetricsToOldInternalMetrics(md)), j.ResourceMetrics)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {

@@ -364,7 +364,7 @@ func (s *loggingExporter) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
 ) (int, error) {
-	imd := pdatautil.MetricsToInternalMetrics(md)
+	imd := pdatautil.MetricsToOldInternalMetrics(md)
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", imd.MetricCount()))
 
 	if !s.debug {

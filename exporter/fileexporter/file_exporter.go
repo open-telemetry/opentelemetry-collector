@@ -50,7 +50,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	request := otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: dataold.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)),
+		ResourceMetrics: dataold.MetricDataToOtlp(pdatautil.MetricsToOldInternalMetrics(md)),
 	}
 	return exportMessageAsLine(e, &request)
 }

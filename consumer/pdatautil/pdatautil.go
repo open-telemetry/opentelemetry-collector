@@ -48,10 +48,10 @@ func MetricsFromMetricsData(ocmds []consumerdata.MetricsData) pdata.Metrics {
 	return pdata.Metrics{InternalOpaque: ocmds}
 }
 
-// MetricsToInternalMetrics returns the `data.MetricData` representation of the `pdata.Metrics`.
+// MetricsToOldInternalMetrics returns the `data.MetricData` representation of the `pdata.Metrics`.
 //
 // This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
-func MetricsToInternalMetrics(md pdata.Metrics) dataold.MetricData {
+func MetricsToOldInternalMetrics(md pdata.Metrics) dataold.MetricData {
 	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
 		return ims
 	}
@@ -64,7 +64,7 @@ func MetricsToInternalMetrics(md pdata.Metrics) dataold.MetricData {
 // MetricsFromMetricsData returns the `pdata.Metrics` representation of the `data.MetricData`.
 //
 // This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
-func MetricsFromInternalMetrics(md dataold.MetricData) pdata.Metrics {
+func MetricsFromOldInternalMetrics(md dataold.MetricData) pdata.Metrics {
 	return pdata.Metrics{InternalOpaque: md}
 }
 

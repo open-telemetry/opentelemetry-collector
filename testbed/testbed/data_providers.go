@@ -159,7 +159,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			})
 		}
 	}
-	return pdatautil.MetricsFromInternalMetrics(metricData), false
+	return pdatautil.MetricsFromOldInternalMetrics(metricData), false
 }
 
 func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span {
@@ -261,7 +261,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-	return pdatautil.MetricsFromInternalMetrics(dataold.MetricData{}), true
+	return pdatautil.MetricsFromOldInternalMetrics(dataold.MetricData{}), true
 }
 
 func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {

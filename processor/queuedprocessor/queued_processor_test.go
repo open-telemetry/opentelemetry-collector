@@ -188,7 +188,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
@@ -220,7 +220,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnNoRetry(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
@@ -252,7 +252,7 @@ func TestMetricsQueueProcessor_EnqueueOnError(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
@@ -351,7 +351,7 @@ func TestMetricsQueueProcessorHappyPath(t *testing.T) {
 	wantBatches := 10
 	wantMetricPoints := 2 * 20
 	for i := 0; i < wantBatches; i++ {
-		md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+		md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 		mockP.run(func() {
 			require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
 		})

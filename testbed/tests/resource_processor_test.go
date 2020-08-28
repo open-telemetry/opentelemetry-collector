@@ -208,7 +208,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 }
 
 func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdatautil.MetricsFromInternalMetrics(dataold.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
+	return pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
 }
 
 func getMetricDataFromJSON(t *testing.T, rmString string) pdata.Metrics {
@@ -217,7 +217,7 @@ func getMetricDataFromJSON(t *testing.T, rmString string) pdata.Metrics {
 	err := jsonpb.UnmarshalString(rmString, &mockedResourceMetrics)
 	require.NoError(t, err, "failed to get mocked resource metrics object", err)
 
-	return pdatautil.MetricsFromInternalMetrics(dataold.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics}))
+	return pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
@@ -280,10 +280,10 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			// Assert Resources
 			m := tc.MockBackend.ReceivedMetrics[0]
-			rm := pdatautil.MetricsToInternalMetrics(m).ResourceMetrics()
+			rm := pdatautil.MetricsToOldInternalMetrics(m).ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
 
-			expectidMD := pdatautil.MetricsToInternalMetrics(test.expectedMetricData)
+			expectidMD := pdatautil.MetricsToOldInternalMetrics(test.expectedMetricData)
 			require.Equal(t,
 				attributesToMap(expectidMD.ResourceMetrics().At(0).Resource().Attributes()),
 				attributesToMap(rm.At(0).Resource().Attributes()),

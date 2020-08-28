@@ -114,7 +114,7 @@ func TestExport(t *testing.T) {
 	require.Equal(t, 1, len(metricSink.AllMetrics()),
 		"unexpected length: %v", len(metricSink.AllMetrics()))
 
-	assert.EqualValues(t, metricData, pdatautil.MetricsToInternalMetrics(metricSink.AllMetrics()[0]))
+	assert.EqualValues(t, metricData, pdatautil.MetricsToOldInternalMetrics(metricSink.AllMetrics()[0]))
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
