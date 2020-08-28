@@ -35,7 +35,7 @@ func OCSliceToMetricData(ocmds []consumerdata.MetricsData) dataold.MetricData {
 		return metricData
 	}
 	for _, ocmd := range ocmds {
-		appendOcToMetriData(ocmd, metricData)
+		appendOcToMetricData(ocmd, metricData)
 	}
 	return metricData
 }
@@ -43,11 +43,11 @@ func OCSliceToMetricData(ocmds []consumerdata.MetricsData) dataold.MetricData {
 // OCToMetricData converts OC data format to MetricData.
 func OCToMetricData(md consumerdata.MetricsData) dataold.MetricData {
 	metricData := dataold.NewMetricData()
-	appendOcToMetriData(md, metricData)
+	appendOcToMetricData(md, metricData)
 	return metricData
 }
 
-func appendOcToMetriData(md consumerdata.MetricsData, dest dataold.MetricData) {
+func appendOcToMetricData(md consumerdata.MetricsData, dest dataold.MetricData) {
 	if md.Node == nil && md.Resource == nil && len(md.Metrics) == 0 {
 		return
 	}
@@ -124,39 +124,39 @@ func appendOcToMetriData(md consumerdata.MetricsData, dest dataold.MetricData) {
 			// Add the metric to the "combinedMetrics". combinedMetrics length is equal
 			// to combinedMetricCount. The loop above that calculates combinedMetricCount
 			// has exact same conditions as we have here in this loop.
-			ocMetricToInternal(ocMetric, combinedMetrics.At(combinedMetricIdx))
+			ocMetricToOldMetrics(ocMetric, combinedMetrics.At(combinedMetricIdx))
 			combinedMetricIdx++
 		} else {
 			// This metric has a different Resource and must be placed in a different
 			// ResourceMetrics instance. Create a separate ResourceMetrics item just for this metric
 			// and store at resourceMetricIdx.
-			ocMetricToResourceMetrics(ocMetric, md.Node, rms.At(initialRmsLen+resourceMetricIdx))
+			ocMetricToOldResourceMetrics(ocMetric, md.Node, rms.At(initialRmsLen+resourceMetricIdx))
 			resourceMetricIdx++
 		}
 	}
 }
 
-func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out dataold.ResourceMetrics) {
+func ocMetricToOldResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out dataold.ResourceMetrics) {
 	ocNodeResourceToInternal(node, ocMetric.Resource, out.Resource())
 	ilms := out.InstrumentationLibraryMetrics()
 	ilms.Resize(1)
 	metrics := ilms.At(0).Metrics()
 	metrics.Resize(1)
-	ocMetricToInternal(ocMetric, metrics.At(0))
+	ocMetricToOldMetrics(ocMetric, metrics.At(0))
 }
 
-// ocMetricToInternal conversts ocMetric to internal representation and fill metric
-func ocMetricToInternal(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
-	descriptorToInternal(ocMetric.GetMetricDescriptor(), metric.MetricDescriptor())
-	setDataPoints(ocMetric, metric)
+// ocMetricToOldMetrics conversts ocMetric to internal representation and fill metric
+func ocMetricToOldMetrics(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
+	descriptorToOldMetrics(ocMetric.GetMetricDescriptor(), metric.MetricDescriptor())
+	setDataPointsToOldMetrics(ocMetric, metric)
 }
 
-func descriptorToInternal(ocDescriptor *ocmetrics.MetricDescriptor, descriptor dataold.MetricDescriptor) {
+func descriptorToOldMetrics(ocDescriptor *ocmetrics.MetricDescriptor, descriptor dataold.MetricDescriptor) {
 	if ocDescriptor == nil {
 		return
 	}
 
-	descriptorType := descriptorTypeToInternal(ocDescriptor.Type)
+	descriptorType := descriptorTypeToOldMetrics(ocDescriptor.Type)
 	if descriptorType == invalidMetricType {
 		return
 	}
@@ -168,7 +168,7 @@ func descriptorToInternal(ocDescriptor *ocmetrics.MetricDescriptor, descriptor d
 	descriptor.SetUnit(ocDescriptor.GetUnit())
 }
 
-func descriptorTypeToInternal(t ocmetrics.MetricDescriptor_Type) dataold.MetricType {
+func descriptorTypeToOldMetrics(t ocmetrics.MetricDescriptor_Type) dataold.MetricType {
 	switch t {
 	case ocmetrics.MetricDescriptor_UNSPECIFIED:
 		return dataold.MetricTypeInvalid
@@ -189,8 +189,8 @@ func descriptorTypeToInternal(t ocmetrics.MetricDescriptor_Type) dataold.MetricT
 	}
 }
 
-// setDataPoints converts OC timeseries to internal datapoints based on metric type
-func setDataPoints(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
+// setDataPointsToOldMetrics converts OC timeseries to internal datapoints based on metric type
+func setDataPointsToOldMetrics(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
 	var int64DataPointsNum, doubleDataPointsNum, histogramDataPointsNum, summaryDataPointsNum int
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
 	ocPointsCount := getPointsCount(ocMetric)
@@ -215,7 +215,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
 				dataPoint := dataPoints.At(int64DataPointsNum)
 				dataPoint.SetStartTime(startTimestamp)
 				dataPoint.SetTimestamp(pointTimestamp)
-				setInt64DataPointValue(dataPoint, point)
+				dataPoint.SetValue(point.GetInt64Value())
 				setLabelsMap(ocLabelsKeys, timeseries.GetLabelValues(), dataPoint.LabelsMap())
 				int64DataPointsNum++
 
@@ -227,7 +227,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
 				dataPoint := dataPoints.At(doubleDataPointsNum)
 				dataPoint.SetStartTime(startTimestamp)
 				dataPoint.SetTimestamp(pointTimestamp)
-				setDoubleDataPointValue(dataPoint, point)
+				dataPoint.SetValue(point.GetDoubleValue())
 				setLabelsMap(ocLabelsKeys, timeseries.GetLabelValues(), dataPoint.LabelsMap())
 				doubleDataPointsNum++
 
@@ -251,7 +251,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric dataold.Metric) {
 				dataPoint := dataPoints.At(summaryDataPointsNum)
 				dataPoint.SetStartTime(startTimestamp)
 				dataPoint.SetTimestamp(pointTimestamp)
-				setSummaryDataPointValue(dataPoint, point)
+				setSummaryDataPointValueToOldMetrics(dataPoint, point)
 				setLabelsMap(ocLabelsKeys, timeseries.GetLabelValues(), dataPoint.LabelsMap())
 				summaryDataPointsNum++
 			}
@@ -296,35 +296,27 @@ func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics
 	}
 }
 
-func setInt64DataPointValue(dataPoint dataold.Int64DataPoint, point *ocmetrics.Point) {
-	dataPoint.SetValue(point.GetInt64Value())
-}
-
-func setDoubleDataPointValue(dataPoint dataold.DoubleDataPoint, point *ocmetrics.Point) {
-	dataPoint.SetValue(point.GetDoubleValue())
-}
-
 func setHistogramDataPointValue(dataPoint dataold.HistogramDataPoint, point *ocmetrics.Point) {
 	distributionValue := point.GetDistributionValue()
 	dataPoint.SetSum(distributionValue.GetSum())
 	dataPoint.SetCount(uint64(distributionValue.GetCount()))
-	histogramBucketsToInternal(distributionValue.GetBuckets(), dataPoint.Buckets())
+	histogramBucketsToOldMetrics(distributionValue.GetBuckets(), dataPoint.Buckets())
 	dataPoint.SetExplicitBounds(distributionValue.GetBucketOptions().GetExplicit().GetBounds())
 }
 
-func histogramBucketsToInternal(ocBuckets []*ocmetrics.DistributionValue_Bucket, buckets dataold.HistogramBucketSlice) {
+func histogramBucketsToOldMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket, buckets dataold.HistogramBucketSlice) {
 	buckets.Resize(len(ocBuckets))
 	for i := 0; i < buckets.Len(); i++ {
 		bucket := buckets.At(i)
 		bucket.SetCount(uint64(ocBuckets[i].GetCount()))
 		if ocBuckets[i].GetExemplar() != nil {
 			bucket.Exemplar().InitEmpty()
-			exemplarToInternal(ocBuckets[i].GetExemplar(), bucket.Exemplar())
+			exemplarToOldMetrics(ocBuckets[i].GetExemplar(), bucket.Exemplar())
 		}
 	}
 }
 
-func exemplarToInternal(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar dataold.HistogramBucketExemplar) {
+func exemplarToOldMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar dataold.HistogramBucketExemplar) {
 	if ocExemplar.GetTimestamp() != nil {
 		exemplar.SetTimestamp(internal.TimestampToUnixNano(ocExemplar.GetTimestamp()))
 	}
@@ -337,14 +329,14 @@ func exemplarToInternal(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempl
 	}
 }
 
-func setSummaryDataPointValue(dataPoint dataold.SummaryDataPoint, point *ocmetrics.Point) {
+func setSummaryDataPointValueToOldMetrics(dataPoint dataold.SummaryDataPoint, point *ocmetrics.Point) {
 	summaryValue := point.GetSummaryValue()
 	dataPoint.SetSum(summaryValue.GetSum().GetValue())
 	dataPoint.SetCount(uint64(summaryValue.GetCount().GetValue()))
-	percentileToInternal(summaryValue.GetSnapshot().GetPercentileValues(), dataPoint.ValueAtPercentiles())
+	percentileToOldMetrics(summaryValue.GetSnapshot().GetPercentileValues(), dataPoint.ValueAtPercentiles())
 }
 
-func percentileToInternal(
+func percentileToOldMetrics(
 	ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile,
 	percentiles dataold.SummaryValueAtPercentileSlice,
 ) {
