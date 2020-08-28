@@ -275,8 +275,8 @@ func Test_handleHistogramMetric(t *testing.T) {
 	}
 }
 
-// Test_newPrwExporter checks that a new exporter instance with non-nil fields is initialized
-func Test_newPrwExporter(t *testing.T) {
+// Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
+func Test_NewPrwExporter(t *testing.T) {
 	config := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
@@ -321,7 +321,7 @@ func Test_newPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := newPrwExporter(tt.namespace, tt.endpoint, tt.client)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client)
 
 			if tt.returnError {
 				assert.Error(t, err)
@@ -459,7 +459,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 	HTTPClient := http.DefaultClient
 	//after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := newPrwExporter("test", endpoint.String(), HTTPClient)
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient)
 	if err != nil {
 		return err
 	}
@@ -729,7 +729,7 @@ func Test_pushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			prwe, nErr := newPrwExporter(config.Namespace, serverURL.String(), c)
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c)
 			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
