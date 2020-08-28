@@ -70,7 +70,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*Pr
 
 // shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *PrwExporter) shutdown(context.Context) error {
+func (prwe *PrwExporter) Shutdown(context.Context) error {
 	close(prwe.closeChan)
 	prwe.wg.Wait()
 	return nil

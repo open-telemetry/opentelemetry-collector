@@ -337,15 +337,15 @@ func Test_NewPrwExporter(t *testing.T) {
 	}
 }
 
-// Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
-func Test_shutdown(t *testing.T) {
+// Test_Shutdown checks after Shutdown is called, incoming calls to pushMetrics return error.
+func Test_Shutdown(t *testing.T) {
 	prwe := &PrwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
 	errChan := make(chan error, 5)
-	err := prwe.shutdown(context.Background())
+	err := prwe.Shutdown(context.Background())
 	require.NoError(t, err)
 	errChan = make(chan error, 5)
 	for i := 0; i < 5; i++ {

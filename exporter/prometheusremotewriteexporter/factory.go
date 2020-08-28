@@ -62,7 +62,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(prwCfg.QueueSettings),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
-		exporterhelper.WithShutdown(prwe.shutdown),
+		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 	return prwexp, err
 }
