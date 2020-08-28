@@ -90,7 +90,7 @@ func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) (int, 
 }
 
 func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	imd := pdatautil.MetricsToInternalMetrics(md)
+	imd := pdatautil.MetricsToOldInternalMetrics(md)
 	request := &otlpmetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: dataold.MetricDataToOtlp(imd),
 	}

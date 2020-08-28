@@ -176,7 +176,7 @@ func (hmr *receiver) scrapeMetrics(ctx context.Context) {
 		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Error(s) when scraping metrics: %v", componenterror.CombineErrors(errors))})
 	}
 
-	if err := hmr.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(metricData)); err != nil {
+	if err := hmr.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(metricData)); err != nil {
 		span.SetStatus(trace.Status{Code: trace.StatusCodeDataLoss, Message: fmt.Sprintf("Unable to process metrics: %v", err)})
 		return
 	}

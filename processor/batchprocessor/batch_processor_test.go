@@ -277,13 +277,13 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 			metrics.At(metricIndex).MetricDescriptor().SetName(getTestMetricName(requestNum, metricIndex))
 		}
 		metricDataSlice = append(metricDataSlice, md.Clone())
-		pd := pdatautil.MetricsFromInternalMetrics(md)
+		pd := pdatautil.MetricsFromOldInternalMetrics(md)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 
 	// Added to test case with empty resources sent.
 	md := testdataold.GenerateMetricDataEmpty()
-	assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
 
@@ -325,7 +325,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdataold.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
 		size += md.Size()
-		pd := pdatautil.MetricsFromInternalMetrics(md)
+		pd := pdatautil.MetricsFromOldInternalMetrics(md)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -340,7 +340,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	receivedMds := sink.AllMetrics()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, md := range receivedMds {
-		im := pdatautil.MetricsToInternalMetrics(md)
+		im := pdatautil.MetricsToOldInternalMetrics(md)
 		require.Equal(t, expectedBatchingFactor, im.ResourceMetrics().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
 			require.Equal(t, metricsPerRequest, im.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
@@ -380,7 +380,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdataold.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
-		pd := pdatautil.MetricsFromInternalMetrics(md)
+		pd := pdatautil.MetricsFromOldInternalMetrics(md)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 
@@ -405,7 +405,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	receivedMds := sink.AllMetrics()
 	require.Equal(t, expectedBatchesNum, len(receivedMds))
 	for _, md := range receivedMds {
-		im := pdatautil.MetricsToInternalMetrics(md)
+		im := pdatautil.MetricsToOldInternalMetrics(md)
 		require.Equal(t, expectedBatchingFactor, im.ResourceMetrics().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
 			require.Equal(t, metricsPerRequest, im.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
@@ -428,7 +428,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdataold.GenerateMetricDataManyMetricsSameResource(metricsPerRequest)
-		pd := pdatautil.MetricsFromInternalMetrics(md)
+		pd := pdatautil.MetricsFromOldInternalMetrics(md)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), pd))
 	}
 
@@ -473,7 +473,7 @@ func spansReceivedByName(tds []pdata.Traces) map[string]pdata.Span {
 func metricsReceivedByName(mds []pdata.Metrics) map[string]dataold.Metric {
 	metricsReceivedByName := map[string]dataold.Metric{}
 	for i := range mds {
-		im := pdatautil.MetricsToInternalMetrics(mds[i])
+		im := pdatautil.MetricsToOldInternalMetrics(mds[i])
 		rms := im.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			rm := rms.At(i)

@@ -141,7 +141,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 }
 
 func assertIncludesStandardMetrics(t *testing.T, got pdata.Metrics) {
-	md := pdatautil.MetricsToInternalMetrics(got)
+	md := pdatautil.MetricsToOldInternalMetrics(got)
 
 	// get the first ResourceMetrics object
 	rms := md.ResourceMetrics()
@@ -165,7 +165,7 @@ func assertIncludesResourceMetrics(t *testing.T, got pdata.Metrics) {
 		return
 	}
 
-	md := pdatautil.MetricsToInternalMetrics(got)
+	md := pdatautil.MetricsToOldInternalMetrics(got)
 
 	// get the superset of metrics returned by all resource metrics (excluding the first)
 	returnedMetrics := make(map[string]struct{})
@@ -301,7 +301,7 @@ func TestGatherMetrics_Error(t *testing.T) {
 
 	// expect to get one empty resource metrics entry
 	require.Equal(t, 1, len(got))
-	rm := pdatautil.MetricsToInternalMetrics(got[0]).ResourceMetrics()
+	rm := pdatautil.MetricsToOldInternalMetrics(got[0]).ResourceMetrics()
 	require.Equal(t, 1, rm.Len())
 	ilm := rm.At(0).InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilm.Len())

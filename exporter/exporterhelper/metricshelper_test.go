@@ -47,7 +47,7 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataEmpty()), nil)
+	mr := newMetricsRequest(context.Background(), pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty()), nil)
 
 	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
 	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
@@ -72,7 +72,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
-	assert.Nil(t, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.Nil(t, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 	assert.Nil(t, me.Shutdown(context.Background()))
 }
 
@@ -82,7 +82,7 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
-	require.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	require.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 }
 
 func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
@@ -169,7 +169,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	md := testdataold.GenerateMetricDataTwoMetrics()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 	}
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
@@ -186,7 +186,7 @@ func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numReque
 	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, me.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
+		require.Equal(t, wantError, me.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
 	}
 }
 

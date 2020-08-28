@@ -273,7 +273,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	md := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataEmpty())
+	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty())
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
@@ -285,7 +285,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A trace with 2 spans.
-	md = pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md = pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 
 	expectedOTLPReq := &otlpmetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: testdataold.GenerateMetricOtlpTwoMetrics(),

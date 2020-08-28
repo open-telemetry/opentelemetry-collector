@@ -38,7 +38,7 @@ func (mf MetricDiff) String() string {
 
 func pdmToPDRM(pdm []pdata.Metrics) (out []dataold.ResourceMetrics) {
 	for _, m := range pdm {
-		md := pdatautil.MetricsToInternalMetrics(m)
+		md := pdatautil.MetricsToOldInternalMetrics(m)
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			rm := rms.At(i)

@@ -247,7 +247,7 @@ func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
 }
 
 func (bm *batchMetrics) export(ctx context.Context) error {
-	return bm.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(bm.metricData))
+	return bm.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(bm.metricData))
 }
 
 func (bm *batchMetrics) itemCount() uint32 {
@@ -265,7 +265,7 @@ func (bm *batchMetrics) reset() {
 }
 
 func (bm *batchMetrics) add(item interface{}) {
-	md := pdatautil.MetricsToInternalMetrics(item.(pdata.Metrics))
+	md := pdatautil.MetricsToOldInternalMetrics(item.(pdata.Metrics))
 
 	newMetricsCount := md.MetricCount()
 	if newMetricsCount == 0 {

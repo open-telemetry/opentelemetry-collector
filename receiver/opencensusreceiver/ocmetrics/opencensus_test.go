@@ -69,14 +69,14 @@ func TestReceiver_endToEnd(t *testing.T) {
 	}()
 
 	md := testdataold.GenerateMetricDataOneMetric()
-	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 
 	testutil.WaitFor(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0
 	})
 	gotMetrics := metricSink.AllMetrics()
 	require.Len(t, gotMetrics, 1)
-	gotMd := pdatautil.MetricsToInternalMetrics(gotMetrics[0])
+	gotMd := pdatautil.MetricsToOldInternalMetrics(gotMetrics[0])
 	assert.Equal(t, md, gotMd)
 }
 

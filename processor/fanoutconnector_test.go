@@ -105,7 +105,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md))
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -115,7 +115,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	for _, p := range processors {
 		m := p.(*exportertest.SinkMetricsExporter)
 		assert.Equal(t, wantMetricsCount, m.MetricsCount())
-		assert.EqualValues(t, md, pdatautil.MetricsToInternalMetrics(m.AllMetrics()[0]))
+		assert.EqualValues(t, md, pdatautil.MetricsToOldInternalMetrics(m.AllMetrics()[0]))
 	}
 }
 
@@ -134,7 +134,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md))
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return
