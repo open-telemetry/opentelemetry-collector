@@ -4,25 +4,27 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+// Note: implementation for this class is in a separate PR
 package prometheusremotewriteexporter
 
 import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
@@ -31,8 +33,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
@@ -49,12 +51,12 @@ type prwExporter struct {
 func newPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
 
 	if client == nil {
-		return nil, errors.New("http client cannot be nil")
+		return nil, fmt.Errorf("http client cannot be nil")
 	}
 
 	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
-		return nil, errors.New("invalid endpoint")
+		return nil, fmt.Errorf("invalid endpoint")
 	}
 
 	return &prwExporter{
@@ -78,35 +80,35 @@ func (prwe *prwExporter) shutdown(context.Context) error {
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
 func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 	select {
 	case <-prwe.closeChan:
-		return pdatautil.MetricCount(md), errors.New("shutdown has been called")
+		return pdatautil.MetricCount(md), fmt.Errorf("shutdown has been called")
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
-		errs := []string{}
+		errs := []error{}
 
-		resourceMetrics := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
-		for _, r := range resourceMetrics {
-			if resourceMetrics == nil {
+		resourceMetrics := dataold.MetricDataToOtlp(pdatautil.MetricsToOldInternalMetrics(md))
+		for _, resourceMetric := range resourceMetrics {
+			if resourceMetric == nil {
 				continue
 			}
-			for _, instMetrics := range r.InstrumentationLibraryMetrics {
-				if instMetrics == nil {
+			// TODO: add resource attributes as labels, probably in next PR
+			for _, instrumentationMetrics := range resourceMetric.InstrumentationLibraryMetrics {
+				if instrumentationMetrics == nil {
 					continue
 				}
 				// TODO: decide if instrumentation library information should be exported as labels
-				for _, metric := range instMetrics.Metrics {
+				for _, metric := range instrumentationMetrics.Metrics {
 					if metric == nil {
 						continue
 					}
 					// check for valid type and temporality combination
 					if ok := validateMetrics(metric.MetricDescriptor); !ok {
 						dropped++
-						errs = append(errs, "invalid temporality and type combination")
+						errs = append(errs, fmt.Errorf("invalid temporality and type combination"))
 						continue
 					}
 					// handle individual metric based on type
@@ -114,11 +116,12 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
 						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
 						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
-							errs = append(errs, err.Error())
+							dropped++
+							errs = append(errs, err)
 						}
 					case otlp.MetricDescriptor_HISTOGRAM:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
-							errs = append(errs, err.Error())
+							errs = append(errs, err)
 						}
 					}
 				}
@@ -130,7 +133,7 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 		}
 
 		if dropped != 0 {
-			return dropped, errors.New(strings.Join(errs, "\n"))
+			return dropped, componenterror.CombineErrors(errs)
 		}
 
 		return 0, nil
@@ -141,7 +144,6 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-	// add check for nil
 
 	mType := metric.MetricDescriptor.Type
 
@@ -149,7 +151,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 	// int points
 	case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64:
 		if metric.Int64DataPoints == nil {
-			return errors.New("nil data point field in metric" + metric.GetMetricDescriptor().Name)
+			return fmt.Errorf("nil data point field in metric %v", metric.GetMetricDescriptor().Name)
 		}
 
 		for _, pt := range metric.Int64DataPoints {
@@ -170,7 +172,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 	// double points
 	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
 		if metric.DoubleDataPoints == nil {
-			return errors.New("nil data point field in metric" + metric.GetMetricDescriptor().Name)
+			return fmt.Errorf("nil data point field in metric %v",  metric.GetMetricDescriptor().Name)
 		}
 		for _, pt := range metric.DoubleDataPoints {
 
@@ -187,7 +189,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 		return nil
 	}
 
-	return errors.New("invalid metric type: wants int or double data points")
+	return fmt.Errorf("invalid metric type: wants int or double data points")
 }
 
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
@@ -196,7 +198,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.HistogramDataPoints == nil {
-		return errors.New("invalid metric type: wants histogram points")
+		return fmt.Errorf("invalid metric type: wants histogram points")
 	}
 
 	for _, pt := range metric.HistogramDataPoints {
@@ -243,15 +245,13 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 			Value:     float64(totalCount),
 			Timestamp: time,
 		}
-		inflabels := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
-		addSample(tsMap, infBucket, inflabels, mType)
+		infLabels := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
+		addSample(tsMap, infBucket, infLabels, mType)
 	}
 	return nil
 }
 
-// Because we are adhering closely to the Remote Write API, we must Export a
-// Snappy-compressed WriteRequest instance of the TimeSeries Metrics in order
-// for the Remote Write Endpoint to properly receive our Metrics data.
+// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(tsMap)
@@ -259,13 +259,12 @@ func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		return err
 	}
 
-	//Uses proto.Marshal to convert the WriteRequest into wire format (bytes array)
+	//Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(req)
 	if err != nil {
 		return err
 	}
 	buf := make([]byte, len(data), cap(data))
-	//Makes use of the snappy compressor, as we are emulating the Remote Write package
 	compressedData := snappy.Encode(buf, data)
 
 	//Create the HTTP POST request to send to the endpoint
@@ -277,11 +276,9 @@ func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// Add necessary headers specified by:
 	// https://cortexmetrics.io/docs/apis/#remote-api
 	httpReq.Header.Add("Content-Encoding", "snappy")
-	httpReq.Header.Set("User-Agent", "otel-collector")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 
-	//Changing context of the httpreq to global context
 	httpReq = httpReq.WithContext(ctx)
 
 	_, cancel := context.WithTimeout(context.Background(), prwe.client.Timeout)
@@ -292,14 +289,14 @@ func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		return err
 	}
 
-	//Only even status codes < 400 are okay
-	if httpResp.StatusCode/100 != 2 || httpResp.StatusCode >= 400 {
+	if httpResp.StatusCode/100 != 2 {
 		scanner := bufio.NewScanner(io.LimitReader(httpResp.Body, 256))
 		line := ""
 		if scanner.Scan() {
 			line = scanner.Text()
 		}
-		err = errors.New("server returned HTTP status: " + httpResp.Status + ", " + line)
+		errMsg := "server returned HTTP status " + httpResp.Status + ": " + line
+		return fmt.Errorf(errMsg)
 	}
-	return err
+	return nil
 }

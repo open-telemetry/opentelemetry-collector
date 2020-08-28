@@ -19,9 +19,10 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 
-	"go.opentelemetry.io/collector/internal/data"
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
+
 )
 
 type combination struct {
@@ -207,8 +208,8 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
-func setCumulative(metricsData *data.MetricData) {
-	for _, r := range data.MetricDataToOtlp(*metricsData) {
+func setCumulative(metricsData *dataold.MetricData) {
+	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
 				m.MetricDescriptor.Temporality = otlp.MetricDescriptor_CUMULATIVE
@@ -217,8 +218,8 @@ func setCumulative(metricsData *data.MetricData) {
 	}
 }
 
-func setDataPointToNil(metricsData *data.MetricData, dataField string) {
-	for _, r := range data.MetricDataToOtlp(*metricsData) {
+func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
+	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
 				switch dataField {
@@ -236,8 +237,8 @@ func setDataPointToNil(metricsData *data.MetricData, dataField string) {
 	}
 }
 
-func setType(metricsData *data.MetricData, dataField string) {
-	for _, r := range data.MetricDataToOtlp(*metricsData) {
+func setType(metricsData *dataold.MetricData, dataField string) {
+	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
 				switch dataField {

@@ -35,9 +35,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/data"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 // TODO: add bucket and histogram test cases for Test_PushMetrics
@@ -305,7 +305,7 @@ func Test_shutdown(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			_, ok := prwe.pushMetrics(context.Background(),
-				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()))
+				pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty()))
 			errChan <- ok
 		}()
 	}
@@ -423,19 +423,19 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 // expected
 func Test_pushMetrics(t *testing.T) {
 
-	noTempBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataManyMetricsSameResource(10))
-	invalidTypeBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())
-	nilDescBatch := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataNilMetricDescriptor())
+	noTempBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataManyMetricsSameResource(10)))
+	invalidTypeBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataMetricTypeInvalid()))
+	nilDescBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataNilMetricDescriptor()))
 
 	// 10 counter metrics, 2 points in each. Two TimeSeries in total
-	batch := testdata.GenerateMetricDataManyMetricsSameResource(10)
+	batch := testdataold.GenerateMetricDataManyMetricsSameResource(10)
 	setCumulative(&batch)
-	scalarBatch := pdatautil.MetricsFromInternalMetrics(batch)
+	scalarBatch := pdatautil.MetricsFromOldInternalMetrics((batch))
 
-	nilBatch1 := testdata.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch2 := testdata.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch3 := testdata.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch4 := testdata.GenerateMetricDataManyMetricsSameResource(10)
+	nilBatch1 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
+	nilBatch2 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
+	nilBatch3 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
+	nilBatch4 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
 
 	setCumulative(&nilBatch1)
 	setCumulative(&nilBatch2)
@@ -447,11 +447,11 @@ func Test_pushMetrics(t *testing.T) {
 	setType(&nilBatch3, typeHistogram)
 	setType(&nilBatch4, typeSummary)
 
-	nilIntDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch1)
-	nilDoubleDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch2)
-	nilHistogramDataPointsBatch := pdatautil.MetricsFromInternalMetrics(nilBatch3)
+	nilIntDataPointsBatch := pdatautil.MetricsFromOldInternalMetrics((nilBatch1))
+	nilDoubleDataPointsBatch := pdatautil.MetricsFromOldInternalMetrics((nilBatch2))
+	nilHistogramDataPointsBatch := pdatautil.MetricsFromOldInternalMetrics((nilBatch3))
 
-	hist := data.MetricDataToOtlp(testdata.GenerateMetricDataOneMetric())
+	hist := dataold.MetricDataToOtlp(testdataold.GenerateMetricDataOneMetric())
 	hist[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
 		MetricDescriptor: getDescriptor("hist_test", histogramComb, validCombinations),
 		HistogramDataPoints: []*otlp.HistogramDataPoint{getHistogramDataPoint(
@@ -465,7 +465,7 @@ func Test_pushMetrics(t *testing.T) {
 		},
 	}
 
-	histBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(hist))
+	histBatch := pdatautil.MetricsFromOldInternalMetrics((dataold.MetricDataFromOtlp(hist)))
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
