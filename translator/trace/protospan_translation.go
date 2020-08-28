@@ -253,22 +253,39 @@ func DetermineValueType(value string, omitSimpleTypes bool) pdata.AttributeValue
 
 func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) {
 	for key, val := range attrs {
+		if val == nil {
+			dest.Upsert(key, pdata.NewAttributeValueNull())
+			continue
+		}
 		if s, ok := val.(string); ok {
-			dest.InsertString(key, s)
+			dest.UpsertString(key, s)
 		} else if d, ok := val.(float64); ok {
 			if math.Mod(d, 1.0) == 0.0 {
-				dest.InsertInt(key, int64(d))
+				dest.UpsertInt(key, int64(d))
 			} else {
-				dest.InsertDouble(key, d)
+				dest.UpsertDouble(key, d)
 			}
 		} else if b, ok := val.(bool); ok {
-			dest.InsertBool(key, b)
+			dest.UpsertBool(key, b)
+		} else if m, ok := val.(map[string]interface{}); ok {
+			value := pdata.NewAttributeValueMap()
+			jsonMapToAttributeMap(m, value.MapVal())
+			dest.Upsert(key, value)
+		} else if a, ok := val.([]interface{}); ok {
+			value := pdata.NewAttributeValueArray()
+			jsonArrayToAttributeArray(a, value.ArrayVal())
+			dest.Upsert(key, value)
 		}
 	}
 }
 
 func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 	for _, val := range jArray {
+		if val == nil {
+			av := pdata.NewAttributeValueNull()
+			dest.Append(&av)
+			continue
+		}
 		if s, ok := val.(string); ok {
 			av := pdata.NewAttributeValueString(s)
 			dest.Append(&av)
@@ -282,6 +299,14 @@ func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 			}
 		} else if b, ok := val.(bool); ok {
 			av := pdata.NewAttributeValueBool(b)
+			dest.Append(&av)
+		} else if m, ok := val.(map[string]interface{}); ok {
+			av := pdata.NewAttributeValueMap()
+			jsonMapToAttributeMap(m, av.MapVal())
+			dest.Append(&av)
+		} else if a, ok := val.([]interface{}); ok {
+			av := pdata.NewAttributeValueArray()
+			jsonArrayToAttributeArray(a, av.ArrayVal())
 			dest.Append(&av)
 		}
 	}

@@ -169,10 +169,10 @@ func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 		return strconv.FormatInt(attr.IntVal(), 10)
 
 	case pdata.AttributeValueMAP:
-		return tracetranslator.AttributeValueToString(attr, true)
+		return tracetranslator.AttributeValueToString(attr, false)
 
 	case pdata.AttributeValueARRAY:
-		return tracetranslator.AttributeValueToString(attr, true)
+		return tracetranslator.AttributeValueToString(attr, false)
 
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
