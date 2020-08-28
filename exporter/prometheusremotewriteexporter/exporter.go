@@ -121,9 +121,11 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 						}
 					case otlp.MetricDescriptor_HISTOGRAM:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
+							dropped++
 							errs = append(errs, err)
 						}
 					default:
+						dropped++
 						errs = append(errs, fmt.Errorf("unsupported metric type"))
 					}
 				}
