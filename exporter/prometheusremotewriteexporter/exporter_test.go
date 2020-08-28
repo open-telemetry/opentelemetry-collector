@@ -511,7 +511,6 @@ func Test_pushMetrics(t *testing.T) {
 	}
 	summaryBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(summary))
 
-
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
