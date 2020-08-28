@@ -58,13 +58,12 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
-		prwe.pushMetrics,
+		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(prwCfg.QueueSettings),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.shutdown),
 	)
-
 	return prwexp, err
 }
 

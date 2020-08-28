@@ -80,7 +80,7 @@ func (prwe *prwExporter) shutdown(context.Context) error {
 // pushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 	select {
@@ -159,7 +159,9 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 		}
 
 		for _, pt := range metric.Int64DataPoints {
-
+			if pt == nil {
+				continue
+			}
 			// create parameters for addSample
 			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 			labels := createLabelSet(pt.GetLabels(), nameStr, name)
@@ -179,7 +181,9 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("nil data point field in metric %v", metric.GetMetricDescriptor().Name)
 		}
 		for _, pt := range metric.DoubleDataPoints {
-
+			if pt == nil {
+				continue
+			}
 			// create parameters for addSample
 			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 			labels := createLabelSet(pt.GetLabels(), nameStr, name)
@@ -205,7 +209,9 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 	}
 
 	for _, pt := range metric.HistogramDataPoints {
-
+		if pt == nil {
+			continue
+		}
 		time := convertTimeStamp(pt.TimeUnixNano)
 		mType := metric.GetMetricDescriptor().GetType()
 

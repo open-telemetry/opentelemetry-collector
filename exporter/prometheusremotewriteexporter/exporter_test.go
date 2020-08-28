@@ -94,6 +94,30 @@ func Test_handleScalarMetric(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 		},
 		{
+			"int_nil_point",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("int_nil_point", monotonicInt64Comb, validCombinations),
+				Int64DataPoints:     []*otlp.Int64DataPoint{nil},
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"double_nil_point",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("double_nil_point", monotonicInt64Comb, validCombinations),
+				Int64DataPoints:     nil,
+				DoubleDataPoints:    []*otlp.DoubleDataPoint{nil},
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			false,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
 			"same_ts_int_points",
 			&otlp.Metric{
 				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64Comb, validCombinations),
@@ -197,6 +221,18 @@ func Test_handleHistogramMetric(t *testing.T) {
 				SummaryDataPoints:   nil,
 			},
 			true,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"hist_nil_pt",
+			otlp.Metric{
+				MetricDescriptor:    getDescriptor("hist_nil_pt", histogramComb, validCombinations),
+				Int64DataPoints:     nil,
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: []*otlp.HistogramDataPoint{nil},
+				SummaryDataPoints:   nil,
+			},
+			false,
 			map[string]*prompb.TimeSeries{},
 		},
 		{
@@ -316,7 +352,7 @@ func Test_shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := prwe.pushMetrics(context.Background(),
+			_, ok := prwe.PushMetrics(context.Background(),
 				pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty()))
 			errChan <- ok
 		}()
@@ -448,6 +484,7 @@ func Test_pushMetrics(t *testing.T) {
 	nilBatch2 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
 	nilBatch3 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
 	nilBatch4 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
+	nilBatch5 := testdataold.GenerateMetricDataOneEmptyResourceMetrics()
 
 	setCumulative(&nilBatch1)
 	setCumulative(&nilBatch2)
@@ -511,6 +548,8 @@ func Test_pushMetrics(t *testing.T) {
 	}
 	summaryBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(summary))
 
+	nilResourceBatch := pdatautil.MetricsFromOldInternalMetrics(nilBatch5)
+
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
@@ -539,6 +578,15 @@ func Test_pushMetrics(t *testing.T) {
 			true,
 		},
 		{
+			"nil_resourece_case",
+			&nilResourceBatch,
+			nil,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilResourceBatch),
+			false,
+		},
+		{
 			"nil_int_point_case",
 			&nilIntDataPointsBatch,
 			nil,
@@ -554,6 +602,15 @@ func Test_pushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			pdatautil.MetricCount(nilDoubleDataPointsBatch),
+			true,
+		},
+		{
+			"nil_histogram_point_case",
+			&nilHistogramDataPointsBatch,
+			nil,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilHistogramDataPointsBatch),
 			true,
 		},
 		{
@@ -603,10 +660,10 @@ func Test_pushMetrics(t *testing.T) {
 		{"summary_case",
 			&summaryBatch,
 			checkFunc,
-			3,
-			http.StatusAccepted,
 			0,
-			false,
+			http.StatusAccepted,
+			pdatautil.MetricCount(summaryBatch),
+			true,
 		},
 	}
 
@@ -644,7 +701,7 @@ func Test_pushMetrics(t *testing.T) {
 			c := http.DefaultClient
 			prwe, nErr := newPrwExporter(config.Namespace, serverURL.String(), c)
 			require.NoError(t, nErr)
-			numDroppedTimeSeries, err := prwe.pushMetrics(context.Background(), *tt.md)
+			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 			if tt.returnErr {
 				assert.Error(t, err)
