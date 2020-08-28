@@ -26,18 +26,6 @@ import (
 	"go.opentelemetry.io/collector/internal/dataold"
 )
 
-const (
-	invalidMetricDescriptorType = ocmetrics.MetricDescriptor_Type(-1)
-)
-
-type labelKeys struct {
-	// ordered OC label keys
-	keys []*ocmetrics.LabelKey
-	// map from a label key literal
-	// to its index in the slice above
-	keyIndices map[string]int
-}
-
 func MetricDataToOC(md dataold.MetricData) []consumerdata.MetricsData {
 	resourceMetrics := md.ResourceMetrics()
 
@@ -181,12 +169,6 @@ func oldMetricCollectLabelKeys(metric dataold.Metric) *labelKeys {
 	}
 }
 
-func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
-	labels.ForEach(func(k string, v pdata.StringValue) {
-		keySet[k] = struct{}{}
-	})
-}
-
 func oldMetricDescriptorToOC(descriptor dataold.MetricDescriptor, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
 	if descriptor.IsNil() {
 		return nil
@@ -202,8 +184,6 @@ func oldMetricDescriptorToOC(descriptor dataold.MetricDescriptor, labelKeys *lab
 
 func oldMetricDescriptorTypeToOC(t dataold.MetricType) ocmetrics.MetricDescriptor_Type {
 	switch t {
-	case dataold.MetricTypeInvalid:
-		return ocmetrics.MetricDescriptor_UNSPECIFIED
 	case dataold.MetricTypeInt64:
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
 	case dataold.MetricTypeDouble:
@@ -216,9 +196,8 @@ func oldMetricDescriptorTypeToOC(t dataold.MetricType) ocmetrics.MetricDescripto
 		return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 	case dataold.MetricTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
-	default:
-		return invalidMetricDescriptorType
 	}
+	return ocmetrics.MetricDescriptor_UNSPECIFIED
 }
 
 func oldMetricDataPointsToTimeseries(metric dataold.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
@@ -411,33 +390,6 @@ func oldMetricPercentileToOC(percentiles dataold.SummaryValueAtPercentileSlice) 
 		Sum:              nil,
 		PercentileValues: ocPercentiles,
 	}
-}
-
-func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.LabelValue {
-	if len(labelKeys.keys) == 0 {
-		return nil
-	}
-
-	// Initialize label values with defaults
-	// (The order matches key indices)
-	labelValuesOrig := make([]ocmetrics.LabelValue, len(labelKeys.keys))
-	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys.keys))
-	for i := 0; i < len(labelKeys.keys); i++ {
-		labelValues[i] = &labelValuesOrig[i]
-	}
-
-	// Visit all defined labels in the point and override defaults with actual values
-	labels.ForEach(func(k string, v pdata.StringValue) {
-		// Find the appropriate label value that we need to update
-		keyIndex := labelKeys.keyIndices[k]
-		labelValue := labelValues[keyIndex]
-
-		// Update label value
-		labelValue.Value = v.Value()
-		labelValue.HasValue = true
-	})
-
-	return labelValues
 }
 
 func int64Value(val uint64) *wrapperspb.Int64Value {

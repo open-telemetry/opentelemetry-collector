@@ -19,7 +19,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/dataold"
 )
@@ -275,27 +274,6 @@ func setDataPointsToOldMetrics(ocMetric *ocmetrics.Metric, metric dataold.Metric
 	}
 }
 
-func setLabelsMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, labelsMap pdata.StringMap) {
-	if len(ocLabelsKeys) == 0 || len(ocLabelValues) == 0 {
-		return
-	}
-
-	lablesCount := len(ocLabelsKeys)
-
-	// Handle invalid length of OC label values list
-	if len(ocLabelValues) < lablesCount {
-		lablesCount = len(ocLabelValues)
-	}
-
-	labelsMap.InitEmptyWithCapacity(lablesCount)
-	for i := 0; i < lablesCount; i++ {
-		if !ocLabelValues[i].GetHasValue() {
-			continue
-		}
-		labelsMap.Insert(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
-	}
-}
-
 func setHistogramDataPointValue(dataPoint dataold.HistogramDataPoint, point *ocmetrics.Point) {
 	distributionValue := point.GetDistributionValue()
 	dataPoint.SetSum(distributionValue.GetSum())
@@ -346,13 +324,4 @@ func percentileToOldMetrics(
 		percentile.SetPercentile(ocPercentiles[i].GetPercentile())
 		percentile.SetValue(ocPercentiles[i].GetValue())
 	}
-}
-
-func getPointsCount(ocMetric *ocmetrics.Metric) int {
-	timeseriesSlice := ocMetric.GetTimeseries()
-	var count int
-	for _, timeseries := range timeseriesSlice {
-		count += len(timeseries.GetPoints())
-	}
-	return count
 }
