@@ -22,8 +22,8 @@ Example:
 
 ```yaml
 exporters:
-prometheusremotewrite:
- endpoint: "http://some.url:9411/api/prom/push"
+  prometheusremotewrite:
+    endpoint: "http://some.url:9411/api/prom/push"
 ```
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
