@@ -26,12 +26,11 @@ import (
 	"strconv"
 	"sync"
 
-	"go.opentelemetry.io/collector/component/componenterror"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
 
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
@@ -125,7 +124,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 							errs = append(errs, err)
 						}
 					default:
-						errs = append(errs, fmt.Errorf("Unsupported metric type"))
+						errs = append(errs, fmt.Errorf("unsupported metric type"))
 					}
 				}
 			}

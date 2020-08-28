@@ -108,7 +108,7 @@ func Test_handleScalarMetric(t *testing.T) {
 		{
 			"double_nil_point",
 			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("double_nil_point", monotonicInt64Comb, validCombinations),
+				MetricDescriptor:    getDescriptor("double_nil_point", monotonicDoubleComb, validCombinations),
 				Int64DataPoints:     nil,
 				DoubleDataPoints:    []*otlp.DoubleDataPoint{nil},
 				HistogramDataPoints: nil,
@@ -485,6 +485,20 @@ func Test_pushMetrics(t *testing.T) {
 	nilBatch3 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
 	nilBatch4 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
 	nilBatch5 := testdataold.GenerateMetricDataOneEmptyResourceMetrics()
+	nilBatch6 := testdataold.GenerateMetricDataOneEmptyInstrumentationLibrary()
+	nilBatch7 := testdataold.GenerateMetricDataOneMetric()
+
+	nilResource := dataold.MetricDataToOtlp(nilBatch5)
+	nilResource[0] = nil
+	nilResourceBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(nilResource))
+
+	nilInstrumentation := dataold.MetricDataToOtlp(nilBatch6)
+	nilInstrumentation[0].InstrumentationLibraryMetrics[0] = nil
+	nilInstrumentationBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(nilInstrumentation))
+
+	nilMetric := dataold.MetricDataToOtlp(nilBatch7)
+	nilMetric[0].InstrumentationLibraryMetrics[0].Metrics[0] = nil
+	nilMetricBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(nilMetric))
 
 	setCumulative(&nilBatch1)
 	setCumulative(&nilBatch2)
@@ -548,8 +562,6 @@ func Test_pushMetrics(t *testing.T) {
 	}
 	summaryBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(summary))
 
-	nilResourceBatch := pdatautil.MetricsFromOldInternalMetrics(nilBatch5)
-
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
@@ -585,6 +597,24 @@ func Test_pushMetrics(t *testing.T) {
 			http.StatusAccepted,
 			pdatautil.MetricCount(nilResourceBatch),
 			false,
+		},
+		{
+			"nil_instrumentation_case",
+			&nilInstrumentationBatch,
+			nil,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilInstrumentationBatch),
+			false,
+		},
+		{
+			"nil_metric_case",
+			&nilMetricBatch,
+			nil,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilMetricBatch),
+			true,
 		},
 		{
 			"nil_int_point_case",

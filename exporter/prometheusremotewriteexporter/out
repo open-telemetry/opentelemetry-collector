@@ -13,14 +13,14 @@ go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:143.3,143.16 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:95.50,96.29 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:100.4,100.88 1 1
-go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:96.29,97.13 1 0
+go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:96.29,97.13 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:100.88,101.38 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:105.5,105.59 1 1
-go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:101.38,102.14 1 0
+go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:101.38,102.14 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:105.59,106.23 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:110.6,110.61 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:116.6,116.52 1 1
-go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:106.23,107.15 1 0
+go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:106.23,107.15 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:110.61,113.15 3 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:118.76,119.68 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:123.43,124.71 1 1
@@ -44,7 +44,7 @@ go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:180.37,182.4 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:183.46,184.17 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:188.4,195.76 4 1
-go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:184.17,185.13 1 0
+go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:184.17,185.13 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:205.112,207.39 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:211.2,211.48 1 1
 go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter/exporter.go:260.2,260.12 1 1
