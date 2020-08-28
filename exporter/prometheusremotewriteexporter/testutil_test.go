@@ -175,6 +175,24 @@ func getHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum flo
 	}
 }
 
+func getSummaryDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
+	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
+	for i, v := range values {
+		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
+			Percentile: pcts[i],
+			Value:      v,
+		})
+	}
+	return &otlp.SummaryDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Count:             count,
+		Sum:               sum,
+		PercentileValues:  pcs,
+	}
+}
+
 // Prometheus TimeSeries
 func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{

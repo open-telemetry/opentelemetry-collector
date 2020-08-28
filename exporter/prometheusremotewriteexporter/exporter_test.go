@@ -82,6 +82,18 @@ func Test_handleScalarMetric(t *testing.T) {
 			map[string]*prompb.TimeSeries{},
 		},
 		{
+			"invalid_metric_type",
+			&otlp.Metric{
+				MetricDescriptor:    getDescriptor("invalid_nil_array", histogramComb, validCombinations),
+				Int64DataPoints:     nil,
+				DoubleDataPoints:    nil,
+				HistogramDataPoints: nil,
+				SummaryDataPoints:   nil,
+			},
+			true,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
 			"same_ts_int_points",
 			&otlp.Metric{
 				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64Comb, validCombinations),
@@ -483,6 +495,23 @@ func Test_pushMetrics(t *testing.T) {
 		require.Nil(t, ok)
 		assert.EqualValues(t, expected, len(wr.Timeseries))
 	}
+
+	summary := dataold.MetricDataToOtlp(testdataold.GenerateMetricDataOneMetric())
+	summary[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
+		MetricDescriptor: getDescriptor("summary_test", summaryComb, validCombinations),
+		SummaryDataPoints: []*otlp.SummaryDataPoint{getSummaryDataPoint(
+			lbs1,
+			time1,
+			floatVal1,
+			uint64(intVal1),
+			[]float64{floatVal1},
+			[]float64{floatVal2},
+		),
+		},
+	}
+	summaryBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(summary))
+
+
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
@@ -568,6 +597,14 @@ func Test_pushMetrics(t *testing.T) {
 			&histBatch,
 			checkFunc,
 			4,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{"summary_case",
+			&summaryBatch,
+			checkFunc,
+			3,
 			http.StatusAccepted,
 			0,
 			false,

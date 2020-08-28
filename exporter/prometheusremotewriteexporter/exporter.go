@@ -124,13 +124,16 @@ func (prwe *prwExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							errs = append(errs, err)
 						}
+					default:
+						errs = append(errs, fmt.Errorf("Unsupported metric type"))
 					}
 				}
 			}
 		}
 
 		if err := prwe.export(ctx, tsMap); err != nil {
-			return pdatautil.MetricCount(md), err
+			dropped = pdatautil.MetricCount(md)
+			errs = append(errs, err)
 		}
 
 		if dropped != 0 {
