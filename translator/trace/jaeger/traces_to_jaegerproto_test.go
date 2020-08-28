@@ -285,7 +285,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					ServiceName: tracetranslator.ResourceNotSet,
 				},
 				Spans: []*model.Span{
-					generateProtoSpanWithLibraryInfo(),
+					generateProtoSpanWithLibraryInfo("io.opentelemetry.test"),
 				},
 			},
 			err: nil,

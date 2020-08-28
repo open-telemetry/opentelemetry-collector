@@ -81,7 +81,6 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 			continue
 		}
 
-		libraryTags := extractInstrumentationLibraryTags(ils.InstrumentationLibrary())
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span := spans.At(j)
@@ -89,7 +88,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 				continue
 			}
 
-			jSpan, err := spanToJaegerProto(span, libraryTags)
+			jSpan, err := spanToJaegerProto(span, ils.InstrumentationLibrary())
 			if err != nil {
 				return nil, err
 			}
@@ -156,19 +155,6 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) [
 	return dest
 }
 
-func appendTagsFromMap(dest []model.KeyValue, tags map[string]string) []model.KeyValue {
-	if len(tags) == 0 {
-		return dest
-	}
-	for key, val := range tags {
-		tag := model.KeyValue{Key: key}
-		tag.VType = model.ValueType_STRING
-		tag.VStr = val
-		dest = append(dest, tag)
-	}
-	return dest
-}
-
 func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyValue {
 	tag := model.KeyValue{Key: key}
 	switch attr.Type() {
@@ -190,21 +176,7 @@ func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyV
 	return tag
 }
 
-func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary) map[string]string {
-	tags := make(map[string]string)
-	if il.IsNil() {
-		return tags
-	}
-	if ilName := il.Name(); ilName != "" {
-		tags[tracetranslator.TagInstrumentationName] = ilName
-	}
-	if ilVer := il.Version(); ilVer != "" {
-		tags[tracetranslator.TagInstrumentationVersion] = ilVer
-	}
-	return tags
-}
-
-func spanToJaegerProto(span pdata.Span, libraryTags map[string]string) (*model.Span, error) {
+func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary) (*model.Span, error) {
 	if span.IsNil() {
 		return nil, nil
 	}
@@ -238,9 +210,11 @@ func spanToJaegerProto(span pdata.Span, libraryTags map[string]string) (*model.S
 	}, nil
 }
 
-func getJaegerProtoSpanTags(span pdata.Span, libraryTags map[string]string) []model.KeyValue {
+func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.InstrumentationLibrary) []model.KeyValue {
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
+
+	libraryTags, libraryTagsFound := getTagsFromInstrumentationLibrary(instrumentationLibrary)
 
 	tagsCount := span.Attributes().Len() + len(libraryTags)
 
@@ -276,7 +250,9 @@ func getJaegerProtoSpanTags(span pdata.Span, libraryTags map[string]string) []mo
 	}
 
 	tags := make([]model.KeyValue, 0, tagsCount)
-	tags = appendTagsFromMap(tags, libraryTags)
+	if libraryTagsFound {
+		tags = append(tags, libraryTags...)
+	}
 	tags = appendTagsFromAttributes(tags, span.Attributes())
 	if spanKindTagFound {
 		tags = append(tags, spanKindTag)
@@ -481,4 +457,29 @@ func getTagsFromTraceState(traceState pdata.TraceState) ([]model.KeyValue, bool)
 		keyValues = append(keyValues, kv)
 	}
 	return keyValues, exists
+}
+
+func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model.KeyValue, bool) {
+	keyValues := make([]model.KeyValue, 0)
+	if il.IsNil() {
+		return keyValues, false
+	}
+	if ilName := il.Name(); ilName != "" {
+		kv := model.KeyValue{
+			Key:   tracetranslator.TagInstrumentationName,
+			VStr:  ilName,
+			VType: model.ValueType_STRING,
+		}
+		keyValues = append(keyValues, kv)
+	}
+	if ilVersion := il.Version(); ilVersion != "" {
+		kv := model.KeyValue{
+			Key:   tracetranslator.TagInstrumentationVersion,
+			VStr:  ilVersion,
+			VType: model.ValueType_STRING,
+		}
+		keyValues = append(keyValues, kv)
+	}
+
+	return keyValues, true
 }
