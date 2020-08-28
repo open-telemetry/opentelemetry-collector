@@ -12,14 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package data
+package dataold
 
 import (
 	"github.com/gogo/protobuf/proto"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 )
+
+type MetricType otlpmetrics.MetricDescriptor_Type
+
+const (
+	MetricTypeInvalid         = MetricType(otlpmetrics.MetricDescriptor_INVALID_TYPE)
+	MetricTypeInt64           = MetricType(otlpmetrics.MetricDescriptor_INT64)
+	MetricTypeDouble          = MetricType(otlpmetrics.MetricDescriptor_DOUBLE)
+	MetricTypeMonotonicInt64  = MetricType(otlpmetrics.MetricDescriptor_MONOTONIC_INT64)
+	MetricTypeMonotonicDouble = MetricType(otlpmetrics.MetricDescriptor_MONOTONIC_DOUBLE)
+	MetricTypeHistogram       = MetricType(otlpmetrics.MetricDescriptor_HISTOGRAM)
+	MetricTypeSummary         = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
+)
+
+func (mt MetricType) String() string {
+	return otlpmetrics.MetricDescriptor_Type(mt).String()
+}
 
 // This file defines in-memory data structures to represent metrics.
 // For the proto representation see https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto
@@ -63,8 +78,8 @@ func (md MetricData) Clone() MetricData {
 	return MetricDataFromOtlp(resourceMetricsClones)
 }
 
-func (md MetricData) ResourceMetrics() pdata.ResourceMetricsSlice {
-	return pdata.InternalNewMetricsResourceSlice(md.orig)
+func (md MetricData) ResourceMetrics() ResourceMetricsSlice {
+	return newResourceMetricsSlice(md.orig)
 }
 
 // MetricCount calculates the total number of metrics.

@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 func TestNopTraceExporter(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNopTraceExporter(t *testing.T) {
 func TestNopMetricsExporter(t *testing.T) {
 	nme := NewNopMetricsExporter()
 	require.NoError(t, nme.Start(context.Background(), nil))
-	require.NoError(t, nme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(data.NewMetricData())))
+	require.NoError(t, nme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(dataold.NewMetricData())))
 	require.NoError(t, nme.Shutdown(context.Background()))
 }
 

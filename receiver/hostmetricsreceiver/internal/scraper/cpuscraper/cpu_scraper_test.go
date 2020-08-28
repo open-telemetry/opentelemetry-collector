@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -97,7 +98,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+func assertCPUMetricValid(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertDoubleMetricStartTimeEquals(t, metric, startTime)
@@ -110,7 +111,7 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, stateLabelName, interruptStateLabelValue)
 }
 
-func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
+func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric dataold.Metric) {
 	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, stateLabelName, niceStateLabelValue)
 	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, stateLabelName, softIRQStateLabelValue)
 	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, stateLabelName, stealStateLabelValue)

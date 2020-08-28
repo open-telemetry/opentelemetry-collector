@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 type logDataBuffer struct {
@@ -73,7 +74,7 @@ func (b *logDataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrar
 		il.Version())
 }
 
-func (b *logDataBuffer) logMetricDescriptor(md pdata.MetricDescriptor) {
+func (b *logDataBuffer) logMetricDescriptor(md dataold.MetricDescriptor) {
 	if md.IsNil() {
 		return
 	}
@@ -85,31 +86,31 @@ func (b *logDataBuffer) logMetricDescriptor(md pdata.MetricDescriptor) {
 	b.logEntry("     -> Type: %s", md.Type().String())
 }
 
-func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
+func (b *logDataBuffer) logMetricDataPoints(m dataold.Metric) {
 	md := m.MetricDescriptor()
 	if md.IsNil() {
 		return
 	}
 
 	switch md.Type() {
-	case pdata.MetricTypeInvalid:
+	case dataold.MetricTypeInvalid:
 		return
-	case pdata.MetricTypeInt64:
+	case dataold.MetricTypeInt64:
 		b.logInt64DataPoints(m.Int64DataPoints())
-	case pdata.MetricTypeDouble:
+	case dataold.MetricTypeDouble:
 		b.logDoubleDataPoints(m.DoubleDataPoints())
-	case pdata.MetricTypeMonotonicInt64:
+	case dataold.MetricTypeMonotonicInt64:
 		b.logInt64DataPoints(m.Int64DataPoints())
-	case pdata.MetricTypeMonotonicDouble:
+	case dataold.MetricTypeMonotonicDouble:
 		b.logDoubleDataPoints(m.DoubleDataPoints())
-	case pdata.MetricTypeHistogram:
+	case dataold.MetricTypeHistogram:
 		b.logHistogramDataPoints(m.HistogramDataPoints())
-	case pdata.MetricTypeSummary:
+	case dataold.MetricTypeSummary:
 		b.logSummaryDataPoints(m.SummaryDataPoints())
 	}
 }
 
-func (b *logDataBuffer) logInt64DataPoints(ps pdata.Int64DataPointSlice) {
+func (b *logDataBuffer) logInt64DataPoints(ps dataold.Int64DataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		if p.IsNil() {
@@ -125,7 +126,7 @@ func (b *logDataBuffer) logInt64DataPoints(ps pdata.Int64DataPointSlice) {
 	}
 }
 
-func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
+func (b *logDataBuffer) logDoubleDataPoints(ps dataold.DoubleDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		if p.IsNil() {
@@ -141,7 +142,7 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 	}
 }
 
-func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
+func (b *logDataBuffer) logHistogramDataPoints(ps dataold.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		if p.IsNil() {
@@ -177,7 +178,7 @@ func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice)
 	}
 }
 
-func (b *logDataBuffer) logSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
+func (b *logDataBuffer) logSummaryDataPoints(ps dataold.SummaryDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		if p.IsNil() {

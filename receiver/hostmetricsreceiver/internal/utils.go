@@ -18,11 +18,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // Initializes a metric with a metric slice and returns it.
-func InitializeMetricSlice(metricData data.MetricData) pdata.MetricSlice {
+func InitializeMetricSlice(metricData dataold.MetricData) dataold.MetricSlice {
 	rms := metricData.ResourceMetrics()
 	rms.Resize(1)
 	rm := rms.At(0)

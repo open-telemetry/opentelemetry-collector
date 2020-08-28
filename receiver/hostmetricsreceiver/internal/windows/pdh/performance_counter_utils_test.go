@@ -22,13 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
 func TestPerfCounter_InitializeMetric_NoLabels(t *testing.T) {
 	data := []win_perf_counters.CounterValue{{InstanceName: "_Total", Value: 100}}
 
-	metric := pdata.NewMetric()
+	metric := dataold.NewMetric()
 	metric.InitEmpty()
 	InitializeMetric(metric, data, "")
 
@@ -41,7 +42,7 @@ func TestPerfCounter_InitializeMetric_NoLabels(t *testing.T) {
 func TestPerfCounter_InitializeMetric_Labels(t *testing.T) {
 	data := []win_perf_counters.CounterValue{{InstanceName: "label_value_1", Value: 20}, {InstanceName: "label_value_2", Value: 50}}
 
-	metric := pdata.NewMetric()
+	metric := dataold.NewMetric()
 	metric.InitEmpty()
 	InitializeMetric(metric, data, "label")
 

@@ -23,20 +23,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/internal/data"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestOCToMetricData(t *testing.T) {
 	tests := []struct {
 		name     string
 		oc       consumerdata.MetricsData
-		internal data.MetricData
+		internal dataold.MetricData
 	}{
 		{
 			name:     "empty",
 			oc:       consumerdata.MetricsData{},
-			internal: testdata.GenerateMetricDataEmpty(),
+			internal: testdataold.GenerateMetricDataEmpty(),
 		},
 
 		{
@@ -45,49 +45,49 @@ func TestOCToMetricData(t *testing.T) {
 				Node:     &occommon.Node{},
 				Resource: &ocresource.Resource{},
 			},
-			internal: wrapMetricsWithEmptyResource(testdata.GenerateMetricDataOneEmptyResourceMetrics()),
+			internal: wrapMetricsWithEmptyResource(testdataold.GenerateMetricDataOneEmptyResourceMetrics()),
 		},
 
 		{
 			name:     "no-libraries",
 			oc:       generateOCTestDataNoMetrics(),
-			internal: testdata.GenerateMetricDataNoLibraries(),
+			internal: testdataold.GenerateMetricDataNoLibraries(),
 		},
 
 		{
 			name:     "all-types-no-points",
 			oc:       generateOCTestDataNoPoints(),
-			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
+			internal: testdataold.GenerateMetricDataAllTypesNoDataPoints(),
 		},
 
 		{
 			name:     "one-metric-no-labels",
 			oc:       generateOCTestDataNoLabels(),
-			internal: testdata.GenerateMetricDataOneMetricNoLabels(),
+			internal: testdataold.GenerateMetricDataOneMetricNoLabels(),
 		},
 
 		{
 			name:     "one-metric",
 			oc:       generateOCTestDataMetricsOneMetric(),
-			internal: testdata.GenerateMetricDataOneMetric(),
+			internal: testdataold.GenerateMetricDataOneMetric(),
 		},
 
 		{
 			name:     "one-metric-one-nil",
 			oc:       generateOCTestDataMetricsOneMetricOneNil(),
-			internal: testdata.GenerateMetricDataOneMetric(),
+			internal: testdataold.GenerateMetricDataOneMetric(),
 		},
 
 		{
 			name:     "one-metric-one-nil-timeseries",
 			oc:       generateOCTestDataMetricsOneMetricOneNilTimeseries(),
-			internal: testdata.GenerateMetricDataOneMetric(),
+			internal: testdataold.GenerateMetricDataOneMetric(),
 		},
 
 		{
 			name:     "one-metric-one-nil-point",
 			oc:       generateOCTestDataMetricsOneMetricOneNilPoint(),
-			internal: testdata.GenerateMetricDataOneMetric(),
+			internal: testdataold.GenerateMetricDataOneMetric(),
 		},
 
 		{
@@ -101,7 +101,7 @@ func TestOCToMetricData(t *testing.T) {
 					generateOCTestMetricSummary(),
 				},
 			},
-			internal: testdata.GenerateMetricDataWithCountersHistogramAndSummary(),
+			internal: testdataold.GenerateMetricDataWithCountersHistogramAndSummary(),
 		},
 	}
 
@@ -114,7 +114,7 @@ func TestOCToMetricData(t *testing.T) {
 				test.oc,
 				test.oc,
 			}
-			wantSlice := data.NewMetricData()
+			wantSlice := dataold.NewMetricData()
 			// Double the ResourceMetrics only if not empty.
 			if test.internal.ResourceMetrics().Len() != 0 {
 				test.internal.Clone().ResourceMetrics().MoveAndAppendTo(wantSlice.ResourceMetrics())
@@ -127,7 +127,7 @@ func TestOCToMetricData(t *testing.T) {
 }
 
 // TODO: Try to avoid unnecessary Resource object allocation.
-func wrapMetricsWithEmptyResource(md data.MetricData) data.MetricData {
+func wrapMetricsWithEmptyResource(md dataold.MetricData) dataold.MetricData {
 	md.ResourceMetrics().At(0).Resource().InitEmpty()
 	return md
 }

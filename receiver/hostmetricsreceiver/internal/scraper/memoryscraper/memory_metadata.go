@@ -15,7 +15,7 @@
 package memoryscraper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // labels
@@ -36,12 +36,12 @@ const (
 
 // descriptors
 
-var memoryUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var memoryUsageDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.memory.usage")
 	descriptor.SetDescription("Bytes of memory in use.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeInt64)
+	descriptor.SetType(dataold.MetricTypeInt64)
 	return descriptor
 }()

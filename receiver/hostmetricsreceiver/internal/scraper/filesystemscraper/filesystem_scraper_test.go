@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
@@ -146,7 +146,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, expectedDeviceDataPoints int) {
+func assertFileSystemUsageMetricValid(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor, expectedDeviceDataPoints int) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	if expectedDeviceDataPoints > 0 {
 		assert.Equal(t, expectedDeviceDataPoints, metric.Int64DataPoints().Len())
@@ -157,7 +157,7 @@ func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descrip
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
 }
 
-func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
+func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric dataold.Metric) {
 	internal.AssertInt64MetricLabelHasValue(t, metric, 2, stateLabelName, reservedLabelValue)
 }
 

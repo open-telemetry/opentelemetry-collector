@@ -26,14 +26,14 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestMetricsDataToOC(t *testing.T) {
 
-	sampleMetricData := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
+	sampleMetricData := testdataold.GenerateMetricDataWithCountersHistogramAndSummary()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(conventions.AttributeHostHostname, pdata.NewAttributeValueString("host1"))
 	attrs.Upsert(conventions.OCAttributeProcessID, pdata.NewAttributeValueInt(123))
@@ -44,18 +44,18 @@ func TestMetricsDataToOC(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		internal data.MetricData
+		internal dataold.MetricData
 		oc       []consumerdata.MetricsData
 	}{
 		{
 			name:     "empty",
-			internal: testdata.GenerateMetricDataEmpty(),
+			internal: testdataold.GenerateMetricDataEmpty(),
 			oc:       []consumerdata.MetricsData(nil),
 		},
 
 		{
 			name:     "one-empty-resource-metrics",
-			internal: testdata.GenerateMetricDataOneEmptyResourceMetrics(),
+			internal: testdataold.GenerateMetricDataOneEmptyResourceMetrics(),
 			oc: []consumerdata.MetricsData{
 				{},
 			},
@@ -63,7 +63,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-one-nil-resource-metrics",
-			internal: testdata.GenerateMetricDataOneEmptyOneNilResourceMetrics(),
+			internal: testdataold.GenerateMetricDataOneEmptyOneNilResourceMetrics(),
 			oc: []consumerdata.MetricsData{
 				{},
 			},
@@ -71,7 +71,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "no-libraries",
-			internal: testdata.GenerateMetricDataNoLibraries(),
+			internal: testdataold.GenerateMetricDataNoLibraries(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
@@ -79,7 +79,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-instrumentation-library",
-			internal: testdata.GenerateMetricDataOneEmptyInstrumentationLibrary(),
+			internal: testdataold.GenerateMetricDataOneEmptyInstrumentationLibrary(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
@@ -87,7 +87,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-one-nil-instrumentation-library",
-			internal: testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary(),
+			internal: testdataold.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
@@ -95,7 +95,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-no-resource",
-			internal: testdata.GenerateMetricDataOneMetricNoResource(),
+			internal: testdataold.GenerateMetricDataOneMetricNoResource(),
 			oc: []consumerdata.MetricsData{
 				{
 					Metrics: []*ocmetrics.Metric{
@@ -107,7 +107,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric",
-			internal: testdata.GenerateMetricDataOneMetric(),
+			internal: testdataold.GenerateMetricDataOneMetric(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
@@ -115,7 +115,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-one-nil",
-			internal: testdata.GenerateMetricDataOneMetricOneNil(),
+			internal: testdataold.GenerateMetricDataOneMetricOneNil(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
@@ -123,7 +123,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-one-nil-point",
-			internal: testdata.GenerateMetricDataOneMetricOneNilPoint(),
+			internal: testdataold.GenerateMetricDataOneMetricOneNilPoint(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
@@ -131,7 +131,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-no-labels",
-			internal: testdata.GenerateMetricDataOneMetricNoLabels(),
+			internal: testdataold.GenerateMetricDataOneMetricNoLabels(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoLabels(),
 			},
@@ -139,7 +139,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "all-types-no-data-points",
-			internal: testdata.GenerateMetricDataAllTypesNoDataPoints(),
+			internal: testdataold.GenerateMetricDataAllTypesNoDataPoints(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoPoints(),
 			},

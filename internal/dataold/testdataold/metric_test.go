@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testdata
+package testdataold
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-
-	"go.opentelemetry.io/collector/internal/data"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 type traceMetricsCase struct {
 	name string
-	td   data.MetricData
+	td   dataold.MetricData
 	otlp []*otlpmetrics.ResourceMetrics
 }
 
@@ -112,9 +111,9 @@ func TestToFromOtlpMetrics(t *testing.T) {
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
-			td := data.MetricDataFromOtlp(test.otlp)
+			td := dataold.MetricDataFromOtlp(test.otlp)
 			assert.EqualValues(t, test.td, td)
-			otlp := data.MetricDataToOtlp(td)
+			otlp := dataold.MetricDataToOtlp(td)
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}

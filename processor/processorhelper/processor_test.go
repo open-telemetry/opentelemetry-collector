@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 const testFullName = "testFullName"
@@ -110,7 +111,7 @@ func TestNewMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
+	assert.NoError(t, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataEmpty())))
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
@@ -126,13 +127,13 @@ func TestNewMetricsExporter_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
 	me, err := NewMetricsProcessor(testCfg, exportertest.NewNopMetricsExporter(), newTestMProcessor(want))
 	require.NoError(t, err)
-	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
+	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataEmpty())))
 }
 
 func TestNewMetricsExporter_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	me, err := NewMetricsProcessor(testCfg, exportertest.NewNopMetricsExporter(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty())))
+	assert.Equal(t, nil, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataEmpty())))
 }
 
 func TestNewLogsExporter(t *testing.T) {

@@ -15,29 +15,9 @@
 package pdata
 
 import (
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 )
-
-type MetricType otlpmetrics.MetricDescriptor_Type
-
-const (
-	MetricTypeInvalid         = MetricType(otlpmetrics.MetricDescriptor_INVALID_TYPE)
-	MetricTypeInt64           = MetricType(otlpmetrics.MetricDescriptor_INT64)
-	MetricTypeDouble          = MetricType(otlpmetrics.MetricDescriptor_DOUBLE)
-	MetricTypeMonotonicInt64  = MetricType(otlpmetrics.MetricDescriptor_MONOTONIC_INT64)
-	MetricTypeMonotonicDouble = MetricType(otlpmetrics.MetricDescriptor_MONOTONIC_DOUBLE)
-	MetricTypeHistogram       = MetricType(otlpmetrics.MetricDescriptor_HISTOGRAM)
-	MetricTypeSummary         = MetricType(otlpmetrics.MetricDescriptor_SUMMARY)
-)
-
-func (mt MetricType) String() string {
-	return otlpmetrics.MetricDescriptor_Type(mt).String()
-}
-
-// InternalNewMetricsResourceSlice is a helper
-func InternalNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
-	return newResourceMetricsSlice(orig)
-}
 
 // Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitate the
 // transition to the new components especially for traces.
@@ -48,4 +28,19 @@ func InternalNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) Resou
 // IMPORTANT: Do not try to convert to/from this manually, use the helper functions in the pdatautil instead.
 type Metrics struct {
 	InternalOpaque interface{}
+}
+
+// DeprecatedNewResource temporary public function.
+func DeprecatedNewResource(orig **otlpresource.Resource) Resource {
+	return newResource(orig)
+}
+
+// DeprecatedNewInstrumentationLibrary temporary public function.
+func DeprecatedNewInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+	return newInstrumentationLibrary(orig)
+}
+
+// DeprecatedNewStringMap temporary public function.
+func DeprecatedNewStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
+	return newStringMap(orig)
 }

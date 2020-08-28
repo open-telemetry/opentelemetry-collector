@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -139,7 +140,7 @@ func testReceivers(
 		traceProducer.TraceConsumer.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
 	}
 
-	metrics := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
+	metrics := pdatautil.MetricsFromInternalMetrics(testdataold.GenerateMetricDataOneMetric())
 	if test.hasMetrics {
 		metricsProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
 		metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), metrics)
