@@ -774,7 +774,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			3,
 			http.StatusAccepted,
-			pdatautil.MetricCount(summaryBatch),
+			0,
 			false,
 		},
 	}

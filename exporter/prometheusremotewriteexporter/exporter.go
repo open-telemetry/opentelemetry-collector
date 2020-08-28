@@ -125,7 +125,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case otlp.MetricDescriptor_SUMMARY:
 						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err.Error())
+							errs = append(errs, err)
 						}
 					default:
 						dropped++
