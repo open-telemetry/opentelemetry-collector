@@ -37,8 +37,8 @@ import (
 	"go.opentelemetry.io/collector/internal/dataold"
 )
 
-// prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
-type prwExporter struct {
+// PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
+type PrwExporter struct {
 	namespace   string
 	endpointURL *url.URL
 	client      *http.Client
@@ -46,9 +46,9 @@ type prwExporter struct {
 	closeChan   chan struct{}
 }
 
-// newPrwExporter initializes a new prwExporter instance and sets fields accordingly.
+// newPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*prwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*PrwExporter, error) {
 
 	if client == nil {
 		return nil, fmt.Errorf("http client cannot be nil")
@@ -59,7 +59,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*pr
 		return nil, fmt.Errorf("invalid endpoint")
 	}
 
-	return &prwExporter{
+	return &PrwExporter{
 		namespace:   namespace,
 		endpointURL: endpointURL,
 		client:      client,
@@ -70,7 +70,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*pr
 
 // shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *prwExporter) shutdown(context.Context) error {
+func (prwe *PrwExporter) shutdown(context.Context) error {
 	close(prwe.closeChan)
 	prwe.wg.Wait()
 	return nil
@@ -79,7 +79,7 @@ func (prwe *prwExporter) shutdown(context.Context) error {
 // pushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 	select {
@@ -148,7 +148,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
-func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	mType := metric.MetricDescriptor.Type
 
@@ -203,7 +203,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
-func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
 	if metric.HistogramDataPoints == nil {
 		return fmt.Errorf("invalid metric type: wants histogram points")
@@ -262,7 +262,7 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	//Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(tsMap)
 	if err != nil {

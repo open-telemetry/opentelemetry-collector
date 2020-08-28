@@ -152,7 +152,7 @@ func Test_handleScalarMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &prwExporter{}
+			prw := &PrwExporter{}
 			ok := prw.handleScalarMetric(tsMap, tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
@@ -259,7 +259,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &prwExporter{}
+			prw := &PrwExporter{}
 			ok := prw.handleHistogramMetric(tsMap, &tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
@@ -339,7 +339,7 @@ func Test_NewPrwExporter(t *testing.T) {
 
 // Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
 func Test_shutdown(t *testing.T) {
-	prwe := &prwExporter{
+	prwe := &PrwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
