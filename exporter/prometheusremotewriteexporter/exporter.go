@@ -189,7 +189,6 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 		}
 		return nil
 	}
-
 	return fmt.Errorf("invalid metric type: wants int or double data points")
 }
 
@@ -210,7 +209,7 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 		// sum, count, and buckets of the histogram should append suffix to baseName
 		baseName := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
 
-		// treat sum as sample in an individual TimeSeries
+		// treat sum as a sample in an individual TimeSeries
 		sum := &prompb.Sample{
 			Value:     pt.GetSum(),
 			Timestamp: time,
@@ -241,7 +240,7 @@ func (prwe *prwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 
 			totalCount += bk.GetCount()
 		}
-
+		// add le=+Inf bucket
 		infBucket := &prompb.Sample{
 			Value:     float64(totalCount),
 			Timestamp: time,
