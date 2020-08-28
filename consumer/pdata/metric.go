@@ -16,8 +16,21 @@ package pdata
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 )
+
+type AggregationTemporality otlpmetrics.AggregationTemporality
+
+const (
+	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	AggregationTemporalityDelta       = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	AggregationTemporalityCumulative  = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+)
+
+func (at AggregationTemporality) String() string {
+	return otlpmetrics.AggregationTemporality(at).String()
+}
 
 // Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitate the
 // transition to the new components especially for traces.
