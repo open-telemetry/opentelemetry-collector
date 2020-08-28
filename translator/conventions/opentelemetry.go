@@ -67,6 +67,9 @@ const (
 	AttributeCloudAccount          = "cloud.account.id"
 	AttributeCloudRegion           = "cloud.region"
 	AttributeCloudZone             = "cloud.zone"
+	AttributeDeploymentEnvironment = "deployment.environment"
+	AttributeOSType                = "os.type"
+	AttributeOSDescription         = "os.description"
 )
 
 // GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
@@ -80,6 +83,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeTelemetrySDKLanguage,
 		AttributeTelemetrySDKVersion,
 		AttributeContainerName,
+		AttributeContainerID,
 		AttributeContainerImage,
 		AttributeContainerTag,
 		AttributeFaasName,
@@ -88,8 +92,21 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeFaasInstance,
 		AttributeK8sCluster,
 		AttributeK8sNamespace,
+		AttributeK8sContainer,
 		AttributeK8sPod,
+		AttributeK8sPodUID,
+		AttributeK8sCronJob,
+		AttributeK8sCronJobUID,
+		AttributeK8sJob,
+		AttributeK8sJobUID,
 		AttributeK8sDeployment,
+		AttributeK8sDeploymentUID,
+		AttributeK8sDaemonSet,
+		AttributeK8sDaemonSetUID,
+		AttributeK8sReplicaSet,
+		AttributeK8sReplicaSetUID,
+		AttributeK8sStatefulSet,
+		AttributeK8sStatefulSetUID,
 		AttributeHostHostname,
 		AttributeHostID,
 		AttributeHostName,
@@ -107,6 +124,9 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeCloudAccount,
 		AttributeCloudRegion,
 		AttributeCloudZone,
+		AttributeDeploymentEnvironment,
+		AttributeOSType,
+		AttributeOSDescription,
 	}
 }
 
