@@ -20,12 +20,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
+
+	"go.opentelemetry.io/collector/component/componenterror"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -172,7 +173,7 @@ func (prwe *prwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 	// double points
 	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
 		if metric.DoubleDataPoints == nil {
-			return fmt.Errorf("nil data point field in metric %v",  metric.GetMetricDescriptor().Name)
+			return fmt.Errorf("nil data point field in metric %v", metric.GetMetricDescriptor().Name)
 		}
 		for _, pt := range metric.DoubleDataPoints {
 

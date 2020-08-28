@@ -22,7 +22,6 @@ import (
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
 	"go.opentelemetry.io/collector/internal/dataold"
-
 )
 
 type combination struct {
