@@ -43,6 +43,164 @@ type Metrics struct {
 	InternalOpaque interface{}
 }
 
+// MetricDataType specifies the type of data in a Metric.
+type MetricDataType int
+
+const (
+	MetricDataNone MetricDataType = iota
+	MetricDataIntGauge
+	MetricDataDoubleGauge
+	MetricDataIntSum
+	MetricDataDoubleSum
+	MetricDataIntHistogram
+	MetricDataDoubleHistogram
+)
+
+func (mdt MetricDataType) String() string {
+	switch mdt {
+	case MetricDataNone:
+		return "None"
+	case MetricDataIntGauge:
+		return "IntGauge"
+	case MetricDataDoubleGauge:
+		return "DoubleGauge"
+	case MetricDataIntSum:
+		return "IntSum"
+	case MetricDataDoubleSum:
+		return "DoubleSum"
+	case MetricDataIntHistogram:
+		return "IntHistogram"
+	case MetricDataDoubleHistogram:
+		return "DoubleHistogram"
+	}
+	return ""
+}
+
+// Type returns the type of the data for this Metric.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DataType() MetricDataType {
+	if *ms.orig == nil || (*ms.orig).Data == nil {
+		return MetricDataNone
+	}
+	switch (*ms.orig).Data.(type) {
+	case *otlpmetrics.Metric_IntGauge:
+		return MetricDataIntGauge
+	case *otlpmetrics.Metric_DoubleGauge:
+		return MetricDataDoubleGauge
+	case *otlpmetrics.Metric_IntSum:
+		return MetricDataIntSum
+	case *otlpmetrics.Metric_DoubleSum:
+		return MetricDataDoubleSum
+	case *otlpmetrics.Metric_IntHistogram:
+		return MetricDataIntHistogram
+	case *otlpmetrics.Metric_DoubleHistogram:
+		return MetricDataDoubleHistogram
+	}
+	return MetricDataNone
+}
+
+// IntGaugeData returns the data as IntGauge. This should be called iff DataType() == MetricDataIntGauge.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) IntGaugeData() IntGauge {
+	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntGauge); ok {
+		return newIntGauge(&orig.IntGauge)
+	}
+	return NewIntGauge()
+}
+
+// DoubleGaugeData returns the data as DoubleGauge. This should be called iff DataType() == MetricDataDoubleGauge.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DoubleGaugeData() DoubleGauge {
+	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleGauge); ok {
+		return newDoubleGauge(&orig.DoubleGauge)
+	}
+	return NewDoubleGauge()
+}
+
+// IntSumData returns the data as IntSum. This should be called iff DataType() == MetricDataIntSum.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) IntSumData() IntSum {
+	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntSum); ok {
+		return newIntSum(&orig.IntSum)
+	}
+	return NewIntSum()
+}
+
+// DoubleSumData returns the data as DoubleSum. This should be called iff DataType() == MetricDataDoubleSum.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DoubleSumData() DoubleSum {
+	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleSum); ok {
+		return newDoubleSum(&orig.DoubleSum)
+	}
+	return NewDoubleSum()
+}
+
+// IntHistogramData returns the data as IntHistogram. This should be called iff DataType() == MetricDataIntHistogram.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) IntHistogramData() IntHistogram {
+	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntHistogram); ok {
+		return newIntHistogram(&orig.IntHistogram)
+	}
+	return NewIntHistogram()
+}
+
+// DoubleHistogramData returns the data as DoubleHistogram. This should be called iff DataType() == MetricDataDoubleHistogram.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DoubleHistogramData() DoubleHistogram {
+	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram); ok {
+		return newDoubleHistogram(&orig.DoubleHistogram)
+	}
+	return NewDoubleHistogram()
+}
+
+// SetIntGaugeData replaces the metric data with the given IntGauge.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetIntGaugeData(data IntGauge) {
+	(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{
+		IntGauge: *data.orig,
+	}
+}
+
+// SetDoubleGaugeData replaces the metric data with the given DoubleGauge.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetDoubleGaugeData(data DoubleGauge) {
+	(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{
+		DoubleGauge: *data.orig,
+	}
+}
+
+// SetIntSumData replaces the metric data with the given IntSum.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetIntSumData(data IntSum) {
+	(*ms.orig).Data = &otlpmetrics.Metric_IntSum{
+		IntSum: *data.orig,
+	}
+}
+
+// SetDoubleSumData replaces the metric data with the given DoubleSum.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetDoubleSumData(data DoubleSum) {
+	(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{
+		DoubleSum: *data.orig,
+	}
+}
+
+// SetIntHistogramData replaces the metric data with the given IntHistogram.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetIntHistogramData(data IntHistogram) {
+	(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{
+		IntHistogram: *data.orig,
+	}
+}
+
+// SetDoubleHistogramData replaces the metric data with the given DoubleHistogram.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetDoubleHistogramData(data DoubleHistogram) {
+	(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{
+		DoubleHistogram: *data.orig,
+	}
+}
+
 // DeprecatedNewResource temporary public function.
 func DeprecatedNewResource(orig **otlpresource.Resource) Resource {
 	return newResource(orig)
@@ -56,4 +214,9 @@ func DeprecatedNewInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrar
 // DeprecatedNewStringMap temporary public function.
 func DeprecatedNewStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
 	return newStringMap(orig)
+}
+
+// DeprecatedNewMetricsResourceSlice temporary public function.
+func DeprecatedNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
+	return newResourceMetricsSlice(orig)
 }
