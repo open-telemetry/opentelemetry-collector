@@ -39,6 +39,65 @@ func generateOCTestDataNoMetrics() consumerdata.MetricsData {
 	}
 }
 
+func generateOCTestDataNoPoints() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &occommon.Node{},
+		Resource: &ocresource.Resource{
+			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+		},
+		Metrics: []*ocmetrics.Metric{
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestGaugeDoubleMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestGaugeIntMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_GAUGE_INT64,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestCounterDoubleMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestCounterIntMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestDoubleHistogramMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+				},
+			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestIntHistogramMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+				},
+			},
+		},
+	}
+}
+
 func generateOCTestDataNoPointsOld() consumerdata.MetricsData {
 	return consumerdata.MetricsData{
 		Node: &occommon.Node{},
@@ -383,6 +442,12 @@ func generateOCTestMetricDoubleHistogram() *ocmetrics.Metric {
 			},
 		},
 	}
+}
+
+func generateOCTestMetricIntHistogram() *ocmetrics.Metric {
+	m := generateOCTestMetricDoubleHistogram()
+	m.MetricDescriptor.Name = testdata.TestIntHistogramMetricName
+	return m
 }
 
 func generateOCTestMetricSummary() *ocmetrics.Metric {

@@ -26,14 +26,13 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/dataold"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
+	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func TestMetricsDataToOC(t *testing.T) {
-
-	sampleMetricData := testdataold.GenerateMetricDataWithCountersHistogramAndSummary()
+func TestMetricsToOC(t *testing.T) {
+	sampleMetricData := testdata.GenerateMetricsWithCountersHistograms()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(conventions.AttributeHostHostname, pdata.NewAttributeValueString("host1"))
 	attrs.Upsert(conventions.OCAttributeProcessID, pdata.NewAttributeValueInt(123))
@@ -44,18 +43,18 @@ func TestMetricsDataToOC(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		internal dataold.MetricData
+		internal data.MetricData
 		oc       []consumerdata.MetricsData
 	}{
 		{
 			name:     "empty",
-			internal: testdataold.GenerateMetricDataEmpty(),
+			internal: testdata.GenerateMetricsEmpty(),
 			oc:       []consumerdata.MetricsData(nil),
 		},
 
 		{
 			name:     "one-empty-resource-metrics",
-			internal: testdataold.GenerateMetricDataOneEmptyResourceMetrics(),
+			internal: testdata.GenerateMetricsOneEmptyResourceMetrics(),
 			oc: []consumerdata.MetricsData{
 				{},
 			},
@@ -63,7 +62,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-one-nil-resource-metrics",
-			internal: testdataold.GenerateMetricDataOneEmptyOneNilResourceMetrics(),
+			internal: testdata.GenerateMetricsOneEmptyOneNilResourceMetrics(),
 			oc: []consumerdata.MetricsData{
 				{},
 			},
@@ -71,7 +70,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "no-libraries",
-			internal: testdataold.GenerateMetricDataNoLibraries(),
+			internal: testdata.GenerateMetricsNoLibraries(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
@@ -79,7 +78,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-instrumentation-library",
-			internal: testdataold.GenerateMetricDataOneEmptyInstrumentationLibrary(),
+			internal: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
@@ -87,7 +86,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-empty-one-nil-instrumentation-library",
-			internal: testdataold.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary(),
+			internal: testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoMetrics(),
 			},
@@ -95,7 +94,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-no-resource",
-			internal: testdataold.GenerateMetricDataOneMetricNoResource(),
+			internal: testdata.GenerateMetricsOneMetricNoResource(),
 			oc: []consumerdata.MetricsData{
 				{
 					Metrics: []*ocmetrics.Metric{
@@ -107,7 +106,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric",
-			internal: testdataold.GenerateMetricDataOneMetric(),
+			internal: testdata.GenerateMetricsOneMetric(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
@@ -115,7 +114,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-one-nil",
-			internal: testdataold.GenerateMetricDataOneMetricOneNil(),
+			internal: testdata.GenerateMetricsOneMetricOneNil(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
@@ -123,7 +122,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-one-nil-point",
-			internal: testdataold.GenerateMetricDataOneMetricOneNilPoint(),
+			internal: testdata.GenerateMetricsOneMetricOneNilPoint(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataMetricsOneMetric(),
 			},
@@ -131,7 +130,7 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "one-metric-no-labels",
-			internal: testdataold.GenerateMetricDataOneMetricNoLabels(),
+			internal: testdata.GenerateMetricsOneMetricNoLabels(),
 			oc: []consumerdata.MetricsData{
 				generateOCTestDataNoLabels(),
 			},
@@ -139,9 +138,9 @@ func TestMetricsDataToOC(t *testing.T) {
 
 		{
 			name:     "all-types-no-data-points",
-			internal: testdataold.GenerateMetricDataAllTypesNoDataPoints(),
+			internal: testdata.GenerateMetricsAllTypesNoDataPoints(),
 			oc: []consumerdata.MetricsData{
-				generateOCTestDataNoPointsOld(),
+				generateOCTestDataNoPoints(),
 			},
 		},
 
@@ -149,20 +148,44 @@ func TestMetricsDataToOC(t *testing.T) {
 			name:     "sample-metric",
 			internal: sampleMetricData,
 			oc: []consumerdata.MetricsData{
-				generateOCTestDataOld(),
+				generateOCTestData(),
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := MetricDataToOC(test.internal)
+			got := MetricsToOC(test.internal)
 			assert.EqualValues(t, test.oc, got)
 		})
 	}
 }
 
-func generateOCTestDataOld() consumerdata.MetricsData {
+func TestMetricsToOC_InvalidDataType(t *testing.T) {
+	internal := testdata.GenerateMetricsMetricTypeInvalid()
+	want := []consumerdata.MetricsData{
+		{
+			Node: &occommon.Node{},
+			Resource: &ocresource.Resource{
+				Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
+			},
+			Metrics: []*ocmetrics.Metric{
+				{
+					MetricDescriptor: &ocmetrics.MetricDescriptor{
+						Name:      testdata.TestCounterIntMetricName,
+						Unit:      "1",
+						Type:      ocmetrics.MetricDescriptor_UNSPECIFIED,
+						LabelKeys: nil,
+					},
+				},
+			},
+		},
+	}
+	got := MetricsToOC(internal)
+	assert.EqualValues(t, want, got)
+}
+
+func generateOCTestData() consumerdata.MetricsData {
 	ts := timestamppb.New(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 
 	return consumerdata.MetricsData{
@@ -187,7 +210,7 @@ func generateOCTestDataOld() consumerdata.MetricsData {
 			generateOCTestMetricInt(),
 			generateOCTestMetricDouble(),
 			generateOCTestMetricDoubleHistogram(),
-			generateOCTestMetricSummary(),
+			generateOCTestMetricIntHistogram(),
 		},
 	}
 }
