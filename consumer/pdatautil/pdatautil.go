@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -38,6 +39,9 @@ func MetricsToMetricsData(md pdata.Metrics) []consumerdata.MetricsData {
 	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
 		return internaldata.MetricDataToOC(ims)
 	}
+	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
+		return internaldata.MetricsToOC(ims)
+	}
 	panic("Unsupported metrics type.")
 }
 
@@ -48,10 +52,13 @@ func MetricsFromMetricsData(ocmds []consumerdata.MetricsData) pdata.Metrics {
 	return pdata.Metrics{InternalOpaque: ocmds}
 }
 
-// MetricsToOldInternalMetrics returns the `data.MetricData` representation of the `pdata.Metrics`.
+// MetricsToOldInternalMetrics returns the `dataold.MetricData` representation of the `pdata.Metrics`.
 //
 // This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
 func MetricsToOldInternalMetrics(md pdata.Metrics) dataold.MetricData {
+	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
+		return internaldata.OCSliceToMetricData(internaldata.MetricsToOC(ims))
+	}
 	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
 		return ims
 	}
@@ -61,10 +68,33 @@ func MetricsToOldInternalMetrics(md pdata.Metrics) dataold.MetricData {
 	panic("Unsupported metrics type.")
 }
 
-// MetricsFromMetricsData returns the `pdata.Metrics` representation of the `data.MetricData`.
+// MetricsFromOldInternalMetrics returns the `pdata.Metrics` representation of the `dataold.MetricData`.
 //
 // This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
 func MetricsFromOldInternalMetrics(md dataold.MetricData) pdata.Metrics {
+	return pdata.Metrics{InternalOpaque: md}
+}
+
+// MetricsToInternalMetrics returns the `data.MetricData` representation of the `pdata.Metrics`.
+//
+// This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
+func MetricsToInternalMetrics(md pdata.Metrics) data.MetricData {
+	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
+		return ims
+	}
+	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
+		return internaldata.OCSliceToMetrics(internaldata.MetricDataToOC(ims))
+	}
+	if cmd, ok := md.InternalOpaque.([]consumerdata.MetricsData); ok {
+		return internaldata.OCSliceToMetrics(cmd)
+	}
+	panic("Unsupported metrics type.")
+}
+
+// MetricsFromInternalMetrics returns the `pdata.Metrics` representation of the `data.MetricData`.
+//
+// This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
+func MetricsFromInternalMetrics(md data.MetricData) pdata.Metrics {
 	return pdata.Metrics{InternalOpaque: md}
 }
 
@@ -75,10 +105,13 @@ func CloneMetrics(md pdata.Metrics) pdata.Metrics {
 	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
 		return pdata.Metrics{InternalOpaque: ims.Clone()}
 	}
+	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
+		return pdata.Metrics{InternalOpaque: ims.Clone()}
+	}
 	if ocmds, ok := md.InternalOpaque.([]consumerdata.MetricsData); ok {
 		clone := make([]consumerdata.MetricsData, 0, len(ocmds))
 		for _, ocmd := range ocmds {
-			clone = append(clone, CloneMetricsDataOld(ocmd))
+			clone = append(clone, cloneMetricsData(ocmd))
 		}
 		return pdata.Metrics{InternalOpaque: clone}
 	}
@@ -87,6 +120,9 @@ func CloneMetrics(md pdata.Metrics) pdata.Metrics {
 
 func MetricCount(md pdata.Metrics) int {
 	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
+		return ims.MetricCount()
+	}
+	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
 		return ims.MetricCount()
 	}
 	if ocmds, ok := md.InternalOpaque.([]consumerdata.MetricsData); ok {
@@ -101,6 +137,9 @@ func MetricCount(md pdata.Metrics) int {
 
 func MetricAndDataPointCount(md pdata.Metrics) (int, int) {
 	if ims, ok := md.InternalOpaque.(dataold.MetricData); ok {
+		return ims.MetricAndDataPointCount()
+	}
+	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
 		return ims.MetricAndDataPointCount()
 	}
 	if ocmds, ok := md.InternalOpaque.([]consumerdata.MetricsData); ok {
@@ -121,8 +160,7 @@ func MetricPointCount(md pdata.Metrics) int {
 	return points
 }
 
-// CloneMetricsDataOld copied from processors.cloneMetricsDataOld
-func CloneMetricsDataOld(md consumerdata.MetricsData) consumerdata.MetricsData {
+func cloneMetricsData(md consumerdata.MetricsData) consumerdata.MetricsData {
 	clone := consumerdata.MetricsData{
 		Node:     googleproto.Clone(md.Node).(*commonpb.Node),
 		Resource: googleproto.Clone(md.Resource).(*resourcepb.Resource),
