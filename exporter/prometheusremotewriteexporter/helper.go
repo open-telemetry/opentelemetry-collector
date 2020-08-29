@@ -15,13 +15,13 @@
 package prometheusremotewriteexporter
 
 import (
+	"errors"
 	"log"
 	"sort"
 	"strings"
 	"time"
 	"unicode"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
 
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -186,7 +186,7 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 // and creates a WriteRequest from the struct -- can move to the helper.go file
 func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
-		return nil, errors.Errorf("invalid tsMap: cannot be empty map")
+		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 	TsArray := []prompb.TimeSeries{}
 	for _, v := range tsMap {
