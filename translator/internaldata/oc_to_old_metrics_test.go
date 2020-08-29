@@ -56,7 +56,7 @@ func TestOCToMetricData(t *testing.T) {
 
 		{
 			name:     "all-types-no-points",
-			oc:       generateOCTestDataNoPoints(),
+			oc:       generateOCTestDataNoPointsOld(),
 			internal: testdataold.GenerateMetricDataAllTypesNoDataPoints(),
 		},
 
@@ -97,7 +97,7 @@ func TestOCToMetricData(t *testing.T) {
 				Metrics: []*ocmetrics.Metric{
 					generateOCTestMetricInt(),
 					generateOCTestMetricDouble(),
-					generateOCTestMetricHistogram(),
+					generateOCTestMetricDoubleHistogram(),
 					generateOCTestMetricSummary(),
 				},
 			},
@@ -168,9 +168,9 @@ func BenchmarkMetricHistogramOCToInternal(b *testing.B) {
 	ocMetric := consumerdata.MetricsData{
 		Resource: generateOCTestResource(),
 		Metrics: []*ocmetrics.Metric{
-			generateOCTestMetricHistogram(),
-			generateOCTestMetricHistogram(),
-			generateOCTestMetricHistogram(),
+			generateOCTestMetricDoubleHistogram(),
+			generateOCTestMetricDoubleHistogram(),
+			generateOCTestMetricDoubleHistogram(),
 		},
 	}
 

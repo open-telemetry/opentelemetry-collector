@@ -141,7 +141,7 @@ func TestMetricsDataToOC(t *testing.T) {
 			name:     "all-types-no-data-points",
 			internal: testdataold.GenerateMetricDataAllTypesNoDataPoints(),
 			oc: []consumerdata.MetricsData{
-				generateOCTestDataNoPoints(),
+				generateOCTestDataNoPointsOld(),
 			},
 		},
 
@@ -186,7 +186,7 @@ func generateOCTestData() consumerdata.MetricsData {
 		Metrics: []*ocmetrics.Metric{
 			generateOCTestMetricInt(),
 			generateOCTestMetricDouble(),
-			generateOCTestMetricHistogram(),
+			generateOCTestMetricDoubleHistogram(),
 			generateOCTestMetricSummary(),
 		},
 	}
