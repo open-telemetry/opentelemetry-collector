@@ -166,12 +166,12 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	want := data.NewMetricData()
 	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
 	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("key", "value")
+	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("resource-attr", "another-value")
 	oc := generateOCTestDataMetricsOneMetric()
 	oc2 := generateOCTestDataMetricsOneMetric()
 	oc.Metrics = append(oc.Metrics, oc2.Metrics...)
 	oc.Metrics[1].Resource = oc2.Resource
-	oc.Metrics[1].Resource.Labels["key"] = "value"
+	oc.Metrics[1].Resource.Labels["resource-attr"] = "another-value"
 	got := OCToMetrics(oc)
 	assert.EqualValues(t, want, got)
 }
