@@ -33,20 +33,24 @@ var metricsFile = &File{
 		instrumentationLibraryMetrics,
 		metricSlice,
 		metric,
-		metricDescriptor,
-		int64DataPointSlice,
-		int64DataPoint,
+		intGauge,
+		doubleGauge,
+		intSum,
+		doubleSum,
+		intHistogram,
+		doubleHistogram,
+		intDataPointSlice,
+		intDataPoint,
 		doubleDataPointSlice,
 		doubleDataPoint,
-		histogramDataPointSlice,
-		histogramDataPoint,
-		histogramBucketSlice,
-		histogramBucket,
-		histogramBucketExemplar,
-		summaryDataPointSlice,
-		summaryDataPoint,
-		summaryValueAtPercentileSlice,
-		summaryValueAtPercentile,
+		intHistogramDataPointSlice,
+		intHistogramDataPoint,
+		doubleHistogramDataPointSlice,
+		doubleHistogramDataPoint,
+		intExemplarSlice,
+		intExemplar,
+		doubleExemplarSlice,
+		doubleExemplar,
 	},
 }
 
@@ -96,41 +100,8 @@ var metricSlice = &sliceStruct{
 var metric = &messageStruct{
 	structName: "Metric",
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
-		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto#L96",
+		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto",
 	originFullName: "otlpmetrics.Metric",
-	fields: []baseField{
-		&messageField{
-			fieldName:       "MetricDescriptor",
-			originFieldName: "MetricDescriptor",
-			returnMessage:   metricDescriptor,
-		},
-		&sliceField{
-			fieldMame:       "Int64DataPoints",
-			originFieldName: "Int64DataPoints",
-			returnSlice:     int64DataPointSlice,
-		},
-		&sliceField{
-			fieldMame:       "DoubleDataPoints",
-			originFieldName: "DoubleDataPoints",
-			returnSlice:     doubleDataPointSlice,
-		},
-		&sliceField{
-			fieldMame:       "HistogramDataPoints",
-			originFieldName: "HistogramDataPoints",
-			returnSlice:     histogramDataPointSlice,
-		},
-		&sliceField{
-			fieldMame:       "SummaryDataPoints",
-			originFieldName: "SummaryDataPoints",
-			returnSlice:     summaryDataPointSlice,
-		},
-	},
-}
-
-var metricDescriptor = &messageStruct{
-	structName:     "MetricDescriptor",
-	description:    "// MetricDescriptor is the descriptor of a metric.",
-	originFullName: "otlpmetrics.MetricDescriptor",
 	fields: []baseField{
 		nameField,
 		&primitiveField{
@@ -147,31 +118,108 @@ var metricDescriptor = &messageStruct{
 			defaultVal:      `""`,
 			testVal:         `"1"`,
 		},
-		&primitiveTypedField{
-			fieldMame:       "Type",
-			originFieldName: "Type",
-			returnType:      "MetricType",
-			rawType:         "otlpmetrics.MetricDescriptor_Type",
-			defaultVal:      "MetricTypeInvalid",
-			testVal:         "MetricTypeInt64",
+	},
+}
+
+var intGauge = &messageStruct{
+	structName:     "IntGauge",
+	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
+	originFullName: "otlpmetrics.IntGauge",
+	fields: []baseField{
+		&sliceField{
+			fieldMame:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     intDataPointSlice,
 		},
 	},
 }
 
-var int64DataPointSlice = &sliceStruct{
-	structName: "Int64DataPointSlice",
-	element:    int64DataPoint,
+var doubleGauge = &messageStruct{
+	structName:     "DoubleGauge",
+	description:    "// DoubleGauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
+	originFullName: "otlpmetrics.DoubleGauge",
+	fields: []baseField{
+		&sliceField{
+			fieldMame:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     doubleDataPointSlice,
+		},
+	},
 }
 
-var int64DataPoint = &messageStruct{
-	structName:     "Int64DataPoint",
-	description:    "// Int64DataPoint is a single data point in a timeseries that describes the time-varying values of a int64 metric.",
-	originFullName: "otlpmetrics.Int64DataPoint",
+var intSum = &messageStruct{
+	structName:     "IntSum",
+	description:    "// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.",
+	originFullName: "otlpmetrics.IntSum",
+	fields: []baseField{
+		aggregationTemporalityField,
+		isMonotonicField,
+		&sliceField{
+			fieldMame:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     intDataPointSlice,
+		},
+	},
+}
+
+var doubleSum = &messageStruct{
+	structName:     "DoubleSum",
+	description:    "// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
+	originFullName: "otlpmetrics.DoubleSum",
+	fields: []baseField{
+		aggregationTemporalityField,
+		isMonotonicField,
+		&sliceField{
+			fieldMame:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     doubleDataPointSlice,
+		},
+	},
+}
+
+var intHistogram = &messageStruct{
+	structName:     "IntHistogram",
+	description:    "// IntHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
+	originFullName: "otlpmetrics.IntHistogram",
+	fields: []baseField{
+		aggregationTemporalityField,
+		&sliceField{
+			fieldMame:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     intHistogramDataPointSlice,
+		},
+	},
+}
+
+var doubleHistogram = &messageStruct{
+	structName:     "DoubleHistogram",
+	description:    "// DoubleHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
+	originFullName: "otlpmetrics.DoubleHistogram",
+	fields: []baseField{
+		aggregationTemporalityField,
+		&sliceField{
+			fieldMame:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     doubleHistogramDataPointSlice,
+		},
+	},
+}
+
+var intDataPointSlice = &sliceStruct{
+	structName: "IntDataPointSlice",
+	element:    intDataPoint,
+}
+
+var intDataPoint = &messageStruct{
+	structName:     "IntDataPoint",
+	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
+	originFullName: "otlpmetrics.IntDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
 		timeField,
 		valueInt64Field,
+		intExemplarsField,
 	},
 }
 
@@ -189,103 +237,95 @@ var doubleDataPoint = &messageStruct{
 		startTimeField,
 		timeField,
 		valueFloat64Field,
+		doubleExemplarsField,
 	},
 }
 
-var histogramDataPointSlice = &sliceStruct{
-	structName: "HistogramDataPointSlice",
-	element:    histogramDataPoint,
+var intHistogramDataPointSlice = &sliceStruct{
+	structName: "IntHistogramDataPointSlice",
+	element:    intHistogramDataPoint,
 }
 
-var histogramDataPoint = &messageStruct{
-	structName:     "HistogramDataPoint",
-	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram.",
-	originFullName: "otlpmetrics.HistogramDataPoint",
+var intHistogramDataPoint = &messageStruct{
+	structName:     "IntHistogramDataPoint",
+	description:    "// IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.",
+	originFullName: "otlpmetrics.IntHistogramDataPoint",
 	fields: []baseField{
 		labelsField,
 		startTimeField,
 		timeField,
 		countField,
-		sumField,
-		&sliceField{
-			fieldMame:       "Buckets",
-			originFieldName: "Buckets",
-			returnSlice:     histogramBucketSlice,
-		},
+		intSumField,
+		bucketCountsField,
 		explicitBoundsField,
+		intExemplarsField,
 	},
 }
 
-var histogramBucketSlice = &sliceStruct{
-	structName: "HistogramBucketSlice",
-	element:    histogramBucket,
+var doubleHistogramDataPointSlice = &sliceStruct{
+	structName: "DoubleHistogramDataPointSlice",
+	element:    doubleHistogramDataPoint,
 }
 
-var histogramBucket = &messageStruct{
-	structName:     "HistogramBucket",
-	description:    "// HistogramBucket contains values for a histogram bucket.",
-	originFullName: "otlpmetrics.HistogramDataPoint_Bucket",
+var doubleHistogramDataPoint = &messageStruct{
+	structName:     "DoubleHistogramDataPoint",
+	description:    "// DoubleHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of double values.",
+	originFullName: "otlpmetrics.DoubleHistogramDataPoint",
 	fields: []baseField{
+		labelsField,
+		startTimeField,
+		timeField,
 		countField,
-		&messageField{
-			fieldName:       "Exemplar",
-			originFieldName: "Exemplar",
-			returnMessage:   histogramBucketExemplar,
-		},
+		doubleSumField,
+		bucketCountsField,
+		explicitBoundsField,
+		doubleExemplarsField,
 	},
 }
 
-var histogramBucketExemplar = &messageStruct{
-	structName: "HistogramBucketExemplar",
-	description: "// HistogramBucketExemplar are example points that may be used to annotate aggregated Histogram values.\n" +
-		"// They are metadata that gives information about a particular value added to a Histogram bucket.",
-	originFullName: "otlpmetrics.HistogramDataPoint_Bucket_Exemplar",
+var intExemplarSlice = &sliceStruct{
+	structName: "IntExemplarSlice",
+	element:    intExemplar,
+}
+
+var intExemplar = &messageStruct{
+	structName: "IntExemplar",
+	description: "// IntExemplar is a sample input int measurement.\n//\n" +
+		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
+		"// for example the span and trace ID of the active span when the exemplar was recorded.",
+
+	originFullName: "otlpmetrics.IntExemplar",
 	fields: []baseField{
 		timeField,
-		valueFloat64Field,
+		valueInt64Field,
 		&sliceField{
-			fieldMame:       "Attachments",
-			originFieldName: "Attachments",
+			fieldMame:       "FilteredLabels",
+			originFieldName: "FilteredLabels",
 			returnSlice:     stringMap,
 		},
 	},
 }
 
-var summaryDataPointSlice = &sliceStruct{
-	structName: "SummaryDataPointSlice",
-	element:    summaryDataPoint,
+var doubleExemplarSlice = &sliceStruct{
+	structName: "DoubleExemplarSlice",
+	element:    doubleExemplar,
 }
 
-var summaryDataPoint = &messageStruct{
-	structName:     "SummaryDataPoint",
-	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary metric.",
-	originFullName: "otlpmetrics.SummaryDataPoint",
+var doubleExemplar = &messageStruct{
+	structName: "DoubleExemplar",
+	description: "// DoubleExemplar is a sample input double measurement.\n//\n" +
+		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
+		"// for example the span and trace ID of the active span when the exemplar was recorded.",
+
+	originFullName: "otlpmetrics.DoubleExemplar",
 	fields: []baseField{
-		labelsField,
-		startTimeField,
 		timeField,
-		countField,
-		sumField,
-		&sliceField{
-			fieldMame:       "ValueAtPercentiles",
-			originFieldName: "PercentileValues",
-			returnSlice:     summaryValueAtPercentileSlice,
-		},
-	},
-}
-
-var summaryValueAtPercentileSlice = &sliceStruct{
-	structName: "SummaryValueAtPercentileSlice",
-	element:    summaryValueAtPercentile,
-}
-
-var summaryValueAtPercentile = &messageStruct{
-	structName:     "SummaryValueAtPercentile",
-	description:    "// SummaryValueAtPercentile represents the value at a given percentile of a distribution.",
-	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtPercentile",
-	fields: []baseField{
-		percentileField,
 		valueFloat64Field,
+		&sliceField{
+			fieldMame:       "FilteredLabels",
+			originFieldName: "FilteredLabels",
+			returnSlice:     stringMap,
+		},
 	},
 }
 
@@ -293,6 +333,18 @@ var labelsField = &sliceField{
 	fieldMame:       "LabelsMap",
 	originFieldName: "Labels",
 	returnSlice:     stringMap,
+}
+
+var intExemplarsField = &sliceField{
+	fieldMame:       "Exemplars",
+	originFieldName: "Exemplars",
+	returnSlice:     intExemplarSlice,
+}
+
+var doubleExemplarsField = &sliceField{
+	fieldMame:       "Exemplars",
+	originFieldName: "Exemplars",
+	returnSlice:     doubleExemplarSlice,
 }
 
 var countField = &primitiveField{
@@ -303,7 +355,15 @@ var countField = &primitiveField{
 	testVal:         "uint64(17)",
 }
 
-var sumField = &primitiveField{
+var intSumField = &primitiveField{
+	fieldMame:       "Sum",
+	originFieldName: "Sum",
+	returnType:      "int64",
+	defaultVal:      "int64(0.0)",
+	testVal:         "int64(1713)",
+}
+
+var doubleSumField = &primitiveField{
 	fieldMame:       "Sum",
 	originFieldName: "Sum",
 	returnType:      "float64",
@@ -327,12 +387,12 @@ var valueFloat64Field = &primitiveField{
 	testVal:         "float64(17.13)",
 }
 
-var percentileField = &primitiveField{
-	fieldMame:       "Percentile",
-	originFieldName: "Percentile",
-	returnType:      "float64",
-	defaultVal:      "float64(0.0)",
-	testVal:         "float64(0.90)",
+var bucketCountsField = &primitiveField{
+	fieldMame:       "BucketCounts",
+	originFieldName: "BucketCounts",
+	returnType:      "[]uint64",
+	defaultVal:      "[]uint64(nil)",
+	testVal:         "[]uint64{1, 2, 3}",
 }
 
 var explicitBoundsField = &primitiveField{
@@ -341,4 +401,21 @@ var explicitBoundsField = &primitiveField{
 	returnType:      "[]float64",
 	defaultVal:      "[]float64(nil)",
 	testVal:         "[]float64{1, 2, 3}",
+}
+
+var isMonotonicField = &primitiveField{
+	fieldMame:       "IsMonotonic",
+	originFieldName: "IsMonotonic",
+	returnType:      "bool",
+	defaultVal:      "false",
+	testVal:         "true",
+}
+
+var aggregationTemporalityField = &primitiveTypedField{
+	fieldMame:       "AggregationTemporality",
+	originFieldName: "AggregationTemporality",
+	returnType:      "AggregationTemporality",
+	rawType:         "otlpmetrics.AggregationTemporality",
+	defaultVal:      "AggregationTemporalityUnspecified",
+	testVal:         "AggregationTemporalityCumulative",
 }

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestSinkTraceExporter(t *testing.T) {
@@ -58,11 +59,11 @@ func TestSinkTraceExporter_Error(t *testing.T) {
 func TestSinkMetricsExporter(t *testing.T) {
 	sink := new(SinkMetricsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdataold.GenerateMetricDataOneMetric()
 	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
-		want = append(want, pdatautil.MetricsFromInternalMetrics(md))
+		require.NoError(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
+		want = append(want, pdatautil.MetricsFromOldInternalMetrics(md))
 	}
 	assert.Equal(t, want, sink.AllMetrics())
 	assert.Equal(t, len(want), sink.MetricsCount())
@@ -76,8 +77,8 @@ func TestSinkMetricsExporter_Error(t *testing.T) {
 	sink := new(SinkMetricsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	sink.SetConsumeMetricsError(errors.New("my error"))
-	md := testdata.GenerateMetricDataOneMetric()
-	require.Error(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	md := testdataold.GenerateMetricDataOneMetric()
+	require.Error(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
 	assert.Len(t, sink.AllMetrics(), 0)
 	assert.Equal(t, 0, sink.MetricsCount())
 	require.NoError(t, sink.Shutdown(context.Background()))

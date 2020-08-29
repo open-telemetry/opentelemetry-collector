@@ -16,6 +16,7 @@ package hostmetricsreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -95,9 +96,12 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 	cfg.Scrapers = map[string]internal.Config{}
 
-	scrapersViperSection := config.ViperSub(componentViperSection, scrapersKey)
-	if scrapersViperSection == nil || len(scrapersViperSection.AllKeys()) == 0 {
-		return fmt.Errorf("must specify at least one scraper when using hostmetrics receiver")
+	scrapersViperSection, err := config.ViperSubExact(componentViperSection, scrapersKey)
+	if err != nil {
+		return err
+	}
+	if len(scrapersViperSection.AllKeys()) == 0 {
+		return errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
 
 	for key := range componentViperSection.GetStringMap(scrapersKey) {
@@ -107,8 +111,11 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 		}
 
 		collectorCfg := factory.CreateDefaultConfig()
-		collectorViperSection := config.ViperSub(scrapersViperSection, key)
-		err := collectorViperSection.UnmarshalExact(collectorCfg)
+		collectorViperSection, err := config.ViperSubExact(scrapersViperSection, key)
+		if err != nil {
+			return err
+		}
+		err = collectorViperSection.UnmarshalExact(collectorCfg)
 		if err != nil {
 			return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
 		}

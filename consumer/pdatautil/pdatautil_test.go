@@ -24,11 +24,11 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestMetricCount(t *testing.T) {
-	metrics := pdata.Metrics{InternalOpaque: testdata.GenerateMetricDataTwoMetrics()}
+	metrics := pdata.Metrics{InternalOpaque: testdataold.GenerateMetricDataTwoMetrics()}
 	assert.Equal(t, 2, MetricCount(metrics))
 
 	metrics = pdata.Metrics{InternalOpaque: []consumerdata.MetricsData{
@@ -50,7 +50,7 @@ func TestMetricCount(t *testing.T) {
 }
 
 func TestMetricAndDataPointCount(t *testing.T) {
-	metrics := pdata.Metrics{InternalOpaque: testdata.GenerateMetricDataTwoMetrics()}
+	metrics := pdata.Metrics{InternalOpaque: testdataold.GenerateMetricDataTwoMetrics()}
 	metricsCount, dataPointsCount := MetricAndDataPointCount(metrics)
 	assert.Equal(t, 2, metricsCount)
 	assert.Equal(t, 4, dataPointsCount)

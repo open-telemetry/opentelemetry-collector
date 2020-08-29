@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -146,9 +147,9 @@ func generateTraceData(attributes map[string]string) pdata.Traces {
 }
 
 func generateMetricData(attributes map[string]string) pdata.Metrics {
-	md := testdata.GenerateMetricDataOneMetricNoResource()
+	md := testdataold.GenerateMetricDataOneMetricNoResource()
 	if attributes == nil {
-		return pdatautil.MetricsFromInternalMetrics(md)
+		return pdatautil.MetricsFromOldInternalMetrics(md)
 	}
 	resource := md.ResourceMetrics().At(0).Resource()
 	resource.InitEmpty()
@@ -156,7 +157,7 @@ func generateMetricData(attributes map[string]string) pdata.Metrics {
 		resource.Attributes().InsertString(k, v)
 	}
 	resource.Attributes().Sort()
-	return pdatautil.MetricsFromInternalMetrics(md)
+	return pdatautil.MetricsFromOldInternalMetrics(md)
 }
 
 type testTraceConsumer struct {
@@ -178,7 +179,7 @@ type testMetricsConsumer struct {
 
 func (tmn *testMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// sort attributes to be able to compare traces
-	imd := pdatautil.MetricsToInternalMetrics(md)
+	imd := pdatautil.MetricsToOldInternalMetrics(md)
 	for i := 0; i < imd.ResourceMetrics().Len(); i++ {
 		sortResourceAttributes(imd.ResourceMetrics().At(i).Resource())
 	}

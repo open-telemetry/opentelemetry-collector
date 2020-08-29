@@ -15,7 +15,7 @@
 package cpuscraper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // labels
@@ -40,12 +40,12 @@ const (
 
 // descriptors
 
-var cpuTimeDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var cpuTimeDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.cpu.time")
 	descriptor.SetDescription("Total CPU seconds broken down by different states.")
 	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
+	descriptor.SetType(dataold.MetricTypeMonotonicDouble)
 	return descriptor
 }()

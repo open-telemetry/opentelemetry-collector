@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
@@ -77,8 +78,8 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) {
+	metrics := dataold.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
 
@@ -127,7 +128,7 @@ func deviceUsageAlreadySet(device string, usages []*deviceUsage) bool {
 	return false
 }
 
-func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
+func initializeFileSystemUsageMetric(metric dataold.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
 	fileSystemUsageDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.Int64DataPoints()
@@ -137,7 +138,7 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUni
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint dataold.Int64DataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(stateLabelName, stateLabel)

@@ -24,11 +24,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-var systemSpecificMetrics = map[string][]pdata.MetricDescriptor{
+var systemSpecificMetrics = map[string][]dataold.MetricDescriptor{
 	"linux":   {processesRunningDescriptor, processesBlockedDescriptor},
 	"darwin":  {processesRunningDescriptor, processesBlockedDescriptor},
 	"freebsd": {processesRunningDescriptor, processesBlockedDescriptor},
@@ -83,7 +83,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertProcessesMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
+func assertProcessesMetricValid(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	assert.Equal(t, metric.Int64DataPoints().Len(), 1)
 	assert.Equal(t, metric.Int64DataPoints().At(0).LabelsMap().Len(), 0)

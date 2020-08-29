@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestWrapScraper(t *testing.T) {
@@ -66,11 +66,11 @@ func (s *testScraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *testScraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+func (s *testScraper) ScrapeMetrics(ctx context.Context) (dataold.MetricSlice, error) {
 	assert.NotNil(s.t, trace.FromContext(ctx))
 	return generateMetricsSlice(), s.err
 }
 
-func generateMetricsSlice() pdata.MetricSlice {
-	return testdata.GenerateMetricDataOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+func generateMetricsSlice() dataold.MetricSlice {
+	return testdataold.GenerateMetricDataOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 }

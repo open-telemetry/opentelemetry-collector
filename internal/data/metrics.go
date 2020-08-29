@@ -64,7 +64,7 @@ func (md MetricData) Clone() MetricData {
 }
 
 func (md MetricData) ResourceMetrics() pdata.ResourceMetricsSlice {
-	return pdata.InternalNewMetricsResourceSlice(md.orig)
+	return pdata.DeprecatedNewMetricsResourceSlice(md.orig)
 }
 
 // MetricCount calculates the total number of metrics.
@@ -122,8 +122,20 @@ func (md MetricData) MetricAndDataPointCount() (metricCount int, dataPointCount 
 				if m.IsNil() {
 					continue
 				}
-				dataPointCount += m.Int64DataPoints().Len() + m.DoubleDataPoints().Len() +
-					m.HistogramDataPoints().Len() + m.SummaryDataPoints().Len()
+				switch m.DataType() {
+				case pdata.MetricDataIntGauge:
+					dataPointCount += m.IntGaugeData().DataPoints().Len()
+				case pdata.MetricDataDoubleGauge:
+					dataPointCount += m.DoubleGaugeData().DataPoints().Len()
+				case pdata.MetricDataIntSum:
+					dataPointCount += m.IntSumData().DataPoints().Len()
+				case pdata.MetricDataDoubleSum:
+					dataPointCount += m.DoubleSumData().DataPoints().Len()
+				case pdata.MetricDataIntHistogram:
+					dataPointCount += m.IntHistogramData().DataPoints().Len()
+				case pdata.MetricDataDoubleHistogram:
+					dataPointCount += m.DoubleHistogramData().DataPoints().Len()
+				}
 			}
 		}
 	}

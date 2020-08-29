@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
@@ -142,7 +143,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+func assertNetworkIOMetricValid(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
@@ -153,7 +154,7 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pd
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)
 }
 
-func assertNetworkTCPConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
+func assertNetworkTCPConnectionsMetricValid(t *testing.T, metric dataold.Metric) {
 	internal.AssertDescriptorEqual(t, networkTCPConnectionsDescriptor, metric.MetricDescriptor())
 	internal.AssertInt64MetricLabelExists(t, metric, 0, stateLabelName)
 	assert.Equal(t, 12, metric.Int64DataPoints().Len())

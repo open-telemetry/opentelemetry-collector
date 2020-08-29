@@ -15,7 +15,7 @@
 package filesystemscraper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // labels
@@ -35,22 +35,22 @@ const (
 
 // descriptors
 
-var fileSystemUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var fileSystemUsageDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.filesystem.usage")
 	descriptor.SetDescription("Filesystem bytes used.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeInt64)
+	descriptor.SetType(dataold.MetricTypeInt64)
 	return descriptor
 }()
 
-var fileSystemINodesUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var fileSystemINodesUsageDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.filesystem.inodes.usage")
 	descriptor.SetDescription("FileSystem operations count.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeInt64)
+	descriptor.SetType(dataold.MetricTypeInt64)
 	return descriptor
 }()

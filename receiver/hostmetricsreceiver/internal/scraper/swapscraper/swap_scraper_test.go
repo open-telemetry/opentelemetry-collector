@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -52,7 +53,7 @@ func TestScrapeMetrics(t *testing.T) {
 	internal.AssertSameTimeStampForMetrics(t, metrics, 1, metrics.Len())
 }
 
-func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) {
+func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric dataold.Metric) {
 	internal.AssertDescriptorEqual(t, swapUsageDescriptor, hostSwapUsageMetric.MetricDescriptor())
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
@@ -81,7 +82,7 @@ func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) 
 	}
 }
 
-func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertPagingMetricValid(t *testing.T, pagingMetric dataold.Metric, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, swapPagingDescriptor, pagingMetric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertInt64MetricStartTimeEquals(t, pagingMetric, startTime)
@@ -106,7 +107,7 @@ func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime 
 	}
 }
 
-func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric dataold.Metric, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, swapPageFaultsDescriptor, pageFaultsMetric.MetricDescriptor())
 	if startTime != 0 {
 		internal.AssertInt64MetricStartTimeEquals(t, pageFaultsMetric, startTime)

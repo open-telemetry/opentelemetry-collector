@@ -19,8 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 func TestGenDefault(t *testing.T) {
@@ -60,7 +59,7 @@ func TestGenDefault(t *testing.T) {
 }
 
 func TestHistogramFunctions(t *testing.T) {
-	pt := pdata.NewHistogramDataPoint()
+	pt := dataold.NewHistogramDataPoint()
 	pt.InitEmpty()
 	setHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
@@ -84,7 +83,7 @@ func TestHistogramFunctions(t *testing.T) {
 
 func TestGenHistogram(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricTypeHistogram
+	cfg.MetricDescriptorType = dataold.MetricTypeHistogram
 	cfg.PtVal = 2
 	md := MetricDataFromCfg(cfg)
 	pts := getMetric(md).HistogramDataPoints()
@@ -99,7 +98,7 @@ func TestGenHistogram(t *testing.T) {
 }
 
 func TestSummaryFunctions(t *testing.T) {
-	pt := pdata.NewSummaryDataPoint()
+	pt := dataold.NewSummaryDataPoint()
 	pt.InitEmpty()
 	setSummaryPercentiles(pt, 0, 50, 95)
 	addSummaryValue(pt, 55, 0)
@@ -114,7 +113,7 @@ func TestSummaryFunctions(t *testing.T) {
 
 func TestGenSummary(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricTypeSummary
+	cfg.MetricDescriptorType = dataold.MetricTypeSummary
 	md := MetricDataFromCfg(cfg)
 	metric := getMetric(md)
 	pts := metric.SummaryDataPoints()
@@ -126,7 +125,7 @@ func TestGenSummary(t *testing.T) {
 
 func TestGenDouble(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricTypeDouble
+	cfg.MetricDescriptorType = dataold.MetricTypeDouble
 	md := MetricDataFromCfg(cfg)
 	metric := getMetric(md)
 	pts := metric.DoubleDataPoints()
@@ -135,6 +134,6 @@ func TestGenDouble(t *testing.T) {
 	require.EqualValues(t, 1, pt.Value())
 }
 
-func getMetric(md data.MetricData) pdata.Metric {
+func getMetric(md dataold.MetricData) dataold.Metric {
 	return md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 }

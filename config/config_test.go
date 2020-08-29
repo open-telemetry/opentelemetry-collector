@@ -506,28 +506,34 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-processor-section", expected: errUnmarshalError, expectedMessage: "processors"},
 		{name: "invalid-exporter-section", expected: errUnmarshalError, expectedMessage: "exporters"},
 		{name: "invalid-pipeline-section", expected: errUnmarshalError, expectedMessage: "pipelines"},
+		{name: "invalid-extension-sub-config", expected: errInvalidSubConfig},
+		{name: "invalid-exporter-sub-config", expected: errInvalidSubConfig},
+		{name: "invalid-processor-sub-config", expected: errInvalidSubConfig},
+		{name: "invalid-receiver-sub-config", expected: errInvalidSubConfig},
+		{name: "invalid-pipeline-sub-config", expected: errInvalidSubConfig},
 	}
 
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	for _, test := range testCases {
-		_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
-		if err == nil {
-			t.Errorf("expected error but succeeded on invalid config case: %s", test.name)
-		} else if test.expected != 0 {
-			cfgErr, ok := err.(*configError)
-			if !ok {
-				t.Errorf("expected config error code %v but got a different error '%v' on invalid config case: %s",
-					test.expected, err, test.name)
-			} else {
-				assert.Equal(t, test.expected, cfgErr.code)
-				if test.expectedMessage != "" {
-					assert.Contains(t, cfgErr.Error(), test.expectedMessage)
+		t.Run(test.name, func(t *testing.T) {
+			_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
+			if err == nil {
+				t.Error("expected error but succeeded")
+			} else if test.expected != 0 {
+				cfgErr, ok := err.(*configError)
+				if !ok {
+					t.Errorf("expected config error code %v but got a different error '%v'", test.expected, err)
+				} else {
+					assert.Equal(t, test.expected, cfgErr.code, err)
+					if test.expectedMessage != "" {
+						assert.Contains(t, cfgErr.Error(), test.expectedMessage)
+					}
+					assert.NotEmpty(t, cfgErr.Error(), "returned config error %v with empty error message", cfgErr.code)
 				}
-				assert.NotEmpty(t, cfgErr.Error(), "returned config error %v with empty error message", cfgErr.code)
 			}
-		}
+		})
 	}
 }
 

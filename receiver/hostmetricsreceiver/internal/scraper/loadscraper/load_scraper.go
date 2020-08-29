@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -50,8 +51,8 @@ func (s *scraper) Close(ctx context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) {
+	metrics := dataold.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
 	avgLoadValues, err := s.load()
@@ -66,7 +67,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func initializeLoadMetric(metric pdata.Metric, metricDescriptor pdata.MetricDescriptor, now pdata.TimestampUnixNano, value float64) {
+func initializeLoadMetric(metric dataold.Metric, metricDescriptor dataold.MetricDescriptor, now pdata.TimestampUnixNano, value float64) {
 	metricDescriptor.CopyTo(metric.MetricDescriptor())
 
 	idps := metric.DoubleDataPoints()

@@ -17,6 +17,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
+	github.com/golang/snappy v0.0.1
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
 	github.com/google/go-cmp v0.5.1
@@ -33,6 +34,7 @@ require (
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.5
 	github.com/pavius/impi v0.0.3
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.11.1
 	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83

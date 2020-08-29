@@ -20,9 +20,10 @@ import (
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 const systemSpecificMetricsLen = 0
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func appendSystemSpecificMetrics(metrics dataold.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 }

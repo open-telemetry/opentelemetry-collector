@@ -15,7 +15,7 @@
 package diskscraper
 
 import (
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 // labels
@@ -34,52 +34,52 @@ const (
 
 // descriptors
 
-var diskIODescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var diskIODescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.io")
 	descriptor.SetDescription("Disk bytes transferred.")
 	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
 	return descriptor
 }()
 
-var diskOpsDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var diskOpsDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.ops")
 	descriptor.SetDescription("Disk operations count.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
 	return descriptor
 }()
 
-var diskTimeDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var diskTimeDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.time")
 	descriptor.SetDescription("Time spent in disk operations.")
 	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
+	descriptor.SetType(dataold.MetricTypeMonotonicDouble)
 	return descriptor
 }()
 
-var diskPendingOperationsDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var diskPendingOperationsDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.pending_operations")
 	descriptor.SetDescription("The queue size of pending I/O operations.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeInt64)
+	descriptor.SetType(dataold.MetricTypeInt64)
 	return descriptor
 }()
 
-var diskMergedDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
+var diskMergedDescriptor = func() dataold.MetricDescriptor {
+	descriptor := dataold.NewMetricDescriptor()
 	descriptor.InitEmpty()
 	descriptor.SetName("system.disk.merged")
 	descriptor.SetDescription("The number of disk reads merged into single physical disk access operations.")
 	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
+	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
 	return descriptor
 }()

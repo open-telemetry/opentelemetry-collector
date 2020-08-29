@@ -26,6 +26,7 @@ func TestDefaultUnMarshaller(t *testing.T) {
 		"otlp_proto",
 		"jaeger_proto",
 		"jaeger_json",
+		"zipkin_proto",
 		"zipkin_json",
 		"zipkin_thrift",
 	}

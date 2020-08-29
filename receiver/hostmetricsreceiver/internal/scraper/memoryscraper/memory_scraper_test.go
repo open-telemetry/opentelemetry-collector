@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -79,14 +79,14 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
+func assertMemoryUsageMetricValid(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor) {
 	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
 	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, stateLabelName, usedStateLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, stateLabelName, freeStateLabelValue)
 }
 
-func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
+func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric dataold.Metric) {
 	internal.AssertInt64MetricLabelHasValue(t, metric, 2, stateLabelName, bufferedStateLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 3, stateLabelName, cachedStateLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 4, stateLabelName, slabReclaimableStateLabelValue)
