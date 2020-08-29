@@ -63,12 +63,12 @@ func testWithTracingGoldenDataset(
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 		161803)
 	factories, err := defaultcomponents.Components()
-	assert.NoError(t, err)
+	assert.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories, sender.GetCollectorPort())
 	validator := testbed.NewCorrectTestValidator(dataProvider)
 	config := correctness.CreateConfigYaml(sender, receiver, processors, "traces")
 	configCleanup, cfgErr := runner.PrepareConfig(config)
-	assert.NoError(t, cfgErr)
+	assert.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
 	defer configCleanup()
 	tc := testbed.NewTestCase(
 		t,
