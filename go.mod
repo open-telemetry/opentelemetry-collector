@@ -38,8 +38,8 @@ require (
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/common v0.11.1
-	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83
+	github.com/prometheus/common v0.13.0
+	github.com/prometheus/prometheus v1.8.2-0.20200827201422-1195cc24e3c8
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec/v2 v2.4.0
 	github.com/shirou/gopsutil v2.20.6+incompatible
@@ -56,10 +56,9 @@ require (
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
+	golang.org/x/sys v0.0.0-20200821140526-fda516888d29
 	golang.org/x/text v0.3.3
-	google.golang.org/api v0.29.0 // indirect
-	google.golang.org/genproto v0.0.0-20200624020401-64a14ca9d1ad
+	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70
 	google.golang.org/grpc v1.32.0
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
 	google.golang.org/protobuf v1.25.0

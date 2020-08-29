@@ -29,12 +29,12 @@ func TestOcaStore(t *testing.T) {
 	o := NewOcaStore(context.Background(), nil, nil, nil, false, "", "prometheus")
 	o.SetScrapeManager(&scrape.Manager{})
 
-	app := o.Appender()
+	app := o.Appender(context.Background())
 	require.NotNil(t, app, "Expecting app")
 
 	_ = o.Close()
 
-	app = o.Appender()
+	app = o.Appender(context.Background())
 	assert.Equal(t, noop, app)
 }
 

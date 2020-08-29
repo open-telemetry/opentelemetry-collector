@@ -22,8 +22,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sdConfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -324,14 +323,16 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.TraceConsumer, mc consumer.Me
 			JobName:        "testbed-job",
 			ScrapeInterval: model.Duration(100 * time.Millisecond),
 			ScrapeTimeout:  model.Duration(time.Second),
-			ServiceDiscoveryConfig: sdConfig.ServiceDiscoveryConfig{
-				StaticConfigs: []*targetgroup.Group{{
-					Targets: []model.LabelSet{{
-						"__address__":      model.LabelValue(addr),
-						"__scheme__":       "http",
-						"__metrics_path__": "/metrics",
-					}},
-				}},
+			ServiceDiscoveryConfigs: discovery.Configs{
+				&discovery.StaticConfig{
+					{
+						Targets: []model.LabelSet{{
+							"__address__":      model.LabelValue(addr),
+							"__scheme__":       "http",
+							"__metrics_path__": "/metrics",
+						}},
+					},
+				},
 			},
 		}},
 	}

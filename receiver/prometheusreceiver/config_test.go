@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -104,7 +105,7 @@ func TestLoadConfigK8s(t *testing.T) {
 		})
 
 	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
-	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfig.KubernetesSDConfigs[0]
+	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
 	assert.Equal(t,
 		kubeSDConfig.Selectors[0].Field,
 		fmt.Sprintf("spec.nodeName=%s", node))
