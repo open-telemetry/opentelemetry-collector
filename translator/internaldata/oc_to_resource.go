@@ -25,6 +25,23 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
+var ocLangCodeToLangMap = getOCLangCodeToLangMap()
+
+func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
+	mappings := make(map[occommon.LibraryInfo_Language]string)
+	mappings[1] = "cpp"
+	mappings[2] = "dotnet"
+	mappings[3] = "erlang"
+	mappings[4] = "go"
+	mappings[5] = "java"
+	mappings[6] = "nodejs"
+	mappings[7] = "php"
+	mappings[8] = "python"
+	mappings[9] = "ruby"
+	mappings[10] = "webjs"
+	return mappings
+}
+
 func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, dest pdata.Resource) {
 	if ocNode == nil && ocResource == nil {
 		return
@@ -98,7 +115,9 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.UpsertString(conventions.OCAttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
-				attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, ocNode.LibraryInfo.Language.String())
+				if str, ok := ocLangCodeToLangMap[ocNode.LibraryInfo.Language]; ok {
+					attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, str)
+				}
 			}
 		}
 	}

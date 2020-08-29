@@ -15,6 +15,7 @@
 package goldendataset
 
 import (
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -147,10 +148,18 @@ func generateFassAttributes() map[string]interface{} {
 func generateExecAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
-	attrMap[conventions.AttributeProcessCommandLine] =
-		"--config=/etc/otel-collector-config.yaml --mem-ballast-size-mib=683"
+	parts := make([]*otlpcommon.AnyValue, 3)
+	parts[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
+	parts[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
+	parts[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
+	attrMap[conventions.AttributeProcessCommandLine] = &otlpcommon.ArrayValue{
+		Values: parts,
+	}
 	attrMap[conventions.AttributeProcessExecutablePath] = "/usr/local/bin/otelcol"
 	attrMap[conventions.AttributeProcessID] = 2020
 	attrMap[conventions.AttributeProcessOwner] = "otel"
+	attrMap[conventions.AttributeOSType] = "LINUX"
+	attrMap[conventions.AttributeOSDescription] =
+		"Linux ubuntu 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux"
 	return attrMap
 }

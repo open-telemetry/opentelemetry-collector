@@ -15,6 +15,7 @@
 package internaldata
 
 import (
+	"strconv"
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -27,6 +28,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -211,6 +214,46 @@ func TestInferResourceType(t *testing.T) {
 			} else {
 				assert.False(t, ok)
 				assert.Equal(t, "", resourceType)
+			}
+		})
+	}
+}
+
+func TestResourceToOCAndBack(t *testing.T) {
+	tests := []goldendataset.PICTInputResource{
+		goldendataset.ResourceNil,
+		goldendataset.ResourceEmpty,
+		goldendataset.ResourceVMOnPrem,
+		goldendataset.ResourceVMCloud,
+		goldendataset.ResourceK8sOnPrem,
+		goldendataset.ResourceK8sCloud,
+		goldendataset.ResourceFaas,
+		goldendataset.ResourceExec,
+	}
+	for _, test := range tests {
+		t.Run(string(test), func(t *testing.T) {
+			rSpans := make([]*otlptrace.ResourceSpans, 1)
+			rSpans[0] = &otlptrace.ResourceSpans{
+				Resource:                    goldendataset.GenerateResource(test),
+				InstrumentationLibrarySpans: nil,
+			}
+			traces := pdata.TracesFromOtlp(rSpans)
+			expected := traces.ResourceSpans().At(0).Resource()
+			ocNode, ocResource := internalResourceToOC(expected)
+			actual := pdata.NewResource()
+			ocNodeResourceToInternal(ocNode, ocResource, actual)
+			if expected.IsNil() {
+				assert.True(t, actual.IsNil())
+			} else {
+				expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+					a, ok := actual.Attributes().Get(k)
+					assert.True(t, ok)
+					if v.Type() == pdata.AttributeValueINT {
+						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+					} else {
+						assert.Equal(t, v, a)
+					}
+				})
 			}
 		})
 	}

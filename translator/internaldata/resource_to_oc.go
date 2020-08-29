@@ -62,6 +62,23 @@ var labelPresenceToResourceType = []ocInferredResourceType{
 	},
 }
 
+var langToOCLangCodeMap = getSDKLangToOCLangCodeMap()
+
+func getSDKLangToOCLangCodeMap() map[string]int32 {
+	mappings := make(map[string]int32)
+	mappings["cpp"] = 1
+	mappings["dotnet"] = 2
+	mappings["erlang"] = 3
+	mappings["go"] = 4
+	mappings["java"] = 5
+	mappings["nodejs"] = 6
+	mappings["php"] = 7
+	mappings["python"] = 8
+	mappings["ruby"] = 9
+	mappings["webjs"] = 10
+	return mappings
+}
+
 func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
 	if resource.IsNil() {
 		return nil, nil
@@ -122,7 +139,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			}
 			ocNode.LibraryInfo.ExporterVersion = val
 		case conventions.AttributeTelemetrySDKLanguage:
-			if code, ok := occommon.LibraryInfo_Language_value[val]; ok {
+			if code, ok := langToOCLangCodeMap[val]; ok {
 				if ocNode.LibraryInfo == nil {
 					ocNode.LibraryInfo = &occommon.LibraryInfo{}
 				}
