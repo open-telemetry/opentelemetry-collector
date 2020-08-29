@@ -66,16 +66,16 @@ var langToOCLangCodeMap = getSDKLangToOCLangCodeMap()
 
 func getSDKLangToOCLangCodeMap() map[string]int32 {
 	mappings := make(map[string]int32)
-	mappings["cpp"] = 1
-	mappings["dotnet"] = 2
-	mappings["erlang"] = 3
-	mappings["go"] = 4
-	mappings["java"] = 5
-	mappings["nodejs"] = 6
-	mappings["php"] = 7
-	mappings["python"] = 8
-	mappings["ruby"] = 9
-	mappings["webjs"] = 10
+	mappings[conventions.SDKLangCPP] = 1
+	mappings[conventions.SDKLangDotNET] = 2
+	mappings[conventions.SDKLangErlang] = 3
+	mappings[conventions.SDKLangGo] = 4
+	mappings[conventions.SDKLangJava] = 5
+	mappings[conventions.SDKLangNodeJS] = 6
+	mappings[conventions.SDKLangPHP] = 7
+	mappings[conventions.SDKLangPython] = 8
+	mappings[conventions.SDKLangRuby] = 9
+	mappings[conventions.SDKLangWebJS] = 10
 	return mappings
 }
 

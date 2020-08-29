@@ -248,9 +248,12 @@ func TestResourceToOCAndBack(t *testing.T) {
 				expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 					a, ok := actual.Attributes().Get(k)
 					assert.True(t, ok)
-					if v.Type() == pdata.AttributeValueINT {
+					switch v.Type() {
+					case pdata.AttributeValueINT:
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
-					} else {
+					case pdata.AttributeValueMAP:
+						assert.EqualValues(t, v.MapVal().Sort(), a.MapVal().Sort())
+					default:
 						assert.Equal(t, v, a)
 					}
 				})

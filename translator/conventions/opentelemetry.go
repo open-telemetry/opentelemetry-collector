@@ -15,7 +15,7 @@
 package conventions
 
 // OpenTelemetry Semantic Convention values for Resource attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/README.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
 const (
 	AttributeServiceName           = "service.name"
 	AttributeServiceNamespace      = "service.namespace"
@@ -70,6 +70,21 @@ const (
 	AttributeDeploymentEnvironment = "deployment.environment"
 	AttributeOSType                = "os.type"
 	AttributeOSDescription         = "os.description"
+)
+
+// OpenTelemetry Semantic Convention values for Resource attribute "telemetry.sdk.language" values.
+// See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
+const (
+	SDKLangCPP    = "cpp"
+	SDKLangDotNET = "dotnet"
+	SDKLangErlang = "erlang"
+	SDKLangGo     = "go"
+	SDKLangJava   = "java"
+	SDKLangNodeJS = "nodejs"
+	SDKLangPHP    = "php"
+	SDKLangPython = "python"
+	SDKLangRuby   = "ruby"
+	SDKLangWebJS  = "webjs"
 )
 
 // GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
