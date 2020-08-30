@@ -42,7 +42,7 @@ func (rp *resourceProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (
 
 // ProcessMetrics implements the MProcessor interface
 func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	imd := pdatautil.MetricsToOldInternalMetrics(md)
+	imd := pdatautil.MetricsToInternalMetrics(md)
 	rms := imd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
@@ -54,5 +54,5 @@ func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics)
 		}
 		rp.attrProc.Process(resource.Attributes())
 	}
-	return pdatautil.MetricsFromOldInternalMetrics(imd), nil
+	return pdatautil.MetricsFromInternalMetrics(imd), nil
 }
