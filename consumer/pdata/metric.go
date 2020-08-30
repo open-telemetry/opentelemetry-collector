@@ -76,12 +76,9 @@ func (mdt MetricDataType) String() string {
 	return ""
 }
 
-// Type returns the type of the data for this Metric.
+// DataType returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DataType() MetricDataType {
-	if *ms.orig == nil || (*ms.orig).Data == nil {
-		return MetricDataTypeNone
-	}
 	switch (*ms.orig).Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
 		return MetricDataTypeIntGauge
@@ -97,6 +94,25 @@ func (ms Metric) DataType() MetricDataType {
 		return MetricDataTypeDoubleHistogram
 	}
 	return MetricDataTypeNone
+}
+
+// SetDataType clears any existing data and initialize it with an empty data of the given type.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetDataType(ty MetricDataType) {
+	switch ty {
+	case MetricDataTypeIntGauge:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{}
+	case MetricDataTypeDoubleGauge:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{}
+	case MetricDataTypeIntSum:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntSum{}
+	case MetricDataTypeDoubleSum:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{}
+	case MetricDataTypeIntHistogram:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{}
+	case MetricDataTypeDoubleHistogram:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{}
+	}
 }
 
 // IntGauge returns the data as IntGauge. This should be called iff DataType() == MetricDataTypeIntGauge.

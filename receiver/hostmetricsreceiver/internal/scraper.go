@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // BaseScraper gathers metrics from the host machine.
@@ -45,7 +45,7 @@ type Scraper interface {
 	// ScrapeMetrics returns relevant scraped metrics. If errors occur
 	// scraping some metrics, an error should be returned, but any
 	// metrics that were successfully scraped should still be returned.
-	ScrapeMetrics(ctx context.Context) (dataold.MetricSlice, error)
+	ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error)
 }
 
 // ScraperFactory can create a MetricScraper.
@@ -66,7 +66,7 @@ type ResourceScraper interface {
 	// If errors occur scraping some metrics, an error should be
 	// returned, but any metrics that were successfully scraped
 	// should still be returned.
-	ScrapeMetrics(ctx context.Context) (dataold.ResourceMetricsSlice, error)
+	ScrapeMetrics(ctx context.Context) (pdata.ResourceMetricsSlice, error)
 }
 
 // ResourceScraperFactory can create a ResourceScraper.

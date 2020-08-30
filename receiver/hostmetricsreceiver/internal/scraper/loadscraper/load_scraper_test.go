@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -77,7 +77,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertMetricHasSingleDatapoint(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
-	assert.Equal(t, 1, metric.DoubleDataPoints().Len())
+func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
+	assert.Equal(t, 1, metric.DoubleGauge().DataPoints().Len())
 }

@@ -18,12 +18,11 @@ package filesystemscraper
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 const fileSystemStatesLen = 3
 
-func appendFileSystemUsageStateDataPoints(idps dataold.Int64DataPointSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsage *deviceUsage) {
+func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsage *deviceUsage) {
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+0), now, deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.Used))
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), now, deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.Free))
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+2), now, deviceUsage.deviceName, reservedLabelValue, int64(deviceUsage.usage.Total-deviceUsage.usage.Used-deviceUsage.usage.Free))
@@ -31,11 +30,11 @@ func appendFileSystemUsageStateDataPoints(idps dataold.Int64DataPointSlice, star
 
 const systemSpecificMetricsLen = 1
 
-func appendSystemSpecificMetrics(metrics dataold.MetricSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
 	metric := metrics.At(startIdx)
-	fileSystemINodesUsageDescriptor.CopyTo(metric.MetricDescriptor())
+	fileSystemINodesUsageDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(deviceUsages))
 	for idx, deviceUsage := range deviceUsages {
 		startIndex := 2 * idx
