@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -32,12 +33,14 @@ func TestOCToMetrics(t *testing.T) {
 	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
 	dh := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
 	ih := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDoubleHistogram(dh.DoubleHistogram())
+	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
 
 	sampleMetricData := testdata.GenerateMetricsWithCountersHistograms()
 	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
 	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
-	ih.SetDoubleHistogram(dh.DoubleHistogram())
+	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
 
 	tests := []struct {
 		name     string

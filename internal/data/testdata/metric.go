@@ -597,37 +597,30 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 	m.SetName(name)
 	m.SetDescription("")
 	m.SetUnit("1")
+	m.SetDataType(ty)
 	switch ty {
 	case pdata.MetricDataTypeIntGauge:
-		md := pdata.NewIntGauge()
-		md.InitEmpty()
-		m.SetIntGauge(md)
+		m.IntGauge().InitEmpty()
 	case pdata.MetricDataTypeDoubleGauge:
-		md := pdata.NewDoubleGauge()
-		md.InitEmpty()
-		m.SetDoubleGauge(md)
+		m.DoubleGauge().InitEmpty()
 	case pdata.MetricDataTypeIntSum:
-		md := pdata.NewIntSum()
-		md.InitEmpty()
-		md.SetIsMonotonic(true)
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		m.SetIntSum(md)
+		sum := m.IntSum()
+		sum.InitEmpty()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeDoubleSum:
-		md := pdata.NewDoubleSum()
-		md.InitEmpty()
-		md.SetIsMonotonic(true)
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		m.SetDoubleSum(md)
+		sum := m.DoubleSum()
+		sum.InitEmpty()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeIntHistogram:
-		md := pdata.NewIntHistogram()
-		md.InitEmpty()
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		m.SetIntHistogram(md)
+		histo := m.IntHistogram()
+		histo.InitEmpty()
+		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeDoubleHistogram:
-		md := pdata.NewDoubleHistogram()
-		md.InitEmpty()
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		m.SetDoubleHistogram(md)
+		histo := m.DoubleHistogram()
+		histo.InitEmpty()
+		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	}
 }
 

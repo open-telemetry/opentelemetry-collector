@@ -91,6 +91,32 @@ func TestCopyData(t *testing.T) {
 	}
 }
 
+func TestDataType(t *testing.T) {
+	m := NewMetric()
+	m.InitEmpty()
+	assert.Equal(t, MetricDataTypeNone, m.DataType())
+	m.SetDataType(MetricDataTypeIntGauge)
+	assert.Equal(t, MetricDataTypeIntGauge, m.DataType())
+	assert.True(t, m.IntGauge().IsNil())
+	m.SetDataType(MetricDataTypeDoubleGauge)
+	assert.Equal(t, MetricDataTypeDoubleGauge, m.DataType())
+	assert.True(t, m.DoubleGauge().IsNil())
+	m.SetDataType(MetricDataTypeIntSum)
+	assert.Equal(t, MetricDataTypeIntSum, m.DataType())
+	assert.True(t, m.IntSum().IsNil())
+	m.SetDataType(MetricDataTypeDoubleSum)
+	assert.Equal(t, MetricDataTypeDoubleSum, m.DataType())
+	assert.True(t, m.DoubleSum().IsNil())
+	m.SetDataType(MetricDataTypeIntHistogram)
+	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
+	assert.True(t, m.IntHistogram().IsNil())
+	m.SetDataType(MetricDataTypeDoubleHistogram)
+	assert.Equal(t, MetricDataTypeDoubleHistogram, m.DataType())
+	assert.True(t, m.DoubleHistogram().IsNil())
+	m.InitEmpty()
+	assert.Equal(t, MetricDataTypeNone, m.DataType())
+}
+
 func TestResourceMetricsWireCompatibility(t *testing.T) {
 	// This test verifies that OTLP ProtoBufs generated using goproto lib in
 	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
