@@ -53,7 +53,7 @@ var resourceSpans = &messageStruct{
 	fields: []baseField{
 		resourceField,
 		&sliceField{
-			fieldMame:       "InstrumentationLibrarySpans",
+			fieldName:       "InstrumentationLibrarySpans",
 			originFieldName: "InstrumentationLibrarySpans",
 			returnSlice:     instrumentationLibrarySpansSlice,
 		},
@@ -72,7 +72,7 @@ var instrumentationLibrarySpans = &messageStruct{
 	fields: []baseField{
 		instrumentationLibraryField,
 		&sliceField{
-			fieldMame:       "Spans",
+			fieldName:       "Spans",
 			originFieldName: "Spans",
 			returnSlice:     spanSlice,
 		},
@@ -96,7 +96,7 @@ var span = &messageStruct{
 		parentSpanIDField,
 		nameField,
 		&primitiveTypedField{
-			fieldMame:       "Kind",
+			fieldName:       "Kind",
 			originFieldName: "Kind",
 			returnType:      "SpanKind",
 			rawType:         "otlptrace.Span_SpanKind",
@@ -108,24 +108,24 @@ var span = &messageStruct{
 		attributes,
 		droppedAttributesCount,
 		&sliceField{
-			fieldMame:       "Events",
+			fieldName:       "Events",
 			originFieldName: "Events",
 			returnSlice:     spanEventSlice,
 		},
 		&primitiveField{
-			fieldMame:       "DroppedEventsCount",
+			fieldName:       "DroppedEventsCount",
 			originFieldName: "DroppedEventsCount",
 			returnType:      "uint32",
 			defaultVal:      "uint32(0)",
 			testVal:         "uint32(17)",
 		},
 		&sliceField{
-			fieldMame:       "Links",
+			fieldName:       "Links",
 			originFieldName: "Links",
 			returnSlice:     spanLinkSlice,
 		},
 		&primitiveField{
-			fieldMame:       "DroppedLinksCount",
+			fieldName:       "DroppedLinksCount",
 			originFieldName: "DroppedLinksCount",
 			returnType:      "uint32",
 			defaultVal:      "uint32(0)",
@@ -183,7 +183,7 @@ var spanStatus = &messageStruct{
 	originFullName: "otlptrace.Status",
 	fields: []baseField{
 		&primitiveTypedField{
-			fieldMame:       "Code",
+			fieldName:       "Code",
 			originFieldName: "Code",
 			returnType:      "StatusCode",
 			rawType:         "otlptrace.Status_StatusCode",
@@ -191,7 +191,7 @@ var spanStatus = &messageStruct{
 			testVal:         "StatusCode(1)",
 		},
 		&primitiveField{
-			fieldMame:       "Message",
+			fieldName:       "Message",
 			originFieldName: "Message",
 			returnType:      "string",
 			defaultVal:      `""`,
@@ -201,7 +201,7 @@ var spanStatus = &messageStruct{
 }
 
 var traceIDField = &primitiveTypedField{
-	fieldMame:       "TraceID",
+	fieldName:       "TraceID",
 	originFieldName: "TraceId",
 	returnType:      "TraceID",
 	rawType:         "[]byte",
@@ -210,7 +210,7 @@ var traceIDField = &primitiveTypedField{
 }
 
 var spanIDField = &primitiveTypedField{
-	fieldMame:       "SpanID",
+	fieldName:       "SpanID",
 	originFieldName: "SpanId",
 	returnType:      "SpanID",
 	rawType:         "[]byte",
@@ -219,7 +219,7 @@ var spanIDField = &primitiveTypedField{
 }
 
 var parentSpanIDField = &primitiveTypedField{
-	fieldMame:       "ParentSpanID",
+	fieldName:       "ParentSpanID",
 	originFieldName: "ParentSpanId",
 	returnType:      "SpanID",
 	rawType:         "[]byte",
@@ -228,7 +228,7 @@ var parentSpanIDField = &primitiveTypedField{
 }
 
 var traceStateField = &primitiveTypedField{
-	fieldMame:       "TraceState",
+	fieldName:       "TraceState",
 	originFieldName: "TraceState",
 	returnType:      "TraceState",
 	rawType:         "string",
@@ -237,7 +237,7 @@ var traceStateField = &primitiveTypedField{
 }
 
 var droppedAttributesCount = &primitiveField{
-	fieldMame:       "DroppedAttributesCount",
+	fieldName:       "DroppedAttributesCount",
 	originFieldName: "DroppedAttributesCount",
 	returnType:      "uint32",
 	defaultVal:      "uint32(0)",
