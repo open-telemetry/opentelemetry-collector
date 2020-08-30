@@ -32,12 +32,12 @@ func TestOCToMetrics(t *testing.T) {
 	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
 	dh := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
 	ih := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDoubleHistogramData(dh.DoubleHistogramData())
+	ih.SetDoubleHistogram(dh.DoubleHistogram())
 
 	sampleMetricData := testdata.GenerateMetricsWithCountersHistograms()
 	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
 	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
-	ih.SetDoubleHistogramData(dh.DoubleHistogramData())
+	ih.SetDoubleHistogram(dh.DoubleHistogram())
 
 	tests := []struct {
 		name     string

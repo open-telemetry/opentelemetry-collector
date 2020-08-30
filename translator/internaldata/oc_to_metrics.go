@@ -149,7 +149,7 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	}
 
 	descriptorType := descriptorTypeToMetrics(ocDescriptor.Type, metric)
-	if descriptorType == pdata.MetricDataNone {
+	if descriptorType == pdata.MetricDataTypeNone {
 		pdata.NewMetric().CopyTo(metric)
 		return
 	}
@@ -167,55 +167,55 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		metric.InitEmpty()
 		md := pdata.NewIntGauge()
 		md.InitEmpty()
-		metric.SetIntGaugeData(md)
-		return pdata.MetricDataIntGauge
+		metric.SetIntGauge(md)
+		return pdata.MetricDataTypeIntGauge
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
 		metric.InitEmpty()
 		md := pdata.NewDoubleGauge()
 		md.InitEmpty()
-		metric.SetDoubleGaugeData(md)
-		return pdata.MetricDataDoubleGauge
+		metric.SetDoubleGauge(md)
+		return pdata.MetricDataTypeDoubleGauge
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		metric.InitEmpty()
 		md := pdata.NewIntSum()
 		md.InitEmpty()
 		md.SetIsMonotonic(true)
 		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		metric.SetIntSumData(md)
-		return pdata.MetricDataIntSum
+		metric.SetIntSum(md)
+		return pdata.MetricDataTypeIntSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
 		metric.InitEmpty()
 		md := pdata.NewDoubleSum()
 		md.InitEmpty()
 		md.SetIsMonotonic(true)
 		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		metric.SetDoubleSumData(md)
-		return pdata.MetricDataDoubleSum
+		metric.SetDoubleSum(md)
+		return pdata.MetricDataTypeDoubleSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		metric.InitEmpty()
 		md := pdata.NewDoubleHistogram()
 		md.InitEmpty()
 		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		metric.SetDoubleHistogramData(md)
-		return pdata.MetricDataDoubleHistogram
+		metric.SetDoubleHistogram(md)
+		return pdata.MetricDataTypeDoubleHistogram
 	}
 	// For the moment MetricDescriptor_SUMMARY is not supported
-	return pdata.MetricDataNone
+	return pdata.MetricDataTypeNone
 }
 
 // setDataPoints converts OC timeseries to internal datapoints based on metric type
 func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 	switch metric.DataType() {
-	case pdata.MetricDataIntGauge:
-		fillIntDataPoint(ocMetric, metric.IntGaugeData().DataPoints())
-	case pdata.MetricDataDoubleGauge:
-		fillDoubleDataPoint(ocMetric, metric.DoubleGaugeData().DataPoints())
-	case pdata.MetricDataIntSum:
-		fillIntDataPoint(ocMetric, metric.IntSumData().DataPoints())
-	case pdata.MetricDataDoubleSum:
-		fillDoubleDataPoint(ocMetric, metric.DoubleSumData().DataPoints())
-	case pdata.MetricDataDoubleHistogram:
-		fillDoubleHistogramDataPoint(ocMetric, metric.DoubleHistogramData().DataPoints())
+	case pdata.MetricDataTypeIntGauge:
+		fillIntDataPoint(ocMetric, metric.IntGauge().DataPoints())
+	case pdata.MetricDataTypeDoubleGauge:
+		fillDoubleDataPoint(ocMetric, metric.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeIntSum:
+		fillIntDataPoint(ocMetric, metric.IntSum().DataPoints())
+	case pdata.MetricDataTypeDoubleSum:
+		fillDoubleDataPoint(ocMetric, metric.DoubleSum().DataPoints())
+	case pdata.MetricDataTypeDoubleHistogram:
+		fillDoubleHistogramDataPoint(ocMetric, metric.DoubleHistogram().DataPoints())
 	}
 }
 
