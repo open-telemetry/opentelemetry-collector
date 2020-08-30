@@ -607,6 +607,8 @@ func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
 
+
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
 	if ms.IsNil() {
@@ -619,6 +621,7 @@ func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
+	copyData((*ms.orig), (*dest.orig))
 }
 
 // IntGauge represents the type of a int scalar metric that always exports the "current value" for every data point.

@@ -201,6 +201,35 @@ func (ms Metric) SetDoubleHistogram(data DoubleHistogram) {
 	}
 }
 
+func copyData(src, dest *otlpmetrics.Metric) {
+	switch (src).Data.(type) {
+	case *otlpmetrics.Metric_IntGauge:
+		dest.Data = &otlpmetrics.Metric_IntGauge{
+			IntGauge: src.Data.(*otlpmetrics.Metric_IntGauge).IntGauge,
+		}
+	case *otlpmetrics.Metric_DoubleGauge:
+		dest.Data = &otlpmetrics.Metric_DoubleGauge{
+			DoubleGauge: src.Data.(*otlpmetrics.Metric_DoubleGauge).DoubleGauge,
+		}
+	case *otlpmetrics.Metric_IntSum:
+		dest.Data = &otlpmetrics.Metric_IntSum{
+			IntSum: src.Data.(*otlpmetrics.Metric_IntSum).IntSum,
+		}
+	case *otlpmetrics.Metric_DoubleSum:
+		dest.Data = &otlpmetrics.Metric_DoubleSum{
+			DoubleSum: src.Data.(*otlpmetrics.Metric_DoubleSum).DoubleSum,
+		}
+	case *otlpmetrics.Metric_IntHistogram:
+		dest.Data = &otlpmetrics.Metric_IntHistogram{
+			IntHistogram: src.Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram,
+		}
+	case *otlpmetrics.Metric_DoubleHistogram:
+		dest.Data = &otlpmetrics.Metric_DoubleHistogram{
+			DoubleHistogram: src.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram,
+		}
+	}
+}
+
 // DeprecatedNewResource temporary public function.
 func DeprecatedNewResource(orig **otlpresource.Resource) Resource {
 	return newResource(orig)

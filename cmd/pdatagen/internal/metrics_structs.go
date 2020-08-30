@@ -118,6 +118,7 @@ var metric = &messageStruct{
 			defaultVal:      `""`,
 			testVal:         `"1"`,
 		},
+		oneofDataField,
 	},
 }
 
@@ -418,4 +419,11 @@ var aggregationTemporalityField = &primitiveTypedField{
 	rawType:         "otlpmetrics.AggregationTemporality",
 	defaultVal:      "AggregationTemporalityUnspecified",
 	testVal:         "AggregationTemporalityCumulative",
+}
+
+var oneofDataField = &oneofField{
+	copyFuncName:    "copyData",
+	originFieldName: "Data",
+	testVal:         "&otlpmetrics.Metric_IntGauge{}",
+	fillTestName:    "IntGauge",
 }
