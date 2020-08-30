@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
@@ -83,12 +82,12 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewMetricsCloningFanOutConnector(processors)
-	md := testdataold.GenerateMetricDataWithCountersHistogramAndSummary()
+	md := testdata.GenerateMetricsWithCountersHistograms()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md))
+		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -100,15 +99,15 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 		assert.Equal(t, wantMetricsCount, m.MetricsCount())
 		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		allMetrics := m.AllMetrics()
-		metricClone := pdatautil.MetricsToOldInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metricClone := pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		if i < len(processors)-1 {
-			assert.True(t, md.ResourceMetrics().At(0).Resource() != pdatautil.MetricsToOldInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() != pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig != metricClone)
 		} else {
-			assert.True(t, md.ResourceMetrics().At(0).Resource() == pdatautil.MetricsToOldInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() == pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig == metricClone)
 		}
-		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), pdatautil.MetricsToOldInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
 		assert.EqualValues(t, metricOrig, metricClone)
 	}
 }
