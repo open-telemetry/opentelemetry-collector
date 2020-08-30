@@ -314,3 +314,27 @@ func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
 }
 
 var _ baseField = (*primitiveTypedField)(nil)
+
+// oneofField is used in case where the proto defines an "oneof".
+type oneofField struct {
+	copyFuncName    string
+	originFieldName string
+	testVal         string
+	fillTestName    string
+}
+
+func (one oneofField) generateAccessors(*messageStruct, *strings.Builder) {}
+
+func (one oneofField) generateAccessorsTest(*messageStruct, *strings.Builder) {}
+
+func (one oneofField) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\t(*tv.orig)." + one.originFieldName + " = " + one.testVal + "\n")
+	sb.WriteString("\ttv." + one.fillTestName + "().InitEmpty()\n")
+	sb.WriteString("\tfillTest" + one.fillTestName + "(tv." + one.fillTestName + "())")
+}
+
+func (one oneofField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\t" + one.copyFuncName + "((*ms.orig), (*dest.orig))")
+}
+
+var _ baseField = (*oneofField)(nil)

@@ -489,6 +489,8 @@ func TestMetric_Unit(t *testing.T) {
 	assert.EqualValues(t, testValUnit, ms.Unit())
 }
 
+
+
 func TestIntGauge_InitEmpty(t *testing.T) {
 	ms := NewIntGauge()
 	assert.True(t, ms.IsNil())
@@ -1849,6 +1851,9 @@ func fillTestMetric(tv Metric) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
+	(*tv.orig).Data = &otlpmetrics.Metric_IntGauge{}
+	tv.IntGauge().InitEmpty()
+	fillTestIntGauge(tv.IntGauge())
 }
 
 func generateTestIntGauge() IntGauge {
