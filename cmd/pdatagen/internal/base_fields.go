@@ -103,7 +103,7 @@ type baseField interface {
 }
 
 type sliceField struct {
-	fieldMame       string
+	fieldName       string
 	originFieldName string
 	returnSlice     *sliceStruct
 }
@@ -114,7 +114,7 @@ func (sf *sliceField) generateAccessors(ms *messageStruct, sb *strings.Builder) 
 		case "structName":
 			return ms.structName
 		case "fieldName":
-			return sf.fieldMame
+			return sf.fieldName
 		case "returnType":
 			return sf.returnSlice.structName
 		case "originFieldName":
@@ -131,7 +131,7 @@ func (sf *sliceField) generateAccessorsTest(ms *messageStruct, sb *strings.Build
 		case "structName":
 			return ms.structName
 		case "fieldName":
-			return sf.fieldMame
+			return sf.fieldName
 		case "returnType":
 			return sf.returnSlice.structName
 		default:
@@ -141,11 +141,11 @@ func (sf *sliceField) generateAccessorsTest(ms *messageStruct, sb *strings.Build
 }
 
 func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\tfillTest" + sf.returnSlice.structName + "(tv." + sf.fieldMame + "())")
+	sb.WriteString("\tfillTest" + sf.returnSlice.structName + "(tv." + sf.fieldName + "())")
 }
 
 func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tms." + sf.fieldMame + "().CopyTo(dest." + sf.fieldMame + "())")
+	sb.WriteString("\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())")
 }
 
 var _ baseField = (*sliceField)(nil)
@@ -204,7 +204,7 @@ func (mf *messageField) generateCopyToValue(sb *strings.Builder) {
 var _ baseField = (*messageField)(nil)
 
 type primitiveField struct {
-	fieldMame       string
+	fieldName       string
 	originFieldName string
 	returnType      string
 	defaultVal      string
@@ -217,9 +217,9 @@ func (pf *primitiveField) generateAccessors(ms *messageStruct, sb *strings.Build
 		case "structName":
 			return ms.structName
 		case "fieldName":
-			return pf.fieldMame
+			return pf.fieldName
 		case "lowerFieldName":
-			return strings.ToLower(pf.fieldMame)
+			return strings.ToLower(pf.fieldName)
 		case "returnType":
 			return pf.returnType
 		case "originFieldName":
@@ -238,7 +238,7 @@ func (pf *primitiveField) generateAccessorsTest(ms *messageStruct, sb *strings.B
 		case "defaultVal":
 			return pf.defaultVal
 		case "fieldName":
-			return pf.fieldMame
+			return pf.fieldName
 		case "testValue":
 			return pf.testVal
 		default:
@@ -248,18 +248,18 @@ func (pf *primitiveField) generateAccessorsTest(ms *messageStruct, sb *strings.B
 }
 
 func (pf *primitiveField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + pf.fieldMame + "(" + pf.testVal + ")")
+	sb.WriteString("\ttv.Set" + pf.fieldName + "(" + pf.testVal + ")")
 }
 
 func (pf *primitiveField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tdest.Set" + pf.fieldMame + "(ms." + pf.fieldMame + "())")
+	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
 }
 
 var _ baseField = (*primitiveField)(nil)
 
 // Types that has defined a custom type (e.g. "type TimestampUnixNano uint64")
 type primitiveTypedField struct {
-	fieldMame       string
+	fieldName       string
 	originFieldName string
 	returnType      string
 	defaultVal      string
@@ -273,9 +273,9 @@ func (ptf *primitiveTypedField) generateAccessors(ms *messageStruct, sb *strings
 		case "structName":
 			return ms.structName
 		case "fieldName":
-			return ptf.fieldMame
+			return ptf.fieldName
 		case "lowerFieldName":
-			return strings.ToLower(ptf.fieldMame)
+			return strings.ToLower(ptf.fieldName)
 		case "returnType":
 			return ptf.returnType
 		case "rawType":
@@ -296,7 +296,7 @@ func (ptf *primitiveTypedField) generateAccessorsTest(ms *messageStruct, sb *str
 		case "defaultVal":
 			return ptf.defaultVal
 		case "fieldName":
-			return ptf.fieldMame
+			return ptf.fieldName
 		case "testValue":
 			return ptf.testVal
 		default:
@@ -306,11 +306,11 @@ func (ptf *primitiveTypedField) generateAccessorsTest(ms *messageStruct, sb *str
 }
 
 func (ptf *primitiveTypedField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + ptf.fieldMame + "(" + ptf.testVal + ")")
+	sb.WriteString("\ttv.Set" + ptf.fieldName + "(" + ptf.testVal + ")")
 }
 
 func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tdest.Set" + ptf.fieldMame + "(ms." + ptf.fieldMame + "())")
+	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
 }
 
 var _ baseField = (*primitiveTypedField)(nil)
