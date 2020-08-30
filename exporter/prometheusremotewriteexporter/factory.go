@@ -79,10 +79,10 @@ func createDefaultConfig() configmodels.Exporter {
 		Namespace: "",
 
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.RetrySettings{
-			Enabled:         false,
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled: false,
 		},
-		QueueSettings:   qs,
+		QueueSettings: qs,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
