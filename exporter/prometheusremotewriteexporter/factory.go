@@ -71,7 +71,6 @@ func createDefaultConfig() configmodels.Exporter {
 	// TODO: Enable the queued settings.
 	qs := exporterhelper.CreateDefaultQueueSettings()
 	qs.Enabled = false
-
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -80,7 +79,9 @@ func createDefaultConfig() configmodels.Exporter {
 		Namespace: "",
 
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		RetrySettings:   exporterhelper.RetrySettings{
+			Enabled:         false,
+		},
 		QueueSettings:   qs,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
