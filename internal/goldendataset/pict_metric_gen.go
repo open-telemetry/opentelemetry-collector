@@ -17,24 +17,25 @@ package goldendataset
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // GenerateMetricDatas takes the filename of a PICT-generated file, walks through all of the rows in the PICT
 // file and for each row, generates a MetricData object, collecting them and returning them to the caller.
-func GenerateMetricDatas(metricPairsFile string) ([]dataold.MetricData, error) {
+func GenerateMetricDatas(metricPairsFile string) ([]data.MetricData, error) {
 	pictData, err := loadPictOutputFile(metricPairsFile)
 	if err != nil {
 		return nil, err
 	}
-	var out []dataold.MetricData
+	var out []data.MetricData
 	for i, values := range pictData {
 		if i == 0 {
 			continue
 		}
 		metricInputs := PICTMetricInputs{
 			NumPtsPerMetric: PICTNumPtsPerMetric(values[0]),
-			MetricType:      PICTMetricType(values[1]),
+			MetricType:      PICTMetricDataType(values[1]),
 			NumPtLabels:     PICTNumPtLabels(values[2]),
 		}
 		cfg := pictToCfg(metricInputs)
@@ -64,18 +65,28 @@ func pictToCfg(inputs PICTMetricInputs) MetricCfg {
 	}
 
 	switch inputs.MetricType {
-	case MetricTypeInt:
-		cfg.MetricDescriptorType = dataold.MetricTypeInt64
-	case MetricTypeMonotonicInt:
-		cfg.MetricDescriptorType = dataold.MetricTypeMonotonicInt64
-	case MetricTypeDouble:
-		cfg.MetricDescriptorType = dataold.MetricTypeDouble
-	case MetricTypeMonotonicDouble:
-		cfg.MetricDescriptorType = dataold.MetricTypeMonotonicDouble
-	case MetricTypeHistogram:
-		cfg.MetricDescriptorType = dataold.MetricTypeHistogram
-	case MetricTypeSummary:
-		cfg.MetricDescriptorType = dataold.MetricTypeSummary
+	case MetricTypeIntGauge:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntGauge
+	case MetricTypeMonotonicIntSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
+		cfg.IsMonotonicSum = true
+	case MetricTypeNonMonotonicIntSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
+		cfg.IsMonotonicSum = false
+	case MetricTypeDoubleGauge:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
+	case MetricTypeMonotonicDoubleSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+		cfg.IsMonotonicSum = true
+	case MetricTypeNonMonotonicDoubleSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+		cfg.IsMonotonicSum = false
+	case MetricTypeIntHistogram:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
+	case MetricTypeDoubleHistogram:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
+	default:
+		panic("Should not happen, unsupported type " + string(inputs.MetricType))
 	}
 
 	switch inputs.NumPtLabels {
