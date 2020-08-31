@@ -22,7 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -33,13 +33,13 @@ func TestSameMetrics(t *testing.T) {
 	assert.Nil(t, diffs)
 }
 
-func diffMetricData(expected dataold.MetricData, actual dataold.MetricData) []*MetricDiff {
+func diffMetricData(expected data.MetricData, actual data.MetricData) []*MetricDiff {
 	expectedRMSlice := expected.ResourceMetrics()
 	actualRMSlice := actual.ResourceMetrics()
 	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
 }
 
-func toSlice(s dataold.ResourceMetricsSlice) (out []dataold.ResourceMetrics) {
+func toSlice(s pdata.ResourceMetricsSlice) (out []pdata.ResourceMetrics) {
 	for i := 0; i < s.Len(); i++ {
 		out = append(out, s.At(i))
 	}
@@ -52,7 +52,7 @@ func TestDifferentValues(t *testing.T) {
 	cfg.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 1, len(diffs))
+	assert.Len(t, diffs, 1)
 }
 
 func TestDifferentNumPts(t *testing.T) {
@@ -61,45 +61,45 @@ func TestDifferentNumPts(t *testing.T) {
 	cfg.NumPtsPerMetric = 2
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 1, len(diffs))
+	assert.Len(t, diffs, 1)
 }
 
 func TestDifferentPtTypes(t *testing.T) {
 	expected := goldendataset.DefaultMetricData()
 	cfg := goldendataset.DefaultCfg()
-	cfg.MetricDescriptorType = dataold.MetricTypeDouble
+	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 3, len(diffs))
+	assert.Len(t, diffs, 1)
 }
 
-func TestHistogram(t *testing.T) {
+func TestDoubleHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = dataold.MetricTypeHistogram
+	cfg1.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	expected := goldendataset.MetricDataFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = dataold.MetricTypeHistogram
+	cfg2.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 3, len(diffs))
+	assert.Len(t, diffs, 3)
 }
 
-func TestSummary(t *testing.T) {
+func TestIntHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = dataold.MetricTypeSummary
+	cfg1.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
 	expected := goldendataset.MetricDataFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = dataold.MetricTypeSummary
+	cfg2.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 3, len(diffs))
+	assert.Len(t, diffs, 3)
 }
 
 func TestPDMToPDRM(t *testing.T) {
-	md := dataold.NewMetricData()
+	md := data.NewMetricData()
 	md.ResourceMetrics().Resize(1)
-	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromOldInternalMetrics(md)})
-	require.Equal(t, 1, len(rm))
+	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromInternalMetrics(md)})
+	require.Len(t, rm, 1)
 }
