@@ -126,7 +126,7 @@ func Test_handleScalarMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &prwExporter{}
+			prw := &PrwExporter{}
 			ok := prw.handleScalarMetric(tsMap, tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
@@ -233,7 +233,7 @@ func Test_handleHistogramMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &prwExporter{}
+			prw := &PrwExporter{}
 			ok := prw.handleHistogramMetric(tsMap, &tt.m)
 			if tt.returnError {
 				assert.Error(t, ok)
@@ -249,8 +249,8 @@ func Test_handleHistogramMetric(t *testing.T) {
 	}
 }
 
-// Test_ newPrwExporter checks that a new exporter instance with non-nil fields is initialized
-func Test_newPrwExporter(t *testing.T) {
+// Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
+func Test_NewPrwExporter(t *testing.T) {
 	config := &Config{
 		ExporterSettings:   configmodels.ExporterSettings{},
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
@@ -295,7 +295,7 @@ func Test_newPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := newPrwExporter(tt.namespace, tt.endpoint, tt.client)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -310,22 +310,22 @@ func Test_newPrwExporter(t *testing.T) {
 	}
 }
 
-// Test_shutdown checks after shutdown is called, incoming calls to pushMetrics return error.
-func Test_shutdown(t *testing.T) {
-	prwe := &prwExporter{
+// Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
+func Test_Shutdown(t *testing.T) {
+	prwe := &PrwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
 	errChan := make(chan error, 5)
-	err := prwe.shutdown(context.Background())
+	err := prwe.Shutdown(context.Background())
 	require.NoError(t, err)
 	errChan = make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := prwe.pushMetrics(context.Background(),
+			_, ok := prwe.PushMetrics(context.Background(),
 				pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty()))
 			errChan <- ok
 		}()
@@ -339,7 +339,7 @@ func Test_shutdown(t *testing.T) {
 
 //Test whether or not the Server receives the correct TimeSeries.
 //Currently considering making this test an iterative for loop of multiple TimeSeries
-//Much akin to Test_pushMetrics
+//Much akin to Test_PushMetrics
 func Test_export(t *testing.T) {
 	//First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
 	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
@@ -432,7 +432,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 	HTTPClient := http.DefaultClient
 	//after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := newPrwExporter("test", endpoint.String(), HTTPClient)
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient)
 	if err != nil {
 		return err
 	}
@@ -440,9 +440,9 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 	return err
 }
 
-// Test_pushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
+// Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
-func Test_pushMetrics(t *testing.T) {
+func Test_PushMetrics(t *testing.T) {
 
 	noTempBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataManyMetricsSameResource(10)))
 	invalidTypeBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataMetricTypeInvalid()))
@@ -693,9 +693,9 @@ func Test_pushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			prwe, nErr := newPrwExporter(config.Namespace, serverURL.String(), c)
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c)
 			require.NoError(t, nErr)
-			numDroppedTimeSeries, err := prwe.pushMetrics(context.Background(), *tt.md)
+			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 			if tt.returnErr {
 				assert.Error(t, err)
