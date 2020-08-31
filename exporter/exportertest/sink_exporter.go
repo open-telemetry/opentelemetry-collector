@@ -123,7 +123,7 @@ func (sme *SinkMetricsExporter) ConsumeMetrics(_ context.Context, md pdata.Metri
 	}
 
 	sme.metrics = append(sme.metrics, md)
-	sme.metricsCount += pdatautil.MetricsToOldInternalMetrics(md).MetricCount()
+	sme.metricsCount += pdatautil.MetricCount(md)
 
 	return nil
 }
