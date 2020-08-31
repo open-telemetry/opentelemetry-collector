@@ -202,31 +202,31 @@ func (ms Metric) SetDoubleHistogram(data DoubleHistogram) {
 }
 
 func copyData(src, dest *otlpmetrics.Metric) {
-	switch (src).Data.(type) {
+	switch srcData := (src).Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
-		dest.Data = &otlpmetrics.Metric_IntGauge{
-			IntGauge: src.Data.(*otlpmetrics.Metric_IntGauge).IntGauge,
-		}
+		data := &otlpmetrics.Metric_IntGauge{}
+		newIntGauge(&srcData.IntGauge).CopyTo(newIntGauge(&data.IntGauge))
+		dest.Data = data
 	case *otlpmetrics.Metric_DoubleGauge:
-		dest.Data = &otlpmetrics.Metric_DoubleGauge{
-			DoubleGauge: src.Data.(*otlpmetrics.Metric_DoubleGauge).DoubleGauge,
-		}
+		data := &otlpmetrics.Metric_DoubleGauge{}
+		newDoubleGauge(&srcData.DoubleGauge).CopyTo(newDoubleGauge(&data.DoubleGauge))
+		dest.Data = data
 	case *otlpmetrics.Metric_IntSum:
-		dest.Data = &otlpmetrics.Metric_IntSum{
-			IntSum: src.Data.(*otlpmetrics.Metric_IntSum).IntSum,
-		}
+		data := &otlpmetrics.Metric_IntSum{}
+		newIntSum(&srcData.IntSum).CopyTo(newIntSum(&data.IntSum))
+		dest.Data = data
 	case *otlpmetrics.Metric_DoubleSum:
-		dest.Data = &otlpmetrics.Metric_DoubleSum{
-			DoubleSum: src.Data.(*otlpmetrics.Metric_DoubleSum).DoubleSum,
-		}
+		data := &otlpmetrics.Metric_DoubleSum{}
+		newDoubleSum(&srcData.DoubleSum).CopyTo(newDoubleSum(&data.DoubleSum))
+		dest.Data = data
 	case *otlpmetrics.Metric_IntHistogram:
-		dest.Data = &otlpmetrics.Metric_IntHistogram{
-			IntHistogram: src.Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram,
-		}
+		data := &otlpmetrics.Metric_IntHistogram{}
+		newIntHistogram(&srcData.IntHistogram).CopyTo(newIntHistogram(&data.IntHistogram))
+		dest.Data = data
 	case *otlpmetrics.Metric_DoubleHistogram:
-		dest.Data = &otlpmetrics.Metric_DoubleHistogram{
-			DoubleHistogram: src.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram,
-		}
+		data := &otlpmetrics.Metric_DoubleHistogram{}
+		newDoubleHistogram(&srcData.DoubleHistogram).CopyTo(newDoubleHistogram(&data.DoubleHistogram))
+		dest.Data = data
 	}
 }
 
