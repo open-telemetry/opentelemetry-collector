@@ -76,12 +76,9 @@ func (mdt MetricDataType) String() string {
 	return ""
 }
 
-// Type returns the type of the data for this Metric.
+// DataType returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DataType() MetricDataType {
-	if *ms.orig == nil || (*ms.orig).Data == nil {
-		return MetricDataTypeNone
-	}
 	switch (*ms.orig).Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
 		return MetricDataTypeIntGauge
@@ -97,6 +94,25 @@ func (ms Metric) DataType() MetricDataType {
 		return MetricDataTypeDoubleHistogram
 	}
 	return MetricDataTypeNone
+}
+
+// SetDataType clears any existing data and initialize it with an empty data of the given type.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetDataType(ty MetricDataType) {
+	switch ty {
+	case MetricDataTypeIntGauge:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{}
+	case MetricDataTypeDoubleGauge:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{}
+	case MetricDataTypeIntSum:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntSum{}
+	case MetricDataTypeDoubleSum:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{}
+	case MetricDataTypeIntHistogram:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{}
+	case MetricDataTypeDoubleHistogram:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{}
+	}
 }
 
 // IntGauge returns the data as IntGauge. This should be called iff DataType() == MetricDataTypeIntGauge.
@@ -151,54 +167,6 @@ func (ms Metric) DoubleHistogram() DoubleHistogram {
 		return newDoubleHistogram(&orig.DoubleHistogram)
 	}
 	return NewDoubleHistogram()
-}
-
-// SetIntGauge replaces the metric data with the given IntGauge.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetIntGauge(data IntGauge) {
-	(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{
-		IntGauge: *data.orig,
-	}
-}
-
-// SetDoubleGauge replaces the metric data with the given DoubleGauge.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDoubleGauge(data DoubleGauge) {
-	(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{
-		DoubleGauge: *data.orig,
-	}
-}
-
-// SetIntSum replaces the metric data with the given IntSum.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetIntSum(data IntSum) {
-	(*ms.orig).Data = &otlpmetrics.Metric_IntSum{
-		IntSum: *data.orig,
-	}
-}
-
-// SetDoubleSum replaces the metric data with the given DoubleSum.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDoubleSum(data DoubleSum) {
-	(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{
-		DoubleSum: *data.orig,
-	}
-}
-
-// SetIntHistogram replaces the metric data with the given IntHistogram.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetIntHistogram(data IntHistogram) {
-	(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{
-		IntHistogram: *data.orig,
-	}
-}
-
-// SetDoubleHistogram replaces the metric data with the given DoubleHistogram.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDoubleHistogram(data DoubleHistogram) {
-	(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{
-		DoubleHistogram: *data.orig,
-	}
 }
 
 func copyData(src, dest *otlpmetrics.Metric) {

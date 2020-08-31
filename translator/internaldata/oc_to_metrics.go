@@ -165,38 +165,36 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 	switch t {
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
 		metric.InitEmpty()
-		md := pdata.NewIntGauge()
-		md.InitEmpty()
-		metric.SetIntGauge(md)
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		metric.IntGauge().InitEmpty()
 		return pdata.MetricDataTypeIntGauge
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
 		metric.InitEmpty()
-		md := pdata.NewDoubleGauge()
-		md.InitEmpty()
-		metric.SetDoubleGauge(md)
+		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		metric.DoubleGauge().InitEmpty()
 		return pdata.MetricDataTypeDoubleGauge
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		metric.InitEmpty()
-		md := pdata.NewIntSum()
-		md.InitEmpty()
-		md.SetIsMonotonic(true)
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		metric.SetIntSum(md)
+		metric.SetDataType(pdata.MetricDataTypeIntSum)
+		sum := metric.IntSum()
+		sum.InitEmpty()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeIntSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
 		metric.InitEmpty()
-		md := pdata.NewDoubleSum()
-		md.InitEmpty()
-		md.SetIsMonotonic(true)
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		metric.SetDoubleSum(md)
+		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+		sum := metric.DoubleSum()
+		sum.InitEmpty()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		metric.InitEmpty()
-		md := pdata.NewDoubleHistogram()
-		md.InitEmpty()
-		md.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		metric.SetDoubleHistogram(md)
+		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+		histo := metric.DoubleHistogram()
+		histo.InitEmpty()
+		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleHistogram
 	}
 	// For the moment MetricDescriptor_SUMMARY is not supported
