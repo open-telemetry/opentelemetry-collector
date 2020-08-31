@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/data"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
-	"go.opentelemetry.io/collector/internal/dataold"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -60,34 +60,37 @@ func TestExport(t *testing.T) {
 				{
 					Metrics: []*otlpmetrics.Metric{
 						{
-							MetricDescriptor: &otlpmetrics.MetricDescriptor{
-								Name:        "mymetric",
-								Description: "My metric",
-								Unit:        "ms",
-								Type:        otlpmetrics.MetricDescriptor_MONOTONIC_INT64,
-							},
-							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
-								{
-									Labels: []*otlpcommon.StringKeyValue{
+							Name:        "mymetric",
+							Description: "My metric",
+							Unit:        "ms",
+							Data: &otlpmetrics.Metric_IntSum{
+								IntSum: &otlpmetrics.IntSum{
+									IsMonotonic:            true,
+									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+									DataPoints: []*otlpmetrics.IntDataPoint{
 										{
-											Key:   "key1",
-											Value: "value1",
+											Labels: []*otlpcommon.StringKeyValue{
+												{
+													Key:   "key1",
+													Value: "value1",
+												},
+											},
+											StartTimeUnixNano: unixnanos1,
+											TimeUnixNano:      unixnanos2,
+											Value:             123,
+										},
+										{
+											Labels: []*otlpcommon.StringKeyValue{
+												{
+													Key:   "key2",
+													Value: "value2",
+												},
+											},
+											StartTimeUnixNano: unixnanos1,
+											TimeUnixNano:      unixnanos2,
+											Value:             456,
 										},
 									},
-									StartTimeUnixNano: unixnanos1,
-									TimeUnixNano:      unixnanos2,
-									Value:             123,
-								},
-								{
-									Labels: []*otlpcommon.StringKeyValue{
-										{
-											Key:   "key2",
-											Value: "value2",
-										},
-									},
-									StartTimeUnixNano: unixnanos1,
-									TimeUnixNano:      unixnanos2,
-									Value:             456,
 								},
 							},
 						},
@@ -99,7 +102,7 @@ func TestExport(t *testing.T) {
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := dataold.MetricDataFromOtlp(resourceMetrics).Clone()
+	metricData := data.MetricDataFromOtlp(resourceMetrics).Clone()
 
 	req := &collectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: resourceMetrics,
@@ -114,7 +117,7 @@ func TestExport(t *testing.T) {
 	require.Equal(t, 1, len(metricSink.AllMetrics()),
 		"unexpected length: %v", len(metricSink.AllMetrics()))
 
-	assert.EqualValues(t, metricData, pdatautil.MetricsToOldInternalMetrics(metricSink.AllMetrics()[0]))
+	assert.EqualValues(t, metricData, pdatautil.MetricsToInternalMetrics(metricSink.AllMetrics()[0]))
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
@@ -153,18 +156,21 @@ func TestExport_ErrorConsumer(t *testing.T) {
 				{
 					Metrics: []*otlpmetrics.Metric{
 						{
-							MetricDescriptor: &otlpmetrics.MetricDescriptor{
-								Name:        "mymetric",
-								Description: "My metric",
-								Unit:        "ms",
-								Type:        otlpmetrics.MetricDescriptor_MONOTONIC_INT64,
-							},
-							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
-								{
-									Value: 123,
-								},
-								{
-									Value: 456,
+							Name:        "mymetric",
+							Description: "My metric",
+							Unit:        "ms",
+							Data: &otlpmetrics.Metric_IntSum{
+								IntSum: &otlpmetrics.IntSum{
+									IsMonotonic:            true,
+									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+									DataPoints: []*otlpmetrics.IntDataPoint{
+										{
+											Value: 123,
+										},
+										{
+											Value: 456,
+										},
+									},
 								},
 							},
 						},
