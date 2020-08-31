@@ -67,6 +67,7 @@ const (
 	AttributeCloudAccount          = "cloud.account.id"
 	AttributeCloudRegion           = "cloud.region"
 	AttributeCloudZone             = "cloud.zone"
+	AttributeDeploymentEnvironment = "deployment.environment"
 )
 
 // GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
@@ -107,6 +108,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeCloudAccount,
 		AttributeCloudRegion,
 		AttributeCloudZone,
+		AttributeDeploymentEnvironment,
 	}
 }
 
