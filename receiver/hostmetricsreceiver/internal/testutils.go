@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/dataold"
 )
 
 func AssertContainsAttribute(t *testing.T, attr pdata.AttributeMap, key string) {
@@ -29,72 +28,77 @@ func AssertContainsAttribute(t *testing.T, attr pdata.AttributeMap, key string) 
 	assert.True(t, ok)
 }
 
-func AssertDescriptorEqual(t *testing.T, expected dataold.MetricDescriptor, actual dataold.MetricDescriptor) {
+func AssertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Metric) {
 	assert.Equal(t, expected.Name(), actual.Name())
 	assert.Equal(t, expected.Description(), actual.Description())
 	assert.Equal(t, expected.Unit(), actual.Unit())
-	assert.Equal(t, expected.Type(), actual.Type())
+	assert.Equal(t, expected.DataType(), actual.DataType())
 }
 
-func AssertInt64MetricLabelHasValue(t *testing.T, metric dataold.Metric, index int, labelName string, expectedVal string) {
-	val, ok := metric.Int64DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertIntSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+	val, ok := metric.IntSum().DataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 	assert.Equal(t, expectedVal, val.Value())
 }
 
-func AssertDoubleMetricLabelHasValue(t *testing.T, metric dataold.Metric, index int, labelName string, expectedVal string) {
-	val, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertDoubleSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+	val, ok := metric.DoubleSum().DataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 	assert.Equal(t, expectedVal, val.Value())
 }
 
-func AssertInt64MetricLabelExists(t *testing.T, metric dataold.Metric, index int, labelName string) {
-	_, ok := metric.Int64DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertIntSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
+	_, ok := metric.IntSum().DataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 }
 
-func AssertDoubleMetricLabelExists(t *testing.T, metric dataold.Metric, index int, labelName string) {
-	_, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertDoubleSumMetricLabelExists(t *testing.T, metric pdata.Metric, index int, labelName string) {
+	_, ok := metric.DoubleSum().DataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 }
 
-func AssertInt64MetricStartTimeEquals(t *testing.T, metric dataold.Metric, startTime pdata.TimestampUnixNano) {
-	idps := metric.Int64DataPoints()
+func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	idps := metric.IntSum().DataPoints()
 	for i := 0; i < idps.Len(); i++ {
 		require.Equal(t, startTime, idps.At(i).StartTime())
 	}
 }
 
-func AssertDoubleMetricStartTimeEquals(t *testing.T, metric dataold.Metric, startTime pdata.TimestampUnixNano) {
-	ddps := metric.DoubleDataPoints()
+func AssertDoubleSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	ddps := metric.DoubleSum().DataPoints()
 	for i := 0; i < ddps.Len(); i++ {
 		require.Equal(t, startTime, ddps.At(i).StartTime())
 	}
 }
 
-func AssertSameTimeStampForAllMetrics(t *testing.T, metrics dataold.MetricSlice) {
+func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pdata.MetricSlice) {
 	AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len())
 }
 
-func AssertSameTimeStampForMetrics(t *testing.T, metrics dataold.MetricSlice, startIdx, endIdx int) {
+func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, startIdx, endIdx int) {
 	var ts pdata.TimestampUnixNano
 	for i := startIdx; i < endIdx; i++ {
 		metric := metrics.At(i)
 
-		idps := metric.Int64DataPoints()
-		for j := 0; j < idps.Len(); j++ {
-			if ts == 0 {
-				ts = idps.At(j).Timestamp()
+		dt := metric.DataType()
+		if dt == pdata.MetricDataTypeIntSum {
+			idps := metric.IntSum().DataPoints()
+			for j := 0; j < idps.Len(); j++ {
+				if ts == 0 {
+					ts = idps.At(j).Timestamp()
+				}
+				require.Equalf(t, ts, idps.At(j).Timestamp(), "metrics contained different end timestamp values")
 			}
-			require.Equalf(t, ts, idps.At(j).Timestamp(), "metrics contained different end timestamp values")
 		}
 
-		ddps := metric.DoubleDataPoints()
-		for j := 0; j < ddps.Len(); j++ {
-			if ts == 0 {
-				ts = ddps.At(j).Timestamp()
+		if dt == pdata.MetricDataTypeDoubleSum {
+			ddps := metric.DoubleSum().DataPoints()
+			for j := 0; j < ddps.Len(); j++ {
+				if ts == 0 {
+					ts = ddps.At(j).Timestamp()
+				}
+				require.Equalf(t, ts, ddps.At(j).Timestamp(), "metrics contained different end timestamp values")
 			}
-			require.Equalf(t, ts, ddps.At(j).Timestamp(), "metrics contained different end timestamp values")
 		}
 	}
 }

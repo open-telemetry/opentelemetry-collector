@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
@@ -143,19 +142,19 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric dataold.Metric, descriptor dataold.MetricDescriptor, startTime pdata.TimestampUnixNano) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
-		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
+		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
-	internal.AssertInt64MetricLabelExists(t, metric, 0, interfaceLabelName)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, transmitDirectionLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)
+	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
+	internal.AssertIntSumMetricLabelExists(t, metric, 0, interfaceLabelName)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, directionLabelName, transmitDirectionLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)
 }
 
-func assertNetworkTCPConnectionsMetricValid(t *testing.T, metric dataold.Metric) {
-	internal.AssertDescriptorEqual(t, networkTCPConnectionsDescriptor, metric.MetricDescriptor())
-	internal.AssertInt64MetricLabelExists(t, metric, 0, stateLabelName)
-	assert.Equal(t, 12, metric.Int64DataPoints().Len())
+func assertNetworkTCPConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, networkTCPConnectionsDescriptor, metric)
+	internal.AssertIntSumMetricLabelExists(t, metric, 0, stateLabelName)
+	assert.Equal(t, 12, metric.IntSum().DataPoints().Len())
 }

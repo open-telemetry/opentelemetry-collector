@@ -15,7 +15,7 @@
 package filesystemscraper
 
 import (
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // labels
@@ -35,22 +35,30 @@ const (
 
 // descriptors
 
-var fileSystemUsageDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.filesystem.usage")
-	descriptor.SetDescription("Filesystem bytes used.")
-	descriptor.SetUnit("bytes")
-	descriptor.SetType(dataold.MetricTypeInt64)
-	return descriptor
+var fileSystemUsageDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.filesystem.usage")
+	metric.SetDescription("Filesystem bytes used.")
+	metric.SetUnit("bytes")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var fileSystemINodesUsageDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.filesystem.inodes.usage")
-	descriptor.SetDescription("FileSystem operations count.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeInt64)
-	return descriptor
+var fileSystemINodesUsageDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.filesystem.inodes.usage")
+	metric.SetDescription("FileSystem iNodes used.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()

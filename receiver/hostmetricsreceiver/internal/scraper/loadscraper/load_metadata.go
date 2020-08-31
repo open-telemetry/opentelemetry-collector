@@ -15,37 +15,40 @@
 package loadscraper
 
 import (
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // descriptors
 
-var loadAvg1MDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.cpu.load_average.1m")
-	descriptor.SetDescription("Average CPU Load over 1 minute.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeDouble)
-	return descriptor
+var loadAvg1MDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.cpu.load_average.1m")
+	metric.SetDescription("Average CPU Load over 1 minute.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.DoubleGauge().InitEmpty()
+	return metric
 }()
 
-var loadAvg5mDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.cpu.load_average.5m")
-	descriptor.SetDescription("Average CPU Load over 5 minutes.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeDouble)
-	return descriptor
+var loadAvg5mDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.cpu.load_average.5m")
+	metric.SetDescription("Average CPU Load over 5 minutes.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.DoubleGauge().InitEmpty()
+	return metric
 }()
 
-var loadAvg15mDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.cpu.load_average.15m")
-	descriptor.SetDescription("Average CPU Load over 15 minutes.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeDouble)
-	return descriptor
+var loadAvg15mDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.cpu.load_average.15m")
+	metric.SetDescription("Average CPU Load over 15 minutes.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.DoubleGauge().InitEmpty()
+	return metric
 }()

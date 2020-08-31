@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/third_party/telegraf/win_perf_counters"
@@ -203,13 +202,13 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) {
+func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	now := time.Now()
 	durationSinceLastScraped := now.Sub(s.prevScrapeTime).Seconds()
 	s.prevScrapeTime = now
 	nowUnixTime := pdata.TimestampUnixNano(uint64(now.UnixNano()))
 
-	metrics := dataold.NewMetricSlice()
+	metrics := pdata.NewMetricSlice()
 
 	var errors []error
 
@@ -231,7 +230,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) 
 	return metrics, componenterror.CombineErrors(errors)
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(metrics dataold.MetricSlice, now pdata.TimestampUnixNano, durationSinceLastScraped float64) error {
+func (s *scraper) scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, now pdata.TimestampUnixNano, durationSinceLastScraped float64) error {
 	diskReadBytesPerSecValues, err := s.diskReadBytesPerSecCounter.ScrapeData()
 	if err != nil {
 		return err
@@ -264,7 +263,7 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(metrics dataold.MetricSlice, now p
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics dataold.MetricSlice, now pdata.TimestampUnixNano, durationSinceLastScraped float64) error {
+func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics pdata.MetricSlice, now pdata.TimestampUnixNano, durationSinceLastScraped float64) error {
 	diskReadsPerSecValues, err := s.diskReadsPerSecCounter.ScrapeData()
 	if err != nil {
 		return err
@@ -330,7 +329,7 @@ func (s *scraper) scrapeAndAppendDiskOpsMetric(metrics dataold.MetricSlice, now 
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskPendingOperationsMetric(metrics dataold.MetricSlice, now pdata.TimestampUnixNano) error {
+func (s *scraper) scrapeAndAppendDiskPendingOperationsMetric(metrics pdata.MetricSlice, now pdata.TimestampUnixNano) error {
 	diskQueueLengthValues, err := s.diskQueueLengthCounter.ScrapeData()
 	if err != nil {
 		return err
@@ -347,10 +346,10 @@ func (s *scraper) scrapeAndAppendDiskPendingOperationsMetric(metrics dataold.Met
 	return nil
 }
 
-func initializeDiskInt64Metric(metric dataold.Metric, descriptor dataold.MetricDescriptor, startTime, now pdata.TimestampUnixNano, ops cumulativeDiskValues) {
-	descriptor.CopyTo(metric.MetricDescriptor())
+func initializeDiskInt64Metric(metric pdata.Metric, descriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ops cumulativeDiskValues) {
+	descriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ops))
 
 	idx := 0
@@ -361,10 +360,10 @@ func initializeDiskInt64Metric(metric dataold.Metric, descriptor dataold.MetricD
 	}
 }
 
-func initializeDiskDoubleMetric(metric dataold.Metric, descriptor dataold.MetricDescriptor, startTime, now pdata.TimestampUnixNano, ops cumulativeDiskValues) {
-	descriptor.CopyTo(metric.MetricDescriptor())
+func initializeDiskDoubleMetric(metric pdata.Metric, descriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ops cumulativeDiskValues) {
+	descriptor.CopyTo(metric)
 
-	ddps := metric.DoubleDataPoints()
+	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(2 * len(ops))
 
 	idx := 0
@@ -375,10 +374,10 @@ func initializeDiskDoubleMetric(metric dataold.Metric, descriptor dataold.Metric
 	}
 }
 
-func initializeDiskPendingOperationsMetric(metric dataold.Metric, now pdata.TimestampUnixNano, avgDiskQueueLengthValues []win_perf_counters.CounterValue) {
-	diskPendingOperationsDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.TimestampUnixNano, avgDiskQueueLengthValues []win_perf_counters.CounterValue) {
+	diskPendingOperationsDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(len(avgDiskQueueLengthValues))
 
 	for idx, avgDiskQueueLengthValue := range avgDiskQueueLengthValues {
@@ -386,7 +385,7 @@ func initializeDiskPendingOperationsMetric(metric dataold.Metric, now pdata.Time
 	}
 }
 
-func initializeInt64DataPoint(dataPoint dataold.Int64DataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
+func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(directionLabelName, directionLabel)
@@ -395,7 +394,7 @@ func initializeInt64DataPoint(dataPoint dataold.Int64DataPoint, startTime, now p
 	dataPoint.SetValue(value)
 }
 
-func initializeDoubleDataPoint(dataPoint dataold.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value float64) {
+func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(directionLabelName, directionLabel)
@@ -404,7 +403,7 @@ func initializeDoubleDataPoint(dataPoint dataold.DoubleDataPoint, startTime, now
 	dataPoint.SetValue(value)
 }
 
-func initializeDiskPendingDataPoint(dataPoint dataold.Int64DataPoint, now pdata.TimestampUnixNano, deviceLabel string, value int64) {
+func initializeDiskPendingDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	dataPoint.SetTimestamp(now)

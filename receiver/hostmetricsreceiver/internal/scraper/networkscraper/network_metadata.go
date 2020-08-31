@@ -15,7 +15,7 @@
 package networkscraper
 
 import (
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // network metric constants
@@ -35,52 +35,72 @@ const (
 
 // descriptors
 
-var networkPacketsDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.network.packets")
-	descriptor.SetDescription("The number of packets transferred.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
-	return descriptor
+var networkPacketsDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.network.packets")
+	metric.SetDescription("The number of packets transferred.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var networkDroppedPacketsDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.network.dropped_packets")
-	descriptor.SetDescription("The number of packets dropped.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
-	return descriptor
+var networkDroppedPacketsDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.network.dropped_packets")
+	metric.SetDescription("The number of packets dropped.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var networkErrorsDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.network.errors")
-	descriptor.SetDescription("The number of errors encountered")
-	descriptor.SetUnit("1")
-	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
-	return descriptor
+var networkErrorsDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.network.errors")
+	metric.SetDescription("The number of errors encountered")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var networkIODescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.network.io")
-	descriptor.SetDescription("The number of bytes transmitted and received")
-	descriptor.SetUnit("bytes")
-	descriptor.SetType(dataold.MetricTypeMonotonicInt64)
-	return descriptor
+var networkIODescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.network.io")
+	metric.SetDescription("The number of bytes transmitted and received")
+	metric.SetUnit("bytes")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var networkTCPConnectionsDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.network.tcp_connections")
-	descriptor.SetDescription("The number of tcp connections")
-	descriptor.SetUnit("bytes")
-	descriptor.SetType(dataold.MetricTypeInt64)
-	return descriptor
+var networkTCPConnectionsDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.network.tcp_connections")
+	metric.SetDescription("The number of tcp connections")
+	metric.SetUnit("bytes")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()

@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -62,8 +61,8 @@ func (s *scraper) Close(_ context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) {
-	metrics := dataold.NewMetricSlice()
+func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+	metrics := pdata.NewMetricSlice()
 
 	var errors []error
 
@@ -80,7 +79,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (dataold.MetricSlice, error) 
 	return metrics, componenterror.CombineErrors(errors)
 }
 
-func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics dataold.MetricSlice) error {
+func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 	vmem, err := s.virtualMemory()
 	if err != nil {
@@ -93,24 +92,24 @@ func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics dataold.MetricSlice) er
 	return nil
 }
 
-func initializeSwapUsageMetric(metric dataold.Metric, now pdata.TimestampUnixNano, vmem *mem.VirtualMemoryStat) {
-	swapUsageDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeSwapUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, vmem *mem.VirtualMemoryStat) {
+	swapUsageDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(3)
 	initializeSwapUsageDataPoint(idps.At(0), now, usedLabelValue, int64(vmem.SwapTotal-vmem.SwapFree-vmem.SwapCached))
 	initializeSwapUsageDataPoint(idps.At(1), now, freeLabelValue, int64(vmem.SwapFree))
 	initializeSwapUsageDataPoint(idps.At(2), now, cachedLabelValue, int64(vmem.SwapCached))
 }
 
-func initializeSwapUsageDataPoint(dataPoint dataold.Int64DataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
+func initializeSwapUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
 
-func (s *scraper) scrapeAndAppendPagingMetrics(metrics dataold.MetricSlice) error {
+func (s *scraper) scrapeAndAppendPagingMetrics(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {
@@ -124,10 +123,10 @@ func (s *scraper) scrapeAndAppendPagingMetrics(metrics dataold.MetricSlice) erro
 	return nil
 }
 
-func initializePagingMetric(metric dataold.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
-	swapPagingDescriptor.CopyTo(metric.MetricDescriptor())
+func initializePagingMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
+	swapPagingDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(4)
 	initializePagingDataPoint(idps.At(0), startTime, now, majorTypeLabelValue, inDirectionLabelValue, int64(swap.Sin))
 	initializePagingDataPoint(idps.At(1), startTime, now, majorTypeLabelValue, outDirectionLabelValue, int64(swap.Sout))
@@ -135,7 +134,7 @@ func initializePagingMetric(metric dataold.Metric, startTime, now pdata.Timestam
 	initializePagingDataPoint(idps.At(3), startTime, now, minorTypeLabelValue, outDirectionLabelValue, int64(swap.PgOut))
 }
 
-func initializePagingDataPoint(dataPoint dataold.Int64DataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, directionLabel string, value int64) {
+func initializePagingDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(typeLabelName, typeLabel)
 	labelsMap.Insert(directionLabelName, directionLabel)
@@ -144,16 +143,16 @@ func initializePagingDataPoint(dataPoint dataold.Int64DataPoint, startTime, now 
 	dataPoint.SetValue(value)
 }
 
-func initializePageFaultsMetric(metric dataold.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
-	swapPageFaultsDescriptor.CopyTo(metric.MetricDescriptor())
+func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
+	swapPageFaultsDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(1)
 	initializePageFaultDataPoint(idps.At(0), startTime, now, minorTypeLabelValue, int64(swap.PgFault))
 	// TODO add swap.PgMajFault once available in gopsutil
 }
 
-func initializePageFaultDataPoint(dataPoint dataold.Int64DataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, value int64) {
+func initializePageFaultDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, value int64) {
 	dataPoint.LabelsMap().Insert(typeLabelName, typeLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
