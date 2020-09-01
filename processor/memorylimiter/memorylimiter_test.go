@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -122,17 +122,17 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	md := dataold.NewMetricData()
+	md := data.NewMetricData()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
 	ml.memCheck()
-	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Check ballast effect
 	ml.ballastSize = 1000
@@ -140,12 +140,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit accounting for ballast.
 	currentMemAlloc = 800 + ml.ballastSize
 	ml.memCheck()
-	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memAllocLimit even accountiing for ballast.
 	currentMemAlloc = 1800 + ml.ballastSize
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Restore ballast to default.
 	ml.ballastSize = 0
@@ -156,12 +156,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.memCheck()
-	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.NoError(t, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.memCheck()
-	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md)))
 
 }
 

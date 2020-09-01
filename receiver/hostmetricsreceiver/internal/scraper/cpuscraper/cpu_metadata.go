@@ -15,7 +15,7 @@
 package cpuscraper
 
 import (
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // labels
@@ -40,12 +40,16 @@ const (
 
 // descriptors
 
-var cpuTimeDescriptor = func() dataold.MetricDescriptor {
-	descriptor := dataold.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.cpu.time")
-	descriptor.SetDescription("Total CPU seconds broken down by different states.")
-	descriptor.SetUnit("s")
-	descriptor.SetType(dataold.MetricTypeMonotonicDouble)
-	return descriptor
+var cpuTimeDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.cpu.time")
+	metric.SetDescription("Total CPU seconds broken down by different states.")
+	metric.SetUnit("s")
+	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	sum := metric.DoubleSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()

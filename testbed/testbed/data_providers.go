@@ -28,8 +28,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/internal/dataold"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -123,7 +123,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	// Generate 7 data points per metric.
 	const dataPointsPerMetric = 7
 
-	metricData := dataold.NewMetricData()
+	metricData := data.NewMetricData()
 	metricData.ResourceMetrics().Resize(1)
 	metricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	if dp.options.Attributes != nil {
@@ -138,18 +138,19 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.At(i)
-		metricDescriptor := metric.MetricDescriptor()
-		metricDescriptor.InitEmpty()
-		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
-		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(dataold.MetricTypeInt64)
+		metric.SetName("load_generator_" + strconv.Itoa(i))
+		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
+		metric.SetUnit("1")
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		gauge := metric.IntGauge()
+		gauge.InitEmpty()
 
 		batchIndex := dp.batchesGenerated.Inc()
 
 		// Generate data points for the metric.
-		metric.Int64DataPoints().Resize(dataPointsPerMetric)
+		gauge.DataPoints().Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := metric.Int64DataPoints().At(j)
+			dataPoint := gauge.DataPoints().At(j)
 			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
@@ -159,7 +160,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			})
 		}
 	}
-	return pdatautil.MetricsFromOldInternalMetrics(metricData), false
+	return pdatautil.MetricsFromInternalMetrics(metricData), false
 }
 
 func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span {
@@ -261,7 +262,7 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-	return pdatautil.MetricsFromOldInternalMetrics(dataold.MetricData{}), true
+	return pdatautil.MetricsFromInternalMetrics(data.MetricData{}), true
 }
 
 func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {

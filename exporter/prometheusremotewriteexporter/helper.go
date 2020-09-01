@@ -30,6 +30,11 @@ import (
 
 const (
 	nameStr   = "__name__"
+	sumStr    = "_sum"
+	countStr  = "_count"
+	bucketStr = "_bucket"
+	leStr     = "le"
+	pInfStr   = "+Inf"
 	totalStr  = "total"
 	delimeter = "_"
 	keyStr    = "key"

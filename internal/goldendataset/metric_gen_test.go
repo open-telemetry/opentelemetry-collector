@@ -19,7 +19,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 func TestGenDefault(t *testing.T) {
@@ -40,12 +41,12 @@ func TestGenDefault(t *testing.T) {
 	ms := ilms.At(0).Metrics()
 	require.Equal(t, 1, ms.Len())
 	pdm := ms.At(0)
-	desc := pdm.MetricDescriptor()
-	require.Equal(t, "metric_0", desc.Name())
-	require.Equal(t, "my-md-description", desc.Description())
-	require.Equal(t, "my-md-units", desc.Unit())
+	require.Equal(t, "metric_0", pdm.Name())
+	require.Equal(t, "my-md-description", pdm.Description())
+	require.Equal(t, "my-md-units", pdm.Unit())
 
-	pts := pdm.Int64DataPoints()
+	require.Equal(t, pdata.MetricDataTypeIntGauge, pdm.DataType())
+	pts := pdm.IntGauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 
@@ -58,82 +59,75 @@ func TestGenDefault(t *testing.T) {
 	require.EqualValues(t, 1, pt.Value())
 }
 
-func TestHistogramFunctions(t *testing.T) {
-	pt := dataold.NewHistogramDataPoint()
+func TestDoubleHistogramFunctions(t *testing.T) {
+	pt := pdata.NewDoubleHistogramDataPoint()
 	pt.InitEmpty()
-	setHistogramBounds(pt, 1, 2, 3, 4, 5)
+	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
-	require.Equal(t, 5, pt.Buckets().Len())
+	require.Equal(t, 5, len(pt.BucketCounts()))
 
-	addHistogramVal(pt, 1, 0)
+	addDoubleHistogramVal(pt, 1)
 	require.EqualValues(t, 1, pt.Count())
 	require.EqualValues(t, 1, pt.Sum())
-	require.EqualValues(t, 1, pt.Buckets().At(0).Count())
+	require.EqualValues(t, 1, pt.BucketCounts()[0])
 
-	addHistogramVal(pt, 2, 0)
+	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 2, pt.Count())
 	require.EqualValues(t, 3, pt.Sum())
-	require.EqualValues(t, 1, pt.Buckets().At(1).Count())
+	require.EqualValues(t, 1, pt.BucketCounts()[1])
 
-	addHistogramVal(pt, 2, 0)
+	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 3, pt.Count())
 	require.EqualValues(t, 5, pt.Sum())
-	require.EqualValues(t, 2, pt.Buckets().At(1).Count())
+	require.EqualValues(t, 2, pt.BucketCounts()[1])
 }
 
-func TestGenHistogram(t *testing.T) {
+func TestIntHistogramFunctions(t *testing.T) {
+	pt := pdata.NewIntHistogramDataPoint()
+	pt.InitEmpty()
+	setIntHistogramBounds(pt, 1, 2, 3, 4, 5)
+	require.Equal(t, 5, len(pt.ExplicitBounds()))
+	require.Equal(t, 5, len(pt.BucketCounts()))
+
+	addIntHistogramVal(pt, 1)
+	require.EqualValues(t, 1, pt.Count())
+	require.EqualValues(t, 1, pt.Sum())
+	require.EqualValues(t, 1, pt.BucketCounts()[0])
+
+	addIntHistogramVal(pt, 2)
+	require.EqualValues(t, 2, pt.Count())
+	require.EqualValues(t, 3, pt.Sum())
+	require.EqualValues(t, 1, pt.BucketCounts()[1])
+
+	addIntHistogramVal(pt, 2)
+	require.EqualValues(t, 3, pt.Count())
+	require.EqualValues(t, 5, pt.Sum())
+	require.EqualValues(t, 2, pt.BucketCounts()[1])
+}
+
+func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = dataold.MetricTypeHistogram
+	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	cfg.PtVal = 2
 	md := MetricDataFromCfg(cfg)
-	pts := getMetric(md).HistogramDataPoints()
+	pts := getMetric(md).DoubleHistogram().DataPoints()
 	pt := pts.At(0)
-	buckets := pt.Buckets()
-	require.Equal(t, 5, buckets.Len())
-	middleBucket := buckets.At(2)
-	require.EqualValues(t, 2, middleBucket.Count())
-	ex := pt.Buckets().At(0).Exemplar()
-	ex.Value()
-	require.EqualValues(t, 1, ex.Value())
+	buckets := pt.BucketCounts()
+	require.Equal(t, 5, len(buckets))
+	require.EqualValues(t, 2, buckets[2])
 }
 
-func TestSummaryFunctions(t *testing.T) {
-	pt := dataold.NewSummaryDataPoint()
-	pt.InitEmpty()
-	setSummaryPercentiles(pt, 0, 50, 95)
-	addSummaryValue(pt, 55, 0)
-	addSummaryValue(pt, 70, 1)
-	addSummaryValue(pt, 90, 2)
-	require.EqualValues(t, 3, pt.Count())
-	v := pt.ValueAtPercentiles().At(2).Value()
-	require.EqualValues(t, 1, v)
-	pctile := pt.ValueAtPercentiles().At(2).Percentile()
-	require.EqualValues(t, 95, pctile)
-}
-
-func TestGenSummary(t *testing.T) {
+func TestGenDoubleGauge(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = dataold.MetricTypeSummary
+	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
 	md := MetricDataFromCfg(cfg)
 	metric := getMetric(md)
-	pts := metric.SummaryDataPoints()
-	require.Equal(t, 1, pts.Len())
-	pt := pts.At(0)
-	require.EqualValues(t, 3, pt.Count())
-	require.EqualValues(t, 215, pt.Sum())
-}
-
-func TestGenDouble(t *testing.T) {
-	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = dataold.MetricTypeDouble
-	md := MetricDataFromCfg(cfg)
-	metric := getMetric(md)
-	pts := metric.DoubleDataPoints()
+	pts := metric.DoubleGauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 	require.EqualValues(t, 1, pt.Value())
 }
 
-func getMetric(md dataold.MetricData) dataold.Metric {
+func getMetric(md data.MetricData) pdata.Metric {
 	return md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 }

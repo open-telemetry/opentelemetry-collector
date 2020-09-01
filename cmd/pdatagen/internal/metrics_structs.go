@@ -66,7 +66,7 @@ var resourceMetrics = &messageStruct{
 	fields: []baseField{
 		resourceField,
 		&sliceField{
-			fieldMame:       "InstrumentationLibraryMetrics",
+			fieldName:       "InstrumentationLibraryMetrics",
 			originFieldName: "InstrumentationLibraryMetrics",
 			returnSlice:     instrumentationLibraryMetricsSlice,
 		},
@@ -85,7 +85,7 @@ var instrumentationLibraryMetrics = &messageStruct{
 	fields: []baseField{
 		instrumentationLibraryField,
 		&sliceField{
-			fieldMame:       "Metrics",
+			fieldName:       "Metrics",
 			originFieldName: "Metrics",
 			returnSlice:     metricSlice,
 		},
@@ -105,19 +105,20 @@ var metric = &messageStruct{
 	fields: []baseField{
 		nameField,
 		&primitiveField{
-			fieldMame:       "Description",
+			fieldName:       "Description",
 			originFieldName: "Description",
 			returnType:      "string",
 			defaultVal:      `""`,
 			testVal:         `"test_description"`,
 		},
 		&primitiveField{
-			fieldMame:       "Unit",
+			fieldName:       "Unit",
 			originFieldName: "Unit",
 			returnType:      "string",
 			defaultVal:      `""`,
 			testVal:         `"1"`,
 		},
+		oneofDataField,
 	},
 }
 
@@ -127,7 +128,7 @@ var intGauge = &messageStruct{
 	originFullName: "otlpmetrics.IntGauge",
 	fields: []baseField{
 		&sliceField{
-			fieldMame:       "DataPoints",
+			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     intDataPointSlice,
 		},
@@ -140,7 +141,7 @@ var doubleGauge = &messageStruct{
 	originFullName: "otlpmetrics.DoubleGauge",
 	fields: []baseField{
 		&sliceField{
-			fieldMame:       "DataPoints",
+			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleDataPointSlice,
 		},
@@ -155,7 +156,7 @@ var intSum = &messageStruct{
 		aggregationTemporalityField,
 		isMonotonicField,
 		&sliceField{
-			fieldMame:       "DataPoints",
+			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     intDataPointSlice,
 		},
@@ -170,7 +171,7 @@ var doubleSum = &messageStruct{
 		aggregationTemporalityField,
 		isMonotonicField,
 		&sliceField{
-			fieldMame:       "DataPoints",
+			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleDataPointSlice,
 		},
@@ -184,7 +185,7 @@ var intHistogram = &messageStruct{
 	fields: []baseField{
 		aggregationTemporalityField,
 		&sliceField{
-			fieldMame:       "DataPoints",
+			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     intHistogramDataPointSlice,
 		},
@@ -198,7 +199,7 @@ var doubleHistogram = &messageStruct{
 	fields: []baseField{
 		aggregationTemporalityField,
 		&sliceField{
-			fieldMame:       "DataPoints",
+			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleHistogramDataPointSlice,
 		},
@@ -299,7 +300,7 @@ var intExemplar = &messageStruct{
 		timeField,
 		valueInt64Field,
 		&sliceField{
-			fieldMame:       "FilteredLabels",
+			fieldName:       "FilteredLabels",
 			originFieldName: "FilteredLabels",
 			returnSlice:     stringMap,
 		},
@@ -322,7 +323,7 @@ var doubleExemplar = &messageStruct{
 		timeField,
 		valueFloat64Field,
 		&sliceField{
-			fieldMame:       "FilteredLabels",
+			fieldName:       "FilteredLabels",
 			originFieldName: "FilteredLabels",
 			returnSlice:     stringMap,
 		},
@@ -330,25 +331,25 @@ var doubleExemplar = &messageStruct{
 }
 
 var labelsField = &sliceField{
-	fieldMame:       "LabelsMap",
+	fieldName:       "LabelsMap",
 	originFieldName: "Labels",
 	returnSlice:     stringMap,
 }
 
 var intExemplarsField = &sliceField{
-	fieldMame:       "Exemplars",
+	fieldName:       "Exemplars",
 	originFieldName: "Exemplars",
 	returnSlice:     intExemplarSlice,
 }
 
 var doubleExemplarsField = &sliceField{
-	fieldMame:       "Exemplars",
+	fieldName:       "Exemplars",
 	originFieldName: "Exemplars",
 	returnSlice:     doubleExemplarSlice,
 }
 
 var countField = &primitiveField{
-	fieldMame:       "Count",
+	fieldName:       "Count",
 	originFieldName: "Count",
 	returnType:      "uint64",
 	defaultVal:      "uint64(0)",
@@ -356,7 +357,7 @@ var countField = &primitiveField{
 }
 
 var intSumField = &primitiveField{
-	fieldMame:       "Sum",
+	fieldName:       "Sum",
 	originFieldName: "Sum",
 	returnType:      "int64",
 	defaultVal:      "int64(0.0)",
@@ -364,7 +365,7 @@ var intSumField = &primitiveField{
 }
 
 var doubleSumField = &primitiveField{
-	fieldMame:       "Sum",
+	fieldName:       "Sum",
 	originFieldName: "Sum",
 	returnType:      "float64",
 	defaultVal:      "float64(0.0)",
@@ -372,7 +373,7 @@ var doubleSumField = &primitiveField{
 }
 
 var valueInt64Field = &primitiveField{
-	fieldMame:       "Value",
+	fieldName:       "Value",
 	originFieldName: "Value",
 	returnType:      "int64",
 	defaultVal:      "int64(0)",
@@ -380,7 +381,7 @@ var valueInt64Field = &primitiveField{
 }
 
 var valueFloat64Field = &primitiveField{
-	fieldMame:       "Value",
+	fieldName:       "Value",
 	originFieldName: "Value",
 	returnType:      "float64",
 	defaultVal:      "float64(0.0)",
@@ -388,7 +389,7 @@ var valueFloat64Field = &primitiveField{
 }
 
 var bucketCountsField = &primitiveField{
-	fieldMame:       "BucketCounts",
+	fieldName:       "BucketCounts",
 	originFieldName: "BucketCounts",
 	returnType:      "[]uint64",
 	defaultVal:      "[]uint64(nil)",
@@ -396,7 +397,7 @@ var bucketCountsField = &primitiveField{
 }
 
 var explicitBoundsField = &primitiveField{
-	fieldMame:       "ExplicitBounds",
+	fieldName:       "ExplicitBounds",
 	originFieldName: "ExplicitBounds",
 	returnType:      "[]float64",
 	defaultVal:      "[]float64(nil)",
@@ -404,7 +405,7 @@ var explicitBoundsField = &primitiveField{
 }
 
 var isMonotonicField = &primitiveField{
-	fieldMame:       "IsMonotonic",
+	fieldName:       "IsMonotonic",
 	originFieldName: "IsMonotonic",
 	returnType:      "bool",
 	defaultVal:      "false",
@@ -412,10 +413,17 @@ var isMonotonicField = &primitiveField{
 }
 
 var aggregationTemporalityField = &primitiveTypedField{
-	fieldMame:       "AggregationTemporality",
+	fieldName:       "AggregationTemporality",
 	originFieldName: "AggregationTemporality",
 	returnType:      "AggregationTemporality",
 	rawType:         "otlpmetrics.AggregationTemporality",
 	defaultVal:      "AggregationTemporalityUnspecified",
 	testVal:         "AggregationTemporalityCumulative",
+}
+
+var oneofDataField = &oneofField{
+	copyFuncName:    "copyData",
+	originFieldName: "Data",
+	testVal:         "&otlpmetrics.Metric_IntGauge{}",
+	fillTestName:    "IntGauge",
 }

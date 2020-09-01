@@ -47,157 +47,154 @@ type Metrics struct {
 type MetricDataType int
 
 const (
-	MetricDataNone MetricDataType = iota
-	MetricDataIntGauge
-	MetricDataDoubleGauge
-	MetricDataIntSum
-	MetricDataDoubleSum
-	MetricDataIntHistogram
-	MetricDataDoubleHistogram
+	MetricDataTypeNone MetricDataType = iota
+	MetricDataTypeIntGauge
+	MetricDataTypeDoubleGauge
+	MetricDataTypeIntSum
+	MetricDataTypeDoubleSum
+	MetricDataTypeIntHistogram
+	MetricDataTypeDoubleHistogram
 )
 
 func (mdt MetricDataType) String() string {
 	switch mdt {
-	case MetricDataNone:
+	case MetricDataTypeNone:
 		return "None"
-	case MetricDataIntGauge:
+	case MetricDataTypeIntGauge:
 		return "IntGauge"
-	case MetricDataDoubleGauge:
+	case MetricDataTypeDoubleGauge:
 		return "DoubleGauge"
-	case MetricDataIntSum:
+	case MetricDataTypeIntSum:
 		return "IntSum"
-	case MetricDataDoubleSum:
+	case MetricDataTypeDoubleSum:
 		return "DoubleSum"
-	case MetricDataIntHistogram:
+	case MetricDataTypeIntHistogram:
 		return "IntHistogram"
-	case MetricDataDoubleHistogram:
+	case MetricDataTypeDoubleHistogram:
 		return "DoubleHistogram"
 	}
 	return ""
 }
 
-// Type returns the type of the data for this Metric.
+// DataType returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DataType() MetricDataType {
-	if *ms.orig == nil || (*ms.orig).Data == nil {
-		return MetricDataNone
-	}
 	switch (*ms.orig).Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
-		return MetricDataIntGauge
+		return MetricDataTypeIntGauge
 	case *otlpmetrics.Metric_DoubleGauge:
-		return MetricDataDoubleGauge
+		return MetricDataTypeDoubleGauge
 	case *otlpmetrics.Metric_IntSum:
-		return MetricDataIntSum
+		return MetricDataTypeIntSum
 	case *otlpmetrics.Metric_DoubleSum:
-		return MetricDataDoubleSum
+		return MetricDataTypeDoubleSum
 	case *otlpmetrics.Metric_IntHistogram:
-		return MetricDataIntHistogram
+		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_DoubleHistogram:
-		return MetricDataDoubleHistogram
+		return MetricDataTypeDoubleHistogram
 	}
-	return MetricDataNone
+	return MetricDataTypeNone
 }
 
-// IntGaugeData returns the data as IntGauge. This should be called iff DataType() == MetricDataIntGauge.
+// SetDataType clears any existing data and initialize it with an empty data of the given type.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntGaugeData() IntGauge {
+func (ms Metric) SetDataType(ty MetricDataType) {
+	switch ty {
+	case MetricDataTypeIntGauge:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{}
+	case MetricDataTypeDoubleGauge:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{}
+	case MetricDataTypeIntSum:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntSum{}
+	case MetricDataTypeDoubleSum:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{}
+	case MetricDataTypeIntHistogram:
+		(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{}
+	case MetricDataTypeDoubleHistogram:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{}
+	}
+}
+
+// IntGauge returns the data as IntGauge. This should be called iff DataType() == MetricDataTypeIntGauge.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) IntGauge() IntGauge {
 	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntGauge); ok {
 		return newIntGauge(&orig.IntGauge)
 	}
 	return NewIntGauge()
 }
 
-// DoubleGaugeData returns the data as DoubleGauge. This should be called iff DataType() == MetricDataDoubleGauge.
+// DoubleGauge returns the data as DoubleGauge. This should be called iff DataType() == MetricDataTypeDoubleGauge.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleGaugeData() DoubleGauge {
+func (ms Metric) DoubleGauge() DoubleGauge {
 	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleGauge); ok {
 		return newDoubleGauge(&orig.DoubleGauge)
 	}
 	return NewDoubleGauge()
 }
 
-// IntSumData returns the data as IntSum. This should be called iff DataType() == MetricDataIntSum.
+// IntSum returns the data as IntSum. This should be called iff DataType() == MetricDataTypeIntSum.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntSumData() IntSum {
+func (ms Metric) IntSum() IntSum {
 	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntSum); ok {
 		return newIntSum(&orig.IntSum)
 	}
 	return NewIntSum()
 }
 
-// DoubleSumData returns the data as DoubleSum. This should be called iff DataType() == MetricDataDoubleSum.
+// DoubleSum returns the data as DoubleSum. This should be called iff DataType() == MetricDataTypeDoubleSum.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleSumData() DoubleSum {
+func (ms Metric) DoubleSum() DoubleSum {
 	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleSum); ok {
 		return newDoubleSum(&orig.DoubleSum)
 	}
 	return NewDoubleSum()
 }
 
-// IntHistogramData returns the data as IntHistogram. This should be called iff DataType() == MetricDataIntHistogram.
+// IntHistogram returns the data as IntHistogram. This should be called iff DataType() == MetricDataTypeIntHistogram.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) IntHistogramData() IntHistogram {
+func (ms Metric) IntHistogram() IntHistogram {
 	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntHistogram); ok {
 		return newIntHistogram(&orig.IntHistogram)
 	}
 	return NewIntHistogram()
 }
 
-// DoubleHistogramData returns the data as DoubleHistogram. This should be called iff DataType() == MetricDataDoubleHistogram.
+// DoubleHistogram returns the data as DoubleHistogram. This should be called iff DataType() == MetricDataTypeDoubleHistogram.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleHistogramData() DoubleHistogram {
+func (ms Metric) DoubleHistogram() DoubleHistogram {
 	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram); ok {
 		return newDoubleHistogram(&orig.DoubleHistogram)
 	}
 	return NewDoubleHistogram()
 }
 
-// SetIntGaugeData replaces the metric data with the given IntGauge.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetIntGaugeData(data IntGauge) {
-	(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{
-		IntGauge: *data.orig,
-	}
-}
-
-// SetDoubleGaugeData replaces the metric data with the given DoubleGauge.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDoubleGaugeData(data DoubleGauge) {
-	(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{
-		DoubleGauge: *data.orig,
-	}
-}
-
-// SetIntSumData replaces the metric data with the given IntSum.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetIntSumData(data IntSum) {
-	(*ms.orig).Data = &otlpmetrics.Metric_IntSum{
-		IntSum: *data.orig,
-	}
-}
-
-// SetDoubleSumData replaces the metric data with the given DoubleSum.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDoubleSumData(data DoubleSum) {
-	(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{
-		DoubleSum: *data.orig,
-	}
-}
-
-// SetIntHistogramData replaces the metric data with the given IntHistogram.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetIntHistogramData(data IntHistogram) {
-	(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{
-		IntHistogram: *data.orig,
-	}
-}
-
-// SetDoubleHistogramData replaces the metric data with the given DoubleHistogram.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDoubleHistogramData(data DoubleHistogram) {
-	(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{
-		DoubleHistogram: *data.orig,
+func copyData(src, dest *otlpmetrics.Metric) {
+	switch srcData := (src).Data.(type) {
+	case *otlpmetrics.Metric_IntGauge:
+		data := &otlpmetrics.Metric_IntGauge{}
+		newIntGauge(&srcData.IntGauge).CopyTo(newIntGauge(&data.IntGauge))
+		dest.Data = data
+	case *otlpmetrics.Metric_DoubleGauge:
+		data := &otlpmetrics.Metric_DoubleGauge{}
+		newDoubleGauge(&srcData.DoubleGauge).CopyTo(newDoubleGauge(&data.DoubleGauge))
+		dest.Data = data
+	case *otlpmetrics.Metric_IntSum:
+		data := &otlpmetrics.Metric_IntSum{}
+		newIntSum(&srcData.IntSum).CopyTo(newIntSum(&data.IntSum))
+		dest.Data = data
+	case *otlpmetrics.Metric_DoubleSum:
+		data := &otlpmetrics.Metric_DoubleSum{}
+		newDoubleSum(&srcData.DoubleSum).CopyTo(newDoubleSum(&data.DoubleSum))
+		dest.Data = data
+	case *otlpmetrics.Metric_IntHistogram:
+		data := &otlpmetrics.Metric_IntHistogram{}
+		newIntHistogram(&srcData.IntHistogram).CopyTo(newIntHistogram(&data.IntHistogram))
+		dest.Data = data
+	case *otlpmetrics.Metric_DoubleHistogram:
+		data := &otlpmetrics.Metric_DoubleHistogram{}
+		newDoubleHistogram(&srcData.DoubleHistogram).CopyTo(newDoubleHistogram(&data.DoubleHistogram))
+		dest.Data = data
 	}
 }
 

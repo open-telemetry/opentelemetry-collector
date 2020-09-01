@@ -20,9 +20,9 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
-	github.com/google/go-cmp v0.5.1
+	github.com/google/go-cmp v0.5.2
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
@@ -32,9 +32,8 @@ require (
 	github.com/mjibson/esc v0.2.0
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
-	github.com/ory/go-acc v0.2.5
+	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.11.1
 	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83

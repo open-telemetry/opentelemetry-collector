@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -32,12 +33,14 @@ func TestOCToMetrics(t *testing.T) {
 	allTypesNoDataPoints := testdata.GenerateMetricsAllTypesNoDataPoints()
 	dh := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4)
 	ih := allTypesNoDataPoints.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5)
-	ih.SetDoubleHistogramData(dh.DoubleHistogramData())
+	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
 
 	sampleMetricData := testdata.GenerateMetricsWithCountersHistograms()
 	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
 	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
-	ih.SetDoubleHistogramData(dh.DoubleHistogramData())
+	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
 
 	tests := []struct {
 		name     string
@@ -166,12 +169,12 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	want := data.NewMetricData()
 	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
 	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
-	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("key", "value")
+	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("resource-attr", "another-value")
 	oc := generateOCTestDataMetricsOneMetric()
 	oc2 := generateOCTestDataMetricsOneMetric()
 	oc.Metrics = append(oc.Metrics, oc2.Metrics...)
 	oc.Metrics[1].Resource = oc2.Resource
-	oc.Metrics[1].Resource.Labels["key"] = "value"
+	oc.Metrics[1].Resource.Labels["resource-attr"] = "another-value"
 	got := OCToMetrics(oc)
 	assert.EqualValues(t, want, got)
 }

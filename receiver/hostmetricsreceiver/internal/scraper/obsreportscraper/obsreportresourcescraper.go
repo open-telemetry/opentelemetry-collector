@@ -19,7 +19,7 @@ import (
 
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -42,7 +42,7 @@ func (s *resourceScraper) Close(ctx context.Context) error {
 }
 
 // ScrapeMetrics
-func (s *resourceScraper) ScrapeMetrics(ctx context.Context) (dataold.ResourceMetricsSlice, error) {
+func (s *resourceScraper) ScrapeMetrics(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
 	// TODO: Add metrics.
 	ctx, span := trace.StartSpan(ctx, s.scrapeMetricsSpanName)
 	defer span.End()

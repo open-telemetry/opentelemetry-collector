@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptraces "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -135,14 +136,7 @@ func (r *mockMetricsReceiver) Export(
 	req *otlpmetrics.ExportMetricsServiceRequest,
 ) (*otlpmetrics.ExportMetricsServiceResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	recordCount := 0
-	for _, rs := range req.ResourceMetrics {
-		for _, il := range rs.InstrumentationLibraryMetrics {
-			for _, m := range il.Metrics {
-				recordCount += len(m.DoubleDataPoints) + len(m.Int64DataPoints) + len(m.HistogramDataPoints) + len(m.SummaryDataPoints)
-			}
-		}
-	}
+	_, recordCount := data.MetricDataFromOtlp(req.ResourceMetrics).MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.lastRequest = req
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
@@ -288,7 +282,7 @@ func TestSendMetrics(t *testing.T) {
 	md = pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 
 	expectedOTLPReq := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: testdataold.GenerateMetricOtlpTwoMetrics(),
+		ResourceMetrics: testdata.GenerateMetricsOtlpTwoMetrics(),
 	}
 
 	err = exp.ConsumeMetrics(context.Background(), md)

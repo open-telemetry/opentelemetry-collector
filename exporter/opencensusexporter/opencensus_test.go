@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -166,19 +165,19 @@ func TestSendMetrics(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := testdataold.GenerateMetricDataOneMetric()
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
+	md := testdata.GenerateMetricsOneMetric()
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	})
 	metrics := sink.AllMetrics()
 	require.Len(t, metrics, 1)
-	assert.Equal(t, md, pdatautil.MetricsToOldInternalMetrics(metrics[0]))
+	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[0]))
 
 	// Sending data no node.
 	sink.Reset()
 	pdata.NewResource().CopyTo(md.ResourceMetrics().At(0).Resource())
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromOldInternalMetrics(md)))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	})
@@ -186,7 +185,7 @@ func TestSendMetrics(t *testing.T) {
 	require.Len(t, metrics, 1)
 	// The conversion will initialize the Resource
 	md.ResourceMetrics().At(0).Resource().InitEmpty()
-	assert.Equal(t, md, pdatautil.MetricsToOldInternalMetrics(metrics[0]))
+	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[0]))
 }
 
 func TestSendMetrics_NoBackend(t *testing.T) {
@@ -207,7 +206,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataOneMetric())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
 	for i := 0; i < 10000; i++ {
 		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 	}
@@ -229,6 +228,6 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataOneMetric())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
 	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 }

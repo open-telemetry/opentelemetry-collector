@@ -123,18 +123,18 @@ func (md MetricData) MetricAndDataPointCount() (metricCount int, dataPointCount 
 					continue
 				}
 				switch m.DataType() {
-				case pdata.MetricDataIntGauge:
-					dataPointCount += m.IntGaugeData().DataPoints().Len()
-				case pdata.MetricDataDoubleGauge:
-					dataPointCount += m.DoubleGaugeData().DataPoints().Len()
-				case pdata.MetricDataIntSum:
-					dataPointCount += m.IntSumData().DataPoints().Len()
-				case pdata.MetricDataDoubleSum:
-					dataPointCount += m.DoubleSumData().DataPoints().Len()
-				case pdata.MetricDataIntHistogram:
-					dataPointCount += m.IntHistogramData().DataPoints().Len()
-				case pdata.MetricDataDoubleHistogram:
-					dataPointCount += m.DoubleHistogramData().DataPoints().Len()
+				case pdata.MetricDataTypeIntGauge:
+					dataPointCount += m.IntGauge().DataPoints().Len()
+				case pdata.MetricDataTypeDoubleGauge:
+					dataPointCount += m.DoubleGauge().DataPoints().Len()
+				case pdata.MetricDataTypeIntSum:
+					dataPointCount += m.IntSum().DataPoints().Len()
+				case pdata.MetricDataTypeDoubleSum:
+					dataPointCount += m.DoubleSum().DataPoints().Len()
+				case pdata.MetricDataTypeIntHistogram:
+					dataPointCount += m.IntHistogram().DataPoints().Len()
+				case pdata.MetricDataTypeDoubleHistogram:
+					dataPointCount += m.DoubleHistogram().DataPoints().Len()
 				}
 			}
 		}

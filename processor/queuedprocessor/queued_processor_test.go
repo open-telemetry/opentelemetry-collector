@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -188,7 +187,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
@@ -220,7 +219,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnNoRetry(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
@@ -252,7 +251,7 @@ func TestMetricsQueueProcessor_EnqueueOnError(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
@@ -351,7 +350,7 @@ func TestMetricsQueueProcessorHappyPath(t *testing.T) {
 	wantBatches := 10
 	wantMetricPoints := 2 * 20
 	for i := 0; i < wantBatches; i++ {
-		md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+		md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 		mockP.run(func() {
 			require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
 		})

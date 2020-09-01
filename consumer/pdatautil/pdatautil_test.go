@@ -21,17 +21,24 @@ import (
 
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	googleproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestMetricCount(t *testing.T) {
-	metrics := pdata.Metrics{InternalOpaque: testdataold.GenerateMetricDataTwoMetrics()}
+	metrics := MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 	assert.Equal(t, 2, MetricCount(metrics))
+}
 
-	metrics = pdata.Metrics{InternalOpaque: []consumerdata.MetricsData{
+func TestMetricCountOld(t *testing.T) {
+	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	assert.Equal(t, 1, MetricCount(metrics))
+
+	metrics = MetricsFromMetricsData([]consumerdata.MetricsData{
 		{
 			Metrics: []*ocmetrics.Metric{
 				{
@@ -45,17 +52,24 @@ func TestMetricCount(t *testing.T) {
 				},
 			},
 		},
-	}}
+	})
 	assert.Equal(t, 1, MetricCount(metrics))
 }
 
-func TestMetricAndDataPointCount(t *testing.T) {
-	metrics := pdata.Metrics{InternalOpaque: testdataold.GenerateMetricDataTwoMetrics()}
+func TestMetricAndDataPointCountOld(t *testing.T) {
+	metrics := MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
 	metricsCount, dataPointsCount := MetricAndDataPointCount(metrics)
 	assert.Equal(t, 2, metricsCount)
 	assert.Equal(t, 4, dataPointsCount)
+}
 
-	metrics = pdata.Metrics{InternalOpaque: []consumerdata.MetricsData{
+func TestMetricAndDataPointCount(t *testing.T) {
+	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	metricsCount, dataPointsCount := MetricAndDataPointCount(metrics)
+	assert.Equal(t, 1, metricsCount)
+	assert.Equal(t, 2, dataPointsCount)
+
+	metrics = MetricsFromMetricsData([]consumerdata.MetricsData{
 		{
 			Metrics: []*ocmetrics.Metric{
 				{
@@ -71,8 +85,38 @@ func TestMetricAndDataPointCount(t *testing.T) {
 				},
 			},
 		},
-	}}
+	})
 	metricsCount, dataPointsCount = MetricAndDataPointCount(metrics)
 	assert.Equal(t, 1, metricsCount)
 	assert.Equal(t, 3, dataPointsCount)
+}
+
+func TestMetricConvertInternalToFromOld(t *testing.T) {
+	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	mdOld := MetricsToOldInternalMetrics(metrics)
+	assert.Equal(t, 1, mdOld.MetricCount())
+	oldMetrics := MetricsFromOldInternalMetrics(mdOld)
+	assert.Equal(t, 1, MetricCount(oldMetrics))
+	mdNew := MetricsToInternalMetrics(oldMetrics)
+	assert.Equal(t, 1, mdNew.MetricCount())
+}
+
+func TestMetricCloneInternal(t *testing.T) {
+	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	clone := CloneMetrics(metrics)
+	assert.EqualValues(t, MetricsToInternalMetrics(metrics), MetricsToInternalMetrics(clone))
+}
+
+func TestMetricCloneOc(t *testing.T) {
+	oc := MetricsToMetricsData(MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric()))
+	require.Len(t, oc, 1)
+	require.Len(t, oc[0].Metrics, 1)
+	metrics := MetricsFromMetricsData(oc)
+	metricsClone := CloneMetrics(metrics)
+	ocClone := MetricsToMetricsData(metricsClone)
+	require.Len(t, ocClone, 1)
+	require.Len(t, ocClone[0].Metrics, 1)
+	assert.True(t, googleproto.Equal(oc[0].Node, ocClone[0].Node))
+	assert.True(t, googleproto.Equal(oc[0].Resource, ocClone[0].Resource))
+	assert.True(t, googleproto.Equal(oc[0].Metrics[0], ocClone[0].Metrics[0]))
 }

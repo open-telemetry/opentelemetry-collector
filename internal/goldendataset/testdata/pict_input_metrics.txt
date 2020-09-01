@@ -1,4 +1,4 @@
 NumPtsPerMetric: OnePt, ManyPts
-MetricType: Double, MonotonicDouble, Int, MonotonicInt, Histogram, Summary
+MetricType: DoubleGauge, MonotonicDoubleSum, NonMonotonicDoubleSum, IntGauge, MonotonicIntSum, NonMonotonicIntSum, IntHistogram, DoubleHistogram
 NumLabels: NoLabels, OneLabel, ManyLabels
 NumResourceAttrs: NoAttrs, OneAttr, TwoAttrs

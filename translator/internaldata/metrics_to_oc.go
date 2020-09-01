@@ -110,18 +110,18 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 	keySet := make(map[string]struct{})
 
 	switch metric.DataType() {
-	case pdata.MetricDataIntGauge:
-		collectLabelKeysIntDataPoints(metric.IntGaugeData().DataPoints(), keySet)
-	case pdata.MetricDataDoubleGauge:
-		collectLabelKeysDoubleDataPoints(metric.DoubleGaugeData().DataPoints(), keySet)
-	case pdata.MetricDataIntSum:
-		collectLabelKeysIntDataPoints(metric.IntSumData().DataPoints(), keySet)
-	case pdata.MetricDataDoubleSum:
-		collectLabelKeysDoubleDataPoints(metric.DoubleSumData().DataPoints(), keySet)
-	case pdata.MetricDataIntHistogram:
-		collectLabelKeysIntHistogramDataPoints(metric.IntHistogramData().DataPoints(), keySet)
-	case pdata.MetricDataDoubleHistogram:
-		collectLabelKeysDoubleHistogramDataPoints(metric.DoubleHistogramData().DataPoints(), keySet)
+	case pdata.MetricDataTypeIntGauge:
+		collectLabelKeysIntDataPoints(metric.IntGauge().DataPoints(), keySet)
+	case pdata.MetricDataTypeDoubleGauge:
+		collectLabelKeysDoubleDataPoints(metric.DoubleGauge().DataPoints(), keySet)
+	case pdata.MetricDataTypeIntSum:
+		collectLabelKeysIntDataPoints(metric.IntSum().DataPoints(), keySet)
+	case pdata.MetricDataTypeDoubleSum:
+		collectLabelKeysDoubleDataPoints(metric.DoubleSum().DataPoints(), keySet)
+	case pdata.MetricDataTypeIntHistogram:
+		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
+	case pdata.MetricDataTypeDoubleHistogram:
+		collectLabelKeysDoubleHistogramDataPoints(metric.DoubleHistogram().DataPoints(), keySet)
 	}
 
 	if len(keySet) == 0 {
@@ -217,30 +217,30 @@ func descriptorToOC(metric pdata.Metric, labelKeys *labelKeys) *ocmetrics.Metric
 
 func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 	switch metric.DataType() {
-	case pdata.MetricDataIntGauge:
+	case pdata.MetricDataTypeIntGauge:
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
-	case pdata.MetricDataDoubleGauge:
+	case pdata.MetricDataTypeDoubleGauge:
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
-	case pdata.MetricDataIntSum:
-		sd := metric.IntSumData()
+	case pdata.MetricDataTypeIntSum:
+		sd := metric.IntSum()
 		if sd.IsMonotonic() || sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_INT64
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_INT64
-	case pdata.MetricDataDoubleSum:
-		sd := metric.DoubleSumData()
+	case pdata.MetricDataTypeDoubleSum:
+		sd := metric.DoubleSum()
 		if sd.IsMonotonic() || sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
-	case pdata.MetricDataDoubleHistogram:
-		hd := metric.DoubleHistogramData()
+	case pdata.MetricDataTypeDoubleHistogram:
+		hd := metric.DoubleHistogram()
 		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pdata.MetricDataIntHistogram:
-		hd := metric.IntHistogramData()
+	case pdata.MetricDataTypeIntHistogram:
+		hd := metric.IntHistogram()
 		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
@@ -251,18 +251,18 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 
 func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
 	switch metric.DataType() {
-	case pdata.MetricDataIntGauge:
-		return intPointsToOC(metric.IntGaugeData().DataPoints(), labelKeys)
-	case pdata.MetricDataDoubleGauge:
-		return doublePointToOC(metric.DoubleGaugeData().DataPoints(), labelKeys)
-	case pdata.MetricDataIntSum:
-		return intPointsToOC(metric.IntSumData().DataPoints(), labelKeys)
-	case pdata.MetricDataDoubleSum:
-		return doublePointToOC(metric.DoubleSumData().DataPoints(), labelKeys)
-	case pdata.MetricDataIntHistogram:
-		return intHistogramPointToOC(metric.IntHistogramData().DataPoints(), labelKeys)
-	case pdata.MetricDataDoubleHistogram:
-		return doubleHistogramPointToOC(metric.DoubleHistogramData().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeIntGauge:
+		return intPointsToOC(metric.IntGauge().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeDoubleGauge:
+		return doublePointToOC(metric.DoubleGauge().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeIntSum:
+		return intPointsToOC(metric.IntSum().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeDoubleSum:
+		return doublePointToOC(metric.DoubleSum().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeIntHistogram:
+		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeDoubleHistogram:
+		return doubleHistogramPointToOC(metric.DoubleHistogram().DataPoints(), labelKeys)
 	}
 
 	return nil

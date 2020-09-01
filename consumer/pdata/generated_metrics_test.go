@@ -1849,6 +1849,9 @@ func fillTestMetric(tv Metric) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
+	(*tv.orig).Data = &otlpmetrics.Metric_IntGauge{}
+	tv.IntGauge().InitEmpty()
+	fillTestIntGauge(tv.IntGauge())
 }
 
 func generateTestIntGauge() IntGauge {

@@ -19,13 +19,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestGenerateMetricDatas(t *testing.T) {
 	mds, err := GenerateMetricDatas("testdata/generated_pict_pairs_metrics.txt")
 	require.NoError(t, err)
-	require.Equal(t, 19, len(mds))
+	require.Equal(t, 25, len(mds))
 }
 
 func TestPICTtoCfg(t *testing.T) {
@@ -39,13 +39,13 @@ func TestPICTtoCfg(t *testing.T) {
 			inputs: PICTMetricInputs{
 				NumResourceAttrs: AttrsNone,
 				NumPtsPerMetric:  NumPtsPerMetricOne,
-				MetricType:       MetricTypeInt,
+				MetricType:       MetricTypeIntGauge,
 				NumPtLabels:      LabelsNone,
 			},
 			cfg: MetricCfg{
 				NumResourceAttrs:     0,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: dataold.MetricTypeInt64,
+				MetricDescriptorType: pdata.MetricDataTypeIntGauge,
 				NumPtLabels:          0,
 			},
 		},
@@ -54,13 +54,13 @@ func TestPICTtoCfg(t *testing.T) {
 			inputs: PICTMetricInputs{
 				NumResourceAttrs: AttrsOne,
 				NumPtsPerMetric:  NumPtsPerMetricOne,
-				MetricType:       MetricTypeDouble,
+				MetricType:       MetricTypeDoubleGauge,
 				NumPtLabels:      LabelsOne,
 			},
 			cfg: MetricCfg{
 				NumResourceAttrs:     1,
 				NumPtsPerMetric:      1,
-				MetricDescriptorType: dataold.MetricTypeDouble,
+				MetricDescriptorType: pdata.MetricDataTypeDoubleGauge,
 				NumPtLabels:          1,
 			},
 		},
@@ -69,13 +69,13 @@ func TestPICTtoCfg(t *testing.T) {
 			inputs: PICTMetricInputs{
 				NumResourceAttrs: AttrsTwo,
 				NumPtsPerMetric:  NumPtsPerMetricMany,
-				MetricType:       MetricTypeSummary,
+				MetricType:       MetricTypeDoubleHistogram,
 				NumPtLabels:      LabelsMany,
 			},
 			cfg: MetricCfg{
 				NumResourceAttrs:     2,
 				NumPtsPerMetric:      16,
-				MetricDescriptorType: dataold.MetricTypeSummary,
+				MetricDescriptorType: pdata.MetricDataTypeDoubleHistogram,
 				NumPtLabels:          16,
 			},
 		},
