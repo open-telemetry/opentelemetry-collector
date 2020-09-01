@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"sync"
 	"testing"
 
@@ -35,219 +34,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
-	"go.opentelemetry.io/collector/internal/dataold"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
+	"go.opentelemetry.io/collector/internal/data"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 )
-
-// Test_handleScalarMetric checks whether data points within a single scalar metric can be added to a map of
-// TimeSeries correctly.
-// Test cases are two data point belonging to the same TimeSeries, two data point belonging different TimeSeries,
-// and nil data points case.
-func Test_handleScalarMetric(t *testing.T) {
-	sameTs := map[string]*prompb.TimeSeries{
-		// string signature of the data point is the key of the map
-		typeMonotonicInt64 + "-__name__-same_ts_int_points_total" + lb1Sig: getTimeSeries(
-			getPromLabels(label11, value11, label12, value12, nameStr, "same_ts_int_points_total"),
-			getSample(float64(intVal1), msTime1),
-			getSample(float64(intVal2), msTime1)),
-	}
-	differentTs := map[string]*prompb.TimeSeries{
-		typeMonotonicDouble + "-__name__-different_ts_double_points_total" + lb1Sig: getTimeSeries(
-			getPromLabels(label11, value11, label12, value12, nameStr, "different_ts_double_points_total"),
-			getSample(floatVal1, msTime1)),
-		typeMonotonicDouble + "-__name__-different_ts_double_points_total" + lb2Sig: getTimeSeries(
-			getPromLabels(label21, value21, label22, value22, nameStr, "different_ts_double_points_total"),
-			getSample(floatVal2, msTime2)),
-	}
-
-	tests := []struct {
-		name        string
-		m           *otlp.Metric
-		returnError bool
-		want        map[string]*prompb.TimeSeries
-	}{
-		{
-			"invalid_nil_array",
-			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_nil_array", monotonicInt64Comb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			true,
-			map[string]*prompb.TimeSeries{},
-		},
-		{
-			"invalid_type_array",
-			&otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_type_array", histogramComb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			true,
-			map[string]*prompb.TimeSeries{},
-		},
-		{
-			"same_ts_int_points",
-			&otlp.Metric{
-				MetricDescriptor: getDescriptor("same_ts_int_points", monotonicInt64Comb, validCombinations),
-				Int64DataPoints: []*otlp.Int64DataPoint{
-					getIntDataPoint(lbs1, intVal1, time1),
-					getIntDataPoint(lbs1, intVal2, time1),
-				},
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			false,
-			sameTs,
-		},
-		{
-			"different_ts_double_points",
-			&otlp.Metric{
-				MetricDescriptor: getDescriptor("different_ts_double_points", monotonicDoubleComb, validCombinations),
-				Int64DataPoints:  nil,
-				DoubleDataPoints: []*otlp.DoubleDataPoint{
-					getDoubleDataPoint(lbs1, floatVal1, time1),
-					getDoubleDataPoint(lbs2, floatVal2, time2),
-				},
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			false,
-			differentTs,
-		},
-	}
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &PrwExporter{}
-			ok := prw.handleScalarMetric(tsMap, tt.m)
-			if tt.returnError {
-				assert.Error(t, ok)
-				return
-			}
-			assert.Exactly(t, len(tt.want), len(tsMap))
-			for k, v := range tsMap {
-				require.NotNil(t, tt.want[k])
-				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
-			}
-		})
-	}
-}
-
-// Test_handleHistogramMetric checks whether data points(sum, count, buckets) within a single Histogram metric can be
-// added to a map of TimeSeries correctly.
-// Test cases are a histogram data point with two buckets and nil data points case.
-func Test_handleHistogramMetric(t *testing.T) {
-	sum := "sum"
-	count := "count"
-	bucket1 := "bucket1"
-	bucket2 := "bucket2"
-	bucketInf := "bucketInf"
-	histPoint := getHistogramDataPoint(
-		lbs1,
-		time1,
-		floatVal2,
-		uint64(intVal2), []float64{floatVal1, floatVal2},
-		[]uint64{uint64(intVal1), uint64(intVal1)})
-
-	// string signature of the data point is the key of the map
-	sigs := map[string]string{
-		sum:   typeHistogram + "-" + nameStr + "-" + name1 + "_sum" + lb1Sig,
-		count: typeHistogram + "-" + nameStr + "-" + name1 + "_count" + lb1Sig,
-		bucket1: typeHistogram + "-" + nameStr + "-" + name1 + "_bucket" + "-" + "le-" +
-			strconv.FormatFloat(floatVal1, 'f', -1, 64) + lb1Sig,
-		bucket2: typeHistogram + "-" + nameStr + "-" + name1 + "_bucket" + "-" + "le-" +
-			strconv.FormatFloat(floatVal2, 'f', -1, 64) + lb1Sig,
-		bucketInf: typeHistogram + "-" + nameStr + "-" + name1 + "_bucket" + "-" + "le-" +
-			"+Inf" + lb1Sig,
-	}
-	labels := map[string][]prompb.Label{
-		sum:   append(promLbs1, getPromLabels(nameStr, name1+"_sum")...),
-		count: append(promLbs1, getPromLabels(nameStr, name1+"_count")...),
-		bucket1: append(promLbs1, getPromLabels(nameStr, name1+"_bucket", "le",
-			strconv.FormatFloat(floatVal1, 'f', -1, 64))...),
-		bucket2: append(promLbs1, getPromLabels(nameStr, name1+"_bucket", "le",
-			strconv.FormatFloat(floatVal2, 'f', -1, 64))...),
-		bucketInf: append(promLbs1, getPromLabels(nameStr, name1+"_bucket", "le",
-			"+Inf")...),
-	}
-	tests := []struct {
-		name        string
-		m           otlp.Metric
-		returnError bool
-		want        map[string]*prompb.TimeSeries
-	}{
-		{
-			"invalid_type_array",
-			otlp.Metric{
-				MetricDescriptor:    getDescriptor("invalid_type_array", histogramComb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: nil,
-				SummaryDataPoints:   nil,
-			},
-			true,
-			map[string]*prompb.TimeSeries{},
-		},
-		{
-			"hist_nil_pt",
-			otlp.Metric{
-				MetricDescriptor:    getDescriptor("hist_nil_pt", histogramComb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: []*otlp.HistogramDataPoint{nil},
-				SummaryDataPoints:   nil,
-			},
-			false,
-			map[string]*prompb.TimeSeries{},
-		},
-		{
-			"single_histogram_point",
-			otlp.Metric{
-				MetricDescriptor:    getDescriptor(name1+"", histogramComb, validCombinations),
-				Int64DataPoints:     nil,
-				DoubleDataPoints:    nil,
-				HistogramDataPoints: []*otlp.HistogramDataPoint{histPoint},
-				SummaryDataPoints:   nil,
-			},
-			false,
-			map[string]*prompb.TimeSeries{
-				sigs[sum]:       getTimeSeries(labels[sum], getSample(floatVal2, msTime1)),
-				sigs[count]:     getTimeSeries(labels[count], getSample(float64(intVal2), msTime1)),
-				sigs[bucket1]:   getTimeSeries(labels[bucket1], getSample(float64(intVal1), msTime1)),
-				sigs[bucket2]:   getTimeSeries(labels[bucket2], getSample(float64(intVal1), msTime1)),
-				sigs[bucketInf]: getTimeSeries(labels[bucketInf], getSample(float64(intVal2), msTime1)),
-			},
-		},
-	}
-
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tsMap := map[string]*prompb.TimeSeries{}
-			prw := &PrwExporter{}
-			ok := prw.handleHistogramMetric(tsMap, &tt.m)
-			if tt.returnError {
-				assert.Error(t, ok)
-				return
-			}
-			assert.Exactly(t, len(tt.want), len(tsMap))
-			for k, v := range tsMap {
-				require.NotNil(t, tt.want[k], k)
-				assert.ElementsMatch(t, tt.want[k].Labels, v.Labels)
-				assert.ElementsMatch(t, tt.want[k].Samples, v.Samples)
-			}
-		})
-	}
-}
 
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPrwExporter(t *testing.T) {
@@ -326,7 +116,7 @@ func Test_Shutdown(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			_, ok := prwe.PushMetrics(context.Background(),
-				pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty()))
+				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsEmpty()))
 			errChan <- ok
 		}()
 	}
@@ -444,64 +234,211 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 // expected
 func Test_PushMetrics(t *testing.T) {
 
-	noTempBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataManyMetricsSameResource(10)))
-	invalidTypeBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataMetricTypeInvalid()))
-	nilDescBatch := pdatautil.MetricsFromOldInternalMetrics((testdataold.GenerateMetricDataNilMetricDescriptor()))
+	invalidTypeBatch := pdatautil.MetricsFromInternalMetrics((testdata.GenerateMetricsMetricTypeInvalid()))
 
-	// 10 counter metrics, 2 points in each. Two TimeSeries in total
-	batch := testdataold.GenerateMetricDataManyMetricsSameResource(10)
-	setCumulative(&batch)
-	scalarBatch := pdatautil.MetricsFromOldInternalMetrics((batch))
+	nilBatch1 := testdata.GenerateMetricsOneEmptyResourceMetrics()
+	nilBatch2 := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	nilBatch3 := testdata.GenerateMetricsOneMetric()
 
-	nilBatch1 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch2 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch3 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch4 := testdataold.GenerateMetricDataManyMetricsSameResource(10)
-	nilBatch5 := testdataold.GenerateMetricDataOneEmptyResourceMetrics()
-	nilBatch6 := testdataold.GenerateMetricDataOneEmptyInstrumentationLibrary()
-	nilBatch7 := testdataold.GenerateMetricDataOneMetric()
-
-	nilResource := dataold.MetricDataToOtlp(nilBatch5)
+	nilResource := data.MetricDataToOtlp(nilBatch1)
 	nilResource[0] = nil
-	nilResourceBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(nilResource))
+	nilResourceBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilResource))
 
-	nilInstrumentation := dataold.MetricDataToOtlp(nilBatch6)
+	nilInstrumentation := data.MetricDataToOtlp(nilBatch2)
 	nilInstrumentation[0].InstrumentationLibraryMetrics[0] = nil
-	nilInstrumentationBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(nilInstrumentation))
+	nilInstrumentationBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilInstrumentation))
 
-	nilMetric := dataold.MetricDataToOtlp(nilBatch7)
+	nilMetric := data.MetricDataToOtlp(nilBatch3)
 	nilMetric[0].InstrumentationLibraryMetrics[0].Metrics[0] = nil
-	nilMetricBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(nilMetric))
+	nilMetricBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilMetric))
 
-	setCumulative(&nilBatch1)
-	setCumulative(&nilBatch2)
-	setCumulative(&nilBatch3)
-	setCumulative(&nilBatch4)
+	// success cases
+	intSumMetric := testdata.GenerateMetricsManyMetricsSameResource(10)
+	intSumBatch := pdatautil.MetricsFromInternalMetrics(intSumMetric)
 
-	setDataPointToNil(&nilBatch1, typeMonotonicInt64)
-	setType(&nilBatch2, typeMonotonicDouble)
-	setType(&nilBatch3, typeHistogram)
-	setType(&nilBatch4, typeSummary)
-
-	nilIntDataPointsBatch := pdatautil.MetricsFromOldInternalMetrics((nilBatch1))
-	nilDoubleDataPointsBatch := pdatautil.MetricsFromOldInternalMetrics((nilBatch2))
-	nilHistogramDataPointsBatch := pdatautil.MetricsFromOldInternalMetrics((nilBatch3))
-
-	hist := dataold.MetricDataToOtlp(testdataold.GenerateMetricDataOneMetric())
-	hist[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
-		MetricDescriptor: getDescriptor("hist_test", histogramComb, validCombinations),
-		HistogramDataPoints: []*otlp.HistogramDataPoint{getHistogramDataPoint(
-			lbs1,
-			time1,
-			floatVal1,
-			uint64(intVal1),
-			[]float64{floatVal1},
-			[]uint64{uint64(intVal1)},
-		),
+	doubleSumMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validDoubleSum],
+						validMetrics2[validDoubleSum],
+					},
+				},
+			},
 		},
 	}
+	doubleSumBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(doubleSumMetric))
 
-	histBatch := pdatautil.MetricsFromOldInternalMetrics((dataold.MetricDataFromOtlp(hist)))
+	intGaugeMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validIntGauge],
+						validMetrics2[validIntGauge],
+					},
+				},
+			},
+		},
+	}
+	intGaugeBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(intGaugeMetric))
+
+	doubleGaugeMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validDoubleGauge],
+						validMetrics2[validDoubleGauge],
+					},
+				},
+			},
+		},
+	}
+	doubleGaugeBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(doubleGaugeMetric))
+
+	intHistogramMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validIntHistogram],
+						validMetrics2[validIntHistogram],
+					},
+				},
+			},
+		},
+	}
+	intHistogramBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(intHistogramMetric))
+
+	doubleHistogramMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validDoubleHistogram],
+						validMetrics2[validDoubleHistogram],
+					},
+				},
+			},
+		},
+	}
+	doubleHistogramBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(doubleHistogramMetric))
+
+	// len(BucketCount) > len(ExplicitBounds)
+	unmatchedBoundBucketIntHistMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics2[unmatchedBoundBucketIntHist],
+					},
+				},
+			},
+		},
+	}
+	unmatchedBoundBucketIntHistBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(unmatchedBoundBucketIntHistMetric))
+
+	unmatchedBoundBucketDoubleHistMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics2[unmatchedBoundBucketDoubleHist],
+					},
+				},
+			},
+		},
+	}
+	unmatchedBoundBucketDoubleHistBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(unmatchedBoundBucketDoubleHistMetric))
+
+	// fail cases
+	nilDataPointIntGaugeMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointIntGauge],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointIntGaugeBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(nilDataPointIntGaugeMetric))
+
+	nilDataPointDoubleGaugeMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointDoubleGauge],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointDoubleGaugeBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(nilDataPointDoubleGaugeMetric))
+
+	nilDataPointIntSumMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointIntSum],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointIntSumBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilDataPointIntSumMetric))
+
+	nilDataPointDoubleSumMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointDoubleSum],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointDoubleSumBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(nilDataPointDoubleSumMetric))
+
+	nilDataPointIntHistogramMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointIntHistogram],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointIntHistogramBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(nilDataPointIntHistogramMetric))
+
+	nilDataPointDoubleHistogramMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointDoubleHistogram],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointDoubleHistogramBatch := pdatautil.MetricsFromInternalMetrics(
+		data.MetricDataFromOtlp(nilDataPointDoubleHistogramMetric))
+
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -520,13 +457,6 @@ func Test_PushMetrics(t *testing.T) {
 		assert.EqualValues(t, expected, len(wr.Timeseries))
 	}
 
-	summary := dataold.MetricDataToOtlp(testdataold.GenerateMetricDataOneMetric())
-	summary[0].InstrumentationLibraryMetrics[0].Metrics[0] = &otlp.Metric{
-		MetricDescriptor:  getDescriptor("summary_test", summaryComb, validCombinations),
-		SummaryDataPoints: []*otlp.SummaryDataPoint{},
-	}
-	summaryBatch := pdatautil.MetricsFromOldInternalMetrics(dataold.MetricDataFromOtlp(summary))
-
 	tests := []struct {
 		name                 string
 		md                   *pdata.Metrics
@@ -543,15 +473,6 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			pdatautil.MetricCount(invalidTypeBatch),
-			true,
-		},
-		{
-			"nil_desc_case",
-			&nilDescBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(nilDescBatch),
 			true,
 		},
 		{
@@ -582,82 +503,129 @@ func Test_PushMetrics(t *testing.T) {
 			true,
 		},
 		{
-			"nil_int_point_case",
-			&nilIntDataPointsBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(nilIntDataPointsBatch),
-			true,
-		},
-		{
-			"nil_double_point_case",
-			&nilDoubleDataPointsBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(nilDoubleDataPointsBatch),
-			true,
-		},
-		{
-			"nil_histogram_point_case",
-			&nilHistogramDataPointsBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(nilHistogramDataPointsBatch),
-			true,
-		},
-		{
-			"nil_histogram_point_case",
-			&nilHistogramDataPointsBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(nilHistogramDataPointsBatch),
-			true,
-		},
-		{
-			"no_temp_case",
-			&noTempBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			pdatautil.MetricCount(noTempBatch),
-			true,
-		},
-		{
-			"http_error_case",
-			&noTempBatch,
-			nil,
-			0,
-			http.StatusForbidden,
-			pdatautil.MetricCount(noTempBatch),
-			true,
-		},
-		{
-			"scalar_case",
-			&scalarBatch,
+			"intSum_case",
+			&intSumBatch,
 			checkFunc,
 			2,
 			http.StatusAccepted,
 			0,
 			false,
 		},
-		{"histogram_case",
-			&histBatch,
+		{
+			"doubleSum_case",
+			&doubleSumBatch,
 			checkFunc,
-			4,
+			2,
 			http.StatusAccepted,
 			0,
 			false,
 		},
-		{"summary_case",
-			&summaryBatch,
+		{
+			"doubleGauge_case",
+			&doubleGaugeBatch,
+			checkFunc,
+			2,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
+			"intGauge_case",
+			&intGaugeBatch,
+			checkFunc,
+			2,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
+			"intHistogram_case",
+			&intHistogramBatch,
+			checkFunc,
+			12,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
+			"doubleHistogram_case",
+			&doubleHistogramBatch,
+			checkFunc,
+			12,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
+			"unmatchedBoundBucketIntHist_case",
+			&unmatchedBoundBucketIntHistBatch,
+			checkFunc,
+			5,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
+			"unmatchedBoundBucketDoubleHist_case",
+			&unmatchedBoundBucketDoubleHistBatch,
+			checkFunc,
+			5,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
+			"nilDataPointDoubleGauge_case",
+			&nilDataPointDoubleGaugeBatch,
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(summaryBatch),
+			pdatautil.MetricCount(nilDataPointDoubleGaugeBatch),
+			true,
+		},
+		{
+			"nilDataPointIntGauge_case",
+			&nilDataPointIntGaugeBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilDataPointIntGaugeBatch),
+			true,
+		},
+		{
+			"nilDataPointDoubleSum_case",
+			&nilDataPointDoubleSumBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilDataPointDoubleSumBatch),
+			true,
+		},
+		{
+			"nilDataPointIntSum_case",
+			&nilDataPointIntSumBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilDataPointIntSumBatch),
+			true,
+		},
+		{
+			"nilDataPointDoubleHistogram_case",
+			&nilDataPointDoubleHistogramBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilDataPointDoubleHistogramBatch),
+			true,
+		},
+		{
+			"nilDataPointIntHistogram_case",
+			&nilDataPointIntHistogramBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			pdatautil.MetricCount(nilDataPointIntHistogramBatch),
 			true,
 		},
 	}

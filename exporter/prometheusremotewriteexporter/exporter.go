@@ -24,7 +24,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
@@ -34,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
-	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/data"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
@@ -91,7 +90,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 		dropped := 0
 		errs := []error{}
 
-		resourceMetrics := dataold.MetricDataToOtlp(pdatautil.MetricsToOldInternalMetrics(md))
+		resourceMetrics := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
 		for _, resourceMetric := range resourceMetrics {
 			if resourceMetric == nil {
 				continue
@@ -104,23 +103,23 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 				// TODO: decide if instrumentation library information should be exported as labels
 				for _, metric := range instrumentationMetrics.Metrics {
 					if metric == nil {
+						dropped++
 						continue
 					}
-					// check for valid type and temporality combination
-					if ok := validateMetrics(metric.MetricDescriptor); !ok {
+					// check for valid type and temporality combination and for matching data field and type
+					if ok := validateMetrics(metric); !ok {
 						dropped++
 						errs = append(errs, errors.New("invalid temporality and type combination"))
 						continue
 					}
 					// handle individual metric based on type
-					switch metric.GetMetricDescriptor().GetType() {
-					case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64,
-						otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
+					switch metric.Data.(type) {
+					case *otlp.Metric_DoubleSum, *otlp.Metric_IntSum, *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:
 						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
 						}
-					case otlp.MetricDescriptor_HISTOGRAM:
+					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
@@ -151,49 +150,38 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
-	mType := metric.MetricDescriptor.Type
-
-	switch mType {
+	switch metric.Data.(type) {
 	// int points
-	case otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_INT64:
-		if metric.Int64DataPoints == nil {
-			return fmt.Errorf("nil data point field in metric %s", metric.GetMetricDescriptor().Name)
+	case *otlp.Metric_DoubleGauge:
+		if metric.GetDoubleGauge().GetDataPoints() == nil {
+			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
-
-		for _, pt := range metric.Int64DataPoints {
-			// create parameters for addSample
-			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
-			labels := createLabelSet(pt.GetLabels(), nameStr, name)
-			sample := &prompb.Sample{
-				Value: float64(pt.Value),
-				// convert ns to ms
-				Timestamp: convertTimeStamp(pt.TimeUnixNano),
-			}
-
-			addSample(tsMap, sample, labels, metric.GetMetricDescriptor().GetType())
+		for _, pt := range metric.GetDoubleGauge().GetDataPoints() {
+			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
-		return nil
-
-	// double points
-	case otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DOUBLE:
-		if metric.DoubleDataPoints == nil {
-			return fmt.Errorf("nil data point field in metric %s", metric.GetMetricDescriptor().Name)
+	case *otlp.Metric_IntGauge:
+		if metric.GetIntGauge().GetDataPoints() == nil {
+			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
-		for _, pt := range metric.DoubleDataPoints {
-
-			// create parameters for addSample
-			name := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
-			labels := createLabelSet(pt.GetLabels(), nameStr, name)
-			sample := &prompb.Sample{
-				Value:     pt.Value,
-				Timestamp: convertTimeStamp(pt.TimeUnixNano),
-			}
-
-			addSample(tsMap, sample, labels, metric.GetMetricDescriptor().GetType())
+		for _, pt := range metric.GetIntGauge().GetDataPoints() {
+			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
-		return nil
+	case *otlp.Metric_DoubleSum:
+		if metric.GetDoubleSum().GetDataPoints() == nil {
+			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
+		}
+		for _, pt := range metric.GetDoubleSum().GetDataPoints() {
+			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
+		}
+	case *otlp.Metric_IntSum:
+		if metric.GetIntSum().GetDataPoints() == nil {
+			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
+		}
+		for _, pt := range metric.GetIntSum().GetDataPoints() {
+			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
+		}
 	}
-	return errors.New("invalid metric type: wants int or double data points")
+	return nil
 }
 
 // handleHistogramMetric processes data points in a single OTLP histogram metric by mapping the sum, count and each
@@ -201,58 +189,21 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // tsMap and metric cannot be nil.
 func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
 
-	if metric.HistogramDataPoints == nil {
-		return fmt.Errorf("nil data point field in metric %s", metric.GetMetricDescriptor().Name)
-	}
-
-	for _, pt := range metric.HistogramDataPoints {
-		if pt == nil {
-			continue
+	switch metric.Data.(type) {
+	case *otlp.Metric_IntHistogram:
+		if metric.GetIntHistogram().GetDataPoints() == nil {
+			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
-		time := convertTimeStamp(pt.TimeUnixNano)
-		mType := metric.GetMetricDescriptor().GetType()
-
-		// sum, count, and buckets of the histogram should append suffix to baseName
-		baseName := getPromMetricName(metric.GetMetricDescriptor(), prwe.namespace)
-
-		// treat sum as a sample in an individual TimeSeries
-		sum := &prompb.Sample{
-			Value:     pt.GetSum(),
-			Timestamp: time,
+		for _, pt := range metric.GetIntHistogram().GetDataPoints() {
+			addSingleIntHistogramDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
-		sumlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
-		addSample(tsMap, sum, sumlabels, mType)
-
-		// treat count as a sample in an individual TimeSeries
-		count := &prompb.Sample{
-			Value:     float64(pt.GetCount()),
-			Timestamp: time,
+	case *otlp.Metric_DoubleHistogram:
+		if metric.GetDoubleHistogram().GetDataPoints() == nil {
+			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
-		countlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
-		addSample(tsMap, count, countlabels, mType)
-
-		// count for +Inf bound
-		var totalCount uint64
-
-		// process each bucket
-		for le, bk := range pt.GetBuckets() {
-			bucket := &prompb.Sample{
-				Value:     float64(bk.Count),
-				Timestamp: time,
-			}
-			boundStr := strconv.FormatFloat(pt.GetExplicitBounds()[le], 'f', -1, 64)
-			labels := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, boundStr)
-			addSample(tsMap, bucket, labels, mType)
-
-			totalCount += bk.GetCount()
+		for _, pt := range metric.GetDoubleHistogram().GetDataPoints() {
+			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
-		// add le=+Inf bucket
-		infBucket := &prompb.Sample{
-			Value:     float64(totalCount),
-			Timestamp: time,
-		}
-		infLabels := createLabelSet(pt.GetLabels(), nameStr, baseName+bucketStr, leStr, pInfStr)
-		addSample(tsMap, infBucket, infLabels, mType)
 	}
 	return nil
 }
