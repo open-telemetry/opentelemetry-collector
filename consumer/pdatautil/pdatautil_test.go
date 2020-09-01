@@ -26,17 +26,11 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 func TestMetricCount(t *testing.T) {
-	metrics := MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 	assert.Equal(t, 2, MetricCount(metrics))
-}
-
-func TestMetricCountOld(t *testing.T) {
-	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
-	assert.Equal(t, 1, MetricCount(metrics))
 
 	metrics = MetricsFromMetricsData([]consumerdata.MetricsData{
 		{
@@ -54,13 +48,6 @@ func TestMetricCountOld(t *testing.T) {
 		},
 	})
 	assert.Equal(t, 1, MetricCount(metrics))
-}
-
-func TestMetricAndDataPointCountOld(t *testing.T) {
-	metrics := MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
-	metricsCount, dataPointsCount := MetricAndDataPointCount(metrics)
-	assert.Equal(t, 2, metricsCount)
-	assert.Equal(t, 4, dataPointsCount)
 }
 
 func TestMetricAndDataPointCount(t *testing.T) {
@@ -91,11 +78,12 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.Equal(t, 3, dataPointsCount)
 }
 
-func TestMetricConvertInternalToFromOld(t *testing.T) {
+func TestMetricConvertInternalToFromOC(t *testing.T) {
 	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
-	mdOld := MetricsToOldInternalMetrics(metrics)
-	assert.Equal(t, 1, mdOld.MetricCount())
-	oldMetrics := MetricsFromOldInternalMetrics(mdOld)
+	mdOc := MetricsToMetricsData(metrics)
+	assert.Len(t, mdOc, 1)
+	assert.Len(t, mdOc[0].Metrics, 1)
+	oldMetrics := MetricsFromMetricsData(mdOc)
 	assert.Equal(t, 1, MetricCount(oldMetrics))
 	mdNew := MetricsToInternalMetrics(oldMetrics)
 	assert.Equal(t, 1, mdNew.MetricCount())
