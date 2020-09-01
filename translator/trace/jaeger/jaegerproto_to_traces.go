@@ -25,7 +25,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -211,13 +210,13 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 
-	statusCode := pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK)
+	statusCode := pdata.StatusCodeOk
 	statusMessage := ""
 	statusExists := false
 
 	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
-			statusCode = pdata.StatusCode(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR)
+			statusCode = pdata.StatusCodeUnknownError
 			attrs.Delete(tracetranslator.TagError)
 			statusExists = true
 		}
@@ -238,7 +237,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 
 			// Do not set status code to OK in case it was set to Unknown based on "error" tag
-			if code != pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK) {
+			if code != pdata.StatusCodeOk {
 				statusCode = code
 			}
 
@@ -263,14 +262,14 @@ func getStatusCodeFromAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, erro
 	case pdata.AttributeValueSTRING:
 		i, err := strconv.Atoi(attrVal.StringVal())
 		if err != nil {
-			return pdata.StatusCode(0), err
+			return pdata.StatusCodeOk, err
 		}
 		codeVal = int64(i)
 	default:
-		return pdata.StatusCode(0), fmt.Errorf("invalid status code attribute type: %s", attrVal.Type().String())
+		return pdata.StatusCodeOk, fmt.Errorf("invalid status code attribute type: %s", attrVal.Type().String())
 	}
 	if codeVal > math.MaxInt32 || codeVal < math.MinInt32 {
-		return pdata.StatusCode(0), fmt.Errorf("invalid status code value: %d", codeVal)
+		return pdata.StatusCodeOk, fmt.Errorf("invalid status code value: %d", codeVal)
 	}
 	return pdata.StatusCode(codeVal), nil
 }
@@ -278,7 +277,7 @@ func getStatusCodeFromAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, erro
 func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
 	statusCode, err := getStatusCodeFromAttr(attrVal)
 	if err != nil {
-		return pdata.StatusCode(0), err
+		return pdata.StatusCodeOk, err
 	}
 
 	// TODO: Introduce and use new HTTP -> OTLP code translator instead
