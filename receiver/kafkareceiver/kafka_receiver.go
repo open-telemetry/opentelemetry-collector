@@ -96,7 +96,7 @@ func (c *kafkaConsumer) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler *consumerGroupHandler) error {
+func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
