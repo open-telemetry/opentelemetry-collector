@@ -53,6 +53,7 @@ func TestDefaultComponents(t *testing.T) {
 		"span",
 		"filter",
 		"groupbytrace",
+		"routing",
 	}
 	expectedExporters := []configmodels.Type{
 		"opencensus",
@@ -64,7 +65,6 @@ func TestDefaultComponents(t *testing.T) {
 		"file",
 		"otlp",
 		"kafka",
-		"routing",
 	}
 
 	factories, err := Components()
