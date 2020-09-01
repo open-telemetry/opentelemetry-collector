@@ -366,7 +366,7 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 }
 
 // addSingleDoubleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
-//// ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
+// ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
 func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric *otlp.Metric, namespace string,
 	tsMap map[string]*prompb.TimeSeries) {
 	if pt == nil {
