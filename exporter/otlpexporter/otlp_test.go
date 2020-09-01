@@ -38,7 +38,6 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptraces "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -267,7 +266,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	md := pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataEmpty())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsEmpty())
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
@@ -279,7 +278,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
 
 	// A trace with 2 spans.
-	md = pdatautil.MetricsFromOldInternalMetrics(testdataold.GenerateMetricDataTwoMetrics())
+	md = pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 
 	expectedOTLPReq := &otlpmetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: testdata.GenerateMetricsOtlpTwoMetrics(),
