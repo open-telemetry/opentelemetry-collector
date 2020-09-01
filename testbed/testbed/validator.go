@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -79,13 +79,13 @@ func (v *PerfTestValidator) RecordResults(tc *TestCase) {
 // CorrectnessTestValidator implements TestCaseValidator for test suites using CorrectnessResults for summarizing results.
 type CorrectnessTestValidator struct {
 	dataProvider      DataProvider
-	assertionFailures []*AssertionFailure
+	assertionFailures []*TraceAssertionFailure
 }
 
 func NewCorrectTestValidator(provider DataProvider) *CorrectnessTestValidator {
 	return &CorrectnessTestValidator{
 		dataProvider:      provider,
-		assertionFailures: make([]*AssertionFailure, 0),
+		assertionFailures: make([]*TraceAssertionFailure, 0),
 	}
 }
 
@@ -111,13 +111,13 @@ func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
 	// Remove "Test" prefix from test name.
 	testName := tc.t.Name()[4:]
 	tc.resultsSummary.Add(tc.t.Name(), &CorrectnessTestResult{
-		testName:              testName,
-		result:                result,
-		duration:              time.Since(tc.startTime),
-		receivedSpanCount:     tc.MockBackend.DataItemsReceived(),
-		sentSpanCount:         tc.LoadGenerator.DataItemsSent(),
-		assertionFailureCount: uint64(len(v.assertionFailures)),
-		assertionFailures:     v.assertionFailures,
+		testName:                   testName,
+		result:                     result,
+		duration:                   time.Since(tc.startTime),
+		receivedSpanCount:          tc.MockBackend.DataItemsReceived(),
+		sentSpanCount:              tc.LoadGenerator.DataItemsSent(),
+		traceAssertionFailureCount: uint64(len(v.assertionFailures)),
+		traceAssertionFailures:     v.assertionFailures,
 	})
 }
 
@@ -138,7 +138,7 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 
 func (v *CorrectnessTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if sentSpan == nil {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: recdSpan.Name,
 		}
@@ -160,7 +160,7 @@ func (v *CorrectnessTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *
 
 func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if hex.EncodeToString(sentSpan.TraceId) != hex.EncodeToString(recdSpan.TraceId) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "TraceId",
@@ -173,7 +173,7 @@ func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan *otlptrace.Span, rec
 
 func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if hex.EncodeToString(sentSpan.SpanId) != hex.EncodeToString(recdSpan.SpanId) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "SpanId",
@@ -186,7 +186,7 @@ func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan *otlptrace.Span, recd
 
 func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if sentSpan.TraceState != recdSpan.TraceState {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "TraceState",
@@ -199,7 +199,7 @@ func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan *otlptrace.Span, 
 
 func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if hex.EncodeToString(sentSpan.ParentSpanId) != hex.EncodeToString(recdSpan.ParentSpanId) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "ParentSpanId",
@@ -213,7 +213,7 @@ func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan *otlptrace.Span
 func (v *CorrectnessTestValidator) diffSpanName(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	// Because of https://github.com/openzipkin/zipkin-go/pull/166 compare lower cases.
 	if !strings.EqualFold(sentSpan.Name, recdSpan.Name) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "Name",
@@ -226,7 +226,7 @@ func (v *CorrectnessTestValidator) diffSpanName(sentSpan *otlptrace.Span, recdSp
 
 func (v *CorrectnessTestValidator) diffSpanKind(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if sentSpan.Kind != recdSpan.Kind {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "Kind",
@@ -239,7 +239,7 @@ func (v *CorrectnessTestValidator) diffSpanKind(sentSpan *otlptrace.Span, recdSp
 
 func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if notWithinOneMillisecond(sentSpan.StartTimeUnixNano, recdSpan.StartTimeUnixNano) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "StartTimeUnixNano",
@@ -249,7 +249,7 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, 
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 	if notWithinOneMillisecond(sentSpan.EndTimeUnixNano, recdSpan.EndTimeUnixNano) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "EndTimeUnixNano",
@@ -262,7 +262,7 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan *otlptrace.Span, 
 
 func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if len(sentSpan.Attributes) != len(recdSpan.Attributes) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "Attributes",
@@ -276,7 +276,7 @@ func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan *otlptrace.Span, 
 		v.diffAttributesSlice(sentSpan.Name, recdAttrs, sentAttrs, "Attributes[%s]")
 	}
 	if sentSpan.DroppedAttributesCount != recdSpan.DroppedAttributesCount {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "DroppedAttributesCount",
@@ -289,7 +289,7 @@ func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan *otlptrace.Span, 
 
 func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if len(sentSpan.Events) != len(recdSpan.Events) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "Events",
@@ -306,7 +306,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 				match = len(sentEvents) == len(recdEvents)
 			}
 			if !match {
-				af := &AssertionFailure{
+				af := &TraceAssertionFailure{
 					typeName:      "Span",
 					dataComboName: sentSpan.Name,
 					fieldPath:     fmt.Sprintf("Events[%s]", name),
@@ -318,7 +318,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 				for i, sentEvent := range sentEvents {
 					recdEvent := recdEvents[i]
 					if notWithinOneMillisecond(sentEvent.TimeUnixNano, recdEvent.TimeUnixNano) {
-						af := &AssertionFailure{
+						af := &TraceAssertionFailure{
 							typeName:      "Span",
 							dataComboName: sentSpan.Name,
 							fieldPath:     fmt.Sprintf("Events[%s].TimeUnixNano", name),
@@ -334,7 +334,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 		}
 	}
 	if sentSpan.DroppedEventsCount != recdSpan.DroppedEventsCount {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "DroppedEventsCount",
@@ -347,7 +347,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan *otlptrace.Span, recd
 
 func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if len(sentSpan.Links) != len(recdSpan.Links) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "Links",
@@ -364,7 +364,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan *otlptrace.Span, recdS
 				v.diffAttributesSlice(sentSpan.Name, sentLink.Attributes, recdLink.Attributes,
 					"Links["+spanID+"].Attributes[%s]")
 			} else {
-				af := &AssertionFailure{
+				af := &TraceAssertionFailure{
 					typeName:      "Span",
 					dataComboName: sentSpan.Name,
 					fieldPath:     fmt.Sprintf("Links[%d]", i),
@@ -377,7 +377,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan *otlptrace.Span, recdS
 		}
 	}
 	if sentSpan.DroppedLinksCount != recdSpan.DroppedLinksCount {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "DroppedLinksCount",
@@ -391,7 +391,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan *otlptrace.Span, recdS
 func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
 	if sentSpan.Status != nil && recdSpan.Status != nil {
 		if sentSpan.Status.Code != recdSpan.Status.Code {
-			af := &AssertionFailure{
+			af := &TraceAssertionFailure{
 				typeName:      "Span",
 				dataComboName: sentSpan.Name,
 				fieldPath:     "Status.Code",
@@ -401,7 +401,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan *otlptrace.Span, recd
 			v.assertionFailures = append(v.assertionFailures, af)
 		}
 	} else if (sentSpan.Status != nil && recdSpan.Status == nil) || (sentSpan.Status == nil && recdSpan.Status != nil) {
-		af := &AssertionFailure{
+		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "Status",
@@ -424,7 +424,7 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 				sentStr := fmt.Sprintf("%v", sentVal)
 				recdStr := fmt.Sprintf("%v", recdVal)
 				if sentStr != recdStr {
-					af := &AssertionFailure{
+					af := &TraceAssertionFailure{
 						typeName:      "Span",
 						dataComboName: spanName,
 						fieldPath:     fmt.Sprintf(fmtStr, sentAttr.Key),
@@ -435,7 +435,7 @@ func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttr
 				}
 			}
 		} else {
-			af := &AssertionFailure{
+			af := &TraceAssertionFailure{
 				typeName:      "Span",
 				dataComboName: spanName,
 				fieldPath:     fmt.Sprintf("Attributes[%s]", sentAttr.Key),
