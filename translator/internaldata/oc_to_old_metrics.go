@@ -19,7 +19,7 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/dataold"
 )
 
@@ -197,13 +197,13 @@ func setDataPointsToOldMetrics(ocMetric *ocmetrics.Metric, metric dataold.Metric
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := internal.TimestampToUnixNano(timeseries.GetStartTimestamp())
+		startTimestamp := pdata.TimestampToUnixNano(timeseries.GetStartTimestamp())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
 				continue
 			}
-			pointTimestamp := internal.TimestampToUnixNano(point.GetTimestamp())
+			pointTimestamp := pdata.TimestampToUnixNano(point.GetTimestamp())
 			switch point.Value.(type) {
 
 			case *ocmetrics.Point_Int64Value:
@@ -296,7 +296,7 @@ func histogramBucketsToOldMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucke
 
 func exemplarToOldMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar dataold.HistogramBucketExemplar) {
 	if ocExemplar.GetTimestamp() != nil {
-		exemplar.SetTimestamp(internal.TimestampToUnixNano(ocExemplar.GetTimestamp()))
+		exemplar.SetTimestamp(pdata.TimestampToUnixNano(ocExemplar.GetTimestamp()))
 	}
 	exemplar.SetValue(ocExemplar.GetValue())
 	attachments := exemplar.Attachments()

@@ -20,7 +20,6 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -197,7 +196,7 @@ func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	startTime := internal.UnixNanoToTime(span.StartTime())
+	startTime := pdata.UnixNanoToTime(span.StartTime())
 
 	return &model.Span{
 		TraceID:       traceID,
@@ -205,7 +204,7 @@ func spanToJaegerProto(span pdata.Span) (*model.Span, error) {
 		OperationName: span.Name(),
 		References:    jReferences,
 		StartTime:     startTime,
-		Duration:      internal.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Duration:      pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil
@@ -378,7 +377,7 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 		}
 		fields = appendTagsFromAttributes(fields, event.Attributes())
 		logs = append(logs, model.Log{
-			Timestamp: internal.UnixNanoToTime(event.Timestamp()),
+			Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
 			Fields:    fields,
 		})
 	}

@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -105,8 +104,8 @@ func spanToOC(span pdata.Span) *octrace.Span {
 		ParentSpanId:            span.ParentSpanID().Bytes(),
 		Name:                    stringToTruncatableString(span.Name()),
 		Kind:                    spanKindToOC(span.Kind()),
-		StartTime:               internal.UnixNanoToTimestamp(span.StartTime()),
-		EndTime:                 internal.UnixNanoToTimestamp(span.EndTime()),
+		StartTime:               pdata.UnixNanoToTimestamp(span.StartTime()),
+		EndTime:                 pdata.UnixNanoToTimestamp(span.EndTime()),
 		Attributes:              attributes,
 		TimeEvents:              eventsToOC(span.Events(), span.DroppedEventsCount()),
 		Links:                   linksToOC(span.Links(), span.DroppedLinksCount()),
@@ -305,7 +304,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
-				Time: internal.UnixNanoToTimestamp(event.Timestamp()),
+				Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
@@ -320,7 +319,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	ocAttributes := attributesMapToOCSpanAttributes(attrs, event.DroppedAttributesCount())
 	return &octrace.Span_TimeEvent{
-		Time: internal.UnixNanoToTimestamp(event.Timestamp()),
+		Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
 		Value: &octrace.Span_TimeEvent_Annotation_{
 			Annotation: &octrace.Span_TimeEvent_Annotation{
 				Description: stringToTruncatableString(event.Name()),

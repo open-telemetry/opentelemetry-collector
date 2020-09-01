@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/dataold"
 )
 
@@ -250,11 +249,11 @@ func oldMetricDataPointsToTimeseries(metric dataold.Metric, labelKeys *labelKeys
 
 func oldMetricInt64PointToOC(point dataold.Int64DataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
+		StartTimestamp: pdata.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
+				Timestamp: pdata.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_Int64Value{
 					Int64Value: point.Value(),
 				},
@@ -265,11 +264,11 @@ func oldMetricInt64PointToOC(point dataold.Int64DataPoint, labelKeys *labelKeys)
 
 func oldMetricDoublePointToOC(point dataold.DoubleDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
+		StartTimestamp: pdata.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
+				Timestamp: pdata.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_DoubleValue{
 					DoubleValue: point.Value(),
 				},
@@ -280,11 +279,11 @@ func oldMetricDoublePointToOC(point dataold.DoubleDataPoint, labelKeys *labelKey
 
 func oldMetricHistogramPointToOC(point dataold.HistogramDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
+		StartTimestamp: pdata.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
+				Timestamp: pdata.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_DistributionValue{
 					DistributionValue: &ocmetrics.DistributionValue{
 						Count:                 int64(point.Count()),
@@ -337,7 +336,7 @@ func oldMetricExemplarToOC(exemplar dataold.HistogramBucketExemplar) *ocmetrics.
 	if attachments.Len() == 0 {
 		return &ocmetrics.DistributionValue_Exemplar{
 			Value:       exemplar.Value(),
-			Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
+			Timestamp:   pdata.UnixNanoToTimestamp(exemplar.Timestamp()),
 			Attachments: nil,
 		}
 	}
@@ -348,18 +347,18 @@ func oldMetricExemplarToOC(exemplar dataold.HistogramBucketExemplar) *ocmetrics.
 	})
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       exemplar.Value(),
-		Timestamp:   internal.UnixNanoToTimestamp(exemplar.Timestamp()),
+		Timestamp:   pdata.UnixNanoToTimestamp(exemplar.Timestamp()),
 		Attachments: labels,
 	}
 }
 
 func oldMetricSummaryPointToOC(point dataold.SummaryDataPoint, labelKeys *labelKeys) *ocmetrics.TimeSeries {
 	return &ocmetrics.TimeSeries{
-		StartTimestamp: internal.UnixNanoToTimestamp(point.StartTime()),
+		StartTimestamp: pdata.UnixNanoToTimestamp(point.StartTime()),
 		LabelValues:    labelValuesToOC(point.LabelsMap(), labelKeys),
 		Points: []*ocmetrics.Point{
 			{
-				Timestamp: internal.UnixNanoToTimestamp(point.Timestamp()),
+				Timestamp: pdata.UnixNanoToTimestamp(point.Timestamp()),
 				Value: &ocmetrics.Point_SummaryValue{
 					SummaryValue: &ocmetrics.SummaryValue{
 						Count:    int64Value(point.Count()),
