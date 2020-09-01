@@ -17,6 +17,7 @@ package kafkareceiver
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/Shopify/sarama"
 	"go.opencensus.io/stats"
@@ -108,7 +109,6 @@ func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler *consumerGroupH
 			c.logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return ctx.Err()
 		}
-		handler.ready = make(chan bool)
 	}
 }
 
@@ -122,6 +122,7 @@ type consumerGroupHandler struct {
 	unmarshaller Unmarshaller
 	nextConsumer consumer.TraceConsumer
 	ready        chan bool
+	readyCloser sync.Once
 
 	logger *zap.Logger
 }
@@ -129,8 +130,9 @@ type consumerGroupHandler struct {
 var _ sarama.ConsumerGroupHandler = (*consumerGroupHandler)(nil)
 
 func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
-	close(c.ready)
-
+	c.readyCloser.Do(func() {
+		close(c.ready)
+	})
 	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
 	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
 	return nil
