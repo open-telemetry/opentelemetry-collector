@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -147,8 +146,8 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	}
 
 	dest.SetName(src.Name.GetValue())
-	dest.SetStartTime(internal.TimestampToUnixNano(src.StartTime))
-	dest.SetEndTime(internal.TimestampToUnixNano(src.EndTime))
+	dest.SetStartTime(pdata.TimestampToUnixNano(src.StartTime))
+	dest.SetEndTime(pdata.TimestampToUnixNano(src.EndTime))
 
 	initAttributeMapFromOC(src.Attributes, dest.Attributes())
 	dest.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(src.Attributes))
@@ -294,7 +293,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 		event := events.At(i)
 		i++
 
-		event.SetTimestamp(internal.TimestampToUnixNano(ocEvent.Time))
+		event.SetTimestamp(pdata.TimestampToUnixNano(ocEvent.Time))
 
 		switch teValue := ocEvent.Value.(type) {
 		case *octrace.Span_TimeEvent_Annotation_:

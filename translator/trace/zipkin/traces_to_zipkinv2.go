@@ -24,7 +24,6 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -142,7 +141,7 @@ func spanToZipkinSpan(
 
 	zs.Sampled = &sampled
 	zs.Name = span.Name()
-	zs.Timestamp = internal.UnixNanoToTime(span.StartTime())
+	zs.Timestamp = pdata.UnixNanoToTime(span.StartTime())
 	if span.EndTime() != 0 {
 		zs.Duration = time.Duration(span.EndTime() - span.StartTime())
 	}
@@ -202,7 +201,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 			}
 			if event.Attributes().Len() == 0 && event.DroppedAttributesCount() == 0 {
 				zAnnos[i] = zipkinmodel.Annotation{
-					Timestamp: internal.UnixNanoToTime(event.Timestamp()),
+					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
 					Value:     event.Name(),
 				}
 			} else {
@@ -212,7 +211,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					return err
 				}
 				zAnnos[i] = zipkinmodel.Annotation{
-					Timestamp: internal.UnixNanoToTime(event.Timestamp()),
+					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
 					Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
 						event.DroppedAttributesCount()),
 				}

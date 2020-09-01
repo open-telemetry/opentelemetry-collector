@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data"
 )
 
@@ -247,7 +246,7 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := internal.TimestampToUnixNano(timeseries.GetStartTimestamp())
+		startTimestamp := pdata.TimestampToUnixNano(timeseries.GetStartTimestamp())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
@@ -258,7 +257,7 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 			pos++
 
 			dp.SetStartTime(startTimestamp)
-			dp.SetTimestamp(internal.TimestampToUnixNano(point.GetTimestamp()))
+			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetInt64Value())
 		}
@@ -275,7 +274,7 @@ func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSl
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := internal.TimestampToUnixNano(timeseries.GetStartTimestamp())
+		startTimestamp := pdata.TimestampToUnixNano(timeseries.GetStartTimestamp())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
@@ -286,7 +285,7 @@ func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSl
 			pos++
 
 			dp.SetStartTime(startTimestamp)
-			dp.SetTimestamp(internal.TimestampToUnixNano(point.GetTimestamp()))
+			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetDoubleValue())
 		}
@@ -303,7 +302,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleHi
 		if timeseries == nil {
 			continue
 		}
-		startTimestamp := internal.TimestampToUnixNano(timeseries.GetStartTimestamp())
+		startTimestamp := pdata.TimestampToUnixNano(timeseries.GetStartTimestamp())
 
 		for _, point := range timeseries.GetPoints() {
 			if point == nil {
@@ -314,7 +313,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleHi
 			pos++
 
 			dp.SetStartTime(startTimestamp)
-			dp.SetTimestamp(internal.TimestampToUnixNano(point.GetTimestamp()))
+			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			distributionValue := point.GetDistributionValue()
 			dp.SetSum(distributionValue.GetSum())
@@ -345,7 +344,7 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 
 func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar pdata.DoubleExemplar) {
 	if ocExemplar.GetTimestamp() != nil {
-		exemplar.SetTimestamp(internal.TimestampToUnixNano(ocExemplar.GetTimestamp()))
+		exemplar.SetTimestamp(pdata.TimestampToUnixNano(ocExemplar.GetTimestamp()))
 	}
 	exemplar.SetValue(ocExemplar.GetValue())
 	attachments := exemplar.FilteredLabels()
