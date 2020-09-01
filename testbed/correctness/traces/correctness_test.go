@@ -61,6 +61,7 @@ func testWithTracingGoldenDataset(
 	dataProvider := testbed.NewGoldenDataProvider(
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		"",
 		161803)
 	factories, err := defaultcomponents.Components()
 	assert.NoError(t, err)
