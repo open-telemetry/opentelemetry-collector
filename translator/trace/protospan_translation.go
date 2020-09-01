@@ -187,10 +187,8 @@ func AttributeArrayToSlice(attrArray pdata.AnyValueArray) []interface{} {
 			rawSlice = append(rawSlice, v.BoolVal())
 		case pdata.AttributeValueNULL:
 			rawSlice = append(rawSlice, nil)
-		case pdata.AttributeValueMAP:
-			rawSlice = append(rawSlice, AttributeMapToMap(v.MapVal()))
-		case pdata.AttributeValueARRAY:
-			rawSlice = append(rawSlice, AttributeArrayToSlice(v.ArrayVal()))
+		default:
+			rawSlice = append(rawSlice, "<Invalid array value>")
 		}
 	}
 	return rawSlice
@@ -300,13 +298,8 @@ func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 		} else if b, ok := val.(bool); ok {
 			av := pdata.NewAttributeValueBool(b)
 			dest.Append(&av)
-		} else if m, ok := val.(map[string]interface{}); ok {
-			av := pdata.NewAttributeValueMap()
-			jsonMapToAttributeMap(m, av.MapVal())
-			dest.Append(&av)
-		} else if a, ok := val.([]interface{}); ok {
-			av := pdata.NewAttributeValueArray()
-			jsonArrayToAttributeArray(a, av.ArrayVal())
+		} else {
+			av := pdata.NewAttributeValueString("<Invalid array value>")
 			dest.Append(&av)
 		}
 	}

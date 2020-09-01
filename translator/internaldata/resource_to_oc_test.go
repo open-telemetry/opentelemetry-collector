@@ -144,7 +144,7 @@ func TestAttributeValueToString(t *testing.T) {
 	v.ArrayVal().Append(&av)
 	av = pdata.NewAttributeValueArray()
 	v.ArrayVal().Append(&av)
-	assert.EqualValues(t, `["b\"\\",123,null,[]]`, attributeValueToString(v, false))
+	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, attributeValueToString(v, false))
 }
 
 func TestInferResourceType(t *testing.T) {
