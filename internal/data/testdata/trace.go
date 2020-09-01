@@ -286,7 +286,7 @@ func fillSpanOne(span pdata.Span) {
 	span.SetDroppedEventsCount(1)
 	status := span.Status()
 	status.InitEmpty()
-	status.SetCode(pdata.StatusCode(1))
+	status.SetCode(pdata.StatusCodeCancelled)
 	status.SetMessage("status-cancelled")
 }
 
