@@ -95,7 +95,7 @@ func (c *kafkaConsumer) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler *consumerGroupHandler) error {
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -108,6 +108,7 @@ func (c *kafkaConsumer) consumeLoop(ctx context.Context, handler sarama.Consumer
 			c.logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return ctx.Err()
 		}
+		handler.ready = make(chan bool)
 	}
 }
 
@@ -129,6 +130,7 @@ var _ sarama.ConsumerGroupHandler = (*consumerGroupHandler)(nil)
 
 func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	close(c.ready)
+
 	statsTags := []tag.Mutator{tag.Insert(tagInstanceName, c.name)}
 	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
 	return nil
