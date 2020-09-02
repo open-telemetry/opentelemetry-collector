@@ -15,9 +15,7 @@
 package pdata
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 )
 
 type AggregationTemporality otlpmetrics.AggregationTemporality
@@ -115,58 +113,46 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 	}
 }
 
-// IntGauge returns the data as IntGauge. This should be called iff DataType() == MetricDataTypeIntGauge.
+// IntGauge returns the data as IntGauge.
+// Calling this function when DataType() != MetricDataTypeIntGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) IntGauge() IntGauge {
-	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntGauge); ok {
-		return newIntGauge(&orig.IntGauge)
-	}
-	return NewIntGauge()
+	return newIntGauge(&(*ms.orig).Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
 }
 
-// DoubleGauge returns the data as DoubleGauge. This should be called iff DataType() == MetricDataTypeDoubleGauge.
+// DoubleGauge returns the data as DoubleGauge.
+// Calling this function when DataType() != MetricDataTypeDoubleGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleGauge() DoubleGauge {
-	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleGauge); ok {
-		return newDoubleGauge(&orig.DoubleGauge)
-	}
-	return NewDoubleGauge()
+	return newDoubleGauge(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleGauge).DoubleGauge)
 }
 
-// IntSum returns the data as IntSum. This should be called iff DataType() == MetricDataTypeIntSum.
+// IntSum returns the data as IntSum.
+// Calling this function when DataType() != MetricDataTypeIntSum  will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) IntSum() IntSum {
-	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntSum); ok {
-		return newIntSum(&orig.IntSum)
-	}
-	return NewIntSum()
+	return newIntSum(&(*ms.orig).Data.(*otlpmetrics.Metric_IntSum).IntSum)
 }
 
-// DoubleSum returns the data as DoubleSum. This should be called iff DataType() == MetricDataTypeDoubleSum.
+// DoubleSum returns the data as DoubleSum.
+// Calling this function when DataType() != MetricDataTypeDoubleSum will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleSum() DoubleSum {
-	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleSum); ok {
-		return newDoubleSum(&orig.DoubleSum)
-	}
-	return NewDoubleSum()
+	return newDoubleSum(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleSum).DoubleSum)
 }
 
-// IntHistogram returns the data as IntHistogram. This should be called iff DataType() == MetricDataTypeIntHistogram.
+// IntHistogram returns the data as IntHistogram.
+// Calling this function when DataType() != MetricDataTypeIntHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) IntHistogram() IntHistogram {
-	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_IntHistogram); ok {
-		return newIntHistogram(&orig.IntHistogram)
-	}
-	return NewIntHistogram()
+	return newIntHistogram(&(*ms.orig).Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram)
 }
 
-// DoubleHistogram returns the data as DoubleHistogram. This should be called iff DataType() == MetricDataTypeDoubleHistogram.
+// DoubleHistogram returns the data as DoubleHistogram.
+// Calling this function when DataType() != MetricDataTypeDoubleHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleHistogram() DoubleHistogram {
-	if orig, ok := (*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram); ok {
-		return newDoubleHistogram(&orig.DoubleHistogram)
-	}
-	return NewDoubleHistogram()
+	return newDoubleHistogram(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
 }
 
 func copyData(src, dest *otlpmetrics.Metric) {
@@ -196,21 +182,6 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		newDoubleHistogram(&srcData.DoubleHistogram).CopyTo(newDoubleHistogram(&data.DoubleHistogram))
 		dest.Data = data
 	}
-}
-
-// DeprecatedNewResource temporary public function.
-func DeprecatedNewResource(orig **otlpresource.Resource) Resource {
-	return newResource(orig)
-}
-
-// DeprecatedNewInstrumentationLibrary temporary public function.
-func DeprecatedNewInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
-	return newInstrumentationLibrary(orig)
-}
-
-// DeprecatedNewStringMap temporary public function.
-func DeprecatedNewStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
-	return newStringMap(orig)
 }
 
 // DeprecatedNewMetricsResourceSlice temporary public function.
