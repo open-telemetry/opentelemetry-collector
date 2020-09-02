@@ -356,3 +356,19 @@ func generateOtlpLogThree() *otlplogs.LogRecord {
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something else happened"}},
 	}
 }
+
+func GenerateLogDataManyLogsSameResource(count int) pdata.Logs {
+	ld := GenerateLogDataOneEmptyLogs()
+	rs0 := ld.ResourceLogs().At(0)
+	rs0.InstrumentationLibraryLogs().Resize(1)
+	rs0.InstrumentationLibraryLogs().At(0).Logs().Resize(count)
+	for i := 0; i < count; i++ {
+		l := rs0.InstrumentationLibraryLogs().At(0).Logs().At(i)
+		if i%2 == 0 {
+			fillLogOne(l)
+		} else {
+			fillLogTwo(l)
+		}
+	}
+	return ld
+}
