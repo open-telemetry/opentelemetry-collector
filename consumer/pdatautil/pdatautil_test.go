@@ -60,6 +60,10 @@ func TestMetricAndDataPointCount(t *testing.T) {
 		{
 			Metrics: []*ocmetrics.Metric{
 				{
+					MetricDescriptor: &ocmetrics.MetricDescriptor{
+						Name: "gauge",
+						Type: ocmetrics.MetricDescriptor_GAUGE_INT64,
+					},
 					Timeseries: []*ocmetrics.TimeSeries{
 						{
 							Points: []*ocmetrics.Point{
