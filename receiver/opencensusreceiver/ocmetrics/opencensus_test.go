@@ -385,8 +385,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer) (int, fun
 
 func makeMetric(val int) *metricspb.Metric {
 	key := &metricspb.LabelKey{
-		Key:         fmt.Sprintf("%s%d", "key", val),
-		Description: "label key",
+		Key: fmt.Sprintf("%s%d", "key", val),
 	}
 	value := &metricspb.LabelValue{
 		Value:    fmt.Sprintf("%s%d", "value", val),

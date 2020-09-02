@@ -23,6 +23,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -69,6 +70,7 @@ type transaction struct {
 	receiverName         string
 	ms                   MetadataService
 	node                 *commonpb.Node
+	resource             *resourcepb.Resource
 	metricBuilder        *metricBuilder
 	logger               *zap.Logger
 }
@@ -134,7 +136,7 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.job = job
 		tr.instance = instance
 	}
-	tr.node = createNode(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
+	tr.node, tr.resource = createNodeAndResource(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
 	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger)
 	tr.isNew = false
 	return nil
@@ -181,8 +183,9 @@ func (tr *transaction) Commit() error {
 	numPoints := 0
 	if len(metrics) > 0 {
 		md := consumerdata.MetricsData{
-			Node:    tr.node,
-			Metrics: metrics,
+			Node:     tr.node,
+			Resource: tr.resource,
+			Metrics:  metrics,
 		}
 		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
 		err = tr.sink.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
@@ -219,20 +222,23 @@ func timestampFromFloat64(ts float64) *timestamppb.Timestamp {
 	}
 }
 
-func createNode(job, instance, scheme string) *commonpb.Node {
+func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resourcepb.Resource) {
 	splitted := strings.Split(instance, ":")
 	host, port := splitted[0], "80"
 	if len(splitted) >= 2 {
 		port = splitted[1]
 	}
-	return &commonpb.Node{
+	node := &commonpb.Node{
 		ServiceInfo: &commonpb.ServiceInfo{Name: job},
 		Identifier: &commonpb.ProcessIdentifier{
 			HostName: host,
 		},
-		Attributes: map[string]string{
+	}
+	resource := &resourcepb.Resource{
+		Labels: map[string]string{
 			portAttr:   port,
 			schemeAttr: scheme,
 		},
 	}
+	return node, resource
 }
