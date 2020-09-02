@@ -25,6 +25,7 @@ const (
 	AttributeContainerImage        = "container.image.name"
 	AttributeContainerName         = "container.name"
 	AttributeContainerTag          = "container.image.tag"
+	AttributeDeploymentEnvironment = "deployment.environment"
 	AttributeFaasID                = "faas.id"
 	AttributeFaasInstance          = "faas.instance"
 	AttributeFaasName              = "faas.name"
@@ -79,6 +80,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeContainerImage,
 		AttributeContainerName,
 		AttributeContainerTag,
+		AttributeDeploymentEnvironment,
 		AttributeFaasID,
 		AttributeFaasInstance,
 		AttributeFaasName,
