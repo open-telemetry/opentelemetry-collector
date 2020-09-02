@@ -122,7 +122,7 @@ type consumerGroupHandler struct {
 	unmarshaller Unmarshaller
 	nextConsumer consumer.TraceConsumer
 	ready        chan bool
-	readyCloser sync.Once
+	readyCloser  sync.Once
 
 	logger *zap.Logger
 }
