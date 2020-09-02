@@ -15,6 +15,8 @@
 package pdata
 
 import (
+	"github.com/gogo/protobuf/proto"
+
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
@@ -35,10 +37,114 @@ func (at AggregationTemporality) String() string {
 //
 // Outside of the core repository the metrics pipeline cannot be converted to the new model since data.MetricData is
 // part of the internal package.
-//
-// IMPORTANT: Do not try to convert to/from this manually, use the helper functions in the pdatautil instead.
 type Metrics struct {
-	InternalOpaque interface{}
+	orig *[]*otlpmetrics.ResourceMetrics
+}
+
+// MetricDataFromOtlp creates the internal MetricData representation from the OTLP.
+func MetricsFromOtlp(orig []*otlpmetrics.ResourceMetrics) Metrics {
+	return Metrics{&orig}
+}
+
+// MetricDataToOtlp converts the internal MetricData to the OTLP.
+func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
+	return *md.orig
+}
+
+// NewMetricData creates a new MetricData.
+func NewMetrics() Metrics {
+	orig := []*otlpmetrics.ResourceMetrics(nil)
+	return Metrics{&orig}
+}
+
+// Clone returns a copy of MetricData.
+func (md Metrics) Clone() Metrics {
+	otlp := MetricsToOtlp(md)
+	resourceMetricsClones := make([]*otlpmetrics.ResourceMetrics, 0, len(otlp))
+	for _, resourceMetrics := range otlp {
+		resourceMetricsClones = append(resourceMetricsClones,
+			proto.Clone(resourceMetrics).(*otlpmetrics.ResourceMetrics))
+	}
+	return MetricsFromOtlp(resourceMetricsClones)
+}
+
+func (md Metrics) ResourceMetrics() ResourceMetricsSlice {
+	return newResourceMetricsSlice(md.orig)
+}
+
+// MetricCount calculates the total number of metrics.
+func (md Metrics) MetricCount() int {
+	metricCount := 0
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				continue
+			}
+			metricCount += ilm.Metrics().Len()
+		}
+	}
+	return metricCount
+}
+
+// Size returns size in bytes.
+func (md Metrics) Size() int {
+	size := 0
+	for i := 0; i < len(*md.orig); i++ {
+		if (*md.orig)[i] == nil {
+			continue
+		}
+		size += (*(*md.orig)[i]).Size()
+	}
+	return size
+}
+
+// MetricAndDataPointCount calculates the total number of metrics and data points.
+func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int) {
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				continue
+			}
+			metrics := ilm.Metrics()
+			metricCount += metrics.Len()
+			ms := ilm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				if m.IsNil() {
+					continue
+				}
+				switch m.DataType() {
+				case MetricDataTypeIntGauge:
+					dataPointCount += m.IntGauge().DataPoints().Len()
+				case MetricDataTypeDoubleGauge:
+					dataPointCount += m.DoubleGauge().DataPoints().Len()
+				case MetricDataTypeIntSum:
+					dataPointCount += m.IntSum().DataPoints().Len()
+				case MetricDataTypeDoubleSum:
+					dataPointCount += m.DoubleSum().DataPoints().Len()
+				case MetricDataTypeIntHistogram:
+					dataPointCount += m.IntHistogram().DataPoints().Len()
+				case MetricDataTypeDoubleHistogram:
+					dataPointCount += m.DoubleHistogram().DataPoints().Len()
+				}
+			}
+		}
+	}
+	return
 }
 
 // MetricDataType specifies the type of data in a Metric.

@@ -19,8 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -52,7 +51,7 @@ const (
 func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
 	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
 
-	md := data.MetricDataFromOtlp(req.ResourceMetrics)
+	md := pdata.MetricsFromOtlp(req.ResourceMetrics)
 
 	err := r.sendToNextConsumer(receiverCtx, md)
 	if err != nil {
@@ -62,7 +61,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetri
 	return &collectormetrics.ExportMetricsServiceResponse{}, nil
 }
 
-func (r *Receiver) sendToNextConsumer(ctx context.Context, md data.MetricData) error {
+func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) error {
 	metricCount, dataPointCount := md.MetricAndDataPointCount()
 	if metricCount == 0 {
 		return nil
@@ -73,7 +72,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md data.MetricData) e
 	}
 
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
-	err := r.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md))
+	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, metricCount, err)
 
 	return err

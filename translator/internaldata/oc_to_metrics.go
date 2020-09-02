@@ -20,12 +20,11 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // OCSliceToMetricData converts a slice of OC data format to data.MetricData.
-func OCSliceToMetrics(ocmds []consumerdata.MetricsData) data.MetricData {
-	metricData := data.NewMetricData()
+func OCSliceToMetrics(ocmds []consumerdata.MetricsData) pdata.Metrics {
+	metricData := pdata.NewMetrics()
 	if len(ocmds) == 0 {
 		return metricData
 	}
@@ -36,13 +35,13 @@ func OCSliceToMetrics(ocmds []consumerdata.MetricsData) data.MetricData {
 }
 
 // OCToMetricData converts OC data format to data.MetricData.
-func OCToMetrics(md consumerdata.MetricsData) data.MetricData {
-	metricData := data.NewMetricData()
+func OCToMetrics(md consumerdata.MetricsData) pdata.Metrics {
+	metricData := pdata.NewMetrics()
 	appendOcToMetrics(md, metricData)
 	return metricData
 }
 
-func appendOcToMetrics(md consumerdata.MetricsData, dest data.MetricData) {
+func appendOcToMetrics(md consumerdata.MetricsData, dest pdata.Metrics) {
 	if md.Node == nil && md.Resource == nil && len(md.Metrics) == 0 {
 		return
 	}
