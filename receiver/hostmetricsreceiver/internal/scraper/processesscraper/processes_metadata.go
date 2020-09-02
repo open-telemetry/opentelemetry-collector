@@ -20,22 +20,30 @@ import (
 
 // descriptors
 
-var processesRunningDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.processes.running")
-	descriptor.SetDescription("Total number of running processes.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeInt64)
-	return descriptor
+var processesRunningDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.processes.running")
+	metric.SetDescription("Total number of running processes.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var processesBlockedDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.processes.blocked")
-	descriptor.SetDescription("Total number of blocked processes.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeInt64)
-	return descriptor
+var processesBlockedDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.processes.blocked")
+	metric.SetDescription("Total number of blocked processes.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()

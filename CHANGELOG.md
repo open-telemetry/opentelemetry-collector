@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- **Update OTLP to v0.5.0, incompatible metrics protocol.**
+- Remove support for propagating summary metrics in OtelCollector.
+  - This is a temporary change, and will affect mostly OpenCensus users who use metrics.
+
 ## v0.9.0 Beta
 
 ## 🛑 Breaking changes 🛑

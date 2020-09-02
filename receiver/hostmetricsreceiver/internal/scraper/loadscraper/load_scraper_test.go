@@ -77,7 +77,7 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
-	assert.Equal(t, 1, metric.DoubleDataPoints().Len())
+func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
+	assert.Equal(t, 1, metric.DoubleGauge().DataPoints().Len())
 }

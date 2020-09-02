@@ -57,7 +57,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	lme := &fileExporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 

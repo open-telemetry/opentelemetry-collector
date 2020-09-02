@@ -71,7 +71,7 @@ func TestScrapeMetrics(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertInt64MetricLabelHasValue(t, metrics.At(0), 2, stateLabelName, inactiveStateLabelValue)
+				internal.AssertIntSumMetricLabelHasValue(t, metrics.At(0), 2, stateLabelName, inactiveStateLabelValue)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -79,16 +79,16 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
-	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 0, stateLabelName, usedStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 1, stateLabelName, freeStateLabelValue)
+func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
+	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, stateLabelName, usedStateLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, stateLabelName, freeStateLabelValue)
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertInt64MetricLabelHasValue(t, metric, 2, stateLabelName, bufferedStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 3, stateLabelName, cachedStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 4, stateLabelName, slabReclaimableStateLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 5, stateLabelName, slabUnreclaimableStateLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 2, stateLabelName, bufferedStateLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 3, stateLabelName, cachedStateLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 4, stateLabelName, slabReclaimableStateLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 5, stateLabelName, slabUnreclaimableStateLabelValue)
 }

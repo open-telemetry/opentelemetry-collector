@@ -46,7 +46,7 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataEmpty()), nil)
+	mr := newMetricsRequest(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsEmpty()), nil)
 
 	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
 	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
@@ -66,7 +66,7 @@ func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
-	md := testdata.GenerateMetricDataEmpty()
+	md := testdata.GenerateMetricsEmpty()
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
-	md := testdata.GenerateMetricDataEmpty()
+	md := testdata.GenerateMetricsEmpty()
 	want := errors.New("my_error")
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
 	require.Nil(t, err)
@@ -165,7 +165,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := testdata.GenerateMetricDataTwoMetrics()
+	md := testdata.GenerateMetricsTwoMetrics()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
@@ -181,7 +181,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 }
 
 func generateMetricsTraffic(t *testing.T, me component.MetricsExporter, numRequests int, wantError error) {
-	md := testdata.GenerateMetricDataOneMetricOneDataPoint()
+	md := testdata.GenerateMetricsOneMetricOneDataPoint()
 	ctx, span := trace.StartSpan(context.Background(), fakeMetricsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

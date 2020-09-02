@@ -58,7 +58,7 @@ func TestSinkTraceExporter_Error(t *testing.T) {
 func TestSinkMetricsExporter(t *testing.T) {
 	sink := new(SinkMetricsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
@@ -76,7 +76,7 @@ func TestSinkMetricsExporter_Error(t *testing.T) {
 	sink := new(SinkMetricsExporter)
 	require.NoError(t, sink.Start(context.Background(), componenttest.NewNopHost()))
 	sink.SetConsumeMetricsError(errors.New("my error"))
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	require.Error(t, sink.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	assert.Len(t, sink.AllMetrics(), 0)
 	assert.Equal(t, 0, sink.MetricsCount())

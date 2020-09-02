@@ -138,18 +138,19 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.At(i)
-		metricDescriptor := metric.MetricDescriptor()
-		metricDescriptor.InitEmpty()
-		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
-		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(pdata.MetricTypeInt64)
+		metric.SetName("load_generator_" + strconv.Itoa(i))
+		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
+		metric.SetUnit("1")
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		gauge := metric.IntGauge()
+		gauge.InitEmpty()
 
 		batchIndex := dp.batchesGenerated.Inc()
 
 		// Generate data points for the metric.
-		metric.Int64DataPoints().Resize(dataPointsPerMetric)
+		gauge.DataPoints().Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := metric.Int64DataPoints().At(j)
+			dataPoint := gauge.DataPoints().At(j)
 			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))

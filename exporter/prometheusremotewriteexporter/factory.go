@@ -50,7 +50,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 		return nil, err
 	}
 
-	prwe, err := newPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client)
+	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client)
 
 	if err != nil {
 		return nil, err
@@ -58,11 +58,11 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
-		prwe.pushMetrics,
+		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(prwCfg.QueueSettings),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
-		exporterhelper.WithShutdown(prwe.shutdown),
+		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 
 	return prwexp, err

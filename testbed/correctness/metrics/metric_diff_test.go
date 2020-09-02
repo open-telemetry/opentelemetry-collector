@@ -52,7 +52,7 @@ func TestDifferentValues(t *testing.T) {
 	cfg.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 1, len(diffs))
+	assert.Len(t, diffs, 1)
 }
 
 func TestDifferentNumPts(t *testing.T) {
@@ -61,45 +61,45 @@ func TestDifferentNumPts(t *testing.T) {
 	cfg.NumPtsPerMetric = 2
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 1, len(diffs))
+	assert.Len(t, diffs, 1)
 }
 
 func TestDifferentPtTypes(t *testing.T) {
 	expected := goldendataset.DefaultMetricData()
 	cfg := goldendataset.DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricTypeDouble
+	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
 	actual := goldendataset.MetricDataFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 3, len(diffs))
+	assert.Len(t, diffs, 1)
 }
 
-func TestHistogram(t *testing.T) {
+func TestDoubleHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricTypeHistogram
+	cfg1.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	expected := goldendataset.MetricDataFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricTypeHistogram
+	cfg2.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 3, len(diffs))
+	assert.Len(t, diffs, 3)
 }
 
-func TestSummary(t *testing.T) {
+func TestIntHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricTypeSummary
+	cfg1.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
 	expected := goldendataset.MetricDataFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricTypeSummary
+	cfg2.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
-	assert.Equal(t, 3, len(diffs))
+	assert.Len(t, diffs, 3)
 }
 
 func TestPDMToPDRM(t *testing.T) {
 	md := data.NewMetricData()
 	md.ResourceMetrics().Resize(1)
 	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromInternalMetrics(md)})
-	require.Equal(t, 1, len(rm))
+	require.Len(t, rm, 1)
 }

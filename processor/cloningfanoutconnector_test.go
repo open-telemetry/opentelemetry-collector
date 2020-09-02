@@ -82,7 +82,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewMetricsCloningFanOutConnector(processors)
-	md := testdata.GenerateMetricDataWithCountersHistogramAndSummary()
+	md := testdata.GenerateMetricsWithCountersHistograms()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {

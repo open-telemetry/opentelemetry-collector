@@ -36,7 +36,7 @@ func MetricsToMetricsData(md pdata.Metrics) []consumerdata.MetricsData {
 		return cmd
 	}
 	if ims, ok := md.InternalOpaque.(data.MetricData); ok {
-		return internaldata.MetricDataToOC(ims)
+		return internaldata.MetricsToOC(ims)
 	}
 	panic("Unsupported metrics type.")
 }
@@ -56,12 +56,12 @@ func MetricsToInternalMetrics(md pdata.Metrics) data.MetricData {
 		return ims
 	}
 	if cmd, ok := md.InternalOpaque.([]consumerdata.MetricsData); ok {
-		return internaldata.OCSliceToMetricData(cmd)
+		return internaldata.OCSliceToMetrics(cmd)
 	}
 	panic("Unsupported metrics type.")
 }
 
-// MetricsFromMetricsData returns the `pdata.Metrics` representation of the `data.MetricData`.
+// MetricsFromInternalMetrics returns the `pdata.Metrics` representation of the `data.MetricData`.
 //
 // This is a temporary function that will be removed when the new internal pdata.Metrics will be finalized.
 func MetricsFromInternalMetrics(md data.MetricData) pdata.Metrics {
@@ -78,7 +78,7 @@ func CloneMetrics(md pdata.Metrics) pdata.Metrics {
 	if ocmds, ok := md.InternalOpaque.([]consumerdata.MetricsData); ok {
 		clone := make([]consumerdata.MetricsData, 0, len(ocmds))
 		for _, ocmd := range ocmds {
-			clone = append(clone, CloneMetricsDataOld(ocmd))
+			clone = append(clone, cloneMetricsData(ocmd))
 		}
 		return pdata.Metrics{InternalOpaque: clone}
 	}
@@ -121,8 +121,7 @@ func MetricPointCount(md pdata.Metrics) int {
 	return points
 }
 
-// CloneMetricsDataOld copied from processors.cloneMetricsDataOld
-func CloneMetricsDataOld(md consumerdata.MetricsData) consumerdata.MetricsData {
+func cloneMetricsData(md consumerdata.MetricsData) consumerdata.MetricsData {
 	clone := consumerdata.MetricsData{
 		Node:     googleproto.Clone(md.Node).(*commonpb.Node),
 		Resource: googleproto.Clone(md.Resource).(*resourcepb.Resource),

@@ -12,31 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package pdata
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestDefaultUnMarshaller(t *testing.T) {
-	expectedEncodings := []string{
-		"otlp_proto",
-		"jaeger_proto",
-		"jaeger_json",
-		"zipkin_proto",
-		"zipkin_json",
-		"zipkin_thrift",
-	}
-	marshallers := defaultUnmarshallers()
-	assert.Equal(t, len(expectedEncodings), len(marshallers))
-	for _, e := range expectedEncodings {
-		t.Run(e, func(t *testing.T) {
-			m, ok := marshallers[e]
-			require.True(t, ok)
-			assert.NotNil(t, m)
-		})
-	}
+func TestUnixNanosConverters(t *testing.T) {
+	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
+	tun := TimestampUnixNano(t1.UnixNano())
+
+	assert.EqualValues(t, uint64(1585012403000000789), tun)
+	tp := UnixNanoToTimestamp(tun)
+	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 1585012403, Nanos: 789}, tp)
+	assert.EqualValues(t, tun, TimestampToUnixNano(tp))
+}
+
+func TestZeroTimestamps(t *testing.T) {
+	assert.Zero(t, TimestampToUnixNano(nil))
+	assert.Nil(t, UnixNanoToTimestamp(0))
+	assert.True(t, UnixNanoToTime(0).IsZero())
 }

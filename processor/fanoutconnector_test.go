@@ -99,7 +99,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	}
 
 	mfc := NewMetricsFanOutConnector(processors)
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
@@ -128,7 +128,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	processors[1].(*exportertest.SinkMetricsExporter).SetConsumeMetricsError(errors.New("my_error"))
 
 	mfc := NewMetricsFanOutConnector(processors)
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {

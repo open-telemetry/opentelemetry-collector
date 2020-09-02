@@ -91,30 +91,30 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 
 func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
 	cpuTimeMetric := getMetric(t, cpuTimeDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric.MetricDescriptor())
+	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric)
 	if startTime != 0 {
-		internal.AssertDoubleMetricStartTimeEquals(t, cpuTimeMetric, startTime)
+		internal.AssertDoubleSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
-	internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
+	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
+	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
 	if runtime.GOOS == "linux" {
-		internal.AssertDoubleMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, waitStateLabelValue)
+		internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, waitStateLabelValue)
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.MetricDescriptor, resourceMetrics pdata.ResourceMetricsSlice) {
+func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.Metric, resourceMetrics pdata.ResourceMetricsSlice) {
 	memoryUsageMetric := getMetric(t, descriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric.MetricDescriptor())
+	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric)
 }
 
 func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
 	diskIOMetric := getMetric(t, diskIODescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, diskIODescriptor, diskIOMetric.MetricDescriptor())
+	internal.AssertDescriptorEqual(t, diskIODescriptor, diskIOMetric)
 	if startTime != 0 {
-		internal.AssertInt64MetricStartTimeEquals(t, diskIOMetric, startTime)
+		internal.AssertIntSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 0, directionLabelName, readDirectionLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, diskIOMetric, 1, directionLabelName, writeDirectionLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 0, directionLabelName, readDirectionLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -126,12 +126,12 @@ func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetric
 	}
 }
 
-func getMetric(t *testing.T, descriptor pdata.MetricDescriptor, rms pdata.ResourceMetricsSlice) pdata.Metric {
+func getMetric(t *testing.T, descriptor pdata.Metric, rms pdata.ResourceMetricsSlice) pdata.Metric {
 	for i := 0; i < rms.Len(); i++ {
 		metrics := getMetricSlice(t, rms.At(i))
 		for j := 0; j < metrics.Len(); j++ {
 			metric := metrics.At(j)
-			if metric.MetricDescriptor().Name() == descriptor.Name() {
+			if metric.Name() == descriptor.Name() {
 				return metric
 			}
 		}

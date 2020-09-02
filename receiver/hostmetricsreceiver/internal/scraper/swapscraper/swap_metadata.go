@@ -49,32 +49,44 @@ const (
 	minorTypeLabelValue = "minor"
 )
 
-var swapUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.swap.usage")
-	descriptor.SetDescription("Swap (unix) or pagefile (windows) usage.")
-	descriptor.SetUnit("pages")
-	descriptor.SetType(pdata.MetricTypeInt64)
-	return descriptor
+var swapUsageDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.swap.usage")
+	metric.SetDescription("Swap (unix) or pagefile (windows) usage.")
+	metric.SetUnit("pages")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var swapPagingDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.swap.paging_ops")
-	descriptor.SetDescription("The number of paging operations.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
-	return descriptor
+var swapPagingDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.swap.paging_ops")
+	metric.SetDescription("The number of paging operations.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var swapPageFaultsDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("system.swap.page_faults")
-	descriptor.SetDescription("The number of page faults.")
-	descriptor.SetUnit("1")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
-	return descriptor
+var swapPageFaultsDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.swap.page_faults")
+	metric.SetDescription("The number of page faults.")
+	metric.SetUnit("1")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()

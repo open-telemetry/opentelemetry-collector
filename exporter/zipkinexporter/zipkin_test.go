@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
-	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -320,7 +320,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	// a mock to ensure that this happens as intended.
 	mzr := newMockZipkinReporter(cst.URL)
 
-	mzr.serializer = zipkinproto.SpanSerializer{}
+	mzr.serializer = zipkin_proto3.SpanSerializer{}
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	port := testutil.GetAvailablePort(t)
@@ -349,11 +349,11 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	err = mzr.Flush()
 	require.NoError(t, err)
 
-	require.Equal(t, zipkinproto.SpanSerializer{}.ContentType(), contentType)
+	require.Equal(t, zipkin_proto3.SpanSerializer{}.ContentType(), contentType)
 	// Finally we need to inspect the output
 	gotBytes, err := ioutil.ReadAll(buf)
 	require.NoError(t, err)
 
-	_, err = zipkinproto.ParseSpans(gotBytes, false)
+	_, err = zipkin_proto3.ParseSpans(gotBytes, false)
 	require.NoError(t, err)
 }

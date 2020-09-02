@@ -29,7 +29,7 @@ type FactoryOption func(o *factory)
 // CreateDefaultConfig is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() configmodels.Extension
 
-// CreateTraceExtension is the equivalent of component.ExtensionFactory.CreateTraceExtension()
+// CreateServiceExtension is the equivalent of component.ExtensionFactory.CreateExtension()
 type CreateServiceExtension func(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.ServiceExtension, error)
 
 type factory struct {

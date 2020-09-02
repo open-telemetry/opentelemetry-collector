@@ -139,7 +139,7 @@ func testReceivers(
 		traceProducer.TraceConsumer.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
 	}
 
-	metrics := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
+	metrics := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
 	if test.hasMetrics {
 		metricsProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
 		metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), metrics)

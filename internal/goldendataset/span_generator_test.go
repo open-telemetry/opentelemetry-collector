@@ -39,7 +39,7 @@ func TestGenerateParentSpan(t *testing.T) {
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Nil(t, span.ParentSpanId)
 	assert.Equal(t, 11, len(span.Attributes))
-	assert.Equal(t, otlptrace.Status_Ok, span.Status.Code)
+	assert.Equal(t, otlptrace.Status_STATUS_CODE_OK, span.Status.Code)
 }
 
 func TestGenerateChildSpan(t *testing.T) {
@@ -59,7 +59,7 @@ func TestGenerateChildSpan(t *testing.T) {
 	assert.Equal(t, traceID, span.TraceId)
 	assert.Equal(t, parentID, span.ParentSpanId)
 	assert.Equal(t, 12, len(span.Attributes))
-	assert.Equal(t, otlptrace.Status_Ok, span.Status.Code)
+	assert.Equal(t, otlptrace.Status_STATUS_CODE_OK, span.Status.Code)
 }
 
 func TestGenerateSpans(t *testing.T) {

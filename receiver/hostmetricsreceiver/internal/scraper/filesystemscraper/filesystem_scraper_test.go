@@ -146,19 +146,19 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, expectedDeviceDataPoints int) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, expectedDeviceDataPoints int) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if expectedDeviceDataPoints > 0 {
-		assert.Equal(t, expectedDeviceDataPoints, metric.Int64DataPoints().Len())
+		assert.Equal(t, expectedDeviceDataPoints, metric.IntSum().DataPoints().Len())
 	} else {
-		assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), fileSystemStatesLen)
+		assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertInt64MetricLabelHasValue(t, metric, 0, stateLabelName, usedLabelValue)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, stateLabelName, usedLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertInt64MetricLabelHasValue(t, metric, 2, stateLabelName, reservedLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 2, stateLabelName, reservedLabelValue)
 }
 
 func isUnix() bool {
