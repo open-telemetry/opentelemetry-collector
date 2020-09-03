@@ -68,7 +68,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 		require.NoError(t, oce.Shutdown(context.Background()))
 	}()
 
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 
 	testutil.WaitFor(t, func() bool {

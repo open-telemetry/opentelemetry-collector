@@ -20,10 +20,14 @@ import (
 	"net"
 	"net/http"
 	"testing"
-	"time"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
+	"github.com/jaegertracing/jaeger/model"
+	jaegerconvert "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"github.com/jaegertracing/jaeger/thrift-gen/agent"
+	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -33,17 +37,20 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
 const jaegerAgent = "jaeger_agent_test"
 
-func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
-	port := 6831
+func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
+	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
-		AgentCompactThriftPort: port,
+		AgentCompactThriftPort: int(port),
 	})
 }
 
@@ -63,13 +70,11 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	jr.Shutdown(context.Background())
 }
 
-func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
-	t.Skipf("Unfortunately due to Jaeger internal versioning, OpenCensus-Go's Thrift seems to conflict with ours")
-
-	port := 6832
+func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
+	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
-		AgentBinaryThriftPort: port,
+		AgentBinaryThriftPort: int(port),
 	})
 }
 
@@ -84,7 +89,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
-	err = jr.(*jReceiver).startAgent(componenttest.NewNopHost())
+	err = jr.startAgent(componenttest.NewNopHost())
 	assert.NoError(t, err, "Start failed")
 	defer jr.Shutdown(context.Background())
 
@@ -192,45 +197,69 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	err = jr.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Start failed")
 
-	now := time.Unix(1542158650, 536343000).UTC()
-	nowPlus10min := now.Add(10 * time.Minute)
-	nowPlus10min2sec := now.Add(10 * time.Minute).Add(2 * time.Second)
-
-	// 2. Then with a "live application", send spans to the Jaeger exporter.
-	jexp, err := jaeger.NewExporter(jaeger.Options{
-		AgentEndpoint: agentEndpoint,
-		ServiceName:   "TestingAgentUDP",
-		Process: jaeger.Process{
-			ServiceName: "issaTest",
-			Tags: []jaeger.Tag{
-				jaeger.BoolTag("bool", true),
-				jaeger.StringTag("string", "yes"),
-				jaeger.Int64Tag("int64", 1e7),
-			},
-		},
-	})
+	// 2. Then send spans to the Jaeger receiver.
+	jexp, err := newClientUDP(agentEndpoint, jr.agentBinaryThriftEnabled())
 	assert.NoError(t, err, "Failed to create the Jaeger OpenCensus exporter for the live application")
 
 	// 3. Now finally send some spans
-	spandata := traceFixture(now, nowPlus10min, nowPlus10min2sec)
-
-	for _, sd := range spandata {
-		jexp.ExportSpan(sd)
+	td := generateTraceData()
+	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	require.NoError(t, err)
+	for _, batch := range batches {
+		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
 	}
-	jexp.Flush()
 
-	// Simulate and account for network latency but also the reception process on the server.
-	<-time.After(500 * time.Millisecond)
-
-	for i := 0; i < 10; i++ {
-		jexp.Flush()
-		<-time.After(60 * time.Millisecond)
-	}
+	testutil.WaitFor(t, func() bool {
+		return sink.SpansCount() > 0
+	})
 
 	gotTraces := sink.AllTraces()
-	assert.Equal(t, 1, len(gotTraces))
+	require.Equal(t, 1, len(gotTraces))
+	assert.EqualValues(t, td, gotTraces[0])
+}
 
-	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
+func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
+	clientTransport, err := thriftudp.NewTUDPClientTransport(hostPort, "")
+	if err != nil {
+		return nil, err
+	}
+	var protocolFactory thrift.TProtocolFactory
+	if binary {
+		protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
+	} else {
+		protocolFactory = thrift.NewTCompactProtocolFactory()
+	}
+	return agent.NewAgentClientFactory(clientTransport, protocolFactory), nil
+}
 
-	assert.EqualValues(t, want, gotTraces[0])
+// Cannot use the testdata because timestamps are nanoseconds.
+func generateTraceData() pdata.Traces {
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).Resource().InitEmpty()
+	td.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test")
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span.SetSpanID([]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	span.SetTraceID([]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})
+	span.SetStartTime(1581452772000000000)
+	span.SetEndTime(1581452773000000000)
+	return td
+}
+
+func modelToThrift(batch *model.Batch) *jaegerthrift.Batch {
+	return &jaegerthrift.Batch{
+		Process: processModelToThrift(batch.Process),
+		Spans:   jaegerconvert.FromDomain(batch.Spans),
+	}
+}
+
+func processModelToThrift(process *model.Process) *jaegerthrift.Process {
+	if process == nil {
+		return nil
+	}
+	return &jaegerthrift.Process{
+		ServiceName: process.ServiceName,
+	}
 }

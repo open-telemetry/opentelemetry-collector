@@ -98,22 +98,22 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
-		internal.AssertDoubleMetricStartTimeEquals(t, metric, startTime)
+		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.GreaterOrEqual(t, metric.DoubleDataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertDoubleMetricLabelExists(t, metric, 0, metadata.Labels.Cpu)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 0, metadata.Labels.CPUState, metadata.LabelCPUState.User)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 1, metadata.Labels.CPUState, metadata.LabelCPUState.System)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 2, metadata.Labels.CPUState, metadata.LabelCPUState.Idle)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 3, metadata.Labels.CPUState, metadata.LabelCPUState.Interrupt)
+	assert.GreaterOrEqual(t, metric.DoubleSum().DataPoints().Len(), 4*runtime.NumCPU())
+	internal.AssertDoubleSumMetricLabelExists(t, metric, 0, metadata.Labels.Cpu)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 0, metadata.Labels.CPUState, metadata.LabelCPUState.User)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 1, metadata.Labels.CPUState, metadata.LabelCPUState.System)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 2, metadata.Labels.CPUState, metadata.LabelCPUState.Idle)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 3, metadata.Labels.CPUState, metadata.LabelCPUState.Interrupt)
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 4, metadata.Labels.CPUState, metadata.LabelCPUState.Nice)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 5, metadata.Labels.CPUState, metadata.LabelCPUState.Softirq)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 6, metadata.Labels.CPUState, metadata.LabelCPUState.Steal)
-	internal.AssertDoubleMetricLabelHasValue(t, metric, 7, metadata.Labels.CPUState, metadata.LabelCPUState.Wait)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 4, metadata.Labels.CPUState, metadata.LabelCPUState.Nice)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 5, metadata.Labels.CPUState, metadata.LabelCPUState.Softirq)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 6, metadata.Labels.CPUState, metadata.LabelCPUState.Steal)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 7, metadata.Labels.CPUState, metadata.LabelCPUState.Wait)
 }

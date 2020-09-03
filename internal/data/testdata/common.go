@@ -118,19 +118,6 @@ func generateOtlpMetricLabels1() []*otlpcommon.StringKeyValue {
 	}
 }
 
-func initMetricLabelValue1(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey: TestLabelValue1})
-}
-
-func generateOtlpMetricLabelValue1() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
-		{
-			Key:   TestLabelKey,
-			Value: TestLabelValue1,
-		},
-	}
-}
-
 func initMetricLabels12(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1, TestLabelKey2: TestLabelValue2}).Sort()
 }
@@ -173,19 +160,6 @@ func generateOtlpMetricLabels2() []*otlpcommon.StringKeyValue {
 	return []*otlpcommon.StringKeyValue{
 		{
 			Key:   TestLabelKey2,
-			Value: TestLabelValue2,
-		},
-	}
-}
-
-func initMetricLabelValue2(dest pdata.StringMap) {
-	dest.InitFromMap(map[string]string{TestLabelKey: TestLabelValue2})
-}
-
-func generateOtlpMetricLabelValue2() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
-		{
-			Key:   TestLabelKey,
 			Value: TestLabelValue2,
 		},
 	}

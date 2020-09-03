@@ -128,16 +128,16 @@ func deviceUsageAlreadySet(device string, usages []*deviceUsage) bool {
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
-	fileSystemUsageDescriptor.CopyTo(metric.MetricDescriptor())
+	fileSystemUsageDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(fileSystemStatesLen * len(deviceUsages))
 	for i, deviceUsage := range deviceUsages {
 		appendFileSystemUsageStateDataPoints(idps, i*fileSystemStatesLen, now, deviceUsage)
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.Int64DataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(stateLabelName, stateLabel)

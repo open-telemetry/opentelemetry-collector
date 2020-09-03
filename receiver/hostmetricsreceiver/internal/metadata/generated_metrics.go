@@ -27,27 +27,35 @@ const Type configmodels.Type = "hostmetricsreceiver"
 // Metrics contains the metric descriptors for the possible metrics.
 var Metrics = struct {
 	// SystemCPUTime in s (Total CPU seconds broken down by different states.)
-	SystemCPUTime pdata.MetricDescriptor
+	SystemCPUTime pdata.Metric
 	// SystemMemoryUsage in By (Bytes of memory in use.)
-	SystemMemoryUsage pdata.MetricDescriptor
+	SystemMemoryUsage pdata.Metric
 }{
-	func() pdata.MetricDescriptor {
-		descriptor := pdata.NewMetricDescriptor()
-		descriptor.InitEmpty()
-		descriptor.SetName("system.cpu.time")
-		descriptor.SetDescription("Total CPU seconds broken down by different states.")
-		descriptor.SetUnit("s")
-		descriptor.SetType(pdata.MetricTypeMonotonicDouble)
-		return descriptor
+	func() pdata.Metric {
+		metric := pdata.NewMetric()
+		metric.InitEmpty()
+		metric.SetName("system.cpu.time")
+		metric.SetDescription("Total CPU seconds broken down by different states.")
+		metric.SetUnit("s")
+		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+		data := metric.DoubleSum()
+		data.InitEmpty()
+		data.SetIsMonotonic(true)
+		data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+		return metric
 	}(),
-	func() pdata.MetricDescriptor {
-		descriptor := pdata.NewMetricDescriptor()
-		descriptor.InitEmpty()
-		descriptor.SetName("system.memory.usage")
-		descriptor.SetDescription("Bytes of memory in use.")
-		descriptor.SetUnit("By")
-		descriptor.SetType(pdata.MetricTypeInt64)
-		return descriptor
+	func() pdata.Metric {
+		metric := pdata.NewMetric()
+		metric.InitEmpty()
+		metric.SetName("system.memory.usage")
+		metric.SetDescription("Bytes of memory in use.")
+		metric.SetUnit("By")
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		data := metric.IntGauge()
+		data.InitEmpty()
+
+		return metric
 	}(),
 }
 

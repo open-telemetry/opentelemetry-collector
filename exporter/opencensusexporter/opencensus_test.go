@@ -165,7 +165,7 @@ func TestSendMetrics(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := testdata.GenerateMetricDataOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
@@ -206,7 +206,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
 	for i := 0; i < 10000; i++ {
 		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 	}
@@ -228,6 +228,6 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
+	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
 	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 }

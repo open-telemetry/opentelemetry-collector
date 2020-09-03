@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/converter"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -33,8 +32,8 @@ import (
 // processor in the pipeline or the exporter if pipeline has no processors).
 type builtPipeline struct {
 	logger  *zap.Logger
-	firstTC consumer.TraceConsumerBase
-	firstMC consumer.MetricsConsumerBase
+	firstTC consumer.TraceConsumer
+	firstMC consumer.MetricsConsumer
 	firstLC consumer.LogsConsumer
 
 	// MutatesConsumedData is set to true if any processors in the pipeline
@@ -82,6 +81,7 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
 	logger    *zap.Logger
+	appInfo   component.ApplicationStartInfo
 	config    *configmodels.Config
 	exporters Exporters
 	factories map[configmodels.Type]component.ProcessorFactory
@@ -91,11 +91,12 @@ type PipelinesBuilder struct {
 // built via ExportersBuilder. Call BuildProcessors() on the returned value.
 func NewPipelinesBuilder(
 	logger *zap.Logger,
+	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	exporters Exporters,
 	factories map[configmodels.Type]component.ProcessorFactory,
 ) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, config, exporters, factories}
+	return &PipelinesBuilder{logger, appInfo, config, exporters, factories}
 }
 
 // BuildProcessors pipeline processors from config.
@@ -103,7 +104,7 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 	pipelineProcessors := make(BuiltPipelines)
 
 	for _, pipeline := range pb.config.Service.Pipelines {
-		firstProcessor, err := pb.buildPipeline(pipeline)
+		firstProcessor, err := pb.buildPipeline(context.Background(), pipeline)
 		if err != nil {
 			return nil, err
 		}
@@ -116,14 +117,13 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
-) (*builtPipeline, error) {
+func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *configmodels.Pipeline) (*builtPipeline, error) {
 
 	// BuildProcessors the pipeline backwards.
 
 	// First create a consumer junction point that fans out the data to all exporters.
-	var tc consumer.TraceConsumerBase
-	var mc consumer.MetricsConsumerBase
+	var tc consumer.TraceConsumer
+	var mc consumer.MetricsConsumer
 	var lc consumer.LogsConsumer
 
 	switch pipelineCfg.InputType {
@@ -154,10 +154,15 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 		// which we will build in the next loop iteration).
 		var err error
 		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogsProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
+		creationParams := component.ProcessorCreateParams{
+			Logger:               componentLogger,
+			ApplicationStartInfo: pb.appInfo,
+		}
+
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessor
-			proc, err = createTraceProcessor(factory, componentLogger, procCfg, tc)
+			proc, err = factory.CreateTraceProcessor(ctx, creationParams, tc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -165,7 +170,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 			tc = proc
 		case configmodels.MetricsDataType:
 			var proc component.MetricsProcessor
-			proc, err = createMetricsProcessor(factory, componentLogger, procCfg, mc)
+			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, mc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -174,7 +179,7 @@ func (pb *PipelinesBuilder) buildPipeline(pipelineCfg *configmodels.Pipeline,
 
 		case configmodels.LogsDataType:
 			var proc component.LogsProcessor
-			proc, err = createLogsProcessor(factory, componentLogger, procCfg, lc)
+			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -224,7 +229,7 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumerBase {
+func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
@@ -232,16 +237,16 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 		return builtExporters[0].te
 	}
 
-	var exporters []consumer.TraceConsumerBase
+	var exporters []consumer.TraceConsumer
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.te)
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return processor.CreateTraceFanOutConnector(exporters)
+	return processor.NewTracesFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumerBase {
+func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	// Optimize for the case when there is only one exporter, no need to create junction point.
@@ -249,13 +254,13 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 		return builtExporters[0].me
 	}
 
-	var exporters []consumer.MetricsConsumerBase
+	var exporters []consumer.MetricsConsumer
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.me)
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return processor.CreateMetricsFanOutConnector(exporters)
+	return processor.NewMetricsFanOutConnector(exporters)
 }
 
 func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
@@ -274,68 +279,5 @@ func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return processor.NewLogFanOutConnector(exporters)
-}
-
-// createTraceProcessor creates trace processor based on type of the current processor
-// and type of the downstream consumer.
-func createTraceProcessor(
-	factory component.ProcessorFactory,
-	logger *zap.Logger,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TraceConsumerBase,
-) (component.TraceProcessor, error) {
-	creationParams := component.ProcessorCreateParams{Logger: logger}
-	ctx := context.Background()
-
-	// If both processor and consumer are of the new type (can manipulate on internal data structure),
-	// use ProcessorFactory.CreateTraceProcessor.
-	if nextConsumer, ok := nextConsumer.(consumer.TraceConsumer); ok {
-		return factory.CreateTraceProcessor(ctx, creationParams, nextConsumer, cfg)
-	}
-
-	// If processor is of the new type, but downstream consumer is of the old type,
-	// use internalToOCTraceConverter compatibility shim.
-	traceConverter := converter.NewInternalToOCTraceConverter(nextConsumer.(consumer.TraceConsumerOld))
-	return factory.CreateTraceProcessor(ctx, creationParams, traceConverter, cfg)
-}
-
-// createMetricsProcessor creates metric processor based on type of the current processor
-// and type of the downstream consumer.
-func createMetricsProcessor(
-	factory component.ProcessorFactory,
-	logger *zap.Logger,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumerBase,
-) (component.MetricsProcessor, error) {
-	creationParams := component.ProcessorCreateParams{Logger: logger}
-	ctx := context.Background()
-
-	// If both processor and consumer are of the new type (can manipulate on internal data structure),
-	// use ProcessorFactory.CreateMetricsProcessor.
-	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumer); ok {
-		return factory.CreateMetricsProcessor(ctx, creationParams, nextConsumer, cfg)
-	}
-
-	// If processor is of the new type, but downstream consumer is of the old type,
-	// use internalToOCMetricsConverter compatibility shim.
-	metricsConverter := converter.NewInternalToOCMetricsConverter(nextConsumer.(consumer.MetricsConsumerOld))
-	return factory.CreateMetricsProcessor(ctx, creationParams, metricsConverter, cfg)
-}
-
-// createLogsProcessor creates a log processor using given factory and next consumer.
-func createLogsProcessor(
-	factoryBase component.Factory,
-	logger *zap.Logger,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
-) (component.LogsProcessor, error) {
-	factory, ok := factoryBase.(component.LogsProcessorFactory)
-	if !ok {
-		return nil, fmt.Errorf("processor %q does support data type %q",
-			cfg.Name(), configmodels.LogsDataType)
-	}
-	creationParams := component.ProcessorCreateParams{Logger: logger}
-	ctx := context.Background()
-	return factory.CreateLogsProcessor(ctx, creationParams, cfg, nextConsumer)
+	return processor.NewLogsFanOutConnector(exporters)
 }

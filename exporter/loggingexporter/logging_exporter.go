@@ -73,50 +73,51 @@ func (b *logDataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrar
 		il.Version())
 }
 
-func (b *logDataBuffer) logMetricDescriptor(md pdata.MetricDescriptor) {
-	if md.IsNil() {
-		return
-	}
-
+func (b *logDataBuffer) logMetricDescriptor(md pdata.Metric) {
 	b.logEntry("Descriptor:")
 	b.logEntry("     -> Name: %s", md.Name())
 	b.logEntry("     -> Description: %s", md.Description())
 	b.logEntry("     -> Unit: %s", md.Unit())
-	b.logEntry("     -> Type: %s", md.Type().String())
+	b.logEntry("     -> DataType: %s", md.DataType().String())
 }
 
 func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
-	md := m.MetricDescriptor()
-	if md.IsNil() {
+	switch m.DataType() {
+	case pdata.MetricDataTypeNone:
 		return
-	}
-
-	switch md.Type() {
-	case pdata.MetricTypeInvalid:
-		return
-	case pdata.MetricTypeInt64:
-		b.logInt64DataPoints(m.Int64DataPoints())
-	case pdata.MetricTypeDouble:
-		b.logDoubleDataPoints(m.DoubleDataPoints())
-	case pdata.MetricTypeMonotonicInt64:
-		b.logInt64DataPoints(m.Int64DataPoints())
-	case pdata.MetricTypeMonotonicDouble:
-		b.logDoubleDataPoints(m.DoubleDataPoints())
-	case pdata.MetricTypeHistogram:
-		b.logHistogramDataPoints(m.HistogramDataPoints())
-	case pdata.MetricTypeSummary:
-		b.logSummaryDataPoints(m.SummaryDataPoints())
+	case pdata.MetricDataTypeIntGauge:
+		b.logIntDataPoints(m.IntGauge().DataPoints())
+	case pdata.MetricDataTypeDoubleGauge:
+		b.logDoubleDataPoints(m.DoubleGauge().DataPoints())
+	case pdata.MetricDataTypeIntSum:
+		data := m.IntSum()
+		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
+		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
+		b.logIntDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeDoubleSum:
+		data := m.DoubleSum()
+		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
+		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
+		b.logDoubleDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeIntHistogram:
+		data := m.IntHistogram()
+		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
+		b.logIntHistogramDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeDoubleHistogram:
+		data := m.DoubleHistogram()
+		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
+		b.logDoubleHistogramDataPoints(data.DataPoints())
 	}
 }
 
-func (b *logDataBuffer) logInt64DataPoints(ps pdata.Int64DataPointSlice) {
+func (b *logDataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		if p.IsNil() {
 			continue
 		}
 
-		b.logEntry("Int64DataPoints #%d", i)
+		b.logEntry("IntDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
 		b.logEntry("StartTime: %d", p.StartTime())
@@ -141,7 +142,7 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 	}
 }
 
-func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
+func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		if p.IsNil() {
@@ -156,17 +157,36 @@ func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice)
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 
-		buckets := p.Buckets()
-		if buckets.Len() != 0 {
-			for i := 0; i < buckets.Len(); i++ {
-				bucket := buckets.At(i)
-				if bucket.IsNil() {
-					continue
-				}
-
-				b.logEntry("Buckets #%d, Count: %d", i, bucket.Count())
+		bounds := p.ExplicitBounds()
+		if len(bounds) != 0 {
+			for i, bound := range bounds {
+				b.logEntry("ExplicitBounds #%d: %f", i, bound)
 			}
 		}
+
+		buckets := p.BucketCounts()
+		if len(buckets) != 0 {
+			for _, bucket := range buckets {
+				b.logEntry("Buckets #%d, Count: %d", i, bucket)
+			}
+		}
+	}
+}
+
+func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("HistogramDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Count: %d", p.Count())
+		b.logEntry("Sum: %d", p.Sum())
 
 		bounds := p.ExplicitBounds()
 		if len(bounds) != 0 {
@@ -174,34 +194,11 @@ func (b *logDataBuffer) logHistogramDataPoints(ps pdata.HistogramDataPointSlice)
 				b.logEntry("ExplicitBounds #%d: %f", i, bound)
 			}
 		}
-	}
-}
 
-func (b *logDataBuffer) logSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
-	for i := 0; i < ps.Len(); i++ {
-		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
-		b.logEntry("SummaryDataPoints #%d", i)
-		b.logDataPointLabels(p.LabelsMap())
-
-		b.logEntry("StartTime: %d", p.StartTime())
-		b.logEntry("Timestamp: %d", p.Timestamp())
-		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
-
-		percentiles := p.ValueAtPercentiles()
-		if percentiles.Len() != 0 {
-			for i := 0; i < percentiles.Len(); i++ {
-				percentile := percentiles.At(i)
-				if percentile.IsNil() {
-					continue
-				}
-
-				b.logEntry("ValueAtPercentiles #%d, Value: %f, Percentile: %f",
-					i, percentile.Value(), percentile.Percentile())
+		buckets := p.BucketCounts()
+		if len(buckets) != 0 {
+			for _, bucket := range buckets {
+				b.logEntry("Buckets #%d, Count: %d", i, bucket)
 			}
 		}
 	}
@@ -217,6 +214,59 @@ func (b *logDataBuffer) logLogRecord(lr pdata.LogRecord) {
 	b.logEntry("ShortName: %s", lr.Name())
 	b.logEntry("Body: %s", attributeValueToString(lr.Body()))
 	b.logAttributeMap("Attributes", lr.Attributes())
+}
+
+func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
+	if se.Len() == 0 {
+		return
+	}
+
+	b.logEntry("%s:", description)
+	for i := 0; i < se.Len(); i++ {
+		e := se.At(i)
+		if e.IsNil() {
+			continue
+		}
+		b.logEntry("SpanEvent #%d", i)
+		b.logEntry("     -> Name: %s", e.Name())
+		b.logEntry("     -> Timestamp: %d", e.Timestamp())
+		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
+
+		if e.Attributes().Len() == 0 {
+			return
+		}
+		b.logEntry("     -> Attributes:")
+		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		})
+	}
+}
+
+func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
+	if sl.Len() == 0 {
+		return
+	}
+
+	b.logEntry("%s:", description)
+
+	for i := 0; i < sl.Len(); i++ {
+		l := sl.At(i)
+		if l.IsNil() {
+			continue
+		}
+		b.logEntry("SpanLink #%d", i)
+		b.logEntry("     -> Trace ID: %s", l.TraceID().String())
+		b.logEntry("     -> ID: %s", l.SpanID().String())
+		b.logEntry("     -> TraceState: %s", l.TraceState())
+		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
+		if l.Attributes().Len() == 0 {
+			return
+		}
+		b.logEntry("     -> Attributes:")
+		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+		})
+	}
 }
 
 func attributeValueToString(av pdata.AttributeValue) string {
@@ -296,8 +346,8 @@ func (s *loggingExporter) pushTraceData(
 				}
 
 				buf.logAttributeMap("Attributes", span.Attributes())
-
-				// TODO: Add logging for the rest of the span properties: events, links.
+				buf.logEvents("Events", span.Events())
+				buf.logLinks("Links", span.Links())
 			}
 		}
 	}
@@ -349,7 +399,7 @@ func (s *loggingExporter) pushMetricsData(
 					continue
 				}
 
-				buf.logMetricDescriptor(metric.MetricDescriptor())
+				buf.logMetricDescriptor(metric)
 				buf.logMetricDataPoints(metric)
 			}
 		}

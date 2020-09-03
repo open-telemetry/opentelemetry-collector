@@ -15,11 +15,12 @@
 package component
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -38,34 +39,39 @@ func (f *TestExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTraceExporter(*zap.Logger, configmodels.Exporter) (TraceExporterOld, error) {
-	return nil, nil
+func (f *TestExporterFactory) CreateTraceExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (TraceExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestExporterFactory) CreateMetricsExporter(*zap.Logger, configmodels.Exporter) (MetricsExporterOld, error) {
-	return nil, nil
+func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (MetricsExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+// CreateMetricsExporter creates a logs exporter based on this config.
+func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (LogsExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildExporters(t *testing.T) {
 	type testCase struct {
-		in  []ExporterFactoryBase
-		out map[configmodels.Type]ExporterFactoryBase
+		in  []ExporterFactory
+		out map[configmodels.Type]ExporterFactory
 	}
 
 	testCases := []testCase{
 		{
-			in: []ExporterFactoryBase{
+			in: []ExporterFactory{
 				&TestExporterFactory{"exp1"},
 				&TestExporterFactory{"exp2"},
 			},
-			out: map[configmodels.Type]ExporterFactoryBase{
+			out: map[configmodels.Type]ExporterFactory{
 				"exp1": &TestExporterFactory{"exp1"},
 				"exp2": &TestExporterFactory{"exp2"},
 			},
 		},
 		{
-			in: []ExporterFactoryBase{
+			in: []ExporterFactory{
 				&TestExporterFactory{"exp1"},
 				&TestExporterFactory{"exp1"},
 			},

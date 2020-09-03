@@ -19,60 +19,18 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/converter"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // This file contains implementations of Trace/Metrics connectors
 // that fan out the data to multiple other consumers.
 
-// CreateMetricsFanOutConnector creates a connector based on provided type of trace consumer.
-// If any of the wrapped metrics consumers are of the new type, use metricsFanOutConnector,
-// otherwise use the old type connector.
-func CreateMetricsFanOutConnector(mcs []consumer.MetricsConsumerBase) consumer.MetricsConsumerBase {
-	metricsConsumersOld := make([]consumer.MetricsConsumerOld, 0, len(mcs))
-	metricsConsumers := make([]consumer.MetricsConsumer, 0, len(mcs))
-	allMetricsConsumersOld := true
-	for _, mc := range mcs {
-		if metricsConsumer, ok := mc.(consumer.MetricsConsumer); ok {
-			allMetricsConsumersOld = false
-			metricsConsumers = append(metricsConsumers, metricsConsumer)
-		} else {
-			metricsConsumerOld := mc.(consumer.MetricsConsumerOld)
-			metricsConsumersOld = append(metricsConsumersOld, metricsConsumerOld)
-			metricsConsumers = append(metricsConsumers, converter.NewInternalToOCMetricsConverter(metricsConsumerOld))
-		}
-	}
-
-	if allMetricsConsumersOld {
-		return NewMetricsFanOutConnectorOld(metricsConsumersOld)
-	}
-	return NewMetricsFanOutConnector(metricsConsumers)
-}
-
-// NewMetricsFanOutConnectorOld wraps multiple metrics consumers in a single one.
-func NewMetricsFanOutConnectorOld(mcs []consumer.MetricsConsumerOld) consumer.MetricsConsumerOld {
-	return metricsFanOutConnectorOld(mcs)
-}
-
-type metricsFanOutConnectorOld []consumer.MetricsConsumerOld
-
-var _ consumer.MetricsConsumerOld = (*metricsFanOutConnectorOld)(nil)
-
-// ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
-func (mfc metricsFanOutConnectorOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	var errs []error
-	for _, mc := range mfc {
-		if err := mc.ConsumeMetricsData(ctx, md); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return componenterror.CombineErrors(errs)
-}
-
-// NewMetricsFanOutConnector wraps multiple new type metrics consumers in a single one.
+// NewMetricsFanOutConnector wraps multiple metrics consumers in a single one.
 func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+	if len(mcs) == 1 {
+		// Don't wrap if no need to do it.
+		return mcs[0]
+	}
 	return metricsFanOutConnector(mcs)
 }
 
@@ -91,52 +49,12 @@ func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.M
 	return componenterror.CombineErrors(errs)
 }
 
-// CreateTraceFanOutConnector wraps multiple trace consumers in a single one.
-// If any of the wrapped trace consumers are of the new type, use traceFanOutConnector,
-// otherwise use the old type connector
-func CreateTraceFanOutConnector(tcs []consumer.TraceConsumerBase) consumer.TraceConsumerBase {
-	traceConsumersOld := make([]consumer.TraceConsumerOld, 0, len(tcs))
-	traceConsumers := make([]consumer.TraceConsumer, 0, len(tcs))
-	allTraceConsumersOld := true
-	for _, tc := range tcs {
-		if traceConsumer, ok := tc.(consumer.TraceConsumer); ok {
-			allTraceConsumersOld = false
-			traceConsumers = append(traceConsumers, traceConsumer)
-		} else {
-			traceConsumerOld := tc.(consumer.TraceConsumerOld)
-			traceConsumersOld = append(traceConsumersOld, traceConsumerOld)
-			traceConsumers = append(traceConsumers, converter.NewInternalToOCTraceConverter(traceConsumerOld))
-		}
+// NewTracesFanOutConnector wraps multiple trace consumers in a single one.
+func NewTracesFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
+	if len(tcs) == 1 {
+		// Don't wrap if no need to do it.
+		return tcs[0]
 	}
-
-	if allTraceConsumersOld {
-		return NewTraceFanOutConnectorOld(traceConsumersOld)
-	}
-	return NewTraceFanOutConnector(traceConsumers)
-}
-
-// NewTraceFanOutConnectorOld wraps multiple trace consumers in a single one.
-func NewTraceFanOutConnectorOld(tcs []consumer.TraceConsumerOld) consumer.TraceConsumerOld {
-	return traceFanOutConnectorOld(tcs)
-}
-
-type traceFanOutConnectorOld []consumer.TraceConsumerOld
-
-var _ consumer.TraceConsumerOld = (*traceFanOutConnectorOld)(nil)
-
-// ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
-func (tfc traceFanOutConnectorOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	var errs []error
-	for _, tc := range tfc {
-		if err := tc.ConsumeTraceData(ctx, td); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return componenterror.CombineErrors(errs)
-}
-
-// NewTraceFanOutConnector wraps multiple new type trace consumers in a single one.
-func NewTraceFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
 	return traceFanOutConnector(tcs)
 }
 
@@ -155,17 +73,21 @@ func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Trac
 	return componenterror.CombineErrors(errs)
 }
 
-// NewLogFanOutConnector wraps multiple new type  consumers in a single one.
-func NewLogFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
-	return LogFanOutConnector(lcs)
+// NewLogsFanOutConnector wraps multiple log consumers in a single one.
+func NewLogsFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
+	if len(lcs) == 1 {
+		// Don't wrap if no need to do it.
+		return lcs[0]
+	}
+	return logsFanOutConnector(lcs)
 }
 
-type LogFanOutConnector []consumer.LogsConsumer
+type logsFanOutConnector []consumer.LogsConsumer
 
-var _ consumer.LogsConsumer = (*LogFanOutConnector)(nil)
+var _ consumer.LogsConsumer = (*logsFanOutConnector)(nil)
 
-// Consume exports the span data to all  consumers wrapped by the current one.
-func (fc LogFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+// Consume exports the log data to all consumers wrapped by the current one.
+func (fc logsFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 	for _, tc := range fc {
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {

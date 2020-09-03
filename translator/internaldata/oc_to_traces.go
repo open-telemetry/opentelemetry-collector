@@ -19,10 +19,10 @@ import (
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -146,14 +146,15 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	}
 
 	dest.SetName(src.Name.GetValue())
-	dest.SetStartTime(internal.TimestampToUnixNano(src.StartTime))
-	dest.SetEndTime(internal.TimestampToUnixNano(src.EndTime))
+	dest.SetStartTime(pdata.TimestampToUnixNano(src.StartTime))
+	dest.SetEndTime(pdata.TimestampToUnixNano(src.EndTime))
 
 	initAttributeMapFromOC(src.Attributes, dest.Attributes())
 	dest.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(src.Attributes))
 	ocEventsToInternal(src.TimeEvents, dest)
 	ocLinksToInternal(src.Links, dest)
 	ocStatusToInternal(src.Status, dest.Status())
+	ocSameProcessAsParentSpanToInternal(src.SameProcessAsParentSpan, dest)
 }
 
 func hasBytesValue(s []byte) bool {
@@ -292,7 +293,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 		event := events.At(i)
 		i++
 
-		event.SetTimestamp(internal.TimestampToUnixNano(ocEvent.Time))
+		event.SetTimestamp(pdata.TimestampToUnixNano(ocEvent.Time))
 
 		switch teValue := ocEvent.Value.(type) {
 		case *octrace.Span_TimeEvent_Annotation_:
@@ -359,4 +360,11 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	dest.UpsertInt(conventions.OCTimeEventMessageEventID, int64(msgEvent.Id))
 	dest.UpsertInt(conventions.OCTimeEventMessageEventUSize, int64(msgEvent.UncompressedSize))
 	dest.UpsertInt(conventions.OCTimeEventMessageEventCSize, int64(msgEvent.CompressedSize))
+}
+
+func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata.Span) {
+	if spaps == nil {
+		return
+	}
+	dest.Attributes().UpsertBool(conventions.OCAttributeSameProcessAsParentSpan, spaps.Value)
 }

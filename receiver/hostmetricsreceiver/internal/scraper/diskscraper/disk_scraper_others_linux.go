@@ -26,9 +26,9 @@ const systemSpecificMetricsLen = 1
 
 func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 	metric := metrics.At(startIdx)
-	diskMergedDescriptor.CopyTo(metric.MetricDescriptor())
+	diskMergedDescriptor.CopyTo(metric)
 
-	idps := metric.Int64DataPoints()
+	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCounters))
 
 	idx := 0

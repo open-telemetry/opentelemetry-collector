@@ -16,6 +16,7 @@ package kafkaexporter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
@@ -25,16 +26,23 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+
 // kafkaProducer uses sarama to produce messages to Kafka.
 type kafkaProducer struct {
 	producer   sarama.SyncProducer
 	topic      string
-	marshaller marshaller
+	marshaller Marshaller
 	logger     *zap.Logger
 }
 
 // newExporter creates Kafka exporter.
-func newExporter(config Config, params component.ExporterCreateParams) (*kafkaProducer, error) {
+func newExporter(config Config, params component.ExporterCreateParams, marshallers map[string]Marshaller) (*kafkaProducer, error) {
+	marshaller := marshallers[config.Encoding]
+	if marshaller == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
 	c := sarama.NewConfig()
 	// These setting are required by the sarama.SyncProducer implementation.
 	c.Producer.Return.Successes = true
@@ -60,21 +68,17 @@ func newExporter(config Config, params component.ExporterCreateParams) (*kafkaPr
 	return &kafkaProducer{
 		producer:   producer,
 		topic:      config.Topic,
-		marshaller: &protoMarshaller{},
+		marshaller: marshaller,
 		logger:     params.Logger,
 	}, nil
 }
 
 func (e *kafkaProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
-	bts, err := e.marshaller.Marshal(td)
+	messages, err := e.marshaller.Marshal(td)
 	if err != nil {
 		return td.SpanCount(), consumererror.Permanent(err)
 	}
-	m := &sarama.ProducerMessage{
-		Topic: e.topic,
-		Value: sarama.ByteEncoder(bts),
-	}
-	_, _, err = e.producer.SendMessage(m)
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
 	if err != nil {
 		return td.SpanCount(), err
 	}
@@ -83,4 +87,15 @@ func (e *kafkaProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int
 
 func (e *kafkaProducer) Close(context.Context) error {
 	return e.producer.Close()
+}
+
+func producerMessages(messages []Message, topic string) []*sarama.ProducerMessage {
+	producerMessages := make([]*sarama.ProducerMessage, len(messages))
+	for i := range messages {
+		producerMessages[i] = &sarama.ProducerMessage{
+			Topic: topic,
+			Value: sarama.ByteEncoder(messages[i].Value),
+		}
+	}
+	return producerMessages
 }

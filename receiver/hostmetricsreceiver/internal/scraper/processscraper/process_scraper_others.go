@@ -27,10 +27,10 @@ const cpuStatesLen = 0
 func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+func getProcessExecutable(processHandle) (*executableMetadata, error) {
 	return nil, nil
 }
 
-func getProcessCommand(proc processHandle) (*commandMetadata, error) {
+func getProcessCommand(processHandle) (*commandMetadata, error) {
 	return nil, nil
 }

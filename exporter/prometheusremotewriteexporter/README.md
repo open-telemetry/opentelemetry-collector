@@ -28,4 +28,4 @@ prometheusremotewrite:
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-_Here is a link to the overall project [design](https://github.com/open-telemetry/opentelemetry-collector/pull/1464)_
+_Here is a link to the overall project [design](./DESIGN.md)_

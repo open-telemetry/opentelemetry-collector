@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	typeStr       = "kafka"
-	defaultTopic  = "otlp_spans"
-	defaultBroker = "localhost:9092"
+	typeStr         = "kafka"
+	defaultTopic    = "otlp_spans"
+	defaultEncoding = "otlp_proto"
+	defaultBroker   = "localhost:9092"
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
 	// default from sarama.NewConfig()
@@ -35,12 +36,30 @@ const (
 	defaultMetadataFull = true
 )
 
+// FactoryOption applies changes to kafkaExporterFactory.
+type FactoryOption func(factory *kafkaExporterFactory)
+
+// WithAddMarshallers adds marshallers.
+func WithAddMarshallers(encodingMarshaller map[string]Marshaller) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for encoding, marshaller := range encodingMarshaller {
+			factory.marshallers[encoding] = marshaller
+		}
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
-func NewFactory() component.ExporterFactory {
+func NewFactory(options ...FactoryOption) component.ExporterFactory {
+	f := &kafkaExporterFactory{
+		marshallers: defaultMarshallers(),
+	}
+	for _, o := range options {
+		o(f)
+	}
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(f.createTraceExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -57,6 +76,7 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings:   qs,
 		Brokers:         []string{defaultBroker},
 		Topic:           defaultTopic,
+		Encoding:        defaultEncoding,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
@@ -67,13 +87,17 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
+type kafkaExporterFactory struct {
+	marshallers map[string]Marshaller
+}
+
+func (f *kafkaExporterFactory) createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	oCfg := cfg.(*Config)
-	exp, err := newExporter(*oCfg, params)
+	exp, err := newExporter(*oCfg, params, f.marshallers)
 	if err != nil {
 		return nil, err
 	}

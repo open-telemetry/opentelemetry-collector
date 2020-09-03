@@ -60,34 +60,37 @@ func TestExport(t *testing.T) {
 				{
 					Metrics: []*otlpmetrics.Metric{
 						{
-							MetricDescriptor: &otlpmetrics.MetricDescriptor{
-								Name:        "mymetric",
-								Description: "My metric",
-								Unit:        "ms",
-								Type:        otlpmetrics.MetricDescriptor_MONOTONIC_INT64,
-							},
-							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
-								{
-									Labels: []*otlpcommon.StringKeyValue{
+							Name:        "mymetric",
+							Description: "My metric",
+							Unit:        "ms",
+							Data: &otlpmetrics.Metric_IntSum{
+								IntSum: &otlpmetrics.IntSum{
+									IsMonotonic:            true,
+									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+									DataPoints: []*otlpmetrics.IntDataPoint{
 										{
-											Key:   "key1",
-											Value: "value1",
+											Labels: []*otlpcommon.StringKeyValue{
+												{
+													Key:   "key1",
+													Value: "value1",
+												},
+											},
+											StartTimeUnixNano: unixnanos1,
+											TimeUnixNano:      unixnanos2,
+											Value:             123,
+										},
+										{
+											Labels: []*otlpcommon.StringKeyValue{
+												{
+													Key:   "key2",
+													Value: "value2",
+												},
+											},
+											StartTimeUnixNano: unixnanos1,
+											TimeUnixNano:      unixnanos2,
+											Value:             456,
 										},
 									},
-									StartTimeUnixNano: unixnanos1,
-									TimeUnixNano:      unixnanos2,
-									Value:             123,
-								},
-								{
-									Labels: []*otlpcommon.StringKeyValue{
-										{
-											Key:   "key2",
-											Value: "value2",
-										},
-									},
-									StartTimeUnixNano: unixnanos1,
-									TimeUnixNano:      unixnanos2,
-									Value:             456,
 								},
 							},
 						},
@@ -153,18 +156,21 @@ func TestExport_ErrorConsumer(t *testing.T) {
 				{
 					Metrics: []*otlpmetrics.Metric{
 						{
-							MetricDescriptor: &otlpmetrics.MetricDescriptor{
-								Name:        "mymetric",
-								Description: "My metric",
-								Unit:        "ms",
-								Type:        otlpmetrics.MetricDescriptor_MONOTONIC_INT64,
-							},
-							Int64DataPoints: []*otlpmetrics.Int64DataPoint{
-								{
-									Value: 123,
-								},
-								{
-									Value: 456,
+							Name:        "mymetric",
+							Description: "My metric",
+							Unit:        "ms",
+							Data: &otlpmetrics.Metric_IntSum{
+								IntSum: &otlpmetrics.IntSum{
+									IsMonotonic:            true,
+									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+									DataPoints: []*otlpmetrics.IntDataPoint{
+										{
+											Value: 123,
+										},
+										{
+											Value: 456,
+										},
+									},
 								},
 							},
 						},

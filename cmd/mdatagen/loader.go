@@ -27,25 +27,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type metricType string
-
-// metricTypeMapping maps yaml name to code type name.
-var metricTypeMapping = map[metricType]string{
-	"int64":       "pdata.MetricTypeInt64",
-	"double":      "pdata.MetricTypeDouble",
-	"int64 mono":  "pdata.MetricTypeMonotonicInt64",
-	"double mono": "pdata.MetricTypeMonotonicDouble",
-	"histogram":   "pdata.MetricTypeHistogram",
-	"summary":     "pdata.MetricTypeSummary",
-}
-
-func (mt metricType) Render() (string, error) {
-	if codeName, ok := metricTypeMapping[mt]; ok {
-		return codeName, nil
-	}
-	return "", fmt.Errorf("unknown metric type %q", mt)
-}
-
 type metricName string
 
 func (mn metricName) Render() (string, error) {
@@ -63,9 +44,12 @@ type metric struct {
 	Description string `validate:"required,notblank"`
 	// Unit of the metric.
 	Unit string `validate:"oneof=s By"`
-	// Type is the data type of the metric. Can be one of:
-	//     int64, double, int64 mono, double mono, histogram, summary
-	Type metricType `validate:"metrictype"`
+
+	// Raw data that is used to set Data interface below.
+	YmlData *ymlMetricData `yaml:"data" validate:"required"`
+	// Date is set to generic metric data interface after validating.
+	Data    MetricData    `yaml:"-"`
+
 	// Labels is the list of labels that the metric emits.
 	Labels []labelName
 }
@@ -117,11 +101,6 @@ func validateMetadata(out metadata) error {
 	if err := v.RegisterValidation("notblank", validators.NotBlank); err != nil {
 		return fmt.Errorf("failed registering notblank validator: %v", err)
 	}
-	if err := v.RegisterValidation("metrictype", func(fl validator.FieldLevel) bool {
-		return metricTypeMapping[metricType(fl.Field().String())] != ""
-	}); err != nil {
-		return fmt.Errorf("failed registering metric-type validator: %v", err)
-	}
 
 	// Provides better validation error messages.
 	enLocale := en.New()
@@ -158,6 +137,13 @@ func validateMetadata(out metadata) error {
 			return errors.New(buf.String())
 		}
 		return fmt.Errorf("unknown validation error: %v", err)
+	}
+
+	// Set metric data interface.
+	for k, v := range out.Metrics {
+		v.Data = v.YmlData.MetricData
+		v.YmlData = nil
+		out.Metrics[k] = v
 	}
 
 	return nil

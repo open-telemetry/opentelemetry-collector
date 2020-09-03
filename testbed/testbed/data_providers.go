@@ -44,6 +44,8 @@ type DataProvider interface {
 	GenerateMetrics() (pdata.Metrics, bool)
 	// GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
 	GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span
+	// GenerateLogs returns the internal pdata.Logs format
+	GenerateLogs() (pdata.Logs, bool)
 }
 
 // PerfTestDataProvider in an implementation of the DataProvider for use in performance tests.
@@ -136,18 +138,19 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.At(i)
-		metricDescriptor := metric.MetricDescriptor()
-		metricDescriptor.InitEmpty()
-		metricDescriptor.SetName("load_generator_" + strconv.Itoa(i))
-		metricDescriptor.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
-		metricDescriptor.SetType(pdata.MetricTypeInt64)
+		metric.SetName("load_generator_" + strconv.Itoa(i))
+		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
+		metric.SetUnit("1")
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		gauge := metric.IntGauge()
+		gauge.InitEmpty()
 
 		batchIndex := dp.batchesGenerated.Inc()
 
 		// Generate data points for the metric.
-		metric.Int64DataPoints().Resize(dataPointsPerMetric)
+		gauge.DataPoints().Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
-			dataPoint := metric.Int64DataPoints().At(j)
+			dataPoint := gauge.DataPoints().At(j)
 			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
@@ -163,6 +166,46 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span {
 	// function not supported for this data provider
 	return nil
+}
+
+func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	if dp.options.Attributes != nil {
+		attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+		attrs.InitEmptyWithCapacity(len(dp.options.Attributes))
+		for k, v := range dp.options.Attributes {
+			attrs.UpsertString(k, v)
+		}
+	}
+	logRecords := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logRecords.Resize(dp.options.ItemsPerBatch)
+
+	now := pdata.TimestampUnixNano(time.Now().UnixNano())
+
+	batchIndex := dp.batchesGenerated.Inc()
+
+	for i := 0; i < dp.options.ItemsPerBatch; i++ {
+		itemIndex := dp.dataItemsGenerated.Inc()
+		record := logRecords.At(i)
+		record.InitEmpty()
+		record.SetSeverityNumber(pdata.SeverityNumberINFO3)
+		record.SetSeverityText("INFO3")
+		record.SetName("load_generator_" + strconv.Itoa(i))
+		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
+		record.SetFlags(uint32(2))
+		record.SetTimestamp(now)
+
+		attrs := record.Attributes()
+		attrs.UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+		attrs.UpsertString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
+		attrs.UpsertString("a", "test")
+		attrs.UpsertDouble("b", 5.0)
+		attrs.UpsertInt("c", 3)
+		attrs.UpsertBool("d", true)
+	}
+	return logs, false
 }
 
 // GoldenDataProvider is an implementation of DataProvider for use in correctness tests.
@@ -220,6 +263,10 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return pdatautil.MetricsFromInternalMetrics(data.MetricData{}), true
+}
+
+func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
+	return pdata.Logs{}, true
 }
 
 func (dp *GoldenDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {

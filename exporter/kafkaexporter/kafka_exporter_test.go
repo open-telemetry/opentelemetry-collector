@@ -30,10 +30,17 @@ import (
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
-func TestNewExporter_wrong_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0"}
-	exp, err := newExporter(c, component.ExporterCreateParams{})
+func TestNewExporter_err_version(t *testing.T) {
+	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
+	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
 	assert.Error(t, err)
+	assert.Nil(t, exp)
+}
+
+func TestNewExporter_err_encoding(t *testing.T) {
+	c := Config{Encoding: "foo"}
+	exp, err := newExporter(c, component.ExporterCreateParams{}, map[string]Marshaller{})
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, exp)
 }
 
@@ -44,7 +51,7 @@ func TestTraceDataPusher(t *testing.T) {
 
 	p := kafkaProducer{
 		producer:   producer,
-		marshaller: &protoMarshaller{},
+		marshaller: &otlpProtoMarshaller{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -62,7 +69,7 @@ func TestTraceDataPusher_err(t *testing.T) {
 
 	p := kafkaProducer{
 		producer:   producer,
-		marshaller: &protoMarshaller{},
+		marshaller: &otlpProtoMarshaller{},
 		logger:     zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -91,8 +98,12 @@ type errorMarshaller struct {
 	err error
 }
 
-var _ marshaller = (*errorMarshaller)(nil)
+var _ Marshaller = (*errorMarshaller)(nil)
 
-func (e errorMarshaller) Marshal(pdata.Traces) ([]byte, error) {
+func (e errorMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 	return nil, e.err
+}
+
+func (e errorMarshaller) Encoding() string {
+	panic("implement me")
 }

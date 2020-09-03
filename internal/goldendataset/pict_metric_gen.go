@@ -35,7 +35,7 @@ func GenerateMetricDatas(metricPairsFile string) ([]data.MetricData, error) {
 		}
 		metricInputs := PICTMetricInputs{
 			NumPtsPerMetric: PICTNumPtsPerMetric(values[0]),
-			MetricType:      PICTMetricType(values[1]),
+			MetricType:      PICTMetricDataType(values[1]),
 			NumPtLabels:     PICTNumPtLabels(values[2]),
 		}
 		cfg := pictToCfg(metricInputs)
@@ -65,18 +65,28 @@ func pictToCfg(inputs PICTMetricInputs) MetricCfg {
 	}
 
 	switch inputs.MetricType {
-	case MetricTypeInt:
-		cfg.MetricDescriptorType = pdata.MetricTypeInt64
-	case MetricTypeMonotonicInt:
-		cfg.MetricDescriptorType = pdata.MetricTypeMonotonicInt64
-	case MetricTypeDouble:
-		cfg.MetricDescriptorType = pdata.MetricTypeDouble
-	case MetricTypeMonotonicDouble:
-		cfg.MetricDescriptorType = pdata.MetricTypeMonotonicDouble
-	case MetricTypeHistogram:
-		cfg.MetricDescriptorType = pdata.MetricTypeHistogram
-	case MetricTypeSummary:
-		cfg.MetricDescriptorType = pdata.MetricTypeSummary
+	case MetricTypeIntGauge:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntGauge
+	case MetricTypeMonotonicIntSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
+		cfg.IsMonotonicSum = true
+	case MetricTypeNonMonotonicIntSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntSum
+		cfg.IsMonotonicSum = false
+	case MetricTypeDoubleGauge:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
+	case MetricTypeMonotonicDoubleSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+		cfg.IsMonotonicSum = true
+	case MetricTypeNonMonotonicDoubleSum:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleSum
+		cfg.IsMonotonicSum = false
+	case MetricTypeIntHistogram:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
+	case MetricTypeDoubleHistogram:
+		cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
+	default:
+		panic("Should not happen, unsupported type " + string(inputs.MetricType))
 	}
 
 	switch inputs.NumPtLabels {

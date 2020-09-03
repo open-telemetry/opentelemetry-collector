@@ -39,7 +39,10 @@ metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
-    type: double mono
+    data:
+      type: double sum
+      monotonic: true
+      aggregation: cumulative
     labels: [freeFormLabel, freeFormLabelWithValue, enumLabel]
 `
 
@@ -49,7 +52,10 @@ metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
-    type: double mono
+    data:
+      type: double sum
+      monotonic: true
+      aggregation: cumulative
     labels: [missing]
 `
 	unknownMetricType = `
@@ -58,9 +64,11 @@ metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
-    type: invalid
+    data:
+      type: invalid
     labels:
 `
+
 )
 
 func Test_loadMetadata(t *testing.T) {
@@ -90,8 +98,12 @@ func Test_loadMetadata(t *testing.T) {
 					"system.cpu.time": {
 						Description: "Total CPU seconds broken down by different states.",
 						Unit:        "s",
-						Type:        "double mono",
-						Labels:      []labelName{"freeFormLabel", "freeFormLabelWithValue", "enumLabel"}}},
+						Data: &doubleSum{
+							Aggregated: Aggregated{Aggregation: "cumulative"},
+							Mono:       Mono{Monotonic: true},
+						},
+						// YmlData: nil,
+						Labels: []labelName{"freeFormLabel", "freeFormLabelWithValue", "enumLabel"}}},
 			},
 		},
 		{
@@ -104,7 +116,7 @@ func Test_loadMetadata(t *testing.T) {
 			name:    "unknownMetricType",
 			yml:     unknownMetricType,
 			want:    metadata{},
-			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Type: Key: 'metadata.Metrics[system.cpu.time].Type' Error:Field validation for 'Type' failed on the 'metrictype' tag\n",
+			wantErr: `unable to unmarshal yaml: metric data "invalid" type invalid`,
 		},
 	}
 	for _, tt := range tests {
@@ -114,6 +126,7 @@ func Test_loadMetadata(t *testing.T) {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)
 			} else {
+				require.NoError(t, err)
 				require.Equal(t, tt.want, got)
 			}
 		})

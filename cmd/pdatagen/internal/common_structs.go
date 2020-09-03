@@ -23,9 +23,12 @@ var commonFile = &File{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
+		``,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
 	},
 	structs: []baseStruct{
 		instrumentationLibrary,
+		anyValueArray,
 	},
 }
 
@@ -36,7 +39,7 @@ var instrumentationLibrary = &messageStruct{
 	fields: []baseField{
 		nameField,
 		&primitiveField{
-			fieldMame:       "Version",
+			fieldName:       "Version",
 			originFieldName: "Version",
 			returnType:      "string",
 			defaultVal:      `""`,
@@ -70,7 +73,7 @@ var instrumentationLibraryField = &messageField{
 }
 
 var startTimeField = &primitiveTypedField{
-	fieldMame:       "StartTime",
+	fieldName:       "StartTime",
 	originFieldName: "StartTimeUnixNano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
@@ -79,7 +82,7 @@ var startTimeField = &primitiveTypedField{
 }
 
 var timeField = &primitiveTypedField{
-	fieldMame:       "Timestamp",
+	fieldName:       "Timestamp",
 	originFieldName: "TimeUnixNano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
@@ -88,7 +91,7 @@ var timeField = &primitiveTypedField{
 }
 
 var endTimeField = &primitiveTypedField{
-	fieldMame:       "EndTime",
+	fieldName:       "EndTime",
 	originFieldName: "EndTimeUnixNano",
 	returnType:      "TimestampUnixNano",
 	rawType:         "uint64",
@@ -97,13 +100,13 @@ var endTimeField = &primitiveTypedField{
 }
 
 var attributes = &sliceField{
-	fieldMame:       "Attributes",
+	fieldName:       "Attributes",
 	originFieldName: "Attributes",
 	returnSlice:     attributeMap,
 }
 
 var nameField = &primitiveField{
-	fieldMame:       "Name",
+	fieldName:       "Name",
 	originFieldName: "Name",
 	returnType:      "string",
 	defaultVal:      `""`,
@@ -113,4 +116,9 @@ var nameField = &primitiveField{
 var anyValue = &messageStruct{
 	structName:     "AttributeValue",
 	originFullName: "otlpcommon.AnyValue",
+}
+
+var anyValueArray = &sliceStruct{
+	structName: "AnyValueArray",
+	element:    anyValue,
 }

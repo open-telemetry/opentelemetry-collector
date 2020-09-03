@@ -3,7 +3,6 @@ module go.opentelemetry.io/collector
 go 1.14
 
 require (
-	contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/Shopify/sarama v1.27.0
@@ -21,11 +20,12 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
+	github.com/golang/snappy v0.0.1
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
-	github.com/google/go-cmp v0.5.1
+	github.com/google/go-cmp v0.5.2
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
@@ -33,16 +33,16 @@ require (
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
-	github.com/openzipkin/zipkin-go v0.2.2
+	github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
-	github.com/ory/go-acc v0.2.5
+	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.11.1
 	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83
 	github.com/rs/cors v1.7.0
-	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
-	github.com/shirou/gopsutil v0.0.0-20200517204708-c89193f22d93 // c89193f22d9359848988f32aee972122bb2abdc2
+	github.com/securego/gosec/v2 v2.4.0
+	github.com/shirou/gopsutil v2.20.6+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1

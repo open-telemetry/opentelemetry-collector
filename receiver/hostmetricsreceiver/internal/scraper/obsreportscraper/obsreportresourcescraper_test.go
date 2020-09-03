@@ -72,5 +72,5 @@ func (s *testResourceScraper) ScrapeMetrics(ctx context.Context) (pdata.Resource
 }
 
 func generateResourceMetricsSlice() pdata.ResourceMetricsSlice {
-	return testdata.GenerateMetricDataOneMetric().ResourceMetrics()
+	return testdata.GenerateMetricsOneMetric().ResourceMetrics()
 }

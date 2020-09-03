@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -31,90 +30,98 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
-const (
-	mockedConsumedResourceWithTypeJSON = `
-  {
-	"resource": {
-	  "attributes": [
-		{
-		  "key": "opencensus.resourcetype",
-		  "value": { "stringValue": "host" }
-		},
-		{
-		  "key": "label-key",
-		  "value": { "stringValue": "label-value" }
-		}
-	  ]
-	},
-	"instrumentation_library_metrics": [
-	  {
-		"metrics": [
-		  {
-			"metric_descriptor": {
-			  "name": "metric-name",
-			  "description": "metric-description",
-			  "unit": "metric-unit",
-			  "type": 1
+var (
+	mockedConsumedResourceWithType = &otlpmetrics.ResourceMetrics{
+		Resource: &otlpresource.Resource{
+			Attributes: []*otlpcommon.KeyValue{
+				{
+					Key: "opencensus.resourcetype",
+					Value: &otlpcommon.AnyValue{
+						Value: &otlpcommon.AnyValue_StringValue{
+							StringValue: "host",
+						},
+					},
+				},
+				{
+					Key: "label-key",
+					Value: &otlpcommon.AnyValue{
+						Value: &otlpcommon.AnyValue_StringValue{
+							StringValue: "label-value",
+						},
+					},
+				},
 			},
-			"int64_data_points": [
-			  {
-				"value": 0
-			  }
-			]
-		  }
-		]
-	  }
-	]
-  }
-`
+		},
+		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+			{
+				Metrics: []*otlpmetrics.Metric{
+					{
+						Name:        "metric-name",
+						Description: "metric-description",
+						Unit:        "metric-unit",
+						Data: &otlpmetrics.Metric_IntGauge{
+							IntGauge: &otlpmetrics.IntGauge{
+								DataPoints: []*otlpmetrics.IntDataPoint{
+									{
+										Value: 0,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	mockedConsumedResourceNilJSON = `
-  {
-    "instrumentation_library_metrics": [
-      {
-        "metrics": [
-          {
-            "metric_descriptor": {
-              "name": "metric-name",
-              "description": "metric-description",
-              "unit": "metric-unit",
-              "type": 1
-            },
-            "int64_data_points": [
-              {
-                "value": 0
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-`
-	mockedConsumedResourceWithoutAttributesJSON = `
-  {
-    "resource": {},
-    "instrumentation_library_metrics": [
-      {
-        "metrics": [
-          {
-            "metric_descriptor": {
-              "name": "metric-name",
-              "description": "metric-description",
-              "unit": "metric-unit",
-              "type": 1
-            },
-            "int64_data_points": [
-              {
-                "value": 0
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-`
+	mockedConsumedResourceNil = &otlpmetrics.ResourceMetrics{
+		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+			{
+				Metrics: []*otlpmetrics.Metric{
+					{
+						Name:        "metric-name",
+						Description: "metric-description",
+						Unit:        "metric-unit",
+						Data: &otlpmetrics.Metric_IntGauge{
+							IntGauge: &otlpmetrics.IntGauge{
+								DataPoints: []*otlpmetrics.IntDataPoint{
+									{
+										Value: 0,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	mockedConsumedResourceWithoutAttributes = &otlpmetrics.ResourceMetrics{
+		Resource: &otlpresource.Resource{
+			Attributes: []*otlpcommon.KeyValue{},
+		},
+		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+			{
+				Metrics: []*otlpmetrics.Metric{
+					{
+						Name:        "metric-name",
+						Description: "metric-description",
+						Unit:        "metric-unit",
+						Data: &otlpmetrics.Metric_IntGauge{
+							IntGauge: &otlpmetrics.IntGauge{
+								DataPoints: []*otlpmetrics.IntDataPoint{
+									{
+										Value: 0,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 )
 
 type resourceProcessorTestCase struct {
@@ -141,7 +148,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
     - key: opencensus.resourcetype
       action: delete
 `,
-			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithTypeJSON),
+			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithType),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: &otlpresource.Resource{
 					Attributes: []*otlpcommon.KeyValue{
@@ -167,7 +174,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
       action: insert
 
 `,
-			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceNilJSON),
+			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceNil),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 
 				Resource: &otlpresource.Resource{
@@ -189,7 +196,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
       value: additional-label-value
       action: insert
 `,
-			mockedConsumedMetricData: getMetricDataFromJSON(t, mockedConsumedResourceWithoutAttributesJSON),
+			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithoutAttributes),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 
 				Resource: &otlpresource.Resource{
@@ -211,13 +218,8 @@ func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Met
 	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
 }
 
-func getMetricDataFromJSON(t *testing.T, rmString string) pdata.Metrics {
-	var mockedResourceMetrics otlpmetrics.ResourceMetrics
-
-	err := jsonpb.UnmarshalString(rmString, &mockedResourceMetrics)
-	require.NoError(t, err, "failed to get mocked resource metrics object", err)
-
-	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{&mockedResourceMetrics}))
+func getMetricDataFrom(t *testing.T, rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
+	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
@@ -235,7 +237,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
-			configStr := createConfigYaml(t, sender, receiver, resultDir, processors)
+			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()

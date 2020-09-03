@@ -66,10 +66,10 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func initializeLoadMetric(metric pdata.Metric, metricDescriptor pdata.MetricDescriptor, now pdata.TimestampUnixNano, value float64) {
-	metricDescriptor.CopyTo(metric.MetricDescriptor())
+func initializeLoadMetric(metric pdata.Metric, metricDescriptor pdata.Metric, now pdata.TimestampUnixNano, value float64) {
+	metricDescriptor.CopyTo(metric)
 
-	idps := metric.DoubleDataPoints()
+	idps := metric.DoubleGauge().DataPoints()
 	idps.Resize(1)
 	dp := idps.At(0)
 	dp.SetTimestamp(now)

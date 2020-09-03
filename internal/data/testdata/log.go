@@ -283,7 +283,7 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		Name:                   "logA",
 		TimeUnixNano:           uint64(TestLogTimestamp),
 		DroppedAttributesCount: 1,
-		SeverityNumber:         otlplogs.SeverityNumber_INFO,
+		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
 		SpanId:                 []byte{0x01, 0x02, 0x04, 0x08},
@@ -320,7 +320,7 @@ func generateOtlpLogTwo() *otlplogs.LogRecord {
 		Name:                   "logB",
 		TimeUnixNano:           uint64(TestLogTimestamp),
 		DroppedAttributesCount: 1,
-		SeverityNumber:         otlplogs.SeverityNumber_INFO,
+		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something happened"}},
 		Attributes: []*otlpcommon.KeyValue{
@@ -351,7 +351,7 @@ func generateOtlpLogThree() *otlplogs.LogRecord {
 		Name:                   "logC",
 		TimeUnixNano:           uint64(TestLogTimestamp),
 		DroppedAttributesCount: 1,
-		SeverityNumber:         otlplogs.SeverityNumber_WARN,
+		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN,
 		SeverityText:           "Warning",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something else happened"}},
 	}

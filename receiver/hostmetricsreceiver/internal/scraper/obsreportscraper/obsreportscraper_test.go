@@ -72,5 +72,5 @@ func (s *testScraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, err
 }
 
 func generateMetricsSlice() pdata.MetricSlice {
-	return testdata.GenerateMetricDataOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	return testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 }

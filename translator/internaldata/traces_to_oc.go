@@ -19,10 +19,10 @@ import (
 	"strings"
 
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -85,6 +85,7 @@ func ResourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
 }
 
 func spanToOC(span pdata.Span) *octrace.Span {
+	spaps := attributesMapToOCSameProcessAsParentSpan(span.Attributes())
 	attributes := attributesMapToOCSpanAttributes(span.Attributes(), span.DroppedAttributesCount())
 	if kindAttr := spanKindToOCAttribute(span.Kind()); kindAttr != nil {
 		if attributes == nil {
@@ -97,19 +98,20 @@ func spanToOC(span pdata.Span) *octrace.Span {
 	}
 
 	return &octrace.Span{
-		TraceId:        span.TraceID().Bytes(),
-		SpanId:         span.SpanID().Bytes(),
-		Tracestate:     traceStateToOC(span.TraceState()),
-		ParentSpanId:   span.ParentSpanID().Bytes(),
-		Name:           stringToTruncatableString(span.Name()),
-		Kind:           spanKindToOC(span.Kind()),
-		StartTime:      internal.UnixNanoToTimestamp(span.StartTime()),
-		EndTime:        internal.UnixNanoToTimestamp(span.EndTime()),
-		Attributes:     attributes,
-		TimeEvents:     eventsToOC(span.Events(), span.DroppedEventsCount()),
-		Links:          linksToOC(span.Links(), span.DroppedLinksCount()),
-		Status:         statusToOC(span.Status()),
-		ChildSpanCount: nil, // TODO(dmitryax): Handle once OTLP supports it
+		TraceId:                 span.TraceID().Bytes(),
+		SpanId:                  span.SpanID().Bytes(),
+		Tracestate:              traceStateToOC(span.TraceState()),
+		ParentSpanId:            span.ParentSpanID().Bytes(),
+		Name:                    stringToTruncatableString(span.Name()),
+		Kind:                    spanKindToOC(span.Kind()),
+		StartTime:               pdata.UnixNanoToTimestamp(span.StartTime()),
+		EndTime:                 pdata.UnixNanoToTimestamp(span.EndTime()),
+		Attributes:              attributes,
+		TimeEvents:              eventsToOC(span.Events(), span.DroppedEventsCount()),
+		Links:                   linksToOC(span.Links(), span.DroppedLinksCount()),
+		Status:                  statusToOC(span.Status()),
+		ChildSpanCount:          nil, // TODO(dmitryax): Handle once OTLP supports it
+		SameProcessAsParentSpan: spaps,
 	}
 }
 
@@ -195,6 +197,14 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 			StringValue: stringToTruncatableString(val),
 		},
 	}
+}
+
+func attributesMapToOCSameProcessAsParentSpan(attr pdata.AttributeMap) *wrapperspb.BoolValue {
+	val, ok := attr.Get(conventions.OCAttributeSameProcessAsParentSpan)
+	if !ok || val.Type() != pdata.AttributeValueBOOL {
+		return nil
+	}
+	return wrapperspb.Bool(val.BoolVal())
 }
 
 // OTLP follows the W3C format, e.g. "vendorname1=opaqueValue1,vendorname2=opaqueValue2"
@@ -294,7 +304,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
-				Time: internal.UnixNanoToTimestamp(event.Timestamp()),
+				Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
@@ -309,7 +319,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	ocAttributes := attributesMapToOCSpanAttributes(attrs, event.DroppedAttributesCount())
 	return &octrace.Span_TimeEvent{
-		Time: internal.UnixNanoToTimestamp(event.Timestamp()),
+		Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
 		Value: &octrace.Span_TimeEvent_Annotation_{
 			Annotation: &octrace.Span_TimeEvent_Annotation{
 				Description: stringToTruncatableString(event.Name()),

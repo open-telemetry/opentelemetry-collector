@@ -286,7 +286,7 @@ func fillSpanOne(span pdata.Span) {
 	span.SetDroppedEventsCount(1)
 	status := span.Status()
 	status.InitEmpty()
-	status.SetCode(pdata.StatusCode(1))
+	status.SetCode(pdata.StatusCodeCancelled)
 	status.SetMessage("status-cancelled")
 }
 
@@ -311,7 +311,7 @@ func generateOtlpSpanOne() *otlptrace.Span {
 		},
 		DroppedEventsCount: 1,
 		Status: &otlptrace.Status{
-			Code:    otlptrace.Status_Cancelled,
+			Code:    otlptrace.Status_STATUS_CODE_CANCELLED,
 			Message: "status-cancelled",
 		},
 	}

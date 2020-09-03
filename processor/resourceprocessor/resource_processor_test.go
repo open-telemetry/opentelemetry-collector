@@ -146,7 +146,7 @@ func generateTraceData(attributes map[string]string) pdata.Traces {
 }
 
 func generateMetricData(attributes map[string]string) pdata.Metrics {
-	md := testdata.GenerateMetricDataOneMetricNoResource()
+	md := testdata.GenerateMetricsOneMetricNoResource()
 	if attributes == nil {
 		return pdatautil.MetricsFromInternalMetrics(md)
 	}

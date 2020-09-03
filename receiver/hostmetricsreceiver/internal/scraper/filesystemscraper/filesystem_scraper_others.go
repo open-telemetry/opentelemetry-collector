@@ -22,7 +22,7 @@ import (
 
 const fileSystemStatesLen = 2
 
-func appendFileSystemUsageStateDataPoints(idps pdata.Int64DataPointSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsage *deviceUsage) {
+func appendFileSystemUsageStateDataPoints(idps pdata.IntDataPointSlice, startIdx int, now pdata.TimestampUnixNano, deviceUsage *deviceUsage) {
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+0), now, deviceUsage.deviceName, usedLabelValue, int64(deviceUsage.usage.Used))
 	initializeFileSystemUsageDataPoint(idps.At(startIdx+1), now, deviceUsage.deviceName, freeLabelValue, int64(deviceUsage.usage.Free))
 }

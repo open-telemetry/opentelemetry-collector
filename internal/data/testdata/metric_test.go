@@ -19,9 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-
 	"go.opentelemetry.io/collector/internal/data"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 type traceMetricsCase struct {
@@ -34,73 +33,73 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 	return []traceMetricsCase{
 		{
 			name: "empty",
-			td:   GenerateMetricDataEmpty(),
-			otlp: generateMetricOtlpEmpty(),
+			td:   GenerateMetricsEmpty(),
+			otlp: generateMetricsOtlpEmpty(),
 		},
 		{
 			name: "one-empty-resource-metrics",
-			td:   GenerateMetricDataOneEmptyResourceMetrics(),
-			otlp: generateMetricOtlpOneEmptyResourceMetrics(),
+			td:   GenerateMetricsOneEmptyResourceMetrics(),
+			otlp: generateMetricsOtlpOneEmptyResourceMetrics(),
 		},
 		{
 			name: "one-empty-one-nil-resource-metrics",
-			td:   GenerateMetricDataOneEmptyOneNilResourceMetrics(),
-			otlp: generateMetricOtlpOneEmptyOneNilResourceMetrics(),
+			td:   GenerateMetricsOneEmptyOneNilResourceMetrics(),
+			otlp: generateMetricsOtlpOneEmptyOneNilResourceMetrics(),
 		},
 		{
 			name: "no-libraries",
-			td:   GenerateMetricDataNoLibraries(),
-			otlp: generateMetricOtlpNoLibraries(),
+			td:   GenerateMetricsNoLibraries(),
+			otlp: generateMetricsOtlpNoLibraries(),
 		},
 		{
 			name: "one-empty-instrumentation-library",
-			td:   GenerateMetricDataOneEmptyInstrumentationLibrary(),
-			otlp: generateMetricOtlpOneEmptyInstrumentationLibrary(),
+			td:   GenerateMetricsOneEmptyInstrumentationLibrary(),
+			otlp: generateMetricsOtlpOneEmptyInstrumentationLibrary(),
 		},
 		{
 			name: "one-empty-one-nil-instrumentation-library",
-			td:   GenerateMetricDataOneEmptyOneNilInstrumentationLibrary(),
-			otlp: generateMetricOtlpOneEmptyOneNilInstrumentationLibrary(),
+			td:   GenerateMetricsOneEmptyOneNilInstrumentationLibrary(),
+			otlp: generateMetricsOtlpOneEmptyOneNilInstrumentationLibrary(),
 		},
 		{
 			name: "one-metric-no-resource",
-			td:   GenerateMetricDataOneMetricNoResource(),
-			otlp: generateMetricOtlpOneMetricNoResource(),
+			td:   GenerateMetricsOneMetricNoResource(),
+			otlp: generateMetricsOtlpOneMetricNoResource(),
 		},
 		{
 			name: "one-metric",
-			td:   GenerateMetricDataOneMetric(),
-			otlp: generateMetricOtlpOneMetric(),
+			td:   GenerateMetricsOneMetric(),
+			otlp: generateMetricsOtlpOneMetric(),
 		},
 		{
 			name: "two-metrics",
-			td:   GenerateMetricDataTwoMetrics(),
-			otlp: GenerateMetricOtlpTwoMetrics(),
+			td:   GenerateMetricsTwoMetrics(),
+			otlp: GenerateMetricsOtlpTwoMetrics(),
 		},
 		{
 			name: "one-metric-one-nil",
-			td:   GenerateMetricDataOneMetricOneNil(),
-			otlp: generateMetricOtlpOneMetricOneNil(),
+			td:   GenerateMetricsOneMetricOneNil(),
+			otlp: generateMetricsOtlpOneMetricOneNil(),
 		},
 		{
 			name: "one-metric-no-labels",
-			td:   GenerateMetricDataOneMetricNoLabels(),
-			otlp: generateMetricOtlpOneMetricNoLabels(),
+			td:   GenerateMetricsOneMetricNoLabels(),
+			otlp: generateMetricsOtlpOneMetricNoLabels(),
 		},
 		{
 			name: "one-metric-one-nil-point",
-			td:   GenerateMetricDataOneMetricOneNilPoint(),
-			otlp: generateMetricOtlpOneMetricOneNilPoint(),
+			td:   GenerateMetricsOneMetricOneNilPoint(),
+			otlp: generateMetricsOtlpOneMetricOneNilPoint(),
 		},
 		{
 			name: "all-types-no-data-points",
-			td:   GenerateMetricDataAllTypesNoDataPoints(),
-			otlp: generateMetricOtlpAllTypesNoDataPoints(),
+			td:   GenerateMetricsAllTypesNoDataPoints(),
+			otlp: generateMetricsOtlpAllTypesNoDataPoints(),
 		},
 		{
-			name: "counters-histogram-summary",
-			td:   GenerateMetricDataWithCountersHistogramAndSummary(),
-			otlp: generateMetricOtlpWithCountersHistogramAndSummary(),
+			name: "counters-histogram",
+			td:   GenerateMetricsWithCountersHistograms(),
+			otlp: generateMetricsOtlpWithCountersHistograms(),
 		},
 	}
 }
@@ -121,26 +120,26 @@ func TestToFromOtlpMetrics(t *testing.T) {
 }
 
 func TestToFromOtlpMetricsWithNils(t *testing.T) {
-	md := GenerateMetricDataOneEmptyOneNilResourceMetrics()
+	md := GenerateMetricsOneEmptyOneNilResourceMetrics()
 	assert.EqualValues(t, 2, md.ResourceMetrics().Len())
 	assert.False(t, md.ResourceMetrics().At(0).IsNil())
 	assert.True(t, md.ResourceMetrics().At(1).IsNil())
 
-	md = GenerateMetricDataOneEmptyOneNilInstrumentationLibrary()
+	md = GenerateMetricsOneEmptyOneNilInstrumentationLibrary()
 	rs := md.ResourceMetrics().At(0)
 	assert.EqualValues(t, 2, rs.InstrumentationLibraryMetrics().Len())
 	assert.False(t, rs.InstrumentationLibraryMetrics().At(0).IsNil())
 	assert.True(t, rs.InstrumentationLibraryMetrics().At(1).IsNil())
 
-	md = GenerateMetricDataOneMetricOneNil()
+	md = GenerateMetricsOneMetricOneNil()
 	ilss := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	assert.EqualValues(t, 2, ilss.Metrics().Len())
 	assert.False(t, ilss.Metrics().At(0).IsNil())
 	assert.True(t, ilss.Metrics().At(1).IsNil())
 }
 
-func TestGenerateMetricDataManyMetricsSameResource(t *testing.T) {
-	md := GenerateMetricDataManyMetricsSameResource(100)
+func TestGenerateMetricsManyMetricsSameResource(t *testing.T) {
+	md := GenerateMetricsManyMetricsSameResource(100)
 	assert.EqualValues(t, 1, md.ResourceMetrics().Len())
 	assert.EqualValues(t, 100, md.MetricCount())
 }

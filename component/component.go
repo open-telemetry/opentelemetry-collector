@@ -107,3 +107,19 @@ type ConfigUnmarshaler interface {
 // intoCfg interface{}
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
 type CustomUnmarshaler func(componentViperSection *viper.Viper, intoCfg interface{}) error
+
+// ApplicationStartInfo is the information that is logged at the application start and
+// passed into each component. This information can be overridden in custom builds.
+type ApplicationStartInfo struct {
+	// Executable file name, e.g. "otelcol".
+	ExeName string
+
+	// Long name, used e.g. in the logs.
+	LongName string
+
+	// Version string.
+	Version string
+
+	// Git hash of the source code.
+	GitHash string
+}

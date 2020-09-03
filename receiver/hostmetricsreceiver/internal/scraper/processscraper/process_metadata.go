@@ -42,42 +42,58 @@ const (
 
 // descriptors
 
-var cpuTimeDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("process.cpu.time")
-	descriptor.SetDescription("Total CPU seconds broken down by different states.")
-	descriptor.SetUnit("s")
-	descriptor.SetType(pdata.MetricTypeMonotonicDouble)
-	return descriptor
+var cpuTimeDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("process.cpu.time")
+	metric.SetDescription("Total CPU seconds broken down by different states.")
+	metric.SetUnit("s")
+	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	sum := metric.DoubleSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var physicalMemoryUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("process.memory.physical_usage")
-	descriptor.SetDescription("The amount of physical memory in use.")
-	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeInt64)
-	return descriptor
+var physicalMemoryUsageDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("process.memory.physical_usage")
+	metric.SetDescription("The amount of physical memory in use.")
+	metric.SetUnit("bytes")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var virtualMemoryUsageDescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("process.memory.virtual_usage")
-	descriptor.SetDescription("Virtual memory size.")
-	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeInt64)
-	return descriptor
+var virtualMemoryUsageDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("process.memory.virtual_usage")
+	metric.SetDescription("Virtual memory size.")
+	metric.SetUnit("bytes")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()
 
-var diskIODescriptor = func() pdata.MetricDescriptor {
-	descriptor := pdata.NewMetricDescriptor()
-	descriptor.InitEmpty()
-	descriptor.SetName("process.disk.io")
-	descriptor.SetDescription("Disk bytes transferred.")
-	descriptor.SetUnit("bytes")
-	descriptor.SetType(pdata.MetricTypeMonotonicInt64)
-	return descriptor
+var diskIODescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("process.disk.io")
+	metric.SetDescription("Disk bytes transferred.")
+	metric.SetUnit("bytes")
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	sum := metric.IntSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
 }()

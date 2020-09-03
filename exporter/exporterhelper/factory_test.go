@@ -52,8 +52,7 @@ func TestNewFactory(t *testing.T) {
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
-	lfactory := factory.(component.LogsExporterFactory)
-	_, err = lfactory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 }
 
@@ -80,8 +79,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Same(t, nopMetricsExporter, me)
 
-	lfactory := factory.(component.LogsExporterFactory)
-	le, err := lfactory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
+	le, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{}, defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopLogsExporter, le)
 }

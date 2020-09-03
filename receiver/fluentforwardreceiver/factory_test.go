@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := NewFactory().(component.LogsReceiverFactory)
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ListenAddress = "localhost:0" // Endpoint is required, not going to be used here.
 

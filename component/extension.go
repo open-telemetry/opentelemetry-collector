@@ -30,7 +30,7 @@ type ServiceExtension interface {
 }
 
 // PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
-// Service that is to be implemented by extensions interested in changes to pipeline
+// Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
 type PipelineWatcher interface {
@@ -51,6 +51,9 @@ type ExtensionCreateParams struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
+
+	// ApplicationStartInfo can be used by components for informational purposes
+	ApplicationStartInfo ApplicationStartInfo
 }
 
 // ExtensionFactory is a factory interface for extensions to the service.

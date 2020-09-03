@@ -72,7 +72,7 @@ func TestScrapeMetrics(t *testing.T) {
 			if runtime.GOOS == "linux" {
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertInt64MetricLabelHasValue(t, metrics.At(0), 2, metadata.Labels.MemState, metadata.LabelMemState.Inactive)
+				internal.AssertIntGaugeMetricLabelHasValue(t, metrics.At(0), 2, metadata.Labels.MemState, metadata.LabelMemState.Inactive)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -80,16 +80,16 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor) {
-	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
-	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 0, metadata.Labels.MemState, metadata.LabelMemState.Used)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 1, metadata.Labels.MemState, metadata.LabelMemState.Free)
+func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
+	internal.AssertDescriptorEqual(t, descriptor, metric)
+	assert.GreaterOrEqual(t, metric.IntGauge().DataPoints().Len(), 2)
+	internal.AssertIntGaugeMetricLabelHasValue(t, metric, 0, metadata.Labels.MemState, metadata.LabelMemState.Used)
+	internal.AssertIntGaugeMetricLabelHasValue(t, metric, 1, metadata.Labels.MemState, metadata.LabelMemState.Free)
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertInt64MetricLabelHasValue(t, metric, 2, metadata.Labels.MemState, metadata.LabelMemState.Buffered)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 3, metadata.Labels.MemState, metadata.LabelMemState.Cached)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 4, metadata.Labels.MemState, metadata.LabelMemState.SlabReclaimable)
-	internal.AssertInt64MetricLabelHasValue(t, metric, 5, metadata.Labels.MemState, metadata.LabelMemState.SlabUnreclaimable)
+	internal.AssertIntGaugeMetricLabelHasValue(t, metric, 2, metadata.Labels.MemState, metadata.LabelMemState.Buffered)
+	internal.AssertIntGaugeMetricLabelHasValue(t, metric, 3, metadata.Labels.MemState, metadata.LabelMemState.Cached)
+	internal.AssertIntGaugeMetricLabelHasValue(t, metric, 4, metadata.Labels.MemState, metadata.LabelMemState.SlabReclaimable)
+	internal.AssertIntGaugeMetricLabelHasValue(t, metric, 5, metadata.Labels.MemState, metadata.LabelMemState.SlabUnreclaimable)
 }
