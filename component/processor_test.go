@@ -50,7 +50,7 @@ func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, Processor
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (LogsProcessor, error) {
+func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, consumer.LogsConsumer, configmodels.Processor) (LogsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

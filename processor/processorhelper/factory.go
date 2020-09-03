@@ -136,9 +136,8 @@ func (f *factory) CreateMetricsProcessor(
 func (f *factory) CreateLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
-) (component.LogsProcessor, error) {
+	cfg configmodels.Processor) (component.LogsProcessor, error) {
 	if f.createLogsProcessor != nil {
 		return f.createLogsProcessor(ctx, params, cfg, nextConsumer)
 	}

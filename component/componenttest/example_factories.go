@@ -407,8 +407,8 @@ func (f *ExampleProcessorFactory) CreateMetricsProcessor(
 func (f *ExampleProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	_ configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
+	_ configmodels.Processor,
 ) (component.LogsProcessor, error) {
 	return &ExampleProcessor{nextLogs: nextConsumer}, nil
 }

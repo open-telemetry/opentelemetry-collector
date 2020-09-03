@@ -99,10 +99,6 @@ type ProcessorFactory interface {
 	// CreateLogsProcessor creates a processor based on the config.
 	// If the processor type does not support logs or if the config is not valid
 	// error will be returned instead.
-	CreateLogsProcessor(
-		ctx context.Context,
-		params ProcessorCreateParams,
-		cfg configmodels.Processor,
-		nextConsumer consumer.LogsConsumer,
-	) (LogsProcessor, error)
+	CreateLogsProcessor(ctx context.Context,params ProcessorCreateParams,
+		nextConsumer consumer.LogsConsumer, cfg configmodels.Processor) (LogsProcessor, error)
 }

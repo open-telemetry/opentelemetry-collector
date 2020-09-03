@@ -179,7 +179,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		case configmodels.LogsDataType:
 			var proc component.LogsProcessor
-			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
+			proc, err = factory.CreateLogsProcessor(ctx, creationParams, lc, procCfg)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}

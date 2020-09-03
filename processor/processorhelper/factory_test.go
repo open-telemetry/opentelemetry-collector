@@ -46,7 +46,7 @@ func TestNewTrace(t *testing.T) {
 	assert.Error(t, err)
 	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, defaultCfg)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, defaultCfg)
 	assert.Error(t, err)
 }
 
@@ -71,7 +71,7 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, defaultCfg)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, defaultCfg)
 	assert.NoError(t, err)
 }
 
