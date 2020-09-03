@@ -126,8 +126,46 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			err = rmp.ConsumeMetrics(context.Background(), sourceMetricData)
 			require.NoError(t, err)
 			assert.EqualValues(t, wantMetricData, tmn.md)
+
+			// Test logs consumer
+			tln := &testLogsConsumer{}
+			rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tln)
+			require.NoError(t, err)
+			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+
+			sourceLogData := generateLogData(tt.sourceAttributes)
+			wantLogData := generateLogData(tt.wantAttributes)
+			err = rlp.ConsumeLogs(context.Background(), sourceLogData)
+			require.NoError(t, err)
+			assert.EqualValues(t, wantLogData, tln.ld)
 		})
 	}
+}
+
+func TestResourceProcessorError(t *testing.T) {
+	ttn := &testTraceConsumer{}
+
+	badCfg := &Config{
+		ProcessorSettings: processorSettings,
+		AttributesActions: nil,
+	}
+
+	factory := NewFactory()
+	rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, ttn, badCfg)
+	require.Error(t, err)
+	require.Nil(t, rtp)
+
+	// Test metrics consumer
+	tmn := &testMetricsConsumer{}
+	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tmn, badCfg)
+	require.Error(t, err)
+	require.Nil(t, rmp)
+
+	// Test logs consumer
+	tln := &testLogsConsumer{}
+	rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tln)
+	require.Error(t, err)
+	require.Nil(t, rlp)
 }
 
 func generateTraceData(attributes map[string]string) pdata.Traces {
@@ -158,6 +196,20 @@ func generateMetricData(attributes map[string]string) pdata.Metrics {
 	return md
 }
 
+func generateLogData(attributes map[string]string) pdata.Logs {
+	ld := testdata.GenerateLogDataOneLogNoResource()
+	if attributes == nil {
+		return ld
+	}
+	resource := ld.ResourceLogs().At(0).Resource()
+	resource.InitEmpty()
+	for k, v := range attributes {
+		resource.Attributes().InsertString(k, v)
+	}
+	resource.Attributes().Sort()
+	return ld
+}
+
 type testTraceConsumer struct {
 	td pdata.Traces
 }
@@ -181,6 +233,19 @@ func (tmn *testMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metri
 		sortResourceAttributes(md.ResourceMetrics().At(i).Resource())
 	}
 	tmn.md = md
+	return nil
+}
+
+type testLogsConsumer struct {
+	ld pdata.Logs
+}
+
+func (tln *testLogsConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+	// sort attributes to be able to compare traces
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		sortResourceAttributes(ld.ResourceLogs().At(i).Resource())
+	}
+	tln.ld = ld
 	return nil
 }
 
