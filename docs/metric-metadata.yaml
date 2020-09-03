@@ -21,7 +21,13 @@ metrics:
     description:
     # Required: metric type as defined by https://ucum.org/ucum.html
     unit:
-    # Required: metric type that is one of: int64, double, int64 mono, double mono, histogram, summary.
-    type:
+    # Required
+    data:
+      # Required: one of int gauge, int sum, int histogram, double gauge, double sum, or double histogram.
+      type:
+      # Required for int sum and double sum.
+      monotonic: # true | false
+      # Required for int sum, int histogram, double sum, and double histogram.
+      aggregation: # delta | cumulative
     # Optional: array of labels that were defined in the labels section that are emitted by this metric.
     labels:
