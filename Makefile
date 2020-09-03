@@ -286,6 +286,7 @@ genproto_sub:
 # to proto and after running `make genproto`
 genpdata:
 	go run cmd/pdatagen/main.go
+	$(MAKE) fmt
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.
