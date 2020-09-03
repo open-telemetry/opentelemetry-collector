@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // Simple utilities for generating metrics for testing
@@ -71,12 +70,12 @@ func DefaultCfg() MetricCfg {
 }
 
 // DefaultMetricData produces MetricData with a default config.
-func DefaultMetricData() data.MetricData {
+func DefaultMetricData() pdata.Metrics {
 	return MetricDataFromCfg(DefaultCfg())
 }
 
 // MetricDataFromCfg produces MetricData with the passed-in config.
-func MetricDataFromCfg(cfg MetricCfg) data.MetricData {
+func MetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
 	return newMetricGenerator().genMetricDataFromCfg(cfg)
 }
 
@@ -88,8 +87,8 @@ func newMetricGenerator() *metricGenerator {
 	return &metricGenerator{}
 }
 
-func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) data.MetricData {
-	md := data.NewMetricData()
+func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
+	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rms.Resize(cfg.NumResourceMetrics)
 	for i := 0; i < cfg.NumResourceMetrics; i++ {

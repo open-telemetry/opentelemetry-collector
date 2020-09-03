@@ -22,8 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -215,11 +213,11 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 }
 
 func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
+	return pdata.MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
 }
 
 func getMetricDataFrom(t *testing.T, rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp([]*otlpmetrics.ResourceMetrics{rm}))
+	return pdata.MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
@@ -282,10 +280,10 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			// Assert Resources
 			m := tc.MockBackend.ReceivedMetrics[0]
-			rm := pdatautil.MetricsToInternalMetrics(m).ResourceMetrics()
+			rm := m.ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
 
-			expectidMD := pdatautil.MetricsToInternalMetrics(test.expectedMetricData)
+			expectidMD := test.expectedMetricData
 			require.Equal(t,
 				attributesToMap(expectidMD.ResourceMetrics().At(0).Resource().Attributes()),
 				attributesToMap(rm.At(0).Resource().Attributes()),

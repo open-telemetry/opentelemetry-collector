@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -87,7 +86,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
+		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -99,15 +98,15 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 		assert.Equal(t, wantMetricsCount, m.MetricsCount())
 		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		allMetrics := m.AllMetrics()
-		metricClone := pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metricClone := allMetrics[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		if i < len(processors)-1 {
-			assert.True(t, md.ResourceMetrics().At(0).Resource() != pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() != allMetrics[0].ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig != metricClone)
 		} else {
-			assert.True(t, md.ResourceMetrics().At(0).Resource() == pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+			assert.True(t, md.ResourceMetrics().At(0).Resource() == allMetrics[0].ResourceMetrics().At(0).Resource())
 			assert.True(t, metricOrig == metricClone)
 		}
-		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), pdatautil.MetricsToInternalMetrics(allMetrics[0]).ResourceMetrics().At(0).Resource())
+		assert.EqualValues(t, md.ResourceMetrics().At(0).Resource(), allMetrics[0].ResourceMetrics().At(0).Resource())
 		assert.EqualValues(t, metricOrig, metricClone)
 	}
 }

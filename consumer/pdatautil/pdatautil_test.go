@@ -29,7 +29,7 @@ import (
 )
 
 func TestMetricCount(t *testing.T) {
-	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
+	metrics := testdata.GenerateMetricsTwoMetrics()
 	assert.Equal(t, 2, MetricCount(metrics))
 
 	metrics = MetricsFromMetricsData([]consumerdata.MetricsData{
@@ -51,7 +51,7 @@ func TestMetricCount(t *testing.T) {
 }
 
 func TestMetricAndDataPointCount(t *testing.T) {
-	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	metrics := testdata.GenerateMetricsOneMetric()
 	metricsCount, dataPointsCount := MetricAndDataPointCount(metrics)
 	assert.Equal(t, 1, metricsCount)
 	assert.Equal(t, 2, dataPointsCount)
@@ -83,24 +83,24 @@ func TestMetricAndDataPointCount(t *testing.T) {
 }
 
 func TestMetricConvertInternalToFromOC(t *testing.T) {
-	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	metrics := testdata.GenerateMetricsOneMetric()
 	mdOc := MetricsToMetricsData(metrics)
 	assert.Len(t, mdOc, 1)
 	assert.Len(t, mdOc[0].Metrics, 1)
 	oldMetrics := MetricsFromMetricsData(mdOc)
 	assert.Equal(t, 1, MetricCount(oldMetrics))
-	mdNew := MetricsToInternalMetrics(oldMetrics)
+	mdNew := oldMetrics
 	assert.Equal(t, 1, mdNew.MetricCount())
 }
 
 func TestMetricCloneInternal(t *testing.T) {
-	metrics := MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	metrics := testdata.GenerateMetricsOneMetric()
 	clone := CloneMetrics(metrics)
-	assert.EqualValues(t, MetricsToInternalMetrics(metrics), MetricsToInternalMetrics(clone))
+	assert.EqualValues(t, metrics, clone)
 }
 
 func TestMetricCloneOc(t *testing.T) {
-	oc := MetricsToMetricsData(MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric()))
+	oc := MetricsToMetricsData(testdata.GenerateMetricsOneMetric())
 	require.Len(t, oc, 1)
 	require.Len(t, oc[0].Metrics, 1)
 	metrics := MetricsFromMetricsData(oc)

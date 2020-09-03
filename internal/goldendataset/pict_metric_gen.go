@@ -18,17 +18,16 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // GenerateMetricDatas takes the filename of a PICT-generated file, walks through all of the rows in the PICT
 // file and for each row, generates a MetricData object, collecting them and returning them to the caller.
-func GenerateMetricDatas(metricPairsFile string) ([]data.MetricData, error) {
+func GenerateMetricDatas(metricPairsFile string) ([]pdata.Metrics, error) {
 	pictData, err := loadPictOutputFile(metricPairsFile)
 	if err != nil {
 		return nil, err
 	}
-	var out []data.MetricData
+	var out []pdata.Metrics
 	for i, values := range pictData {
 		if i == 0 {
 			continue

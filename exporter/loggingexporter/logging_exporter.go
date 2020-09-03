@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -360,15 +359,14 @@ func (s *loggingExporter) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
 ) (int, error) {
-	imd := pdatautil.MetricsToInternalMetrics(md)
-	s.logger.Info("MetricsExporter", zap.Int("#metrics", imd.MetricCount()))
+	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !s.debug {
 		return 0, nil
 	}
 
 	buf := logDataBuffer{}
-	rms := imd.ResourceMetrics()
+	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		buf.logEntry("ResourceMetrics #%d", i)
 		rm := rms.At(i)

@@ -69,15 +69,14 @@ func TestReceiver_endToEnd(t *testing.T) {
 	}()
 
 	md := testdata.GenerateMetricsOneMetric()
-	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, oce.ConsumeMetrics(context.Background(), md))
 
 	testutil.WaitFor(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0
 	})
 	gotMetrics := metricSink.AllMetrics()
 	require.Len(t, gotMetrics, 1)
-	gotMd := pdatautil.MetricsToInternalMetrics(gotMetrics[0])
-	assert.Equal(t, md, gotMd)
+	assert.Equal(t, md, gotMetrics[0])
 }
 
 // Issue #43. Export should support node multiplexing.

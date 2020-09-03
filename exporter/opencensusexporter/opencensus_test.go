@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
@@ -166,18 +165,18 @@ func TestSendMetrics(t *testing.T) {
 	})
 
 	md := testdata.GenerateMetricsOneMetric()
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	})
 	metrics := sink.AllMetrics()
 	require.Len(t, metrics, 1)
-	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[0]))
+	assert.Equal(t, md, metrics[0])
 
 	// Sending data no node.
 	sink.Reset()
 	pdata.NewResource().CopyTo(md.ResourceMetrics().At(0).Resource())
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	})
@@ -185,7 +184,7 @@ func TestSendMetrics(t *testing.T) {
 	require.Len(t, metrics, 1)
 	// The conversion will initialize the Resource
 	md.ResourceMetrics().At(0).Resource().InitEmpty()
-	assert.Equal(t, md, pdatautil.MetricsToInternalMetrics(metrics[0]))
+	assert.Equal(t, md, metrics[0])
 }
 
 func TestSendMetrics_NoBackend(t *testing.T) {
@@ -206,7 +205,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	md := testdata.GenerateMetricsOneMetric()
 	for i := 0; i < 10000; i++ {
 		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 	}
@@ -228,6 +227,6 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetric())
+	md := testdata.GenerateMetricsOneMetric()
 	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 }
