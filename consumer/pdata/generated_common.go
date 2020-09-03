@@ -56,6 +56,9 @@ func (ms InstrumentationLibrary) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibrary) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 

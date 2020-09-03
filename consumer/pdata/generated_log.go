@@ -179,6 +179,9 @@ func (ms ResourceLogs) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ResourceLogs) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -370,6 +373,9 @@ func (ms InstrumentationLibraryLogs) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibraryLogs) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -562,6 +568,9 @@ func (ms LogRecord) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms LogRecord) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 

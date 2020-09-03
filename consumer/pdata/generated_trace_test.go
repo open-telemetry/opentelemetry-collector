@@ -1135,3 +1135,8 @@ func fillTestSpanStatus(tv SpanStatus) {
 	tv.SetCode(StatusCode(1))
 	tv.SetMessage("cancelled")
 }
+
+func TestResourceSpansIsNil(t *testing.T) {
+	rs := ResourceSpans{}
+	assert.True(t, rs.IsNil())
+}

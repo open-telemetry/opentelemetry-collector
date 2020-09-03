@@ -179,6 +179,9 @@ func (ms ResourceMetrics) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ResourceMetrics) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -370,6 +373,9 @@ func (ms InstrumentationLibraryMetrics) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibraryMetrics) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -562,6 +568,9 @@ func (ms Metric) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Metric) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -657,6 +666,9 @@ func (ms IntGauge) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms IntGauge) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -714,6 +726,9 @@ func (ms DoubleGauge) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleGauge) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -771,6 +786,9 @@ func (ms IntSum) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms IntSum) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -858,6 +876,9 @@ func (ms DoubleSum) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleSum) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -945,6 +966,9 @@ func (ms IntHistogram) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms IntHistogram) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1017,6 +1041,9 @@ func (ms DoubleHistogram) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleHistogram) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1212,6 +1239,9 @@ func (ms IntDataPoint) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms IntDataPoint) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1445,6 +1475,9 @@ func (ms DoubleDataPoint) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleDataPoint) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1678,6 +1711,9 @@ func (ms IntHistogramDataPoint) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms IntHistogramDataPoint) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1956,6 +1992,9 @@ func (ms DoubleHistogramDataPoint) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleHistogramDataPoint) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -2237,6 +2276,9 @@ func (ms IntExemplar) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms IntExemplar) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -2450,6 +2492,9 @@ func (ms DoubleExemplar) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms DoubleExemplar) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 

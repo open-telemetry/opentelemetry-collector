@@ -179,6 +179,9 @@ func (ms ResourceSpans) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms ResourceSpans) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -370,6 +373,9 @@ func (ms InstrumentationLibrarySpans) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibrarySpans) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -562,6 +568,9 @@ func (ms Span) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Span) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -935,6 +944,9 @@ func (ms SpanEvent) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SpanEvent) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1161,6 +1173,9 @@ func (ms SpanLink) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SpanLink) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
@@ -1279,6 +1294,9 @@ func (ms SpanStatus) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms SpanStatus) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 

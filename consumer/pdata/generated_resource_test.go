@@ -57,3 +57,8 @@ func generateTestResource() Resource {
 func fillTestResource(tv Resource) {
 	fillTestAttributeMap(tv.Attributes())
 }
+
+func TestResourceIsNil(t *testing.T) {
+	r := Resource{}
+	assert.True(t, r.IsNil())
+}

@@ -56,6 +56,9 @@ func (ms Resource) InitEmpty() {
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms Resource) IsNil() bool {
+	if ms.orig == nil {
+		return true
+	}
 	return *ms.orig == nil
 }
 
