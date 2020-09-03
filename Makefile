@@ -235,7 +235,9 @@ PROTO_TARGET_GEN_DIR=internal/data/opentelemetry-proto-gen
 PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 
 # Intermediate directory used during generation.
-PROTO_INTERMEDIATE_DIR=internal/data/tempprotodir
+PROTO_INTERMEDIATE_DIR=internal/data/.patched-otlp-proto
+
+GO_PKG_DIR:=$(shell go env GOPATH)/pkg/mod/
 
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
@@ -257,27 +259,35 @@ genproto_sub:
 	@echo Generating code for the following files:
 	@$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,echo $(file)))
 
+	@echo Delete intermediate directory.
+	@rm -rf $(PROTO_INTERMEDIATE_DIR)
+
 	@echo Copy .proto file to intermediate directory.
-	mkdir -p $(PROTO_INTERMEDIATE_DIR)
-	cp -R $(OPENTELEMETRY_PROTO_SRC_DIR)/* $(PROTO_INTERMEDIATE_DIR)
+	mkdir -p $(PROTO_INTERMEDIATE_DIR)/opentelemetry
+	cp -R $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/* $(PROTO_INTERMEDIATE_DIR)/opentelemetry
 
 	@echo Modify them in the intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
+	# Patch proto files. See proto_patch.sed for patching rules.
+	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/trace/v1/trace.proto \
+	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/trace/v1/trace.proto
+
+	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/logs/v1/logs.proto \
+	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
+
 	@echo Generate Go code from .proto files in intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(GO_PKG_DIR) $(file)))
 
 	@echo Generate gRPC gateway code.
-	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
-	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ opentelemetry/proto/collector/metrics/v1/metrics_service.proto
-	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ opentelemetry/proto/collector/logs/v1/logs_service.proto
+	cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(GO_PKG_DIR) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
+	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ -I./ -I$(GO_PKG_DIR) opentelemetry/proto/collector/metrics/v1/metrics_service.proto
+	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ -I./ -I$(GO_PKG_DIR) opentelemetry/proto/collector/logs/v1/logs_service.proto
 
 	@echo Move generated code to target directory.
 	mkdir -p $(PROTO_TARGET_GEN_DIR)
 	cp -R $(PROTO_INTERMEDIATE_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
-
-	@echo Delete intermediate directory.
-	@rm -rf $(PROTO_INTERMEDIATE_DIR)
+	rm -rf $(PROTO_INTERMEDIATE_DIR)/go.opentelemetry.io
 
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/*
 	@rm -rf $(OPENTELEMETRY_PROTO_SRC_DIR)/.* > /dev/null 2>&1 || true
