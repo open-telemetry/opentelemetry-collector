@@ -166,31 +166,42 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			}
 
 			trace.Decisions[i] = decision
+		}
 
-			switch decision {
-			case sampling.Sampled:
-				stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				decisionSampled++
+		finalDecision := sampling.NotSampled
+		firstMatchingPolicy := tsp.policies[0]
 
-				trace.Lock()
-				traceBatches := trace.ReceivedBatches
-				trace.Unlock()
-
-				for j := 0; j < len(traceBatches); j++ {
-					tsp.nextConsumer.ConsumeTraces(policy.ctx, internaldata.OCToTraceData(traceBatches[j]))
-				}
-			case sampling.NotSampled:
-				stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				decisionNotSampled++
+		for i, decision := range trace.Decisions {
+			if decision == sampling.Sampled {
+				finalDecision = sampling.Sampled
+				firstMatchingPolicy = tsp.policies[i]
+				break
 			}
+		}
+
+		switch finalDecision {
+		case sampling.Sampled:
+			_ = stats.RecordWithTags(
+				firstMatchingPolicy.ctx,
+				[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
+				statCountTracesSampled.M(int64(1)),
+			)
+			decisionSampled++
+
+			trace.Lock()
+			traceBatches := trace.ReceivedBatches
+			trace.Unlock()
+
+			for j := 0; j < len(traceBatches); j++ {
+				_ = tsp.nextConsumer.ConsumeTraces(firstMatchingPolicy.ctx, internaldata.OCToTraceData(traceBatches[j]))
+			}
+		case sampling.NotSampled:
+			_ = stats.RecordWithTags(
+				firstMatchingPolicy.ctx,
+				[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
+				statCountTracesSampled.M(int64(1)),
+			)
+			decisionNotSampled++
 		}
 
 		// Sampled or not, remove the batches
@@ -296,8 +307,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 			actualData.Unlock()
 
 			switch actualDecision {
-			case sampling.Pending:
-				// All process for pending done above, keep the case so it doesn't go to default.
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(spans, singleTrace, td)
@@ -315,6 +324,12 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 				tsp.logger.Warn("Encountered unexpected sampling decision",
 					zap.String("policy", policy.Name),
 					zap.Int("decision", int(actualDecision)))
+			}
+
+			// At this point the late arrival has been passed to nextConsumer. Need to break out of the policy loop
+			// so that it isn't sent to nextConsumer more than once when multiple policies chose to sample
+			if actualDecision == sampling.Sampled {
+				break
 			}
 		}
 	}
