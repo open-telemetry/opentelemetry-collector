@@ -16,6 +16,7 @@ package pdata
 
 import (
 	"encoding/hex"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -39,6 +40,13 @@ func TracesFromOtlp(orig []*otlptrace.ResourceSpans) Traces {
 // TracesToOtlp converts the internal Traces to the OTLP.
 func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
 	return *td.orig
+}
+
+// TracesToOtlpProtoBytes converts the internal Traces to OTLP Collector ExportTraceServiceRequest ProtoBuf bytes
+func TracesToOtlpProtoBytes(td Traces) ([]byte, error) {
+	return proto.Marshal(&otlpcollectortrace.ExportTraceServiceRequest{
+		ResourceSpans: *td.orig,
+	})
 }
 
 // NewTraces creates a new Traces.

@@ -17,6 +17,7 @@ package pdata
 import (
 	"github.com/gogo/protobuf/proto"
 
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
@@ -49,6 +50,13 @@ func MetricsFromOtlp(orig []*otlpmetrics.ResourceMetrics) Metrics {
 // MetricDataToOtlp converts the internal MetricData to the OTLP.
 func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
 	return *md.orig
+}
+
+// MetricsToOtlpProtoBytes converts the internal MetricData to the OTLP Collector ExportMetricsServiceRequest ProtoBuf bytes
+func MetricsToOtlpProtoBytes(md Metrics) ([]byte, error) {
+	return proto.Marshal(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: *md.orig,
+	})
 }
 
 // NewMetricData creates a new MetricData.

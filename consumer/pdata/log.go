@@ -16,7 +16,7 @@ package pdata
 
 import (
 	"github.com/gogo/protobuf/proto"
-
+	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
@@ -40,6 +40,13 @@ func LogsFromOtlp(orig []*otlplogs.ResourceLogs) Logs {
 // LogsToOtlp converts the internal Logs to the ProtoBuf.
 func LogsToOtlp(ld Logs) []*otlplogs.ResourceLogs {
 	return *ld.orig
+}
+
+// LogsToOtlpProtoBytes converts the internal Logs to the OTLP Collector ExportLogsServiceRequest ProtoBuf bytes
+func LogsToOtlpProtoBytes(ld Logs) ([]byte, error) {
+	return proto.Marshal(&otlpcollectorlogs.ExportLogsServiceRequest{
+		ResourceLogs: *ld.orig,
+	})
 }
 
 // NewLogs creates a new Logs.
