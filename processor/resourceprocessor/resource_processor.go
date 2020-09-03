@@ -56,3 +56,17 @@ func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics)
 	}
 	return pdatautil.MetricsFromInternalMetrics(imd), nil
 }
+
+// ProcessLogs implements the LProcessor interface
+func (rp *resourceProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		resource := rls.At(i).Resource()
+		if resource.IsNil() {
+			resource.InitEmpty()
+		}
+		attrs := resource.Attributes()
+		rp.attrProc.Process(attrs)
+	}
+	return ld, nil
+}
