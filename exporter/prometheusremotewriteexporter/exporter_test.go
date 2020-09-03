@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
@@ -462,7 +461,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(invalidTypeBatch),
+			invalidTypeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -471,7 +470,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilResourceBatch),
+			nilResourceBatch.MetricCount(),
 			false,
 		},
 		{
@@ -480,7 +479,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilInstrumentationBatch),
+			nilInstrumentationBatch.MetricCount(),
 			false,
 		},
 		{
@@ -489,7 +488,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilMetricBatch),
+			nilMetricBatch.MetricCount(),
 			true,
 		},
 		{
@@ -570,7 +569,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointDoubleGaugeBatch),
+			nilDataPointDoubleGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -579,7 +578,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointIntGaugeBatch),
+			nilDataPointIntGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -588,7 +587,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointDoubleSumBatch),
+			nilDataPointDoubleSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -597,7 +596,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointIntSumBatch),
+			nilDataPointIntSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -606,7 +605,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointDoubleHistogramBatch),
+			nilDataPointDoubleHistogramBatch.MetricCount(),
 			true,
 		},
 		{
@@ -615,7 +614,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointIntHistogramBatch),
+			nilDataPointIntHistogramBatch.MetricCount(),
 			true,
 		},
 	}

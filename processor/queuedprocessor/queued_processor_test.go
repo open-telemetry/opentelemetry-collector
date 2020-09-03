@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -398,7 +397,7 @@ func (p *mockConcurrentSpanProcessor) ConsumeMetrics(_ context.Context, md pdata
 		return nil
 	}
 	atomic.AddInt64(&p.batchCount, 1)
-	_, mpc := pdatautil.MetricAndDataPointCount(md)
+	_, mpc := md.MetricAndDataPointCount()
 	atomic.AddInt64(&p.metricPointsCount, int64(mpc))
 	p.mu.Lock()
 	defer p.mu.Unlock()
