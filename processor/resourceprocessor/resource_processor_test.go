@@ -143,6 +143,32 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	}
 }
 
+func TestResourceProcessorError(t *testing.T) {
+	ttn := &testTraceConsumer{}
+
+	badCfg := &Config{
+		ProcessorSettings: processorSettings,
+		AttributesActions: nil,
+	}
+
+	factory := NewFactory()
+	rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, ttn, badCfg)
+	require.Error(t, err)
+	require.Nil(t, rtp)
+
+	// Test metrics consumer
+	tmn := &testMetricsConsumer{}
+	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tmn, badCfg)
+	require.Error(t, err)
+	require.Nil(t, rmp)
+
+	// Test logs consumer
+	tln := &testLogsConsumer{}
+	rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tln)
+	require.Error(t, err)
+	require.Nil(t, rlp)
+}
+
 func generateTraceData(attributes map[string]string) pdata.Traces {
 	td := testdata.GenerateTraceDataOneSpanNoResource()
 	if attributes == nil {
