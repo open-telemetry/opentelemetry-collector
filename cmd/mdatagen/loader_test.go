@@ -68,7 +68,6 @@ metrics:
       type: invalid
     labels:
 `
-
 )
 
 func Test_loadMetadata(t *testing.T) {

@@ -35,46 +35,6 @@ metrics:
       aggregation: cumulative
     labels: []
 `
-	allDataTypes = `
-name: metricreceiver
-metrics:
-  int.gauge:
-    description: int gauge type
-    unit: s
-    data:
-      type: int gauge
-  int.sum:
-    description: int sum type
-    unit: s
-    data:
-      type: int sum
-      monotonic: true
-      aggregation: delta
-  int.histogram:
-    description: int histogram type
-    unit: s
-    data:
-      type: int histogram
-      aggregation: cumulative
-  double.gauge:
-    description: double gauge type
-    unit: s
-    data:
-      type: double gauge
-  double.sum:
-    description: double sum type
-    unit: s
-    data:
-      type: double sum
-      monotonic: true
-      aggregation: delta
-  double.histogram:
-    description: double histogram type
-    unit: s
-    data:
-      type: double histogram
-      aggregation: cumulative
-`
 )
 
 func Test_runContents(t *testing.T) {
@@ -150,28 +110,3 @@ func Test_run(t *testing.T) {
 		})
 	}
 }
-
-// 		{
-//			name: "all data types",
-//			yml:  allDataTypes,
-//			want: metadata{Name: "metricreceiver",
-//				Metrics: map[metricName]metric{
-//					"double.gauge": {Description: "double gauge type", Unit: "s",
-//						Data: &doubleGauge{}},
-//					"double.histogram": {Description: "double histogram type", Unit: "s",
-//						Data: &doubleHistogram{Aggregated{Aggregation: "cumulative"}}},
-//					"double.sum": {Description: "double sum type", Unit: "s",
-//						Data: &doubleSum{
-//							Aggregated: Aggregated{Aggregation: "delta"},
-//							Mono:       Mono{Monotonic: true},
-//						}},
-//					"int.gauge": {Description: "int gauge type", Unit: "s",
-//						Data: &intGauge{}},
-//					"int.histogram": {Description: "int histogram type", Unit: "s",
-//						Data: &intHistogram{Aggregated{Aggregation: "cumulative"}}},
-//					"int.sum": {Description: "int sum type", Unit: "s",
-//						Data: &intSum{
-//							Aggregated: Aggregated{Aggregation: "delta"},
-//							Mono:       Mono{Monotonic: true},
-//						}}}},
-//		},

@@ -21,11 +21,11 @@ import (
 )
 
 func TestMetricData(t *testing.T) {
-	for _, arg := range []struct{
-		metricData MetricData
-		typ string
+	for _, arg := range []struct {
+		metricData    MetricData
+		typ           string
 		hasAggregated bool
-		hasMonotonic bool
+		hasMonotonic  bool
 	}{
 		{&intGauge{}, "IntGauge", false, false},
 		{&intSum{}, "IntSum", true, true},

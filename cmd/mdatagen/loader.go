@@ -48,7 +48,7 @@ type metric struct {
 	// Raw data that is used to set Data interface below.
 	YmlData *ymlMetricData `yaml:"data" validate:"required"`
 	// Date is set to generic metric data interface after validating.
-	Data    MetricData    `yaml:"-"`
+	Data MetricData `yaml:"-"`
 
 	// Labels is the list of labels that the metric emits.
 	Labels []labelName
