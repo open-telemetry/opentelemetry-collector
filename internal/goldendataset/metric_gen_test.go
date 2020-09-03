@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 func TestGenDefault(t *testing.T) {
@@ -128,6 +127,6 @@ func TestGenDoubleGauge(t *testing.T) {
 	require.EqualValues(t, 1, pt.Value())
 }
 
-func getMetric(md data.MetricData) pdata.Metric {
+func getMetric(md pdata.Metrics) pdata.Metric {
 	return md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 }

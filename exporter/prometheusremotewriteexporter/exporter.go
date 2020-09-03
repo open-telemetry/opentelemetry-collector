@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
@@ -88,9 +87,9 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
-		errs := []error{}
+		var errs []error
 
-		resourceMetrics := data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md))
+		resourceMetrics := pdata.MetricsToOtlp(md)
 		for _, resourceMetric := range resourceMetrics {
 			if resourceMetric == nil {
 				continue

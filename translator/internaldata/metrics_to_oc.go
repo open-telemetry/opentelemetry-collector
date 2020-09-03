@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 type labelKeys struct {
@@ -32,7 +31,7 @@ type labelKeys struct {
 	keyIndices map[string]int
 }
 
-func MetricsToOC(md data.MetricData) []consumerdata.MetricsData {
+func MetricsToOC(md pdata.Metrics) []consumerdata.MetricsData {
 	resourceMetrics := md.ResourceMetrics()
 
 	if resourceMetrics.Len() == 0 {

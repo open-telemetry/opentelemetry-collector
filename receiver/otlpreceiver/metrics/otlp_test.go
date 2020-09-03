@@ -25,9 +25,8 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/internal/data"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
@@ -102,7 +101,7 @@ func TestExport(t *testing.T) {
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := data.MetricDataFromOtlp(resourceMetrics).Clone()
+	metricData := pdata.MetricsFromOtlp(resourceMetrics).Clone()
 
 	req := &collectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: resourceMetrics,
@@ -117,7 +116,7 @@ func TestExport(t *testing.T) {
 	require.Equal(t, 1, len(metricSink.AllMetrics()),
 		"unexpected length: %v", len(metricSink.AllMetrics()))
 
-	assert.EqualValues(t, metricData, pdatautil.MetricsToInternalMetrics(metricSink.AllMetrics()[0]))
+	assert.EqualValues(t, metricData, metricSink.AllMetrics()[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {

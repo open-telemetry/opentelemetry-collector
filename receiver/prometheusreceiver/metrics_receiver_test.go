@@ -29,12 +29,12 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -109,6 +109,7 @@ type testData struct {
 	name         string
 	pages        []mockPrometheusResponse
 	node         *commonpb.Node
+	resource     *resourcepb.Resource
 	validateFunc func(t *testing.T, td *testData, result []consumerdata.MetricsData)
 }
 
@@ -151,7 +152,9 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 			ServiceInfo: &commonpb.ServiceInfo{
 				Name: t.name,
 			},
-			Attributes: map[string]string{
+		}
+		t.resource = &resourcepb.Resource{
+			Labels: map[string]string{
 				"scheme": "http",
 				"port":   port,
 			},
@@ -258,10 +261,9 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 			Name:        "go_threads",
 			Description: "Number of OS threads created",
 			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			LabelKeys:   []*metricspb.LabelKey{}},
+		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
-				LabelValues: []*metricspb.LabelValue{},
 				Points: []*metricspb.Point{
 					{Value: &metricspb.Point_DoubleValue{DoubleValue: 19.0}},
 				},
@@ -280,17 +282,16 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
 	want2 := &consumerdata.MetricsData{
-		Node: td.node,
+		Node:     td.node,
+		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{}},
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						LabelValues: []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 18.0}},
 						},
@@ -333,11 +334,10 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
 					Description: "A histogram of the request duration.",
 					Unit:        "s",
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{
 								Timestamp: ts2,
@@ -359,37 +359,6 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 											{Count: 0},
 										},
 									}},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "rpc_duration_seconds",
-					Type:        metricspb.MetricDescriptor_SUMMARY,
-					Description: "A summary of the RPC duration in seconds.",
-					Unit:        "s",
-					LabelKeys:   []*metricspb.LabelKey{}},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: ts2, Value: &metricspb.Point_SummaryValue{
-									SummaryValue: &metricspb.SummaryValue{
-										Sum:   &wrapperspb.DoubleValue{Value: 2.0},
-										Count: &wrapperspb.Int64Value{Value: 1},
-										Snapshot: &metricspb.SummaryValue_Snapshot{
-											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
-												{Percentile: 1.0, Value: 1},
-												{Percentile: 90.0, Value: 5},
-												{Percentile: 99.0, Value: 8},
-											},
-										},
-									},
-								},
 							},
 						},
 					},
@@ -479,10 +448,9 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 			Name:        "go_threads",
 			Description: "Number of OS threads created",
 			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			LabelKeys:   []*metricspb.LabelKey{}},
+		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
-				LabelValues: []*metricspb.LabelValue{},
 				Points: []*metricspb.Point{
 					{Value: &metricspb.Point_DoubleValue{DoubleValue: 18.0}},
 				},
@@ -500,17 +468,17 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
 	want2 := &consumerdata.MetricsData{
-		Node: td.node,
+		Node:     td.node,
+		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						LabelValues: []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
 						},
@@ -557,17 +525,17 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	ts3 := m3.Metrics[0].Timeseries[0].Points[0].Timestamp
 
 	want3 := &consumerdata.MetricsData{
-		Node: td.node,
+		Node:     td.node,
+		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						LabelValues: []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{Timestamp: ts3, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
 						},
@@ -623,17 +591,17 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	ts4 := m4.Metrics[0].Timeseries[0].Points[0].Timestamp
 
 	want4 := &consumerdata.MetricsData{
-		Node: td.node,
+		Node:     td.node,
+		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						LabelValues: []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{Timestamp: ts4, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
 						},
@@ -650,17 +618,17 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	ts5 := m5.Metrics[0].Timeseries[0].Points[0].Timestamp
 
 	want5 := &consumerdata.MetricsData{
-		Node: td.node,
+		Node:     td.node,
+		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						LabelValues: []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{Timestamp: ts5, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
 						},
@@ -797,11 +765,9 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name:        "go_threads",
 			Description: "Number of OS threads created",
-			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			LabelKeys:   []*metricspb.LabelKey{}},
+			Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE},
 		Timeseries: []*metricspb.TimeSeries{
 			{
-				LabelValues: []*metricspb.LabelValue{},
 				Points: []*metricspb.Point{
 					{Value: &metricspb.Point_DoubleValue{DoubleValue: 18.0}},
 				},
@@ -819,17 +785,17 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
 	want2 := &consumerdata.MetricsData{
-		Node: td.node,
+		Node:     td.node,
+		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "go_threads",
 					Description: "Number of OS threads created",
 					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						LabelValues: []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{Timestamp: ts2, Value: &metricspb.Point_DoubleValue{DoubleValue: 16.0}},
 						},
@@ -842,11 +808,10 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 					Description: "A histogram of the request duration.",
 					Unit:        "s",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-					LabelKeys:   []*metricspb.LabelKey{}},
+				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{},
 						Points: []*metricspb.Point{
 							{
 								Timestamp: ts2,
@@ -867,53 +832,6 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 											{Count: 0},
 											{Count: 0},
 										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "rpc_duration_seconds",
-					Description: "A summary of the RPC duration in seconds.",
-					Unit:        "s",
-					Type:        metricspb.MetricDescriptor_SUMMARY,
-					LabelKeys:   []*metricspb.LabelKey{{Key: "foo"}}},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: ts2, Value: &metricspb.Point_SummaryValue{
-									SummaryValue: &metricspb.SummaryValue{
-										Sum:   &wrapperspb.DoubleValue{Value: 100.0},
-										Count: &wrapperspb.Int64Value{Value: 50},
-										Snapshot: &metricspb.SummaryValue_Snapshot{
-											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
-												{Percentile: 1.0, Value: 32},
-												{Percentile: 5.0, Value: 35},
-												{Percentile: 50.0, Value: 47},
-												{Percentile: 90.0, Value: 70},
-												{Percentile: 99.0, Value: 77},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						StartTimestamp: ts1,
-						LabelValues:    []*metricspb.LabelValue{{Value: "no_quantile", HasValue: true}},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: ts2, Value: &metricspb.Point_SummaryValue{
-									SummaryValue: &metricspb.SummaryValue{
-										Sum:   &wrapperspb.DoubleValue{Value: 1.0},
-										Count: &wrapperspb.Int64Value{Value: 5},
 									},
 								},
 							},
@@ -995,7 +913,8 @@ process_start_time_seconds 400.8
 
 var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nanos: 800000000}
 
-const numStartTimeMetricPageTimeseries = 6
+// Summary is not yet supported, so we have only 5 supported metrics as result.
+const numStartTimeMetricPageTimeseries = 5
 
 func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []consumerdata.MetricsData) {
 	numTimeseries := 0

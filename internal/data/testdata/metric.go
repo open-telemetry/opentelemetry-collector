@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
@@ -43,8 +42,8 @@ const (
 	NumMetricTests                = 14
 )
 
-func GenerateMetricsEmpty() data.MetricData {
-	md := data.NewMetricData()
+func GenerateMetricsEmpty() pdata.Metrics {
+	md := pdata.NewMetrics()
 	return md
 }
 
@@ -52,7 +51,7 @@ func generateMetricsOtlpEmpty() []*otlpmetrics.ResourceMetrics {
 	return []*otlpmetrics.ResourceMetrics(nil)
 }
 
-func GenerateMetricsOneEmptyResourceMetrics() data.MetricData {
+func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
 	md := GenerateMetricsEmpty()
 	md.ResourceMetrics().Resize(1)
 	return md
@@ -64,8 +63,8 @@ func generateMetricsOtlpOneEmptyResourceMetrics() []*otlpmetrics.ResourceMetrics
 	}
 }
 
-func GenerateMetricsOneEmptyOneNilResourceMetrics() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricsOtlpOneEmptyOneNilResourceMetrics())
+func GenerateMetricsOneEmptyOneNilResourceMetrics() pdata.Metrics {
+	return pdata.MetricsFromOtlp(generateMetricsOtlpOneEmptyOneNilResourceMetrics())
 }
 
 func generateMetricsOtlpOneEmptyOneNilResourceMetrics() []*otlpmetrics.ResourceMetrics {
@@ -75,7 +74,7 @@ func generateMetricsOtlpOneEmptyOneNilResourceMetrics() []*otlpmetrics.ResourceM
 	}
 }
 
-func GenerateMetricsNoLibraries() data.MetricData {
+func GenerateMetricsNoLibraries() pdata.Metrics {
 	md := GenerateMetricsOneEmptyResourceMetrics()
 	ms0 := md.ResourceMetrics().At(0)
 	initResource1(ms0.Resource())
@@ -90,7 +89,7 @@ func generateMetricsOtlpNoLibraries() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsOneEmptyInstrumentationLibrary() data.MetricData {
+func GenerateMetricsOneEmptyInstrumentationLibrary() pdata.Metrics {
 	md := GenerateMetricsNoLibraries()
 	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(1)
 	return md
@@ -108,8 +107,8 @@ func generateMetricsOtlpOneEmptyInstrumentationLibrary() []*otlpmetrics.Resource
 	}
 }
 
-func GenerateMetricsOneEmptyOneNilInstrumentationLibrary() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricsOtlpOneEmptyOneNilInstrumentationLibrary())
+func GenerateMetricsOneEmptyOneNilInstrumentationLibrary() pdata.Metrics {
+	return pdata.MetricsFromOtlp(generateMetricsOtlpOneEmptyOneNilInstrumentationLibrary())
 }
 
 func generateMetricsOtlpOneEmptyOneNilInstrumentationLibrary() []*otlpmetrics.ResourceMetrics {
@@ -124,7 +123,7 @@ func generateMetricsOtlpOneEmptyOneNilInstrumentationLibrary() []*otlpmetrics.Re
 	}
 }
 
-func GenerateMetricsOneMetricNoResource() data.MetricData {
+func GenerateMetricsOneMetricNoResource() pdata.Metrics {
 	md := GenerateMetricsOneEmptyResourceMetrics()
 	rm0 := md.ResourceMetrics().At(0)
 	rm0.InstrumentationLibraryMetrics().Resize(1)
@@ -148,7 +147,7 @@ func generateMetricsOtlpOneMetricNoResource() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsOneMetric() data.MetricData {
+func GenerateMetricsOneMetric() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rm0ils0.Metrics().Resize(1)
@@ -171,7 +170,7 @@ func generateMetricsOtlpOneMetric() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsOneMetricOneDataPoint() data.MetricData {
+func GenerateMetricsOneMetricOneDataPoint() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rm0ils0.Metrics().Resize(1)
@@ -179,7 +178,7 @@ func GenerateMetricsOneMetricOneDataPoint() data.MetricData {
 	return md
 }
 
-func GenerateMetricsTwoMetrics() data.MetricData {
+func GenerateMetricsTwoMetrics() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rm0ils0.Metrics().Resize(2)
@@ -204,8 +203,8 @@ func GenerateMetricsOtlpTwoMetrics() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsOneMetricOneNil() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricsOtlpOneMetricOneNil())
+func GenerateMetricsOneMetricOneNil() pdata.Metrics {
+	return pdata.MetricsFromOtlp(generateMetricsOtlpOneMetricOneNil())
 }
 
 func generateMetricsOtlpOneMetricOneNil() []*otlpmetrics.ResourceMetrics {
@@ -224,7 +223,7 @@ func generateMetricsOtlpOneMetricOneNil() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsOneMetricNoLabels() data.MetricData {
+func GenerateMetricsOneMetricNoLabels() pdata.Metrics {
 	md := GenerateMetricsOneMetric()
 	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntSum().DataPoints()
 	dps.At(0).LabelsMap().InitFromMap(map[string]string{})
@@ -240,8 +239,8 @@ func generateMetricsOtlpOneMetricNoLabels() []*otlpmetrics.ResourceMetrics {
 	return md
 }
 
-func GenerateMetricsOneMetricOneNilPoint() data.MetricData {
-	return data.MetricDataFromOtlp(generateMetricsOtlpOneMetricOneNilPoint())
+func GenerateMetricsOneMetricOneNilPoint() pdata.Metrics {
+	return pdata.MetricsFromOtlp(generateMetricsOtlpOneMetricOneNilPoint())
 }
 
 func generateMetricsOtlpOneMetricOneNilPoint() []*otlpmetrics.ResourceMetrics {
@@ -251,7 +250,7 @@ func generateMetricsOtlpOneMetricOneNilPoint() []*otlpmetrics.ResourceMetrics {
 	return md
 }
 
-func GenerateMetricsAllTypesNoDataPoints() data.MetricData {
+func GenerateMetricsAllTypesNoDataPoints() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
@@ -265,7 +264,7 @@ func GenerateMetricsAllTypesNoDataPoints() data.MetricData {
 	return md
 }
 
-func GenerateMetricsAllTypesNilDataPoint() data.MetricData {
+func GenerateMetricsAllTypesNilDataPoint() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
@@ -292,7 +291,7 @@ func GenerateMetricsAllTypesNilDataPoint() data.MetricData {
 	return md
 }
 
-func GenerateMetricsAllTypesEmptyDataPoint() data.MetricData {
+func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
@@ -322,7 +321,7 @@ func GenerateMetricsAllTypesEmptyDataPoint() data.MetricData {
 	return md
 }
 
-func GenerateMetricsMetricTypeInvalid() data.MetricData {
+func GenerateMetricsMetricTypeInvalid() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	ms := ilm0.Metrics()
@@ -352,8 +351,8 @@ func generateMetricsOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsWithCountersHistograms() data.MetricData {
-	metricData := data.NewMetricData()
+func GenerateMetricsWithCountersHistograms() pdata.Metrics {
+	metricData := pdata.NewMetrics()
 	metricData.ResourceMetrics().Resize(1)
 
 	rms := metricData.ResourceMetrics()
@@ -657,7 +656,7 @@ func generateOtlpMetric(name string, ty pdata.MetricDataType) *otlpmetrics.Metri
 	return m
 }
 
-func GenerateMetricsManyMetricsSameResource(metricsCount int) data.MetricData {
+func GenerateMetricsManyMetricsSameResource(metricsCount int) pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	rs0ilm0.Metrics().Resize(metricsCount)

@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -140,10 +139,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 }
 
 func assertIncludesStandardMetrics(t *testing.T, got pdata.Metrics) {
-	md := pdatautil.MetricsToInternalMetrics(got)
-
 	// get the first ResourceMetrics object
-	rms := md.ResourceMetrics()
+	rms := got.ResourceMetrics()
 	require.GreaterOrEqual(t, rms.Len(), 1)
 	rm := rms.At(0)
 	assert.True(t, rm.Resource().IsNil() || rm.Resource().Attributes().Len() == 0)
@@ -164,11 +161,9 @@ func assertIncludesResourceMetrics(t *testing.T, got pdata.Metrics) {
 		return
 	}
 
-	md := pdatautil.MetricsToInternalMetrics(got)
-
 	// get the superset of metrics returned by all resource metrics (excluding the first)
 	returnedMetrics := make(map[string]struct{})
-	rms := md.ResourceMetrics()
+	rms := got.ResourceMetrics()
 	for i := 1; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		assert.Greater(t, rm.Resource().Attributes().Len(), 0)
@@ -300,7 +295,7 @@ func TestGatherMetrics_Error(t *testing.T) {
 
 	// expect to get one empty resource metrics entry
 	require.Equal(t, 1, len(got))
-	rm := pdatautil.MetricsToInternalMetrics(got[0]).ResourceMetrics()
+	rm := got[0].ResourceMetrics()
 	require.Equal(t, 1, rm.Len())
 	ilm := rm.At(0).InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilm.Len())

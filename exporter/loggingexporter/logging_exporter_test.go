@@ -22,7 +22,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -45,14 +44,14 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsEmpty())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneEmptyOneNilResourceMetrics())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsOneMetricOneNil())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsWithCountersHistograms())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsAllTypesNilDataPoint())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsAllTypesEmptyDataPoint())))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsMetricTypeInvalid())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilResourceMetrics()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetricOneNil()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsWithCountersHistograms()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesNilDataPoint()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }

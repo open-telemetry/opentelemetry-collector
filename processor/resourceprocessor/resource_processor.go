@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -42,8 +41,7 @@ func (rp *resourceProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (
 
 // ProcessMetrics implements the MProcessor interface
 func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	imd := pdatautil.MetricsToInternalMetrics(md)
-	rms := imd.ResourceMetrics()
+	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
 		if resource.IsNil() {
@@ -54,5 +52,19 @@ func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics)
 		}
 		rp.attrProc.Process(resource.Attributes())
 	}
-	return pdatautil.MetricsFromInternalMetrics(imd), nil
+	return md, nil
+}
+
+// ProcessLogs implements the LProcessor interface
+func (rp *resourceProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		resource := rls.At(i).Resource()
+		if resource.IsNil() {
+			resource.InitEmpty()
+		}
+		attrs := resource.Attributes()
+		rp.attrProc.Process(attrs)
+	}
+	return ld, nil
 }

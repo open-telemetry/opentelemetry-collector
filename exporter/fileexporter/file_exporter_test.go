@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	collectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -57,7 +55,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	lme := &fileExporter{file: mf}
 	require.NotNil(t, lme)
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
+	md := testdata.GenerateMetricsTwoMetrics()
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
@@ -65,7 +63,7 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	var j collectormetrics.ExportMetricsServiceRequest
 	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
 
-	assert.EqualValues(t, data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)), j.ResourceMetrics)
+	assert.EqualValues(t, pdata.MetricsToOtlp(md), j.ResourceMetrics)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {

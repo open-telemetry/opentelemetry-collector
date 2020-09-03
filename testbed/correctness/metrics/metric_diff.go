@@ -19,7 +19,6 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
 // MetricDiff is intended to support producing human-readable diffs between two MetricData structs during
@@ -36,8 +35,7 @@ func (mf MetricDiff) String() string {
 }
 
 func pdmToPDRM(pdm []pdata.Metrics) (out []pdata.ResourceMetrics) {
-	for _, m := range pdm {
-		md := pdatautil.MetricsToInternalMetrics(m)
+	for _, md := range pdm {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			rm := rms.At(i)
