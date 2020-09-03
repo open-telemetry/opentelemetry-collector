@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package pdata
 
 import (
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TimestampToUnixNano(ts *timestamppb.Timestamp) (t pdata.TimestampUnixNano) {
+func TimestampToUnixNano(ts *timestamppb.Timestamp) (t TimestampUnixNano) {
 	if ts == nil {
 		return
 	}
-	return pdata.TimestampUnixNano(uint64(ts.AsTime().UnixNano()))
+	return TimestampUnixNano(uint64(ts.AsTime().UnixNano()))
 }
 
-func UnixNanoToTimestamp(u pdata.TimestampUnixNano) *timestamppb.Timestamp {
+func UnixNanoToTimestamp(u TimestampUnixNano) *timestamppb.Timestamp {
 	// 0 is a special case and want to make sure we return nil.
 	if u == 0 {
 		return nil
@@ -37,7 +35,7 @@ func UnixNanoToTimestamp(u pdata.TimestampUnixNano) *timestamppb.Timestamp {
 	return timestamppb.New(UnixNanoToTime(u))
 }
 
-func UnixNanoToTime(u pdata.TimestampUnixNano) time.Time {
+func UnixNanoToTime(u TimestampUnixNano) time.Time {
 	// 0 is a special case and want to make sure we return a time that IsZero() returns true.
 	if u == 0 {
 		return time.Time{}

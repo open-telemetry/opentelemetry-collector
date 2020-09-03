@@ -21,49 +21,52 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
 func Test_validateMetrics(t *testing.T) {
+
 	// define a single test
 	type combTest struct {
-		name string
-		desc *otlp.MetricDescriptor
-		want bool
+		name   string
+		metric *otlp.Metric
+		want   bool
 	}
 
 	tests := []combTest{}
 
 	// append true cases
-	for i := range validCombinations {
-		name := "valid_" + strconv.Itoa(i)
-		desc := getDescriptor(name, i, validCombinations)
+	for k, validMetric := range validMetrics1 {
+		name := "valid_" + k
+
 		tests = append(tests, combTest{
 			name,
-			desc,
+			validMetric,
 			true,
 		})
 	}
-	// append false cases
-	for i := range invalidCombinations {
-		name := "invalid_" + strconv.Itoa(i)
-		desc := getDescriptor(name, i, invalidCombinations)
+
+	// append nil case
+	tests = append(tests, combTest{"invalid_nil", nil, false})
+
+	for k, invalidMetric := range invalidMetrics {
+		name := "valid_" + k
+
 		tests = append(tests, combTest{
 			name,
-			desc,
+			invalidMetric,
 			false,
 		})
 	}
-	// append nil case
-	tests = append(tests, combTest{"invalid_nil", nil, false})
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validateMetrics(tt.desc)
+			got := validateMetrics(tt.metric)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -75,7 +78,7 @@ func Test_validateMetrics(t *testing.T) {
 // case.
 func Test_addSample(t *testing.T) {
 	type testCase struct {
-		desc   otlp.MetricDescriptor_Type
+		metric *otlp.Metric
 		sample prompb.Sample
 		labels []prompb.Label
 	}
@@ -90,13 +93,13 @@ func Test_addSample(t *testing.T) {
 			"two_points_same_ts_same_metric",
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
-				{otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal1), msTime1),
+				{validMetrics1[validDoubleGauge],
+					getSample(floatVal1, msTime1),
 					promLbs1,
 				},
 				{
-					otlp.MetricDescriptor_INT64,
-					getSample(float64(intVal2), msTime2),
+					validMetrics1[validDoubleGauge],
+					getSample(floatVal2, msTime2),
 					promLbs1,
 				},
 			},
@@ -106,11 +109,11 @@ func Test_addSample(t *testing.T) {
 			"two_points_different_ts_same_metric",
 			map[string]*prompb.TimeSeries{},
 			[]testCase{
-				{otlp.MetricDescriptor_INT64,
+				{validMetrics1[validIntGauge],
 					getSample(float64(intVal1), msTime1),
 					promLbs1,
 				},
-				{otlp.MetricDescriptor_INT64,
+				{validMetrics1[validIntGauge],
 					getSample(float64(intVal1), msTime2),
 					promLbs2,
 				},
@@ -120,14 +123,14 @@ func Test_addSample(t *testing.T) {
 	}
 	t.Run("nil_case", func(t *testing.T) {
 		tsMap := map[string]*prompb.TimeSeries{}
-		addSample(tsMap, nil, nil, 0)
+		addSample(tsMap, nil, nil, nil)
 		assert.Exactly(t, tsMap, map[string]*prompb.TimeSeries{})
 	})
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].desc)
-			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].desc)
+			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric)
+			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric)
 			assert.Exactly(t, tt.want, tt.orig)
 		})
 	}
@@ -137,42 +140,42 @@ func Test_addSample(t *testing.T) {
 // metric type combination.
 func Test_timeSeriesSignature(t *testing.T) {
 	tests := []struct {
-		name string
-		lbs  []prompb.Label
-		desc otlp.MetricDescriptor_Type
-		want string
+		name   string
+		lbs    []prompb.Label
+		metric *otlp.Metric
+		want   string
 	}{
 		{
 			"int64_signature",
 			promLbs1,
-			otlp.MetricDescriptor_INT64,
-			typeInt64 + lb1Sig,
+			validMetrics1[validIntGauge],
+			strconv.Itoa(int(pdata.MetricDataTypeIntGauge)) + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
-			otlp.MetricDescriptor_HISTOGRAM,
-			typeHistogram + lb2Sig,
+			validMetrics1[validIntHistogram],
+			strconv.Itoa(int(pdata.MetricDataTypeIntHistogram)) + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
-			otlp.MetricDescriptor_HISTOGRAM,
-			typeHistogram + lb2Sig,
+			validMetrics1[validIntHistogram],
+			strconv.Itoa(int(pdata.MetricDataTypeIntHistogram)) + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateMetrics
 		{
 			"nil_case",
 			nil,
-			otlp.MetricDescriptor_HISTOGRAM,
-			typeHistogram,
+			validMetrics1[validIntHistogram],
+			strconv.Itoa(int(pdata.MetricDataTypeIntHistogram)),
 		},
 	}
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.desc, &tt.lbs))
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric, &tt.lbs))
 		})
 	}
 }
@@ -236,10 +239,10 @@ func Test_createLabelSet(t *testing.T) {
 // invalid characters.
 func Test_getPromMetricName(t *testing.T) {
 	tests := []struct {
-		name string
-		desc *otlp.MetricDescriptor
-		ns   string
-		want string
+		name   string
+		metric *otlp.Metric
+		ns     string
+		want   string
 	}{
 		{
 			"nil_case",
@@ -249,34 +252,33 @@ func Test_getPromMetricName(t *testing.T) {
 		},
 		{
 			"normal_case",
-			getDescriptor(name1, histogramComb, validCombinations),
+			validMetrics1[validDoubleGauge],
 			ns1,
-			"test_ns_valid_single_int_point",
+			"test_ns_" + validDoubleGauge,
 		},
 		{
 			"empty_namespace",
-			getDescriptor(name1, summaryComb, validCombinations),
+			validMetrics1[validDoubleGauge],
 			"",
-			"valid_single_int_point",
+			validDoubleGauge,
 		},
 		{
 			"total_suffix",
-			getDescriptor(name1, monotonicInt64Comb, validCombinations),
+			validMetrics1[validIntSum],
 			ns1,
-			"test_ns_valid_single_int_point_total",
+			"test_ns_" + validIntSum + delimeter + totalStr,
 		},
 		{
 			"dirty_string",
-			getDescriptor(name1+dirty1, monotonicInt64Comb, validCombinations),
+			validMetrics2[validIntGaugeDirty],
 			"7" + ns1,
-			"key_7test_ns_valid_single_int_point__total",
+			"key_7test_ns__" + validIntGauge + "_",
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, getPromMetricName(tt.desc, tt.ns))
+			assert.Equal(t, tt.want, getPromMetricName(tt.metric, tt.ns))
 		})
 	}
-
 }

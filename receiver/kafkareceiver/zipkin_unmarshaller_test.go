@@ -19,22 +19,27 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
-	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
+	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 func TestUnmarshallZipkin(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).Resource().InitEmpty()
+	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(
+		map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString("my_service")})
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTime(pdata.TimestampUnixNano(1597759000))
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTime(pdata.TimestampUnixNano(1597769000))
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().InitEmptyWithCapacity(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
@@ -57,7 +62,7 @@ func TestUnmarshallZipkin(t *testing.T) {
 	tdThrift, err := zipkintranslator.V1ThriftBatchToInternalTraces([]*zipkincore.Span{tSpan})
 	require.NoError(t, err)
 
-	protoBytes, err := new(zipkinproto.SpanSerializer).Serialize(spans)
+	protoBytes, err := new(zipkin_proto3.SpanSerializer).Serialize(spans)
 	require.NoError(t, err)
 
 	tests := []struct {

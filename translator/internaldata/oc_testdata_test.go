@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -92,65 +91,6 @@ func generateOCTestDataNoPoints() consumerdata.MetricsData {
 					Description: "",
 					Unit:        "1",
 					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-				},
-			},
-		},
-	}
-}
-
-func generateOCTestDataNoPointsOld() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
-		Node: &occommon.Node{},
-		Resource: &ocresource.Resource{
-			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
-		},
-		Metrics: []*ocmetrics.Metric{
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestGaugeDoubleMetricName,
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestGaugeIntMetricName,
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_GAUGE_INT64,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestCounterDoubleMetricName,
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestCounterIntMetricName,
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        testdata.TestDoubleHistogramMetricName,
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-				},
-			},
-			{
-				MetricDescriptor: &ocmetrics.MetricDescriptor{
-					Name:        "summary",
-					Description: "",
-					Unit:        "1",
-					Type:        ocmetrics.MetricDescriptor_SUMMARY,
 				},
 			},
 		},
@@ -453,7 +393,7 @@ func generateOCTestMetricIntHistogram() *ocmetrics.Metric {
 func generateOCTestMetricSummary() *ocmetrics.Metric {
 	return &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        testdataold.TestSummaryMetricName,
+			Name:        "summary",
 			Description: "",
 			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_SUMMARY,

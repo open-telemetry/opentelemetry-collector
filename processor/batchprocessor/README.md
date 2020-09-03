@@ -1,11 +1,11 @@
 # Batch Processor
 
-Supported pipeline types: metric, traces
+Supported pipeline types: metric, traces, logs
 
-The batch processor accepts spans or metrics and places them into batches.
-Batching helps better compress the data and reduce the number of outgoing 
-connections required to transmit the data. This processor supports both size and
-time based batching.
+The batch processor accepts spans, metrics, or logs and places them into
+batches. Batching helps better compress the data and reduce the number of
+outgoing connections required to transmit the data. This processor supports
+both size and time based batching.
 
 It is highly recommended to configure the batch processor on every collector.
 The batch processor should be defined in the pipeline after the `memory_limiter`

@@ -132,10 +132,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 				Description: "Extra ones",
 				Unit:        "1",
 				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "os", Description: "Operating system"},
-					{Key: "arch", Description: "Architecture"},
-				},
+				LabelKeys:   []*metricspb.LabelKey{{Key: "os"}, {Key: "arch"}},
 			},
 			Timeseries: []*metricspb.TimeSeries{
 				{
@@ -144,8 +141,8 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 						Nanos:   100000090,
 					},
 					LabelValues: []*metricspb.LabelValue{
-						{Value: "windows"},
-						{Value: "x86"},
+						{Value: "windows", HasValue: true},
+						{Value: "x86", HasValue: true},
 					},
 					Points: []*metricspb.Point{
 						{
@@ -167,10 +164,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 				Description: "Extra ones",
 				Unit:        "1",
 				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "os", Description: "Operating system"},
-					{Key: "arch", Description: "Architecture"},
-				},
+				LabelKeys:   []*metricspb.LabelKey{{Key: "os"}, {Key: "arch"}},
 			},
 			Timeseries: []*metricspb.TimeSeries{
 				{
@@ -179,8 +173,8 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 						Nanos:   100000090,
 					},
 					LabelValues: []*metricspb.LabelValue{
-						{Value: "linux"},
-						{Value: "x86"},
+						{Value: "linux", HasValue: true},
+						{Value: "x86", HasValue: true},
 					},
 					Points: []*metricspb.Point{
 						{

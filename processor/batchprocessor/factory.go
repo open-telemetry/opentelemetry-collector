@@ -39,7 +39,8 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		processorhelper.WithTraces(createTraceProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor))
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor))
 }
 
 func createDefaultConfig() configmodels.Processor {
@@ -74,4 +75,15 @@ func createMetricsProcessor(
 	oCfg := cfg.(*Config)
 	level, _ := telemetry.GetLevel()
 	return newBatchMetricsProcessor(params, nextConsumer, oCfg, level), nil
+}
+
+func createLogsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	oCfg := cfg.(*Config)
+	level, _ := telemetry.GetLevel()
+	return newBatchLogsProcessor(params, nextConsumer, oCfg, level), nil
 }

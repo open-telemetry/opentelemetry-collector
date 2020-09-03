@@ -26,11 +26,11 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/jaegertracing/jaeger v1.18.2-0.20200707061226-97d2319ff2be
+	github.com/jaegertracing/jaeger v1.19.2
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
-	github.com/openzipkin/zipkin-go v0.2.2
+	github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c
 	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
@@ -38,8 +38,8 @@ require (
 	github.com/prometheus/common v0.11.1
 	github.com/prometheus/prometheus v1.8.2-0.20200626085723-c448ada63d83
 	github.com/rs/cors v1.7.0
-	github.com/securego/gosec v0.0.0-20200316084457-7da9f46445fd
-	github.com/shirou/gopsutil v0.0.0-20200517204708-c89193f22d93 // c89193f22d9359848988f32aee972122bb2abdc2
+	github.com/securego/gosec/v2 v2.4.0
+	github.com/shirou/gopsutil v2.20.6+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1

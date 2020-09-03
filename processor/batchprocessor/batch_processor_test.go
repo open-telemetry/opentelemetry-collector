@@ -513,3 +513,214 @@ func BenchmarkTraceSizeSpanCount(b *testing.B) {
 		td.SpanCount()
 	}
 }
+
+func TestBatchLogProcessor_ReceivingData(t *testing.T) {
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		Timeout:       200 * time.Millisecond,
+		SendBatchSize: 50,
+	}
+
+	requestCount := 100
+	logsPerRequest := 5
+	sink := &exportertest.SinkLogsExporter{}
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchLogsProcessor(createParams, sink, &cfg, telemetry.Detailed)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	logDataSlice := make([]pdata.Logs, 0, requestCount)
+
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
+			logs.At(logIndex).SetName(getTestLogName(requestNum, logIndex))
+		}
+		logDataSlice = append(logDataSlice, ld.Clone())
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+
+	// Added to test case with empty resources sent.
+	ld := testdata.GenerateLogDataEmpty()
+	assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	receivedMds := sink.AllLogs()
+	logsReceivedByName := logsReceivedByName(receivedMds)
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		logs := logDataSlice[requestNum].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
+			require.EqualValues(t,
+				logs.At(logIndex),
+				logsReceivedByName[getTestLogName(requestNum, logIndex)])
+		}
+	}
+}
+
+func TestBatchLogProcessor_BatchSize(t *testing.T) {
+	views := MetricViews(telemetry.Detailed)
+	view.Register(views...)
+	defer view.Unregister(views...)
+
+	// Instantiate the batch processor with low config values to test data
+	// gets sent through the processor.
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 50,
+	}
+
+	requestCount := 100
+	logsPerRequest := 5
+	sink := &exportertest.SinkLogsExporter{}
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchLogsProcessor(createParams, sink, &cfg, telemetry.Detailed)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	start := time.Now()
+	size := 0
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		size += ld.SizeBytes()
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	expectedBatchesNum := requestCount * logsPerRequest / int(cfg.SendBatchSize)
+	expectedBatchingFactor := int(cfg.SendBatchSize) / logsPerRequest
+
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	receivedMds := sink.AllLogs()
+	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	for _, ld := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs().Len())
+		}
+	}
+
+	viewData, err := view.RetrieveData(statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sink.LogRecordsCount(), int(distData.Sum()))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
+	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
+
+	viewData, err = view.RetrieveData(statBatchSendSizeBytes.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData = viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, size, int(distData.Sum()))
+}
+
+func TestBatchLogsProcessor_Timeout(t *testing.T) {
+	cfg := Config{
+		Timeout:       100 * time.Millisecond,
+		SendBatchSize: 100,
+	}
+	requestCount := 5
+	logsPerRequest := 10
+	sink := &exportertest.SinkLogsExporter{}
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchLogsProcessor(createParams, sink, &cfg, telemetry.Detailed)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	start := time.Now()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+
+	// Wait for at least one batch to be sent.
+	for {
+		if sink.LogRecordsCount() != 0 {
+			break
+		}
+		<-time.After(cfg.Timeout)
+	}
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, cfg.Timeout.Nanoseconds(), elapsed.Nanoseconds())
+
+	// This should not change the results in the sink, verified by the expectedBatchesNum
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	expectedBatchesNum := 1
+	expectedBatchingFactor := 5
+
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	receivedMds := sink.AllLogs()
+	require.Equal(t, expectedBatchesNum, len(receivedMds))
+	for _, ld := range receivedMds {
+		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
+		for i := 0; i < expectedBatchingFactor; i++ {
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs().Len())
+		}
+	}
+}
+
+func TestBatchLogProcessor_Shutdown(t *testing.T) {
+	cfg := Config{
+		Timeout:       3 * time.Second,
+		SendBatchSize: 1000,
+	}
+	requestCount := 5
+	logsPerRequest := 10
+	sink := &exportertest.SinkLogsExporter{}
+
+	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchLogsProcessor(createParams, sink, &cfg, telemetry.Detailed)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
+		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordsCount())
+	require.Equal(t, 1, len(sink.AllLogs()))
+}
+
+func getTestLogName(requestNum, index int) string {
+	return fmt.Sprintf("test-log-int-%d-%d", requestNum, index)
+}
+
+func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
+	logsReceivedByName := map[string]pdata.LogRecord{}
+	for i := range lds {
+		ld := lds[i]
+		rms := ld.ResourceLogs()
+		for i := 0; i < rms.Len(); i++ {
+			rm := rms.At(i)
+			if rm.IsNil() {
+				continue
+			}
+			ilms := rm.InstrumentationLibraryLogs()
+			for j := 0; j < ilms.Len(); j++ {
+				ilm := ilms.At(j)
+				if ilm.IsNil() {
+					continue
+				}
+				logs := ilm.Logs()
+				for k := 0; k < logs.Len(); k++ {
+					log := logs.At(k)
+					logsReceivedByName[log.Name()] = log
+				}
+			}
+		}
+	}
+	return logsReceivedByName
+}

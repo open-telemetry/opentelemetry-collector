@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data"
 )
 
@@ -279,11 +278,11 @@ func intPointsToOC(dps pdata.IntDataPointSlice, labelKeys *labelKeys) []*ocmetri
 			continue
 		}
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: internal.UnixNanoToTimestamp(ip.StartTime()),
+			StartTimestamp: pdata.UnixNanoToTimestamp(ip.StartTime()),
 			LabelValues:    labelValuesToOC(ip.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
-					Timestamp: internal.UnixNanoToTimestamp(ip.Timestamp()),
+					Timestamp: pdata.UnixNanoToTimestamp(ip.Timestamp()),
 					Value: &ocmetrics.Point_Int64Value{
 						Int64Value: ip.Value(),
 					},
@@ -306,11 +305,11 @@ func doublePointToOC(dps pdata.DoubleDataPointSlice, labelKeys *labelKeys) []*oc
 			continue
 		}
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: internal.UnixNanoToTimestamp(dp.StartTime()),
+			StartTimestamp: pdata.UnixNanoToTimestamp(dp.StartTime()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
-					Timestamp: internal.UnixNanoToTimestamp(dp.Timestamp()),
+					Timestamp: pdata.UnixNanoToTimestamp(dp.Timestamp()),
 					Value: &ocmetrics.Point_DoubleValue{
 						DoubleValue: dp.Value(),
 					},
@@ -337,11 +336,11 @@ func doubleHistogramPointToOC(dps pdata.DoubleHistogramDataPointSlice, labelKeys
 		doubleExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: internal.UnixNanoToTimestamp(dp.StartTime()),
+			StartTimestamp: pdata.UnixNanoToTimestamp(dp.StartTime()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
-					Timestamp: internal.UnixNanoToTimestamp(dp.Timestamp()),
+					Timestamp: pdata.UnixNanoToTimestamp(dp.Timestamp()),
 					Value: &ocmetrics.Point_DistributionValue{
 						DistributionValue: &ocmetrics.DistributionValue{
 							Count:                 int64(dp.Count()),
@@ -374,11 +373,11 @@ func intHistogramPointToOC(dps pdata.IntHistogramDataPointSlice, labelKeys *labe
 		intExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
 		ts := &ocmetrics.TimeSeries{
-			StartTimestamp: internal.UnixNanoToTimestamp(dp.StartTime()),
+			StartTimestamp: pdata.UnixNanoToTimestamp(dp.StartTime()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
 			Points: []*ocmetrics.Point{
 				{
-					Timestamp: internal.UnixNanoToTimestamp(dp.Timestamp()),
+					Timestamp: pdata.UnixNanoToTimestamp(dp.Timestamp()),
 					Value: &ocmetrics.Point_DistributionValue{
 						DistributionValue: &ocmetrics.DistributionValue{
 							Count:                 int64(dp.Count()),
@@ -479,7 +478,7 @@ func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata
 
 	return &ocmetrics.DistributionValue_Exemplar{
 		Value:       value,
-		Timestamp:   internal.UnixNanoToTimestamp(timestamp),
+		Timestamp:   pdata.UnixNanoToTimestamp(timestamp),
 		Attachments: labels,
 	}
 }

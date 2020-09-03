@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package pdata
 
 import (
 	"testing"
@@ -20,13 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestUnixNanosConverters(t *testing.T) {
 	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
-	tun := pdata.TimestampUnixNano(t1.UnixNano())
+	tun := TimestampUnixNano(t1.UnixNano())
 
 	assert.EqualValues(t, uint64(1585012403000000789), tun)
 	tp := UnixNanoToTimestamp(tun)

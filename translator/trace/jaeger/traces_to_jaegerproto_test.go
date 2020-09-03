@@ -39,30 +39,30 @@ func TestGetTagFromStatusCode(t *testing.T) {
 	}{
 		{
 			name: "ok",
-			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK),
+			code: pdata.StatusCodeOk,
 			tag: model.KeyValue{
 				Key:    tracetranslator.TagStatusCode,
-				VInt64: int64(otlptrace.Status_STATUS_CODE_OK),
+				VInt64: int64(pdata.StatusCodeOk),
 				VType:  model.ValueType_INT64,
 			},
 		},
 
 		{
 			name: "unknown",
-			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR),
+			code: pdata.StatusCodeUnknownError,
 			tag: model.KeyValue{
 				Key:    tracetranslator.TagStatusCode,
-				VInt64: int64(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR),
+				VInt64: int64(pdata.StatusCodeUnknownError),
 				VType:  model.ValueType_INT64,
 			},
 		},
 
 		{
 			name: "not-found",
-			code: pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND),
+			code: pdata.StatusCodeNotFound,
 			tag: model.KeyValue{
 				Key:    tracetranslator.TagStatusCode,
-				VInt64: int64(otlptrace.Status_STATUS_CODE_NOT_FOUND),
+				VInt64: int64(pdata.StatusCodeNotFound),
 				VType:  model.ValueType_INT64,
 			},
 		},
@@ -84,14 +84,14 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 		VType: model.ValueType_BOOL,
 	}
 
-	_, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_OK))
+	_, ok := getErrorTagFromStatusCode(pdata.StatusCodeOk)
 	assert.False(t, ok)
 
-	got, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR))
+	got, ok := getErrorTagFromStatusCode(pdata.StatusCodeUnknownError)
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 
-	got, ok = getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_STATUS_CODE_NOT_FOUND))
+	got, ok = getErrorTagFromStatusCode(pdata.StatusCodeNotFound)
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 }
