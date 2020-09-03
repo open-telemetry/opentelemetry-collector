@@ -44,6 +44,7 @@ func TestDefaultComponents(t *testing.T) {
 	}
 	expectedProcessors := []configmodels.Type{
 		"attributes",
+		"authentication",
 		"resource",
 		"queued_retry",
 		"batch",

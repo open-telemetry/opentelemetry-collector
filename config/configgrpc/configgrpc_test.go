@@ -22,8 +22,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	otelcol "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -74,7 +76,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 	assert.Len(t, opts, 0)
 }
 
-func TestAllGrpcServerSettings(t *testing.T) {
+func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	gss := &GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:1234",
@@ -105,6 +107,25 @@ func TestAllGrpcServerSettings(t *testing.T) {
 	opts, err := gss.ToServerOption()
 	assert.NoError(t, err)
 	assert.Len(t, opts, 7)
+}
+
+func TestGrpcServerAuthSettings(t *testing.T) {
+	gss := &GRPCServerSettings{}
+
+	// sanity check
+	_, err := gss.ToServerOption()
+	require.NoError(t, err)
+
+	// test
+	gss.Auth = &configauth.Authentication{
+		OIDC: &configauth.OIDC{},
+	}
+	opts, err := gss.ToServerOption()
+
+	// verify
+	// an error here is a positive confirmation that Auth kicked in
+	assert.Error(t, err)
+	assert.Nil(t, opts)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
