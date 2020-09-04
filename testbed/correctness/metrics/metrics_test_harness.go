@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -34,7 +32,7 @@ type testHarness struct {
 	metricSupplier     *metricSupplier
 	metricIndex        *metricsReceivedIndex
 	sender             testbed.MetricDataSender
-	currMD             data.MetricData
+	currPDM            pdata.Metrics
 	diffConsumer       diffConsumer
 	outOfMetrics       bool
 	allMetricsReceived chan struct{}
@@ -62,8 +60,7 @@ func newTestHarness(
 }
 
 func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pdata.Metrics) error {
-	md := pdatautil.MetricsToInternalMetrics(pdm)
-	h.compare(&md)
+	h.compare(pdm)
 	if h.metricIndex.allReceived() {
 		close(h.allMetricsReceived)
 	}
@@ -73,8 +70,8 @@ func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pdata.Metrics) error
 	return nil
 }
 
-func (h *testHarness) compare(md *data.MetricData) {
-	pdms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+func (h *testHarness) compare(pdm pdata.Metrics) {
+	pdms := pdm.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	var diffs []*MetricDiff
 	for i := 0; i < pdms.Len(); i++ {
 		pdmRecd := pdms.At(i)
@@ -88,7 +85,7 @@ func (h *testHarness) compare(md *data.MetricData) {
 		}
 		if !metric.received {
 			metric.received = true
-			sent := metric.md
+			sent := metric.pdm
 			pdmExpected := sent.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 			diffs = DiffMetric(
 				diffs,
@@ -101,10 +98,10 @@ func (h *testHarness) compare(md *data.MetricData) {
 }
 
 func (h *testHarness) sendNextMetric() {
-	h.currMD, h.outOfMetrics = h.metricSupplier.nextMetricData()
+	h.currPDM, h.outOfMetrics = h.metricSupplier.nextMetrics()
 	if h.outOfMetrics {
 		return
 	}
-	err := h.sender.SendMetrics(pdatautil.MetricsFromInternalMetrics(h.currMD))
+	err := h.sender.SendMetrics(h.currPDM)
 	require.NoError(h.t, err)
 }

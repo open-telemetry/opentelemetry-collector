@@ -15,23 +15,23 @@
 package metrics
 
 import (
-	"go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type metricSupplier struct {
-	mds     []data.MetricData
+	pdms    []pdata.Metrics
 	currIdx int
 }
 
-func newMetricSupplier(mds []data.MetricData) *metricSupplier {
-	return &metricSupplier{mds: mds}
+func newMetricSupplier(pdms []pdata.Metrics) *metricSupplier {
+	return &metricSupplier{pdms: pdms}
 }
 
-func (p *metricSupplier) nextMetricData() (md data.MetricData, done bool) {
-	if p.currIdx == len(p.mds) {
-		return data.MetricData{}, true
+func (p *metricSupplier) nextMetrics() (pdm pdata.Metrics, done bool) {
+	if p.currIdx == len(p.pdms) {
+		return pdata.Metrics{}, true
 	}
-	md = p.mds[p.currIdx]
+	pdm = p.pdms[p.currIdx]
 	p.currIdx++
-	return md, false
+	return pdm, false
 }

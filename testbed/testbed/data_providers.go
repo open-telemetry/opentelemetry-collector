@@ -219,7 +219,7 @@ type GoldenDataProvider struct {
 	spansMap           map[string]*otlptrace.Span
 
 	metricPairsFile  string
-	metricsGenerated []data.MetricData
+	metricsGenerated []pdata.Metrics
 	metricsIndex     int
 }
 
@@ -276,11 +276,11 @@ func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	if dp.metricsIndex == numMetricsGenerated {
 		return pdata.Metrics{}, true
 	}
-	md := dp.metricsGenerated[dp.metricsIndex]
+	pdm := dp.metricsGenerated[dp.metricsIndex]
 	dp.metricsIndex++
-	_, dpCount := md.MetricAndDataPointCount()
+	_, dpCount := pdm.MetricAndDataPointCount()
 	dp.dataItemsGenerated.Add(uint64(dpCount))
-	return pdatautil.MetricsFromInternalMetrics(md), false
+	return pdm, false
 }
 
 func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
