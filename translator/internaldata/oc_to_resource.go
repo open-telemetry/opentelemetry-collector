@@ -29,16 +29,16 @@ var ocLangCodeToLangMap = getOCLangCodeToLangMap()
 
 func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
 	mappings := make(map[occommon.LibraryInfo_Language]string)
-	mappings[1] = conventions.SDKLangCPP
-	mappings[2] = conventions.SDKLangDotNET
-	mappings[3] = conventions.SDKLangErlang
-	mappings[4] = conventions.SDKLangGo
-	mappings[5] = conventions.SDKLangJava
-	mappings[6] = conventions.SDKLangNodeJS
-	mappings[7] = conventions.SDKLangPHP
-	mappings[8] = conventions.SDKLangPython
-	mappings[9] = conventions.SDKLangRuby
-	mappings[10] = conventions.SDKLangWebJS
+	mappings[1] = conventions.AttributeSDKLangValueCPP
+	mappings[2] = conventions.AttributeSDKLangValueDotNET
+	mappings[3] = conventions.AttributeSDKLangValueErlang
+	mappings[4] = conventions.AttributeSDKLangValueGo
+	mappings[5] = conventions.AttributeSDKLangValueJava
+	mappings[6] = conventions.AttributeSDKLangValueNodeJS
+	mappings[7] = conventions.AttributeSDKLangValuePHP
+	mappings[8] = conventions.AttributeSDKLangValuePython
+	mappings[9] = conventions.AttributeSDKLangValueRuby
+	mappings[10] = conventions.AttributeSDKLangValueWebJS
 	return mappings
 }
 

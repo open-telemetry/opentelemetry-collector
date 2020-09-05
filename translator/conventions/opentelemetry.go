@@ -75,16 +75,16 @@ const (
 // OpenTelemetry Semantic Convention values for Resource attribute "telemetry.sdk.language" values.
 // See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
 const (
-	SDKLangCPP    = "cpp"
-	SDKLangDotNET = "dotnet"
-	SDKLangErlang = "erlang"
-	SDKLangGo     = "go"
-	SDKLangJava   = "java"
-	SDKLangNodeJS = "nodejs"
-	SDKLangPHP    = "php"
-	SDKLangPython = "python"
-	SDKLangRuby   = "ruby"
-	SDKLangWebJS  = "webjs"
+	AttributeSDKLangValueCPP    = "cpp"
+	AttributeSDKLangValueDotNET = "dotnet"
+	AttributeSDKLangValueErlang = "erlang"
+	AttributeSDKLangValueGo     = "go"
+	AttributeSDKLangValueJava   = "java"
+	AttributeSDKLangValueNodeJS = "nodejs"
+	AttributeSDKLangValuePHP    = "php"
+	AttributeSDKLangValuePython = "python"
+	AttributeSDKLangValueRuby   = "ruby"
+	AttributeSDKLangValueWebJS  = "webjs"
 )
 
 // GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.

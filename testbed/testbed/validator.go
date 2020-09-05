@@ -16,6 +16,7 @@ package testbed
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
@@ -462,10 +463,13 @@ func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal 
 
 func (v *CorrectnessTestValidator) compareKeyValueList(spanName string, sentKVList *otlpcommon.KeyValueList,
 	recdVal interface{}, fmtStr string, attrKey string) {
-	recdKVList, ok := recdVal.(*otlpcommon.KeyValueList)
-	if ok {
-		v.diffAttributesSlice(spanName, recdKVList.Values, sentKVList.Values, fmtStr)
-	} else {
+	switch val := recdVal.(type) {
+	case *otlpcommon.KeyValueList:
+		v.diffAttributesSlice(spanName, val.Values, sentKVList.Values, fmtStr)
+	case string:
+		jsonStr := convertKVListToJSONString(sentKVList.Values)
+		v.compareSimpleValues(spanName, jsonStr, val, fmtStr, attrKey)
+	default:
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: spanName,
@@ -479,10 +483,13 @@ func (v *CorrectnessTestValidator) compareKeyValueList(spanName string, sentKVLi
 
 func (v *CorrectnessTestValidator) compareArrayList(spanName string, sentArray *otlpcommon.ArrayValue,
 	recdVal interface{}, fmtStr string, attrKey string) {
-	recdArray, ok := recdVal.(*otlpcommon.ArrayValue)
-	if ok {
-		v.compareSimpleValues(spanName, sentArray.Values, recdArray.Values, fmtStr, attrKey)
-	} else {
+	switch val := recdVal.(type) {
+	case *otlpcommon.ArrayValue:
+		v.compareSimpleValues(spanName, sentArray.Values, val.Values, fmtStr, attrKey)
+	case string:
+		jsonStr := convertArrayValuesToJSONString(sentArray.Values)
+		v.compareSimpleValues(spanName, jsonStr, val, fmtStr, attrKey)
+	default:
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: spanName,
@@ -563,4 +570,60 @@ func notWithinOneMillisecond(sentNs uint64, recdNs uint64) bool {
 		diff = recdNs - sentNs
 	}
 	return diff > uint64(1100000)
+}
+
+func convertKVListToJSONString(values []*otlpcommon.KeyValue) string {
+	jsonStr, err := json.Marshal(convertKVListToRawMap(values))
+	if err == nil {
+		return string(jsonStr)
+	}
+	return ""
+}
+
+func convertArrayValuesToJSONString(values []*otlpcommon.AnyValue) string {
+	jsonStr, err := json.Marshal(convertArrayValuesToRawSlice(values))
+	if err == nil {
+		return string(jsonStr)
+	}
+	return ""
+}
+
+func convertKVListToRawMap(values []*otlpcommon.KeyValue) map[string]interface{} {
+	rawMap := make(map[string]interface{})
+	for _, kv := range values {
+		var value interface{} = kv.GetValue()
+		switch val := value.(type) {
+		case *otlpcommon.AnyValue_StringValue:
+			rawMap[kv.Key] = val.StringValue
+		case *otlpcommon.AnyValue_IntValue:
+			rawMap[kv.Key] = val.IntValue
+		case *otlpcommon.AnyValue_DoubleValue:
+			rawMap[kv.Key] = val.DoubleValue
+		case *otlpcommon.AnyValue_BoolValue:
+			rawMap[kv.Key] = val.BoolValue
+		case *otlpcommon.AnyValue_KvlistValue:
+			rawMap[kv.Key] = convertKVListToRawMap(val.KvlistValue.Values)
+		case *otlpcommon.AnyValue_ArrayValue:
+			rawMap[kv.Key] = convertArrayValuesToRawSlice(val.ArrayValue.Values)
+		}
+	}
+	return rawMap
+}
+
+func convertArrayValuesToRawSlice(values []*otlpcommon.AnyValue) []interface{} {
+	rawSlice := make([]interface{}, 0, len(values))
+	for _, v := range values {
+		var value interface{} = v.GetValue()
+		switch val := value.(type) {
+		case *otlpcommon.AnyValue_StringValue:
+			rawSlice = append(rawSlice, val.StringValue)
+		case *otlpcommon.AnyValue_IntValue:
+			rawSlice = append(rawSlice, val.IntValue)
+		case *otlpcommon.AnyValue_DoubleValue:
+			rawSlice = append(rawSlice, val.DoubleValue)
+		case *otlpcommon.AnyValue_BoolValue:
+			rawSlice = append(rawSlice, val.BoolValue)
+		}
+	}
+	return rawSlice
 }

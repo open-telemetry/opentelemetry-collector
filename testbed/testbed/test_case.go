@@ -315,7 +315,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg ..
 
 // WaitFor is like WaitForN but with a fixed duration of 10 seconds
 func (tc *TestCase) WaitFor(cond func() bool, errMsg ...interface{}) bool {
-	return tc.WaitForN(cond, time.Second*12, errMsg...)
+	return tc.WaitForN(cond, time.Second*10, errMsg...)
 }
 
 func (tc *TestCase) indicateError(err error) {

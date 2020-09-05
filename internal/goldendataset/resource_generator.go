@@ -77,7 +77,7 @@ func generateOnpremVMAttributes() map[string]interface{} {
 		Values: convertMapToAttributeKeyValues(subMap),
 	}
 	attrMap[conventions.AttributeHostImageID] = "661ADFA6-E293-4870-9EFA-1AA052C49F18"
-	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.SDKLangJava
+	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
 	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
 	return attrMap
@@ -89,7 +89,7 @@ func generateCloudVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeServiceName] = "customers"
 	attrMap[conventions.AttributeServiceNamespace] = "production"
 	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.SDKLangJava
+	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
 	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
 	attrMap[conventions.AttributeHostHostname] = "env-check"
