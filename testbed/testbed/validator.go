@@ -591,8 +591,8 @@ func convertArrayValuesToJSONString(values []*otlpcommon.AnyValue) string {
 func convertKVListToRawMap(values []*otlpcommon.KeyValue) map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	for _, kv := range values {
-		var value interface{} = kv.GetValue()
-		switch val := value.(type) {
+		var value *otlpcommon.AnyValue = kv.GetValue()
+		switch val := value.GetValue().(type) {
 		case *otlpcommon.AnyValue_StringValue:
 			rawMap[kv.Key] = val.StringValue
 		case *otlpcommon.AnyValue_IntValue:
@@ -605,6 +605,8 @@ func convertKVListToRawMap(values []*otlpcommon.KeyValue) map[string]interface{}
 			rawMap[kv.Key] = convertKVListToRawMap(val.KvlistValue.Values)
 		case *otlpcommon.AnyValue_ArrayValue:
 			rawMap[kv.Key] = convertArrayValuesToRawSlice(val.ArrayValue.Values)
+		default:
+			rawMap[kv.Key] = val
 		}
 	}
 	return rawMap
@@ -613,8 +615,7 @@ func convertKVListToRawMap(values []*otlpcommon.KeyValue) map[string]interface{}
 func convertArrayValuesToRawSlice(values []*otlpcommon.AnyValue) []interface{} {
 	rawSlice := make([]interface{}, 0, len(values))
 	for _, v := range values {
-		var value interface{} = v.GetValue()
-		switch val := value.(type) {
+		switch val := v.GetValue().(type) {
 		case *otlpcommon.AnyValue_StringValue:
 			rawSlice = append(rawSlice, val.StringValue)
 		case *otlpcommon.AnyValue_IntValue:
