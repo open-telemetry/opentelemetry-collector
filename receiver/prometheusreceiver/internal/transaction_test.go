@@ -25,8 +25,8 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"google.golang.org/protobuf/proto"
 
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func Test_transaction(t *testing.T) {
@@ -116,7 +116,7 @@ func Test_transaction(t *testing.T) {
 		if len(mds) != 1 {
 			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())
 		}
-		ocmds := pdatautil.MetricsToMetricsData(mds[0])
+		ocmds := internaldata.MetricsToOC(mds[0])
 		if len(ocmds) != 1 {
 			t.Fatalf("wanted one batch per node, got %v\n", sink.AllMetrics())
 		}

@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -45,7 +44,7 @@ func TestOCToMetrics(t *testing.T) {
 	tests := []struct {
 		name     string
 		oc       consumerdata.MetricsData
-		internal data.MetricData
+		internal pdata.Metrics
 	}{
 		{
 			name:     "empty",
@@ -146,7 +145,7 @@ func TestOCToMetrics(t *testing.T) {
 				test.oc,
 				test.oc,
 			}
-			wantSlice := data.NewMetricData()
+			wantSlice := pdata.NewMetrics()
 			// Double the ResourceMetrics only if not empty.
 			if test.internal.ResourceMetrics().Len() != 0 {
 				test.internal.Clone().ResourceMetrics().MoveAndAppendTo(wantSlice.ResourceMetrics())
@@ -159,14 +158,14 @@ func TestOCToMetrics(t *testing.T) {
 }
 
 // TODO: Try to avoid unnecessary Resource object allocation.
-func wrapMetricsWithEmptyResource(md data.MetricData) data.MetricData {
+func wrapMetricsWithEmptyResource(md pdata.Metrics) pdata.Metrics {
 	md.ResourceMetrics().At(0).Resource().InitEmpty()
 	return md
 }
 
 func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	internal := testdata.GenerateMetricsOneMetric()
-	want := data.NewMetricData()
+	want := pdata.NewMetrics()
 	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
 	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
 	want.ResourceMetrics().At(1).Resource().Attributes().UpsertString("resource-attr", "another-value")

@@ -27,6 +27,10 @@ exporters:
 
 service:
   pipelines:
+    logs:
+      receivers: [examplereceiver]
+      processors: [resource]
+      exporters: [exampleexporter]
     metrics:
       receivers: [examplereceiver]
       processors: [resource]

@@ -23,7 +23,7 @@ import (
 	"sync"
 	"testing"
 
-	proto "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
@@ -32,9 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/data"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -115,8 +113,7 @@ func Test_Shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := prwe.PushMetrics(context.Background(),
-				pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsEmpty()))
+			_, ok := prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
 			errChan <- ok
 		}()
 	}
@@ -234,27 +231,26 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 // expected
 func Test_PushMetrics(t *testing.T) {
 
-	invalidTypeBatch := pdatautil.MetricsFromInternalMetrics((testdata.GenerateMetricsMetricTypeInvalid()))
+	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	nilBatch1 := testdata.GenerateMetricsOneEmptyResourceMetrics()
 	nilBatch2 := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
 	nilBatch3 := testdata.GenerateMetricsOneMetric()
 
-	nilResource := data.MetricDataToOtlp(nilBatch1)
+	nilResource := pdata.MetricsToOtlp(nilBatch1)
 	nilResource[0] = nil
-	nilResourceBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilResource))
+	nilResourceBatch := pdata.MetricsFromOtlp(nilResource)
 
-	nilInstrumentation := data.MetricDataToOtlp(nilBatch2)
+	nilInstrumentation := pdata.MetricsToOtlp(nilBatch2)
 	nilInstrumentation[0].InstrumentationLibraryMetrics[0] = nil
-	nilInstrumentationBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilInstrumentation))
+	nilInstrumentationBatch := pdata.MetricsFromOtlp(nilInstrumentation)
 
-	nilMetric := data.MetricDataToOtlp(nilBatch3)
+	nilMetric := pdata.MetricsToOtlp(nilBatch3)
 	nilMetric[0].InstrumentationLibraryMetrics[0].Metrics[0] = nil
-	nilMetricBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilMetric))
+	nilMetricBatch := pdata.MetricsFromOtlp(nilMetric)
 
 	// success cases
-	intSumMetric := testdata.GenerateMetricsManyMetricsSameResource(10)
-	intSumBatch := pdatautil.MetricsFromInternalMetrics(intSumMetric)
+	intSumBatch := testdata.GenerateMetricsManyMetricsSameResource(10)
 
 	doubleSumMetric := []*otlp.ResourceMetrics{
 		{
@@ -268,7 +264,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	doubleSumBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(doubleSumMetric))
+	doubleSumBatch := pdata.MetricsFromOtlp(doubleSumMetric)
 
 	intGaugeMetric := []*otlp.ResourceMetrics{
 		{
@@ -282,7 +278,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	intGaugeBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(intGaugeMetric))
+	intGaugeBatch := pdata.MetricsFromOtlp(intGaugeMetric)
 
 	doubleGaugeMetric := []*otlp.ResourceMetrics{
 		{
@@ -296,7 +292,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	doubleGaugeBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(doubleGaugeMetric))
+	doubleGaugeBatch := pdata.MetricsFromOtlp(doubleGaugeMetric)
 
 	intHistogramMetric := []*otlp.ResourceMetrics{
 		{
@@ -310,7 +306,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	intHistogramBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(intHistogramMetric))
+	intHistogramBatch := pdata.MetricsFromOtlp(intHistogramMetric)
 
 	doubleHistogramMetric := []*otlp.ResourceMetrics{
 		{
@@ -324,7 +320,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	doubleHistogramBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(doubleHistogramMetric))
+	doubleHistogramBatch := pdata.MetricsFromOtlp(doubleHistogramMetric)
 
 	// len(BucketCount) > len(ExplicitBounds)
 	unmatchedBoundBucketIntHistMetric := []*otlp.ResourceMetrics{
@@ -338,8 +334,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	unmatchedBoundBucketIntHistBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(unmatchedBoundBucketIntHistMetric))
+	unmatchedBoundBucketIntHistBatch := pdata.MetricsFromOtlp(unmatchedBoundBucketIntHistMetric)
 
 	unmatchedBoundBucketDoubleHistMetric := []*otlp.ResourceMetrics{
 		{
@@ -352,8 +347,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	unmatchedBoundBucketDoubleHistBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(unmatchedBoundBucketDoubleHistMetric))
+	unmatchedBoundBucketDoubleHistBatch := pdata.MetricsFromOtlp(unmatchedBoundBucketDoubleHistMetric)
 
 	// fail cases
 	nilDataPointIntGaugeMetric := []*otlp.ResourceMetrics{
@@ -367,8 +361,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	nilDataPointIntGaugeBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(nilDataPointIntGaugeMetric))
+	nilDataPointIntGaugeBatch := pdata.MetricsFromOtlp(nilDataPointIntGaugeMetric)
 
 	nilDataPointDoubleGaugeMetric := []*otlp.ResourceMetrics{
 		{
@@ -381,8 +374,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	nilDataPointDoubleGaugeBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(nilDataPointDoubleGaugeMetric))
+	nilDataPointDoubleGaugeBatch := pdata.MetricsFromOtlp(nilDataPointDoubleGaugeMetric)
 
 	nilDataPointIntSumMetric := []*otlp.ResourceMetrics{
 		{
@@ -395,7 +387,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	nilDataPointIntSumBatch := pdatautil.MetricsFromInternalMetrics(data.MetricDataFromOtlp(nilDataPointIntSumMetric))
+	nilDataPointIntSumBatch := pdata.MetricsFromOtlp(nilDataPointIntSumMetric)
 
 	nilDataPointDoubleSumMetric := []*otlp.ResourceMetrics{
 		{
@@ -408,8 +400,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	nilDataPointDoubleSumBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(nilDataPointDoubleSumMetric))
+	nilDataPointDoubleSumBatch := pdata.MetricsFromOtlp(nilDataPointDoubleSumMetric)
 
 	nilDataPointIntHistogramMetric := []*otlp.ResourceMetrics{
 		{
@@ -422,8 +413,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	nilDataPointIntHistogramBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(nilDataPointIntHistogramMetric))
+	nilDataPointIntHistogramBatch := pdata.MetricsFromOtlp(nilDataPointIntHistogramMetric)
 
 	nilDataPointDoubleHistogramMetric := []*otlp.ResourceMetrics{
 		{
@@ -436,8 +426,7 @@ func Test_PushMetrics(t *testing.T) {
 			},
 		},
 	}
-	nilDataPointDoubleHistogramBatch := pdatautil.MetricsFromInternalMetrics(
-		data.MetricDataFromOtlp(nilDataPointDoubleHistogramMetric))
+	nilDataPointDoubleHistogramBatch := pdata.MetricsFromOtlp(nilDataPointDoubleHistogramMetric)
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -472,7 +461,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(invalidTypeBatch),
+			invalidTypeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -481,7 +470,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilResourceBatch),
+			nilResourceBatch.MetricCount(),
 			false,
 		},
 		{
@@ -490,7 +479,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilInstrumentationBatch),
+			nilInstrumentationBatch.MetricCount(),
 			false,
 		},
 		{
@@ -499,7 +488,7 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilMetricBatch),
+			nilMetricBatch.MetricCount(),
 			true,
 		},
 		{
@@ -580,7 +569,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointDoubleGaugeBatch),
+			nilDataPointDoubleGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -589,7 +578,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointIntGaugeBatch),
+			nilDataPointIntGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -598,7 +587,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointDoubleSumBatch),
+			nilDataPointDoubleSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -607,7 +596,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointIntSumBatch),
+			nilDataPointIntSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -616,7 +605,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointDoubleHistogramBatch),
+			nilDataPointDoubleHistogramBatch.MetricCount(),
 			true,
 		},
 		{
@@ -625,7 +614,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			pdatautil.MetricCount(nilDataPointIntHistogramBatch),
+			nilDataPointIntHistogramBatch.MetricCount(),
 			true,
 		},
 	}

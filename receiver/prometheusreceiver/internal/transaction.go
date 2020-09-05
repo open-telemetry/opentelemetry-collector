@@ -35,8 +35,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 const (
@@ -188,7 +188,7 @@ func (tr *transaction) Commit() error {
 			Metrics:  metrics,
 		}
 		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
-		err = tr.sink.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
+		err = tr.sink.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
 	}
 	obsreport.EndMetricsReceiveOp(
 		ctx, dataformat, numPoints, numTimeseries, err)

@@ -26,9 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -248,7 +246,7 @@ func (bt *batchTraces) reset() {
 
 type batchMetrics struct {
 	nextConsumer consumer.MetricsConsumer
-	metricData   data.MetricData
+	metricData   pdata.Metrics
 	metricCount  uint32
 }
 
@@ -259,7 +257,7 @@ func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
 }
 
 func (bm *batchMetrics) export(ctx context.Context) error {
-	return bm.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(bm.metricData))
+	return bm.nextConsumer.ConsumeMetrics(ctx, bm.metricData)
 }
 
 func (bm *batchMetrics) itemCount() uint32 {
@@ -272,12 +270,12 @@ func (bm *batchMetrics) size() int {
 
 // resets the current batchMetrics structure with zero/empty values.
 func (bm *batchMetrics) reset() {
-	bm.metricData = data.NewMetricData()
+	bm.metricData = pdata.NewMetrics()
 	bm.metricCount = 0
 }
 
 func (bm *batchMetrics) add(item interface{}) {
-	md := pdatautil.MetricsToInternalMetrics(item.(pdata.Metrics))
+	md := item.(pdata.Metrics)
 
 	newMetricsCount := md.MetricCount()
 	if newMetricsCount == 0 {

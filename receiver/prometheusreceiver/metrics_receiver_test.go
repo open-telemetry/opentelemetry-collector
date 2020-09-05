@@ -39,8 +39,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 var logger = zap.NewNop()
@@ -967,7 +967,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	// split and store results by target name
 	results := make(map[string][]consumerdata.MetricsData)
 	for _, m := range metrics {
-		ocmds := pdatautil.MetricsToMetricsData(m)
+		ocmds := internaldata.MetricsToOC(m)
 		for _, ocmd := range ocmds {
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
@@ -1054,7 +1054,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	// split and store results by target name
 	results := make(map[string][]consumerdata.MetricsData)
 	for _, m := range metrics {
-		ocmds := pdatautil.MetricsToMetricsData(m)
+		ocmds := internaldata.MetricsToOC(m)
 		for _, ocmd := range ocmds {
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {

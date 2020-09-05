@@ -70,7 +70,7 @@ func TestSize(t *testing.T) {
 	assert.Equal(t, sizeBytes, md.Size())
 }
 
-func TestSizeWithNils(t *testing.T) {
+func TestTracesSizeWithNils(t *testing.T) {
 	assert.Equal(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{nil, {}}).Size())
 }
 
