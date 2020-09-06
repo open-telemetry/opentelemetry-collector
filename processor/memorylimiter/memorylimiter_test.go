@@ -100,12 +100,11 @@ func TestNew(t *testing.T) {
 // TestMetricsMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestMetricsMemoryPressureResponse(t *testing.T) {
-	d := &fixedDecision{
-		memAllocLimit: 1024,
-	}
 	var currentMemAlloc uint64
 	ml := &memoryLimiter{
-		decision: d,
+		decision: dropDecision{
+			memAllocLimit: 1024,
+		},
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -153,7 +152,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	ml.ballastSize = 0
 
 	// Check spike limit
-	d.memSpikeLimit = 512
+	ml.decision.memSpikeLimit = 512
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -170,12 +169,11 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 // TestTraceMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestTraceMemoryPressureResponse(t *testing.T) {
-	d := &fixedDecision{
-		memAllocLimit: 1024,
-	}
 	var currentMemAlloc uint64
 	ml := &memoryLimiter{
-		decision: d,
+		decision: dropDecision{
+			memAllocLimit: 1024,
+		},
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -223,7 +221,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	ml.ballastSize = 0
 
 	// Check spike limit
-	d.memSpikeLimit = 512
+	ml.decision.memSpikeLimit = 512
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -240,12 +238,11 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 // TestLogMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestLogMemoryPressureResponse(t *testing.T) {
-	d := &fixedDecision{
-		memAllocLimit: 1024,
-	}
 	var currentMemAlloc uint64
 	ml := &memoryLimiter{
-		decision: d,
+		decision: dropDecision{
+			memAllocLimit: 1024,
+		},
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -293,7 +290,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	ml.ballastSize = 0
 
 	// Check spike limit
-	d.memSpikeLimit = 512
+	ml.decision.memSpikeLimit = 512
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -309,7 +306,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 func TestGetDecision(t *testing.T) {
 	d, err := getDecision(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, &fixedDecision{
+	assert.Equal(t, &dropDecision{
 		memAllocLimit: 100 * mibBytes,
 		memSpikeLimit: 20 * mibBytes,
 	}, d)
@@ -325,7 +322,7 @@ func TestGetDecision(t *testing.T) {
 	}
 	d, err = getDecision(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, &fixedDecision{
+	assert.Equal(t, &dropDecision{
 		memAllocLimit: 50 * mibBytes,
 		memSpikeLimit: 10 * mibBytes,
 	}, d)
@@ -338,6 +335,9 @@ func TestDropDecision(t *testing.T) {
 	require.NoError(t, err)
 	decison1000Limit40Spike20, err := newPercentrageDecision(1000, 40, 20)
 	require.NoError(t, err)
+	decison1000Limit40Spike60, err := newPercentrageDecision(1000, 40, 60)
+	require.Error(t, err)
+	assert.Nil(t, decison1000Limit40Spike60)
 
 	tests := []struct {
 		name       string
@@ -347,19 +347,19 @@ func TestDropDecision(t *testing.T) {
 	}{
 		{
 			name:       "should drop over limit",
-			decision:   decison1000Limit30Spike30,
+			decision:   *decison1000Limit30Spike30,
 			ms:         &runtime.MemStats{Alloc: 600},
 			shouldDrop: true,
 		},
 		{
 			name:       "should not drop",
-			decision:   decison1000Limit30Spike30,
+			decision:   *decison1000Limit30Spike30,
 			ms:         &runtime.MemStats{Alloc: 100},
 			shouldDrop: false,
 		},
 		{
 			name: "should not drop spike, fixed decision",
-			decision: &fixedDecision{
+			decision: dropDecision{
 				memAllocLimit: 600,
 				memSpikeLimit: 500,
 			},
@@ -368,13 +368,13 @@ func TestDropDecision(t *testing.T) {
 		},
 		{
 			name:       "should drop, spike, percentage decision",
-			decision:   decison1000Limit60Spike50,
+			decision:   *decison1000Limit60Spike50,
 			ms:         &runtime.MemStats{Alloc: 300},
 			shouldDrop: true,
 		},
 		{
 			name:       "should drop, spike, percentage decision",
-			decision:   decison1000Limit40Spike20,
+			decision:   *decison1000Limit40Spike20,
 			ms:         &runtime.MemStats{Alloc: 250},
 			shouldDrop: true,
 		},

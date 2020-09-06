@@ -92,8 +92,13 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		return nil, err
 	}
 
+	logger.Info("Percentage limiter configured",
+		zap.Uint64("limit_mib", decision.memAllocLimit),
+		zap.Uint64("spike_limit_mib", decision.memSpikeLimit),
+		zap.Duration("check_interval", cfg.CheckInterval))
+
 	ml := &memoryLimiter{
-		decision:       decision,
+		decision:       *decision,
 		memCheckWait:   cfg.CheckInterval,
 		ballastSize:    ballastSize,
 		ticker:         time.NewTicker(cfg.CheckInterval),
@@ -107,7 +112,7 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	return ml, nil
 }
 
-func getDecision(cfg *Config, logger *zap.Logger) (dropDecision, error) {
+func getDecision(cfg *Config, logger *zap.Logger) (*dropDecision, error) {
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
 	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
 	if cfg.MemoryLimitMiB != 0 {
@@ -117,12 +122,8 @@ func getDecision(cfg *Config, logger *zap.Logger) (dropDecision, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
-	decision, err := newPercentrageDecision(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
-	logger.Info("Using percentage settings for memory limiting",
-		zap.Int64("total_memory", totalMemory),
-		zap.Uint64("limit_mib", decision.memAllocLimit),
-		zap.Uint64("spike_limit_mib", decision.memSpikeLimit))
-	return decision, err
+	logger.Info("Using percentage memory limiter", zap.Int64("total_memory", totalMemory))
+	return newPercentrageDecision(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -242,31 +243,25 @@ func (ml *memoryLimiter) memLimiting(ms *runtime.MemStats) {
 	}
 }
 
-type dropDecision interface {
-	shouldDrop(memStats *runtime.MemStats) bool
-}
-
-type fixedDecision struct {
+type dropDecision struct {
 	memAllocLimit uint64
 	memSpikeLimit uint64
 }
 
-var _ dropDecision = (*fixedDecision)(nil)
+func (d dropDecision) shouldDrop(ms *runtime.MemStats) bool {
+	return d.memAllocLimit <= ms.Alloc || d.memAllocLimit-ms.Alloc <= d.memSpikeLimit
+}
 
-func newFixedDecision(memAllocLimit, memSpikeLimit uint64) (*fixedDecision, error) {
+func newFixedDecision(memAllocLimit, memSpikeLimit uint64) (*dropDecision, error) {
 	if memSpikeLimit >= memAllocLimit {
 		return nil, errMemSpikeLimitOutOfRange
 	}
-	return &fixedDecision{
+	return &dropDecision{
 		memAllocLimit: memAllocLimit,
 		memSpikeLimit: memSpikeLimit,
 	}, nil
 }
 
-func (d *fixedDecision) shouldDrop(ms *runtime.MemStats) bool {
-	return d.memAllocLimit <= ms.Alloc || d.memAllocLimit-ms.Alloc <= d.memSpikeLimit
-}
-
-func newPercentrageDecision(totalMemory, percentageLimit, percentageSpike int64) (*fixedDecision, error) {
+func newPercentrageDecision(totalMemory, percentageLimit, percentageSpike int64) (*dropDecision, error) {
 	return newFixedDecision(uint64(percentageLimit*totalMemory)/100, uint64(percentageSpike*totalMemory)/100)
 }
