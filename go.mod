@@ -51,7 +51,7 @@ require (
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	go.opencensus.io v0.22.4
 	go.uber.org/atomic v1.6.0
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
 	golang.org/x/text v0.3.3
