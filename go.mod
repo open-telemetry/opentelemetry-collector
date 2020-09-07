@@ -57,7 +57,7 @@ require (
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200624020401-64a14ca9d1ad
-	google.golang.org/grpc v1.31.0
+	google.golang.org/grpc v1.31.1
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
