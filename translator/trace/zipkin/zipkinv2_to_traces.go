@@ -449,7 +449,7 @@ func copySpanTags(tags map[string]string) map[string]string {
 }
 
 func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
-	if zspan == nil || zspan.LocalEndpoint == nil {
+	if zspan == nil || zspan.LocalEndpoint == nil || zspan.LocalEndpoint.ServiceName == "" {
 		return tracetranslator.ResourceNotSet
 	}
 	return zspan.LocalEndpoint.ServiceName
