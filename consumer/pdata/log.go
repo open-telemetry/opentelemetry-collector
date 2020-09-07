@@ -16,6 +16,7 @@ package pdata
 
 import (
 	"github.com/gogo/protobuf/proto"
+
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
