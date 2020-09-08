@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -104,7 +103,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
+		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err != nil {
 			t.Errorf("Wanted nil got error")
 			return
@@ -114,7 +113,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	for _, p := range processors {
 		m := p.(*exportertest.SinkMetricsExporter)
 		assert.Equal(t, wantMetricsCount, m.MetricsCount())
-		assert.EqualValues(t, md, pdatautil.MetricsToInternalMetrics(m.AllMetrics()[0]))
+		assert.EqualValues(t, md, m.AllMetrics()[0])
 	}
 }
 
@@ -133,7 +132,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md))
+		err := mfc.ConsumeMetrics(context.Background(), md)
 		if err == nil {
 			t.Errorf("Wanted error got nil")
 			return

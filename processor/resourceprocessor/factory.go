@@ -40,7 +40,8 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		processorhelper.WithTraces(createTraceProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor))
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -79,6 +80,22 @@ func createMetricsProcessor(
 		return nil, err
 	}
 	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		&resourceProcessor{attrProc: attrProc},
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createLogsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
+	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
 		&resourceProcessor{attrProc: attrProc},

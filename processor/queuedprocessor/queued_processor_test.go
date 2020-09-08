@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -187,7 +186,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnPermanentError(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
+	md := testdata.GenerateMetricsTwoMetrics()
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(consumererror.Permanent(errors.New("bad data")))
@@ -219,7 +218,7 @@ func TestMetricsQueueProcessor_NoEnqueueOnNoRetry(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
+	md := testdata.GenerateMetricsTwoMetrics()
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
@@ -251,7 +250,7 @@ func TestMetricsQueueProcessor_EnqueueOnError(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
+	md := testdata.GenerateMetricsTwoMetrics()
 
 	mockP := newMockConcurrentSpanProcessor()
 	mockP.updateError(errors.New("transient error"))
@@ -350,7 +349,7 @@ func TestMetricsQueueProcessorHappyPath(t *testing.T) {
 	wantBatches := 10
 	wantMetricPoints := 2 * 20
 	for i := 0; i < wantBatches; i++ {
-		md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricsTwoMetrics())
+		md := testdata.GenerateMetricsTwoMetrics()
 		mockP.run(func() {
 			require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
 		})
@@ -398,7 +397,7 @@ func (p *mockConcurrentSpanProcessor) ConsumeMetrics(_ context.Context, md pdata
 		return nil
 	}
 	atomic.AddInt64(&p.batchCount, 1)
-	_, mpc := pdatautil.MetricAndDataPointCount(md)
+	_, mpc := md.MetricAndDataPointCount()
 	atomic.AddInt64(&p.metricPointsCount, int64(mpc))
 	p.mu.Lock()
 	defer p.mu.Unlock()

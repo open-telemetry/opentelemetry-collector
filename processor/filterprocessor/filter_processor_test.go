@@ -17,18 +17,20 @@ package filterprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 type metricNameTest struct {
@@ -146,7 +148,6 @@ var (
 			},
 			inMN: [][]*metricspb.Metric{nil, metricsWithName(inMetricNames), {}},
 			outMN: [][]string{
-				{},
 				{
 					"full_name_match",
 					"prefix/test/match",
@@ -160,7 +161,6 @@ var (
 					"full/name/match",
 					"full_name_match",
 				},
-				{},
 			},
 		},
 		{
@@ -217,9 +217,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 					Metrics: metrics,
 				}
 			}
-			cErr := fmp.ConsumeMetrics(
-				context.Background(),
-				pdatautil.MetricsFromMetricsData(mds))
+			cErr := fmp.ConsumeMetrics(context.Background(), internaldata.OCSliceToMetrics(mds))
 			assert.Nil(t, cErr)
 			got := next.AllMetrics()
 
@@ -229,7 +227,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			}
 
 			require.Equal(t, 1, len(got))
-			gotMD := pdatautil.MetricsToMetricsData(got[0])
+			gotMD := internaldata.MetricsToOC(got[0])
 			require.Equal(t, len(test.outMN), len(gotMD))
 			for i, wantOut := range test.outMN {
 				assert.Equal(t, len(wantOut), len(gotMD[i].Metrics))
@@ -306,8 +304,7 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 			}
 		}
 
-		pdm := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
-
+		pdm := internaldata.OCToMetrics(md)
 		b.Run(test.name, func(b *testing.B) {
 			assert.NoError(b, fmp.ConsumeMetrics(context.Background(), pdm))
 		})
@@ -316,10 +313,24 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 
 func metricsWithName(names []string) []*metricspb.Metric {
 	ret := make([]*metricspb.Metric, len(names))
+	now := time.Now()
 	for i, name := range names {
 		ret[i] = &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name: name,
+				Type: metricspb.MetricDescriptor_GAUGE_INT64,
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					Points: []*metricspb.Point{
+						{
+							Timestamp: timestamppb.New(now.Add(10 * time.Second)),
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(123),
+							},
+						},
+					},
+				},
 			},
 		}
 	}

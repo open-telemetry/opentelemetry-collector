@@ -20,8 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 func TestNopTraceExporter(t *testing.T) {
@@ -34,7 +32,7 @@ func TestNopTraceExporter(t *testing.T) {
 func TestNopMetricsExporter(t *testing.T) {
 	nme := NewNopMetricsExporter()
 	require.NoError(t, nme.Start(context.Background(), nil))
-	require.NoError(t, nme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(data.NewMetricData())))
+	require.NoError(t, nme.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 	require.NoError(t, nme.Shutdown(context.Background()))
 }
 

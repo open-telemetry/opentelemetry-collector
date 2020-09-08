@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -33,7 +31,7 @@ func TestSameMetrics(t *testing.T) {
 	assert.Nil(t, diffs)
 }
 
-func diffMetricData(expected data.MetricData, actual data.MetricData) []*MetricDiff {
+func diffMetricData(expected pdata.Metrics, actual pdata.Metrics) []*MetricDiff {
 	expectedRMSlice := expected.ResourceMetrics()
 	actualRMSlice := actual.ResourceMetrics()
 	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
@@ -98,8 +96,8 @@ func TestIntHistogram(t *testing.T) {
 }
 
 func TestPDMToPDRM(t *testing.T) {
-	md := data.NewMetricData()
-	md.ResourceMetrics().Resize(1)
-	rm := pdmToPDRM([]pdata.Metrics{pdatautil.MetricsFromInternalMetrics(md)})
-	require.Len(t, rm, 1)
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().Resize(2)
+	rms := pdmToPDRM([]pdata.Metrics{md})
+	require.Len(t, rms, 2)
 }

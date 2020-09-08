@@ -30,7 +30,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -98,7 +98,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	assert.NotNil(t, exp)
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{Metrics: metricBuilder(int64(delta))}})
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err := http.Get("http://localhost:7777/metrics")
@@ -132,10 +132,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 				Description: "Extra ones",
 				Unit:        "1",
 				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "os", Description: "Operating system"},
-					{Key: "arch", Description: "Architecture"},
-				},
+				LabelKeys:   []*metricspb.LabelKey{{Key: "os"}, {Key: "arch"}},
 			},
 			Timeseries: []*metricspb.TimeSeries{
 				{
@@ -144,8 +141,8 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 						Nanos:   100000090,
 					},
 					LabelValues: []*metricspb.LabelValue{
-						{Value: "windows"},
-						{Value: "x86"},
+						{Value: "windows", HasValue: true},
+						{Value: "x86", HasValue: true},
 					},
 					Points: []*metricspb.Point{
 						{
@@ -167,10 +164,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 				Description: "Extra ones",
 				Unit:        "1",
 				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "os", Description: "Operating system"},
-					{Key: "arch", Description: "Architecture"},
-				},
+				LabelKeys:   []*metricspb.LabelKey{{Key: "os"}, {Key: "arch"}},
 			},
 			Timeseries: []*metricspb.TimeSeries{
 				{
@@ -179,8 +173,8 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 						Nanos:   100000090,
 					},
 					LabelValues: []*metricspb.LabelValue{
-						{Value: "linux"},
-						{Value: "x86"},
+						{Value: "linux", HasValue: true},
+						{Value: "x86", HasValue: true},
 					},
 					Points: []*metricspb.Point{
 						{

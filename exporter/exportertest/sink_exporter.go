@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
@@ -123,7 +122,7 @@ func (sme *SinkMetricsExporter) ConsumeMetrics(_ context.Context, md pdata.Metri
 	}
 
 	sme.metrics = append(sme.metrics, md)
-	sme.metricsCount += pdatautil.MetricCount(md)
+	sme.metricsCount += md.MetricCount()
 
 	return nil
 }

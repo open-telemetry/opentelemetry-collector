@@ -24,8 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -50,7 +48,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	request := otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: data.MetricDataToOtlp(pdatautil.MetricsToInternalMetrics(md)),
+		ResourceMetrics: pdata.MetricsToOtlp(md),
 	}
 	return exportMessageAsLine(e, &request)
 }

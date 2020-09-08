@@ -39,12 +39,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
@@ -69,15 +69,14 @@ func TestReceiver_endToEnd(t *testing.T) {
 	}()
 
 	md := testdata.GenerateMetricsOneMetric()
-	assert.NoError(t, oce.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(md)))
+	assert.NoError(t, oce.ConsumeMetrics(context.Background(), md))
 
 	testutil.WaitFor(t, func() bool {
 		return len(metricSink.AllMetrics()) != 0
 	})
 	gotMetrics := metricSink.AllMetrics()
 	require.Len(t, gotMetrics, 1)
-	gotMd := pdatautil.MetricsToInternalMetrics(gotMetrics[0])
-	assert.Equal(t, md, gotMd)
+	assert.Equal(t, md, gotMetrics[0])
 }
 
 // Issue #43. Export should support node multiplexing.
@@ -153,7 +152,7 @@ func TestExportMultiplexing(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		ocmds := pdatautil.MetricsToMetricsData(md)
+		ocmds := internaldata.MetricsToOC(md)
 		for _, ocmd := range ocmds {
 			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
 		}
@@ -296,7 +295,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
-		ocmds := pdatautil.MetricsToMetricsData(md)
+		ocmds := internaldata.MetricsToOC(md)
 		for _, ocmd := range ocmds {
 			resultsMapping[nodeToKey(ocmd.Node)] = append(resultsMapping[nodeToKey(ocmd.Node)], ocmd.Metrics...)
 		}
@@ -385,8 +384,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.MetricsConsumer) (int, fun
 
 func makeMetric(val int) *metricspb.Metric {
 	key := &metricspb.LabelKey{
-		Key:         fmt.Sprintf("%s%d", "key", val),
-		Description: "label key",
+		Key: fmt.Sprintf("%s%d", "key", val),
 	}
 	value := &metricspb.LabelValue{
 		Value:    fmt.Sprintf("%s%d", "value", val),

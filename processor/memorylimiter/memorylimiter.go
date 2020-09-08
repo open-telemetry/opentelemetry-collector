@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -133,7 +132,7 @@ func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pd
 
 // ProcessMetrics implements the MProcessor interface
 func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	_, numDataPoints := pdatautil.MetricAndDataPointCount(md)
+	_, numDataPoints := md.MetricAndDataPointCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected

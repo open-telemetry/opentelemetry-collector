@@ -1,6 +1,6 @@
 # Resource Processor
 
-Supported pipeline types: metrics, traces
+Supported pipeline types: metrics, traces, logs
 
 The resource processor can be used to apply changes on resource attributes.
 Please refer to [config.go](./config.go) for the config spec.

@@ -26,9 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
-	"go.opentelemetry.io/collector/internal/data"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -74,6 +72,7 @@ type batch interface {
 
 var _ consumer.TraceConsumer = (*batchProcessor)(nil)
 var _ consumer.MetricsConsumer = (*batchProcessor)(nil)
+var _ consumer.LogsConsumer = (*batchProcessor)(nil)
 
 func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch, telemetryLevel telemetry.Level) *batchProcessor {
 	return &batchProcessor{
@@ -182,6 +181,12 @@ func (bp *batchProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) er
 	return nil
 }
 
+// ConsumeLogs implements LogsProcessor
+func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+	bp.newItem <- ld
+	return nil
+}
+
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
 func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TraceConsumer, cfg *Config, telemetryLevel telemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchTraces(trace), telemetryLevel)
@@ -190,6 +195,11 @@ func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consu
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
 func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.MetricsConsumer, cfg *Config, telemetryLevel telemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchMetrics(metrics), telemetryLevel)
+}
+
+// newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
+func newBatchLogsProcessor(params component.ProcessorCreateParams, logs consumer.LogsConsumer, cfg *Config, telemetryLevel telemetry.Level) *batchProcessor {
+	return newBatchProcessor(params, cfg, newBatchLogs(logs), telemetryLevel)
 }
 
 type batchTraces struct {
@@ -236,7 +246,7 @@ func (bt *batchTraces) reset() {
 
 type batchMetrics struct {
 	nextConsumer consumer.MetricsConsumer
-	metricData   data.MetricData
+	metricData   pdata.Metrics
 	metricCount  uint32
 }
 
@@ -247,7 +257,7 @@ func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
 }
 
 func (bm *batchMetrics) export(ctx context.Context) error {
-	return bm.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(bm.metricData))
+	return bm.nextConsumer.ConsumeMetrics(ctx, bm.metricData)
 }
 
 func (bm *batchMetrics) itemCount() uint32 {
@@ -260,12 +270,12 @@ func (bm *batchMetrics) size() int {
 
 // resets the current batchMetrics structure with zero/empty values.
 func (bm *batchMetrics) reset() {
-	bm.metricData = data.NewMetricData()
+	bm.metricData = pdata.NewMetrics()
 	bm.metricCount = 0
 }
 
 func (bm *batchMetrics) add(item interface{}) {
-	md := pdatautil.MetricsToInternalMetrics(item.(pdata.Metrics))
+	md := item.(pdata.Metrics)
 
 	newMetricsCount := md.MetricCount()
 	if newMetricsCount == 0 {
@@ -273,4 +283,45 @@ func (bm *batchMetrics) add(item interface{}) {
 	}
 	bm.metricCount += uint32(newMetricsCount)
 	md.ResourceMetrics().MoveAndAppendTo(bm.metricData.ResourceMetrics())
+}
+
+type batchLogs struct {
+	nextConsumer consumer.LogsConsumer
+	logData      pdata.Logs
+	logCount     uint32
+}
+
+func newBatchLogs(nextConsumer consumer.LogsConsumer) *batchLogs {
+	b := &batchLogs{nextConsumer: nextConsumer}
+	b.reset()
+	return b
+}
+
+func (bm *batchLogs) export(ctx context.Context) error {
+	return bm.nextConsumer.ConsumeLogs(ctx, bm.logData)
+}
+
+func (bm *batchLogs) itemCount() uint32 {
+	return bm.logCount
+}
+
+func (bm *batchLogs) size() int {
+	return bm.logData.SizeBytes()
+}
+
+// resets the current batchLogs structure with zero/empty values.
+func (bm *batchLogs) reset() {
+	bm.logData = pdata.NewLogs()
+	bm.logCount = 0
+}
+
+func (bm *batchLogs) add(item interface{}) {
+	ld := item.(pdata.Logs)
+
+	newLogsCount := ld.LogRecordCount()
+	if newLogsCount == 0 {
+		return
+	}
+	bm.logCount += uint32(newLogsCount)
+	ld.ResourceLogs().MoveAndAppendTo(bm.logData.ResourceLogs())
 }

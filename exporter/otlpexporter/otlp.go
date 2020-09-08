@@ -29,9 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -90,14 +88,13 @@ func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) (int, 
 }
 
 func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	imd := pdatautil.MetricsToInternalMetrics(md)
 	request := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: data.MetricDataToOtlp(imd),
+		ResourceMetrics: pdata.MetricsToOtlp(md),
 	}
 	err := e.w.exportMetrics(ctx, request)
 
 	if err != nil {
-		return imd.MetricCount(), fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
+		return md.MetricCount(), fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
 	}
 	return 0, nil
 }

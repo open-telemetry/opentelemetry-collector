@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -63,7 +62,7 @@ func (req *metricsRequest) export(ctx context.Context) (int, error) {
 }
 
 func (req *metricsRequest) count() int {
-	_, numPoints := pdatautil.MetricAndDataPointCount(req.md)
+	_, numPoints := req.md.MetricAndDataPointCount()
 	return numPoints
 }
 
@@ -116,7 +115,7 @@ func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
 	// 	temporarily loading it from internal format. Once full switch is done
 	// 	to new metrics will remove this.
 	mReq := req.(*metricsRequest)
-	numReceivedMetrics, numPoints := pdatautil.MetricAndDataPointCount(mReq.md)
+	numReceivedMetrics, numPoints := mReq.md.MetricAndDataPointCount()
 
 	obsreport.EndMetricsExportOp(req.context(), numPoints, numReceivedMetrics, numDroppedMetrics, err)
 	return numReceivedMetrics, err
