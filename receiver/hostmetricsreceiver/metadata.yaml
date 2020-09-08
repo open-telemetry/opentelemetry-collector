@@ -20,8 +20,8 @@ metrics:
     unit: s
     data:
       type: double sum
-      monotonic: true
       aggregation: cumulative
+      monotonic: true
     labels: [cpu.state]
 
   system.memory.usage:
@@ -29,4 +29,6 @@ metrics:
     unit: By
     labels: [mem.state]
     data:
-      type: int gauge
+      type: int sum
+      aggregation: cumulative
+      monotonic: false

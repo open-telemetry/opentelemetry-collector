@@ -51,9 +51,11 @@ var Metrics = struct {
 		metric.SetName("system.memory.usage")
 		metric.SetDescription("Bytes of memory in use.")
 		metric.SetUnit("By")
-		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		data := metric.IntGauge()
+		metric.SetDataType(pdata.MetricDataTypeIntSum)
+		data := metric.IntSum()
 		data.InitEmpty()
+		data.SetIsMonotonic(false)
+		data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 		return metric
 	}(),
