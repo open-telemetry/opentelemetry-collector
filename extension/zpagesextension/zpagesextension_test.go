@@ -25,16 +25,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestZPagesExtensionUsage(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	zpagesExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	zpagesExt := newServer(config, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -55,7 +54,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 }
 
 func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
 	defer ln.Close()
@@ -63,8 +62,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	config := Config{
 		Endpoint: endpoint,
 	}
-	zpagesExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	zpagesExt := newServer(config, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -72,11 +70,10 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestZPagesMultipleStarts(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	zpagesExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	zpagesExt := newServer(config, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -88,11 +85,10 @@ func TestZPagesMultipleStarts(t *testing.T) {
 
 func TestZPagesMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	zpagesExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	zpagesExt := newServer(config, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -102,11 +98,10 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 
 func TestZPagesShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	zpagesExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	zpagesExt := newServer(config, zap.NewNop())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))

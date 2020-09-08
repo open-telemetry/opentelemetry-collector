@@ -43,7 +43,7 @@ func (np *nopProcessor) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // Start is invoked during service startup.
-func (np *nopProcessor) Start(ctx context.Context, host component.Host) error {
+func (np *nopProcessor) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -83,9 +83,9 @@ func (npf *NopProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 // If the processor type does not support tracing or if the config is not valid
 // error will be returned instead.
 func (npf *NopProcessorFactory) CreateTraceProcessor(
-	logger *zap.Logger,
+	_ *zap.Logger,
 	nextConsumer consumer.TraceConsumerOld,
-	cfg configmodels.Processor,
+	_ configmodels.Processor,
 ) (component.TraceProcessorOld, error) {
 	return &nopProcessor{nextTraceProcessor: nextConsumer}, nil
 }
@@ -94,9 +94,9 @@ func (npf *NopProcessorFactory) CreateTraceProcessor(
 // If the processor type does not support metrics or if the config is not valid
 // error will be returned instead.
 func (npf *NopProcessorFactory) CreateMetricsProcessor(
-	logger *zap.Logger,
+	_ *zap.Logger,
 	nextConsumer consumer.MetricsConsumerOld,
-	cfg configmodels.Processor,
+	_ configmodels.Processor,
 ) (component.MetricsProcessorOld, error) {
 	return &nopProcessor{nextMetricsProcessor: nextConsumer}, nil
 }

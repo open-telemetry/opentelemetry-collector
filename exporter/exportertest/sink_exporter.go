@@ -19,8 +19,10 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
 // SinkTraceExporterOld acts as a trace receiver for use in tests.
@@ -33,18 +35,18 @@ type SinkTraceExporterOld struct {
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (ste *SinkTraceExporterOld) Start(ctx context.Context, host component.Host) error {
+func (ste *SinkTraceExporterOld) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // ConsumeTraceData stores traces for tests.
-func (ste *SinkTraceExporterOld) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (ste *SinkTraceExporterOld) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
 	if ste.consumeTraceError != nil {
 		return ste.consumeTraceError
 	}
-
-	ste.mu.Lock()
-	defer ste.mu.Unlock()
 
 	ste.traces = append(ste.traces, td)
 
@@ -61,6 +63,9 @@ func (ste *SinkTraceExporterOld) AllTraces() []consumerdata.TraceData {
 
 // SetConsumeTraceError sets an error that will be returned by ConsumeTraceData
 func (ste *SinkTraceExporterOld) SetConsumeTraceError(err error) {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
 	ste.consumeTraceError = err
 }
 
@@ -71,28 +76,30 @@ func (ste *SinkTraceExporterOld) Shutdown(context.Context) error {
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
 type SinkTraceExporter struct {
-	consumeTraceError error // to be returned by ConsumeTraces, if set
 	mu                sync.Mutex
+	consumeTraceError error // to be returned by ConsumeTraces, if set
 	traces            []pdata.Traces
+	spansCount        int
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (ste *SinkTraceExporter) Start(ctx context.Context, host component.Host) error {
+func (ste *SinkTraceExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // ConsumeTraceData stores traces for tests.
-func (ste *SinkTraceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (ste *SinkTraceExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
 	if ste.consumeTraceError != nil {
 		return ste.consumeTraceError
 	}
 
-	ste.mu.Lock()
-	defer ste.mu.Unlock()
-
 	ste.traces = append(ste.traces, td)
+	ste.spansCount += td.SpanCount()
 
 	return nil
 }
@@ -102,11 +109,22 @@ func (ste *SinkTraceExporter) AllTraces() []pdata.Traces {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
-	return ste.traces
+	copyTraces := make([]pdata.Traces, len(ste.traces))
+	copy(copyTraces, ste.traces)
+	return copyTraces
+}
+
+// SpansCount return the number of spans sent to the test sing.
+func (ste *SinkTraceExporter) SpansCount() int {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+	return ste.spansCount
 }
 
 // SetConsumeTraceError sets an error that will be returned by ConsumeTraces
 func (ste *SinkTraceExporter) SetConsumeTraceError(err error) {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
 	ste.consumeTraceError = err
 }
 
@@ -117,26 +135,26 @@ func (ste *SinkTraceExporter) Shutdown(context.Context) error {
 
 // SinkMetricsExporterOld acts as a metrics receiver for use in tests.
 type SinkMetricsExporterOld struct {
-	consumeMetricsError error // to be returned by ConsumeMetricsData, if set
 	mu                  sync.Mutex
+	consumeMetricsError error // to be returned by ConsumeMetricsData, if set
 	metrics             []consumerdata.MetricsData
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (sme *SinkMetricsExporterOld) Start(ctx context.Context, host component.Host) error {
+func (sme *SinkMetricsExporterOld) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // ConsumeMetricsData stores traces for tests.
-func (sme *SinkMetricsExporterOld) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (sme *SinkMetricsExporterOld) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
 	if sme.consumeMetricsError != nil {
 		return sme.consumeMetricsError
 	}
-
-	sme.mu.Lock()
-	defer sme.mu.Unlock()
 
 	sme.metrics = append(sme.metrics, md)
 
@@ -153,6 +171,9 @@ func (sme *SinkMetricsExporterOld) AllMetrics() []consumerdata.MetricsData {
 
 // SetConsumeMetricsError sets an error that will be returned by ConsumeMetricsData
 func (sme *SinkMetricsExporterOld) SetConsumeMetricsError(err error) {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
 	sme.consumeMetricsError = err
 }
 
@@ -163,33 +184,36 @@ func (sme *SinkMetricsExporterOld) Shutdown(context.Context) error {
 
 // SinkMetricsExporter acts as a metrics receiver for use in tests.
 type SinkMetricsExporter struct {
-	consumeMetricsError error // to be returned by ConsumeMetrics, if set
 	mu                  sync.Mutex
+	consumeMetricsError error // to be returned by ConsumeMetrics, if set
 	metrics             []pdata.Metrics
+	metricsCount        int
 }
 
 // SetConsumeMetricsError sets an error that will be returned by ConsumeMetrics
 func (sme *SinkMetricsExporter) SetConsumeMetricsError(err error) {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
 	sme.consumeMetricsError = err
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (sme *SinkMetricsExporter) Start(ctx context.Context, host component.Host) error {
+func (sme *SinkMetricsExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // ConsumeMetricsData stores traces for tests.
 func (sme *SinkMetricsExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
 	if sme.consumeMetricsError != nil {
 		return sme.consumeMetricsError
 	}
 
-	sme.mu.Lock()
-	defer sme.mu.Unlock()
-
 	sme.metrics = append(sme.metrics, md)
+	sme.metricsCount += pdatautil.MetricsToInternalMetrics(md).MetricCount()
 
 	return nil
 }
@@ -199,10 +223,87 @@ func (sme *SinkMetricsExporter) AllMetrics() []pdata.Metrics {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
-	return sme.metrics
+	copyMetrics := make([]pdata.Metrics, len(sme.metrics))
+	copy(copyMetrics, sme.metrics)
+	return copyMetrics
+}
+
+// MetricsCount return the number of metrics sent to the test sing.
+func (sme *SinkMetricsExporter) MetricsCount() int {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+	return sme.metricsCount
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+// SinkLogsExporter acts as a metrics receiver for use in tests.
+type SinkLogsExporter struct {
+	consumeLogError error // to be returned by ConsumeLog, if set
+	mu              sync.Mutex
+	logs            []pdata.Logs
+	logRecordsCount int
+}
+
+var _ consumer.LogsConsumer = new(SinkLogsExporter)
+
+// SetConsumeLogError sets an error that will be returned by ConsumeLog
+func (sle *SinkLogsExporter) SetConsumeLogError(err error) {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+	sle.consumeLogError = err
+}
+
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned.
+func (sle *SinkLogsExporter) Start(context.Context, component.Host) error {
+	return nil
+}
+
+// ConsumeLogData stores traces for tests.
+func (sle *SinkLogsExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+	if sle.consumeLogError != nil {
+		return sle.consumeLogError
+	}
+
+	sle.logs = append(sle.logs, ld)
+	sle.logRecordsCount += ld.LogRecordCount()
+
+	return nil
+}
+
+// AllLog returns the metrics sent to the test sink.
+func (sle *SinkLogsExporter) AllLogs() []pdata.Logs {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+
+	copyLogs := make([]pdata.Logs, len(sle.logs))
+	copy(copyLogs, sle.logs)
+	return copyLogs
+}
+
+// LogRecordsCount return the number of log records sent to the test sing.
+func (sle *SinkLogsExporter) LogRecordsCount() int {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+	return sle.logRecordsCount
+}
+
+// Reset deletes any existing logs.
+func (sle *SinkLogsExporter) Reset() {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+
+	sle.logs = nil
+}
+
+// Shutdown stops the exporter and is invoked during shutdown.
+func (sle *SinkLogsExporter) Shutdown(context.Context) error {
 	return nil
 }

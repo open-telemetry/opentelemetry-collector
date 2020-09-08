@@ -21,8 +21,8 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -84,15 +84,15 @@ func BenchmarkOcResourceNodeUnmarshal(b *testing.B) {
 		Resource: generateOcResource(),
 	}
 
-	buf := &proto.Buffer{}
-	if err := buf.Marshal(oc); err != nil {
+	bytes, err := proto.Marshal(oc)
+	if err != nil {
 		b.Fail()
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		unmarshalOc := &agenttracepb.ExportTraceServiceRequest{}
-		if err := proto.Unmarshal(buf.Bytes(), unmarshalOc); err != nil {
+		if err := proto.Unmarshal(bytes, unmarshalOc); err != nil {
 			b.Fail()
 		}
 		if unmarshalOc.Node.Identifier.Pid != 123 {

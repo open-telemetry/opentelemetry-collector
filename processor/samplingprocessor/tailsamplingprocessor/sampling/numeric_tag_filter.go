@@ -42,13 +42,13 @@ func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValu
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (naf *numericAttributeFilter) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error {
+func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
 	naf.logger.Debug("Triggering action for late arriving spans in numeric-attribute filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (naf *numericAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) Evaluate(_ []byte, trace *TraceData) (Decision, error) {
 	naf.logger.Debug("Evaluating spans in numeric-attribute filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
@@ -72,7 +72,7 @@ func (naf *numericAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (D
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (naf *numericAttributeFilter) OnDroppedSpans(traceID []byte, trace *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) OnDroppedSpans([]byte, *TraceData) (Decision, error) {
 	naf.logger.Debug("Triggering action for dropped spans in numeric-attribute filter")
 	return NotSampled, nil
 }

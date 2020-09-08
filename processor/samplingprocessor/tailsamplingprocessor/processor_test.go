@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
@@ -213,7 +212,7 @@ func generateIdsAndBatches(numIds int) ([][]byte, []consumerdata.TraceData) {
 		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
 	}
 
-	tds := []consumerdata.TraceData{}
+	var tds []consumerdata.TraceData
 	for i := range traceIds {
 		spans := make([]*tracepb.Span, i+1)
 		for j := range spans {
@@ -244,17 +243,17 @@ type mockPolicyEvaluator struct {
 	OnDroppedSpansCount    int
 }
 
-var _ (sampling.PolicyEvaluator) = (*mockPolicyEvaluator)(nil)
+var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) OnLateArrivingSpans(earlyDecision sampling.Decision, spans []*tracepb.Span) error {
+func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*tracepb.Span) error {
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate(traceID []byte, trace *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate([]byte, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
-func (m *mockPolicyEvaluator) OnDroppedSpans(traceID []byte, trace *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) OnDroppedSpans([]byte, *sampling.TraceData) (sampling.Decision, error) {
 	m.OnDroppedSpansCount++
 	return m.NextDecision, m.NextError
 }
@@ -265,11 +264,13 @@ type manualTTicker struct {
 
 var _ tTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) Start(d time.Duration) {
+func (t *manualTTicker) Start(time.Duration) {
 	t.Started = true
 }
+
 func (t *manualTTicker) OnTick() {
 }
+
 func (t *manualTTicker) Stop() {
 }
 
@@ -279,7 +280,7 @@ type syncIDBatcher struct {
 	batchPipe chan idbatcher.Batch
 }
 
-var _ (idbatcher.Batcher) = (*syncIDBatcher)(nil)
+var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
 
 func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 	batches := make(chan idbatcher.Batch, numBatches)
@@ -290,11 +291,13 @@ func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 		batchPipe: batches,
 	}
 }
+
 func (s *syncIDBatcher) AddToCurrentBatch(id idbatcher.ID) {
 	s.Lock()
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()
 }
+
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
 	s.Lock()
 	defer s.Unlock()
@@ -303,6 +306,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	s.openBatch = nil
 	return firstBatch, true
 }
+
 func (s *syncIDBatcher) Stop() {
 }
 
@@ -310,22 +314,7 @@ type mockSpanProcessor struct {
 	TotalSpans int
 }
 
-func (p *mockSpanProcessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	batchSize := len(td.Spans)
-	p.TotalSpans += batchSize
-	return nil
-}
-
-func (p *mockSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
-}
-
-// Start is invoked during service startup.
-func (p *mockSpanProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (p *mockSpanProcessor) Shutdown(context.Context) error {
+func (p *mockSpanProcessor) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
+	p.TotalSpans += len(td.Spans)
 	return nil
 }

@@ -81,10 +81,10 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 		VType: model.ValueType_BOOL,
 	}
 
-	got, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_Ok))
+	_, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_Ok))
 	assert.False(t, ok)
 
-	got, ok = getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_UnknownError))
+	got, ok := getErrorTagFromStatusCode(pdata.StatusCode(otlptrace.Status_UnknownError))
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 
@@ -160,6 +160,17 @@ func TestGetTagFromSpanKind(t *testing.T) {
 				Key:   tracetranslator.TagSpanKind,
 				VType: model.ValueType_STRING,
 				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
+			},
+			ok: true,
+		},
+
+		{
+			name: "internal",
+			kind: pdata.SpanKindINTERNAL,
+			tag: model.KeyValue{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindInternal),
 			},
 			ok: true,
 		},
@@ -243,11 +254,25 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 
 		{
-			name: "one-span-no-resources",
-			td:   generateTraceDataOneSpanNoResource(),
+			name: "no-resource-attrs",
+			td:   generateTraceDataResourceOnlyWithNoAttrs(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoAttrs,
+				},
+			},
+			err: nil,
+		},
+
+		{
+			name: "one-span-no-resources",
+			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
+			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
-					generateProtoSpan(),
+					generateProtoSpanWithTraceState(),
 				},
 			},
 			err: nil,
@@ -256,6 +281,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "two-spans-child-parent",
 			td:   generateTraceDataTwoSpansChildParent(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
 					generateProtoChildSpanWithErrorTags(),
@@ -268,6 +296,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			name: "two-spans-with-follower",
 			td:   generateTraceDataTwoSpansWithFollower(),
 			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
 					generateProtoFollowerSpan(),

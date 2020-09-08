@@ -1,0 +1,34 @@
+receivers:
+    examplereceiver:
+  
+processors:
+    exampleprocessor:
+ 
+exporters:
+    prometheusremotewrite:
+    prometheusremotewrite/2:
+        namespace: "test-space"
+        sending_queue:
+            enabled: true
+            num_consumers: 2
+            queue_size: 10
+        retry_on_failure:
+            enabled: true
+            initial_interval: 10s
+            max_interval: 60s
+            max_elapsed_time: 10m
+        endpoint: "localhost:8888"
+        ca_file: "/var/lib/mycert.pem"
+        write_buffer_size: 524288
+        headers:
+            Prometheus-Remote-Write-Version: "0.1.0"
+            X-Scope-OrgID: 234
+
+service:
+    pipelines:
+        metrics:
+            receivers: [examplereceiver]
+            processors: [exampleprocessor]
+            exporters: [prometheusremotewrite]
+    
+    

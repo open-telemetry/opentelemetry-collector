@@ -152,8 +152,8 @@ var metricDescriptor = &messageStruct{
 			originFieldName: "Type",
 			returnType:      "MetricType",
 			rawType:         "otlpmetrics.MetricDescriptor_Type",
-			defaultVal:      "MetricTypeUnspecified",
-			testVal:         "MetricTypeGaugeInt64",
+			defaultVal:      "MetricTypeInvalid",
+			testVal:         "MetricTypeInt64",
 		},
 	},
 }

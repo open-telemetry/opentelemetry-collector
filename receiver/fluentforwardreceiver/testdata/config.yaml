@@ -1,0 +1,15 @@
+receivers:
+  fluentforward:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    logs:
+      receivers: [fluentforward]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

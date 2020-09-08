@@ -53,5 +53,9 @@ func UnixNanoToTimestamp(u pdata.TimestampUnixNano) *timestamp.Timestamp {
 }
 
 func UnixNanoToTime(u pdata.TimestampUnixNano) time.Time {
+	// 0 is a special case and want to make sure we return a time that IsZero() returns true.
+	if u == 0 {
+		return time.Time{}
+	}
 	return time.Unix(0, int64(u)).UTC()
 }

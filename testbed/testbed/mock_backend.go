@@ -23,6 +23,7 @@ import (
 
 	"go.uber.org/atomic"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -124,7 +125,7 @@ func (mb *MockBackend) GetStats() string {
 
 // DataItemsReceived returns total number of received spans and metrics.
 func (mb *MockBackend) DataItemsReceived() uint64 {
-	return mb.tc.spansReceived.Load() + mb.mc.metricsReceived.Load()
+	return mb.tc.numSpansReceived.Load() + mb.mc.numMetricsReceived.Load()
 }
 
 // ClearReceivedItems clears the list of received traces and metrics. Note: counters
@@ -172,13 +173,20 @@ func (mb *MockBackend) ConsumeMetricOld(md consumerdata.MetricsData) {
 	}
 }
 
-type MockTraceConsumer struct {
-	spansReceived atomic.Uint64
-	backend       *MockBackend
+type TraceDualConsumer interface {
+	consumer.TraceConsumer
+	consumer.TraceConsumerOld
 }
 
-func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	tc.spansReceived.Add(uint64(td.SpanCount()))
+var _ TraceDualConsumer = (*MockTraceConsumer)(nil)
+
+type MockTraceConsumer struct {
+	numSpansReceived atomic.Uint64
+	backend          *MockBackend
+}
+
+func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
@@ -213,8 +221,8 @@ func (tc *MockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces)
 	return nil
 }
 
-func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	tc.spansReceived.Add(uint64(len(td.Spans)))
+func (tc *MockTraceConsumer) ConsumeTraceData(_ context.Context, td consumerdata.TraceData) error {
+	tc.numSpansReceived.Add(uint64(len(td.Spans)))
 
 	for _, span := range td.Spans {
 		var spanSeqnum int64
@@ -243,29 +251,28 @@ func (tc *MockTraceConsumer) ConsumeTraceData(ctx context.Context, td consumerda
 	return nil
 }
 
+type MetricsDualConsumer interface {
+	consumer.MetricsConsumer
+	consumer.MetricsConsumerOld
+}
+
+var _ MetricsDualConsumer = (*MockMetricConsumer)(nil)
+
 type MockMetricConsumer struct {
-	metricsReceived atomic.Uint64
-	backend         *MockBackend
+	numMetricsReceived atomic.Uint64
+	backend            *MockBackend
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	_, dataPoints := pdatautil.MetricAndDataPointCount(md)
-	mc.metricsReceived.Add(uint64(dataPoints))
+	mc.numMetricsReceived.Add(uint64(dataPoints))
 	mc.backend.ConsumeMetric(md)
 	return nil
 }
 
-func (mc *MockMetricConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	dataPoints := 0
-	for _, metric := range md.Metrics {
-		for _, ts := range metric.Timeseries {
-			dataPoints += len(ts.Points)
-		}
-	}
-
-	mc.metricsReceived.Add(uint64(dataPoints))
-
+func (mc *MockMetricConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
+	_, dataPoints := pdatautil.TimeseriesAndPointCount(md)
+	mc.numMetricsReceived.Add(uint64(dataPoints))
 	mc.backend.ConsumeMetricOld(md)
-
 	return nil
 }

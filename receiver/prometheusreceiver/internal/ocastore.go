@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"errors"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -41,35 +40,37 @@ var noop = &noopAppender{}
 
 // OcaStore is an interface combines io.Closer and prometheus' scrape.Appendable
 type OcaStore interface {
-	scrape.Appendable
+	storage.Appendable
 	io.Closer
 	SetScrapeManager(*scrape.Manager)
 }
 
 // OpenCensus Store for prometheus
 type ocaStore struct {
-	running            int32
-	logger             *zap.Logger
-	sink               consumer.MetricsConsumerOld
-	mc                 *mService
-	once               *sync.Once
-	ctx                context.Context
-	jobsMap            *JobsMap
-	useStartTimeMetric bool
-	receiverName       string
+	running              int32
+	logger               *zap.Logger
+	sink                 consumer.MetricsConsumer
+	mc                   *mService
+	once                 *sync.Once
+	ctx                  context.Context
+	jobsMap              *JobsMap
+	useStartTimeMetric   bool
+	startTimeMetricRegex string
+	receiverName         string
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumerOld, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, receiverName string) OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string) OcaStore {
 	return &ocaStore{
-		running:            runningStateInit,
-		ctx:                ctx,
-		sink:               sink,
-		logger:             logger,
-		once:               &sync.Once{},
-		jobsMap:            jobsMap,
-		useStartTimeMetric: useStartTimeMetric,
-		receiverName:       receiverName,
+		running:              runningStateInit,
+		ctx:                  ctx,
+		sink:                 sink,
+		logger:               logger,
+		once:                 &sync.Once{},
+		jobsMap:              jobsMap,
+		useStartTimeMetric:   useStartTimeMetric,
+		startTimeMetricRegex: startTimeMetricRegex,
+		receiverName:         receiverName,
 	}
 }
 
@@ -81,15 +82,15 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 	}
 }
 
-func (o *ocaStore) Appender() (storage.Appender, error) {
+func (o *ocaStore) Appender() storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.receiverName, o.mc, o.sink, o.logger), nil
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
 	} else if state == runningStateInit {
-		return nil, errors.New("ScrapeManager is not set")
+		panic("ScrapeManager is not set")
 	}
 	// instead of returning an error, return a dummy appender instead, otherwise it can trigger panic
-	return noop, nil
+	return noop
 }
 
 func (o *ocaStore) Close() error {
@@ -100,11 +101,11 @@ func (o *ocaStore) Close() error {
 // noopAppender, always return error on any operations
 type noopAppender struct{}
 
-func (*noopAppender) Add(l labels.Labels, t int64, v float64) (uint64, error) {
+func (*noopAppender) Add(labels.Labels, int64, float64) (uint64, error) {
 	return 0, componenterror.ErrAlreadyStopped
 }
 
-func (*noopAppender) AddFast(l labels.Labels, ref uint64, t int64, v float64) error {
+func (*noopAppender) AddFast(uint64, int64, float64) error {
 	return componenterror.ErrAlreadyStopped
 }
 

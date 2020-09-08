@@ -38,6 +38,8 @@ func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
 		attrs = generateCloudK8sAttributes()
 	case ResourceFaas:
 		attrs = generateFassAttributes()
+	case ResourceExec:
+		attrs = generateExecAttributes()
 	default:
 		attrs = generateEmptyAttributes()
 	}
@@ -139,5 +141,16 @@ func generateFassAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeCloudAccount] = "opentelemetry"
 	attrMap[conventions.AttributeCloudRegion] = "us-central1"
 	attrMap[conventions.AttributeCloudZone] = "us-central1-a"
+	return attrMap
+}
+
+func generateExecAttributes() map[string]interface{} {
+	attrMap := make(map[string]interface{})
+	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
+	attrMap[conventions.AttributeProcessCommandLine] =
+		"--config=/etc/otel-collector-config.yaml --mem-ballast-size-mib=683"
+	attrMap[conventions.AttributeProcessExecutablePath] = "/usr/local/bin/otelcol"
+	attrMap[conventions.AttributeProcessID] = 2020
+	attrMap[conventions.AttributeProcessOwner] = "otel"
 	return attrMap
 }

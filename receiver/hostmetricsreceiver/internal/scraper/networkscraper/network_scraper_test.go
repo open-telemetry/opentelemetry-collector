@@ -16,51 +16,145 @@ package networkscraper
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/shirou/gopsutil/net"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-type validationFn func(*testing.T, pdata.MetricSlice)
-
 func TestScrapeMetrics(t *testing.T) {
-	createScraperAndValidateScrapedMetrics(t, &Config{}, func(t *testing.T, metrics pdata.MetricSlice) {
-		// expect 5 metrics
-		assert.Equal(t, 5, metrics.Len())
+	type testCase struct {
+		name                 string
+		config               Config
+		bootTimeFunc         func() (uint64, error)
+		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
+		connectionsFunc      func(string) ([]net.ConnectionStat, error)
+		expectNetworkMetrics bool
+		expectedStartTime    pdata.TimestampUnixNano
+		newErrRegex          string
+		initializationErr    string
+		expectedErr          string
+	}
 
-		// for network packets, dropped packets, errors, & bytes metrics, expect a transmit & receive datapoint
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(0), metricNetworkPacketsDescriptor)
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(1), metricNetworkDroppedPacketsDescriptor)
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(2), metricNetworkErrorsDescriptor)
-		assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t, metrics.At(3), metricNetworkBytesDescriptor)
+	testCases := []testCase{
+		{
+			name:                 "Standard",
+			expectNetworkMetrics: true,
+		},
+		{
+			name:                 "Validate Start Time",
+			bootTimeFunc:         func() (uint64, error) { return 100, nil },
+			expectNetworkMetrics: true,
+			expectedStartTime:    100 * 1e9,
+		},
+		{
+			name:                 "Include Filter that matches nothing",
+			config:               Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			expectNetworkMetrics: false,
+		},
+		{
+			name:        "Invalid Include Filter",
+			config:      Config{Include: MatchConfig{Interfaces: []string{"test"}}},
+			newErrRegex: "^error creating network interface include filters:",
+		},
+		{
+			name:        "Invalid Exclude Filter",
+			config:      Config{Exclude: MatchConfig{Interfaces: []string{"test"}}},
+			newErrRegex: "^error creating network interface exclude filters:",
+		},
+		{
+			name:              "Boot Time Error",
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
+		},
+		{
+			name:           "IOCounters Error",
+			ioCountersFunc: func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
+			expectedErr:    "err2",
+		},
+		{
+			name:            "Connections Error",
+			connectionsFunc: func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
+			expectedErr:     "err3",
+		},
+	}
 
-		// for tcp connections metric, expect at least one datapoint with a state label
-		hostNetworkTCPConnectionsMetric := metrics.At(4)
-		internal.AssertDescriptorEqual(t, metricNetworkTCPConnectionDescriptor, hostNetworkTCPConnectionsMetric.MetricDescriptor())
-		internal.AssertInt64MetricLabelExists(t, hostNetworkTCPConnectionsMetric, 0, stateLabelName)
-		assert.GreaterOrEqual(t, hostNetworkTCPConnectionsMetric.Int64DataPoints().Len(), 1)
-	})
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper, err := newNetworkScraper(context.Background(), &test.config)
+			if test.newErrRegex != "" {
+				require.Error(t, err)
+				require.Regexp(t, test.newErrRegex, err)
+				return
+			}
+			require.NoError(t, err, "Failed to create network scraper: %v", err)
+
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
+			if test.ioCountersFunc != nil {
+				scraper.ioCounters = test.ioCountersFunc
+			}
+			if test.connectionsFunc != nil {
+				scraper.connections = test.connectionsFunc
+			}
+
+			err = scraper.Initialize(context.Background())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
+			require.NoError(t, err, "Failed to initialize network scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			metrics, err := scraper.ScrapeMetrics(context.Background())
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			expectedMetricCount := 1
+			if test.expectNetworkMetrics {
+				expectedMetricCount += 4
+			}
+			assert.Equal(t, expectedMetricCount, metrics.Len())
+
+			idx := 0
+			if test.expectNetworkMetrics {
+				assertNetworkIOMetricValid(t, metrics.At(idx+0), networkPacketsDescriptor, test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), networkDroppedPacketsDescriptor, test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), networkErrorsDescriptor, test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), networkIODescriptor, test.expectedStartTime)
+				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
+				idx += 4
+			}
+
+			assertNetworkTCPConnectionsMetricValid(t, metrics.At(idx+0))
+			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
+		})
+	}
 }
 
-func assertNetworkMetricMatchesDescriptorAndHasTransmitAndReceiveDataPoints(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.MetricDescriptor) {
-	internal.AssertDescriptorEqual(t, expectedDescriptor, metric.MetricDescriptor())
-	assert.Equal(t, 2, metric.Int64DataPoints().Len())
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.MetricDescriptor, startTime pdata.TimestampUnixNano) {
+	internal.AssertDescriptorEqual(t, descriptor, metric.MetricDescriptor())
+	if startTime != 0 {
+		internal.AssertInt64MetricStartTimeEquals(t, metric, startTime)
+	}
+	assert.GreaterOrEqual(t, metric.Int64DataPoints().Len(), 2)
+	internal.AssertInt64MetricLabelExists(t, metric, 0, interfaceLabelName)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 0, directionLabelName, transmitDirectionLabelValue)
 	internal.AssertInt64MetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)
 }
 
-func createScraperAndValidateScrapedMetrics(t *testing.T, config *Config, assertFn validationFn) {
-	scraper := newNetworkScraper(context.Background(), config)
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize network scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-
-	assertFn(t, metrics)
+func assertNetworkTCPConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, networkTCPConnectionsDescriptor, metric.MetricDescriptor())
+	internal.AssertInt64MetricLabelExists(t, metric, 0, stateLabelName)
+	assert.Equal(t, 12, metric.Int64DataPoints().Len())
 }

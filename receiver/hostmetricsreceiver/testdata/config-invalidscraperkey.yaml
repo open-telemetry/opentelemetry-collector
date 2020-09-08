@@ -1,0 +1,18 @@
+receivers:
+  hostmetrics:
+    scrapers:
+      invalidscraperkey:
+
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

@@ -20,7 +20,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/converter"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
 // This file contains implementations of cloning Trace/Metrics connectors
@@ -217,16 +216,16 @@ func (tfc traceCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pda
 }
 
 // NewLogCloningFanOutConnector wraps multiple trace consumers in a single one.
-func NewLogCloningFanOutConnector(lcs []consumer.LogConsumer) consumer.LogConsumer {
+func NewLogCloningFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	return LogCloningFanOutConnector(lcs)
 }
 
-type LogCloningFanOutConnector []consumer.LogConsumer
+type LogCloningFanOutConnector []consumer.LogsConsumer
 
-var _ consumer.LogConsumer = (*LogCloningFanOutConnector)(nil)
+var _ consumer.LogsConsumer = (*LogCloningFanOutConnector)(nil)
 
 // ConsumeLogs exports the span data to all  consumers wrapped by the current one.
-func (lfc LogCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld data.Logs) error {
+func (lfc LogCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.

@@ -12,6 +12,8 @@ receivers:
       disk:
       filesystem:
       network:
+      processes:
+      swap:
 
 exporters:
   logging:

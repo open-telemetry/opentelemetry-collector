@@ -19,7 +19,6 @@ import (
 	"compress/zlib"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net"
@@ -31,13 +30,13 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	zipkinproto "github.com/openzipkin/zipkin-go/proto/v2"
-	"go.opencensus.io/trace"
+	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
@@ -57,48 +56,30 @@ type ZipkinReceiver struct {
 	mu sync.Mutex
 
 	// addr is the address onto which the HTTP server will be bound
-	addr         string
 	host         component.Host
-	nextConsumer consumer.TraceConsumerOld
+	nextConsumer consumer.TraceConsumer
 	instanceName string
 
 	startOnce sync.Once
 	stopOnce  sync.Once
 	server    *http.Server
+	config    *Config
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(instanceName, address string, nextConsumer consumer.TraceConsumerOld) (*ZipkinReceiver, error) {
+func New(config *Config, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	zr := &ZipkinReceiver{
-		addr:         address,
 		nextConsumer: nextConsumer,
-		instanceName: instanceName,
+		instanceName: config.Name(),
+		config:       config,
 	}
 	return zr, nil
-}
-
-const defaultAddress = ":9411"
-
-func (zr *ZipkinReceiver) address() string {
-	addr := zr.addr
-	if addr == "" {
-		addr = defaultAddress
-	}
-	return addr
-}
-
-func (zr *ZipkinReceiver) WithHTTPServer(s *http.Server) *ZipkinReceiver {
-	if s.Handler == nil {
-		s.Handler = zr
-	}
-	zr.server = s
-	return zr
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
@@ -113,37 +94,37 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 	var err = componenterror.ErrAlreadyStarted
 
 	zr.startOnce.Do(func() {
-		ln, lerr := net.Listen("tcp", zr.address())
-		if lerr != nil {
-			err = lerr
+		err = nil
+		zr.host = host
+		zr.server = zr.config.HTTPServerSettings.ToServer(zr)
+		var listener net.Listener
+		listener, err = zr.config.HTTPServerSettings.ToListener()
+		if err != nil {
+			host.ReportFatalError(err)
 			return
 		}
-
-		zr.host = host
-		if zr.server == nil {
-			zr.server = &http.Server{Handler: zr}
-		}
 		go func() {
-			host.ReportFatalError(zr.server.Serve(ln))
+			err = zr.server.Serve(listener)
+			if err != nil {
+				host.ReportFatalError(err)
+			}
 		}()
-
-		err = nil
 	})
 
 	return err
 }
 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs []consumerdata.TraceData, err error) {
+func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
 		zSpans, err := deserializeThrift(blob)
 		if err != nil {
-			return nil, err
+			return pdata.NewTraces(), err
 		}
 
-		return zipkin.V1ThriftBatchToOCProto(zSpans)
+		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
 	}
-	return zipkin.V1JSONBatchToOCProto(blob)
+	return zipkin.V1JSONBatchToInternalTraces(blob)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.
@@ -175,7 +156,7 @@ func deserializeThrift(b []byte) ([]*zipkincore.Span, error) {
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
-func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []consumerdata.TraceData, err error) {
+func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	// This flag's reference is from:
 	//      https://github.com/openzipkin/zipkin-go/blob/3793c981d4f621c0e3eb1457acffa2c1cc591384/proto/v2/zipkin.proto#L154
 	debugWasSet := hdr.Get("X-B3-Flags") == "1"
@@ -193,10 +174,10 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs []c
 	}
 
 	if err != nil {
-		return nil, err
+		return pdata.Traces{}, err
 	}
 
-	return zipkin.V2BatchToOCProto(zipkinSpans)
+	return zipkin.V2SpansToInternalTraces(zipkinSpans)
 }
 
 func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {
@@ -288,37 +269,22 @@ func (zr *ZipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = r.Body.Close()
 
-	var tds []consumerdata.TraceData
+	var td pdata.Traces
 	var err error
 	if asZipkinv1 {
-		tds, err = zr.v1ToTraceSpans(slurp, r.Header)
+		td, err = zr.v1ToTraceSpans(slurp, r.Header)
 	} else {
-		tds, err = zr.v2ToTraceSpans(slurp, r.Header)
+		td, err = zr.v2ToTraceSpans(slurp, r.Header)
 	}
 
 	if err != nil {
-		trace.FromContext(ctx).SetStatus(trace.Status{
-			Code:    trace.StatusCodeInvalidArgument,
-			Message: err.Error(),
-		})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var consumerErr error
-	tdsSize := 0
-	for _, td := range tds {
-		tdsSize += len(td.Spans)
-		if consumerErr != nil {
-			// Do not attempt the remaining data, continue on the loop just to
-			// count all the data on the request.
-			continue
-		}
-		td.SourceFormat = "zipkin"
-		consumerErr = zr.nextConsumer.ConsumeTraceData(ctx, td)
-	}
+	consumerErr := zr.nextConsumer.ConsumeTraces(ctx, td)
 
-	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, tdsSize, consumerErr)
+	obsreport.EndTraceDataReceiveOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
 
 	if consumerErr != nil {
 		// Transient error, due to some internal condition.

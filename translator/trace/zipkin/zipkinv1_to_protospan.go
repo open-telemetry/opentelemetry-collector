@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -85,8 +86,8 @@ type binaryAnnotation struct {
 	Endpoint *endpoint `json:"endpoint"`
 }
 
-// V1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func V1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
+// v1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
+func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, errors.WithMessage(err, msgZipkinV1JSONUnmarshalError)
@@ -253,12 +254,17 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 func parseAnnotationValue(value string) *tracepb.AttributeValue {
 	pbAttrib := &tracepb.AttributeValue{}
 
-	if iValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+	switch determineValueType(value) {
+	case pdata.AttributeValueINT:
+		iValue, _ := strconv.ParseInt(value, 10, 64)
 		pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-	} else if bValue, err := strconv.ParseBool(value); err == nil {
+	case pdata.AttributeValueDOUBLE:
+		fValue, _ := strconv.ParseFloat(value, 64)
+		pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
+	case pdata.AttributeValueBOOL:
+		bValue, _ := strconv.ParseBool(value)
 		pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
-	} else {
-		// For now all else go to string
+	default:
 		pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
 	}
 

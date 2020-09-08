@@ -21,19 +21,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Exporters[typeStr] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -62,11 +63,13 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				KeepaliveParameters: &configgrpc.KeepaliveConfig{
+				Keepalive: &configgrpc.KeepaliveClientConfig{
 					Time:                20,
 					PermitWithoutStream: true,
 					Timeout:             30,
 				},
+				WriteBufferSize: 512 * 1024,
+				BalancerName:    "round_robin",
 			},
 			NumWorkers:        123,
 			ReconnectionDelay: 15,

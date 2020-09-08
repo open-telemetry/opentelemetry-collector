@@ -35,26 +35,22 @@ const (
 
 // descriptors
 
-var metricFilesystemUsedDescriptor = createMetricFilesystemUsedDescriptor()
-
-func createMetricFilesystemUsedDescriptor() pdata.MetricDescriptor {
+var fileSystemUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/filesystem/used")
+	descriptor.SetName("system.filesystem.usage")
 	descriptor.SetDescription("Filesystem bytes used.")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
-}
+}()
 
-var metricFilesystemINodesUsedDescriptor = createMetricFilesystemINodesUsedDescriptor()
-
-func createMetricFilesystemINodesUsedDescriptor() pdata.MetricDescriptor {
+var fileSystemINodesUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/filesystem/inodes/used")
+	descriptor.SetName("system.filesystem.inodes.usage")
 	descriptor.SetDescription("FileSystem operations count.")
 	descriptor.SetUnit("1")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
-}
+}()

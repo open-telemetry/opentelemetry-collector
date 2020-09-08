@@ -91,7 +91,8 @@ linters-settings:
       - kilometres
 
 linters:
-  disable-all: true
+  disable:
+    - errcheck
   enable:
     - gofmt
     - goimports
@@ -100,6 +101,8 @@ linters:
     - staticcheck
     - misspell
     - scopelint
+    - unconvert
+    - gocritic
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
@@ -108,3 +111,15 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
+    - path: otlp_test.go
+      linters:
+        # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
+        - structcheck
+    - path: opencensus_test.go
+      linters:
+        - unused
+    # Exclude some staticcheck messages
+    - linters:
+      - staticcheck
+      # See https://github.com/golang/protobuf/issues/1077
+      text: "SA1019:"

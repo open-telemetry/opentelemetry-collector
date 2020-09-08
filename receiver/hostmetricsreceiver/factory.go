@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -33,7 +32,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/virtualmemoryscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -44,82 +46,93 @@ const (
 	scrapersKey = "scrapers"
 )
 
-// Factory is the Factory for receiver.
-type Factory struct {
-	scraperFactories map[string]internal.Factory
-}
+var (
+	scraperFactories = map[string]internal.ScraperFactory{
+		cpuscraper.TypeStr:        &cpuscraper.Factory{},
+		diskscraper.TypeStr:       &diskscraper.Factory{},
+		loadscraper.TypeStr:       &loadscraper.Factory{},
+		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
+		memoryscraper.TypeStr:     &memoryscraper.Factory{},
+		networkscraper.TypeStr:    &networkscraper.Factory{},
+		processesscraper.TypeStr:  &processesscraper.Factory{},
+		swapscraper.TypeStr:       &swapscraper.Factory{},
+	}
+
+	resourceScraperFactories = map[string]internal.ResourceScraperFactory{
+		processscraper.TypeStr: &processscraper.Factory{},
+	}
+)
 
 // NewFactory creates a new factory for host metrics receiver.
-func NewFactory() *Factory {
-	return &Factory{
-		scraperFactories: map[string]internal.Factory{
-			cpuscraper.TypeStr:           &cpuscraper.Factory{},
-			diskscraper.TypeStr:          &diskscraper.Factory{},
-			loadscraper.TypeStr:          &loadscraper.Factory{},
-			filesystemscraper.TypeStr:    &filesystemscraper.Factory{},
-			memoryscraper.TypeStr:        &memoryscraper.Factory{},
-			networkscraper.TypeStr:       &networkscraper.Factory{},
-			virtualmemoryscraper.TypeStr: &virtualmemoryscraper.Factory{},
-		},
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
+}
+
+// customUnmarshaler returns custom unmarshaler for this config.
+func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
+
+	// load the non-dynamic config normally
+
+	err := componentViperSection.Unmarshal(intoCfg)
+	if err != nil {
+		return err
 	}
-}
 
-// Type returns the type of the Receiver config created by this Factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
+	cfg, ok := intoCfg.(*Config)
+	if !ok {
+		return fmt.Errorf("config type not hostmetrics.Config")
+	}
 
-// CustomUnmarshaler returns custom unmarshaler for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	if cfg.CollectionInterval <= 0 {
+		return fmt.Errorf("collection_interval must be a positive duration")
+	}
 
-		// load the non-dynamic config normally
+	// dynamically load the individual collector configs based on the key name
 
-		err := componentViperSection.Unmarshal(intoCfg)
-		if err != nil {
-			return err
-		}
+	cfg.Scrapers = map[string]internal.Config{}
 
-		cfg, ok := intoCfg.(*Config)
+	scrapersViperSection := config.ViperSub(componentViperSection, scrapersKey)
+	if scrapersViperSection == nil || len(scrapersViperSection.AllKeys()) == 0 {
+		return fmt.Errorf("must specify at least one scraper when using hostmetrics receiver")
+	}
+
+	for key := range componentViperSection.GetStringMap(scrapersKey) {
+		factory, ok := getScraperFactory(key)
 		if !ok {
-			return fmt.Errorf("config type not hostmetrics.Config")
+			return fmt.Errorf("invalid scraper key: %s", key)
 		}
 
-		if cfg.CollectionInterval <= 0 {
-			return fmt.Errorf("collection_interval must be a positive duration")
+		collectorCfg := factory.CreateDefaultConfig()
+		collectorViperSection := config.ViperSub(scrapersViperSection, key)
+		err := collectorViperSection.UnmarshalExact(collectorCfg)
+		if err != nil {
+			return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
 		}
 
-		// dynamically load the individual collector configs based on the key name
-
-		cfg.Scrapers = map[string]internal.Config{}
-
-		scrapersViperSection := config.ViperSub(componentViperSection, scrapersKey)
-		if scrapersViperSection == nil || len(scrapersViperSection.AllKeys()) == 0 {
-			return fmt.Errorf("must specify at least one scraper when using hostmetrics receiver")
-		}
-
-		for key := range componentViperSection.GetStringMap(scrapersKey) {
-			factory, ok := f.scraperFactories[key]
-			if !ok {
-				return fmt.Errorf("invalid scraper key: %s", key)
-			}
-
-			collectorCfg := factory.CreateDefaultConfig()
-			collectorViperSection := config.ViperSub(scrapersViperSection, key)
-			err := collectorViperSection.UnmarshalExact(collectorCfg)
-			if err != nil {
-				return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
-			}
-
-			cfg.Scrapers[key] = collectorCfg
-		}
-
-		return nil
+		cfg.Scrapers[key] = collectorCfg
 	}
+
+	return nil
 }
 
-// CreateDefaultConfig creates the default configuration for receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func getScraperFactory(key string) (internal.BaseFactory, bool) {
+	if factory, ok := scraperFactories[key]; ok {
+		return factory, true
+	}
+
+	if factory, ok := resourceScraperFactories[key]; ok {
+		return factory, true
+	}
+
+	return nil, false
+}
+
+// createDefaultConfig creates the default configuration for receiver.
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -129,27 +142,16 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver returns error as trace receiver is not applicable to host metrics receiver.
-func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	consumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
-	// Host Metrics does not support traces
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
+// createMetricsReceiver creates a metrics receiver based on provided config.
+func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	config := cfg.(*Config)
+	oCfg := cfg.(*Config)
 
-	hmr, err := newHostMetricsReceiver(ctx, params.Logger, config, f.scraperFactories, consumer)
+	hmr, err := newHostMetricsReceiver(ctx, params.Logger, oCfg, scraperFactories, resourceScraperFactories, consumer)
 	if err != nil {
 		return nil, err
 	}

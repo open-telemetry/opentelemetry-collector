@@ -25,6 +25,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -66,7 +67,7 @@ func TestTraceProcessorCloningMultiplexingOld(t *testing.T) {
 		} else {
 			assert.True(t, td.Resource == m.Traces[0].Resource)
 		}
-		assert.EqualValues(t, td.Resource, m.Traces[0].Resource)
+		assert.True(t, proto.Equal(td.Resource, m.Traces[0].Resource))
 	}
 }
 
@@ -102,7 +103,7 @@ func TestMetricsProcessorCloningMultiplexingOld(t *testing.T) {
 		} else {
 			assert.True(t, md.Resource == m.Metrics[0].Resource)
 		}
-		assert.EqualValues(t, md.Resource, m.Metrics[0].Resource)
+		assert.True(t, proto.Equal(md.Resource, m.Metrics[0].Resource))
 	}
 }
 

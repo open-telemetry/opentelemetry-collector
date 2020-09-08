@@ -5,7 +5,8 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path '*/third_party/*' \
 							-not -path '*/internal/data/opentelemetry-proto/*' \
 							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
-							-not -path '*/internal/data/logsproto/*' \
+							-not -path './.circleci/scripts/reportgenerator/*' \
+							-not -path './examples/demo/app/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -20,7 +21,7 @@ GO_ACC=go-acc
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
-ADDLICENCESE= addlicense
+ADDLICENSE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
@@ -40,6 +41,8 @@ BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
 RUN_CONFIG=local/config.yaml
+
+CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
@@ -81,14 +84,14 @@ test-with-cover:
 
 .PHONY: addlicense
 addlicense:
-	$(ADDLICENCESE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
+	$(ADDLICENSE) -c 'The OpenTelemetry Authors' $(ALL_SRC)
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			echo "Use 'make addlicense' to fix this."; \
 			exit 1; \
 		else \
@@ -125,7 +128,7 @@ lint: lint-static-check
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto --skip internal/data/logsproto ./...
+	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto ./...
 
 .PHONY: fmt
 fmt:
@@ -146,7 +149,7 @@ install-tools:
 
 .PHONY: otelcol
 otelcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: run
 run:
@@ -201,7 +204,14 @@ binaries-linux_arm64:
 
 .PHONY: binaries-windows_amd64
 binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) binaries
+
+.PHONY: deb-rpm-package
+%-package: ARCH ?= amd64
+%-package:
+	$(MAKE) binaries-linux_$(ARCH)
+	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
+	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
 
 # Definitions for ProtoBuf generation.
 
@@ -210,12 +220,6 @@ OPENTELEMETRY_PROTO_SRC_DIR=internal/data/opentelemetry-proto
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
-
-# The source directory for experimental Log ProtoBufs.
-LOGS_PROTO_SRC_DIR=internal/data/logsproto
-
-# Find Log .proto files.
-LOGS_PROTO_FILES := $(subst $(LOGS_PROTO_SRC_DIR)/,,$(wildcard $(LOGS_PROTO_SRC_DIR)/*/v1/*.proto $(LOGS_PROTO_SRC_DIR)/collector/*/v1/*.proto))
 
 # Target directory to write generated files to.
 PROTO_TARGET_GEN_DIR=internal/data/opentelemetry-proto-gen
@@ -240,6 +244,7 @@ genproto:
 	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated after the submodule
 	# files are present.
 	$(MAKE) genproto_sub
+	$(MAKE) fmt
 
 genproto_sub:
 	@echo Generating code for the following files:
@@ -252,20 +257,13 @@ genproto_sub:
 	@echo Modify them in the intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
-	@echo Generate Go code from Logs .proto files in intermediate directory.
-	$(foreach file,$(LOGS_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(LOGS_PROTO_SRC_DIR):$(PWD)/$(LOGS_PROTO_SRC_DIR) -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(LOGS_PROTO_SRC_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(PWD)/$(PROTO_INTERMEDIATE_DIR) $(file)))
-
-	@echo Move generated code to target directory.
-	mkdir -p $(PROTO_TARGET_GEN_DIR)
-	cp -R $(LOGS_PROTO_SRC_DIR)/$(PROTO_PACKAGE)/* $(PROTO_TARGET_GEN_DIR)/
-	rm -rf $(LOGS_PROTO_SRC_DIR)/go.opentelemetry.io
-
 	@echo Generate Go code from .proto files in intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,docker run --rm -v $(PWD)/$(PROTO_INTERMEDIATE_DIR):$(PWD)/$(PROTO_INTERMEDIATE_DIR) -w $(PWD)/$(PROTO_INTERMEDIATE_DIR) znly/protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ $(file)))
 
 	@echo Generate gRPC gateway code.
 	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
 	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ opentelemetry/proto/collector/metrics/v1/metrics_service.proto
+	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ opentelemetry/proto/collector/logs/v1/logs_service.proto
 
 	@echo Move generated code to target directory.
 	mkdir -p $(PROTO_TARGET_GEN_DIR)
@@ -281,3 +279,13 @@ genproto_sub:
 # to proto and after running `make genproto`
 genpdata:
 	go run cmd/pdatagen/main.go
+
+# Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
+# against the current version of this repo.
+.PHONY: check-contrib
+check-contrib:
+	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
+	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	make -C $(CONTRIB_PATH) test
+	@echo Restoring contrib to no longer use this core checkout
+	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"

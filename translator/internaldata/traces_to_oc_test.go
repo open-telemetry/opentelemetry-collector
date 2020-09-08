@@ -30,7 +30,7 @@ import (
 )
 
 func TestInternalTraceStateToOC(t *testing.T) {
-	assert.Equal(t, (*octrace.Span_Tracestate)(nil), traceStateToOC(pdata.TraceState("")))
+	assert.Equal(t, (*octrace.Span_Tracestate)(nil), traceStateToOC(""))
 
 	ocTracestate := &octrace.Span_Tracestate{
 		Entries: []*octrace.Span_Tracestate_Entry{
@@ -40,14 +40,14 @@ func TestInternalTraceStateToOC(t *testing.T) {
 			},
 		},
 	}
-	assert.EqualValues(t, ocTracestate, traceStateToOC(pdata.TraceState("abc=def")))
+	assert.EqualValues(t, ocTracestate, traceStateToOC("abc=def"))
 
 	ocTracestate.Entries = append(ocTracestate.Entries,
 		&octrace.Span_Tracestate_Entry{
 			Key:   "123",
 			Value: "4567",
 		})
-	assert.EqualValues(t, ocTracestate, traceStateToOC(pdata.TraceState("abc=def,123=4567")))
+	assert.EqualValues(t, ocTracestate, traceStateToOC("abc=def,123=4567"))
 }
 
 func TestAttributesMapToOC(t *testing.T) {

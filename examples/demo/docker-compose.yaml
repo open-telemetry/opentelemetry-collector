@@ -66,7 +66,7 @@ services:
   metrics-load-generator:
     image: golang:1.12.7
     volumes:
-      - ../main.go:/usr/src/main.go
+      - ./app/main.go:/usr/src/main.go
     environment:
       - GO111MODULE=on
       - OTEL_AGENT_ENDPOINT=otel-agent:55678

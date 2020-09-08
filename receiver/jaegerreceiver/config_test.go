@@ -21,19 +21,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -43,28 +46,25 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["jaeger/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/customname",
-			Protocols: map[string]*SecureSetting{
-				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:9876",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/customname",
+			},
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9876",
+						Transport: "tcp",
 					},
 				},
-				"thrift_http": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: ":3456",
-					},
+				ThriftHTTP: &confighttp.HTTPServerSettings{
+					Endpoint: ":3456",
 				},
-				"thrift_compact": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:456",
-					},
+				ThriftCompact: &confignet.TCPAddr{
+					Endpoint: "0.0.0.0:456",
 				},
-				"thrift_binary": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:789",
-					},
+				ThriftBinary: &confignet.TCPAddr{
+					Endpoint: "0.0.0.0:789",
 				},
 			},
 			RemoteSampling: &RemoteSamplingConfig{
@@ -79,28 +79,25 @@ func TestLoadConfig(t *testing.T) {
 	rDefaults := cfg.Receivers["jaeger/defaults"].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/defaults",
-			Protocols: map[string]*SecureSetting{
-				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultGRPCBindEndpoint,
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/defaults",
+			},
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  defaultGRPCBindEndpoint,
+						Transport: "tcp",
 					},
 				},
-				"thrift_http": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultHTTPBindEndpoint,
-					},
+				ThriftHTTP: &confighttp.HTTPServerSettings{
+					Endpoint: defaultHTTPBindEndpoint,
 				},
-				"thrift_compact": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultThriftCompactBindEndpoint,
-					},
+				ThriftCompact: &confignet.TCPAddr{
+					Endpoint: defaultThriftCompactBindEndpoint,
 				},
-				"thrift_binary": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultThriftBinaryBindEndpoint,
-					},
+				ThriftBinary: &confignet.TCPAddr{
+					Endpoint: defaultThriftBinaryBindEndpoint,
 				},
 			},
 		})
@@ -108,18 +105,19 @@ func TestLoadConfig(t *testing.T) {
 	rMixed := cfg.Receivers["jaeger/mixed"].(*Config)
 	assert.Equal(t, rMixed,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/mixed",
-			Protocols: map[string]*SecureSetting{
-				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:9876",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/mixed",
+			},
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9876",
+						Transport: "tcp",
 					},
 				},
-				"thrift_compact": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultThriftCompactBindEndpoint,
-					},
+				ThriftCompact: &confignet.TCPAddr{
+					Endpoint: defaultThriftCompactBindEndpoint,
 				},
 			},
 		})
@@ -128,39 +126,45 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, tlsConfig,
 		&Config{
-			TypeVal: typeStr,
-			NameVal: "jaeger/tls",
-			Protocols: map[string]*SecureSetting{
-				"grpc": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:9876",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "jaeger/tls",
+			},
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:9876",
+						Transport: "tcp",
 					},
-					TLSCredentials: &configtls.TLSSetting{
-						CertFile: "/test.crt",
-						KeyFile:  "/test.key",
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "/test.crt",
+							KeyFile:  "/test.key",
+						},
 					},
 				},
-				"thrift_http": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: ":3456",
-					},
+				ThriftHTTP: &confighttp.HTTPServerSettings{
+					Endpoint: ":3456",
 				},
 			},
 		})
 }
 
 func TestFailedLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
-	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": unknown Jaeger protocol badproto`)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for jaeger: unknown protocols in the Jaeger receiver")
 
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
-	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": must specify at least one protocol when using the Jaeger receiver`)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for jaeger: 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
-	assert.EqualError(t, err, `error reading settings for receiver type "jaeger": empty config for Jaeger receiver`)
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for jaeger: must specify at least one protocol when using the Jaeger receiver")
+
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
+	assert.EqualError(t, err, "error reading receivers configuration for jaeger: empty config for Jaeger receiver")
 }

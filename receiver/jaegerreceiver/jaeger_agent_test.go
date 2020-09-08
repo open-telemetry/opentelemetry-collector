@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 const jaegerAgent = "jaeger_agent_test"
@@ -42,7 +42,7 @@ const jaegerAgent = "jaeger_agent_test"
 func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
 	port := 6831
 	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &Configuration{
+	testJaegerAgent(t, addrForClient, &configuration{
 		AgentCompactThriftPort: port,
 	})
 }
@@ -50,11 +50,11 @@ func TestJaegerAgentUDP_ThriftCompact_6831(t *testing.T) {
 func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	port := 999999
 
-	config := &Configuration{
-		AgentCompactThriftPort: int(port),
+	config := &configuration{
+		AgentCompactThriftPort: port,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerAgent, config, nil, params)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	err = jr.Start(context.Background(), componenttest.NewNopHost())
@@ -68,20 +68,20 @@ func TestJaegerAgentUDP_ThriftBinary_6832(t *testing.T) {
 
 	port := 6832
 	addrForClient := fmt.Sprintf(":%d", port)
-	testJaegerAgent(t, addrForClient, &Configuration{
+	testJaegerAgent(t, addrForClient, &configuration{
 		AgentBinaryThriftPort: port,
 	})
 }
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 
-	config := &Configuration{
+	config := &configuration{
 		AgentBinaryThriftPort: int(port),
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerAgent, config, nil, params)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	err = jr.(*jReceiver).startAgent(componenttest.NewNopHost())
@@ -99,11 +99,11 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	port := 999999
 
-	config := &Configuration{
-		AgentBinaryThriftPort: int(port),
+	config := &configuration{
+		AgentBinaryThriftPort: port,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerAgent, config, nil, params)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 
 	err = jr.Start(context.Background(), componenttest.NewNopHost())
@@ -137,8 +137,8 @@ func TestJaegerHTTP(t *testing.T) {
 	})
 	defer s.GracefulStop()
 
-	port := testutils.GetAvailablePort(t)
-	config := &Configuration{
+	port := testutil.GetAvailablePort(t)
+	config := &configuration{
 		AgentHTTPPort: int(port),
 		RemoteSamplingClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
@@ -148,7 +148,7 @@ func TestJaegerHTTP(t *testing.T) {
 		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerAgent, config, nil, params)
+	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown(context.Background())
 
@@ -156,7 +156,7 @@ func TestJaegerHTTP(t *testing.T) {
 	assert.NoError(t, err, "Start failed")
 
 	// allow http server to start
-	err = testutils.WaitForPort(t, port)
+	err = testutil.WaitForPort(t, port)
 	assert.NoError(t, err, "WaitForPort failed")
 
 	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
@@ -181,11 +181,11 @@ func TestJaegerHTTP(t *testing.T) {
 	}
 }
 
-func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *Configuration) {
+func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(exportertest.SinkTraceExporter)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := New(jaegerAgent, receiverConfig, sink, params)
+	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
 	defer jr.Shutdown(context.Background())
 

@@ -6,12 +6,20 @@ receivers:
     collection_interval: 30s
     scrapers:
       cpu:
-        report_per_cpu: true
       disk:
       load:
       filesystem:
       memory:
       network:
+        include:
+          interfaces: ["test1"]
+          match_type: "strict"
+      processes:
+      swap:
+      process:
+        include:
+          names: ["test2", "test3"]
+          match_type: "regexp"
 
 processors:
   exampleprocessor:

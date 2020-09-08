@@ -25,18 +25,17 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	config := Config{
-		Endpoint:             testutils.GetAvailableLocalAddress(t),
+		Endpoint:             testutil.GetAvailableLocalAddress(t),
 		BlockProfileFraction: 3,
 		MutexProfileFraction: 5,
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -57,7 +56,7 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 }
 
 func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
 	defer ln.Close()
@@ -65,8 +64,7 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	config := Config{
 		Endpoint: endpoint,
 	}
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -74,11 +72,10 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -90,11 +87,10 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -104,11 +100,10 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Endpoint: testutils.GetAvailableLocalAddress(t),
+		Endpoint: testutil.GetAvailableLocalAddress(t),
 	}
 
-	pprofExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Shutdown(context.Background()))

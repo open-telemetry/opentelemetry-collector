@@ -17,7 +17,6 @@ Supported metric receivers (sorted alphabetically):
 - [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OpenTelemetry Receiver](otlpreceiver/README.md)
 - [Prometheus Receiver](prometheusreceiver/README.md)
-- [VM Metrics Receiver](vmmetricsreceiver/README.md)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
  has more receivers that can be added to custom builds of the collector.
@@ -51,5 +50,5 @@ must be unique. For the example above:
 - Receiver 2 has full name `examplereceiver/settings`.
 
 All receivers expose a setting to disable it, by default receivers are enabled.
-At least one receiver must be enabled per [pipeline](docs/pipelines.md) to be a
+At least one receiver must be enabled per [pipeline](../docs/pipelines.md) to be a
 valid configuration.

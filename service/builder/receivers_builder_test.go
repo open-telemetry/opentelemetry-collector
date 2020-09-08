@@ -18,18 +18,18 @@ import (
 	"context"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	idata "go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/zipkinreceiver"
@@ -93,12 +93,12 @@ func testReceivers(
 	t *testing.T,
 	test testCase,
 ) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline
@@ -131,24 +131,20 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.te.(*config.ExampleExporterConsumer)
+		consumer := exporter.te.(*componenttest.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
 
 	if test.hasTraces {
-		traceProducer := receiver.receiver.(*config.ExampleReceiverProducer)
-		traceProducer.TraceConsumer.ConsumeTraceData(context.Background(), generateTestTraceData())
+		traceProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
+		traceProducer.TraceConsumer.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
 	}
 
-	metricsData := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			{MetricDescriptor: &metricspb.MetricDescriptor{Name: "testmetric"}},
-		},
-	}
+	metrics := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetric())
 	if test.hasMetrics {
-		metricsProducer := receiver.receiver.(*config.ExampleReceiverProducer)
-		metricsProducer.MetricsConsumer.ConsumeMetricsData(context.Background(), metricsData)
+		metricsProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
+		metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), metrics)
 	}
 
 	// Now verify received data.
@@ -165,19 +161,19 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.te.(*config.ExampleExporterConsumer)
+			traceConsumer := exporter.te.(*componenttest.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
-				assertEqualTraceData(t, generateTestTraceDataWithAttributes(), traceConsumer.Traces[i])
+				assert.EqualValues(t, generateTestTracesWithAttributes(), traceConsumer.Traces[i])
 			}
 		}
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.me.(*config.ExampleExporterConsumer)
+			metricsConsumer := exporter.me.(*componenttest.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
-			assertEqualMetricsData(t, metricsData, metricsConsumer.Metrics[0])
+			assert.EqualValues(t, metrics, metricsConsumer.Metrics[0])
 		}
 	}
 }
@@ -241,13 +237,13 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 
 			// First check that there are no traces in the exporters yet.
 			for _, exporter := range exporters {
-				consumer := exporter.le.(*config.ExampleExporterConsumer)
+				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
 			// Send one data.
-			log := idata.Logs{}
-			producer := receiver.receiver.(*config.ExampleReceiverProducer)
+			log := pdata.Logs{}
+			producer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
 			producer.LogConsumer.ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.
@@ -256,7 +252,7 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 				exporter := allExporters[cfg.Exporters[name]]
 
 				// Validate exported data.
-				consumer := exporter.le.(*config.ExampleExporterConsumer)
+				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
 				require.Equal(t, 1, len(consumer.Logs))
 				assert.EqualValues(t, log, consumer.Logs[0])
 			}
@@ -265,17 +261,17 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 }
 
 func TestReceiversBuilder_DataTypeError(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	assert.NoError(t, err)
 
 	// Make examplereceiver to "unsupport" trace data type.
 	receiver := cfg.Receivers["examplereceiver"]
-	receiver.(*config.ExampleReceiver).FailTraceCreation = true
+	receiver.(*componenttest.ExampleReceiver).FailTraceCreation = true
 
 	// Build the pipeline
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()
@@ -294,7 +290,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
-	receiver := &config.ExampleReceiverProducer{}
+	receiver := &componenttest.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
 		logger:   zap.NewNop(),
@@ -313,7 +309,7 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
-	receiver := &config.ExampleReceiverProducer{}
+	receiver := &componenttest.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
 		logger:   zap.NewNop(),
@@ -328,7 +324,7 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 }
 
 func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	npf := &processortest.NopProcessorFactory{}
@@ -337,7 +333,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	bf := &badReceiverFactory{}
 	factories.Receivers[bf.Type()] = bf
 
-	cfg, err := config.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline
@@ -366,15 +362,15 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 }
 
 func TestReceiversBuilder_Unused(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
 
-	zpkFactory := &zipkinreceiver.Factory{}
+	zpkFactory := zipkinreceiver.NewFactory()
 	factories.Receivers[zpkFactory.Type()] = zpkFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
 	assert.NoError(t, err)
 
 	// Build the pipeline
@@ -391,7 +387,7 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 }
 
 func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	npf := &processortest.NopProcessorFactory{}
@@ -400,7 +396,7 @@ func TestReceiversBuilder_InternalToOcTraceConverter(t *testing.T) {
 	newStyleReceiver := &newStyleReceiverFactory{}
 	factories.Receivers[newStyleReceiver.Type()] = newStyleReceiver
 
-	cfg, err := config.LoadConfigFile(t, "testdata/new_style_receiver_factory.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/new_style_receiver_factory.yaml", factories)
 	require.Nil(t, err)
 
 	// Build the pipeline
@@ -427,10 +423,6 @@ func (b *badReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &configmodels.ReceiverSettings{}
 }
 
-func (b *badReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
 func (b *badReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
 	_ *zap.Logger,
@@ -440,11 +432,7 @@ func (b *badReceiverFactory) CreateTraceReceiver(
 	return nil, nil
 }
 
-func (b *badReceiverFactory) CreateMetricsReceiver(
-	_ *zap.Logger,
-	_ configmodels.Receiver,
-	_ consumer.MetricsConsumerOld,
-) (component.MetricsReceiver, error) {
+func (b *badReceiverFactory) CreateMetricsReceiver(context.Context, *zap.Logger, configmodels.Receiver, consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
@@ -459,17 +447,13 @@ func (b *newStyleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	return &configmodels.ReceiverSettings{}
 }
 
-func (b *newStyleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
 func (b *newStyleReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
 	_ consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
-	return &config.ExampleReceiverProducer{}, nil
+	return &componenttest.ExampleReceiverProducer{}, nil
 }
 
 func (b *newStyleReceiverFactory) CreateMetricsReceiver(
@@ -478,5 +462,5 @@ func (b *newStyleReceiverFactory) CreateMetricsReceiver(
 	_ configmodels.Receiver,
 	_ consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	return &config.ExampleReceiverProducer{}, nil
+	return &componenttest.ExampleReceiverProducer{}, nil
 }

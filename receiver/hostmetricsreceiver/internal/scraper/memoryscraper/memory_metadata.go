@@ -27,6 +27,7 @@ const stateLabelName = "state"
 const (
 	bufferedStateLabelValue          = "buffered"
 	cachedStateLabelValue            = "cached"
+	inactiveStateLabelValue          = "inactive"
 	freeStateLabelValue              = "free"
 	slabReclaimableStateLabelValue   = "slab_reclaimable"
 	slabUnreclaimableStateLabelValue = "slab_unreclaimable"
@@ -35,14 +36,12 @@ const (
 
 // descriptors
 
-var metricMemoryUsedDescriptor = createMetricMemoryUsedDescriptor()
-
-func createMetricMemoryUsedDescriptor() pdata.MetricDescriptor {
+var memoryUsageDescriptor = func() pdata.MetricDescriptor {
 	descriptor := pdata.NewMetricDescriptor()
 	descriptor.InitEmpty()
-	descriptor.SetName("host/memory/used")
+	descriptor.SetName("system.memory.usage")
 	descriptor.SetDescription("Bytes of memory in use.")
 	descriptor.SetUnit("bytes")
 	descriptor.SetType(pdata.MetricTypeInt64)
 	return descriptor
-}
+}()

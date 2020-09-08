@@ -26,9 +26,11 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/internal"
@@ -141,17 +143,11 @@ func Test_hexTraceIDToOCTraceID(t *testing.T) {
 
 func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_local_component.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
-	reqs, err := V1JSONBatchToOCProto(blob)
-	if err != nil {
-		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
 
-	if len(reqs) != 2 {
-		t.Fatalf("got %d trace service request(s), want 2", len(reqs))
-	}
+	reqs, err := v1JSONBatchToOCProto(blob)
+	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
+	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
 
 	// Ensure the order of nodes
 	sort.Slice(reqs, func(i, j int) bool {
@@ -160,28 +156,19 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 
 	// First span didn't have a host/endpoint to give service name, use the local component.
 	got := reqs[0].Node.ServiceInfo.Name
-	want := "myLocalComponent"
-	if got != want {
-		t.Fatalf("got %q for service name, want %q", got, want)
-	}
+	require.Equal(t, "myLocalComponent", got)
 
 	// Second span have a host/endpoint to give service name, do not use local component.
 	got = reqs[1].Node.ServiceInfo.Name
-	want = "myServiceName"
-	if got != want {
-		t.Fatalf("got %q for service name, want %q", got, want)
-	}
+	require.Equal(t, "myServiceName", got)
 }
 
 func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
-	got, err := V1JSONBatchToOCProto(blob)
-	if err != nil {
-		t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
+
+	got, err := v1JSONBatchToOCProto(blob)
+	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 	want := ocBatchesFromZipkinV1
 	sortTraceByNodeName(want)
@@ -192,27 +179,20 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 
 func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
-	if err != nil {
-		t.Fatalf("failed to load test data: %v", err)
-	}
+	require.NoError(t, err, "Failed to load test data")
 
 	var batches []interface{}
-	if err := json.Unmarshal(blob, &batches); err != nil {
-		t.Fatalf("failed to load the batches: %v", err)
-	}
+	err = json.Unmarshal(blob, &batches)
+	require.NoError(t, err, "Failed to load the batches")
 
 	nodeToTraceReqs := make(map[string]*consumerdata.TraceData)
 	var got []consumerdata.TraceData
 	for _, batch := range batches {
 		jsonBatch, err := json.Marshal(batch)
-		if err != nil {
-			t.Fatalf("failed to marshal interface back to blob: %v", err)
-		}
+		require.NoError(t, err, "Failed to marshal interface back to blob")
 
-		g, err := V1JSONBatchToOCProto(jsonBatch)
-		if err != nil {
-			t.Fatalf("failed to translate zipkinv1 to OC proto: %v", err)
-		}
+		g, err := v1JSONBatchToOCProto(jsonBatch)
+		require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 		// Coalesce the nodes otherwise they will differ due to multiple
 		// nodes representing same logical service
@@ -234,7 +214,9 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 	sortTraceByNodeName(want)
 	sortTraceByNodeName(got)
 
-	assert.EqualValues(t, got, want)
+	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
+		t.Errorf("Unexpected difference:\n%v", diff)
+	}
 }
 
 func sortTraceByNodeName(trace []consumerdata.TraceData) {
@@ -520,20 +502,14 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 				t.Errorf("#%d: Unexpected error: %v", i, err)
 				return
 			}
-			gb, err := V1JSONBatchToOCProto(zBytes)
+			gb, err := v1JSONBatchToOCProto(zBytes)
 			if err != nil {
 				t.Errorf("#%d: Unexpected error: %v", i, err)
 				return
 			}
 			gs := gb[0].Spans[0]
-
-			if !reflect.DeepEqual(gs.Attributes, c.wantAttributes) {
-				t.Fatalf("Unsuccessful conversion\nGot:\n\t%v\nWant:\n\t%v", gs.Attributes, c.wantAttributes)
-			}
-
-			if !reflect.DeepEqual(gs.Status, c.wantStatus) {
-				t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, c.wantStatus)
-			}
+			require.Equal(t, c.wantAttributes, gs.Attributes, "Unsuccessful conversion %d", i)
+			require.Equal(t, c.wantStatus, gs.Status, "Unsuccessful conversion %d", i)
 		})
 	}
 }
@@ -556,7 +532,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	testStart := time.Now()
 
-	gb, err := V1JSONBatchToOCProto(zBytes)
+	gb, err := v1JSONBatchToOCProto(zBytes)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -600,16 +576,14 @@ func TestJSONHTTPToGRPCStatusCode(t *testing.T) {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
 		}
-		gb, err := V1JSONBatchToOCProto(zBytes)
+		gb, err := v1JSONBatchToOCProto(zBytes)
 		if err != nil {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
 		}
 
 		gs := gb[0].Spans[0]
-		if !reflect.DeepEqual(gs.Status.Code, wantStatus) {
-			t.Fatalf("Unsuccessful conversion: %d\nGot:\n\t%v\nWant:\n\t%v", i, gs.Status, wantStatus)
-		}
+		require.Equal(t, wantStatus, gs.Status.Code, "Unsuccessful conversion %d", i)
 	}
 }
 
@@ -792,11 +766,6 @@ func TestSpanKindTranslation(t *testing.T) {
 				}
 				assert.EqualValues(t, expected, ocSpan.Attributes.AttributeMap[tracetranslator.TagSpanKind])
 			}
-
-			// Translate to Zipkin V2 (which is used for internal representation by Zipkin exporter).
-			zSpanTranslated, err := OCSpanProtoToZipkin(nil, nil, ocSpan, "")
-			assert.NoError(t, err)
-			assert.EqualValues(t, test.zipkinV2Kind, zSpanTranslated.Kind)
 		})
 	}
 }

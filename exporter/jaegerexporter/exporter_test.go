@@ -56,7 +56,7 @@ func TestNew(t *testing.T) {
 						TLSSetting: configtls.TLSClientSetting{
 							Insecure: true,
 						},
-						KeepaliveParameters: nil,
+						Keepalive: nil,
 					},
 				},
 			},
@@ -66,10 +66,10 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Headers:             map[string]string{"extra-header": "header-value"},
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						KeepaliveParameters: nil,
+						Headers:     map[string]string{"extra-header": "header-value"},
+						Endpoint:    "foo.bar",
+						Compression: "",
+						Keepalive:   nil,
 					},
 				},
 			},
@@ -79,10 +79,10 @@ func TestNew(t *testing.T) {
 			args: args{
 				config: Config{
 					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Headers:             nil,
-						Endpoint:            "foo.bar",
-						Compression:         "",
-						KeepaliveParameters: nil,
+						Headers:     nil,
+						Endpoint:    "foo.bar",
+						Compression: "",
+						Keepalive:   nil,
 					},
 				},
 			},
@@ -101,7 +101,7 @@ func TestNew(t *testing.T) {
 							},
 							Insecure: false,
 						},
-						KeepaliveParameters: nil,
+						Keepalive: nil,
 					},
 				},
 			},
@@ -121,7 +121,7 @@ func TestNew(t *testing.T) {
 							Insecure:   false,
 							ServerName: "",
 						},
-						KeepaliveParameters: &configgrpc.KeepaliveConfig{
+						Keepalive: &configgrpc.KeepaliveClientConfig{
 							Time:                0,
 							Timeout:             0,
 							PermitWithoutStream: false,
@@ -144,7 +144,7 @@ func TestNew(t *testing.T) {
 							},
 							Insecure: false,
 						},
-						KeepaliveParameters: nil,
+						Keepalive: nil,
 					},
 				},
 			},
@@ -153,9 +153,9 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(&tt.args.config)
+			got, err := newTraceExporter(&tt.args.config)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("newTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got == nil {
@@ -190,10 +190,12 @@ func TestMutualTLS(t *testing.T) {
 	clientKeyPath := path.Join(".", "testdata", "client.key")
 
 	// start gRPC Jaeger server
-	tlsCfgOpts := configtls.TLSSetting{
-		CAFile:   caPath,
-		CertFile: serverCertPath,
-		KeyFile:  serverKeyPath,
+	tlsCfgOpts := configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   caPath,
+			CertFile: serverCertPath,
+			KeyFile:  serverKeyPath,
+		},
 	}
 	tlsCfg, err := tlsCfgOpts.LoadTLSConfig()
 	require.NoError(t, err)
@@ -204,7 +206,7 @@ func TestMutualTLS(t *testing.T) {
 	defer server.GracefulStop()
 
 	// Create gRPC trace exporter
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 		Endpoint: serverAddr.String(),

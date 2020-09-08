@@ -19,17 +19,17 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
 	zipkin_proto3 "github.com/openzipkin/zipkin-go/proto/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
@@ -107,80 +107,168 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	// 3. Get that payload converted to OpenCensus proto spans.
 	reqs, err := zi.v2ToTraceSpans(protoBlob, hdr)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)
-	require.Len(t, reqs, 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", len(reqs))
+	require.Equal(t, reqs.ResourceSpans().Len(), 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
-	want := []consumerdata.TraceData{
+	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{
-					Name: "svc-1",
+			Resource: &otlpresource.Resource{
+				Attributes: []*otlpcommon.KeyValue{
+					{
+						Key: conventions.AttributeServiceName,
+						Value: &otlpcommon.AnyValue{
+							Value: &otlpcommon.AnyValue_StringValue{
+								StringValue: "svc-1",
+							},
+						},
+					},
 				},
 			},
-			Spans: []*tracepb.Span{
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 				{
-					TraceId:      []byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
-					SpanId:       []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
-					ParentSpanId: []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
-					Name:         &tracepb.TruncatableString{Value: "ProtoSpan1"},
-					StartTime:    internal.TimeToTimestamp(now),
-					EndTime:      internal.TimeToTimestamp(now.Add(12 * time.Second)),
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							zipkin.LocalEndpointIPv4:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "192.168.0.1"}}},
-							zipkin.LocalEndpointPort:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "8009"}}},
-							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "memcached"}}},
-							zipkin.RemoteEndpointIPv6:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "fe80::1453:a77c:da4d:d21b"}}},
-							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "11211"}}},
-							tracetranslator.TagSpanKind:      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: string(tracetranslator.OpenTracingSpanKindConsumer)}}},
+					Spans: []*otlptrace.Span{
+						{
+							TraceId:           []byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
+							SpanId:            []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
+							ParentSpanId:      []byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0},
+							Name:              "ProtoSpan1",
+							StartTimeUnixNano: uint64(now.UnixNano()),
+							EndTimeUnixNano:   uint64(now.Add(12 * time.Second).UnixNano()),
+							Attributes: []*otlpcommon.KeyValue{
+								{
+									Key: conventions.AttributeNetHostIP,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: "192.168.0.1",
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetHostPort,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_IntValue{
+											IntValue: 8009,
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetPeerName,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: "memcached",
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetPeerIP,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: "fe80::1453:a77c:da4d:d21b",
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetPeerPort,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_IntValue{
+											IntValue: 11211,
+										},
+									},
+								},
+								{
+									Key: tracetranslator.TagSpanKind,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: string(tracetranslator.OpenTracingSpanKindConsumer),
+										},
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{
-					Name: "search",
-				},
-			},
-			Spans: []*tracepb.Span{
-				{
-					TraceId:      []byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0},
-					SpanId:       []byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60},
-					ParentSpanId: []byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10},
-					Name:         &tracepb.TruncatableString{Value: "CacheWarmUp"},
-					StartTime:    internal.TimeToTimestamp(now.Add(-10 * time.Hour)),
-					EndTime:      internal.TimeToTimestamp(now.Add(-10 * time.Hour).Add(7 * time.Second)),
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							zipkin.LocalEndpointIPv4:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "10.0.0.13"}}},
-							zipkin.LocalEndpointPort:         {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "8009"}}},
-							zipkin.RemoteEndpointServiceName: {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "redis"}}},
-							zipkin.RemoteEndpointIPv6:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "fe80::1453:a77c:da4d:d21b"}}},
-							zipkin.RemoteEndpointPort:        {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "6379"}}},
-							tracetranslator.TagSpanKind:      {Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: string(tracetranslator.OpenTracingSpanKindProducer)}}},
+			Resource: &otlpresource.Resource{
+				Attributes: []*otlpcommon.KeyValue{
+					{
+						Key: conventions.AttributeServiceName,
+						Value: &otlpcommon.AnyValue{
+							Value: &otlpcommon.AnyValue_StringValue{
+								StringValue: "search",
+							},
 						},
 					},
-					TimeEvents: &tracepb.Span_TimeEvents{
-						TimeEvent: []*tracepb.Span_TimeEvent{
-							{
-								Time: internal.TimeToTimestamp(cmpTimestamp(now.Add(-10 * time.Hour))),
-								Value: &tracepb.Span_TimeEvent_Annotation_{
-									Annotation: &tracepb.Span_TimeEvent_Annotation{
-										Description: &tracepb.TruncatableString{
-											Value: "DB reset",
+				},
+			},
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				{
+					Spans: []*otlptrace.Span{
+						{
+							TraceId:           []byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0},
+							SpanId:            []byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60},
+							ParentSpanId:      []byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10},
+							Name:              "CacheWarmUp",
+							StartTimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
+							EndTimeUnixNano:   uint64(now.Add(-10 * time.Hour).Add(7 * time.Second).UnixNano()),
+							Attributes: []*otlpcommon.KeyValue{
+								{
+									Key: conventions.AttributeNetHostIP,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: "10.0.0.13",
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetHostPort,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_IntValue{
+											IntValue: 8009,
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetPeerName,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: "redis",
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetPeerIP,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: "fe80::1453:a77c:da4d:d21b",
+										},
+									},
+								},
+								{
+									Key: conventions.AttributeNetPeerPort,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_IntValue{
+											IntValue: 6379,
+										},
+									},
+								},
+								{
+									Key: tracetranslator.TagSpanKind,
+									Value: &otlpcommon.AnyValue{
+										Value: &otlpcommon.AnyValue_StringValue{
+											StringValue: string(tracetranslator.OpenTracingSpanKindProducer),
 										},
 									},
 								},
 							},
-							{
-								Time: internal.TimeToTimestamp(minus10hr5ms),
-								Value: &tracepb.Span_TimeEvent_Annotation_{
-									Annotation: &tracepb.Span_TimeEvent_Annotation{
-										Description: &tracepb.TruncatableString{
-											Value: "GC Cycle 39",
-										},
-									},
+							Events: []*otlptrace.Span_Event{
+								{
+									TimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
+									Name:         "DB reset",
+								},
+								{
+									TimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
+									Name:         "GC Cycle 39",
 								},
 							},
 						},
@@ -188,7 +276,28 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				},
 			},
 		},
+	})
+
+	assert.Equal(t, want.SpanCount(), reqs.SpanCount())
+	assert.Equal(t, want.ResourceSpans().Len(), reqs.ResourceSpans().Len())
+	for i := 0; i < want.ResourceSpans().Len(); i++ {
+		wantRS := want.ResourceSpans().At(i)
+		wSvcName, ok := wantRS.Resource().Attributes().Get(conventions.AttributeServiceName)
+		assert.True(t, ok)
+		for j := 0; j < reqs.ResourceSpans().Len(); j++ {
+			reqsRS := reqs.ResourceSpans().At(j)
+			rSvcName, ok := reqsRS.Resource().Attributes().Get(conventions.AttributeServiceName)
+			assert.True(t, ok)
+			if rSvcName.StringVal() == wSvcName.StringVal() {
+				compareResourceSpans(t, wantRS, reqsRS)
+			}
+		}
 	}
+}
 
-	assert.Equal(t, want, reqs)
+func compareResourceSpans(t *testing.T, wantRS pdata.ResourceSpans, reqsRS pdata.ResourceSpans) {
+	assert.Equal(t, wantRS.InstrumentationLibrarySpans().Len(), reqsRS.InstrumentationLibrarySpans().Len())
+	wantIL := wantRS.InstrumentationLibrarySpans().At(0)
+	reqsIL := reqsRS.InstrumentationLibrarySpans().At(0)
+	assert.Equal(t, wantIL.Spans().Len(), reqsIL.Spans().Len())
 }

@@ -17,16 +17,20 @@ package componenttest
 import (
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestNewNopHost(t *testing.T) {
-	got := NewNopHost()
-	if got == nil {
-		t.Fatal("NewNopHost() = nil, want non-nil", got)
-	}
-	_, ok := got.(*NopHost)
-	if !ok {
-		t.Fatal("got.(*NopHost) failed")
-	}
-	got.ReportFatalError(errors.New("TestError"))
+	nh := NewNopHost()
+	require.NotNil(t, nh)
+	require.IsType(t, &NopHost{}, nh)
+
+	nh.ReportFatalError(errors.New("TestError"))
+	assert.Nil(t, nh.GetExporters())
+	assert.Nil(t, nh.GetExtensions())
+	assert.Nil(t, nh.GetFactory(component.KindReceiver, "test"))
 }

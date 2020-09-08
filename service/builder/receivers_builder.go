@@ -62,10 +62,7 @@ func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 // StartAll starts all receivers.
@@ -96,7 +93,7 @@ func NewReceiversBuilder(
 	builtPipelines BuiltPipelines,
 	factories map[configmodels.Type]component.ReceiverFactoryBase,
 ) *ReceiversBuilder {
-	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogReceiver)), config, builtPipelines, factories}
+	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), config, builtPipelines, factories}
 }
 
 // BuildProcessors receivers from config.
@@ -193,7 +190,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 
 	case configmodels.LogsDataType:
 		junction := buildFanoutLogConsumer(builtPipelines)
-		createdReceiver, err = createLogReceiver(context.Background(), factory, logger, config, junction)
+		createdReceiver, err = createLogsReceiver(context.Background(), factory, logger, config, junction)
 
 	default:
 		err = configerror.ErrDataTypeIsNotSupported
@@ -325,13 +322,13 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 	return processor.CreateMetricsFanOutConnector(pipelineConsumers)
 }
 
-func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogConsumer {
+func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstLC
 	}
 
-	var pipelineConsumers []consumer.LogConsumer
+	var pipelineConsumers []consumer.LogsConsumer
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstLC)
@@ -417,28 +414,28 @@ func createMetricsReceiver(
 	// If both receiver and consumer are of the old type (can manipulate on OC metrics only),
 	// use Factory.CreateMetricsReceiver.
 	if nextConsumer, ok := nextConsumer.(consumer.MetricsConsumerOld); ok {
-		return factoryOld.CreateMetricsReceiver(logger, cfg, nextConsumer)
+		return factoryOld.CreateMetricsReceiver(context.Background(), logger, cfg, nextConsumer)
 	}
 
 	// If receiver is of the old type, but downstream consumer is of the new type,
 	// use NewInternalToOCMetricsConverter compatibility shim to convert metrics from internal format to OC.
 	metricsConverter := converter.NewOCToInternalMetricsConverter(nextConsumer.(consumer.MetricsConsumer))
-	return factoryOld.CreateMetricsReceiver(logger, cfg, metricsConverter)
+	return factoryOld.CreateMetricsReceiver(context.Background(), logger, cfg, metricsConverter)
 }
 
-// createLogReceiver creates a log receiver using given factory and next consumer.
-func createLogReceiver(
+// createLogsReceiver creates a log receiver using given factory and next consumer.
+func createLogsReceiver(
 	ctx context.Context,
 	factoryBase component.ReceiverFactoryBase,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.LogConsumer,
-) (component.LogReceiver, error) {
-	factory, ok := factoryBase.(component.LogReceiverFactory)
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	factory, ok := factoryBase.(component.LogsReceiverFactory)
 	if !ok {
 		return nil, fmt.Errorf("receiver %q does support data type %q",
 			cfg.Name(), configmodels.LogsDataType)
 	}
 	creationParams := component.ReceiverCreateParams{Logger: logger}
-	return factory.CreateLogReceiver(ctx, creationParams, cfg, nextConsumer)
+	return factory.CreateLogsReceiver(ctx, creationParams, cfg, nextConsumer)
 }

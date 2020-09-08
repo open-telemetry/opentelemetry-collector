@@ -27,7 +27,7 @@ import (
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := NewTraceExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	lte, err := newTraceExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -41,7 +41,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := NewMetricsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	lme, err := newMetricsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -50,6 +50,24 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneEmptyOneNilInstrumentationLibrary())))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataOneMetricOneNil())))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataWithCountersHistogramAndSummary())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataAllTypesNilDataPoint())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataAllTypesEmptyDataPoint())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataNilMetricDescriptor())))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataMetricTypeInvalid())))
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
+}
+
+func TestLoggingLogsExporterNoErrors(t *testing.T) {
+	lle, err := newLogsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	require.NotNil(t, lle)
+	assert.NoError(t, err)
+
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyResourceLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyOneNilResourceLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataNoLogRecords()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyLogs()))
+
+	assert.NoError(t, lle.Shutdown(context.Background()))
 }

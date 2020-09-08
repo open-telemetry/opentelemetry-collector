@@ -27,20 +27,20 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
@@ -49,7 +49,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
 		name     string
@@ -77,11 +77,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "KeepaliveParameters",
+			name: "Keepalive",
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					KeepaliveParameters: &configgrpc.KeepaliveConfig{
+					Keepalive: &configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,
@@ -111,12 +111,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "NumWorkers",
+			name: "NumConsumers",
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				},
-				NumWorkers: 3,
 			},
 		},
 		{
@@ -160,7 +159,7 @@ func TestCreateTraceExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &Factory{}
+			factory := NewFactory()
 			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 			consumer, err := factory.CreateTraceExporter(context.Background(), creationParams, &tt.config)
 
@@ -182,12 +181,12 @@ func TestCreateTraceExporter(t *testing.T) {
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutils.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateLogExporter(context.Background(), creationParams, cfg)
+	oexp, err := factory.(component.LogsExporterFactory).CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 }

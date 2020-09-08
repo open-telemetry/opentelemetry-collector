@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/obsreportscraper"
 )
 
 // This file implements Factory for Disk scraper.
@@ -44,6 +45,10 @@ func (f *Factory) CreateMetricsScraper(
 	_ *zap.Logger,
 	config internal.Config,
 ) (internal.Scraper, error) {
-	cfg := config.(*Config)
-	return newDiskScraper(ctx, cfg), nil
+	scraper, err := newDiskScraper(ctx, config.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
+	return obsreportscraper.WrapScraper(scraper, TypeStr), nil
 }

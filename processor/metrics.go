@@ -41,39 +41,23 @@ var (
 		"spans_dropped",
 		"counts the number of spans dropped",
 		stats.UnitDimensionless)
-	StatBadBatchDroppedSpanCount = stats.Int64(
-		"bad_batch_spans_dropped",
-		"counts the number of spans dropped due to being in bad batches",
-		stats.UnitDimensionless)
 
 	StatTraceBatchesDroppedCount = stats.Int64(
 		"trace_batches_dropped",
 		"counts the number of trace batches dropped",
-		stats.UnitDimensionless)
-
-	StatDroppedMetricCount = stats.Int64(
-		"metrics_dropped",
-		"counts the number of metrics dropped",
-		stats.UnitDimensionless)
-
-	StatMetricBatchesDroppedCount = stats.Int64(
-		"metric_batches_dropped",
-		"counts the number of metric batches dropped",
 		stats.UnitDimensionless)
 )
 
 // SpanCountStats represents span count stats grouped by service if DETAILED telemetry level is set,
 // otherwise only overall span count is stored in serviceSpansCounts.
 type SpanCountStats struct {
-	processorName      string
 	serviceSpansCounts map[string]int
 	allSpansCount      int
 	isDetailed         bool
 }
 
-func NewSpanCountStats(td pdata.Traces, processorName string) *SpanCountStats {
+func NewSpanCountStats(td pdata.Traces) *SpanCountStats {
 	scm := &SpanCountStats{
-		processorName: processorName,
 		allSpansCount: td.SpanCount(),
 	}
 	if serviceTagsEnabled() {
@@ -124,13 +108,6 @@ func MetricViews(level telemetry.Level) []*view.View {
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
-	droppedBadBatchesView := &view.View{
-		Name:        "bad_batches_dropped",
-		Measure:     StatBadBatchDroppedSpanCount,
-		Description: "The number of span batches with bad data that were dropped.",
-		TagKeys:     tagKeys,
-		Aggregation: view.Count(),
-	}
 	receivedSpansView := &view.View{
 		Name:        StatReceivedSpanCount.Name(),
 		Measure:     StatReceivedSpanCount,
@@ -145,21 +122,12 @@ func MetricViews(level telemetry.Level) []*view.View {
 		TagKeys:     tagKeys,
 		Aggregation: view.Sum(),
 	}
-	droppedSpansFromBadBatchesView := &view.View{
-		Name:        StatBadBatchDroppedSpanCount.Name(),
-		Measure:     StatBadBatchDroppedSpanCount,
-		Description: "The number of spans dropped from span batches with bad data.",
-		TagKeys:     tagKeys,
-		Aggregation: view.Sum(),
-	}
 
 	legacyViews := []*view.View{
 		receivedBatchesView,
 		droppedBatchesView,
 		receivedSpansView,
 		droppedSpansView,
-		droppedBadBatchesView,
-		droppedSpansFromBadBatchesView,
 	}
 
 	return obsreport.ProcessorMetricViews("", legacyViews)
@@ -167,17 +135,16 @@ func MetricViews(level telemetry.Level) []*view.View {
 
 // ServiceNameForNode gets the service name for a specified node.
 func ServiceNameForNode(node *commonpb.Node) string {
-	var serviceName string
-	if node == nil {
-		serviceName = "<nil-batch-node>"
-	} else if node.ServiceInfo == nil {
-		serviceName = "<nil-service-info>"
-	} else if node.ServiceInfo.Name == "" {
-		serviceName = "<empty-service-info-name>"
-	} else {
-		serviceName = node.ServiceInfo.Name
+	switch {
+	case node == nil:
+		return "<nil-batch-node>"
+	case node.ServiceInfo == nil:
+		return "<nil-service-info>"
+	case node.ServiceInfo.Name == "":
+		return "<empty-service-info-name>"
+	default:
+		return node.ServiceInfo.Name
 	}
-	return serviceName
 }
 
 // ServiceNameForResource gets the service name for a specified Resource.
@@ -199,17 +166,13 @@ func ServiceNameForResource(resource pdata.Resource) string {
 func RecordsSpanCountMetrics(ctx context.Context, scm *SpanCountStats, measure *stats.Int64Measure) {
 	if scm.isDetailed {
 		for serviceName, spanCount := range scm.serviceSpansCounts {
-			statsTags := []tag.Mutator{
-				tag.Insert(TagProcessorNameKey, scm.processorName),
-				tag.Insert(TagServiceNameKey, serviceName),
-			}
+			statsTags := []tag.Mutator{tag.Insert(TagServiceNameKey, serviceName)}
 			_ = stats.RecordWithTags(ctx, statsTags, measure.M(int64(spanCount)))
 		}
 		return
 	}
 
-	statsTags := []tag.Mutator{tag.Insert(TagProcessorNameKey, scm.processorName)}
-	_ = stats.RecordWithTags(ctx, statsTags, measure.M(int64(scm.allSpansCount)))
+	stats.Record(ctx, measure.M(int64(scm.allSpansCount)))
 }
 
 func serviceTagsEnabled() bool {

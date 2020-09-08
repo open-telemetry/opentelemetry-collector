@@ -17,15 +17,50 @@ package internaldata
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
+	"go.opencensus.io/resource/resourcekeys"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
+
+type ocInferredResourceType struct {
+	// label presence to check against
+	labelKeyPresent string
+	// inferred resource type
+	resourceType string
+}
+
+// mapping of label presence to inferred OC resource type
+// NOTE: defined in the priority order (first match wins)
+var labelPresenceToResourceType = []ocInferredResourceType{
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
+		labelKeyPresent: conventions.AttributeContainerName,
+		resourceType:    resourcekeys.ContainerType,
+	},
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
+		labelKeyPresent: conventions.AttributeK8sPod,
+		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
+		resourceType: resourcekeys.K8SType,
+	},
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
+		labelKeyPresent: conventions.AttributeHostName,
+		resourceType:    resourcekeys.HostType,
+	},
+	{
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+		labelKeyPresent: conventions.AttributeCloudProvider,
+		resourceType:    resourcekeys.CloudType,
+	},
+}
 
 func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
 	if resource.IsNil() {
@@ -42,7 +77,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 
 	labels := make(map[string]string, attrs.Len())
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
-		val := attributeValueToString(v)
+		val := attributeValueToString(v, false)
 
 		switch k {
 		case conventions.OCAttributeResourceType:
@@ -103,20 +138,73 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	})
 	ocResource.Labels = labels
 
+	// If resource type is missing, try to infer it
+	// based on the presence of resource labels (semantic conventions)
+	if ocResource.Type == "" {
+		if resType, ok := inferResourceType(ocResource.Labels); ok {
+			ocResource.Type = resType
+		}
+	}
+
 	return &ocNode, &ocResource
 }
 
-func attributeValueToString(attr pdata.AttributeValue) string {
+func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
 	switch attr.Type() {
+	case pdata.AttributeValueNULL:
+		if jsonLike {
+			return "null"
+		}
+		return ""
 	case pdata.AttributeValueSTRING:
+		if jsonLike {
+			return fmt.Sprintf("%q", attr.StringVal())
+		}
 		return attr.StringVal()
+
 	case pdata.AttributeValueBOOL:
 		return strconv.FormatBool(attr.BoolVal())
+
 	case pdata.AttributeValueDOUBLE:
 		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
+
 	case pdata.AttributeValueINT:
 		return strconv.FormatInt(attr.IntVal(), 10)
+
+	case pdata.AttributeValueMAP:
+		// OpenCensus attributes cannot represent maps natively. Convert the
+		// map to a JSON-like string.
+		var sb strings.Builder
+		sb.WriteString("{")
+		m := attr.MapVal()
+		first := true
+		m.ForEach(func(k string, v pdata.AttributeValue) {
+			if !first {
+				sb.WriteString(",")
+			}
+			first = false
+			sb.WriteString(fmt.Sprintf("%q:%s", k, attributeValueToString(v, true)))
+		})
+		sb.WriteString("}")
+		return sb.String()
+
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
 	}
+
+	// TODO: Add support for ARRAY type.
+}
+
+func inferResourceType(labels map[string]string) (string, bool) {
+	if labels == nil {
+		return "", false
+	}
+
+	for _, mapping := range labelPresenceToResourceType {
+		if _, ok := labels[mapping.labelKeyPresent]; ok {
+			return mapping.resourceType, true
+		}
+	}
+
+	return "", false
 }

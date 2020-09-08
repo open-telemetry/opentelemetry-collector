@@ -16,6 +16,7 @@ package hostmetricsreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,19 +25,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
 var creationParams = component.ReceiverCreateParams{Logger: zap.NewNop()}
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nil)
@@ -48,4 +50,14 @@ func TestCreateReceiver(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
+}
+
+func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
+	const errorKey string = "error"
+
+	factory := NewFactory()
+	cfg := &Config{Scrapers: map[string]internal.Config{errorKey: &mockConfig{}}}
+
+	_, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
+	assert.EqualError(t, err, fmt.Sprintf("host metrics scraper factory not found for key: %q", errorKey))
 }

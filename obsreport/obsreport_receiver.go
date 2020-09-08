@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/observability"
 )
 
 const (
@@ -43,6 +42,12 @@ const (
 	// Key used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
+
+	// Key used to identify log records accepted by the Collector.
+	AcceptedLogRecordsKey = "accepted_log_records"
+	// Key used to identify log records refused (ie.: not ingested) by the
+	// Collector.
+	RefusedLogRecordsKey = "refused_log_records"
 )
 
 var (
@@ -73,6 +78,14 @@ var (
 	mReceiverRefusedMetricPoints = stats.Int64(
 		receiverPrefix+RefusedMetricPointsKey,
 		"Number of metric points that could not be pushed into the pipeline.",
+		stats.UnitDimensionless)
+	mReceiverAcceptedLogRecords = stats.Int64(
+		receiverPrefix+AcceptedLogRecordsKey,
+		"Number of  log records successfully pushed into the pipeline.",
+		stats.UnitDimensionless)
+	mReceiverRefusedLogRecords = stats.Int64(
+		receiverPrefix+RefusedLogRecordsKey,
+		"Number of  log records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
 )
 
@@ -128,7 +141,7 @@ func WithLongLivedCtx() StartReceiveOption {
 	}
 }
 
-// StartTraceDataReceiveOp is called when a \request is received from a client.
+// StartTraceDataReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartTraceDataReceiveOp(
@@ -160,8 +173,7 @@ func EndTraceDataReceiveOp(
 			numDroppedSpans = numReceivedSpans
 			numReceivedLegacy = 0
 		}
-		observability.RecordMetricsForTraceReceiver(
-			receiverCtx, numReceivedLegacy, numDroppedSpans)
+		stats.Record(receiverCtx, mReceiverReceivedSpans.M(int64(numReceivedLegacy)), mReceiverDroppedSpans.M(int64(numDroppedSpans)))
 	}
 
 	endReceiveOp(
@@ -173,7 +185,7 @@ func EndTraceDataReceiveOp(
 	)
 }
 
-// StartMetricsReceiveOp is called when a \request is received from a client.
+// StartMetricsReceiveOp is called when a request is received from a client.
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func StartMetricsReceiveOp(
@@ -205,8 +217,7 @@ func EndMetricsReceiveOp(
 			numDroppedTimeSeries = numReceivedTimeSeries
 			numReceivedTimeSeries = 0
 		}
-		observability.RecordMetricsForMetricsReceiver(
-			receiverCtx, numReceivedTimeSeries, numDroppedTimeSeries)
+		stats.Record(receiverCtx, mReceiverReceivedTimeSeries.M(int64(numReceivedTimeSeries)), mReceiverDroppedTimeSeries.M(int64(numDroppedTimeSeries)))
 	}
 
 	endReceiveOp(
@@ -233,18 +244,12 @@ func ReceiverContext(
 		if legacyName != "" {
 			name = legacyName
 		}
-		ctx = observability.ContextWithReceiverName(ctx, name)
+		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyReceiver, name, tag.WithTTL(tag.TTLNoPropagation)))
 	}
 
-	if useNew {
-		mutators := make([]tag.Mutator, 0, 2)
-		mutators = append(mutators, tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)))
-		if transport != "" {
-			mutators = append(mutators, tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
-		}
-
-		ctx, _ = tag.New(ctx, mutators...)
-	}
+	ctx, _ = tag.New(ctx,
+		tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)),
+		tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
 
 	return ctx
 }

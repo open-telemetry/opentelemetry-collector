@@ -55,9 +55,9 @@ func TestHelper_AttributeValue(t *testing.T) {
 	assert.Equal(t, pdata.NewAttributeValueString("bob the builder"), val)
 	assert.NoError(t, err)
 
-	val, err = NewAttributeValueRaw(nil)
+	_, err = NewAttributeValueRaw(nil)
 	assert.Error(t, err)
 
-	val, err = NewAttributeValueRaw(t)
+	_, err = NewAttributeValueRaw(t)
 	assert.Error(t, err)
 }

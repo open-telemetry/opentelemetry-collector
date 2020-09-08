@@ -47,13 +47,13 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string) P
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (saf *stringAttributeFilter) OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error {
+func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
 	saf.logger.Debug("Triggering action for late arriving spans in string-tag filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (saf *stringAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) Evaluate(_ []byte, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
@@ -87,7 +87,7 @@ func (saf *stringAttributeFilter) Evaluate(traceID []byte, trace *TraceData) (De
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (saf *stringAttributeFilter) OnDroppedSpans(traceID []byte, trace *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) OnDroppedSpans([]byte, *TraceData) (Decision, error) {
 	saf.logger.Debug("Triggering action for dropped spans in string-tag filter")
 	return NotSampled, nil
 }

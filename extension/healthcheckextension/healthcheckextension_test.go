@@ -27,16 +27,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -67,7 +66,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 }
 
 func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
-	endpoint := testutils.GetAvailableLocalAddress(t)
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	_, portStr, err := net.SplitHostPort(endpoint)
 	require.NoError(t, err)
 
@@ -84,8 +83,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	config := Config{
 		Port: uint16(port),
 	}
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	// Health check will report port already in use in a goroutine, use the error waiting
@@ -100,11 +98,10 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	mh := componenttest.NewErrorWaitingHost()
@@ -122,11 +119,10 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -136,11 +132,10 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Port: testutils.GetAvailablePort(t),
+		Port: testutil.GetAvailablePort(t),
 	}
 
-	hcExt, err := newServer(config, zap.NewNop())
-	require.NoError(t, err)
+	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Shutdown(context.Background()))

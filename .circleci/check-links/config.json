@@ -1,0 +1,10 @@
+{
+    "ignorePatterns": [
+        {
+            "pattern": "http(s)?://\\d+\\.\\d+\\.\\d+\\.\\d+"
+        },
+        {
+            "pattern": "http(s)?://localhost"
+        }
+    ]
+}

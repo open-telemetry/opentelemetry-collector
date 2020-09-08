@@ -18,9 +18,10 @@ import (
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
-	goproto "github.com/golang/protobuf/proto"
-	otlptrace_goproto "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
+	goproto "github.com/golang/protobuf/proto" //lint:ignore SA1019 golang/protobuf/proto is deprecated
+	otlptracegoproto "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
@@ -46,6 +47,31 @@ func TestSpanCount(t *testing.T) {
 	rms.At(2).InstrumentationLibrarySpans().Resize(1)
 	rms.At(2).InstrumentationLibrarySpans().At(0).Spans().Resize(5)
 	assert.EqualValues(t, 6, md.SpanCount())
+}
+
+func TestSize(t *testing.T) {
+	md := NewTraces()
+	assert.Equal(t, 0, md.Size())
+	rms := md.ResourceSpans()
+	rms.Resize(1)
+	rms.At(0).InstrumentationLibrarySpans().Resize(1)
+	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	rms.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
+	otlp := TracesToOtlp(md)
+	size := 0
+	sizeBytes := 0
+	for _, rspans := range otlp {
+		size += rspans.Size()
+		bts, err := rspans.Marshal()
+		require.NoError(t, err)
+		sizeBytes += len(bts)
+	}
+	assert.Equal(t, size, md.Size())
+	assert.Equal(t, sizeBytes, md.Size())
+}
+
+func TestSizeWithNils(t *testing.T) {
+	assert.Equal(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{nil, {}}).Size())
 }
 
 func TestSpanCountWithNils(t *testing.T) {
@@ -97,7 +123,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.NotNil(t, wire1)
 
 	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
-	var goprotoRS otlptrace_goproto.ResourceSpans
+	var goprotoRS otlptracegoproto.ResourceSpans
 	err = goproto.Unmarshal(wire1, &goprotoRS)
 	assert.NoError(t, err)
 

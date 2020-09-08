@@ -18,24 +18,18 @@ import (
 	"context"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	idata "go.opentelemetry.io/collector/internal/data"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestPipelinesBuilder_Build(t *testing.T) {
@@ -63,12 +57,12 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 	}
 }
 
-func createExampleFactories() config.Factories {
-	exampleReceiverFactory := &config.ExampleReceiverFactory{}
-	exampleProcessorFactory := &config.ExampleProcessorFactory{}
-	exampleExporterFactory := &config.ExampleExporterFactory{}
+func createExampleFactories() component.Factories {
+	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
+	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
+	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
 
-	factories := config.Factories{
+	factories := component.Factories{
 		Receivers: map[configmodels.Type]component.ReceiverFactoryBase{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 		},
@@ -85,9 +79,9 @@ func createExampleFactories() config.Factories {
 
 func createExampleConfig(dataType string) *configmodels.Config {
 
-	exampleReceiverFactory := &config.ExampleReceiverFactory{}
-	exampleProcessorFactory := &config.ExampleProcessorFactory{}
-	exampleExporterFactory := &config.ExampleExporterFactory{}
+	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
+	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
+	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
 
 	cfg := &configmodels.Config{
 		Receivers: map[string]configmodels.Receiver{
@@ -177,16 +171,16 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			// Send Logs via processor and verify that all exporters of the pipeline receive it.
 
 			// First check that there are no logs in the exporters yet.
-			var exporterConsumers []*config.ExampleExporterConsumer
+			var exporterConsumers []*componenttest.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				consumer := exporter.le.(*config.ExampleExporterConsumer)
+				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
 				exporterConsumers = append(exporterConsumers, consumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
 			// Send one custom data.
-			log := idata.Logs{}
-			processor.firstLC.(consumer.LogConsumer).ConsumeLogs(context.Background(), log)
+			log := pdata.Logs{}
+			processor.firstLC.(consumer.LogsConsumer).ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.
 			for _, consumer := range exporterConsumers {
@@ -203,94 +197,21 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 	}
 }
 
-func assertEqualTraceData(t *testing.T, expected consumerdata.TraceData, actual consumerdata.TraceData) {
-	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
-	assert.True(t, proto.Equal(expected.Node, actual.Node))
-
-	for i := range expected.Spans {
-		assert.True(t, proto.Equal(expected.Spans[i], actual.Spans[i]))
-	}
-
-	// TODO: Source format is not very well supported in the new data, fix this.
-	// assert.EqualValues(t, expected.SourceFormat, actual.SourceFormat)
-}
-
-func generateTestTraceData() consumerdata.TraceData {
-	return consumerdata.TraceData{
-		SourceFormat: "test-source-format",
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: "servicename",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type: "resourcetype",
-		},
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "testspanname"},
-				StartTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-				EndTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-			},
-		},
-	}
-}
-
-func generateTestTraceDataWithAttributes() consumerdata.TraceData {
-	return consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: "servicename",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type: "resourcetype",
-		},
-		SourceFormat: "test-source-format",
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{Value: "testspanname"},
-				StartTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-				EndTime: &timestamp.Timestamp{
-					Seconds: 123456789,
-					Nanos:   456,
-				},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"attr1": {
-							Value: &tracepb.AttributeValue_IntValue{IntValue: 12345},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func assertEqualMetricsData(t *testing.T, expected consumerdata.MetricsData, actual consumerdata.MetricsData) {
-	assert.True(t, proto.Equal(expected.Resource, actual.Resource))
-	assert.True(t, proto.Equal(expected.Node, actual.Node))
-
-	for i := range expected.Metrics {
-		assert.True(t, proto.Equal(expected.Metrics[i], actual.Metrics[i]))
-	}
+func generateTestTracesWithAttributes() pdata.Traces {
+	traces := testdata.GenerateTraceDataOneSpan()
+	attrs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes()
+	attrs.InitFromMap(map[string]pdata.AttributeValue{
+		"attr1": pdata.NewAttributeValueInt(12345),
+	})
+	return traces
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	// Load the config
 	require.Nil(t, err)
 
@@ -323,14 +244,14 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Send TraceData via processor and verify that all exporters of the pipeline receive it.
 
 	// First check that there are no traces in the exporters yet.
-	var exporterConsumers []*config.ExampleExporterConsumer
+	var exporterConsumers []*componenttest.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		consumer := exporter.te.(*config.ExampleExporterConsumer)
+		consumer := exporter.te.(*componenttest.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, consumer)
 		require.Equal(t, len(consumer.Traces), 0)
 	}
 
-	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), internaldata.OCToTraceData(generateTestTraceData()))
+	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {
@@ -338,7 +259,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 		require.Equal(t, 1, len(consumer.Traces))
 
 		// Verify that span is successfully delivered.
-		assertEqualTraceData(t, generateTestTraceDataWithAttributes(), consumer.Traces[0])
+		assert.EqualValues(t, generateTestTracesWithAttributes(), consumer.Traces[0])
 	}
 
 	err = pipelineProcessors.ShutdownProcessors(context.Background())
@@ -346,11 +267,11 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 }
 
 func TestPipelinesBuilder_Error(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
-	attrFactory := &attributesprocessor.Factory{}
+	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := config.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
 	// Corrupt the pipeline, change data type to metrics. We have to forcedly do it here
@@ -370,13 +291,13 @@ func TestPipelinesBuilder_Error(t *testing.T) {
 }
 
 func TestProcessorsBuilder_ErrorOnNilProcessor(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	bf := &badProcessorFactory{}
 	factories.Processors[bf.Type()] = bf
 
-	cfg, err := config.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
+	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
 	require.Nil(t, err)
 
 	allExporters, err := NewExportersBuilder(zap.NewNop(), cfg, factories.Exporters).Build()

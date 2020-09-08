@@ -1,0 +1,20 @@
+receivers:
+  # The following demonstrates how to enable protocols with defaults
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: "127.0.0.1:123"
+      thrift_htttp:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

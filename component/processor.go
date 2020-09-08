@@ -66,10 +66,10 @@ type MetricsProcessor interface {
 	MetricsProcessorBase
 }
 
-// LogProcessor is a processor that can consume logs.
-type LogProcessor interface {
+// LogsProcessor is a processor that can consume logs.
+type LogsProcessor interface {
 	Processor
-	consumer.LogConsumer
+	consumer.LogsConsumer
 }
 
 // ProcessorCapabilities describes the capabilities of a Processor.
@@ -138,17 +138,17 @@ type ProcessorFactory interface {
 		nextConsumer consumer.MetricsConsumer, cfg configmodels.Processor) (MetricsProcessor, error)
 }
 
-// LogProcessorFactory can create LogProcessor.
-type LogProcessorFactory interface {
+// LogsProcessorFactory can create LogsProcessor.
+type LogsProcessorFactory interface {
 	ProcessorFactoryBase
 
-	// CreateLogProcessor creates a processor based on the config.
+	// CreateLogsProcessor creates a processor based on the config.
 	// If the processor type does not support logs or if the config is not valid
 	// error will be returned instead.
-	CreateLogProcessor(
+	CreateLogsProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
 		cfg configmodels.Processor,
-		nextConsumer consumer.LogConsumer,
-	) (LogProcessor, error)
+		nextConsumer consumer.LogsConsumer,
+	) (LogsProcessor, error)
 }

@@ -24,14 +24,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 )
 
 func TestExportersBuilder_Build(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	oceFactory := &opencensusexporter.Factory{}
@@ -104,12 +103,12 @@ func TestExportersBuilder_Build(t *testing.T) {
 }
 
 func TestExportersBuilder_BuildLogs(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	cfg := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{
-			"exampleexporter": &config.ExampleExporter{
+			"exampleexporter": &componenttest.ExampleExporter{
 				ExporterSettings: configmodels.ExporterSettings{
 					NameVal: "exampleexporter",
 					TypeVal: "exampleexporter",
@@ -170,8 +169,8 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 func TestExportersBuilder_StartAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
-	traceExporter := &config.ExampleExporterConsumer{}
-	metricExporter := &config.ExampleExporterConsumer{}
+	traceExporter := &componenttest.ExampleExporterConsumer{}
+	metricExporter := &componenttest.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
 		te:     traceExporter,
@@ -189,8 +188,8 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 func TestExportersBuilder_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
-	traceExporter := &config.ExampleExporterConsumer{}
-	metricExporter := &config.ExampleExporterConsumer{}
+	traceExporter := &componenttest.ExampleExporterConsumer{}
+	metricExporter := &componenttest.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
 		te:     traceExporter,

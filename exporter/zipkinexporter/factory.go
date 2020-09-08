@@ -15,53 +15,62 @@
 package zipkinexporter
 
 import (
+	"context"
 	"errors"
-
-	"go.uber.org/zap"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "zipkin"
+
+	defaultTimeout = time.Second * 5
+
+	defaultFormat = "json"
+
+	defaultServiceName string = "<missing service name>"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
+// NewFactory creates a factory for Zipkin exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Format: "json",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: defaultTimeout,
+			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			WriteBufferSize: 512 * 1024,
+		},
+		Format:             defaultFormat,
+		DefaultServiceName: defaultServiceName,
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(_ *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
-	zc := config.(*Config)
+func createTraceExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TraceExporter, error) {
+	zc := cfg.(*Config)
 
-	if zc.URL == "" {
-		// TODO https://go.opentelemetry.io/collector/issues/215
-		return nil, errors.New("exporter config requires a non-empty 'url'")
+	if zc.Endpoint == "" {
+		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
+		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
 	}
 
-	return NewTraceExporter(config)
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(_ *zap.Logger, _ configmodels.Exporter) (component.MetricsExporterOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return newTraceExporter(zc)
 }

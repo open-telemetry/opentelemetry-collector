@@ -31,16 +31,21 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
+	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-var (
-	// AppTelemetry is application's own telemetry.
-	AppTelemetry = &appTelemetry{}
-)
+// applicationTelemetry is application's own telemetry.
+var applicationTelemetry appTelemetryExporter = &appTelemetry{}
+
+type appTelemetryExporter interface {
+	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	shutdown() error
+}
 
 type appTelemetry struct {
-	views []*view.View
+	views  []*view.View
+	server *http.Server
 }
 
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
@@ -59,10 +64,11 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, obsreport.Configure(telemetry.UseLegacyMetrics(), telemetry.UseNewMetrics())...)
 	views = append(views, processor.MetricViews(level)...)
 	views = append(views, queuedprocessor.MetricViews(level)...)
-	views = append(views, batchprocessor.MetricViews()...)
+	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
 	processMetricsViews := telemetry.NewProcessMetricsViews(ballastSizeBytes)
 	views = append(views, processMetricsViews.Views()...)
+	views = append(views, fluentobserv.Views(level)...)
 	tel.views = views
 	if err = view.Register(views...); err != nil {
 		return err
@@ -100,10 +106,16 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		zap.String(conventions.AttributeServiceInstance, instanceID),
 	)
 
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", pe)
+
+	tel.server = &http.Server{
+		Addr:    metricsAddr,
+		Handler: mux,
+	}
+
 	go func() {
-		mux := http.NewServeMux()
-		mux.Handle("/metrics", pe)
-		serveErr := http.ListenAndServe(metricsAddr, mux)
+		serveErr := tel.server.ListenAndServe()
 		if serveErr != nil && serveErr != http.ErrServerClosed {
 			asyncErrorChannel <- serveErr
 		}
@@ -112,8 +124,14 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *appTelemetry) shutdown() {
+func (tel *appTelemetry) shutdown() error {
 	view.Unregister(tel.views...)
+
+	if tel.server != nil {
+		return tel.server.Close()
+	}
+
+	return nil
 }
 
 func sanitizePrometheusKey(str string) string {

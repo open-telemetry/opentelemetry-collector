@@ -22,19 +22,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 type metricNameTest struct {
-	name  string
-	inc   *filtermetric.MatchProperties
-	exc   *filtermetric.MatchProperties
-	inMN  []string // input Metric names
-	outMN []string // output Metric names
+	name               string
+	inc                *filtermetric.MatchProperties
+	exc                *filtermetric.MatchProperties
+	inMN               [][]*metricspb.Metric // input Metric batches
+	outMN              [][]string            // output Metric names
+	allMetricsFiltered bool
 }
 
 var (
@@ -77,8 +80,8 @@ var (
 		{
 			name: "includeFilter",
 			inc:  regexpMetricsFilterProperties,
-			inMN: inMetricNames,
-			outMN: []string{
+			inMN: [][]*metricspb.Metric{metricsWithName(inMetricNames)},
+			outMN: [][]string{{
 				"full_name_match",
 				"prefix/test/match",
 				"prefix_test_match",
@@ -90,17 +93,19 @@ var (
 				"test_contains_match",
 				"full/name/match",
 				"full_name_match",
-			},
-		}, {
+			}},
+		},
+		{
 			name: "excludeFilter",
 			exc:  regexpMetricsFilterProperties,
-			inMN: inMetricNames,
-			outMN: []string{
+			inMN: [][]*metricspb.Metric{metricsWithName(inMetricNames)},
+			outMN: [][]string{{
 				"not_exact_string_match",
 				"random",
 				"not_exact_string_match",
-			},
-		}, {
+			}},
+		},
+		{
 			name: "includeAndExclude",
 			inc:  regexpMetricsFilterProperties,
 			exc: &filtermetric.MatchProperties{
@@ -112,8 +117,8 @@ var (
 					"test_contains_match",
 				},
 			},
-			inMN: inMetricNames,
-			outMN: []string{
+			inMN: [][]*metricspb.Metric{metricsWithName(inMetricNames)},
+			outMN: [][]string{{
 				"full_name_match",
 				"prefix/test/match",
 				// "prefix_test_match", excluded by exclude filter
@@ -125,25 +130,58 @@ var (
 				// "test_contains_match", excluded by exclude filter
 				"full/name/match",
 				"full_name_match",
+			}},
+		},
+		{
+			name: "includeAndExcludeWithEmptyAndNil",
+			inc:  regexpMetricsFilterProperties,
+			exc: &filtermetric.MatchProperties{
+				Config: filterset.Config{
+					MatchType: filterset.Strict,
+				},
+				MetricNames: []string{
+					"prefix_test_match",
+					"test_contains_match",
+				},
 			},
-		}, {
+			inMN: [][]*metricspb.Metric{nil, metricsWithName(inMetricNames), {}},
+			outMN: [][]string{
+				{},
+				{
+					"full_name_match",
+					"prefix/test/match",
+					// "prefix_test_match", excluded by exclude filter
+					"prefixprefix/test/match",
+					"test/match/suffix",
+					"test_match_suffix",
+					"test/match/suffixsuffix",
+					"test/contains/match",
+					// "test_contains_match", excluded by exclude filter
+					"full/name/match",
+					"full_name_match",
+				},
+				{},
+			},
+		},
+		{
 			name: "emptyFilterInclude",
 			inc: &filtermetric.MatchProperties{
 				Config: filterset.Config{
 					MatchType: filterset.Strict,
 				},
 			},
-			inMN:  inMetricNames,
-			outMN: []string{},
-		}, {
+			inMN:               [][]*metricspb.Metric{metricsWithName(inMetricNames)},
+			allMetricsFiltered: true,
+		},
+		{
 			name: "emptyFilterExclude",
 			exc: &filtermetric.MatchProperties{
 				Config: filterset.Config{
 					MatchType: filterset.Strict,
 				},
 			},
-			inMN:  inMetricNames,
-			outMN: inMetricNames,
+			inMN:  [][]*metricspb.Metric{metricsWithName(inMetricNames)},
+			outMN: [][]string{inMetricNames},
 		},
 	}
 )
@@ -152,7 +190,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
-			next := &etest.SinkMetricsExporterOld{}
+			next := &etest.SinkMetricsExporter{}
 			cfg := &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
 					TypeVal: typeStr,
@@ -163,7 +201,8 @@ func TestFilterMetricProcessor(t *testing.T) {
 					Exclude: test.exc,
 				},
 			}
-			fmp, err := newFilterMetricProcessor(next, cfg)
+			factory := NewFactory()
+			fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, next, cfg)
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
@@ -172,27 +211,32 @@ func TestFilterMetricProcessor(t *testing.T) {
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 
-			md := consumerdata.MetricsData{
-				Metrics: make([]*metricspb.Metric, len(test.inMN)),
-			}
-
-			for idx, in := range test.inMN {
-				md.Metrics[idx] = &metricspb.Metric{
-					MetricDescriptor: &metricspb.MetricDescriptor{
-						Name: in,
-					},
+			mds := make([]consumerdata.MetricsData, len(test.inMN))
+			for i, metrics := range test.inMN {
+				mds[i] = consumerdata.MetricsData{
+					Metrics: metrics,
 				}
 			}
-
-			cErr := fmp.ConsumeMetricsData(context.Background(), md)
+			cErr := fmp.ConsumeMetrics(
+				context.Background(),
+				pdatautil.MetricsFromMetricsData(mds))
 			assert.Nil(t, cErr)
+			got := next.AllMetrics()
 
-			gotMetrics := next.AllMetrics()[0].Metrics
-			require.Equal(t, len(test.outMN), len(gotMetrics))
-			for idx, out := range gotMetrics {
-				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
+			if test.allMetricsFiltered {
+				require.Equal(t, 0, len(got))
+				return
 			}
 
+			require.Equal(t, 1, len(got))
+			gotMD := pdatautil.MetricsToMetricsData(got[0])
+			require.Equal(t, len(test.outMN), len(gotMD))
+			for i, wantOut := range test.outMN {
+				assert.Equal(t, len(wantOut), len(gotMD[i].Metrics))
+				for idx, out := range gotMD[i].Metrics {
+					assert.Equal(t, wantOut[idx], out.MetricDescriptor.Name)
+				}
+			}
 			assert.NoError(t, fmp.Shutdown(ctx))
 		})
 	}
@@ -212,7 +256,7 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 				"test_contains_match",
 			},
 		},
-		outMN: []string{
+		outMN: [][]string{{
 			"full_name_match",
 			"prefix/test/match",
 			// "prefix_test_match", excluded by exclude filter
@@ -224,18 +268,18 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 			// "test_contains_match", excluded by exclude filter
 			"full/name/match",
 			"full_name_match",
-		},
+		}},
 	}
 
-	for len(stressTest.inMN) < 1000 {
-		stressTest.inMN = append(stressTest.inMN, inMetricNames...)
+	for len(stressTest.inMN[0]) < 1000 {
+		stressTest.inMN[0] = append(stressTest.inMN[0], metricsWithName(inMetricNames)...)
 	}
 
 	benchmarkTests := append(standardTests, stressTest)
 
 	for _, test := range benchmarkTests {
 		// next stores the results of the filter metric processor
-		next := &etest.SinkMetricsExporterOld{}
+		next := &etest.SinkMetricsExporter{}
 		cfg := &Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: typeStr,
@@ -246,7 +290,8 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 				Exclude: test.exc,
 			},
 		}
-		fmp, err := newFilterMetricProcessor(next, cfg)
+		factory := NewFactory()
+		fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, next, cfg)
 		assert.NotNil(b, fmp)
 		assert.Nil(b, err)
 
@@ -254,16 +299,29 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 			Metrics: make([]*metricspb.Metric, len(test.inMN)),
 		}
 
-		for idx, in := range test.inMN {
-			md.Metrics[idx] = &metricspb.Metric{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name: in,
-				},
+		mds := make([]consumerdata.MetricsData, len(test.inMN))
+		for i, metrics := range test.inMN {
+			mds[i] = consumerdata.MetricsData{
+				Metrics: metrics,
 			}
 		}
 
+		pdm := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+
 		b.Run(test.name, func(b *testing.B) {
-			assert.NoError(b, fmp.ConsumeMetricsData(context.Background(), md))
+			assert.NoError(b, fmp.ConsumeMetrics(context.Background(), pdm))
 		})
 	}
+}
+
+func metricsWithName(names []string) []*metricspb.Metric {
+	ret := make([]*metricspb.Metric, len(names))
+	for i, name := range names {
+		ret[i] = &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name: name,
+			},
+		}
+	}
+	return ret
 }

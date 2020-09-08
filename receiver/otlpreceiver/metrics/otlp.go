@@ -17,7 +17,7 @@ package metrics
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/data"
@@ -36,15 +36,12 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
-	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
-	}
+func New(instanceName string, nextConsumer consumer.MetricsConsumer) *Receiver {
 	r := &Receiver{
 		instanceName: instanceName,
 		nextConsumer: nextConsumer,
 	}
-	return r, nil
+	return r
 }
 
 const (
@@ -69,6 +66,10 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md data.MetricData) e
 	metricCount, dataPointCount := md.MetricAndDataPointCount()
 	if metricCount == 0 {
 		return nil
+	}
+
+	if c, ok := client.FromGRPC(ctx); ok {
+		ctx = client.NewContext(ctx, c)
 	}
 
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)

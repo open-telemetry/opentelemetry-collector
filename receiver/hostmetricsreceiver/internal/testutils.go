@@ -18,9 +18,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
+
+func AssertContainsAttribute(t *testing.T, attr pdata.AttributeMap, key string) {
+	_, ok := attr.Get(key)
+	assert.True(t, ok)
+}
 
 func AssertDescriptorEqual(t *testing.T, expected pdata.MetricDescriptor, actual pdata.MetricDescriptor) {
 	assert.Equal(t, expected.Name(), actual.Name())
@@ -51,12 +57,43 @@ func AssertDoubleMetricLabelExists(t *testing.T, metric pdata.Metric, index int,
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.MetricDescriptor().Name())
 }
 
-func AssertInt64MetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.Int64DataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertInt64MetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	idps := metric.Int64DataPoints()
+	for i := 0; i < idps.Len(); i++ {
+		require.Equal(t, startTime, idps.At(i).StartTime())
+	}
 }
 
-func AssertDoubleMetricLabelDoesNotExist(t *testing.T, metric pdata.Metric, index int, labelName string) {
-	_, ok := metric.DoubleDataPoints().At(index).LabelsMap().Get(labelName)
-	assert.Falsef(t, ok, "Unexpected label %q in metric %q", labelName, metric.MetricDescriptor().Name())
+func AssertDoubleMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	ddps := metric.DoubleDataPoints()
+	for i := 0; i < ddps.Len(); i++ {
+		require.Equal(t, startTime, ddps.At(i).StartTime())
+	}
+}
+
+func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pdata.MetricSlice) {
+	AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len())
+}
+
+func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, startIdx, endIdx int) {
+	var ts pdata.TimestampUnixNano
+	for i := startIdx; i < endIdx; i++ {
+		metric := metrics.At(i)
+
+		idps := metric.Int64DataPoints()
+		for j := 0; j < idps.Len(); j++ {
+			if ts == 0 {
+				ts = idps.At(j).Timestamp()
+			}
+			require.Equalf(t, ts, idps.At(j).Timestamp(), "metrics contained different end timestamp values")
+		}
+
+		ddps := metric.DoubleDataPoints()
+		for j := 0; j < ddps.Len(); j++ {
+			if ts == 0 {
+				ts = ddps.At(j).Timestamp()
+			}
+			require.Equalf(t, ts, ddps.At(j).Timestamp(), "metrics contained different end timestamp values")
+		}
+	}
 }

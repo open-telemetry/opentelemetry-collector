@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -77,11 +78,14 @@ type Application struct {
 	builtExtensions builder.Extensions
 	stateChannel    chan State
 
-	factories config.Factories
+	factories component.Factories
 	config    *configmodels.Config
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
+
+	// signalsChannel is used to receive termination signals from the OS.
+	signalsChannel chan os.Signal
 
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
@@ -111,20 +115,22 @@ type ApplicationStartInfo struct {
 // Parameters holds configuration for creating a new Application.
 type Parameters struct {
 	// Factories component factories.
-	Factories config.Factories
+	Factories component.Factories
 	// ApplicationStartInfo provides application start information.
 	ApplicationStartInfo ApplicationStartInfo
 	// ConfigFactory that creates the configuration.
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
 	ConfigFactory ConfigFactory
+	// LoggingHooks provides a way to supply a hook into logging events
+	LoggingHooks []func(zapcore.Entry) error
 }
 
 // ConfigFactory creates config.
-type ConfigFactory func(v *viper.Viper, factories config.Factories) (*configmodels.Config, error)
+type ConfigFactory func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
-func FileLoaderConfigFactory(v *viper.Viper, factories config.Factories) (*configmodels.Config, error) {
+func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")
@@ -156,7 +162,7 @@ func New(params Parameters) (*Application, error) {
 		Use:  params.ApplicationStartInfo.ExeName,
 		Long: params.ApplicationStartInfo.LongName,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := app.init()
+			err := app.init(params.LoggingHooks...)
 			if err != nil {
 				return err
 			}
@@ -237,8 +243,8 @@ func (app *Application) SignalTestComplete() {
 	close(app.stopTestChan)
 }
 
-func (app *Application) init() error {
-	l, err := newLogger()
+func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
+	l, err := newLogger(hooks...)
 	if err != nil {
 		return errors.Wrap(err, "failed to get logger")
 	}
@@ -249,7 +255,7 @@ func (app *Application) init() error {
 func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 	app.logger.Info("Setting up own telemetry...")
 
-	err := AppTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
+	err := applicationTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
 	if err != nil {
 		return errors.Wrap(err, "failed to initialize telemetry")
 	}
@@ -261,19 +267,17 @@ func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
 func (app *Application) runAndWaitForShutdownEvent() {
 	app.logger.Info("Everything is ready. Begin running and processing data.")
 
-	// Plug SIGTERM signal into a channel.
-	signalsChannel := make(chan os.Signal, 1)
-	signal.Notify(signalsChannel, os.Interrupt, syscall.SIGTERM)
+	// plug SIGTERM signal into a channel.
+	app.signalsChannel = make(chan os.Signal, 1)
+	signal.Notify(app.signalsChannel, os.Interrupt, syscall.SIGTERM)
 
 	// set the channel to stop testing.
 	app.stopTestChan = make(chan struct{})
-	// notify tests that it is ready.
-
 	app.stateChannel <- Running
 	select {
 	case err := <-app.asyncErrorChannel:
 		app.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
-	case s := <-signalsChannel:
+	case s := <-app.signalsChannel:
 		app.logger.Info("Received signal from OS", zap.String("signal", s.String()))
 	case <-app.stopTestChan:
 		app.logger.Info("Received stop test request")
@@ -392,11 +396,7 @@ func (app *Application) shutdownPipelines(ctx context.Context) error {
 		errs = append(errs, errors.Wrap(err, "failed to shutdown exporters"))
 	}
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 func (app *Application) shutdownExtensions(ctx context.Context) error {
@@ -462,16 +462,16 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
 	}
 
-	AppTelemetry.shutdown()
+	err = applicationTelemetry.shutdown()
+	if err != nil {
+		errs = append(errs, errors.Wrap(err, "failed to shutdown extensions"))
+	}
 
 	app.logger.Info("Shutdown complete.")
 	app.stateChannel <- Closed
 	close(app.stateChannel)
 
-	if len(errs) != 0 {
-		return componenterror.CombineErrors(errs)
-	}
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 // Start starts the collector according to the command and configuration

@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenTelemety Collector
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/otelcol --config /etc/otel-collector/config.yaml
+KillMode=mixed
+Restart=on-failure
+Type=simple
+User=otel
+Group=otel
+
+[Install]
+WantedBy=multi-user.target

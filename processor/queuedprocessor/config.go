@@ -24,7 +24,7 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// NumWorkers is the number of queue workers that dequeue batches and send them out.
+	// NumConsumers is the number of queue workers that dequeue batches and send them out.
 	NumWorkers int `mapstructure:"num_workers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`

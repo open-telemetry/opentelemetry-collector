@@ -31,13 +31,15 @@ receivers:
   opencensus/msg-size-conc-connect-max-idle:
     max_recv_msg_size_mib: 32
     max_concurrent_streams: 16
+    read_buffer_size: 1024
+    write_buffer_size: 1024
     keepalive:
       server_parameters:
         max_connection_idle: 10s
   # The following entry demonstrates how to specify TLS credentials for the server.
   # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
   opencensus/tlscredentials:
-    tls_credentials:
+    tls_settings:
       cert_file: test.crt
       key_file: test.key
   # The following entry demonstrates how to specify a Unix Domain Socket for the server.
