@@ -18,49 +18,9 @@ import (
 	"errors"
 	"strings"
 	"unicode"
-)
 
-// See https://github.com/golang/lint/blob/d0100b6bd8b389f0385611eb39152c4d7c3a7905/lint.go#L771
-var lintAcronyms = map[string]bool{
-	"ACL":   true,
-	"API":   true,
-	"ASCII": true,
-	"CPU":   true,
-	"CSS":   true,
-	"DNS":   true,
-	"EOF":   true,
-	"GUID":  true,
-	"HTML":  true,
-	"HTTP":  true,
-	"HTTPS": true,
-	"ID":    true,
-	"IP":    true,
-	"JSON":  true,
-	"LHS":   true,
-	"QPS":   true,
-	"RAM":   true,
-	"RHS":   true,
-	"RPC":   true,
-	"SLA":   true,
-	"SMTP":  true,
-	"SQL":   true,
-	"SSH":   true,
-	"TCP":   true,
-	"TLS":   true,
-	"TTL":   true,
-	"UDP":   true,
-	"UI":    true,
-	"UID":   true,
-	"UUID":  true,
-	"URI":   true,
-	"URL":   true,
-	"UTF8":  true,
-	"VM":    true,
-	"XML":   true,
-	"XMPP":  true,
-	"XSRF":  true,
-	"XSS":   true,
-}
+	"go.opentelemetry.io/collector/cmd/mdatagen/third_party/golint"
+)
 
 // formatIdentifier variable in a go-safe way
 func formatIdentifier(s string, exported bool) (string, error) {
@@ -89,7 +49,7 @@ func formatIdentifier(s string, exported bool) (string, error) {
 		if unicode.IsUpper(r) || unicode.IsNumber(r) {
 			// If the current word is an acronym and it's either exported or it's not the
 			// beginning of an unexported variable then upper case it.
-			if lintAcronyms[strings.ToUpper(word)] && (exported || output != "") {
+			if golint.Acronyms[strings.ToUpper(word)] && (exported || output != "") {
 				output += strings.ToUpper(word)
 				word = string(r)
 			} else {
@@ -101,7 +61,7 @@ func formatIdentifier(s string, exported bool) (string, error) {
 		}
 	}
 
-	if lintAcronyms[strings.ToUpper(word)] && output != "" {
+	if golint.Acronyms[strings.ToUpper(word)] && output != "" {
 		output += strings.ToUpper(word)
 	} else {
 		output += word
