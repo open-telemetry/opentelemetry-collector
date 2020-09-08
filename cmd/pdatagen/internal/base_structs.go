@@ -304,6 +304,14 @@ func (ms ${structName}) InitEmpty() {
 	*ms.orig = &${originName}{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms ${structName}) EnsureInit() ${structName} {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -329,6 +337,16 @@ const messageTestTemplate = `func Test${structName}_InitEmpty(t *testing.T) {
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
 }
+
+func Test${structName}_EnsureInit(t *testing.T) {
+	ms := New${structName}()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 
 func Test${structName}_CopyTo(t *testing.T) {
 	ms := New${structName}()

@@ -150,6 +150,15 @@ func TestResourceLogs_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestResourceLogs_EnsureInit(t *testing.T) {
+	ms := NewResourceLogs()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestResourceLogs_CopyTo(t *testing.T) {
 	ms := NewResourceLogs()
 	NewResourceLogs().CopyTo(ms)
@@ -302,6 +311,15 @@ func TestInstrumentationLibraryLogs_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestInstrumentationLibraryLogs_EnsureInit(t *testing.T) {
+	ms := NewInstrumentationLibraryLogs()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	NewInstrumentationLibraryLogs().CopyTo(ms)
@@ -452,6 +470,15 @@ func TestLogRecord_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestLogRecord_EnsureInit(t *testing.T) {
+	ms := NewLogRecord()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {

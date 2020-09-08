@@ -150,6 +150,15 @@ func TestResourceSpans_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestResourceSpans_EnsureInit(t *testing.T) {
+	ms := NewResourceSpans()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestResourceSpans_CopyTo(t *testing.T) {
 	ms := NewResourceSpans()
 	NewResourceSpans().CopyTo(ms)
@@ -302,6 +311,15 @@ func TestInstrumentationLibrarySpans_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestInstrumentationLibrarySpans_EnsureInit(t *testing.T) {
+	ms := NewInstrumentationLibrarySpans()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	NewInstrumentationLibrarySpans().CopyTo(ms)
@@ -452,6 +470,15 @@ func TestSpan_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestSpan_EnsureInit(t *testing.T) {
+	ms := NewSpan()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestSpan_CopyTo(t *testing.T) {
@@ -723,6 +750,15 @@ func TestSpanEvent_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestSpanEvent_EnsureInit(t *testing.T) {
+	ms := NewSpanEvent()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestSpanEvent_CopyTo(t *testing.T) {
 	ms := NewSpanEvent()
 	NewSpanEvent().CopyTo(ms)
@@ -892,6 +928,15 @@ func TestSpanLink_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestSpanLink_EnsureInit(t *testing.T) {
+	ms := NewSpanLink()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestSpanLink_CopyTo(t *testing.T) {
 	ms := NewSpanLink()
 	NewSpanLink().CopyTo(ms)
@@ -950,6 +995,15 @@ func TestSpanStatus_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestSpanStatus_EnsureInit(t *testing.T) {
+	ms := NewSpanStatus()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestSpanStatus_CopyTo(t *testing.T) {

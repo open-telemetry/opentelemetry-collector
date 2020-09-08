@@ -175,6 +175,14 @@ func (ms ResourceSpans) InitEmpty() {
 	*ms.orig = &otlptrace.ResourceSpans{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms ResourceSpans) EnsureInit() ResourceSpans {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -364,6 +372,14 @@ func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
 // InitEmpty overwrites the current value with empty.
 func (ms InstrumentationLibrarySpans) InitEmpty() {
 	*ms.orig = &otlptrace.InstrumentationLibrarySpans{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms InstrumentationLibrarySpans) EnsureInit() InstrumentationLibrarySpans {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -556,6 +572,14 @@ func NewSpan() Span {
 // InitEmpty overwrites the current value with empty.
 func (ms Span) InitEmpty() {
 	*ms.orig = &otlptrace.Span{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms Span) EnsureInit() Span {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -931,6 +955,14 @@ func (ms SpanEvent) InitEmpty() {
 	*ms.orig = &otlptrace.Span_Event{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms SpanEvent) EnsureInit() SpanEvent {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -1157,6 +1189,14 @@ func (ms SpanLink) InitEmpty() {
 	*ms.orig = &otlptrace.Span_Link{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms SpanLink) EnsureInit() SpanLink {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -1273,6 +1313,14 @@ func NewSpanStatus() SpanStatus {
 // InitEmpty overwrites the current value with empty.
 func (ms SpanStatus) InitEmpty() {
 	*ms.orig = &otlptrace.Status{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms SpanStatus) EnsureInit() SpanStatus {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.

@@ -52,6 +52,14 @@ func (ms Resource) InitEmpty() {
 	*ms.orig = &otlpresource.Resource{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms Resource) EnsureInit() Resource {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".

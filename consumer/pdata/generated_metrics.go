@@ -175,6 +175,14 @@ func (ms ResourceMetrics) InitEmpty() {
 	*ms.orig = &otlpmetrics.ResourceMetrics{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms ResourceMetrics) EnsureInit() ResourceMetrics {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -364,6 +372,14 @@ func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 // InitEmpty overwrites the current value with empty.
 func (ms InstrumentationLibraryMetrics) InitEmpty() {
 	*ms.orig = &otlpmetrics.InstrumentationLibraryMetrics{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms InstrumentationLibraryMetrics) EnsureInit() InstrumentationLibraryMetrics {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -558,6 +574,14 @@ func (ms Metric) InitEmpty() {
 	*ms.orig = &otlpmetrics.Metric{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms Metric) EnsureInit() Metric {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -653,6 +677,14 @@ func (ms IntGauge) InitEmpty() {
 	*ms.orig = &otlpmetrics.IntGauge{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms IntGauge) EnsureInit() IntGauge {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -710,6 +742,14 @@ func (ms DoubleGauge) InitEmpty() {
 	*ms.orig = &otlpmetrics.DoubleGauge{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleGauge) EnsureInit() DoubleGauge {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -765,6 +805,14 @@ func NewIntSum() IntSum {
 // InitEmpty overwrites the current value with empty.
 func (ms IntSum) InitEmpty() {
 	*ms.orig = &otlpmetrics.IntSum{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms IntSum) EnsureInit() IntSum {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -854,6 +902,14 @@ func (ms DoubleSum) InitEmpty() {
 	*ms.orig = &otlpmetrics.DoubleSum{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleSum) EnsureInit() DoubleSum {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -941,6 +997,14 @@ func (ms IntHistogram) InitEmpty() {
 	*ms.orig = &otlpmetrics.IntHistogram{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms IntHistogram) EnsureInit() IntHistogram {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -1011,6 +1075,14 @@ func NewDoubleHistogram() DoubleHistogram {
 // InitEmpty overwrites the current value with empty.
 func (ms DoubleHistogram) InitEmpty() {
 	*ms.orig = &otlpmetrics.DoubleHistogram{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleHistogram) EnsureInit() DoubleHistogram {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -1206,6 +1278,14 @@ func NewIntDataPoint() IntDataPoint {
 // InitEmpty overwrites the current value with empty.
 func (ms IntDataPoint) InitEmpty() {
 	*ms.orig = &otlpmetrics.IntDataPoint{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms IntDataPoint) EnsureInit() IntDataPoint {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -1441,6 +1521,14 @@ func (ms DoubleDataPoint) InitEmpty() {
 	*ms.orig = &otlpmetrics.DoubleDataPoint{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleDataPoint) EnsureInit() DoubleDataPoint {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -1672,6 +1760,14 @@ func NewIntHistogramDataPoint() IntHistogramDataPoint {
 // InitEmpty overwrites the current value with empty.
 func (ms IntHistogramDataPoint) InitEmpty() {
 	*ms.orig = &otlpmetrics.IntHistogramDataPoint{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms IntHistogramDataPoint) EnsureInit() IntHistogramDataPoint {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -1950,6 +2046,14 @@ func NewDoubleHistogramDataPoint() DoubleHistogramDataPoint {
 // InitEmpty overwrites the current value with empty.
 func (ms DoubleHistogramDataPoint) InitEmpty() {
 	*ms.orig = &otlpmetrics.DoubleHistogramDataPoint{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleHistogramDataPoint) EnsureInit() DoubleHistogramDataPoint {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.
@@ -2233,6 +2337,14 @@ func (ms IntExemplar) InitEmpty() {
 	*ms.orig = &otlpmetrics.IntExemplar{}
 }
 
+// InitEmpty overwrites the current value with empty.
+func (ms IntExemplar) EnsureInit() IntExemplar {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
+}
+
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
@@ -2444,6 +2556,14 @@ func NewDoubleExemplar() DoubleExemplar {
 // InitEmpty overwrites the current value with empty.
 func (ms DoubleExemplar) InitEmpty() {
 	*ms.orig = &otlpmetrics.DoubleExemplar{}
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleExemplar) EnsureInit() DoubleExemplar {
+	if ms.IsNil() {
+		ms.InitEmpty()
+	}
+	return ms
 }
 
 // IsNil returns true if the underlying data are nil.

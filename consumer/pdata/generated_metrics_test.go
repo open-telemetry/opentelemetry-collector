@@ -150,6 +150,15 @@ func TestResourceMetrics_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestResourceMetrics_EnsureInit(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestResourceMetrics_CopyTo(t *testing.T) {
 	ms := NewResourceMetrics()
 	NewResourceMetrics().CopyTo(ms)
@@ -300,6 +309,15 @@ func TestInstrumentationLibraryMetrics_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestInstrumentationLibraryMetrics_EnsureInit(t *testing.T) {
+	ms := NewInstrumentationLibraryMetrics()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
@@ -454,6 +472,15 @@ func TestMetric_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestMetric_EnsureInit(t *testing.T) {
+	ms := NewMetric()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestMetric_CopyTo(t *testing.T) {
 	ms := NewMetric()
 	NewMetric().CopyTo(ms)
@@ -496,6 +523,15 @@ func TestIntGauge_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestIntGauge_EnsureInit(t *testing.T) {
+	ms := NewIntGauge()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestIntGauge_CopyTo(t *testing.T) {
 	ms := NewIntGauge()
 	NewIntGauge().CopyTo(ms)
@@ -520,6 +556,15 @@ func TestDoubleGauge_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestDoubleGauge_EnsureInit(t *testing.T) {
+	ms := NewDoubleGauge()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestDoubleGauge_CopyTo(t *testing.T) {
 	ms := NewDoubleGauge()
 	NewDoubleGauge().CopyTo(ms)
@@ -542,6 +587,15 @@ func TestIntSum_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestIntSum_EnsureInit(t *testing.T) {
+	ms := NewIntSum()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestIntSum_CopyTo(t *testing.T) {
@@ -586,6 +640,15 @@ func TestDoubleSum_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestDoubleSum_EnsureInit(t *testing.T) {
+	ms := NewDoubleSum()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestDoubleSum_CopyTo(t *testing.T) {
 	ms := NewDoubleSum()
 	NewDoubleSum().CopyTo(ms)
@@ -628,6 +691,15 @@ func TestIntHistogram_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestIntHistogram_EnsureInit(t *testing.T) {
+	ms := NewIntHistogram()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestIntHistogram_CopyTo(t *testing.T) {
 	ms := NewIntHistogram()
 	NewIntHistogram().CopyTo(ms)
@@ -659,6 +731,15 @@ func TestDoubleHistogram_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestDoubleHistogram_EnsureInit(t *testing.T) {
+	ms := NewDoubleHistogram()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestDoubleHistogram_CopyTo(t *testing.T) {
@@ -810,6 +891,15 @@ func TestIntDataPoint_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestIntDataPoint_EnsureInit(t *testing.T) {
+	ms := NewIntDataPoint()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestIntDataPoint_CopyTo(t *testing.T) {
@@ -990,6 +1080,15 @@ func TestDoubleDataPoint_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestDoubleDataPoint_EnsureInit(t *testing.T) {
+	ms := NewDoubleDataPoint()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestDoubleDataPoint_CopyTo(t *testing.T) {
 	ms := NewDoubleDataPoint()
 	NewDoubleDataPoint().CopyTo(ms)
@@ -1166,6 +1265,15 @@ func TestIntHistogramDataPoint_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestIntHistogramDataPoint_EnsureInit(t *testing.T) {
+	ms := NewIntHistogramDataPoint()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestIntHistogramDataPoint_CopyTo(t *testing.T) {
@@ -1373,6 +1481,15 @@ func TestDoubleHistogramDataPoint_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestDoubleHistogramDataPoint_EnsureInit(t *testing.T) {
+	ms := NewDoubleHistogramDataPoint()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestDoubleHistogramDataPoint_CopyTo(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
 	NewDoubleHistogramDataPoint().CopyTo(ms)
@@ -1578,6 +1695,15 @@ func TestIntExemplar_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestIntExemplar_EnsureInit(t *testing.T) {
+	ms := NewIntExemplar()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestIntExemplar_CopyTo(t *testing.T) {
 	ms := NewIntExemplar()
 	NewIntExemplar().CopyTo(ms)
@@ -1736,6 +1862,15 @@ func TestDoubleExemplar_InitEmpty(t *testing.T) {
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
+}
+
+func TestDoubleExemplar_EnsureInit(t *testing.T) {
+	ms := NewDoubleExemplar()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
 }
 
 func TestDoubleExemplar_CopyTo(t *testing.T) {

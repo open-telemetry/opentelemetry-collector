@@ -32,6 +32,15 @@ func TestInstrumentationLibrary_InitEmpty(t *testing.T) {
 	assert.False(t, ms.IsNil())
 }
 
+func TestInstrumentationLibrary_EnsureInit(t *testing.T) {
+	ms := NewInstrumentationLibrary()
+	assert.True(t, ms.IsNil())
+	assert.False(t, ms.EnsureInit().IsNil())
+	oldOrig := ms.orig
+	assert.False(t, ms.EnsureInit().IsNil())
+	assert.Equal(t, oldOrig, ms.orig)
+}
+
 func TestInstrumentationLibrary_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrary()
 	NewInstrumentationLibrary().CopyTo(ms)
