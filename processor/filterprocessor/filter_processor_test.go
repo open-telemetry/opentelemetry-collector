@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 type metricNameTest struct {
@@ -217,7 +217,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 					Metrics: metrics,
 				}
 			}
-			cErr := fmp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(mds))
+			cErr := fmp.ConsumeMetrics(context.Background(), internaldata.OCSliceToMetrics(mds))
 			assert.Nil(t, cErr)
 			got := next.AllMetrics()
 
@@ -227,7 +227,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			}
 
 			require.Equal(t, 1, len(got))
-			gotMD := pdatautil.MetricsToMetricsData(got[0])
+			gotMD := internaldata.MetricsToOC(got[0])
 			require.Equal(t, len(test.outMN), len(gotMD))
 			for i, wantOut := range test.outMN {
 				assert.Equal(t, len(wantOut), len(gotMD[i].Metrics))
@@ -304,8 +304,7 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 			}
 		}
 
-		pdm := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
-
+		pdm := internaldata.OCToMetrics(md)
 		b.Run(test.name, func(b *testing.B) {
 			assert.NoError(b, fmp.ConsumeMetrics(context.Background(), pdm))
 		})

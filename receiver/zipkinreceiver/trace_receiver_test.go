@@ -122,7 +122,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
-	require.Equal(t, reqs.ResourceSpans().Len(), 1, "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	req := reqs.ResourceSpans().At(0)
 	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
@@ -525,4 +525,17 @@ type zipkinMockTraceConsumer struct {
 func (m *zipkinMockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err
+}
+
+func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/sample2.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := new(ZipkinReceiver)
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
 }

@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // Receiver is the type used to handle metrics from OpenCensus exporters.
@@ -147,7 +147,7 @@ func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md cons
 
 	var consumerErr error
 	if len(md.Metrics) > 0 {
-		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
+		consumerErr = ocr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
 	}
 
 	obsreport.EndMetricsReceiveOp(

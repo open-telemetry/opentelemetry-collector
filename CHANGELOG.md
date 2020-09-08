@@ -41,6 +41,7 @@
 - Fix multiple exporters panic (#1563)
 - Allow `attribute` processor for external use (#1574)
 - Do not duplicate filesystem metrics for devices with many mount points (#1617)
+- Fix a panic issue while processing Zipkin spans with an empty service name (#1742)
 
 ## v0.8.0 Beta
 

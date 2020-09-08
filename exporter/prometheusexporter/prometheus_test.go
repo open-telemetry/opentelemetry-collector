@@ -30,7 +30,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestPrometheusExporter(t *testing.T) {
@@ -98,7 +98,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	assert.NotNil(t, exp)
 
 	for delta := 0; delta <= 20; delta += 10 {
-		md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{Metrics: metricBuilder(int64(delta))}})
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 		res, err := http.Get("http://localhost:7777/metrics")
