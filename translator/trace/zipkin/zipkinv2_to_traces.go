@@ -338,7 +338,8 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
 		if _, ok := nonSpanAttributes[key]; ok {
 			continue
 		}
-		tracetranslator.UpsertStringToAttributeMap(key, val, dest, false)
+		dest.UpsertString(key, val)
+		// TODO add translation to native OTLP types if configured to do so
 	}
 	return parseErr
 }
