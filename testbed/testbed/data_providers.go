@@ -217,16 +217,21 @@ type GoldenDataProvider struct {
 	resourceSpans      []*otlptrace.ResourceSpans
 	spansIndex         int
 	spansMap           map[string]*otlptrace.Span
+
+	metricPairsFile  string
+	metricsGenerated []pdata.Metrics
+	metricsIndex     int
 }
 
 // NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
 // The supplied randomSeed is used to initialize the random number generator used in generating tracing IDs.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, randomSeed int64) *GoldenDataProvider {
+func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string, randomSeed int64) *GoldenDataProvider {
 	return &GoldenDataProvider{
-		tracePairsFile: tracePairsFile,
-		spanPairsFile:  spanPairsFile,
-		random:         io.Reader(rand.New(rand.NewSource(randomSeed))),
+		tracePairsFile:  tracePairsFile,
+		spanPairsFile:   spanPairsFile,
+		metricPairsFile: metricPairsFile,
+		random:          io.Reader(rand.New(rand.NewSource(randomSeed))),
 	}
 }
 
@@ -260,7 +265,22 @@ func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-	return pdata.NewMetrics(), true
+	if dp.metricsGenerated == nil {
+		var err error
+		dp.metricsGenerated, err = goldendataset.GenerateMetricDatas(dp.metricPairsFile)
+		if err != nil {
+			log.Printf("cannot generate metrics: %s", err)
+		}
+	}
+	numMetricsGenerated := len(dp.metricsGenerated)
+	if dp.metricsIndex == numMetricsGenerated {
+		return pdata.Metrics{}, true
+	}
+	pdm := dp.metricsGenerated[dp.metricsIndex]
+	dp.metricsIndex++
+	_, dpCount := pdm.MetricAndDataPointCount()
+	dp.dataItemsGenerated.Add(uint64(dpCount))
+	return pdm, false
 }
 
 func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {

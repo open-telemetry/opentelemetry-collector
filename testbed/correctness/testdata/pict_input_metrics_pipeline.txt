@@ -1,0 +1,2 @@
+Receiver: otlp
+Exporter: otlp

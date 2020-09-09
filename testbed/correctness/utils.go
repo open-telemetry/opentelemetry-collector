@@ -139,16 +139,15 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 }
 
 // ConstructMetricsSender creates a testbed metrics sender from the passed-in metrics sender identifier.
-func ConstructMetricsSender(t *testing.T, receiver string) testbed.DataSender {
-	var sender testbed.DataSender
+func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSender {
+	var sender testbed.MetricDataSender
 	switch receiver {
 	case "otlp":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "opencensus":
 		sender = testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	// will be uncommented in a subsequent PR
-	// case "prometheus":
-	// 	sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	case "prometheus":
+		sender = testbed.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -167,9 +166,8 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 		receiver = testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t))
 	case "zipkin":
 		receiver = testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t))
-	// will be uncommented in a subsequent PR
-	// case "prometheus":
-	// 	receiver = testbed.NewPrometheusDataReceiver(testbed.GetAvailablePort(t))
+	case "prometheus":
+		receiver = testbed.NewPrometheusDataReceiver(testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown exporter type: %s", exporter)
 	}

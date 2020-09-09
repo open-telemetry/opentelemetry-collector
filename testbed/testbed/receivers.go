@@ -336,7 +336,8 @@ func (dr *PrometheusDataReceiver) Start(_ consumer.TraceConsumer, mc consumer.Me
 		}},
 	}
 	var err error
-	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, mc)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc)
 	if err != nil {
 		return err
 	}
