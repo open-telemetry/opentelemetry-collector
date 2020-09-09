@@ -14,11 +14,11 @@ The following settings can be optionally configured:
   the exporter's gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure).
 - `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
-  only be used if `insecure` is set to true.
+  only be used if `insecure` is set to false.
 - `cert_file` path to the TLS cert to use for TLS required connections. Should
-  only be used if `insecure` is set to true.
+  only be used if `insecure` is set to false.
 - `key_file` path to the TLS key to use for TLS required connections. Should
-  only be used if `insecure` is set to true.
+  only be used if `insecure` is set to false.
 - `keepalive` keepalive parameters for client gRPC. See
 [grpc.WithKeepaliveParams()](https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 - `server_name_override` If set to a non-empty string, it will override the virtual host name 

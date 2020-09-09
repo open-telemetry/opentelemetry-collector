@@ -141,9 +141,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetName(zspan.Name)
 	startNano := zspan.Timestamp.UnixNano()
 	dest.SetStartTime(pdata.TimestampUnixNano(startNano))
-	if zspan.Duration.Nanoseconds() > 0 {
-		dest.SetEndTime(pdata.TimestampUnixNano(startNano + zspan.Duration.Nanoseconds()))
-	}
+	dest.SetEndTime(pdata.TimestampUnixNano(startNano + zspan.Duration.Nanoseconds()))
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())
@@ -403,7 +401,7 @@ func copySpanTags(tags map[string]string) map[string]string {
 }
 
 func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
-	if zspan == nil || zspan.LocalEndpoint == nil {
+	if zspan == nil || zspan.LocalEndpoint == nil || zspan.LocalEndpoint.ServiceName == "" {
 		return tracetranslator.ResourceNotSet
 	}
 	return zspan.LocalEndpoint.ServiceName
