@@ -99,7 +99,16 @@ func TestAttributeValueToString(t *testing.T) {
 			UpsertStringToAttributeMap(key, actual, dest, false)
 			val, ok := dest.Get(key)
 			assert.True(t, ok)
-			assert.NotNil(t, val)
+			if !test.jsonLike {
+				switch test.input.Type() {
+				case pdata.AttributeValueINT, pdata.AttributeValueDOUBLE, pdata.AttributeValueBOOL:
+					assert.EqualValues(t, test.input, val)
+				case pdata.AttributeValueARRAY:
+					assert.NotNil(t, val)
+				default:
+					assert.Equal(t, test.expected, val.StringVal())
+				}
+			}
 		})
 	}
 }
