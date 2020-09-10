@@ -87,7 +87,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocNode != nil {
 		// Copy all Attributes.
 		for k, v := range ocNode.Attributes {
-			tracetranslator.UpsertStringToAttributeMap(k, v, attrs, true)
+			attrs.InsertString(k, v)
 		}
 
 		// Add all special fields.
