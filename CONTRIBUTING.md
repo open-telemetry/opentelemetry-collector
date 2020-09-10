@@ -2,6 +2,27 @@
 
 We'd love your help!
 
+## How to structure PRs to get expedient reviews?
+
+We recommend that any PR (unless it is trivial) to be smaller than 500 lines (excluding go mod/sum changes) in order to help reviewers to do a thorough and reasonably fast reviews.
+
+### When adding a new component
+
+Consider submitting different PRs for (more details about adding new components [here](#adding-new-components)) :
+
+* First PR should include the overall structure of the new component:
+  * Readme, configuration, and factory implementation usually using the helper factory structs.
+  * This PR is usually trivial to review, so the size limit does not apply to it.
+* Second PR should include the concrete implementation of the component.
+If the size of this PR is larger than the recommended size consider splitting it in multiple PRs.
+* Last PR should enable the new component and add it to the `otelcontribcol` binary by updating the `components.go` file.
+The component must be enabled only after sufficient testing, and there is enough confidence in the stability and quality of the component.
+
+### Refactoring Work
+
+Any refactoring work must be split in its own PR that does not include any behavior changes.
+It is important to do this to avoid hidden changes in large and trivial refactoring PRs.
+
 ## Report a bug or requesting feature
 
 Reporting bugs is an important contribution. Please make sure to include:
