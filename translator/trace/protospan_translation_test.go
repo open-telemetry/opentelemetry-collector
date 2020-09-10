@@ -94,6 +94,12 @@ func TestAttributeValueToString(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actual := AttributeValueToString(test.input, test.jsonLike)
 			assert.Equal(t, test.expected, actual)
+			dest := pdata.NewAttributeMap()
+			key := "keyOne"
+			UpsertStringToAttributeMap(key, actual, dest, false)
+			val, ok := dest.Get(key)
+			assert.True(t, ok)
+			assert.NotNil(t, val)
 		})
 	}
 }
