@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 var (
@@ -46,8 +48,15 @@ func CombineErrors(errs []error) error {
 	}
 
 	errMsgs := make([]string, 0, numErrors)
+	permanent := false
 	for _, err := range errs {
+		if !permanent && consumererror.IsPermanent(err) {
+			permanent = true
+		}
 		errMsgs = append(errMsgs, err.Error())
+	}
+	if permanent {
+		return consumererror.Permanent(fmt.Errorf("[%s]", strings.Join(errMsgs, "; ")))
 	}
 	return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 }
