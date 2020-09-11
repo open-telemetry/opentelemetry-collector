@@ -7,6 +7,13 @@ assignees: ''
 
 ---
 
+## Important (read before submitting)
+We are currently preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with
+the current roadmap https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/roadmap.md
+and are not aimed at stabilizing and preparing the Collector for the release will not be prioritized.
+
+_Delete this paragraph before submitting._
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
@@ -18,3 +25,5 @@ A clear and concise description of any alternative solutions or features you've 
 
 **Additional context**
 Add any other context or screenshots about the feature request here.
+
+_Plesae delete paragraphs that you did not use before submitting._
