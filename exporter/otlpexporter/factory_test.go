@@ -35,6 +35,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	ocfg, ok := factory.CreateDefaultConfig().(*Config)
+	assert.True(t, ok)
+	assert.Equal(t, ocfg.RetrySettings.Enabled, true, "default retry is enabled")
+	assert.Equal(t, ocfg.RetrySettings.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
+	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
+	assert.Equal(t, ocfg.RetrySettings.MaxInterval, 30*time.Second, "default retry MaxInterval")
+	assert.Equal(t, ocfg.QueueSettings.Enabled, false, "default sending queue is disabled")
+	assert.Equal(t, ocfg.Timeout, 5*time.Second, "default timeout is 5 second")
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
