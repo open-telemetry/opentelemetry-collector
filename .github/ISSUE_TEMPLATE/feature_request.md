@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 ## Important (read before submitting)
-We are current preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with
+We are currently preparing for the upcoming 1.0 GA release. Feature requests that are not aligned with
 the current roadmap https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/roadmap.md
 and are not aimed at stabilizing and preparing the Collector for the release will not be accepted.
 
