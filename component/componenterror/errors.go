@@ -55,8 +55,9 @@ func CombineErrors(errs []error) error {
 		}
 		errMsgs = append(errMsgs, err.Error())
 	}
+	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
 	if permanent {
-		return consumererror.Permanent(fmt.Errorf("[%s]", strings.Join(errMsgs, "; ")))
+		err = consumererror.Permanent(err)
 	}
-	return fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
+	return err
 }
