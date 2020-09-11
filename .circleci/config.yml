@@ -6,7 +6,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
 
 commands:
   verify_dist_files_exist:
@@ -380,7 +380,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -396,7 +396,7 @@ jobs:
 
   publish-stable:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -417,7 +417,7 @@ jobs:
 
   publish-dev:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - attach_to_workspace
       - verify_dist_files_exist
@@ -438,7 +438,7 @@ jobs:
       - run:
           name: Upgrade golang
           command: |
-            choco upgrade golang --version=1.14.3
+            choco upgrade golang --version=1.15
             refreshenv
       - run:
           name: Unit tests
