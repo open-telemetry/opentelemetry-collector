@@ -20,15 +20,16 @@ import (
 	"github.com/shirou/gopsutil/mem"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const memStatesLen = 6
 
 func appendMemoryUsageStateDataPoints(idps pdata.IntDataPointSlice, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsageDataPoint(idps.At(0), now, usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.At(1), now, freeStateLabelValue, int64(memInfo.Free))
-	initializeMemoryUsageDataPoint(idps.At(2), now, bufferedStateLabelValue, int64(memInfo.Buffers))
-	initializeMemoryUsageDataPoint(idps.At(3), now, cachedStateLabelValue, int64(memInfo.Cached))
-	initializeMemoryUsageDataPoint(idps.At(4), now, slabReclaimableStateLabelValue, int64(memInfo.SReclaimable))
-	initializeMemoryUsageDataPoint(idps.At(5), now, slabUnreclaimableStateLabelValue, int64(memInfo.SUnreclaim))
+	initializeMemoryUsageDataPoint(idps.At(0), now, metadata.LabelMemState.Used, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.At(1), now, metadata.LabelMemState.Free, int64(memInfo.Free))
+	initializeMemoryUsageDataPoint(idps.At(2), now, metadata.LabelMemState.Buffered, int64(memInfo.Buffers))
+	initializeMemoryUsageDataPoint(idps.At(3), now, metadata.LabelMemState.Cached, int64(memInfo.Cached))
+	initializeMemoryUsageDataPoint(idps.At(4), now, metadata.LabelMemState.SlabReclaimable, int64(memInfo.SReclaimable))
+	initializeMemoryUsageDataPoint(idps.At(5), now, metadata.LabelMemState.SlabUnreclaimable, int64(memInfo.SUnreclaim))
 }

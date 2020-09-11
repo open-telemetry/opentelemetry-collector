@@ -16,3 +16,6 @@ coverage:
       default:
         enabled: yes
         target: 95%
+
+ignore:
+  - **/*/metadata/generated_metrics.go

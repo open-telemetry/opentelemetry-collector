@@ -1,0 +1,33 @@
+# Required: name of the receiver.
+name:
+
+# Optional: map of label definitions with the key being the label name and value
+# being described below.
+labels:
+  label.name:
+    # Optional: if the label name as described by the key is not the actual label
+    # value to be reported that value can be overridden here.
+    value:
+    # Required: description of the label.
+    description:
+    # Optional: array of label values if they are static values.
+    enum:
+
+# Required: map of metric names with the key being the metric name and value
+# being described below.
+metrics:
+  metric.name:
+    # Required: metric description
+    description:
+    # Required: metric type as defined by https://ucum.org/ucum.html
+    unit:
+    # Required
+    data:
+      # Required: one of int gauge, int sum, int histogram, double gauge, double sum, or double histogram.
+      type:
+      # Required for int sum and double sum.
+      monotonic: # true | false
+      # Required for int sum, int histogram, double sum, and double histogram.
+      aggregation: # delta | cumulative
+    # Optional: array of labels that were defined in the labels section that are emitted by this metric.
+    labels:
