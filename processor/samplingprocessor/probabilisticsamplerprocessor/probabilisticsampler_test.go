@@ -228,15 +228,13 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 // Test_tracesamplerprocessor_SpanSamplingPriority checks if handling of "sampling.priority" is correct.
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
-
-		span := getSpanWithAttributes(key, attribValue)
 		traces := pdata.NewTraces()
 		traces.ResourceSpans().Resize(1)
 		rs := traces.ResourceSpans().At(0)
 		rs.Resource().InitEmpty()
-		instrLibrarySpans := pdata.NewInstrumentationLibrarySpans()
-		instrLibrarySpans.InitEmpty()
-		rs.InstrumentationLibrarySpans().Append(&instrLibrarySpans)
+		rs.InstrumentationLibrarySpans().Resize(1)
+		instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
+		span := getSpanWithAttributes(key, attribValue)
 		instrLibrarySpans.Spans().Append(&span)
 		return traces
 	}
@@ -451,7 +449,7 @@ func Test_hash(t *testing.T) {
 func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []pdata.Traces) {
 	r := rand.New(rand.NewSource(1))
 	var traceBatches []pdata.Traces
-	for i := 1; i <= numBatches; i++ {
+	for i := 0; i < numBatches; i++ {
 		traces := pdata.NewTraces()
 		traces.ResourceSpans().Resize(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
@@ -462,16 +460,16 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			rs.Resource().Attributes().InsertString("string", "yes")
 			rs.Resource().Attributes().InsertInt("int64", 10000000)
 			rs.InstrumentationLibrarySpans().Resize(1)
+			ils := rs.InstrumentationLibrarySpans().At(0)
+			ils.Spans().Resize(numTracesPerBatch)
 
-			for j := 1; j <= numTracesPerBatch; j++ {
-				span := pdata.NewSpan()
-				span.InitEmpty()
+			for k := 0; k < numTracesPerBatch; k++ {
+				span := ils.Spans().At(k)
 				span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)
 				attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
 				attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")
-				rs.InstrumentationLibrarySpans().At(0).Spans().Append(&span)
 				span.Attributes().InitFromMap(attributes)
 			}
 		}
