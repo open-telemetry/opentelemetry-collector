@@ -208,13 +208,13 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
-	//Calls the helper function to convert the TsMap to the desired format
+	// Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(tsMap)
 	if err != nil {
 		return err
 	}
 
-	//Uses proto.Marshal to convert the WriteRequest into bytes array
+	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(req)
 	if err != nil {
 		return err
@@ -222,7 +222,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	buf := make([]byte, len(data), cap(data))
 	compressedData := snappy.Encode(buf, data)
 
-	//Create the HTTP POST request to send to the endpoint
+	// Create the HTTP POST request to send to the endpoint
 	httpReq, err := http.NewRequest("POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
 		return err

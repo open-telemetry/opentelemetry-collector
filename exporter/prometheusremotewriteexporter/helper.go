@@ -216,7 +216,7 @@ func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, 
 	}
 	wrapped := prompb.WriteRequest{
 		Timeseries: TsArray,
-		//Other parameters of the WriteRequest are unnecessary for our Export
+		// Other parameters of the WriteRequest are unnecessary for our Export
 	}
 	return &wrapped, nil
 }
