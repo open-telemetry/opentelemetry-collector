@@ -165,26 +165,6 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
 			ocAttrs: &octrace.Span_Attributes{
 				AttributeMap: map[string]*octrace.AttributeValue{
-					"span.kind": {Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "client"}}},
-				},
-			},
-			otlpKind: otlptrace.Span_CLIENT,
-		},
-		{
-			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
-			ocAttrs: &octrace.Span_Attributes{
-				AttributeMap: map[string]*octrace.AttributeValue{
-					"span.kind": {Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "server"}}},
-				},
-			},
-			otlpKind: otlptrace.Span_SERVER,
-		},
-		{
-			ocKind: octrace.Span_SPAN_KIND_UNSPECIFIED,
-			ocAttrs: &octrace.Span_Attributes{
-				AttributeMap: map[string]*octrace.AttributeValue{
 					"span.kind": {Value: &octrace.AttributeValue_IntValue{
 						IntValue: 123}},
 				},
