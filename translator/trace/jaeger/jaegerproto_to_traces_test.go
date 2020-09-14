@@ -226,50 +226,6 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			td: generateTraceDataOneSpanNoResourceWithTraceState(),
 		},
 		{
-			name: "two-instrumentation-libraries",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
-				},
-				Spans: []*model.Span{
-					{
-						TraceID:       model.NewTraceID(0, 0),
-						StartTime:     testSpanStartTime,
-						Duration:      testSpanEndTime.Sub(testSpanStartTime),
-						OperationName: "operation1",
-						Tags: []model.KeyValue{
-							{
-								Key:   tracetranslator.TagInstrumentationName,
-								VType: model.ValueType_STRING,
-								VStr:  "library1",
-							}, {
-								Key:   tracetranslator.TagInstrumentationVersion,
-								VType: model.ValueType_STRING,
-								VStr:  "0.42.0",
-							},
-						},
-					},
-					{
-						StartTime:     testSpanStartTime,
-						Duration:      testSpanEndTime.Sub(testSpanStartTime),
-						OperationName: "operation2",
-						Tags: []model.KeyValue{
-							{
-								Key:   tracetranslator.TagInstrumentationName,
-								VType: model.ValueType_STRING,
-								VStr:  "library2",
-							}, {
-								Key:   tracetranslator.TagInstrumentationVersion,
-								VType: model.ValueType_STRING,
-								VStr:  "0.42.0",
-							},
-						},
-					},
-				},
-			},
-			td: generateTraceDataTwoSpansFromTwoLibraries(),
-		},
-		{
 			name: "two-spans-child-parent",
 			jb: model.Batch{
 				Process: &model.Process{
@@ -303,6 +259,67 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			td := ProtoBatchToInternalTraces(test.jb)
 			assert.EqualValues(t, test.td, td)
 		})
+	}
+}
+
+func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
+	jb := model.Batch{
+		Process: &model.Process{
+			ServiceName: tracetranslator.ResourceNotSet,
+		},
+		Spans: []*model.Span{
+			{
+				StartTime:     testSpanStartTime,
+				Duration:      testSpanEndTime.Sub(testSpanStartTime),
+				OperationName: "operation2",
+				Tags: []model.KeyValue{
+					{
+						Key:   tracetranslator.TagInstrumentationName,
+						VType: model.ValueType_STRING,
+						VStr:  "library2",
+					}, {
+						Key:   tracetranslator.TagInstrumentationVersion,
+						VType: model.ValueType_STRING,
+						VStr:  "0.42.0",
+					},
+				},
+			},
+			{
+				TraceID:       model.NewTraceID(0, 0),
+				StartTime:     testSpanStartTime,
+				Duration:      testSpanEndTime.Sub(testSpanStartTime),
+				OperationName: "operation1",
+				Tags: []model.KeyValue{
+					{
+						Key:   tracetranslator.TagInstrumentationName,
+						VType: model.ValueType_STRING,
+						VStr:  "library1",
+					}, {
+						Key:   tracetranslator.TagInstrumentationVersion,
+						VType: model.ValueType_STRING,
+						VStr:  "0.42.0",
+					},
+				},
+			},
+		},
+	}
+	expected := generateTraceDataTwoSpansFromTwoLibraries()
+	library1Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	library2Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
+
+	actual := ProtoBatchToInternalTraces(jb)
+
+	assert.Equal(t, actual.ResourceSpans().Len(), 1)
+	assert.Equal(t, actual.ResourceSpans().At(0).InstrumentationLibrarySpans().Len(), 2)
+
+	ils0 := actual.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	ils1 := actual.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
+	if ils0.InstrumentationLibrary().Name() == "library1" {
+		assert.EqualValues(t, library1Span, ils0)
+		assert.EqualValues(t, library2Span, ils1)
+	} else {
+		assert.EqualValues(t, library1Span, ils1)
+		assert.EqualValues(t, library2Span, ils0)
 	}
 }
 
