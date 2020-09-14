@@ -30,6 +30,6 @@ type Config struct {
 	// ResourceType field is deprecated. Set "opencensus.type" key in "attributes.upsert" map instead.
 	ResourceType string `mapstructure:"type"`
 
-	// Labels field is deprecated. Use "attributes.upsert" instead.
+	// Deprecated: Use "attributes.upsert" instead.
 	Labels map[string]string `mapstructure:"labels"`
 }
