@@ -17,6 +17,8 @@ package sampling
 import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type numericAttributeFilter struct {
@@ -48,7 +50,7 @@ func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*tracepb.Span
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (naf *numericAttributeFilter) Evaluate(_ []byte, trace *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	naf.logger.Debug("Evaluating spans in numeric-attribute filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
@@ -72,7 +74,7 @@ func (naf *numericAttributeFilter) Evaluate(_ []byte, trace *TraceData) (Decisio
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (naf *numericAttributeFilter) OnDroppedSpans([]byte, *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
 	naf.logger.Debug("Triggering action for dropped spans in numeric-attribute filter")
 	return NotSampled, nil
 }

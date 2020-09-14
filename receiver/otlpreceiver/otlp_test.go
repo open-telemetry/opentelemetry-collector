@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -54,23 +54,7 @@ import (
 
 const otlpReceiverName = "otlp_receiver_test"
 
-func TestGrpcGateway_endToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporter)
-	ocr := newHTTPReceiver(t, addr, sink, nil)
-
-	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
-	defer ocr.Shutdown(context.Background())
-
-	// TODO(nilebox): make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
-
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
-
-	traceJSON := []byte(`
+var traceJSON = []byte(`
 	{
 	  "resource_spans": [
 		{
@@ -86,7 +70,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 			{
 			  "spans": [
 				{
-				  "trace_id": "W47/95gDgQPSabYzgT/GDA==",
+				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
 				  "span_id": "7uGbfsPBsXM=",
 				  "name": "testSpan",
 				  "start_time_unix_nano": 1544712660000000000,
@@ -104,6 +88,123 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 		}
 	  ]
 	}`)
+
+var resourceSpansOtlp = otlptrace.ResourceSpans{
+
+	Resource: &otlpresource.Resource{
+		Attributes: []*otlpcommon.KeyValue{
+			{
+				Key:   conventions.AttributeHostHostname,
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
+			},
+		},
+	},
+	InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+		{
+			Spans: []*otlptrace.Span{
+				{
+					TraceId:           otlpcommon.NewTraceID([]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
+					SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
+					Name:              "testSpan",
+					StartTimeUnixNano: 1544712660000000000,
+					EndTimeUnixNano:   1544712661000000000,
+					Attributes: []*otlpcommon.KeyValue{
+						{
+							Key:   "attr1",
+							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var traceOtlp = pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{&resourceSpansOtlp})
+
+func TestJsonMarshaling(t *testing.T) {
+	m := jsonpb.Marshaler{}
+	json, err := m.MarshalToString(&resourceSpansOtlp)
+	assert.NoError(t, err)
+
+	var resourceSpansOtlp2 otlptrace.ResourceSpans
+	err = jsonpb.UnmarshalString(json, &resourceSpansOtlp2)
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, resourceSpansOtlp, resourceSpansOtlp2)
+}
+
+func TestJsonUnmarshaling(t *testing.T) {
+	var resourceSpansOtlp2 otlptrace.ResourceSpans
+	err := jsonpb.UnmarshalString(`
+		{
+		  "instrumentation_library_spans": [
+			{
+			  "spans": [
+				{
+				}
+			  ]
+			}
+		  ]
+		}`, &resourceSpansOtlp2)
+	assert.NoError(t, err)
+	assert.EqualValues(t, otlpcommon.TraceID{}, resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
+
+	tests := []struct {
+		name  string
+		json  string
+		bytes []byte
+	}{
+		{
+			name:  "empty string trace id",
+			json:  `""`,
+			bytes: nil,
+		},
+		{
+			name:  "zero bytes trace id",
+			json:  `"00000000000000000000000000000000"`,
+			bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var resourceSpansOtlp2 otlptrace.ResourceSpans
+			jsonStr := fmt.Sprintf(`
+			{
+			  "instrumentation_library_spans": [
+				{
+				  "spans": [
+					{
+					  "trace_id": %v
+					}
+				  ]
+				}
+			  ]
+			}`, test.json)
+			err := jsonpb.UnmarshalString(jsonStr, &resourceSpansOtlp2)
+			assert.NoError(t, err)
+			assert.EqualValues(t, otlpcommon.NewTraceID(test.bytes), resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
+		})
+	}
+}
+
+func TestGrpcGateway_endToEnd(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	sink := new(exportertest.SinkTraceExporter)
+	ocr := newHTTPReceiver(t, addr, sink, nil)
+
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	defer ocr.Shutdown(context.Background())
+
+	// TODO(nilebox): make starting server deterministic
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(traceJSON))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
@@ -137,39 +238,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 
 	got := sink.AllTraces()[0]
 
-	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
-		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
-					{
-						Key:   conventions.AttributeHostHostname,
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						{
-							TraceId:           []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
-							SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
-							Name:              "testSpan",
-							StartTimeUnixNano: 1544712660000000000,
-							EndTimeUnixNano:   1544712661000000000,
-							Attributes: []*otlpcommon.KeyValue{
-								{
-									Key:   "attr1",
-									Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-
-	assert.EqualValues(t, got, want)
+	assert.EqualValues(t, traceOtlp, got)
 }
 
 func TestProtoHttp(t *testing.T) {
@@ -222,14 +291,7 @@ func TestProtoHttp(t *testing.T) {
 	got := gotOtlp[0]
 	want := wantOtlp[0]
 
-	// assert.Equal doesn't work on protos, see:
-	// https://github.com/stretchr/testify/issues/758
-	if !proto.Equal(got, want) {
-		t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
-			got.String(),
-			want.String())
-	}
-
+	assert.EqualValues(t, want, got)
 }
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
@@ -316,10 +378,12 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 					{
 						Spans: []*otlptrace.Span{
 							{
-								TraceId: []byte{
-									0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-									0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-								},
+								TraceId: otlpcommon.NewTraceID(
+									[]byte{
+										0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+										0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+									},
+								),
 							},
 						},
 					},

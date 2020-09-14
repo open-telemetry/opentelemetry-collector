@@ -254,7 +254,7 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 			continue
 		}
 		b.logEntry("SpanLink #%d", i)
-		b.logEntry("     -> Trace ID: %s", l.TraceID().String())
+		b.logEntry("     -> Trace ID: %s", l.TraceID().HexString())
 		b.logEntry("     -> ID: %s", l.SpanID().String())
 		b.logEntry("     -> TraceState: %s", l.TraceState())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
@@ -332,7 +332,7 @@ func (s *loggingExporter) pushTraceData(
 					continue
 				}
 
-				buf.logAttr("Trace ID", span.TraceID().String())
+				buf.logAttr("Trace ID", span.TraceID().HexString())
 				buf.logAttr("Parent ID", span.ParentSpanID().String())
 				buf.logAttr("ID", span.SpanID().String())
 				buf.logAttr("Name", span.Name())

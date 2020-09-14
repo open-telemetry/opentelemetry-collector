@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+//lint:file-ignore U1000 staticcheck incorrectly flags count() in this file.
+
 var errStorageNilResourceSpans = errors.New("the provided trace is invalid (nil)")
 
 type memoryStorage struct {
@@ -41,7 +43,7 @@ func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.Resource
 		return errStorageNilResourceSpans
 	}
 
-	sTraceID := traceID.String()
+	sTraceID := traceID.HexString()
 
 	st.Lock()
 	if _, ok := st.content[sTraceID]; !ok {
@@ -57,7 +59,7 @@ func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.Resource
 	return nil
 }
 func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	sTraceID := traceID.String()
+	sTraceID := traceID.HexString()
 
 	st.RLock()
 	rss, ok := st.content[sTraceID]
@@ -79,7 +81,7 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 // delete will return a reference to a ResourceSpans. Changes to the returned object may not be applied
 // to the version in the storage.
 func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	sTraceID := traceID.String()
+	sTraceID := traceID.HexString()
 
 	st.Lock()
 	rss := st.content[sTraceID]

@@ -18,6 +18,7 @@
 package pdata
 
 import (
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
@@ -590,7 +591,7 @@ func (ms LogRecord) TraceID() TraceID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = []byte(v)
+	(*ms.orig).TraceId = otlpcommon.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
