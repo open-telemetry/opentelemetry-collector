@@ -14,7 +14,7 @@
 
 package goldendataset
 
-// // Start of PICT inputs for generating golden dataset metrics (pict_input_metrics.txt) ////
+// Start of PICT inputs for generating golden dataset metrics (pict_input_metrics.txt)
 
 // PICTMetricInputs defines one pairwise combination of MetricData variations
 type PICTMetricInputs struct {
