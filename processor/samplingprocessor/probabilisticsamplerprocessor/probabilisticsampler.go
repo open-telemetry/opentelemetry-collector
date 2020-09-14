@@ -115,7 +115,7 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpa
 				hash(span.TraceID(), tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
 			if sampled {
-				spns.Append(&span)
+				spns.Append(span)
 			}
 		}
 	}

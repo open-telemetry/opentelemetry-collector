@@ -119,10 +119,10 @@ func TestMemoryAppendSpans(t *testing.T) {
 		pdata.NewResourceSpans(),
 	}
 	expected[0].InitEmpty()
-	expected[0].InstrumentationLibrarySpans().Append(&ils)
+	expected[0].InstrumentationLibrarySpans().Append(ils)
 
 	expected[1].InitEmpty()
-	expected[1].InstrumentationLibrarySpans().Append(&secondIls)
+	expected[1].InstrumentationLibrarySpans().Append(secondIls)
 
 	// test
 	err := st.createOrAppend(traceID, secondBatch)

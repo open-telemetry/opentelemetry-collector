@@ -131,13 +131,13 @@ func TestResourceMetricsSlice_Append(t *testing.T) {
 	emptyVal := NewResourceMetrics()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewResourceMetrics()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -283,13 +283,13 @@ func TestInstrumentationLibraryMetricsSlice_Append(t *testing.T) {
 	emptyVal := NewInstrumentationLibraryMetrics()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewInstrumentationLibraryMetrics()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -435,13 +435,13 @@ func TestMetricSlice_Append(t *testing.T) {
 	emptyVal := NewMetric()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewMetric()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -793,13 +793,13 @@ func TestIntDataPointSlice_Append(t *testing.T) {
 	emptyVal := NewIntDataPoint()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewIntDataPoint()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -971,13 +971,13 @@ func TestDoubleDataPointSlice_Append(t *testing.T) {
 	emptyVal := NewDoubleDataPoint()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewDoubleDataPoint()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -1149,13 +1149,13 @@ func TestIntHistogramDataPointSlice_Append(t *testing.T) {
 	emptyVal := NewIntHistogramDataPoint()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewIntHistogramDataPoint()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -1354,13 +1354,13 @@ func TestDoubleHistogramDataPointSlice_Append(t *testing.T) {
 	emptyVal := NewDoubleHistogramDataPoint()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewDoubleHistogramDataPoint()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -1559,13 +1559,13 @@ func TestIntExemplarSlice_Append(t *testing.T) {
 	emptyVal := NewIntExemplar()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewIntExemplar()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -1719,13 +1719,13 @@ func TestDoubleExemplarSlice_Append(t *testing.T) {
 	emptyVal := NewDoubleExemplar()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewDoubleExemplar()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())

@@ -234,8 +234,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		rs.Resource().InitEmpty()
 		rs.InstrumentationLibrarySpans().Resize(1)
 		instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
-		span := getSpanWithAttributes(key, attribValue)
-		instrLibrarySpans.Spans().Append(&span)
+		instrLibrarySpans.Spans().Append(getSpanWithAttributes(key, attribValue))
 		return traces
 	}
 	tests := []struct {

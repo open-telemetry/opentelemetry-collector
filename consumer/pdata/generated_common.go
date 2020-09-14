@@ -219,6 +219,6 @@ func (es AnyValueArray) Resize(newLen int) {
 // given AttributeValue at that new position.  The original AttributeValue
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es AnyValueArray) Append(e *AttributeValue) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es AnyValueArray) Append(e AttributeValue) {
+	*es.orig = append(*es.orig, *e.orig)
 }
