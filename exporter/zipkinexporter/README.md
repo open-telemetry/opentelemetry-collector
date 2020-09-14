@@ -26,8 +26,8 @@ Example:
 
 ```yaml
 exporters:
-zipkin:
- endpoint: "http://some.url:9411/api/v2/spans"
+  zipkin:
+    endpoint: "http://some.url:9411/api/v2/spans"
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
