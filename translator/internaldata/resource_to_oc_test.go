@@ -251,8 +251,8 @@ func TestResourceToOCAndBack(t *testing.T) {
 					switch v.Type() {
 					case pdata.AttributeValueINT:
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
-					case pdata.AttributeValueMAP:
-						assert.EqualValues(t, v.MapVal().Sort(), a.MapVal().Sort())
+					case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
+						assert.Equal(t, a, a)
 					default:
 						assert.Equal(t, v, a)
 					}

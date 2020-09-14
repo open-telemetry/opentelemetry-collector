@@ -211,8 +211,7 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.Attribu
 		for key, ocAttr := range ocAttrs.AttributeMap {
 			switch attribValue := ocAttr.Value.(type) {
 			case *octrace.AttributeValue_StringValue:
-				strVal := attribValue.StringValue.GetValue()
-				tracetranslator.UpsertStringToAttributeMap(key, strVal, dest, true)
+				dest.UpsertString(key, attribValue.StringValue.GetValue())
 
 			case *octrace.AttributeValue_IntValue:
 				dest.UpsertInt(key, attribValue.IntValue)

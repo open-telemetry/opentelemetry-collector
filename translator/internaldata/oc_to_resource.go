@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 var ocLangCodeToLangMap = getOCLangCodeToLangMap()
@@ -125,7 +124,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	if ocResource != nil {
 		// Copy resource Labels.
 		for k, v := range ocResource.Labels {
-			tracetranslator.UpsertStringToAttributeMap(k, v, attrs, true)
+			attrs.InsertString(k, v)
 		}
 		// Add special fields.
 		if ocResource.Type != "" {
