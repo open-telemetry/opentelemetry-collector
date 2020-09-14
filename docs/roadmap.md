@@ -9,33 +9,19 @@ items from this roadmap.
 Description|Status|Links|
 -----------|------|-----|
 **Testing**|
-Add metric testing to the testbed|Done|
-Implement matrix testing in the testbed and convert benchmarks for receivers and exporters to use it|Done|
-Implement E2E tests for all core formats (Jaeger, Zipkin, OpenCensus, OTLP, Prometheus)| |[#482](https://github.com/open-telemetry/opentelemetry-collector/issues/482)
-Improve comparison with baseline performance and fail CI build on degradations| |
-Add code coverage collection to Contrib repository| |
-Add 2-stage build pipeline: separate build and certification jobs| |
-| |
-**Performance**|
-Convert internal memory representation to OTLP Protobuf|In progress |[#478](https://github.com/open-telemetry/opentelemetry-collector/issues/478)
-Research: explore Fast pass-through mode| |[Partial Protobufs](https://blog.najaryan.net/posts/partial-protobuf-encoding/)
-Research: alternative compression algorithms| |
-| |
-**Observability**|
-Add pipeline metrics| |[observability.md](observability.md)
-High-level observations|Draft|[#485](https://github.com/open-telemetry/opentelemetry-collector/issues/485)
-Research: Explore ways to expose pipelines state as a graph| |[#486](https://github.com/open-telemetry/opentelemetry-collector/issues/486)
+Metrics correctness tests|In progress|[#652](https://github.com/open-telemetry/opentelemetry-collector/issues/652)
 | |
 **New Formats**|
-OTLP Receiver and Exporter| |[#480](https://github.com/open-telemetry/opentelemetry-collector/issues/480) [#479](https://github.com/open-telemetry/opentelemetry-collector/issues/479)
-Research: OTLP over HTTP 1.1| |
-Add Logs and Events as new data type|
+Complete OTLP/HTTP support| |[#882](https://github.com/open-telemetry/opentelemetry-collector/issues/882)
+Add logs support for all primary core processors (attributes, batch, k8s_tagger, etc)|In progress|
 | |
 **5 Min to Value**|
 Distribution packages for most common targets (e.g. Docker, RPM, Windows, etc)|
-Detection and collection of environment metrics and tags (AWS, k8s, etc)|k8s Done|
+Detection and collection of environment metrics and tags on AWS||
+Detection and collection of k8s telemetry|In progress|
+Host metric collection|In progress|
+Support more application-specific metric collection (e.g. Kafka, Hadoop, etc)
 | |
 **Other Features**|
 Graceful shutdown (pipeline draining)| |[#483](https://github.com/open-telemetry/opentelemetry-collector/issues/483)
-Attribute SHA1 hashing|In progress |[#289](https://github.com/open-telemetry/opentelemetry-collector/issues/289)
-Common code for HTTP receivers and exporters| |[#505](https://github.com/open-telemetry/opentelemetry-collector/issues/505)
+Deprecate queue retry processor and enable queueing per exporter by default||[#1721](https://github.com/open-telemetry/opentelemetry-collector/issues/1721)

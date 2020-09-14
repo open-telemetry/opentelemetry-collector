@@ -1,0 +1,34 @@
+name: hostmetricsreceiver
+
+labels:
+  cpu:
+    description: CPU number starting at 0.
+
+  cpu.state:
+    value: state
+    description: Breakdown of CPU usage by type.
+    enum: [idle, interrupt, nice, softirq, steal, system, user, wait]
+
+  mem.state:
+    value: state
+    description: Breakdown of memory usage by type.
+    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
+
+metrics:
+  system.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    data:
+      type: double sum
+      aggregation: cumulative
+      monotonic: true
+    labels: [cpu.state]
+
+  system.memory.usage:
+    description: Bytes of memory in use.
+    unit: By
+    labels: [mem.state]
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false

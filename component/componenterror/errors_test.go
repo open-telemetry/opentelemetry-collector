@@ -19,28 +19,41 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func TestCombineErrors(t *testing.T) {
 	testCases := []struct {
-		errors    []error
-		expected  string
-		expectNil bool
-	}{{
-		errors:    []error{},
-		expectNil: true,
-	}, {
-		errors: []error{
-			fmt.Errorf("foo"),
+		errors            []error
+		expected          string
+		expectNil         bool
+		expectedPermanent bool
+	}{
+		{
+			errors:    []error{},
+			expectNil: true,
 		},
-		expected: "foo",
-	}, {
-		errors: []error{
-			fmt.Errorf("foo"),
-			fmt.Errorf("bar"),
+		{
+			errors: []error{
+				fmt.Errorf("foo"),
+			},
+			expected: "foo",
 		},
-		expected: "[foo; bar]",
-	}}
+		{
+			errors: []error{
+				fmt.Errorf("foo"),
+				fmt.Errorf("bar"),
+			},
+			expected: "[foo; bar]",
+		},
+		{
+			errors: []error{
+				fmt.Errorf("foo"),
+				fmt.Errorf("bar"),
+				consumererror.Permanent(fmt.Errorf("permanent"))},
+			expected: "Permanent error: [foo; bar; Permanent error: permanent]",
+		},
+	}
 
 	for _, tc := range testCases {
 		got := componenterror.CombineErrors(tc.errors)
@@ -49,6 +62,9 @@ func TestCombineErrors(t *testing.T) {
 		}
 		if got != nil && tc.expected != got.Error() {
 			t.Errorf("CombineErrors(%v) = %q. Want: %q", tc.errors, got, tc.expected)
+		}
+		if tc.expectedPermanent && !consumererror.IsPermanent(got) {
+			t.Errorf("CombineErrors(%v) = %q. Want: consumererror.permanent", tc.errors, got)
 		}
 	}
 }

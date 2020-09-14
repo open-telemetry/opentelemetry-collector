@@ -13,6 +13,9 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-kit/kit v0.10.0
+	github.com/go-playground/locales v0.13.0
+	github.com/go-playground/universal-translator v0.17.0
+	github.com/go-playground/validator/v10 v10.3.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
@@ -57,7 +60,7 @@ require (
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.29.0 // indirect
 	google.golang.org/genproto v0.0.0-20200624020401-64a14ca9d1ad
-	google.golang.org/grpc v1.31.1
+	google.golang.org/grpc v1.32.0
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0

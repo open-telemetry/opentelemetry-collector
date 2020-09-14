@@ -238,7 +238,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	// The received JSON messages are inside arrays, so reading then directly will
 	// fail with error. Use a small hack to transform the multiple arrays into a
 	// single one.
-	accumulatedJSONMsgs := strings.Replace(buf.String(), "][", ",", -1)
+	accumulatedJSONMsgs := strings.ReplaceAll(buf.String(), "][", ",")
 	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
 	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
 	// translation to OTLP sorts spans so do a span-by-span comparison

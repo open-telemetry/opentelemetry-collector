@@ -14,7 +14,7 @@
 
 package goldendataset
 
-//// Start of PICT inputs for generating golden dataset ResourceSpans (pict_input_traces.txt) ////
+// Start of PICT inputs for generating golden dataset ResourceSpans (pict_input_traces.txt)
 
 // Input columns in pict_input_traces.txt
 const (
@@ -66,7 +66,7 @@ type PICTTracingInputs struct {
 	Spans PICTInputSpans
 }
 
-//// Start of PICT inputs for generating golden dataset Spans (pict_input_spans.txt) ////
+// Start of PICT inputs for generating golden dataset Spans (pict_input_spans.txt)
 
 // Input columns in pict_input_spans.txt
 const (
