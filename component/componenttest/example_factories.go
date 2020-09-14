@@ -385,22 +385,12 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *ExampleProcessorFactory) CreateTraceProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	_ configmodels.Processor,
-) (component.TraceProcessor, error) {
+func (f *ExampleProcessorFactory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
 	return &ExampleProcessor{nextTraces: nextConsumer}, nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *ExampleProcessorFactory) CreateMetricsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
-	_ configmodels.Processor,
-) (component.MetricsProcessor, error) {
+func (f *ExampleProcessorFactory) CreateMetricsProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
 	return &ExampleProcessor{nextMetrics: nextConsumer}, nil
 }
 

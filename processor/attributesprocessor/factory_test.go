@@ -49,7 +49,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -62,7 +62,7 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
-	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -75,21 +75,18 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 		{Key: "a key", Action: processorhelper.DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	tp, err = factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Action: processorhelper.DELETE},
 	}
-	tp, err = factory.CreateTraceProcessor(
-		context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }
@@ -98,8 +95,7 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetricsProcessor(
-		context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	require.Nil(t, mp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }
