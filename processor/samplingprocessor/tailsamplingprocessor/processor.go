@@ -145,7 +145,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	batchLen := len(batch)
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 	for _, id := range batch {
-		d, ok := tsp.idToTrace.Load(traceKey(id))
+		d, ok := tsp.idToTrace.Load(traceKey(id.Bytes()))
 		if !ok {
 			idNotFoundOnMapCount++
 			continue
@@ -265,7 +265,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 			atomic.AddInt64(&actualData.SpanCount, lenSpans)
 		} else {
 			newTraceIDs++
-			tsp.decisionBatcher.AddToCurrentBatch([]byte(id))
+			tsp.decisionBatcher.AddToCurrentBatch(pdata.NewTraceID([]byte(id)))
 			atomic.AddUint64(&tsp.numTracesOnMap, 1)
 			postDeletion := false
 			currTime := time.Now()
@@ -354,7 +354,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 	for j := 0; j < policiesLen; j++ {
 		if trace.Decisions[j] == sampling.Pending {
 			policy := tsp.policies[j]
-			if decision, err := policy.Evaluator.OnDroppedSpans([]byte(traceID), trace); err != nil {
+			if decision, err := policy.Evaluator.OnDroppedSpans(pdata.NewTraceID([]byte(traceID)), trace); err != nil {
 				tsp.logger.Warn("OnDroppedSpans",
 					zap.String("policy", policy.Name),
 					zap.Int("decision", int(decision)),

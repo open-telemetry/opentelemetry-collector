@@ -105,17 +105,6 @@ func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(td.orig)
 }
 
-type TraceID []byte
-
-// NewTraceID returns a new TraceID.
-func NewTraceID(bytes []byte) TraceID { return bytes }
-
-func (t TraceID) Bytes() []byte {
-	return t
-}
-
-func (t TraceID) String() string { return hex.EncodeToString(t) }
-
 type SpanID []byte
 
 // NewSpanID returns a new SpanID.

@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
@@ -64,7 +65,7 @@ func TestExport(t *testing.T) {
 				{
 					Spans: []*otlptrace.Span{
 						{
-							TraceId:           traceID,
+							TraceId:           v1.NewTraceID(traceID),
 							SpanId:            spanID,
 							Name:              "operationB",
 							Kind:              otlptrace.Span_SPAN_KIND_SERVER,

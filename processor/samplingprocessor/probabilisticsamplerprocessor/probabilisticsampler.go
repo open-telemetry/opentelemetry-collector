@@ -112,7 +112,7 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpa
 			// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 			// Hashing here prevents bias due to such systems.
 			sampled := sp == mustSampleSpan ||
-				hash(span.TraceID(), tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
+				hash(span.TraceID().Bytes(), tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
 			if sampled {
 				spns.Append(span)

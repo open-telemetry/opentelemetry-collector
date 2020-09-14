@@ -270,7 +270,7 @@ func fillLogOne(log pdata.LogRecord) {
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
 	log.SetSpanID([]byte{0x01, 0x02, 0x04, 0x08})
-	log.SetTraceID([]byte{0x08, 0x04, 0x02, 0x01})
+	log.SetTraceID(pdata.NewTraceID([]byte{0x08, 0x04, 0x02, 0x01}))
 
 	attrs := log.Attributes()
 	attrs.InsertString("app", "server")
@@ -288,7 +288,7 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
 		SpanId:                 []byte{0x01, 0x02, 0x04, 0x08},
-		TraceId:                []byte{0x08, 0x04, 0x02, 0x01},
+		TraceId:                otlpcommon.NewTraceID([]byte{0x08, 0x04, 0x02, 0x01}),
 		Attributes: []*otlpcommon.KeyValue{
 			{
 				Key:   "app",

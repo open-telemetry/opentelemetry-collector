@@ -53,7 +53,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	}
 
 	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
@@ -88,7 +88,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	wg.Wait()
 
 	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
@@ -112,7 +112,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
 	for i := 0; i < len(traceIds)-maxSize; i++ {
-		_, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		_, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
 	}
 }
@@ -205,11 +205,11 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
 }
 
-func generateIdsAndBatches(numIds int) ([][]byte, []pdata.Traces) {
-	traceIds := make([][]byte, numIds)
+func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
+	traceIds := make([]pdata.TraceID, numIds)
 	var tds []pdata.Traces
 	for i := 0; i < numIds; i++ {
-		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
+		traceIds[i] = tracetranslator.UInt64ToTraceID(1, uint64(i+1))
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := testdata.GenerateTraceDataOneSpan()
@@ -237,11 +237,11 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*tracepb.
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate([]byte, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
-func (m *mockPolicyEvaluator) OnDroppedSpans([]byte, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) OnDroppedSpans(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.OnDroppedSpansCount++
 	return m.NextDecision, m.NextError
 }
@@ -280,7 +280,7 @@ func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id idbatcher.ID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pdata.TraceID) {
 	s.Lock()
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()

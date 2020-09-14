@@ -128,7 +128,7 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 		for _, rs := range resourceSpansList {
 			for _, ils := range rs.InstrumentationLibrarySpans {
 				for _, recdSpan := range ils.Spans {
-					sentSpan := v.dataProvider.GetGeneratedSpan(recdSpan.TraceId, recdSpan.SpanId)
+					sentSpan := v.dataProvider.GetGeneratedSpan(pdata.TraceID(recdSpan.TraceId), recdSpan.SpanId)
 					v.diffSpan(sentSpan, recdSpan)
 				}
 			}
@@ -160,13 +160,13 @@ func (v *CorrectnessTestValidator) diffSpan(sentSpan *otlptrace.Span, recdSpan *
 }
 
 func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if hex.EncodeToString(sentSpan.TraceId) != hex.EncodeToString(recdSpan.TraceId) {
+	if sentSpan.TraceId.HexString() != recdSpan.TraceId.HexString() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
 			fieldPath:     "TraceId",
-			expectedValue: hex.EncodeToString(sentSpan.TraceId),
-			actualValue:   hex.EncodeToString(recdSpan.TraceId),
+			expectedValue: sentSpan.TraceId.HexString(),
+			actualValue:   recdSpan.TraceId.HexString(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}

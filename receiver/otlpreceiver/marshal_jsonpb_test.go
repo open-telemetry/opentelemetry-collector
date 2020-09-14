@@ -39,6 +39,7 @@ const expectedJSON = `{
     {
       "spans": [
         {
+          "traceId": "",
           "name": "operationA",
           "startTimeUnixNano": "1581452772000000321",
           "endTimeUnixNano": "1581452773000000789",

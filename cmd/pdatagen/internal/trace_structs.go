@@ -17,6 +17,7 @@ package internal
 var traceFile = &File{
 	Name: "trace",
 	imports: []string{
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
 		`otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"`,
 	},
 	testImports: []string{
@@ -204,7 +205,7 @@ var traceIDField = &primitiveTypedField{
 	fieldName:       "TraceID",
 	originFieldName: "TraceId",
 	returnType:      "TraceID",
-	rawType:         "[]byte",
+	rawType:         "otlpcommon.TraceID",
 	defaultVal:      "NewTraceID(nil)",
 	testVal:         "NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
