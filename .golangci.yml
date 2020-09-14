@@ -123,3 +123,7 @@ issues:
       - staticcheck
       # See https://github.com/golang/protobuf/issues/1077
       text: "SA1019:"
+    - path: receiver/otlpreceiver/marshal_jsonpb\.go
+      linters:
+        - gocritic
+        - gosimple
