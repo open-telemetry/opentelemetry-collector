@@ -187,23 +187,18 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	next := &mockProcessor{}
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(&span)
-
-	trace := pdata.NewResourceSpans()
-	trace.InitEmpty()
-	trace.InstrumentationLibrarySpans().Append(&ils)
-
-	emptyTrace := pdata.NewResourceSpans()
 
 	batch := pdata.NewTraces()
-	batch.ResourceSpans().Append(&trace)
-	batch.ResourceSpans().Append(&emptyTrace)
+	batch.ResourceSpans().Resize(1)
+	trace := batch.ResourceSpans().At(0)
+	trace.InstrumentationLibrarySpans().Resize(1)
+	ils := trace.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(traceID)
+	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
+	emptyRs := pdata.NewResourceSpans()
+	batch.ResourceSpans().Append(&emptyRs)
 
 	p, err := newGroupByTraceProcessor(logger, st, next, config)
 	require.NoError(t, err)
@@ -322,18 +317,15 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(&span)
 
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
-	rs.InstrumentationLibrarySpans().Append(&ils)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(traceID)
+	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
 
 	batch := splitByTrace(rs)
 
@@ -437,18 +429,15 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(&span)
 
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
-	rs.InstrumentationLibrarySpans().Append(&ils)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(traceID)
+	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
 
 	batch := splitByTrace(rs)
 
@@ -550,30 +539,24 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	require.NoError(t, err)
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(&span)
 
 	firstResourceSpans := pdata.NewResourceSpans()
 	firstResourceSpans.InitEmpty()
-	firstResourceSpans.InstrumentationLibrarySpans().Append(&ils)
+	firstResourceSpans.InstrumentationLibrarySpans().Resize(1)
+	ils := firstResourceSpans.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(traceID)
 
 	secondTraceID := []byte{2, 3, 4, 5}
-	secondSpan := pdata.NewSpan()
-	secondSpan.InitEmpty()
-	secondSpan.SetTraceID(secondTraceID)
-
-	secondIls := pdata.NewInstrumentationLibrarySpans()
-	secondIls.InitEmpty()
-	secondIls.Spans().Append(&secondSpan)
 
 	secondResourceSpans := pdata.NewResourceSpans()
 	secondResourceSpans.InitEmpty()
-	secondResourceSpans.InstrumentationLibrarySpans().Append(&secondIls)
+	secondResourceSpans.InstrumentationLibrarySpans().Resize(1)
+	secondIls := secondResourceSpans.InstrumentationLibrarySpans().At(0)
+	secondIls.Spans().Resize(1)
+	secondSpan := secondIls.Spans().At(0)
+	secondSpan.SetTraceID(secondTraceID)
 
 	// test
 	wg.Add(2)
@@ -596,44 +579,30 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceSpans with 2 ILS, resulting in two batches
 	input := pdata.NewResourceSpans()
 	input.InitEmpty()
+	input.InstrumentationLibrarySpans().Resize(2)
 
 	// the first ILS has two spans
-	firstILS := pdata.NewInstrumentationLibrarySpans()
-	firstILS.InitEmpty()
-	input.InstrumentationLibrarySpans().Append(&firstILS)
-
-	// the second ILS has one span
-	secondILS := pdata.NewInstrumentationLibrarySpans()
-	secondILS.InitEmpty()
-	input.InstrumentationLibrarySpans().Append(&secondILS)
-
-	firstLibrary := pdata.NewInstrumentationLibrary()
+	firstILS := input.InstrumentationLibrarySpans().At(0)
+	firstLibrary := firstILS.InstrumentationLibrary()
 	firstLibrary.InitEmpty()
 	firstLibrary.SetName("first-library")
-	firstLibrary.CopyTo(firstILS.InstrumentationLibrary())
-
-	secondLibrary := pdata.NewInstrumentationLibrary()
-	secondLibrary.InitEmpty()
-	secondLibrary.SetName("second-library")
-	secondLibrary.CopyTo(secondILS.InstrumentationLibrary())
-
-	firstSpan := pdata.NewSpan()
-	firstSpan.InitEmpty()
+	firstILS.Spans().Resize(2)
+	firstSpan := firstILS.Spans().At(0)
 	firstSpan.SetName("first-batch-first-span")
 	firstSpan.SetTraceID([]byte{1, 2, 3, 4})
-	firstILS.Spans().Append(&firstSpan)
-
-	secondSpan := pdata.NewSpan()
-	secondSpan.InitEmpty()
+	secondSpan := firstILS.Spans().At(1)
 	secondSpan.SetName("first-batch-second-span")
 	secondSpan.SetTraceID([]byte{1, 2, 3, 4})
-	firstILS.Spans().Append(&secondSpan)
 
-	thirdSpan := pdata.NewSpan()
-	thirdSpan.InitEmpty()
+	// the second ILS has one span
+	secondILS := input.InstrumentationLibrarySpans().At(1)
+	secondLibrary := secondILS.InstrumentationLibrary()
+	secondLibrary.InitEmpty()
+	secondLibrary.SetName("second-library")
+	secondILS.Spans().Resize(1)
+	thirdSpan := secondILS.Spans().At(0)
 	thirdSpan.SetName("second-batch-first-span")
 	thirdSpan.SetTraceID([]byte{1, 2, 3, 4})
-	secondILS.Spans().Append(&thirdSpan)
 
 	// test
 	batches := splitByTrace(input)
@@ -659,28 +628,20 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceSpans with 1 ILS and two traceIDs, resulting in two batches
 	input := pdata.NewResourceSpans()
 	input.InitEmpty()
+	input.InstrumentationLibrarySpans().Resize(1)
 
 	// the first ILS has two spans
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	input.InstrumentationLibrarySpans().Append(&ils)
-
-	library := pdata.NewInstrumentationLibrary()
+	ils := input.InstrumentationLibrarySpans().At(0)
+	library := ils.InstrumentationLibrary()
 	library.InitEmpty()
 	library.SetName("first-library")
-	library.CopyTo(ils.InstrumentationLibrary())
-
-	firstSpan := pdata.NewSpan()
-	firstSpan.InitEmpty()
+	ils.Spans().Resize(2)
+	firstSpan := ils.Spans().At(0)
 	firstSpan.SetName("first-batch-first-span")
 	firstSpan.SetTraceID([]byte{1, 2, 3, 4})
-	ils.Spans().Append(&firstSpan)
-
-	secondSpan := pdata.NewSpan()
-	secondSpan.InitEmpty()
+	secondSpan := ils.Spans().At(1)
 	secondSpan.SetName("first-batch-second-span")
 	secondSpan.SetTraceID([]byte{2, 3, 4, 5})
-	ils.Spans().Append(&secondSpan)
 
 	// test
 	batches := splitByTrace(input)
@@ -703,14 +664,11 @@ func TestSplitByTraceWithNilTraceID(t *testing.T) {
 	// prepare
 	input := pdata.NewResourceSpans()
 	input.InitEmpty()
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	input.InstrumentationLibrarySpans().Append(&ils)
-
-	firstSpan := pdata.NewSpan()
-	firstSpan.InitEmpty()
+	input.InstrumentationLibrarySpans().Resize(1)
+	ils := input.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	firstSpan := ils.Spans().At(0)
 	firstSpan.SetTraceID(nil)
-	ils.Spans().Append(&firstSpan)
 
 	// test
 	batches := splitByTrace(input)
@@ -733,18 +691,15 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(&span)
 
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
-	rs.InstrumentationLibrarySpans().Append(&ils)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(traceID)
+	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
 
 	expectedError := errors.New("some unexpected error")
 	returnedError := false
