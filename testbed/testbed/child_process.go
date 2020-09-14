@@ -59,7 +59,7 @@ func (rs *ResourceSpec) isSpecified() bool {
 }
 
 // ChildProcess implements the OtelcolRunner interface as a child process on the same machine executing
-//the test. The process can be monitored and the output of which will be written to a log file.
+// the test. The process can be monitored and the output of which will be written to a log file.
 type ChildProcess struct {
 	// Descriptive name of the process
 	name string

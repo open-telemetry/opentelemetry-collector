@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-//GenerateResource generates a OTLP Resource object with representative attributes for the
-//underlying resource type specified by the rscID input parameter.
+// GenerateResource generates a OTLP Resource object with representative attributes for the
+// underlying resource type specified by the rscID input parameter.
 func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
 	var attrs map[string]interface{}
 	switch rscID {

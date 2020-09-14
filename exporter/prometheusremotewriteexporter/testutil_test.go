@@ -282,7 +282,7 @@ var (
 	invalidIntHistogram    = "invalidIntHistogram"
 	invalidDoubleHistogram = "invalidDoubleHistogram"
 
-	//Category 3: nil data points
+	// Category 3: nil data points
 	nilDataPointIntGauge        = "nilDataPointIntGauge"
 	nilDataPointDoubleGauge     = "nilDataPointDoubleGauge"
 	nilDataPointIntSum          = "nilDataPointIntSum"
