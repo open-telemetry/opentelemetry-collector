@@ -51,8 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		ClientID: "otel-collector",
 		GroupID:  "otel-collector",
 		Authentication: kafkaexporter.Authentication{
-			Type: kafkaexporter.AuthTypeTLS,
-			TLS: configtls.TLSClientSetting{
+			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile:   "ca.pem",
 					CertFile: "cert.pem",

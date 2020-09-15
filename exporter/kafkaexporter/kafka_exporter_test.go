@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -47,15 +48,21 @@ func TestNewExporter_err_encoding(t *testing.T) {
 func TestNewExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
-		Authentication:  Authentication{Type: AuthType("foo")},
-		Encoding:        defaultEncoding,
+		Authentication: Authentication{
+			TLS: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "/doesnotexist",
+				},
+			},
+		},
+		Encoding: defaultEncoding,
 		Metadata: Metadata{
 			Full: false,
 		},
 	}
 	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown/unsupported authentication method")
+	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, exp)
 }
 

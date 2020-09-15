@@ -62,8 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		Encoding: "otlp_proto",
 		Brokers:  []string{"foo:123", "bar:456"},
 		Authentication: Authentication{
-			Type: "plain_text",
-			PlainText: PlainTextConfig{
+			PlainText: &PlainTextConfig{
 				Username: "jdoe",
 				Password: "pass",
 			},

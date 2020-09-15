@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -35,7 +34,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, defaultTopic, cfg.Topic)
 	assert.Equal(t, defaultGroupID, cfg.GroupID)
 	assert.Equal(t, defaultClientID, cfg.ClientID)
-	assert.Equal(t, kafkaexporter.AuthTypeNone, cfg.Authentication.Type)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {

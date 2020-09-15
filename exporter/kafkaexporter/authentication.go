@@ -16,29 +16,50 @@ package kafkaexporter
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Shopify/sarama"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
+// Authentication defines authentication.
+type Authentication struct {
+	PlainText *PlainTextConfig            `mapstructure:"plain_text"`
+	TLS       *configtls.TLSClientSetting `mapstructure:"tls"`
+	Kerberos  *KerberosConfig             `mapstructure:"kerberos"`
+}
+
+// PlainTextConfig defines plaintext authentication.
+type PlainTextConfig struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
+
+// KerberosConfig defines kereros configuration.
+type KerberosConfig struct {
+	ServiceName string `mapstructure:"service_name"`
+	Realm       string `mapstructure:"realm"`
+	UseKeyTab   bool   `mapstructure:"use_keytab"`
+	Username    string `mapstructure:"username"`
+	Password    string `mapstructure:"password" json:"-"`
+	ConfigPath  string `mapstructure:"config_file"`
+	KeyTabPath  string `mapstructure:"keytab_file"`
+}
+
 // ConfigureAuthentication configures authentication in sarama.Config.
 func ConfigureAuthentication(config Authentication, saramaConfig *sarama.Config) error {
-	switch AuthType(strings.TrimSpace(string(config.Type))) {
-	case AuthTypeNone, "":
-		return nil
-	case AuthTypeTLS:
-		return configureTLS(config.TLS, saramaConfig)
-	case AuthTypeKerberos:
-		configureKerberos(config.Kerberos, saramaConfig)
-		return nil
-	case AuthTypePlaintext:
-		configurePlaintext(config.PlainText, saramaConfig)
-		return nil
-	default:
-		return fmt.Errorf("unknown/unsupported authentication method %v to kafka cluster", config.Type)
+	if config.PlainText != nil {
+		configurePlaintext(*config.PlainText, saramaConfig)
 	}
+	if config.TLS != nil {
+		if err := configureTLS(*config.TLS, saramaConfig); err != nil {
+			return err
+		}
+	}
+	if config.Kerberos != nil {
+		configureKerberos(*config.Kerberos, saramaConfig)
+	}
+	return nil
 }
 
 func configurePlaintext(config PlainTextConfig, saramaConfig *sarama.Config) {

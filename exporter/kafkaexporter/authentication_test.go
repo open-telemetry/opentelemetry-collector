@@ -55,35 +55,31 @@ func TestAuthentication(t *testing.T) {
 		err          string
 	}{
 		{
-			auth: Authentication{Type: AuthType("foo")},
-			err:  "unknown/unsupported authentication method",
-		},
-		{
-			auth:         Authentication{Type: AuthTypePlaintext, PlainText: PlainTextConfig{Username: "jdoe", Password: "pass"}},
+			auth:         Authentication{PlainText: &PlainTextConfig{Username: "jdoe", Password: "pass"}},
 			saramaConfig: saramaPlaintext,
 		},
 		{
-			auth:         Authentication{Type: AuthTypeTLS, TLS: configtls.TLSClientSetting{}},
+			auth:         Authentication{TLS: &configtls.TLSClientSetting{}},
 			saramaConfig: saramaTLSCfg,
 		},
 		{
-			auth: Authentication{Type: AuthTypeTLS, TLS: configtls.TLSClientSetting{
+			auth: Authentication{TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{CAFile: "/doesnotexists"},
 			}},
 			saramaConfig: saramaTLSCfg,
 			err:          "failed to load TLS config",
 		},
 		{
-			auth:         Authentication{Type: AuthTypeKerberos, Kerberos: KerberosConfig{ServiceName: "foobar"}},
+			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar"}},
 			saramaConfig: saramaKerberosCfg,
 		},
 		{
-			auth:         Authentication{Type: AuthTypeKerberos, Kerberos: KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"}},
+			auth:         Authentication{Kerberos: &KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"}},
 			saramaConfig: saramaKerberosKeyTabCfg,
 		},
 	}
 	for _, test := range tests {
-		t.Run(string(test.auth.Type), func(t *testing.T) {
+		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
 			err := ConfigureAuthentication(test.auth, config)
 			if test.err != "" {

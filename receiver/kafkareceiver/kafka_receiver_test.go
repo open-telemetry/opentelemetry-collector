@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
@@ -59,15 +60,21 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 func TestNewExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
-		Authentication:  kafkaexporter.Authentication{Type: kafkaexporter.AuthType("foo")},
-		Encoding:        defaultEncoding,
+		Authentication: kafkaexporter.Authentication{
+			TLS: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "/doesnotexist",
+				},
+			},
+		},
+		Encoding: defaultEncoding,
 		Metadata: kafkaexporter.Metadata{
 			Full: false,
 		},
 	}
 	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown/unsupported authentication method")
+	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
 }
 

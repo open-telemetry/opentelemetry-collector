@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -44,45 +43,6 @@ type Config struct {
 
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"authentication"`
-}
-
-// AuthType defines authentication type
-type AuthType string
-
-const (
-	// No authentication
-	AuthTypeNone AuthType = "none"
-	// Plain text authentication
-	AuthTypePlaintext AuthType = "plain_text"
-	// TLS authentication
-	AuthTypeTLS AuthType = "tls"
-	// Kerberos authentication
-	AuthTypeKerberos AuthType = "kerberos"
-)
-
-// Authentication defines authentication.
-type Authentication struct {
-	Type      AuthType                   `mapstructure:"type"`
-	PlainText PlainTextConfig            `mapstructure:"plain_text"`
-	TLS       configtls.TLSClientSetting `mapstructure:"tls"`
-	Kerberos  KerberosConfig             `mapstructure:"kerberos"`
-}
-
-// PlainTextConfig defines plaintext authentication.
-type PlainTextConfig struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-}
-
-// KerberosConfig defines kereros configuration.
-type KerberosConfig struct {
-	ServiceName string `mapstructure:"service_name"`
-	Realm       string `mapstructure:"realm"`
-	UseKeyTab   bool   `mapstructure:"use_keytab"`
-	Username    string `mapstructure:"username"`
-	Password    string `mapstructure:"password" json:"-"`
-	ConfigPath  string `mapstructure:"config_file"`
-	KeyTabPath  string `mapstructure:"keytab_file"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

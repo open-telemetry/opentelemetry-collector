@@ -10,7 +10,6 @@ exporters:
         max: 15
     timeout: 10s
     authentication:
-      type: plain_text
       plain_text:
         username: jdoe
         password: pass
