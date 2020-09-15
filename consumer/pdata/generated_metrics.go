@@ -140,8 +140,8 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 // given ResourceMetrics at that new position.  The original ResourceMetrics
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es ResourceMetricsSlice) Append(e *ResourceMetrics) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es ResourceMetricsSlice) Append(e ResourceMetrics) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -331,8 +331,8 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 // given InstrumentationLibraryMetrics at that new position.  The original InstrumentationLibraryMetrics
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es InstrumentationLibraryMetricsSlice) Append(e *InstrumentationLibraryMetrics) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es InstrumentationLibraryMetricsSlice) Append(e InstrumentationLibraryMetrics) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -522,8 +522,8 @@ func (es MetricSlice) Resize(newLen int) {
 // given Metric at that new position.  The original Metric
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es MetricSlice) Append(e *Metric) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es MetricSlice) Append(e Metric) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // Metric represents one metric as a collection of datapoints.
@@ -1173,8 +1173,8 @@ func (es IntDataPointSlice) Resize(newLen int) {
 // given IntDataPoint at that new position.  The original IntDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es IntDataPointSlice) Append(e *IntDataPoint) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es IntDataPointSlice) Append(e IntDataPoint) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.
@@ -1406,8 +1406,8 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 // given DoubleDataPoint at that new position.  The original DoubleDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleDataPointSlice) Append(e *DoubleDataPoint) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es DoubleDataPointSlice) Append(e DoubleDataPoint) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
@@ -1639,8 +1639,8 @@ func (es IntHistogramDataPointSlice) Resize(newLen int) {
 // given IntHistogramDataPoint at that new position.  The original IntHistogramDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es IntHistogramDataPointSlice) Append(e *IntHistogramDataPoint) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es IntHistogramDataPointSlice) Append(e IntHistogramDataPoint) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.
@@ -1917,8 +1917,8 @@ func (es DoubleHistogramDataPointSlice) Resize(newLen int) {
 // given DoubleHistogramDataPoint at that new position.  The original DoubleHistogramDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleHistogramDataPointSlice) Append(e *DoubleHistogramDataPoint) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es DoubleHistogramDataPointSlice) Append(e DoubleHistogramDataPoint) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // DoubleHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of double values.
@@ -2195,8 +2195,8 @@ func (es IntExemplarSlice) Resize(newLen int) {
 // given IntExemplar at that new position.  The original IntExemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es IntExemplarSlice) Append(e *IntExemplar) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es IntExemplarSlice) Append(e IntExemplar) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // IntExemplar is a sample input int measurement.
@@ -2408,8 +2408,8 @@ func (es DoubleExemplarSlice) Resize(newLen int) {
 // given DoubleExemplar at that new position.  The original DoubleExemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleExemplarSlice) Append(e *DoubleExemplar) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // DoubleExemplar is a sample input double measurement.

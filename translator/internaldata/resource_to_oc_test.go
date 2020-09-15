@@ -137,13 +137,13 @@ func TestAttributeValueToString(t *testing.T) {
 
 	v = pdata.NewAttributeValueArray()
 	av := pdata.NewAttributeValueString(`b"\`)
-	v.ArrayVal().Append(&av)
+	v.ArrayVal().Append(av)
 	av = pdata.NewAttributeValueInt(123)
-	v.ArrayVal().Append(&av)
+	v.ArrayVal().Append(av)
 	av = pdata.NewAttributeValueNull()
-	v.ArrayVal().Append(&av)
+	v.ArrayVal().Append(av)
 	av = pdata.NewAttributeValueArray()
-	v.ArrayVal().Append(&av)
+	v.ArrayVal().Append(av)
 	assert.EqualValues(t, `["b\"\\",123,null,"\u003cInvalid array value\u003e"]`, attributeValueToString(v, false))
 }
 

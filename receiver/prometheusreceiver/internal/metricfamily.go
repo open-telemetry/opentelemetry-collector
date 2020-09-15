@@ -184,7 +184,7 @@ func (mf *metricFamily) ToMetric() (*metricspb.Metric, int, int) {
 	timeseries := make([]*metricspb.TimeSeries, 0, len(mf.groups))
 	switch mf.mtype {
 	// not supported currently
-	//case metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+	// case metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 	//	return nil
 	case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		for _, mg := range mf.getGroups() {

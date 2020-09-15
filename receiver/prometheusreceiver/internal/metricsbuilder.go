@@ -237,7 +237,7 @@ func convToOCAMetricType(metricType textparse.MetricType) metricspb.MetricDescri
 		return metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
-	//case textparse.MetricTypeGaugeHistogram:
+	// case textparse.MetricTypeGaugeHistogram:
 	//	return metricspb.MetricDescriptor_GAUGE_DISTRIBUTION
 	case textparse.MetricTypeSummary:
 		return metricspb.MetricDescriptor_SUMMARY

@@ -1141,8 +1141,7 @@ func generateTestBoolAttributeMap() AttributeMap {
 func fromArray(v []interface{}) AttributeValue {
 	arr := NewAnyValueArray()
 	for _, v := range v {
-		av := fromVal(v)
-		arr.Append(&av)
+		arr.Append(fromVal(v))
 	}
 	av := NewAttributeValueArray()
 	av.SetArrayVal(arr)
@@ -1169,8 +1168,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
 	assert.EqualValues(t, 0, a1.ArrayVal().Len())
 
-	av := NewAttributeValueDouble(123)
-	a1.ArrayVal().Append(&av)
+	a1.ArrayVal().Append(NewAttributeValueDouble(123))
 	assertArrayJSON(t, `[123]`, a1)
 	assert.EqualValues(t, 1, a1.ArrayVal().Len())
 
@@ -1183,13 +1181,12 @@ func TestAttributeValueArray(t *testing.T) {
 	assertArrayJSON(t, `[]`, a2)
 	assert.EqualValues(t, 0, a2.ArrayVal().Len())
 
-	av = NewAttributeValueString("somestr")
-	a2.ArrayVal().Append(&av)
+	a2.ArrayVal().Append(NewAttributeValueString("somestr"))
 	assertArrayJSON(t, `["somestr"]`, a2)
 	assert.EqualValues(t, 1, a2.ArrayVal().Len())
 
 	// Insert the second array as a child.
-	a1.ArrayVal().Append(&a2)
+	a1.ArrayVal().Append(a2)
 	assertArrayJSON(t, `[123, ["somestr"]]`, a1)
 	assert.EqualValues(t, 2, a1.ArrayVal().Len())
 
@@ -1259,8 +1256,7 @@ func TestAnyValueArrayWithNilValues(t *testing.T) {
 	assert.EqualValues(t, AttributeValueNULL, val.Type())
 	assert.EqualValues(t, "", val.StringVal())
 
-	av := NewAttributeValueString("other_value")
-	sm.Append(&av)
+	sm.Append(NewAttributeValueString("other_value"))
 	val = sm.At(4)
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())

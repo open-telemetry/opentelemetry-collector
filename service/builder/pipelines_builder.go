@@ -162,7 +162,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
 			var proc component.TraceProcessor
-			proc, err = factory.CreateTraceProcessor(ctx, creationParams, tc, procCfg)
+			proc, err = factory.CreateTraceProcessor(ctx, creationParams, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -170,7 +170,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			tc = proc
 		case configmodels.MetricsDataType:
 			var proc component.MetricsProcessor
-			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, mc, procCfg)
+			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, procCfg, mc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}

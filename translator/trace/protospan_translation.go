@@ -281,26 +281,26 @@ func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 	for _, val := range jArray {
 		if val == nil {
 			av := pdata.NewAttributeValueNull()
-			dest.Append(&av)
+			dest.Append(av)
 			continue
 		}
 		if s, ok := val.(string); ok {
 			av := pdata.NewAttributeValueString(s)
-			dest.Append(&av)
+			dest.Append(av)
 		} else if d, ok := val.(float64); ok {
 			if math.Mod(d, 1.0) == 0.0 {
 				av := pdata.NewAttributeValueInt(int64(d))
-				dest.Append(&av)
+				dest.Append(av)
 			} else {
 				av := pdata.NewAttributeValueDouble(d)
-				dest.Append(&av)
+				dest.Append(av)
 			}
 		} else if b, ok := val.(bool); ok {
 			av := pdata.NewAttributeValueBool(b)
-			dest.Append(&av)
+			dest.Append(av)
 		} else {
 			av := pdata.NewAttributeValueString("<Invalid array value>")
-			dest.Append(&av)
+			dest.Append(av)
 		}
 	}
 }

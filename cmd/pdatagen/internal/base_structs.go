@@ -138,8 +138,8 @@ func (es ${structName}) Resize(newLen int) {
 // given ${elementName} at that new position.  The original ${elementName}
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es ${structName}) Append(e *${elementName}) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es ${structName}) Append(e ${elementName}) {
+	*es.orig = append(*es.orig, *e.orig)
 }`
 
 const sliceTestTemplate = `func Test${structName}(t *testing.T) {
@@ -248,13 +248,13 @@ func Test${structName}_Append(t *testing.T) {
 	emptyVal := New${elementName}()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := New${elementName}()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())

@@ -140,8 +140,8 @@ func (es ResourceLogsSlice) Resize(newLen int) {
 // given ResourceLogs at that new position.  The original ResourceLogs
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es ResourceLogsSlice) Append(e *ResourceLogs) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es ResourceLogsSlice) Append(e ResourceLogs) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // ResourceLogs is a collection of logs from a Resource.
@@ -331,8 +331,8 @@ func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
 // given InstrumentationLibraryLogs at that new position.  The original InstrumentationLibraryLogs
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es InstrumentationLibraryLogsSlice) Append(e *InstrumentationLibraryLogs) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es InstrumentationLibraryLogsSlice) Append(e InstrumentationLibraryLogs) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
@@ -522,8 +522,8 @@ func (es LogSlice) Resize(newLen int) {
 // given LogRecord at that new position.  The original LogRecord
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es LogSlice) Append(e *LogRecord) {
-	(*es.orig) = append((*es.orig), *e.orig)
+func (es LogSlice) Append(e LogRecord) {
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
