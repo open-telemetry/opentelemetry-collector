@@ -42,7 +42,7 @@ type Config struct {
 	Metadata Metadata `mapstructure:"metadata"`
 
 	// Authentication defines used authentication mechanism.
-	Authentication Authentication `mapstructure:"authentication"`
+	Authentication Authentication `mapstructure:"auth"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

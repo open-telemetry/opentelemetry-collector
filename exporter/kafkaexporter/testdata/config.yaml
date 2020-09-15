@@ -9,7 +9,7 @@ exporters:
       retry:
         max: 15
     timeout: 10s
-    authentication:
+    auth:
       plain_text:
         username: jdoe
         password: pass

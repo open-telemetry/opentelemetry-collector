@@ -17,8 +17,7 @@ The following settings can be optionally configured:
   - `zipkin_thrift`: the payload is deserialized into Zipkin Thrift spans.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
-- `authentication`
-  - `type` (default = none): The authentication type. Supported types are `plain_text`, `tls`, `kerberos`.
+- `auth`
   - `plain_text`
     - `username`: The username to use.
     - `password`: The password to use

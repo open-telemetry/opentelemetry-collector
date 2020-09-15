@@ -39,5 +39,5 @@ type Config struct {
 	// Client, and shared by the Producer/Consumer.
 	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
 
-	Authentication kafkaexporter.Authentication `mapstructure:"authentication"`
+	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
 }

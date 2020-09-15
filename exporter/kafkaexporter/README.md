@@ -14,8 +14,7 @@ The following settings can be optionally configured:
   - `otlp_proto`: the payload is serialized to `ExportTraceServiceRequest`.
   - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`.
   - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`.
-- `authentication`
-  - `type` (default = none): The authentication type. Supported types are `plain_text`, `tls`, `kerberos`.
+- `auth`
   - `plain_text`
     - `username`: The username to use.
     - `password`: The password to use
