@@ -117,10 +117,10 @@ func createAttrProcessor(cfg *Config, logger *zap.Logger) (*processorhelper.Attr
 // handleDeprecatedFields converts deprecated ResourceType and Labels fields into Attributes.Upsert
 func handleDeprecatedFields(cfg *Config, logger *zap.Logger) {
 
-	// Upsert value from deprecated ResourceType config to resource attributes with "opencensus.type" key
+	// Upsert value from deprecated ResourceType config to resource attributes with "opencensus.resourcetype" key
 	if cfg.ResourceType != "" {
 		logger.Warn("[DEPRECATED] \"type\" field is deprecated and will be removed in future release. " +
-			"Please set the value to \"attributes\" with key=opencensus.type and action=upsert.")
+			"Please set the value to \"attributes\" with key=opencensus.resourcetype and action=upsert.")
 		upsertResourceType := processorhelper.ActionKeyValue{
 			Action: processorhelper.UPSERT,
 			Key:    conventions.OCAttributeResourceType,
