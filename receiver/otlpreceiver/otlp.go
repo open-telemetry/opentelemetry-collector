@@ -75,6 +75,7 @@ func newOtlpReceiver(cfg *Config) (*otlpReceiver, error) {
 			OrigName:     true,
 		}
 		r.gatewayMux = gatewayruntime.NewServeMux(
+			gatewayruntime.WithProtoErrorHandler(gatewayruntime.DefaultHTTPProtoErrorHandler),
 			gatewayruntime.WithMarshalerOption("application/x-protobuf", &xProtobufMarshaler{}),
 			gatewayruntime.WithMarshalerOption(gatewayruntime.MIMEWildcard, jsonpb),
 		)
