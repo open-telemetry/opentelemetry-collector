@@ -164,13 +164,13 @@ func TestAnyValueArray_Append(t *testing.T) {
 	emptyVal := NewAttributeValue()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewAttributeValue()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())

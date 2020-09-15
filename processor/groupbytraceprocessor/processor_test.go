@@ -197,8 +197,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	span := ils.Spans().At(0)
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
-	emptyRs := pdata.NewResourceSpans()
-	batch.ResourceSpans().Append(&emptyRs)
+	batch.ResourceSpans().Append(pdata.NewResourceSpans())
 
 	p, err := newGroupByTraceProcessor(logger, st, next, config)
 	require.NoError(t, err)

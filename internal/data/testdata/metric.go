@@ -270,23 +270,18 @@ func GenerateMetricsAllTypesNilDataPoint() pdata.Metrics {
 	ms := ilm0.Metrics()
 	ms.Resize(6)
 
-	nilInt := pdata.NewIntDataPoint()
-	nilDouble := pdata.NewDoubleDataPoint()
-	nilDoubleHistogram := pdata.NewDoubleHistogramDataPoint()
-	nilIntHistogram := pdata.NewIntHistogramDataPoint()
-
 	initMetric(ms.At(0), TestGaugeDoubleMetricName, pdata.MetricDataTypeDoubleGauge)
-	ms.At(0).DoubleGauge().DataPoints().Append(&nilDouble)
+	ms.At(0).DoubleGauge().DataPoints().Append(pdata.NewDoubleDataPoint())
 	initMetric(ms.At(1), TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge)
-	ms.At(1).IntGauge().DataPoints().Append(&nilInt)
+	ms.At(1).IntGauge().DataPoints().Append(pdata.NewIntDataPoint())
 	initMetric(ms.At(2), TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum)
-	ms.At(2).DoubleSum().DataPoints().Append(&nilDouble)
+	ms.At(2).DoubleSum().DataPoints().Append(pdata.NewDoubleDataPoint())
 	initMetric(ms.At(3), TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
-	ms.At(3).IntSum().DataPoints().Append(&nilInt)
+	ms.At(3).IntSum().DataPoints().Append(pdata.NewIntDataPoint())
 	initMetric(ms.At(4), TestDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram)
-	ms.At(4).DoubleHistogram().DataPoints().Append(&nilDoubleHistogram)
+	ms.At(4).DoubleHistogram().DataPoints().Append(pdata.NewDoubleHistogramDataPoint())
 	initMetric(ms.At(5), TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram)
-	ms.At(5).IntHistogram().DataPoints().Append(&nilIntHistogram)
+	ms.At(5).IntHistogram().DataPoints().Append(pdata.NewIntHistogramDataPoint())
 
 	return md
 }

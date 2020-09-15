@@ -335,7 +335,7 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 			exemplar := pdata.NewDoubleExemplar()
 			exemplar.InitEmpty()
 			exemplarToMetrics(ocBuckets[i].GetExemplar(), exemplar)
-			dp.Exemplars().Append(&exemplar)
+			dp.Exemplars().Append(exemplar)
 		}
 	}
 	dp.SetBucketCounts(buckets)

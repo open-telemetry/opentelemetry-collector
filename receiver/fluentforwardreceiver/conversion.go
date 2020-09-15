@@ -120,7 +120,7 @@ func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	}
 }
 
-func decodeTimestampToLogRecord(dc *msgp.Reader, lr *pdata.LogRecord) error {
+func decodeTimestampToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 	tsIntf, err := dc.ReadIntf()
 	if err != nil {
 		return msgp.WrapError(err, "Time")
@@ -135,7 +135,7 @@ func decodeTimestampToLogRecord(dc *msgp.Reader, lr *pdata.LogRecord) error {
 	return nil
 }
 
-func parseRecordToLogRecord(dc *msgp.Reader, lr *pdata.LogRecord) error {
+func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 	attrs := lr.Attributes()
 
 	recordLen, err := dc.ReadMapHeader()
@@ -165,20 +165,18 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr *pdata.LogRecord) error {
 }
 
 type MessageEventLogRecord struct {
-	pdata.LogRecord
+	pdata.LogSlice
 	OptionsMap
 }
 
 func (melr *MessageEventLogRecord) LogRecords() pdata.LogSlice {
-	out := pdata.NewLogSlice()
-	out.Append(&melr.LogRecord)
-	return out
+	return melr.LogSlice
 }
 
 func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
-	melr.LogRecord = pdata.NewLogRecord()
-	melr.LogRecord.InitEmpty()
-	melr.Body().InitEmpty()
+	melr.LogSlice = pdata.NewLogSlice()
+	melr.LogSlice.Resize(1)
+	melr.LogSlice.At(0).Body().InitEmpty()
 
 	var arrLen uint32
 	var err error
@@ -196,15 +194,15 @@ func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	attrs := melr.LogRecord.Attributes()
+	attrs := melr.LogSlice.At(0).Attributes()
 	attrs.InsertString(tagAttributeKey, tag)
 
-	err = decodeTimestampToLogRecord(dc, &melr.LogRecord)
+	err = decodeTimestampToLogRecord(dc, melr.LogSlice.At(0))
 	if err != nil {
 		return msgp.WrapError(err, "Time")
 	}
 
-	err = parseRecordToLogRecord(dc, &melr.LogRecord)
+	err = parseRecordToLogRecord(dc, melr.LogSlice.At(0))
 	if err != nil {
 		return err
 	}
@@ -306,12 +304,12 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		return msgp.ArrayError{Wanted: 2, Got: arrLen}
 	}
 
-	err = decodeTimestampToLogRecord(dc, &lr)
+	err = decodeTimestampToLogRecord(dc, lr)
 	if err != nil {
 		return msgp.WrapError(err, "Time")
 	}
 
-	return parseRecordToLogRecord(dc, &lr)
+	return parseRecordToLogRecord(dc, lr)
 }
 
 type PackedForwardEventLogRecords struct {
@@ -414,6 +412,6 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 		lr.Attributes().InsertString(tagAttributeKey, tag)
 
-		pfe.LogSlice.Append(&lr)
+		pfe.LogSlice.Append(lr)
 	}
 }

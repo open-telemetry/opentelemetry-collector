@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Fix slice Append to accept by value the element in pdata
+
 ## v0.10.0 Beta
 
 ## 🛑 Breaking changes 🛑

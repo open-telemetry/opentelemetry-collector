@@ -226,8 +226,7 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID) error {
 func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) error {
 	trace := pdata.NewTraces()
 	for _, rs := range rss {
-		prs := rs
-		trace.ResourceSpans().Append(&prs)
+		trace.ResourceSpans().Append(rs)
 	}
 	return sp.nextConsumer.ConsumeTraces(context.Background(), trace)
 }
@@ -289,7 +288,7 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 				// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 				// and set our own spans
 				ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
-				newRS.InstrumentationLibrarySpans().Append(&newILS)
+				newRS.InstrumentationLibrarySpans().Append(newILS)
 
 				batch := &singleTraceBatch{
 					traceID: span.TraceID(),
@@ -300,7 +299,7 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 			}
 
 			// there is only one instrumentation library per batch
-			batches[sTraceID].rs.InstrumentationLibrarySpans().At(0).Spans().Append(&span)
+			batches[sTraceID].rs.InstrumentationLibrarySpans().At(0).Spans().Append(span)
 		}
 	}
 
