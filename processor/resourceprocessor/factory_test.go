@@ -47,11 +47,11 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopMetricsExporter(), cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopMetricsExporter())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 }
@@ -60,10 +60,10 @@ func TestInvalidEmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopMetricsExporter(), cfg)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopMetricsExporter())
 	assert.Error(t, err)
 }
 
@@ -79,10 +79,10 @@ func TestInvalidAttributeActions(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	assert.Error(t, err)
 }
 

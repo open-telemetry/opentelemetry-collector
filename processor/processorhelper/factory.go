@@ -109,11 +109,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a component.TraceProcessor based on this config.
-func (f *factory) CreateTraceProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor) (component.TraceProcessor, error) {
+func (f *factory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
 	if f.createTraceProcessor != nil {
 		return f.createTraceProcessor(ctx, params, cfg, nextConsumer)
 	}
@@ -121,11 +117,7 @@ func (f *factory) CreateTraceProcessor(
 }
 
 // CreateMetricsProcessor creates a consumer.MetricsConsumer based on this config.
-func (f *factory) CreateMetricsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor) (component.MetricsProcessor, error) {
+func (f *factory) CreateMetricsProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
 	if f.createMetricsProcessor != nil {
 		return f.createMetricsProcessor(ctx, params, cfg, nextConsumer)
 	}

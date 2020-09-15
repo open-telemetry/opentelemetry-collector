@@ -105,7 +105,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := &testTraceConsumer{}
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, ttn, tt.config)
+			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
 			require.NoError(t, err)
 			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
 
@@ -117,7 +117,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := &testMetricsConsumer{}
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tmn, tt.config)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tmn)
 			require.NoError(t, err)
 			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
 
@@ -151,13 +151,13 @@ func TestResourceProcessorError(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, ttn, badCfg)
+	rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
 	require.Error(t, err)
 	require.Nil(t, rtp)
 
 	// Test metrics consumer
 	tmn := &testMetricsConsumer{}
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tmn, badCfg)
+	rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, tmn)
 	require.Error(t, err)
 	require.Nil(t, rmp)
 
