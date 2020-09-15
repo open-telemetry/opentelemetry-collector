@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
@@ -104,7 +105,10 @@ func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 			}()
 		}
 		if r.cfg.HTTP != nil {
-			r.serverHTTP = r.cfg.HTTP.ToServer(r.gatewayMux)
+			r.serverHTTP = r.cfg.HTTP.ToServer(
+				r.gatewayMux,
+				confighttp.WithErrorHandler(OTLPErrorHandler),
+			)
 			var hln net.Listener
 			hln, err = r.cfg.HTTP.ToListener()
 			if err != nil {

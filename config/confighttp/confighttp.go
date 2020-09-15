@@ -23,6 +23,7 @@ import (
 	"github.com/rs/cors"
 
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type HTTPClientSettings struct {
@@ -126,11 +127,35 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 	return listener, nil
 }
 
-func (hss *HTTPServerSettings) ToServer(handler http.Handler) *http.Server {
+// toServerOptions has options that change the behavior of the HTTP server
+// returned by HTTPServerSettings.ToServer().
+type toServerOptions struct {
+	errorHandler middleware.ErrorHandler
+}
+
+type ToServerOption func(opts *toServerOptions)
+
+// WithErrorHandler overrides the HTTP error handler that gets invoked
+// when there is a failure inside middleware.HTTPContentDecompressor.
+func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
+	return func(opts *toServerOptions) {
+		opts.errorHandler = e
+	}
+}
+
+func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOption) *http.Server {
+	serverOpts := &toServerOptions{}
+	for _, o := range opts {
+		o(serverOpts)
+	}
 	if len(hss.CorsOrigins) > 0 {
 		co := cors.Options{AllowedOrigins: hss.CorsOrigins}
 		handler = cors.New(co).Handler(handler)
 	}
+	handler = middleware.HTTPContentDecompressor(
+		handler,
+		middleware.WithErrorHandler(serverOpts.errorHandler),
+	)
 	return &http.Server{
 		Handler: handler,
 	}
