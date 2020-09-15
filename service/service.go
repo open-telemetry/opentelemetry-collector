@@ -111,10 +111,10 @@ type Parameters struct {
 }
 
 // ConfigFactory creates config.
-type ConfigFactory func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error)
+type ConfigFactory func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
-func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
+func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")
@@ -123,6 +123,16 @@ func FileLoaderConfigFactory(v *viper.Viper, factories component.Factories) (*co
 	err := v.ReadInConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
+	}
+
+	all := v.AllSettings()
+	for key, value := range all {
+		v.Set(key, value)
+	}
+
+	// handle --set flag and override properties from the configuration file
+	if err := addSetFlagProperties(v, cmd); err != nil {
+		return nil, fmt.Errorf("failed to process set flag: %v", err)
 	}
 	return config.Load(v, factories)
 }
@@ -171,6 +181,7 @@ func New(params Parameters) (*Application, error) {
 		addFlags(flagSet)
 	}
 	rootCmd.Flags().AddGoFlagSet(flagSet)
+	addSetFlag(rootCmd.Flags())
 
 	app.rootCmd = rootCmd
 
@@ -275,7 +286,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 	}
 
 	app.logger.Info("Loading configuration...")
-	cfg, err := factory(app.v, app.factories)
+	cfg, err := factory(app.v, app.rootCmd, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}

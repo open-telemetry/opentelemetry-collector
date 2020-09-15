@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/shirou/gopsutil/process"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -106,7 +107,7 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 			return ipp.config, nil
 		},
 		Factories: ipp.factories,
