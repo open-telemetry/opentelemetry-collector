@@ -38,9 +38,9 @@ func (*xProtobufMarshaler) ContentType() string {
 
 var jsonMarshaller = &jsonpb.Marshaler{}
 
-// OTLPErrorHandler encodes the HTTP error message inside a rpc.Status message as required
+// errorHandler encodes the HTTP error message inside a rpc.Status message as required
 // by the OTLP protocol.
-func OTLPErrorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
+func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
 	var (
 		msg []byte
 		s   *status.Status
