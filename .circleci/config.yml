@@ -119,59 +119,59 @@ workflows:
       - windows-test:
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup-environment:
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - lint:
           requires:
             - setup-environment
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - cross-compile:
           requires:
             - setup-environment
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - correctness:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - test:
           requires:
             - setup-environment
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - gosec:
           requires:
             - setup-environment
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - coverage:
           requires:
             - setup-environment
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - windows-msi:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
           requires:
             - cross-compile
@@ -202,7 +202,7 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-dev:
           requires:
             - cross-compile
@@ -224,7 +224,7 @@ workflows:
       - check-links:
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-package:
           name: deb-package
           package_type: deb
@@ -232,7 +232,7 @@ workflows:
             - cross-compile
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-package:
           name: rpm-package
           package_type: rpm
@@ -240,19 +240,19 @@ workflows:
             - cross-compile
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
   contrib-test:
     jobs:
       - setup-environment:
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - contribtest:
           requires:
             - setup-environment
           filters:
             tags:
-              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
 
 jobs:
   setup-environment:
