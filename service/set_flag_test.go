@@ -41,11 +41,11 @@ func TestSetFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	settings := v.AllSettings()
-	assert.Equal(t, 3, len(settings))
-	assert.Equal(t, "2s", v.Get("processors.batch.timeout"))
-	assert.Equal(t, "3s", v.Get("processors.batch/foo.timeout"))
-	assert.Equal(t, "foo:9200,foo2:9200", v.Get("exporters.kafka.brokers"))
-	assert.Equal(t, "localhost:1818", v.Get("receivers.otlp.protocols.grpc.endpoint"))
+	assert.Equal(t, 4, len(settings))
+	assert.Equal(t, "2s", v.Get("processors::batch::timeout"))
+	assert.Equal(t, "3s", v.Get("processors::batch/foo::timeout"))
+	assert.Equal(t, "foo:9200,foo2:9200", v.Get("exporters::kafka::brokers"))
+	assert.Equal(t, "localhost:1818", v.Get("receivers::otlp::protocols::grpc::endpoint"))
 }
 
 func TestSetFlags_empty(t *testing.T) {

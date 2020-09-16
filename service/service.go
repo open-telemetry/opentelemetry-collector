@@ -119,15 +119,14 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 	if file == "" {
 		return nil, errors.New("config file not specified")
 	}
-	v.SetConfigFile(file)
-	err := v.ReadInConfig()
+	viperFile := config.NewViper()
+	viperFile.SetConfigFile(file)
+	err := viperFile.ReadInConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
 	}
-
-	all := v.AllSettings()
-	for key, value := range all {
-		v.Set(key, value)
+	for _, k := range viperFile.AllKeys() {
+		v.Set(k, viperFile.Get(k))
 	}
 
 	// handle --set flag and override properties from the configuration file

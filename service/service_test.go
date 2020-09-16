@@ -21,10 +21,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
-	"go.opentelemetry.io/collector/service/builder"
 	"net/http"
 	"sort"
 	"strconv"
@@ -45,6 +41,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/processor/attributesprocessor"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/service/builder"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -535,8 +535,9 @@ func TestSetFlag(t *testing.T) {
 		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
 		require.Error(t, err)
 		require.Nil(t, cfg)
+
 	})
-	t.Run("unknown_component_instance", func(t *testing.T) {
+	t.Run("component_not_added_to_pipeline", func(t *testing.T) {
 		app, err := New(params)
 		require.NoError(t, err)
 		err = app.rootCmd.ParseFlags([]string{
@@ -547,9 +548,17 @@ func TestSetFlag(t *testing.T) {
 		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
-
 		err = config.ValidateConfig(cfg, zap.NewNop())
-		require.Error(t, err)
+		require.NoError(t, err)
+
+		var processors []string
+		for k := range cfg.Processors {
+			processors = append(processors, k)
+		}
+		sort.Strings(processors)
+		// batch/foo is not added to the pipeline
+		assert.Equal(t, []string{"attributes", "batch", "batch/foo", "queued_retry"}, processors)
+		assert.Equal(t, []string{"attributes", "batch", "queued_retry"}, cfg.Service.Pipelines["traces"].Processors)
 	})
 	t.Run("ok", func(t *testing.T) {
 		app, err := New(params)
@@ -569,6 +578,8 @@ func TestSetFlag(t *testing.T) {
 		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
+		err = config.ValidateConfig(cfg, zap.NewNop())
+		require.NoError(t, err)
 
 		assert.Equal(t, 3, len(cfg.Processors))
 		batch := cfg.Processors["batch"].(*batchprocessor.Config)
@@ -580,7 +591,6 @@ func TestSetFlag(t *testing.T) {
 		assert.Equal(t, "foo", attributes.Actions[0].Key)
 		assert.Equal(t, "bar", attributes.Actions[0].Value)
 	})
-
 }
 
 func TestSetFlag_component_does_not_exist(t *testing.T) {
@@ -606,7 +616,6 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
-
 
 func constructMimumalOpConfig(t *testing.T, factories component.Factories) *configmodels.Config {
 	configStr := `

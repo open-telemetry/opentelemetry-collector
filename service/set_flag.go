@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	setFlagName = "set"
+	setFlagName     = "set"
 	setFlagFileType = "properties"
 )
 
@@ -58,8 +58,8 @@ func addSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 		return fmt.Errorf("failed to read set flag config: %v", err)
 	}
 
-	for key, value := range viperFlags.AllSettings() {
-		v.Set(key, value)
+	for _, k := range viperFlags.AllKeys() {
+		v.Set(k, viperFlags.Get(k))
 	}
 	return nil
 }
