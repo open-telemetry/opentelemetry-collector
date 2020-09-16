@@ -281,6 +281,19 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			err: nil,
 		},
 		{
+			name: "library-info",
+			td:   generateTraceDataWithLibraryInfo(),
+			jb: model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNotSet,
+				},
+				Spans: []*model.Span{
+					generateProtoSpanWithLibraryInfo("io.opentelemetry.test"),
+				},
+			},
+			err: nil,
+		},
+		{
 			name: "two-spans-child-parent",
 			td:   generateTraceDataTwoSpansChildParent(),
 			jb: model.Batch{
