@@ -19,16 +19,24 @@ The following settings can be optionally configured:
     - `username`: The username to use.
     - `password`: The password to use
   - `tls`
-    - `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
+    - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
       only be used if `insecure` is set to true.
-    - `cert_file` path to the TLS cert to use for TLS required connections. Should
+    - `cert_file`: path to the TLS cert to use for TLS required connections. Should
       only be used if `insecure` is set to true.
-    - `key_file` path to the TLS key to use for TLS required connections. Should
+    - `key_file`: path to the TLS key to use for TLS required connections. Should
       only be used if `insecure` is set to true.
-    - `insecure`  (default = false): Disable verifying the server's certificate chain and host 
+    - `insecure` (default = false): Disable verifying the server's certificate chain and host 
       name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client
       in order to support virtual hosting.
+  - `kerberos`
+    - `service_name`: Kerberos service name
+    - `realm`: Kerberos realm
+    - `use_keytab`:  Use of keytab instead of password, if this is true, keytab file will be used instead of password
+    - `username`: The Kerberos username used for authenticate with KDC
+    - `password`: The Kerberos password used for authenticate with KDC
+    - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
+    - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. 
                                     When disabled the client does not make the initial request to broker at the startup.

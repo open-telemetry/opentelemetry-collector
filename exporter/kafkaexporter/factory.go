@@ -77,7 +77,6 @@ func createDefaultConfig() configmodels.Exporter {
 		Brokers:         []string{defaultBroker},
 		Topic:           defaultTopic,
 		Encoding:        defaultEncoding,
-		Authentication:  Authentication{},
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
