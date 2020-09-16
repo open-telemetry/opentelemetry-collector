@@ -39,7 +39,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -203,57 +202,6 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 
 	// Verify disallowed domain gets responses that disallow CORS.
 	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
-}
-
-const (
-	asSubContentType = true
-	asContentType    = false
-)
-
-func runContentTypeTests(addr string, contentTypeDesignation bool, contentType string) error {
-	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithDisableRetry(),
-	}
-
-	if contentTypeDesignation == asContentType {
-		opts = append(opts, grpc.WithDefaultCallOptions(
-			grpc.Header(&metadata.MD{"Content-Type": []string{contentType}})))
-	} else {
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.CallContentSubtype(contentType)))
-	}
-
-	cc, err := grpc.Dial(addr, opts...)
-	if err != nil {
-		return fmt.Errorf("creating grpc.ClientConn: %v", err)
-	}
-	defer cc.Close()
-
-	// First step is to send the Node.
-	acc := agenttracepb.NewTraceServiceClient(cc)
-
-	stream, err := acc.Export(context.Background())
-	if err != nil {
-		return fmt.Errorf("initializing the export stream: %v", err)
-	}
-
-	msg := &agenttracepb.ExportTraceServiceRequest{
-		Node: &commonpb.Node{
-			Attributes: map[string]string{
-				"sub-type": contentType,
-			},
-		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte{
-					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-					0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-				},
-			},
-		},
-	}
-	return stream.Send(msg)
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
