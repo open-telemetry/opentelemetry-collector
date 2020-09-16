@@ -19,7 +19,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -32,8 +32,8 @@ var (
 )
 
 // MetricViews returns the metrics views related to batching
-func MetricViews(level telemetry.Level) []*view.View {
-	if level == telemetry.None {
+func MetricViews(level configtelemetry.Level) []*view.View {
+	if level == configtelemetry.LevelNone {
 		return nil
 	}
 

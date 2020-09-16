@@ -12,17 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observ
+package configtelemetry
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/config/configtelemetry"
-)
-
-func TestViews(t *testing.T) {
-	require.Greater(t, len(Views(configtelemetry.LevelBasic)), 2)
-	require.Len(t, Views(configtelemetry.LevelNone), 0)
-}
+// Package with interfaces and structs only.
