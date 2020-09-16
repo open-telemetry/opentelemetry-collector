@@ -108,7 +108,7 @@ func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 		if r.cfg.HTTP != nil {
 			r.serverHTTP = r.cfg.HTTP.ToServer(
 				r.gatewayMux,
-				confighttp.WithErrorHandler(OTLPErrorHandler),
+				confighttp.WithErrorHandler(errorHandler),
 			)
 			var hln net.Listener
 			hln, err = r.cfg.HTTP.ToListener()
