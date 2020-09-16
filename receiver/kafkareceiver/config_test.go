@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 )
 
@@ -49,6 +50,15 @@ func TestLoadConfig(t *testing.T) {
 		Brokers:  []string{"foo:123", "bar:456"},
 		ClientID: "otel-collector",
 		GroupID:  "otel-collector",
+		Authentication: kafkaexporter.Authentication{
+			TLS: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   "ca.pem",
+					CertFile: "cert.pem",
+					KeyFile:  "key.pem",
+				},
+			},
+		},
 		Metadata: kafkaexporter.Metadata{
 			Full: true,
 			Retry: kafkaexporter.MetadataRetry{

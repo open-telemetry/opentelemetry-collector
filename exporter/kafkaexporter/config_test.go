@@ -61,6 +61,12 @@ func TestLoadConfig(t *testing.T) {
 		Topic:    "spans",
 		Encoding: "otlp_proto",
 		Brokers:  []string{"foo:123", "bar:456"},
+		Authentication: Authentication{
+			PlainText: &PlainTextConfig{
+				Username: "jdoe",
+				Password: "pass",
+			},
+		},
 		Metadata: Metadata{
 			Full: false,
 			Retry: MetadataRetry{

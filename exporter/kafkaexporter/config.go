@@ -41,8 +41,8 @@ type Config struct {
 	// Client, and shared by the Producer/Consumer.
 	Metadata Metadata `mapstructure:"metadata"`
 
-	// TODO authentication
-	// TODO batch settings
+	// Authentication defines used authentication mechanism.
+	Authentication Authentication `mapstructure:"auth"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

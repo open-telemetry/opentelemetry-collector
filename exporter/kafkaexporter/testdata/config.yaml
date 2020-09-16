@@ -9,6 +9,10 @@ exporters:
       retry:
         max: 15
     timeout: 10s
+    auth:
+      plain_text:
+        username: jdoe
+        password: pass
     sending_queue:
       enabled: true
       num_consumers: 2

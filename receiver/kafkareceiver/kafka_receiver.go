@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -66,6 +67,9 @@ func newReceiver(config Config, params component.ReceiverCreateParams, unmarshal
 			return nil, err
 		}
 		c.Version = version
+	}
+	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
 	if err != nil {

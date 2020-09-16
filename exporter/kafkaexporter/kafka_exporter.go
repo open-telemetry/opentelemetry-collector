@@ -61,6 +61,9 @@ func newExporter(config Config, params component.ExporterCreateParams, marshalle
 		}
 		c.Version = version
 	}
+	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
+		return nil, err
+	}
 	producer, err := sarama.NewSyncProducer(config.Brokers, c)
 	if err != nil {
 		return nil, err
