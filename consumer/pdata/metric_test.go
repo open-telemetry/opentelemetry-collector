@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
@@ -675,6 +676,27 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	}, MetricsToOtlp(metricData))
 }
 
+func TestMetrics_ToOtlpProtoBytes(t *testing.T) {
+	md := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestProtoResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+				},
+			},
+		},
+	})
+	bytes, err := md.ToOtlpProtoBytes()
+	assert.Nil(t, err)
+
+	ms := otlpcollectormetrics.ExportMetricsServiceRequest{}
+	err = gogoproto.Unmarshal(bytes, &ms)
+	assert.Nil(t, err)
+	assert.Equal(t, ms.GetResourceMetrics(), MetricsToOtlp(md))
+}
+
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
@@ -755,6 +777,25 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 		md := MetricsFromOtlp(resourceMetricsList)
 		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleHistogram().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
 		MetricsToOtlp(md)
+	}
+}
+
+func BenchmarkMetrics_ToOtlpProtoBytes_PassThrough(b *testing.B) {
+	metrics := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
+		{
+			Resource: generateTestProtoResource(),
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				{
+					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
+				},
+			},
+		},
+	})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_, _ = metrics.ToOtlpProtoBytes()
 	}
 }
 
