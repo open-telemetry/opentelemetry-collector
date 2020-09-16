@@ -52,8 +52,10 @@ func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
 	return *md.orig
 }
 
-// MetricsToOtlpProtoBytes converts the internal MetricData to the OTLP Collector ExportMetricsServiceRequest ProtoBuf bytes
-func MetricsToOtlpProtoBytes(md Metrics) ([]byte, error) {
+// ToOtlpProtoBytes returns the internal MetricData to the OTLP Collector
+// ExportMetricsServiceRequest ProtoBuf bytes. This is intended to export
+// OTLP Protobuf bytes for OTLP/HTTP transports.
+func (md Metrics) ToOtlpProtoBytes() ([]byte, error) {
 	return proto.Marshal(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: *md.orig,
 	})
