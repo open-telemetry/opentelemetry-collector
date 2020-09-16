@@ -148,8 +148,8 @@ func TestTraces_ToOtlpProtoBytes(t *testing.T) {
 	bytes, err := td.ToOtlpProtoBytes()
 	assert.Nil(t, err)
 
-	ets := otlpcollectortrace.ExportTraceServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &ets)
+	etsr := otlpcollectortrace.ExportTraceServiceRequest{}
+	err = gogoproto.Unmarshal(bytes, &etsr)
 	assert.Nil(t, err)
-	assert.Equal(t, ets.ResourceSpans, TracesToOtlp(td))
+	assert.EqualValues(t, etsr.ResourceSpans, TracesToOtlp(td))
 }
