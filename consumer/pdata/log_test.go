@@ -15,9 +15,10 @@
 package pdata
 
 import (
+	"testing"
+
 	gogoproto "github.com/gogo/protobuf/proto"
 	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 
