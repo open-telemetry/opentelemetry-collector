@@ -36,7 +36,6 @@ func TestSetFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	v := viper.New()
-	require.Equal(t, 0, len(v.AllSettings()))
 	err = addSetFlagProperties(v, cmd)
 	require.NoError(t, err)
 
@@ -46,6 +45,13 @@ func TestSetFlags(t *testing.T) {
 	assert.Equal(t, "3s", v.Get("processors::batch/foo::timeout"))
 	assert.Equal(t, "foo:9200,foo2:9200", v.Get("exporters::kafka::brokers"))
 	assert.Equal(t, "localhost:1818", v.Get("receivers::otlp::protocols::grpc::endpoint"))
+}
+
+func TestSetFlags_err_set_flag(t *testing.T) {
+	cmd := &cobra.Command{}
+	v := viper.New()
+	err := addSetFlagProperties(v, cmd)
+	require.Error(t, err)
 }
 
 func TestSetFlags_empty(t *testing.T) {
