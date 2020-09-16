@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,30 +46,6 @@ func getNonSpanAttributes() map[string]struct{} {
 	attrs[conventions.OCAttributeProcessID] = struct{}{}
 	attrs[conventions.OCAttributeResourceType] = struct{}{}
 	return attrs
-}
-
-type AttrValDescript struct {
-	regex    *regexp.Regexp
-	attrType pdata.AttributeValueType
-}
-
-var attrValDescriptions = getAttrValDescripts()
-
-func getAttrValDescripts() []*AttrValDescript {
-	descriptions := make([]*AttrValDescript, 0, 5)
-	descriptions = append(descriptions, constructAttrValDescript("^$", pdata.AttributeValueNULL))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueINT))
-	descriptions = append(descriptions, constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueDOUBLE))
-	descriptions = append(descriptions, constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueBOOL))
-	return descriptions
-}
-
-func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *AttrValDescript {
-	regexc, _ := regexp.Compile(regex)
-	return &AttrValDescript{
-		regex:    regexc,
-		attrType: attrType,
-	}
 }
 
 // Custom Sort on
@@ -166,9 +141,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetName(zspan.Name)
 	startNano := zspan.Timestamp.UnixNano()
 	dest.SetStartTime(pdata.TimestampUnixNano(startNano))
-	if zspan.Duration.Nanoseconds() > 0 {
-		dest.SetEndTime(pdata.TimestampUnixNano(startNano + zspan.Duration.Nanoseconds()))
-	}
+	dest.SetEndTime(pdata.TimestampUnixNano(startNano + zspan.Duration.Nanoseconds()))
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())
@@ -365,30 +338,10 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
 		if _, ok := nonSpanAttributes[key]; ok {
 			continue
 		}
-		switch determineValueType(val) {
-		case pdata.AttributeValueINT:
-			iVal, _ := strconv.ParseInt(val, 10, 64)
-			dest.UpsertInt(key, iVal)
-		case pdata.AttributeValueDOUBLE:
-			fVal, _ := strconv.ParseFloat(val, 64)
-			dest.UpsertDouble(key, fVal)
-		case pdata.AttributeValueBOOL:
-			bVal, _ := strconv.ParseBool(val)
-			dest.UpsertBool(key, bVal)
-		default:
-			dest.UpsertString(key, val)
-		}
+		dest.UpsertString(key, val)
+		// TODO add translation to native OTLP types if configured to do so
 	}
 	return parseErr
-}
-
-func determineValueType(value string) pdata.AttributeValueType {
-	for _, desc := range attrValDescriptions {
-		if desc.regex.MatchString(value) {
-			return desc.attrType
-		}
-	}
-	return pdata.AttributeValueSTRING
 }
 
 func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
@@ -449,7 +402,7 @@ func copySpanTags(tags map[string]string) map[string]string {
 }
 
 func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
-	if zspan == nil || zspan.LocalEndpoint == nil {
+	if zspan == nil || zspan.LocalEndpoint == nil || zspan.LocalEndpoint.ServiceName == "" {
 		return tracetranslator.ResourceNotSet
 	}
 	return zspan.LocalEndpoint.ServiceName

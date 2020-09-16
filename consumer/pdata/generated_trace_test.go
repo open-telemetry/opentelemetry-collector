@@ -131,13 +131,13 @@ func TestResourceSpansSlice_Append(t *testing.T) {
 	emptyVal := NewResourceSpans()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewResourceSpans()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -283,13 +283,13 @@ func TestInstrumentationLibrarySpansSlice_Append(t *testing.T) {
 	emptyVal := NewInstrumentationLibrarySpans()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewInstrumentationLibrarySpans()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -435,13 +435,13 @@ func TestSpanSlice_Append(t *testing.T) {
 	emptyVal := NewSpan()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewSpan()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -704,13 +704,13 @@ func TestSpanEventSlice_Append(t *testing.T) {
 	emptyVal := NewSpanEvent()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewSpanEvent()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
@@ -873,13 +873,13 @@ func TestSpanLinkSlice_Append(t *testing.T) {
 	emptyVal := NewSpanLink()
 	emptyVal.InitEmpty()
 
-	es.Append(&emptyVal)
+	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewSpanLink()
 	emptyVal2.InitEmpty()
 
-	es.Append(&emptyVal2)
+	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())

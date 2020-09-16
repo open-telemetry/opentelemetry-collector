@@ -202,7 +202,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, next, cfg)
+			fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, next)
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
@@ -289,7 +289,7 @@ func BenchmarkFilter_MetricNames(b *testing.B) {
 			},
 		}
 		factory := NewFactory()
-		fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, next, cfg)
+		fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, next)
 		assert.NotNil(b, fmp)
 		assert.Nil(b, err)
 

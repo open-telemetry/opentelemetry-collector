@@ -17,7 +17,7 @@ package pdata
 import (
 	"github.com/gogo/protobuf/proto"
 
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
+	"go.opentelemetry.io/collector/internal"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
@@ -33,38 +33,35 @@ type Logs struct {
 	orig *[]*otlplogs.ResourceLogs
 }
 
-// LogsFromOtlp creates the internal Logs representation from the ProtoBuf.
-func LogsFromOtlp(orig []*otlplogs.ResourceLogs) Logs {
-	return Logs{&orig}
-}
-
-// LogsToOtlp converts the internal Logs to the ProtoBuf.
-func LogsToOtlp(ld Logs) []*otlplogs.ResourceLogs {
-	return *ld.orig
-}
-
-// LogsToOtlpProtoBytes converts the internal Logs to the OTLP Collector ExportLogsServiceRequest ProtoBuf bytes
-func LogsToOtlpProtoBytes(ld Logs) ([]byte, error) {
-	return proto.Marshal(&otlpcollectorlogs.ExportLogsServiceRequest{
-		ResourceLogs: *ld.orig,
-	})
-}
-
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
 	orig := []*otlplogs.ResourceLogs(nil)
 	return Logs{&orig}
 }
 
+// LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should
+// not be used outside this module. This is intended to be used only by OTLP exporter and
+// File exporter, which legitimately need to work with OTLP Protobuf structs.
+func LogsFromInternalRep(logs internal.OtlpLogsWrapper) Logs {
+	return Logs{logs.Orig}
+}
+
+// InternalRep returns internal representation of the logs. Should not be used outside
+// this module. This is intended to be used only by OTLP exporter and File exporter,
+// which legitimately need to work with OTLP Protobuf structs.
+func (ld Logs) InternalRep() internal.OtlpLogsWrapper {
+	return internal.OtlpLogsWrapper{Orig: ld.orig}
+}
+
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
-	otlp := LogsToOtlp(ld)
+	otlp := *ld.orig
 	resourceSpansClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
 	for _, resourceSpans := range otlp {
 		resourceSpansClones = append(resourceSpansClones,
 			proto.Clone(resourceSpans).(*otlplogs.ResourceLogs))
 	}
-	return LogsFromOtlp(resourceSpansClones)
+	return Logs{orig: &resourceSpansClones}
 }
 
 // LogRecordCount calculates the total number of log records.

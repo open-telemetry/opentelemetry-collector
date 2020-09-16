@@ -29,9 +29,19 @@ type Component interface {
 	// Start() then the collector startup will be aborted.
 	// If this is an exporter component it may prepare for exporting
 	// by connecting to the endpoint.
+	//
+	// If the component needs to perform a long-running starting operation then it is recommended
+	// that Start() returns quickly and the long-running operation is performed in background.
+	// In that case make sure that the long-running operation does not use the context passed
+	// to Start() function since that context will be cancelled soon and can abort the long-running operation.
+	// Create a new context from the context.Background() for long-running operations.
 	Start(ctx context.Context, host Host) error
 
 	// Shutdown is invoked during service shutdown.
+	//
+	// If there are any background operations running by the component they must be aborted as soon as possible.
+	// Remember that if you started any long-running background operation from the Start() method that operation
+	// must be also cancelled.
 	Shutdown(ctx context.Context) error
 }
 

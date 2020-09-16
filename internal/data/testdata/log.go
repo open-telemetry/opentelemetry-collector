@@ -20,6 +20,7 @@ import (
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
@@ -54,7 +55,7 @@ func generateLogOtlpOneEmptyResourceLogs() []*otlplogs.ResourceLogs {
 }
 
 func GenerateLogDataOneEmptyOneNilResourceLogs() pdata.Logs {
-	return pdata.LogsFromOtlp(generateLogOtlpOneEmptyOneNilResourceLogs())
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(generateLogOtlpOneEmptyOneNilResourceLogs()))
 
 }
 
@@ -104,7 +105,7 @@ func generateLogOtlpOneEmptyLogs() []*otlplogs.ResourceLogs {
 }
 
 func GenerateLogDataOneEmptyOneNilLogRecord() pdata.Logs {
-	return pdata.LogsFromOtlp(generateLogOtlpOneEmptyOneNilLogRecord())
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(generateLogOtlpOneEmptyOneNilLogRecord()))
 }
 
 func generateLogOtlpOneEmptyOneNilLogRecord() []*otlplogs.ResourceLogs {
@@ -173,7 +174,7 @@ func generateLogOtlpOneLog() []*otlplogs.ResourceLogs {
 }
 
 func GenerateLogDataOneLogOneNil() pdata.Logs {
-	return pdata.LogsFromOtlp(generateLogOtlpOneLogOneNil())
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(generateLogOtlpOneLogOneNil()))
 }
 
 func generateLogOtlpOneLogOneNil() []*otlplogs.ResourceLogs {

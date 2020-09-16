@@ -64,16 +64,16 @@ var statusMsgMap = map[PICTInputStatus]string{
 	SpanStatusUnauthenticated:    "nstark is unknown user",
 }
 
-//GenerateSpans generates a slice of OTLP Span objects with the number of spans specified by the count input
-//parameter. The startPos parameter specifies the line in the PICT tool-generated, test parameter
-//combination records file specified by the pictFile parameter to start reading from. When the end record
-//is reached it loops back to the first record. The random parameter injects the random number generator
-//to use in generating IDs and other random values. Using a random number generator with the same seed value
-//enables reproducible tests.
+// GenerateSpans generates a slice of OTLP Span objects with the number of spans specified by the count input
+// parameter. The startPos parameter specifies the line in the PICT tool-generated, test parameter
+// combination records file specified by the pictFile parameter to start reading from. When the end record
+// is reached it loops back to the first record. The random parameter injects the random number generator
+// to use in generating IDs and other random values. Using a random number generator with the same seed value
+// enables reproducible tests.
 //
-//The return values are the slice with the generated spans, the starting position for the next generation
-//run and the error which caused the spans generation to fail. If err is not nil, the spans slice will
-//have nil values.
+// The return values are the slice with the generated spans, the starting position for the next generation
+// run and the error which caused the spans generation to fail. If err is not nil, the spans slice will
+// have nil values.
 func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) ([]*otlptrace.Span, int, error) {
 	pairsData, err := loadPictOutputFile(pictFile)
 	if err != nil {
@@ -126,14 +126,14 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 		spanInputs.Attributes, spanInputs.Events, spanInputs.Links, spanInputs.Status)
 }
 
-//GenerateSpan generates a single OTLP Span based on the input values provided. They are:
-//  traceID - the trace ID to use, should not be nil
-//  parentID - the parent span ID or nil if it is a root span
-//  spanName - the span name, should not be blank
-//  spanInputs - the pairwise combination of field value variations for this span
-//  random - the random number generator to use in generating ID values
+// GenerateSpan generates a single OTLP Span based on the input values provided. They are:
+//   traceID - the trace ID to use, should not be nil
+//   parentID - the parent span ID or nil if it is a root span
+//   spanName - the span name, should not be blank
+//   spanInputs - the pairwise combination of field value variations for this span
+//   random - the random number generator to use in generating ID values
 //
-//The generated span is returned.
+// The generated span is returned.
 func GenerateSpan(traceID []byte, parentID []byte, spanName string, spanInputs *PICTSpanInputs,
 	random io.Reader) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
@@ -435,8 +435,20 @@ func generateMaxCountAttributes(includeStatus bool) map[string]interface{} {
 	attrMap["ai-sampler.absolute"] = false
 	attrMap["ai-sampler.maxhops"] = int64(6)
 	attrMap["application.create.location"] = "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE"
-	attrMap["application.svcmap"] = "Blogosphere"
-	attrMap["application.abflags"] = "UIx=false,UI4=true,flow-alt3=false"
+	stages := make([]*otlpcommon.AnyValue, 3)
+	stages[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Launch"}}
+	stages[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Injestion"}}
+	stages[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "Validation"}}
+	attrMap["application.stages"] = &otlpcommon.ArrayValue{
+		Values: stages,
+	}
+	subMap := make(map[string]interface{})
+	subMap["UIx"] = false
+	subMap["UI4"] = true
+	subMap["flow-alt3"] = false
+	attrMap["application.abflags"] = &otlpcommon.KeyValueList{
+		Values: convertMapToAttributeKeyValues(subMap),
+	}
 	attrMap["application.thread"] = "proc-pool-14"
 	attrMap["application.session"] = ""
 	attrMap["application.persist.size"] = int64(1172184)

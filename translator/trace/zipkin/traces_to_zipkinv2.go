@@ -205,8 +205,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					Value:     event.Name(),
 				}
 			} else {
-				rawMap := attributeMapToMap(event.Attributes())
-				jsonStr, err := json.Marshal(rawMap)
+				jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(event.Attributes()))
 				if err != nil {
 					return err
 				}
@@ -227,8 +226,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 		link := links.At(i)
 		if !link.IsNil() {
 			key := fmt.Sprintf("otlp.link.%d", i)
-			rawMap := attributeMapToMap(link.Attributes())
-			jsonStr, err := json.Marshal(rawMap)
+			jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(link.Attributes()))
 			if err != nil {
 				return err
 			}
@@ -239,40 +237,10 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	return nil
 }
 
-func attributeMapToMap(attrMap pdata.AttributeMap) map[string]interface{} {
-	rawMap := make(map[string]interface{})
-	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
-		switch v.Type() {
-		case pdata.AttributeValueSTRING:
-			rawMap[k] = v.StringVal()
-		case pdata.AttributeValueINT:
-			rawMap[k] = v.IntVal()
-		case pdata.AttributeValueDOUBLE:
-			rawMap[k] = v.DoubleVal()
-		case pdata.AttributeValueBOOL:
-			rawMap[k] = v.BoolVal()
-		case pdata.AttributeValueNULL:
-			rawMap[k] = nil
-		}
-	})
-	return rawMap
-}
-
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
 	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
-		switch v.Type() {
-		case pdata.AttributeValueSTRING:
-			rawMap[k] = v.StringVal()
-		case pdata.AttributeValueINT:
-			rawMap[k] = strconv.FormatInt(v.IntVal(), 10)
-		case pdata.AttributeValueDOUBLE:
-			rawMap[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
-		case pdata.AttributeValueBOOL:
-			rawMap[k] = strconv.FormatBool(v.BoolVal())
-		case pdata.AttributeValueNULL:
-			rawMap[k] = ""
-		}
+		rawMap[k] = tracetranslator.AttributeValueToString(v, false)
 	})
 	return rawMap
 }

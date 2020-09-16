@@ -24,6 +24,23 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
+var ocLangCodeToLangMap = getOCLangCodeToLangMap()
+
+func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
+	mappings := make(map[occommon.LibraryInfo_Language]string)
+	mappings[1] = conventions.AttributeSDKLangValueCPP
+	mappings[2] = conventions.AttributeSDKLangValueDotNET
+	mappings[3] = conventions.AttributeSDKLangValueErlang
+	mappings[4] = conventions.AttributeSDKLangValueGo
+	mappings[5] = conventions.AttributeSDKLangValueJava
+	mappings[6] = conventions.AttributeSDKLangValueNodeJS
+	mappings[7] = conventions.AttributeSDKLangValuePHP
+	mappings[8] = conventions.AttributeSDKLangValuePython
+	mappings[9] = conventions.AttributeSDKLangValueRuby
+	mappings[10] = conventions.AttributeSDKLangValueWebJS
+	return mappings
+}
+
 func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Resource, dest pdata.Resource) {
 	if ocNode == nil && ocResource == nil {
 		return
@@ -97,7 +114,9 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.UpsertString(conventions.OCAttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
-				attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, ocNode.LibraryInfo.Language.String())
+				if str, ok := ocLangCodeToLangMap[ocNode.LibraryInfo.Language]; ok {
+					attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, str)
+				}
 			}
 		}
 	}

@@ -277,7 +277,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 				"region":  pdata.NewAttributeValueString("planet-earth"),
 			},
 		},
-		/// Ensure `region` is updated for spans with the attribute key `region`.
+		// Ensure `region` is updated for spans with the attribute key `region`.
 		{
 			name: "UpsertAttributeExists",
 			inputAttributes: map[string]pdata.AttributeValue{

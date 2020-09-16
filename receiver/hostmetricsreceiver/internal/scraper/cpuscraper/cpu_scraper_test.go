@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrapeMetrics(t *testing.T) {
@@ -86,7 +87,7 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertCPUMetricValid(t, metrics.At(0), cpuTimeDescriptor, test.expectedStartTime)
+			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime, test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
@@ -103,16 +104,16 @@ func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Me
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.DoubleSum().DataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertDoubleSumMetricLabelExists(t, metric, 0, cpuLabelName)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 0, stateLabelName, userStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 1, stateLabelName, systemStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 2, stateLabelName, idleStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 3, stateLabelName, interruptStateLabelValue)
+	internal.AssertDoubleSumMetricLabelExists(t, metric, 0, metadata.Labels.Cpu)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 0, metadata.Labels.CPUState, metadata.LabelCPUState.User)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 1, metadata.Labels.CPUState, metadata.LabelCPUState.System)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 2, metadata.Labels.CPUState, metadata.LabelCPUState.Idle)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 3, metadata.Labels.CPUState, metadata.LabelCPUState.Interrupt)
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 4, stateLabelName, niceStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 5, stateLabelName, softIRQStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 6, stateLabelName, stealStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 7, stateLabelName, waitStateLabelValue)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 4, metadata.Labels.CPUState, metadata.LabelCPUState.Nice)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 5, metadata.Labels.CPUState, metadata.LabelCPUState.Softirq)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 6, metadata.Labels.CPUState, metadata.LabelCPUState.Steal)
+	internal.AssertDoubleSumMetricLabelHasValue(t, metric, 7, metadata.Labels.CPUState, metadata.LabelCPUState.Wait)
 }

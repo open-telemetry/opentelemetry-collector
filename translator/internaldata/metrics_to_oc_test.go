@@ -36,7 +36,7 @@ func TestMetricsToOC(t *testing.T) {
 	attrs.Upsert(conventions.AttributeHostHostname, pdata.NewAttributeValueString("host1"))
 	attrs.Upsert(conventions.OCAttributeProcessID, pdata.NewAttributeValueInt(123))
 	attrs.Upsert(conventions.OCAttributeProcessStartTime, pdata.NewAttributeValueString("2020-02-11T20:26:00Z"))
-	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pdata.NewAttributeValueString("CPP"))
+	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pdata.NewAttributeValueString("cpp"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKVersion, pdata.NewAttributeValueString("v2.0.1"))
 	attrs.Upsert(conventions.OCAttributeExporterVersion, pdata.NewAttributeValueString("v1.2.0"))
 

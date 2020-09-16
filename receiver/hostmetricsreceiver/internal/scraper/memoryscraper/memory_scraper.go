@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 // scraper for Memory Metrics
@@ -63,7 +64,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 }
 
 func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	memoryUsageDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemMemoryUsage.CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(memStatesLen)
@@ -72,7 +73,7 @@ func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNan
 
 func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.MemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

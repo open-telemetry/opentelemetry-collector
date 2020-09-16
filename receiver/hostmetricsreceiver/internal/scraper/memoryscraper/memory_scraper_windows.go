@@ -20,11 +20,12 @@ import (
 	"github.com/shirou/gopsutil/mem"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const memStatesLen = 2
 
 func appendMemoryUsageStateDataPoints(idps pdata.IntDataPointSlice, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsageDataPoint(idps.At(0), now, usedStateLabelValue, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.At(1), now, freeStateLabelValue, int64(memInfo.Available))
+	initializeMemoryUsageDataPoint(idps.At(0), now, metadata.LabelMemState.Used, int64(memInfo.Used))
+	initializeMemoryUsageDataPoint(idps.At(1), now, metadata.LabelMemState.Free, int64(memInfo.Available))
 }

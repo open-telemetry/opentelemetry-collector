@@ -473,7 +473,7 @@ func generateResourceWithOcNodeAndResource() pdata.Resource {
 		conventions.OCAttributeProcessID:          pdata.NewAttributeValueInt(123),
 		conventions.AttributeTelemetrySDKVersion:  pdata.NewAttributeValueString("v2.0.1"),
 		conventions.OCAttributeExporterVersion:    pdata.NewAttributeValueString("v1.2.0"),
-		conventions.AttributeTelemetrySDKLanguage: pdata.NewAttributeValueString("CPP"),
+		conventions.AttributeTelemetrySDKLanguage: pdata.NewAttributeValueString("cpp"),
 		conventions.OCAttributeResourceType:       pdata.NewAttributeValueString("good-resource"),
 		"node-str-attr":                           pdata.NewAttributeValueString("node-str-attr-val"),
 		"resource-str-attr":                       pdata.NewAttributeValueString("resource-str-attr-val"),

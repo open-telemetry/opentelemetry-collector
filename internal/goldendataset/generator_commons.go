@@ -56,6 +56,16 @@ func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.KeyVa
 			Key:   key,
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: cast.ToBool(val)}},
 		}
+	case *otlpcommon.ArrayValue:
+		attr = otlpcommon.KeyValue{
+			Key:   key,
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: val}},
+		}
+	case *otlpcommon.KeyValueList:
+		attr = otlpcommon.KeyValue{
+			Key:   key,
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: val}},
+		}
 	default:
 		attr = otlpcommon.KeyValue{
 			Key:   key,

@@ -122,7 +122,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
-	require.Equal(t, reqs.ResourceSpans().Len(), 1, "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	req := reqs.ResourceSpans().At(0)
 	sn, _ := req.Resource().Attributes().Get(conventions.AttributeServiceName)
@@ -238,7 +238,7 @@ func TestConversionRoundtrip(t *testing.T) {
 	// The received JSON messages are inside arrays, so reading then directly will
 	// fail with error. Use a small hack to transform the multiple arrays into a
 	// single one.
-	accumulatedJSONMsgs := strings.Replace(buf.String(), "][", ",", -1)
+	accumulatedJSONMsgs := strings.ReplaceAll(buf.String(), "][", ",")
 	gj := testutil.GenerateNormalizedJSON(t, accumulatedJSONMsgs)
 	wj := testutil.GenerateNormalizedJSON(t, string(receiverInputJSON))
 	// translation to OTLP sorts spans so do a span-by-span comparison
@@ -525,4 +525,17 @@ type zipkinMockTraceConsumer struct {
 func (m *zipkinMockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err
+}
+
+func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
+	blob, err := ioutil.ReadFile("./testdata/sample2.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := new(ZipkinReceiver)
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
 }

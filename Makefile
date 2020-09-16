@@ -82,7 +82,7 @@ benchmark:
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector/,./,$(ALL_PKGS))
+	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector,.,$(ALL_PKGS))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GO_ACC) $(ALL_PKGS)
@@ -156,6 +156,7 @@ install-tools:
 
 .PHONY: otelcol
 otelcol:
+	go generate ./...
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
 
 .PHONY: run

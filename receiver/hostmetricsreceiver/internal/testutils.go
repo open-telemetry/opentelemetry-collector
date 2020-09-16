@@ -41,6 +41,12 @@ func AssertIntSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index in
 	assert.Equal(t, expectedVal, val.Value())
 }
 
+func AssertIntGaugeMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
+	val, ok := metric.IntGauge().DataPoints().At(index).LabelsMap().Get(labelName)
+	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
+	assert.Equal(t, expectedVal, val.Value())
+}
+
 func AssertDoubleSumMetricLabelHasValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal string) {
 	val, ok := metric.DoubleSum().DataPoints().At(index).LabelsMap().Get(labelName)
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
