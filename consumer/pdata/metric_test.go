@@ -692,10 +692,10 @@ func TestMetrics_ToOtlpProtoBytes(t *testing.T) {
 	bytes, err := md.ToOtlpProtoBytes()
 	assert.Nil(t, err)
 
-	ms := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &ms)
+	emsr := otlpcollectormetrics.ExportMetricsServiceRequest{}
+	err = gogoproto.Unmarshal(bytes, &emsr)
 	assert.Nil(t, err)
-	assert.EqualValues(t, ms.GetResourceMetrics(), MetricsToOtlp(md))
+	assert.EqualValues(t, emsr.GetResourceMetrics(), MetricsToOtlp(md))
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
