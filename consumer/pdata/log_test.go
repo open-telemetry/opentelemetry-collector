@@ -18,11 +18,10 @@ import (
 	"testing"
 
 	gogoproto "github.com/gogo/protobuf/proto"
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal"
+	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
