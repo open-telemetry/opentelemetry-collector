@@ -189,6 +189,7 @@ delete-tag:
 
 .PHONY: docker-otelcol
 docker-otelcol:
+	cp examples/otel-local-config.yaml cmd/otelcol
 	COMPONENT=otelcol $(MAKE) docker-component
 
 .PHONY: binaries
