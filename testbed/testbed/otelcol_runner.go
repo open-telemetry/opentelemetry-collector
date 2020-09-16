@@ -120,7 +120,7 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 	ipp.appDone = make(chan struct{})
 	go func() {
 		defer close(ipp.appDone)
-		appErr := ipp.svc.Start()
+		appErr := ipp.svc.Run()
 		if appErr != nil {
 			err = appErr
 		}

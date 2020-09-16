@@ -67,7 +67,7 @@ func TestApplication_Start(t *testing.T) {
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		assert.NoError(t, app.Start())
+		assert.NoError(t, app.Run())
 	}()
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())
@@ -120,7 +120,7 @@ func TestApplication_ReportError(t *testing.T) {
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		assert.EqualError(t, app.Start(), "failed to shutdown extensions: err1")
+		assert.EqualError(t, app.Run(), "failed to shutdown extensions: err1")
 	}()
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())
@@ -151,7 +151,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		appErr := app.Start()
+		appErr := app.Run()
 		if appErr != nil {
 			err = appErr
 		}
@@ -449,7 +449,7 @@ func TestApplication_GetExtensions(t *testing.T) {
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		assert.NoError(t, app.Start())
+		assert.NoError(t, app.Run())
 	}()
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())
@@ -478,7 +478,7 @@ func TestApplication_GetExporters(t *testing.T) {
 	appDone := make(chan struct{})
 	go func() {
 		defer close(appDone)
-		assert.NoError(t, app.Start())
+		assert.NoError(t, app.Run())
 	}()
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())

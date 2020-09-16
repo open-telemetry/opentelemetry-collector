@@ -458,9 +458,9 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	return componenterror.CombineErrors(errs)
 }
 
-// Start starts the collector according to the command and configuration
-// given by the user.
-func (app *Application) Start() error {
+// Run starts the collector according to the command and configuration
+// given by the user, and waits for it to complete.
+func (app *Application) Run() error {
 	// From this point on do not show usage in case of error.
 	app.rootCmd.SilenceUsage = true
 
