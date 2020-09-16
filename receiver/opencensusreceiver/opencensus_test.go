@@ -205,47 +205,6 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
 }
 
-// As per Issue https://github.com/census-instrumentation/opencensus-service/issues/366
-// the agent's mux should be able to accept all Proto affiliated content-types and not
-// redirect them to the web-grpc-gateway endpoint.
-func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
-	t.Skip("Currently a flaky test as we need a way to flush all written traces")
-
-	addr := testutil.GetAvailableLocalAddress(t)
-	cbts := new(exportertest.SinkTraceExporter)
-	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, cbts, nil)
-	require.NoError(t, err, "Failed to create trace receiver: %v", err)
-
-	err = ocr.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err, "Failed to start the trace receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
-
-	// Now start the client with the various Proto affiliated gRPC Content-SubTypes as per:
-	//      https://godoc.org/google.golang.org/grpc#CallContentSubtype
-	protoAffiliatedContentSubTypes := []string{"", "proto"}
-	for _, subContentType := range protoAffiliatedContentSubTypes {
-		if err := runContentTypeTests(addr, asSubContentType, subContentType); err != nil {
-			t.Errorf("%q subContentType failed to send proto: %v", subContentType, err)
-		}
-	}
-
-	// Now start the client with the various Proto affiliated gRPC Content-Types,
-	// as we encountered in https://github.com/census-instrumentation/opencensus-service/issues/366
-	protoAffiliatedContentTypes := []string{"application/grpc", "application/grpc+proto"}
-	for _, contentType := range protoAffiliatedContentTypes {
-		if err := runContentTypeTests(addr, asContentType, contentType); err != nil {
-			t.Errorf("%q Content-type failed to send proto: %v", contentType, err)
-		}
-	}
-
-	// Before we exit we have to verify that we got exactly 4 TraceService requests.
-	wantLen := len(protoAffiliatedContentSubTypes) + len(protoAffiliatedContentTypes)
-	gotReqs := cbts.AllTraces()
-	if len(gotReqs) != wantLen {
-		t.Errorf("ocReceiver ExportTraceServiceRequest length mismatch:: Got %d Want %d", len(gotReqs), wantLen)
-	}
-}
-
 const (
 	asSubContentType = true
 	asContentType    = false
