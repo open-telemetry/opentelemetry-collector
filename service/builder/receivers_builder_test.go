@@ -388,6 +388,9 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 
 func newBadReceiverFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory("bf", func() configmodels.Receiver {
-		return &configmodels.ReceiverSettings{}
+		return &configmodels.ReceiverSettings{
+			TypeVal: "bf",
+			NameVal: "bf",
+		}
 	})
 }

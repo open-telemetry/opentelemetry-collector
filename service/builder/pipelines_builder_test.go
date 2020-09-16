@@ -301,6 +301,9 @@ func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
 
 func newBadProcessorFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory("bf", func() configmodels.Processor {
-		return &configmodels.ProcessorSettings{}
+		return &configmodels.ProcessorSettings{
+			TypeVal: "bf",
+			NameVal: "bf",
+		}
 	})
 }
