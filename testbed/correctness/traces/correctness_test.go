@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/testbed/correctness"
@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 
 func TestTracingGoldenData(t *testing.T) {
 	tests, err := correctness.LoadPictOutputPipelineDefs("testdata/generated_pict_pairs_traces_pipeline.txt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	processors := map[string]string{
 		"batch": `
   batch:
@@ -64,12 +64,12 @@ func testWithTracingGoldenDataset(
 		"",
 		161803)
 	factories, err := defaultcomponents.Components()
-	assert.NoError(t, err)
+	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories, sender.GetCollectorPort())
 	validator := testbed.NewCorrectTestValidator(dataProvider)
 	config := correctness.CreateConfigYaml(sender, receiver, processors, "traces")
 	configCleanup, cfgErr := runner.PrepareConfig(config)
-	assert.NoError(t, cfgErr)
+	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
 	defer configCleanup()
 	tc := testbed.NewTestCase(
 		t,

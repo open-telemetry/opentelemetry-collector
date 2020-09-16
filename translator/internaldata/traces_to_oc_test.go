@@ -15,6 +15,8 @@
 package internaldata
 
 import (
+	"io"
+	"math/rand"
 	"testing"
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -27,7 +29,9 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -458,5 +462,24 @@ func TestInternalToOC(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			assert.EqualValues(t, test.oc, TraceDataToOC(test.td))
 		})
+	}
+}
+
+func TestInternalTracesToOCTracesAndBack(t *testing.T) {
+	rscSpans, err := goldendataset.GenerateResourceSpans(
+		"../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		io.Reader(rand.New(rand.NewSource(2004))))
+	assert.NoError(t, err)
+	for _, rs := range rscSpans {
+		orig := make([]*otlptrace.ResourceSpans, 1)
+		orig[0] = rs
+		td := pdata.TracesFromOtlp(orig)
+		ocTraceData := TraceDataToOC(td)
+		assert.Equal(t, 1, len(ocTraceData))
+		assert.Equal(t, td.SpanCount(), len(ocTraceData[0].Spans))
+		tdFromOC := OCToTraceData(ocTraceData[0])
+		assert.NotNil(t, tdFromOC)
+		assert.Equal(t, td.SpanCount(), tdFromOC.SpanCount())
 	}
 }

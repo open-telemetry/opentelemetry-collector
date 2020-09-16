@@ -15,7 +15,7 @@
 package conventions
 
 // OpenTelemetry Semantic Convention values for Resource attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/README.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
 const (
 	AttributeCloudAccount          = "cloud.account.id"
 	AttributeCloudProvider         = "cloud.provider"
@@ -54,6 +54,8 @@ const (
 	AttributeK8sReplicaSetUID      = "k8s.replicaset.uid"
 	AttributeK8sStatefulSet        = "k8s.statefulset.name"
 	AttributeK8sStatefulSetUID     = "k8s.statefulset.uid"
+	AttributeOSType                = "os.type"
+	AttributeOSDescription         = "os.description"
 	AttributeProcessCommand        = "process.command"
 	AttributeProcessCommandLine    = "process.command_line"
 	AttributeProcessExecutableName = "process.executable.name"
@@ -70,6 +72,21 @@ const (
 	AttributeTelemetrySDKVersion   = "telemetry.sdk.version"
 )
 
+// OpenTelemetry Semantic Convention values for Resource attribute "telemetry.sdk.language" values.
+// See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
+const (
+	AttributeSDKLangValueCPP    = "cpp"
+	AttributeSDKLangValueDotNET = "dotnet"
+	AttributeSDKLangValueErlang = "erlang"
+	AttributeSDKLangValueGo     = "go"
+	AttributeSDKLangValueJava   = "java"
+	AttributeSDKLangValueNodeJS = "nodejs"
+	AttributeSDKLangValuePHP    = "php"
+	AttributeSDKLangValuePython = "python"
+	AttributeSDKLangValueRuby   = "ruby"
+	AttributeSDKLangValueWebJS  = "webjs"
+)
+
 // GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
 func GetResourceSemanticConventionAttributeNames() []string {
 	return []string{
@@ -77,6 +94,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeCloudProvider,
 		AttributeCloudRegion,
 		AttributeCloudZone,
+		AttributeContainerID,
 		AttributeContainerImage,
 		AttributeContainerName,
 		AttributeContainerTag,
@@ -93,9 +111,24 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeHostName,
 		AttributeHostType,
 		AttributeK8sCluster,
+		AttributeK8sContainer,
+		AttributeK8sCronJob,
+		AttributeK8sCronJobUID,
+		AttributeK8sDaemonSet,
+		AttributeK8sDaemonSetUID,
 		AttributeK8sDeployment,
+		AttributeK8sDeploymentUID,
+		AttributeK8sJob,
+		AttributeK8sJobUID,
 		AttributeK8sNamespace,
 		AttributeK8sPod,
+		AttributeK8sPodUID,
+		AttributeK8sReplicaSet,
+		AttributeK8sReplicaSetUID,
+		AttributeK8sStatefulSet,
+		AttributeK8sStatefulSetUID,
+		AttributeOSType,
+		AttributeOSDescription,
 		AttributeProcessCommand,
 		AttributeProcessCommandLine,
 		AttributeProcessExecutableName,
@@ -106,6 +139,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeServiceName,
 		AttributeServiceNamespace,
 		AttributeServiceVersion,
+		AttributeTelemetryAutoVersion,
 		AttributeTelemetrySDKLanguage,
 		AttributeTelemetrySDKName,
 		AttributeTelemetrySDKVersion,

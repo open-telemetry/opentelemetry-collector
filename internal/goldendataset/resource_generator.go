@@ -15,6 +15,7 @@
 package goldendataset
 
 import (
+	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -69,10 +70,14 @@ func generateOnpremVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeServiceName] = "customers"
 	attrMap[conventions.AttributeServiceNamespace] = "production"
 	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	attrMap[conventions.AttributeHostHostname] = "tc-prod9.internal.example.com"
-	attrMap[conventions.AttributeHostName] = "172.18.36.18"
+	subMap := make(map[string]interface{})
+	subMap["public"] = "tc-prod9.internal.example.com"
+	subMap["internal"] = "172.18.36.18"
+	attrMap[conventions.AttributeHostName] = &otlpcommon.KeyValueList{
+		Values: convertMapToAttributeKeyValues(subMap),
+	}
 	attrMap[conventions.AttributeHostImageID] = "661ADFA6-E293-4870-9EFA-1AA052C49F18"
-	attrMap[conventions.AttributeTelemetrySDKLanguage] = "java"
+	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
 	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
 	return attrMap
@@ -84,7 +89,7 @@ func generateCloudVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeServiceName] = "customers"
 	attrMap[conventions.AttributeServiceNamespace] = "production"
 	attrMap[conventions.AttributeServiceVersion] = "semver:0.7.3"
-	attrMap[conventions.AttributeTelemetrySDKLanguage] = "java"
+	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
 	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
 	attrMap[conventions.AttributeHostHostname] = "env-check"
@@ -119,8 +124,11 @@ func generateCloudK8sAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeK8sCluster] = "erp-dev"
 	attrMap[conventions.AttributeK8sNamespace] = "monitoring"
 	attrMap[conventions.AttributeK8sDeployment] = "otel-collector"
+	attrMap[conventions.AttributeK8sDeploymentUID] = "4D614B27-EDAF-409B-B631-6963D8F6FCD4"
+	attrMap[conventions.AttributeK8sReplicaSet] = "otel-collector-2983fd34"
+	attrMap[conventions.AttributeK8sReplicaSetUID] = "EC7D59EF-D5B6-48B7-881E-DA6B7DD539B6"
 	attrMap[conventions.AttributeK8sPod] = "otel-collector-6484db5844-c6f9m"
-	attrMap[conventions.AttributeHostHostname] = "ip-10-99-118-157.ec2.internal"
+	attrMap[conventions.AttributeK8sPodUID] = "FDFD941E-2A7A-4945-B601-88DD486161A4"
 	attrMap[conventions.AttributeHostID] = "ec2e3fdaffa294348bdf355156b94cda"
 	attrMap[conventions.AttributeHostName] = "10.99.118.157"
 	attrMap[conventions.AttributeHostImageID] = "ami-011c865bf7da41a9d"
@@ -147,10 +155,18 @@ func generateFassAttributes() map[string]interface{} {
 func generateExecAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
-	attrMap[conventions.AttributeProcessCommandLine] =
-		"--config=/etc/otel-collector-config.yaml --mem-ballast-size-mib=683"
+	parts := make([]*otlpcommon.AnyValue, 3)
+	parts[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
+	parts[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
+	parts[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
+	attrMap[conventions.AttributeProcessCommandLine] = &otlpcommon.ArrayValue{
+		Values: parts,
+	}
 	attrMap[conventions.AttributeProcessExecutablePath] = "/usr/local/bin/otelcol"
 	attrMap[conventions.AttributeProcessID] = 2020
 	attrMap[conventions.AttributeProcessOwner] = "otel"
+	attrMap[conventions.AttributeOSType] = "LINUX"
+	attrMap[conventions.AttributeOSDescription] =
+		"Linux ubuntu 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux"
 	return attrMap
 }

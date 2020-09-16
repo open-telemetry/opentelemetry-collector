@@ -15,6 +15,8 @@
 package jaeger
 
 import (
+	"io"
+	"math/rand"
 	"testing"
 
 	"github.com/jaegertracing/jaeger/model"
@@ -22,7 +24,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -318,6 +322,24 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 				assert.EqualValues(t, test.jb, *jbs[0])
 			}
 		})
+	}
+}
+
+func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
+	rscSpans, err := goldendataset.GenerateResourceSpans(
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		io.Reader(rand.New(rand.NewSource(2004))))
+	assert.NoError(t, err)
+	for _, rs := range rscSpans {
+		orig := make([]*otlptrace.ResourceSpans, 1)
+		orig[0] = rs
+		td := pdata.TracesFromOtlp(orig)
+		protoBatches, err := InternalTracesToJaegerProto(td)
+		assert.NoError(t, err)
+		tdFromPB := ProtoBatchesToInternalTraces(protoBatches)
+		assert.NotNil(t, tdFromPB)
+		assert.Equal(t, td.SpanCount(), tdFromPB.SpanCount())
 	}
 }
 
