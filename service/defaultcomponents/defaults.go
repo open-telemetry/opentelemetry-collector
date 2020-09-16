@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor/aggregateprocessor"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/filterprocessor"
@@ -109,6 +110,7 @@ func Components() (
 		spanprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
+		aggregateprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

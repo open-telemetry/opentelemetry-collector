@@ -16,6 +16,7 @@ package service
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/processor/aggregateprocessor"
 	"net/http"
 	"strings"
 	"unicode"
@@ -72,6 +73,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, queuedprocessor.MetricViews(level)...)
 	views = append(views, batchprocessor.MetricViews(level)...)
 	views = append(views, tailsamplingprocessor.SamplingProcessorMetricViews(level)...)
+	views = append(views, aggregateprocessor.MetricViews(level)...)
 	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, processMetricsViews.Views()...)
 	views = append(views, fluentobserv.Views(level)...)

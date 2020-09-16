@@ -53,6 +53,7 @@ func TestDefaultComponents(t *testing.T) {
 		"span",
 		"filter",
 		"groupbytrace",
+		"aggregate",
 	}
 	expectedExporters := []configmodels.Type{
 		"opencensus",
