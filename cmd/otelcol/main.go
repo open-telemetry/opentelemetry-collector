@@ -50,7 +50,7 @@ func runInteractive(params service.Parameters) error {
 		return fmt.Errorf("failed to construct the application: %w", err)
 	}
 
-	err = app.Start()
+	err = app.Run()
 	if err != nil {
 		return fmt.Errorf("application run finished with error: %w", err)
 	}

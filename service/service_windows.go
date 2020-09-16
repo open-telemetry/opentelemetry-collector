@@ -87,7 +87,7 @@ func (s *WindowsService) start(elog *eventlog.Log, appErrorChannel chan error) e
 
 	// app.Start blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
-	go func() { appErrorChannel <- s.app.Start() }()
+	go func() { appErrorChannel <- s.app.Run() }()
 
 	// wait until the app is in the Running state
 	go func() {

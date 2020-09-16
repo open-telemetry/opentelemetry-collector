@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 <<<<<<< HEAD
 
+- Rename service.Start() to Run() since it's a blocking call
 - Fix slice Append to accept by value the element in pdata
 - Change CreateTraceProcessor and CreateMetricsProcessor to use the same parameter order as receivers/logs processor and exporters.
 
