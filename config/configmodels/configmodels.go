@@ -33,11 +33,11 @@ the corresponding common settings struct (the easiest approach is to embed the c
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
-	Receivers  Receivers
-	Exporters  Exporters
-	Processors Processors
-	Extensions Extensions
-	Service    Service
+	Receivers
+	Exporters
+	Processors
+	Extensions
+	Service
 }
 
 // Type is the component type as it is used in the config.
