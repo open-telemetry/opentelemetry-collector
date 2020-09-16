@@ -268,9 +268,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // metrics should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
-	t.Skipf("Currently disabled, this test is flaky on Windows. Enable this test when the following are fixed:\nIssue %s\n",
-		"https://github.com/census-instrumentation/opencensus-service/issues/225",
-	)
+	// This test used to be flaky on Windows. Skip if errors pop up again
 
 	metricSink := new(exportertest.SinkMetricsExporter)
 

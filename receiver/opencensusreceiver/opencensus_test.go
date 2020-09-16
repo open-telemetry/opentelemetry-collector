@@ -39,7 +39,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -203,98 +202,6 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 
 	// Verify disallowed domain gets responses that disallow CORS.
 	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
-}
-
-// As per Issue https://github.com/census-instrumentation/opencensus-service/issues/366
-// the agent's mux should be able to accept all Proto affiliated content-types and not
-// redirect them to the web-grpc-gateway endpoint.
-func TestAcceptAllGRPCProtoAffiliatedContentTypes(t *testing.T) {
-	t.Skip("Currently a flaky test as we need a way to flush all written traces")
-
-	addr := testutil.GetAvailableLocalAddress(t)
-	cbts := new(exportertest.SinkTraceExporter)
-	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, cbts, nil)
-	require.NoError(t, err, "Failed to create trace receiver: %v", err)
-
-	err = ocr.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err, "Failed to start the trace receiver: %v", err)
-	defer ocr.Shutdown(context.Background())
-
-	// Now start the client with the various Proto affiliated gRPC Content-SubTypes as per:
-	//      https://godoc.org/google.golang.org/grpc#CallContentSubtype
-	protoAffiliatedContentSubTypes := []string{"", "proto"}
-	for _, subContentType := range protoAffiliatedContentSubTypes {
-		if err := runContentTypeTests(addr, asSubContentType, subContentType); err != nil {
-			t.Errorf("%q subContentType failed to send proto: %v", subContentType, err)
-		}
-	}
-
-	// Now start the client with the various Proto affiliated gRPC Content-Types,
-	// as we encountered in https://github.com/census-instrumentation/opencensus-service/issues/366
-	protoAffiliatedContentTypes := []string{"application/grpc", "application/grpc+proto"}
-	for _, contentType := range protoAffiliatedContentTypes {
-		if err := runContentTypeTests(addr, asContentType, contentType); err != nil {
-			t.Errorf("%q Content-type failed to send proto: %v", contentType, err)
-		}
-	}
-
-	// Before we exit we have to verify that we got exactly 4 TraceService requests.
-	wantLen := len(protoAffiliatedContentSubTypes) + len(protoAffiliatedContentTypes)
-	gotReqs := cbts.AllTraces()
-	if len(gotReqs) != wantLen {
-		t.Errorf("ocReceiver ExportTraceServiceRequest length mismatch:: Got %d Want %d", len(gotReqs), wantLen)
-	}
-}
-
-const (
-	asSubContentType = true
-	asContentType    = false
-)
-
-func runContentTypeTests(addr string, contentTypeDesignation bool, contentType string) error {
-	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithDisableRetry(),
-	}
-
-	if contentTypeDesignation == asContentType {
-		opts = append(opts, grpc.WithDefaultCallOptions(
-			grpc.Header(&metadata.MD{"Content-Type": []string{contentType}})))
-	} else {
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.CallContentSubtype(contentType)))
-	}
-
-	cc, err := grpc.Dial(addr, opts...)
-	if err != nil {
-		return fmt.Errorf("creating grpc.ClientConn: %v", err)
-	}
-	defer cc.Close()
-
-	// First step is to send the Node.
-	acc := agenttracepb.NewTraceServiceClient(cc)
-
-	stream, err := acc.Export(context.Background())
-	if err != nil {
-		return fmt.Errorf("initializing the export stream: %v", err)
-	}
-
-	msg := &agenttracepb.ExportTraceServiceRequest{
-		Node: &commonpb.Node{
-			Attributes: map[string]string{
-				"sub-type": contentType,
-			},
-		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte{
-					0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-					0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-				},
-			},
-		},
-	}
-	return stream.Send(msg)
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
