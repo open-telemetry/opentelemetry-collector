@@ -263,7 +263,6 @@ func loadExtensions(v *viper.Viper, factories map[configmodels.Type]component.Ex
 
 		// Create the default config for this extension
 		extensionCfg := factory.CreateDefaultConfig()
-		extensionCfg.SetType(typeStr)
 		extensionCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
@@ -323,7 +322,6 @@ func loadService(v *viper.Viper) (configmodels.Service, error) {
 func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactory) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
-	receiverCfg.SetType(typeStr)
 	receiverCfg.SetName(fullName)
 
 	// Now that the default config struct is created we can Unmarshal into it
@@ -416,7 +414,6 @@ func loadExporters(v *viper.Viper, factories map[configmodels.Type]component.Exp
 
 		// Create the default config for this exporter
 		exporterCfg := factory.CreateDefaultConfig()
-		exporterCfg.SetType(typeStr)
 		exporterCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this exporter.
@@ -472,7 +469,6 @@ func loadProcessors(v *viper.Viper, factories map[configmodels.Type]component.Pr
 
 		// Create the default config for this processors
 		processorCfg := factory.CreateDefaultConfig()
-		processorCfg.SetType(typeStr)
 		processorCfg.SetName(fullName)
 
 		// Unmarshal only the subconfig for this processor.

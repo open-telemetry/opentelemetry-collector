@@ -83,6 +83,7 @@ func TestDefaultComponents(t *testing.T) {
 		v, ok := recvs[k]
 		require.True(t, ok)
 		assert.Equal(t, k, v.Type())
+		assert.Equal(t, k, v.CreateDefaultConfig().Type())
 	}
 
 	procs := factories.Processors
@@ -91,6 +92,7 @@ func TestDefaultComponents(t *testing.T) {
 		v, ok := procs[k]
 		require.True(t, ok)
 		assert.Equal(t, k, v.Type())
+		assert.Equal(t, k, v.CreateDefaultConfig().Type())
 	}
 
 	exps := factories.Exporters
@@ -99,5 +101,6 @@ func TestDefaultComponents(t *testing.T) {
 		v, ok := exps[k]
 		require.True(t, ok)
 		assert.Equal(t, k, v.Type())
+		assert.Equal(t, k, v.CreateDefaultConfig().Type())
 	}
 }
