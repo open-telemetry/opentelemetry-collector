@@ -140,8 +140,8 @@ func translateJaegerVersionAttr(attrs pdata.AttributeMap) {
 	}
 }
 
-func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]*pdata.InstrumentationLibrarySpans {
-	spansByLibrary := make(map[instrumentationLibrary]*pdata.InstrumentationLibrarySpans)
+func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.InstrumentationLibrarySpans {
+	spansByLibrary := make(map[instrumentationLibrary]pdata.InstrumentationLibrarySpans)
 
 	for _, span := range spans {
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
@@ -150,18 +150,17 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]*pdata.Ins
 		span, library := jSpanToInternal(span)
 		ils, found := spansByLibrary[library]
 		if !found {
-			temp := pdata.NewInstrumentationLibrarySpans()
-			ils = &temp
+			ils = pdata.NewInstrumentationLibrarySpans()
 			ils.InitEmpty()
 			spansByLibrary[library] = ils
 
 			if library.name != "" {
-				temp.InstrumentationLibrary().InitEmpty()
-				temp.InstrumentationLibrary().SetName(library.name)
-				temp.InstrumentationLibrary().SetVersion(library.version)
+				ils.InstrumentationLibrary().InitEmpty()
+				ils.InstrumentationLibrary().SetName(library.name)
+				ils.InstrumentationLibrary().SetVersion(library.version)
 			}
 		}
-		ils.Spans().Append(&span)
+		ils.Spans().Append(span)
 	}
 	return spansByLibrary
 }
