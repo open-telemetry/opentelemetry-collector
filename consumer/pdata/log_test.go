@@ -17,9 +17,11 @@ package pdata
 import (
 	"testing"
 
+	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal"
+	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
@@ -69,4 +71,16 @@ func TestToFromLogProto(t *testing.T) {
 	td := LogsFromInternalRep(internal.LogsFromOtlp(otlp))
 	assert.EqualValues(t, NewLogs(), td)
 	assert.EqualValues(t, otlp, *td.orig)
+}
+
+func TestLogs_ToOtlpProtoBytes(t *testing.T) {
+	otlp := []*otlplogs.ResourceLogs(nil)
+	ld := LogsFromInternalRep(internal.LogsFromOtlp(otlp))
+	bytes, err := ld.ToOtlpProtoBytes()
+	assert.Nil(t, err)
+
+	elsr := otlpcollectorlogs.ExportLogsServiceRequest{}
+	err = gogoproto.Unmarshal(bytes, &elsr)
+	assert.Nil(t, err)
+	assert.EqualValues(t, elsr.ResourceLogs, *ld.orig)
 }

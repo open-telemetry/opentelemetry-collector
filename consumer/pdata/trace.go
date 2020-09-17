@@ -19,6 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
 
@@ -39,6 +40,15 @@ func TracesFromOtlp(orig []*otlptrace.ResourceSpans) Traces {
 // TracesToOtlp converts the internal Traces to the OTLP.
 func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
 	return *td.orig
+}
+
+// ToOtlpProtoBytes returns the internal Traces to OTLP Collector
+// ExportTraceServiceRequest ProtoBuf bytes. This is intended to export OTLP
+// Protobuf bytes for OTLP/HTTP transports.
+func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
+	return proto.Marshal(&otlpcollectortrace.ExportTraceServiceRequest{
+		ResourceSpans: *td.orig,
+	})
 }
 
 // NewTraces creates a new Traces.

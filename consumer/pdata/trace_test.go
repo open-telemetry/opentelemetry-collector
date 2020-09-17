@@ -23,6 +23,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
 
@@ -140,4 +141,15 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
 	assert.True(t, gogoproto.Equal(*pdataRS.orig, &gogoprotoRS2))
+}
+
+func TestTraces_ToOtlpProtoBytes(t *testing.T) {
+	td := NewTraces()
+	bytes, err := td.ToOtlpProtoBytes()
+	assert.Nil(t, err)
+
+	etsr := otlpcollectortrace.ExportTraceServiceRequest{}
+	err = gogoproto.Unmarshal(bytes, &etsr)
+	assert.Nil(t, err)
+	assert.EqualValues(t, etsr.ResourceSpans, TracesToOtlp(td))
 }
