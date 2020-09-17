@@ -36,7 +36,7 @@ func TestSetFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	v := viper.New()
-	err = addSetFlagProperties(v, cmd)
+	err = AddSetFlagProperties(v, cmd)
 	require.NoError(t, err)
 
 	settings := v.AllSettings()
@@ -50,7 +50,7 @@ func TestSetFlags(t *testing.T) {
 func TestSetFlags_err_set_flag(t *testing.T) {
 	cmd := &cobra.Command{}
 	v := viper.New()
-	err := addSetFlagProperties(v, cmd)
+	err := AddSetFlagProperties(v, cmd)
 	require.Error(t, err)
 }
 
@@ -58,7 +58,7 @@ func TestSetFlags_empty(t *testing.T) {
 	cmd := &cobra.Command{}
 	addSetFlag(cmd.Flags())
 	v := viper.New()
-	err := addSetFlagProperties(v, cmd)
+	err := AddSetFlagProperties(v, cmd)
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(v.AllSettings()))
 }

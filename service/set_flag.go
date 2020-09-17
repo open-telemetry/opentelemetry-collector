@@ -35,9 +35,10 @@ func addSetFlag(flagSet *pflag.FlagSet) {
 	flagSet.StringArray(setFlagName, []string{}, "Set arbitrary component config property. The component has to be defined in the config file. The flag has a higher precedence over config file. The arrays are overridden. Example --set=processors.batch.timeout=2s")
 }
 
-// addSetFlagProperties sets/overrides properties from set flag(s) to supplied viper instance.
-// The implementation reads set flag(s) from the cmd and passes the content to viper as .properties file.
-func addSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
+// AddSetFlagProperties overrides properties from set flag(s) in supplied viper instance.
+// The implementation reads set flag(s) from the cmd and passes the content to a new viper instance as .properties file.
+// Then the properties from new viper instance are read and set to the supplied viper.
+func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 	flagProperties, err := cmd.Flags().GetStringArray(setFlagName)
 	if err != nil {
 		return err

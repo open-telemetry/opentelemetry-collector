@@ -104,13 +104,15 @@ type Parameters struct {
 	ApplicationStartInfo component.ApplicationStartInfo
 	// ConfigFactory that creates the configuration.
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
-	// The default factory loads the configuration specified as a command line flag.
+	// The default factory loads the configuration file and overrides component's configuration
+	// properties supplied via --set flag..
 	ConfigFactory ConfigFactory
 	// LoggingHooks provides a way to supply a hook into logging events
 	LoggingHooks []func(zapcore.Entry) error
 }
 
 // ConfigFactory creates config.
+// The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
 type ConfigFactory func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
@@ -129,7 +131,7 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 	}
 
 	// handle --set flag and override properties from the configuration file
-	if err := addSetFlagProperties(v, cmd); err != nil {
+	if err := AddSetFlagProperties(v, cmd); err != nil {
 		return nil, fmt.Errorf("failed to process set flag: %v", err)
 	}
 	return config.Load(v, factories)
