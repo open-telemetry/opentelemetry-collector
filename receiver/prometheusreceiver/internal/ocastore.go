@@ -82,7 +82,7 @@ func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 	}
 }
 
-func (o *ocaStore) Appender() storage.Appender {
+func (o *ocaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
 		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
