@@ -22,7 +22,7 @@ VERSION="${1:-}"
 ARCH="${2:-"amd64"}"
 OUTPUT_DIR="${3:-"$REPO_DIR/dist/"}"
 OTELCOL_PATH="$REPO_DIR/bin/otelcol_linux_$ARCH"
-CONFIG_PATH="$REPO_DIR/examples/otel-local-config.yaml"
+CONFIG_PATH="$REPO_DIR/examples/local/otel-config.yaml"
 
 mkdir -p $OUTPUT_DIR
 
