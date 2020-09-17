@@ -447,7 +447,7 @@ func TestMissingClient(t *testing.T) {
 	// test
 	p, err := newOIDCAuthenticator(config)
 
-	//verify
+	// verify
 	assert.Nil(t, p)
 	assert.Equal(t, errNoClientIDProvided, err)
 }
@@ -463,7 +463,7 @@ func TestMissingIssuerURL(t *testing.T) {
 	// test
 	p, err := newOIDCAuthenticator(config)
 
-	//verify
+	// verify
 	assert.Nil(t, p)
 	assert.Equal(t, errNoIssuerURL, err)
 }
@@ -483,7 +483,7 @@ func TestClose(t *testing.T) {
 	// test
 	err = p.Close() // for now, we never fail
 
-	//verify
+	// verify
 	assert.NoError(t, err)
 }
 
@@ -511,7 +511,7 @@ func TestUnaryInterceptor(t *testing.T) {
 	// test
 	res, err := p.UnaryInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
 
-	//verify
+	// verify
 	assert.NoError(t, err)
 	assert.Nil(t, res)
 	assert.True(t, interceptorCalled)
@@ -544,7 +544,7 @@ func TestStreamInterceptor(t *testing.T) {
 	// test
 	err = p.StreamInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
 
-	//verify
+	// verify
 	assert.NoError(t, err)
 	assert.True(t, interceptorCalled)
 }
