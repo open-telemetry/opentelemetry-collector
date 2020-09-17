@@ -18,6 +18,7 @@ import (
 	"sort"
 
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -72,7 +73,7 @@ func resourceMetricsToOC(rm pdata.ResourceMetrics) consumerdata.MetricsData {
 			if m.IsNil() {
 				continue
 			}
-			ocMetrics = append(ocMetrics, metricToOC(m))
+			ocMetrics = append(ocMetrics, metricToOC(m, ocMetricsData.Resource))
 		}
 	}
 	if len(ocMetrics) != 0 {
@@ -81,12 +82,12 @@ func resourceMetricsToOC(rm pdata.ResourceMetrics) consumerdata.MetricsData {
 	return ocMetricsData
 }
 
-func metricToOC(metric pdata.Metric) *ocmetrics.Metric {
+func metricToOC(metric pdata.Metric, res *ocresource.Resource) *ocmetrics.Metric {
 	labelKeys := collectLabelKeys(metric)
 	return &ocmetrics.Metric{
 		MetricDescriptor: descriptorToOC(metric, labelKeys),
 		Timeseries:       dataPointsToTimeseries(metric, labelKeys),
-		Resource:         nil,
+		Resource:         res,
 	}
 }
 

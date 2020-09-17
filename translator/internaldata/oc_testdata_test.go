@@ -39,7 +39,7 @@ func generateOCTestDataNoMetrics() consumerdata.MetricsData {
 }
 
 func generateOCTestDataNoPoints() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+	md := consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -95,6 +95,7 @@ func generateOCTestDataNoPoints() consumerdata.MetricsData {
 			},
 		},
 	}
+	return withMetricResource(md)
 }
 
 func generateOCTestDataNoLabels() consumerdata.MetricsData {
@@ -102,57 +103,62 @@ func generateOCTestDataNoLabels() consumerdata.MetricsData {
 	m.MetricDescriptor.LabelKeys = nil
 	m.Timeseries[0].LabelValues = nil
 	m.Timeseries[1].LabelValues = nil
-	return consumerdata.MetricsData{
+	md := consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
 		Metrics: []*ocmetrics.Metric{m},
 	}
+	return withMetricResource(md)
 }
 
 func generateOCTestDataMetricsOneMetric() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+	md := consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
 		Metrics: []*ocmetrics.Metric{generateOCTestMetricInt()},
 	}
+	return withMetricResource(md)
 }
 
 func generateOCTestDataMetricsOneMetricOneNil() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+	md := consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
 		Metrics: []*ocmetrics.Metric{generateOCTestMetricInt(), nil},
 	}
+	return withMetricResource(md)
 }
 
 func generateOCTestDataMetricsOneMetricOneNilTimeseries() consumerdata.MetricsData {
 	m := generateOCTestMetricInt()
 	m.Timeseries = append(m.Timeseries, nil)
-	return consumerdata.MetricsData{
+	md := consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
 		Metrics: []*ocmetrics.Metric{m},
 	}
+	return withMetricResource(md)
 }
 
 func generateOCTestDataMetricsOneMetricOneNilPoint() consumerdata.MetricsData {
 	m := generateOCTestMetricInt()
 	m.Timeseries[0].Points = append(m.Timeseries[0].Points, nil)
-	return consumerdata.MetricsData{
+	md := consumerdata.MetricsData{
 		Node: &occommon.Node{},
 		Resource: &ocresource.Resource{
 			Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
 		},
 		Metrics: []*ocmetrics.Metric{m},
 	}
+	return withMetricResource(md)
 }
 
 func generateOCTestMetricInt() *ocmetrics.Metric {
@@ -510,4 +516,13 @@ func generateOcResource() *ocresource.Resource {
 			"resource-int-attr": "123",
 		},
 	}
+}
+
+// Copy resource to metric level, as that's part of the OC model
+func withMetricResource(md consumerdata.MetricsData) consumerdata.MetricsData {
+	for _, m := range md.Metrics {
+		m.Resource = md.Resource
+	}
+
+	return md
 }

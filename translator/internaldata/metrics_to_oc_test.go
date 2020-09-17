@@ -147,7 +147,7 @@ func TestMetricsToOC(t *testing.T) {
 			name:     "sample-metric",
 			internal: sampleMetricData,
 			oc: []consumerdata.MetricsData{
-				generateOCTestData(),
+				withMetricResource(generateOCTestData()),
 			},
 		},
 	}
@@ -163,7 +163,7 @@ func TestMetricsToOC(t *testing.T) {
 func TestMetricsToOC_InvalidDataType(t *testing.T) {
 	internal := testdata.GenerateMetricsMetricTypeInvalid()
 	want := []consumerdata.MetricsData{
-		{
+		withMetricResource(consumerdata.MetricsData{
 			Node: &occommon.Node{},
 			Resource: &ocresource.Resource{
 				Labels: map[string]string{"resource-attr": "resource-attr-val-1"},
@@ -178,7 +178,7 @@ func TestMetricsToOC_InvalidDataType(t *testing.T) {
 					},
 				},
 			},
-		},
+		}),
 	}
 	got := MetricsToOC(internal)
 	assert.EqualValues(t, want, got)
