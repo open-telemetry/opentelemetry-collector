@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
 	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
+	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -61,7 +62,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
-	processMetricsViews, err := telemetry.NewProcessMetricsViews(ballastSizeBytes)
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
 	if err != nil {
 		return err
 	}
