@@ -26,5 +26,3 @@ coverage.html
 # Wix
 *.wixobj
 *.wixpdb
-
-cmd/otelcol/otel-local-config.yaml
