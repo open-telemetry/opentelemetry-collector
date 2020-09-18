@@ -36,8 +36,8 @@ func TestNew(t *testing.T) {
 	})
 
 	// verify
-	assert.Nil(t, p)
-	assert.Equal(t, errNotImplemented, err)
+	assert.NotNil(t, p)
+	assert.NoError(t, err)
 }
 
 func TestMissingOIDC(t *testing.T) {

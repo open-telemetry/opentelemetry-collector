@@ -28,7 +28,6 @@ import (
 var (
 	errNoOIDCProvided   = errors.New("no OIDC information provided")
 	errMetadataNotFound = errors.New("no request metadata found")
-	errNotImplemented   = errors.New("not implemented")
 	defaultAttribute    = "authorization"
 )
 
@@ -50,6 +49,8 @@ type Authenticator interface {
 }
 
 type authenticateFunc func(context.Context, map[string][]string) (context.Context, error)
+type unaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error)
+type streamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate authenticateFunc) error
 
 // New creates an authenticator based on the given configuration
 func New(cfg configauth.Authentication) (Authenticator, error) {
@@ -61,7 +62,7 @@ func New(cfg configauth.Authentication) (Authenticator, error) {
 		cfg.Attribute = defaultAttribute
 	}
 
-	return nil, errNotImplemented
+	return newOIDCAuthenticator(cfg)
 }
 
 func defaultUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error) {
