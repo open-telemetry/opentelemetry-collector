@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/version"
 )
 
@@ -27,17 +28,6 @@ const (
 	metricsAddrCfg   = "metrics-addr"
 	metricsLevelCfg  = "metrics-level"
 	metricsPrefixCfg = "metrics-prefix"
-
-	// Telemetry levels
-	//
-	// None indicates that no telemetry data should be collected.
-	None Level = iota - 1
-	// Basic is the default and covers the basics of the service telemetry.
-	Basic
-	// Normal adds some other indicators on top of basic.
-	Normal
-	// Detailed adds dimensions and views to the previous levels.
-	Detailed
 )
 
 var (
@@ -97,17 +87,14 @@ func GetMetricsAddrDefault() string {
 	return ":8888"
 }
 
-// Level of telemetry data to be generated.
-type Level int8
-
 func GetAddInstanceID() bool {
 	return *addInstanceIDPtr
 }
 
 // GetLevel returns the Level represented by the string. The parsing is case-insensitive
 // and it returns error if the string value is unknown.
-func GetLevel() (Level, error) {
-	var level Level
+func GetLevel() (configtelemetry.Level, error) {
+	var level configtelemetry.Level
 	var str string
 
 	if metricsLevelPtr != nil {
@@ -116,13 +103,13 @@ func GetLevel() (Level, error) {
 
 	switch str {
 	case "none":
-		level = None
+		level = configtelemetry.LevelNone
 	case "", "basic":
-		level = Basic
+		level = configtelemetry.LevelBasic
 	case "normal":
-		level = Normal
+		level = configtelemetry.LevelNormal
 	case "detailed":
-		level = Detailed
+		level = configtelemetry.LevelDetailed
 	default:
 		return level, fmt.Errorf("unknown metrics level %q", str)
 	}

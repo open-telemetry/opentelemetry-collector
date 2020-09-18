@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observ
+package configtelemetry
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/config/configtelemetry"
+const (
+	// LevelNone indicates that no telemetry data should be collected.
+	LevelNone Level = iota - 1
+	// LevelBasic is the default and covers the basics of the service telemetry.
+	LevelBasic
+	// LevelNormal adds some other indicators on top of basic.
+	LevelNormal
+	// LevelDetailed adds dimensions and views to the previous levels.
+	LevelDetailed
 )
 
-func TestViews(t *testing.T) {
-	require.Greater(t, len(Views(configtelemetry.LevelBasic)), 2)
-	require.Len(t, Views(configtelemetry.LevelNone), 0)
-}
+// Level is the level of internal telemetry (metrics, logs, traces about the component itself)
+// that every component should generate.
+type Level int8

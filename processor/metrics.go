@@ -22,6 +22,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/obsreport"
@@ -72,13 +73,13 @@ func (scm *SpanCountStats) GetAllSpansCount() int {
 }
 
 // MetricTagKeys returns the metric tag keys according to the given telemetry level.
-func MetricTagKeys(level telemetry.Level) []tag.Key {
+func MetricTagKeys(level configtelemetry.Level) []tag.Key {
 	var tagKeys []tag.Key
 	switch level {
-	case telemetry.Detailed:
+	case configtelemetry.LevelDetailed:
 		tagKeys = append(tagKeys, TagServiceNameKey)
 		fallthrough
-	case telemetry.Normal, telemetry.Basic:
+	case configtelemetry.LevelNormal, configtelemetry.LevelBasic:
 		tagKeys = append(tagKeys, TagProcessorNameKey)
 	default:
 		return nil
@@ -88,7 +89,7 @@ func MetricTagKeys(level telemetry.Level) []tag.Key {
 }
 
 // MetricViews return the metrics views according to given telemetry level.
-func MetricViews(level telemetry.Level) []*view.View {
+func MetricViews(level configtelemetry.Level) []*view.View {
 	tagKeys := MetricTagKeys(level)
 	if tagKeys == nil {
 		return nil
@@ -177,7 +178,7 @@ func RecordsSpanCountMetrics(ctx context.Context, scm *SpanCountStats, measure *
 
 func serviceTagsEnabled() bool {
 	level, err := telemetry.GetLevel()
-	return err == nil && level == telemetry.Detailed
+	return err == nil && level == configtelemetry.LevelDetailed
 }
 
 // spanCountByResourceStringAttribute calculates the number of spans by resource specified by

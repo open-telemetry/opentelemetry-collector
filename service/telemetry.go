@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
@@ -58,7 +59,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	metricsAddr := telemetry.GetMetricsAddr()
 
-	if level == telemetry.None || metricsAddr == "" {
+	if level == configtelemetry.LevelNone || metricsAddr == "" {
 		return nil
 	}
 
