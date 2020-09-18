@@ -8,7 +8,7 @@ include it in the receiver definitions.
 
 The following settings are required:
 
-- `endpoint` (default = 0.0.0.0:55680): host:port to which the exporter is
+- `endpoint` (default = 0.0.0.0:55680): host:port to which the receiver is
   going to receive traces or metrics, using the gRPC protocol. The valid syntax
   is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 - `transport` (default = tcp): which transport to use between `tcp` and `unix`.
@@ -76,7 +76,8 @@ serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 IMPORTANT: bytes fields are encoded as base64 strings.
 
-To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`.
+To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The default
+port is `55681`.
 
 The HTTP/JSON endpoint can also optionally configure
 [CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
