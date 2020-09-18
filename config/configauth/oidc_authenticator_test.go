@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package configauth
 
 import (
 	"context"
@@ -34,8 +34,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-
-	"go.opentelemetry.io/collector/config/configauth"
 )
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
@@ -45,8 +43,8 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	config := configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	config := Authentication{
+		OIDC: &OIDC{
 			IssuerURL:   oidcServer.URL,
 			Audience:    "unit-test",
 			GroupsClaim: "memberships",
@@ -122,7 +120,7 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	oidcServer.StartTLS()
 
 	// prepare the processor configuration
-	config := configauth.OIDC{
+	config := OIDC{
 		IssuerURL:    oidcServer.URL,
 		IssuerCAPath: caFile.Name(),
 		Audience:     "unit-test",
@@ -196,7 +194,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	defer os.Remove(file.Name())
 	file.Write([]byte("foobar"))
 
-	config := configauth.OIDC{
+	config := OIDC{
 		IssuerCAPath: file.Name(),
 	}
 
@@ -210,8 +208,8 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 
 func TestOIDCInvalidAuthHeader(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	p, err := newOIDCAuthenticator(Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com",
 		},
@@ -228,8 +226,8 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 
 func TestOIDCNotAuthenticated(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	p, err := newOIDCAuthenticator(Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com",
 		},
@@ -246,8 +244,8 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 
 func TestProviderNotReacheable(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	p, err := newOIDCAuthenticator(Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com",
 		},
@@ -268,8 +266,8 @@ func TestFailedToVerifyToken(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	p, err := newOIDCAuthenticator(configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	p, err := newOIDCAuthenticator(Authentication{
+		OIDC: &OIDC{
 			IssuerURL: oidcServer.URL,
 			Audience:  "unit-test",
 		},
@@ -296,13 +294,13 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 
 	for _, tt := range []struct {
 		casename      string
-		config        configauth.Authentication
+		config        Authentication
 		expectedError error
 	}{
 		{
 			"groupsClaimNonExisting",
-			configauth.Authentication{
-				OIDC: &configauth.OIDC{
+			Authentication{
+				OIDC: &OIDC{
 					IssuerURL:   oidcServer.URL,
 					Audience:    "unit-test",
 					GroupsClaim: "non-existing-claim",
@@ -312,8 +310,8 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 		},
 		{
 			"usernameClaimNonExisting",
-			configauth.Authentication{
-				OIDC: &configauth.OIDC{
+			Authentication{
+				OIDC: &OIDC{
 					IssuerURL:     oidcServer.URL,
 					Audience:      "unit-test",
 					UsernameClaim: "non-existing-claim",
@@ -323,8 +321,8 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 		},
 		{
 			"usernameNotString",
-			configauth.Authentication{
-				OIDC: &configauth.OIDC{
+			Authentication{
+				OIDC: &OIDC{
 					IssuerURL:     oidcServer.URL,
 					Audience:      "unit-test",
 					UsernameClaim: "some-non-string-field",
@@ -438,8 +436,8 @@ func TestEmptyGroupsClaim(t *testing.T) {
 
 func TestMissingClient(t *testing.T) {
 	// prepare
-	config := configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	config := Authentication{
+		OIDC: &OIDC{
 			IssuerURL: "http://example.com/",
 		},
 	}
@@ -454,8 +452,8 @@ func TestMissingClient(t *testing.T) {
 
 func TestMissingIssuerURL(t *testing.T) {
 	// prepare
-	config := configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	config := Authentication{
+		OIDC: &OIDC{
 			Audience: "some-audience",
 		},
 	}
@@ -470,8 +468,8 @@ func TestMissingIssuerURL(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	// prepare
-	config := configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	config := Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com/",
 		},
@@ -489,8 +487,8 @@ func TestClose(t *testing.T) {
 
 func TestUnaryInterceptor(t *testing.T) {
 	// prepare
-	config := configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	config := Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com/",
 		},
@@ -519,8 +517,8 @@ func TestUnaryInterceptor(t *testing.T) {
 
 func TestStreamInterceptor(t *testing.T) {
 	// prepare
-	config := configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	config := Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com/",
 		},

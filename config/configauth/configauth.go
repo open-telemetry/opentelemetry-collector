@@ -14,6 +14,12 @@
 
 package configauth
 
+import (
+	"context"
+
+	"google.golang.org/grpc"
+)
+
 // Authentication defines the auth settings for the receiver
 type Authentication struct {
 	// The attribute (header name) to look for auth data. Optional, default value: "authentication".
@@ -46,4 +52,23 @@ type OIDC struct {
 	// The claim that holds the subject's group membership information.
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
+}
+
+// ToServerOptions builds a set of server options ready to be used by the gRPC server
+func (a *Authentication) ToServerOptions() ([]grpc.ServerOption, error) {
+	auth, err := NewAuthenticator(*a)
+	if err != nil {
+		return nil, err
+	}
+
+	// perhaps we should use a timeout here?
+	// TODO: we need a hook to call auth.Close()
+	if err := auth.Start(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return []grpc.ServerOption{
+		grpc.UnaryInterceptor(auth.UnaryInterceptor),
+		grpc.StreamInterceptor(auth.StreamInterceptor),
+	}, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package configauth
 
 import (
 	"context"
@@ -21,8 +21,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-
-	"go.opentelemetry.io/collector/config/configauth"
 )
 
 var (
@@ -52,8 +50,8 @@ type authenticateFunc func(context.Context, map[string][]string) (context.Contex
 type unaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error)
 type streamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate authenticateFunc) error
 
-// New creates an authenticator based on the given configuration
-func New(cfg configauth.Authentication) (Authenticator, error) {
+// NewAuthenticator creates an authenticator based on the given configuration
+func NewAuthenticator(cfg Authentication) (Authenticator, error) {
 	if cfg.OIDC == nil {
 		return nil, errNoOIDCProvided
 	}

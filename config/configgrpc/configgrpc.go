@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -157,9 +158,12 @@ type GRPCServerSettings struct {
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
+
+	// Auth for this receiver
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
-// ToServerOption maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
+// ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
 func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
@@ -285,6 +289,14 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 				PermitWithoutStream: enfPol.PermitWithoutStream,
 			}))
 		}
+	}
+
+	if gss.Auth != nil {
+		authOpts, err := gss.Auth.ToServerOptions()
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, authOpts...)
 	}
 
 	return opts, nil

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package configauth
 
 import (
 	"context"
@@ -29,13 +29,11 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"google.golang.org/grpc"
-
-	"go.opentelemetry.io/collector/config/configauth"
 )
 
 type oidcAuthenticator struct {
 	attribute string
-	config    configauth.OIDC
+	config    OIDC
 	provider  *oidc.Provider
 	verifier  *oidc.IDTokenVerifier
 
@@ -56,7 +54,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newOIDCAuthenticator(cfg configauth.Authentication) (*oidcAuthenticator, error) {
+func newOIDCAuthenticator(cfg Authentication) (*oidcAuthenticator, error) {
 	if cfg.OIDC.Audience == "" {
 		return nil, errNoClientIDProvided
 	}
@@ -189,7 +187,7 @@ func getGroupsFromClaims(claims map[string]interface{}, groupsClaim string) ([]s
 	return []string{}, nil
 }
 
-func getProviderForConfig(config configauth.OIDC) (*oidc.Provider, error) {
+func getProviderForConfig(config OIDC) (*oidc.Provider, error) {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
