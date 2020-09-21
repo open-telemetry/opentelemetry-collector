@@ -12,9 +12,9 @@ The following settings can be optionally configured:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`.
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
   - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
-  - `zipkin_proto`: the payload is deserialized into Zipkin proto spans.
-  - `zipkin_json`: the payload is deserialized into Zipkin V2 JSON spans.
-  - `zipkin_thrift`: the payload is deserialized into Zipkin Thrift spans.
+  - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
+  - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
+  - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `auth`
