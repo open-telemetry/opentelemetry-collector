@@ -27,9 +27,6 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/storage"
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -157,14 +154,6 @@ func (tr *transaction) Commit() error {
 		// droppedTimeseries set to zero.
 		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
 		return err
-	}
-
-	if tr.metricBuilder.hasInternalMetric {
-		m := ochttp.ClientRoundtripLatency.M(tr.metricBuilder.scrapeLatencyMs)
-		stats.RecordWithTags(tr.ctx, []tag.Mutator{
-			tag.Upsert(ochttp.KeyClientStatus, tr.metricBuilder.scrapeStatus),
-		}, m)
-
 	}
 
 	if tr.useStartTimeMetric {
