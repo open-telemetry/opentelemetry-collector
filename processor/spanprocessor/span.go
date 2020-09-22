@@ -48,6 +48,7 @@ func newSpanProcessor(config Config) (*spanProcessor, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	exclude, err := filterspan.NewMatcher(config.Exclude)
 	if err != nil {
 		return nil, err
