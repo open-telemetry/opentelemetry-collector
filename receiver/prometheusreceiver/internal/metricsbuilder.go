@@ -30,11 +30,11 @@ import (
 )
 
 const (
-	metricsSuffixCount      = "_count"
-	metricsSuffixBucket     = "_bucket"
-	metricsSuffixSum        = "_sum"
-	startTimeMetricName     = "process_start_time_seconds"
-	scrapeUpMetricName      = "up"
+	metricsSuffixCount  = "_count"
+	metricsSuffixBucket = "_bucket"
+	metricsSuffixSum    = "_sum"
+	startTimeMetricName = "process_start_time_seconds"
+	scrapeUpMetricName  = "up"
 )
 
 var (
