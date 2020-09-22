@@ -50,6 +50,10 @@ var (
 
 	errMemSpikeLimitOutOfRange = errors.New(
 		"memSpikeLimit must be smaller than memAllocLimit")
+
+	errPercentageLimitOutOfRange = errors.New(
+		"memoryLimitPercentage and memorySpikePercentage must be greater than zero and less than or equal to hundred",
+	)
 )
 
 // make it overridable by tests
@@ -92,7 +96,7 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		return nil, err
 	}
 
-	logger.Info("Percentage limiter configured",
+	logger.Info("Memory limiter configured",
 		zap.Uint64("limit_mib", decision.memAllocLimit),
 		zap.Uint64("spike_limit_mib", decision.memSpikeLimit),
 		zap.Duration("check_interval", cfg.CheckInterval))
@@ -122,8 +126,11 @@ func getDecision(cfg *Config, logger *zap.Logger) (*dropDecision, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
-	logger.Info("Using percentage memory limiter", zap.Int64("total_memory", totalMemory))
-	return newPercentrageDecision(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
+	logger.Info("Using percentage memory limiter",
+		zap.Int64("total_memory", totalMemory),
+		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
+		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
+	return newPercentageDecision(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -262,6 +269,9 @@ func newFixedDecision(memAllocLimit, memSpikeLimit uint64) (*dropDecision, error
 	}, nil
 }
 
-func newPercentrageDecision(totalMemory, percentageLimit, percentageSpike int64) (*dropDecision, error) {
+func newPercentageDecision(totalMemory int64, percentageLimit, percentageSpike int64) (*dropDecision, error) {
+	if percentageLimit > 100 || percentageLimit <= 0 || percentageSpike > 100 || percentageSpike <= 0 {
+		return nil, errPercentageLimitOutOfRange
+	}
 	return newFixedDecision(uint64(percentageLimit*totalMemory)/100, uint64(percentageSpike*totalMemory)/100)
 }

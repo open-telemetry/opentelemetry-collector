@@ -304,15 +304,19 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 }
 
 func TestGetDecision(t *testing.T) {
-	d, err := getDecision(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, &dropDecision{
-		memAllocLimit: 100 * mibBytes,
-		memSpikeLimit: 20 * mibBytes,
-	}, d)
-	d, err = getDecision(&Config{MemoryLimitMiB: 20, MemorySpikeLimitMiB: 100}, zap.NewNop())
-	require.Error(t, err)
-	assert.Nil(t, d)
+	t.Run("fixed_limit", func(t *testing.T) {
+		d, err := getDecision(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
+		require.NoError(t, err)
+		assert.Equal(t, &dropDecision{
+			memAllocLimit: 100 * mibBytes,
+			memSpikeLimit: 20 * mibBytes,
+		}, d)
+	})
+	t.Run("fixed_limit_error", func(t *testing.T) {
+		d, err := getDecision(&Config{MemoryLimitMiB: 20, MemorySpikeLimitMiB: 100}, zap.NewNop())
+		require.Error(t, err)
+		assert.Nil(t, d)
+	})
 
 	t.Cleanup(func() {
 		getMemoryFn = iruntime.TotalMemory
@@ -320,22 +324,32 @@ func TestGetDecision(t *testing.T) {
 	getMemoryFn = func() (int64, error) {
 		return 100 * mibBytes, nil
 	}
-	d, err = getDecision(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
-	require.NoError(t, err)
-	assert.Equal(t, &dropDecision{
-		memAllocLimit: 50 * mibBytes,
-		memSpikeLimit: 10 * mibBytes,
-	}, d)
+	t.Run("percentage_limit", func(t *testing.T) {
+		d, err := getDecision(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
+		require.NoError(t, err)
+		assert.Equal(t, &dropDecision{
+			memAllocLimit: 50 * mibBytes,
+			memSpikeLimit: 10 * mibBytes,
+		}, d)
+	})
+	t.Run("percentage_limit_error", func(t *testing.T) {
+		d, err := getDecision(&Config{MemoryLimitPercentage: 101, MemorySpikePercentage: 10}, zap.NewNop())
+		require.Error(t, err)
+		assert.Nil(t, d)
+		d, err = getDecision(&Config{MemoryLimitPercentage: 99, MemorySpikePercentage: 101}, zap.NewNop())
+		require.Error(t, err)
+		assert.Nil(t, d)
+	})
 }
 
 func TestDropDecision(t *testing.T) {
-	decison1000Limit30Spike30, err := newPercentrageDecision(1000, 60, 30)
+	decison1000Limit30Spike30, err := newPercentageDecision(1000, 60, 30)
 	require.NoError(t, err)
-	decison1000Limit60Spike50, err := newPercentrageDecision(1000, 60, 50)
+	decison1000Limit60Spike50, err := newPercentageDecision(1000, 60, 50)
 	require.NoError(t, err)
-	decison1000Limit40Spike20, err := newPercentrageDecision(1000, 40, 20)
+	decison1000Limit40Spike20, err := newPercentageDecision(1000, 40, 20)
 	require.NoError(t, err)
-	decison1000Limit40Spike60, err := newPercentrageDecision(1000, 40, 60)
+	decison1000Limit40Spike60, err := newPercentageDecision(1000, 40, 60)
 	require.Error(t, err)
 	assert.Nil(t, decison1000Limit40Spike60)
 
