@@ -6,6 +6,10 @@ extensions:
     endpoint: 0.0.0.0:55679
 
 receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
 
   opencensus:
 
@@ -29,7 +33,6 @@ receivers:
 
 processors:
   batch:
-  queued_retry:
 
 exporters:
   logging:
@@ -41,7 +44,7 @@ service:
 
     traces:
       receivers: [opencensus, jaeger, zipkin]
-      processors: [batch, queued_retry]
+      processors: [batch]
       exporters: [logging]
 
     metrics:
