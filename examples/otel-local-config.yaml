@@ -6,17 +6,12 @@ extensions:
     endpoint: 0.0.0.0:55679
 
 receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
 
   opencensus:
-
-  # Collect own metrics
-  prometheus:
-    config:
-      scrape_configs:
-      - job_name: 'otel-collector'
-        scrape_interval: 10s
-        static_configs:
-        - targets: ['0.0.0.0:8888']
 
   jaeger:
     protocols:
@@ -27,9 +22,17 @@ receivers:
 
   zipkin:
 
+  # Collect own metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: [ '0.0.0.0:8888' ]
+
 processors:
   batch:
-  queued_retry:
 
 exporters:
   logging:
@@ -40,8 +43,8 @@ service:
   pipelines:
 
     traces:
-      receivers: [opencensus, jaeger, zipkin]
-      processors: [batch, queued_retry]
+      receivers: [otlp, opencensus, jaeger, zipkin]
+      processors: [batch]
       exporters: [logging]
 
     metrics:
