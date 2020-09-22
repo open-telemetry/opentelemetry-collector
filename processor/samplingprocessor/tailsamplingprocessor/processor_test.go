@@ -16,6 +16,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -317,6 +318,17 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	tsp.ConsumeTraces(context.Background(), batches[0])
 	require.Equal(t, 0, msp.SpansCount())
 	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+
+	mpe.NextDecision = sampling.Unspecified
+	mpe.NextError = errors.New("mock policy error")
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpansCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 6, mpe.EvaluationCount, "policy should have been evaluated 6 times")
+
+	// Late span of a non-sampled trace should be ignored
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.Equal(t, 0, msp.SpansCount())
+	require.Equal(t, 2, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
 }
 
 func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
