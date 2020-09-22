@@ -32,7 +32,7 @@ const (
 )
 
 func addSetFlag(flagSet *pflag.FlagSet) {
-	flagSet.StringArray(setFlagName, []string{}, "Set arbitrary component config property. The component has to be defined in the config file. The flag has a higher precedence over config file. The arrays are overridden. Example --set=processors.batch.timeout=2s")
+	flagSet.StringArray(setFlagName, []string{}, "Set arbitrary component config property. The component has to be defined in the config file and the flag has a higher precedence over config file. Arrays config properties are overridden and maps are joined, note that only a single (first) array property can be set e.g. -set=processors.attributes.actions.key=some_key. Example --set=processors.batch.timeout=2s")
 }
 
 // AddSetFlagProperties overrides properties from set flag(s) in supplied viper instance.
@@ -59,6 +59,8 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 		return fmt.Errorf("failed to read set flag config: %v", err)
 	}
 
+	// flagProperties cannot be applied to v directly because
+	// v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface) does not work properly.
 	for _, k := range viperFlags.AllKeys() {
 		v.Set(k, viperFlags.Get(k))
 	}

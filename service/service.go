@@ -105,7 +105,7 @@ type Parameters struct {
 	// ConfigFactory that creates the configuration.
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration file and overrides component's configuration
-	// properties supplied via --set flag..
+	// properties supplied via --set command line flag.
 	ConfigFactory ConfigFactory
 	// LoggingHooks provides a way to supply a hook into logging events
 	LoggingHooks []func(zapcore.Entry) error
@@ -113,9 +113,12 @@ type Parameters struct {
 
 // ConfigFactory creates config.
 // The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
+// Viper and command instances are passed from the Application.
+// The factories also belong the Application and are equal to the factories passed via Parameters.
 type ConfigFactory func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
 
-// FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file.
+// FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
+// and from --set command line flag (if the flag is present).
 func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
@@ -126,6 +129,13 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
 	}
+	// The configuration is being loaded from two places: the config file and --set command line flag.
+	// The --set flag implementation (AddSetFlagProperties) creates a properties file from the --set flag
+	// that is loaded by a different viper instance.
+	// Viper implementation of v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface)
+	// does not work properly.
+	// The workaround is to call v.Set(string, interface) on all loaded properties from the config file
+	// and then do the same for --set flag in AddSetFlagProperties.
 	for _, k := range v.AllKeys() {
 		v.Set(k, v.Get(k))
 	}
