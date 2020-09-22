@@ -308,3 +308,19 @@ check-contrib:
 	make -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
+
+# List of directories where certificates are stored for unit tests.
+CERT_DIRS := config/configgrpc/testdata \
+             config/confighttp/testdata \
+             receiver/jaegerreceiver/testdata \
+             exporter/jaegerexporter/testdata
+
+# Generate certificates for unit tests relying on certificates.
+.PHONY: certs
+certs:
+	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
+
+# Generate certificates for unit tests relying on certificates without copying certs to specific test directories.
+.PHONY: certs-dryrun
+certs-dryrun:
+	@internal/buildscripts/gen-certs.sh -d
