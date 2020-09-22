@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -114,11 +114,11 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
-		MatchConfig: filterspan.MatchConfig{
-			Exclude: &filterspan.MatchProperties{
+		MatchConfig: filterconfig.MatchConfig{
+			Exclude: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{"svcA", "svcB"},
-				Attributes: []filterspan.Attribute{
+				Attributes: []filterconfig.Attribute{
 					{Key: "env", Value: "dev"},
 					{Key: "test_request"},
 				},
@@ -138,8 +138,8 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
-		MatchConfig: filterspan.MatchConfig{
-			Include: &filterspan.MatchProperties{
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),
 				Services: []string{"auth.*", "login.*"},
 			},
@@ -158,14 +158,14 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/selectiveprocessing",
 			TypeVal: typeStr,
 		},
-		MatchConfig: filterspan.MatchConfig{
-			Include: &filterspan.MatchProperties{
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{"svcA", "svcB"},
 			},
-			Exclude: &filterspan.MatchProperties{
+			Exclude: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Strict),
-				Attributes: []filterspan.Attribute{
+				Attributes: []filterconfig.Attribute{
 					{Key: "redact_trace", Value: false},
 				},
 			},
@@ -216,12 +216,12 @@ func TestLoadingConifg(t *testing.T) {
 			NameVal: "attributes/regexp",
 			TypeVal: typeStr,
 		},
-		MatchConfig: filterspan.MatchConfig{
-			Include: &filterspan.MatchProperties{
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),
 				Services: []string{"auth.*"},
 			},
-			Exclude: &filterspan.MatchProperties{
+			Exclude: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				SpanNames: []string{"login.*"},
 			},

@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -150,7 +150,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &filterspan.MatchProperties{
+	oCfg.Include = &filterconfig.MatchProperties{
 		Config:   *createMatchConfig(filterset.Strict),
 		Services: []string{"service"},
 	}
@@ -600,12 +600,12 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &filterspan.MatchProperties{
+	oCfg.Include = &filterconfig.MatchProperties{
 		Config:    *createMatchConfig(filterset.Regexp),
 		Services:  []string{`^banks$`},
 		SpanNames: []string{"/"},
 	}
-	oCfg.Exclude = &filterspan.MatchProperties{
+	oCfg.Exclude = &filterconfig.MatchProperties{
 		Config:    *createMatchConfig(filterset.Strict),
 		SpanNames: []string{`donot/change`},
 	}
