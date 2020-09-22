@@ -186,7 +186,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id idbatcher.ID, trace *sampling.TraceData) (sampling.Decision, *Policy, int64, int64, int64) {
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData) (sampling.Decision, *Policy, int64, int64, int64) {
 	var decisionSampled, decisionNotSampled, evaluateErrorCount int64
 	finalDecision := sampling.NotSampled
 	var matchingPolicy *Policy = nil

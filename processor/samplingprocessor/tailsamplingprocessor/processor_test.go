@@ -271,6 +271,54 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	require.Equal(t, 0, mpe2.LateArrivingSpansCount, "2nd policy should not have been notified of the late span")
 }
 
+func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(exportertest.SinkTraceExporter)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan traceKey, maxSize),
+		policyTicker:    mtt,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpansCount() != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	// Now the first batch that waited the decision period.
+	mpe.NextDecision = sampling.NotSampled
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpansCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 4, mpe.EvaluationCount, "policy should have been evaluated 4 times")
+
+	// Late span of a non-sampled trace should be ignored
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.Equal(t, 0, msp.SpansCount())
+	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+}
+
 func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	traceIds := make([]pdata.TraceID, numIds)
 	var tds []pdata.Traces
