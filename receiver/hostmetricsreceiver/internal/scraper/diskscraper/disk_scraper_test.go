@@ -16,6 +16,7 @@ package diskscraper
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"testing"
 
@@ -29,16 +30,30 @@ import (
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name          string
-		config        Config
-		expectMetrics bool
-		newErrRegex   string
+		name              string
+		config            Config
+		bootTimeFunc      func() (uint64, error)
+		newErrRegex       string
+		initializationErr string
+		expectMetrics     bool
+		expectedStartTime pdata.TimestampUnixNano
 	}
 
 	testCases := []testCase{
 		{
 			name:          "Standard",
 			expectMetrics: true,
+		},
+		{
+			name:              "Validate Start Time",
+			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			expectMetrics:     true,
+			expectedStartTime: 100 * 1e9,
+		},
+		{
+			name:              "Boot Time Error",
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
 		},
 		{
 			name:          "Include Filter that matches nothing",
@@ -67,7 +82,15 @@ func TestScrapeMetrics(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
+
 			err = scraper.Initialize(context.Background())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
@@ -81,13 +104,13 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.GreaterOrEqual(t, metrics.Len(), 4)
 
-			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, 0)
-			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, 0)
-			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, 0)
+			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, test.expectedStartTime)
+			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, test.expectedStartTime)
+			assertDoubleDiskMetricValid(t, metrics.At(2), diskTimeDescriptor, test.expectedStartTime)
 			assertDiskPendingOperationsMetricValid(t, metrics.At(3))
 
 			if runtime.GOOS == "linux" {
-				assertInt64DiskMetricValid(t, metrics.At(4), diskMergedDescriptor, 0)
+				assertInt64DiskMetricValid(t, metrics.At(4), diskMergedDescriptor, test.expectedStartTime)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
