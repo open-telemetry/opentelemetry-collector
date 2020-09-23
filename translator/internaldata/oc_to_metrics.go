@@ -90,9 +90,10 @@ func appendOcToMetrics(md consumerdata.MetricsData, dest pdata.Metrics) {
 		}
 	}
 	// Total number of resources is equal to:
-	// 1 (for all metrics with nil resource) + numMetricsWithResource (distinctResourceCount).
+	// initial + numMetricsWithResource + (optional) 1
 	resourceCount := initialRmsLen + distinctResourceCount
 	if combinedMetricCount > 0 {
+		// +1 for all metrics with nil resource
 		resourceCount++
 	}
 	rms.Resize(resourceCount)
