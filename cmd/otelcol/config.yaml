@@ -48,7 +48,7 @@ service:
       exporters: [logging]
 
     metrics:
-      receivers: [opencensus, prometheus]
+      receivers: [otlp, opencensus, prometheus]
       processors: [batch]
       exporters: [logging]
 
