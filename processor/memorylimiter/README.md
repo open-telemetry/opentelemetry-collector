@@ -46,6 +46,18 @@ allocated by the process heap. Note that typically the total memory usage of
 process will be about 50MiB higher than this value.
 - `spike_limit_mib` (default = 0): Maximum spike expected between the
 measurements of memory usage. The value must be less than `limit_mib`.
+- `limit_percentage` (default = 0): Maximum amount of total memory, in percents, targeted to be
+allocated by the process heap. This configuration is supported on Linux systems with cgroups
+and it's intended to be used in dynamic platforms like docker.
+This option is used to calculate `memory_limit` from the total available memory.
+For instance setting of 75% with the total memory of 1GiB will result in the limit of 750 MiB.  
+The fixed memory setting (`limit_mib`) takes precedence
+over the percentage configuration.
+- `spike_limit_percentage` (default = 0): Maximum spike expected between the
+measurements of memory usage. The value must be less than `limit_percentage`.
+This option is used to calculate `spike_limit_mib` from the total available memory.
+For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
+This option is intended to be used only with `limit_percentage`.
 
 The following configuration options can also be modified:
 - `ballast_size_mib` (default = 0): Must match the `mem-ballast-size-mib`
@@ -60,6 +72,15 @@ processors:
     check_interval: 5s
     limit_mib: 4000
     spike_limit_mib: 500
+```
+
+```yaml
+processors:
+  memory_limiter:
+    ballast_size_mib: 2000
+    check_interval: 5s
+    limit_percentage: 50
+    spike_limit_percentage: 30
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
