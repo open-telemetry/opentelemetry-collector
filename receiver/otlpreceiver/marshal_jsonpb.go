@@ -16,6 +16,7 @@ package otlpreceiver
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -23,7 +24,6 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	json "github.com/json-iterator/go"
 )
 
 // JSONPb is a copy of https://github.com/grpc-ecosystem/grpc-gateway/blob/master/runtime/marshal_jsonpb.go
