@@ -33,4 +33,10 @@ type storage interface {
 	// delete will remove the trace based on the given trace ID, returning the trace that was removed,
 	// or nil in case a trace cannot be found
 	delete(pdata.TraceID) ([]pdata.ResourceSpans, error)
+
+	// start gives the storage the opportunity to initialize any resources or procedures
+	start() error
+
+	// shutdown signals the storage that the processor is shutting down
+	shutdown() error
 }
