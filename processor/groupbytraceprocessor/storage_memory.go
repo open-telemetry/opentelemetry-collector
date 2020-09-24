@@ -44,6 +44,8 @@ func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.Resource
 	sTraceID := traceID.HexString()
 
 	st.Lock()
+	defer st.Unlock()
+
 	if _, ok := st.content[sTraceID]; !ok {
 		st.content[sTraceID] = []pdata.ResourceSpans{}
 	}
@@ -52,14 +54,14 @@ func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.Resource
 	rs.CopyTo(newRS)
 	st.content[sTraceID] = append(st.content[sTraceID], newRS)
 
-	st.Unlock()
-
 	return nil
 }
 func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
 	sTraceID := traceID.HexString()
 
 	st.RLock()
+	defer st.RUnlock()
+
 	rss, ok := st.content[sTraceID]
 	if !ok {
 		return nil, nil
@@ -71,7 +73,6 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 		rs.CopyTo(newRS)
 		result = append(result, newRS)
 	}
-	st.RUnlock()
 
 	return result, nil
 }
@@ -82,6 +83,8 @@ func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, e
 	sTraceID := traceID.HexString()
 
 	st.Lock()
+	defer st.Unlock()
+
 	rss := st.content[sTraceID]
 	result := []pdata.ResourceSpans{}
 	for _, rs := range rss {
@@ -90,7 +93,6 @@ func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, e
 		result = append(result, newRS)
 	}
 	delete(st.content, sTraceID)
-	st.Unlock()
 
 	return result, nil
 }
