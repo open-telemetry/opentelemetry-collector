@@ -18,7 +18,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	json "github.com/json-iterator/go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 

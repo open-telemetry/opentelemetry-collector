@@ -15,11 +15,11 @@
 package pdata
 
 import (
-	"encoding/json"
 	"math/rand"
 	"strconv"
 	"testing"
 
+	json "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

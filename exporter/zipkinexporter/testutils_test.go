@@ -15,9 +15,9 @@
 package zipkinexporter
 
 import (
-	"encoding/json"
 	"testing"
 
+	json "github.com/json-iterator/go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/require"
 )

@@ -16,7 +16,6 @@ package zipkin
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"io/ioutil"
 	"math"
 	"sort"
@@ -24,6 +23,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	json "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

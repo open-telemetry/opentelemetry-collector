@@ -15,11 +15,12 @@
 package tracetranslator
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
 	"strconv"
+
+	json "github.com/json-iterator/go"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )

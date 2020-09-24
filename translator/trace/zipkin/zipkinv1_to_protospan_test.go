@@ -15,7 +15,6 @@
 package zipkin
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"reflect"
 	"sort"
@@ -26,6 +25,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	json "github.com/json-iterator/go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

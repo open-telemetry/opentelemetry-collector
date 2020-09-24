@@ -16,13 +16,13 @@ package testbed
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"

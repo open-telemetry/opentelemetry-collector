@@ -15,7 +15,6 @@
 package zipkin
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -25,6 +24,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	json "github.com/json-iterator/go"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"

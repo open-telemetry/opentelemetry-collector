@@ -15,10 +15,9 @@
 package kafkareceiver
 
 import (
-	"encoding/json"
-
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	json "github.com/json-iterator/go"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 

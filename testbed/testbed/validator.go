@@ -16,7 +16,6 @@ package testbed
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
@@ -24,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer/pdata"

@@ -31,6 +31,7 @@ require (
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/jaegertracing/jaeger v1.19.2
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
+	github.com/json-iterator/go v1.1.10
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/mjibson/esc v0.2.0
 	github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c

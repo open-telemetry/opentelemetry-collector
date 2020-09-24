@@ -17,11 +17,11 @@ package fluentforwardreceiver
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/tinylib/msgp/msgp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
