@@ -759,87 +759,128 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	}
 }
 
+type concurrencyTest struct {
+	name           string
+	numTraces      int
+	spansPerTrace  int
+	ringBufferSize int
+	waitDuration   time.Duration
+}
+
 func TestHighConcurrency(t *testing.T) {
-	// Make 400 traces with 100 spans each
-	traceIds, batches := generateTraces(400, 100)
-	// Shuffle the batches so that the spans for each trace will arrive in a random order
-	rand.Shuffle(len(batches), func(i, j int) { batches[i], batches[j] = batches[j], batches[i] })
 
-	total := 0
-	for _, b := range batches {
-		total += b.SpanCount()
-	}
-	require.EqualValues(t, 400*100, total)
-
-	st := newMemoryStorage()
-	next := &exportertest.SinkTraceExporter{}
-
-	config := Config{
-		WaitDuration: 100 * time.Millisecond,
-		// To reproduce the deadlock we need to trigger the buffer eviction
-		// we also need more to exceed the channel buffer size (200)
-		NumTraces: 100,
+	tests := []concurrencyTest{
+		{
+			name:           "exceed_ring_buffer_size",
+			numTraces:      400,
+			spansPerTrace:  100,
+			ringBufferSize: 100,
+			waitDuration:   100 * time.Millisecond,
+		},
+		{
+			name:           "fast_wait_duration",
+			numTraces:      400,
+			spansPerTrace:  100,
+			ringBufferSize: 10000,
+			waitDuration:   1 * time.Millisecond,
+		},
 	}
 
-	logger := zap.NewNop()
-	// For local debugging
-	//conf := zap.NewDevelopmentConfig()
-	//// Debug to help follow the operations on the trace
-	//conf.Level.SetLevel(zapcore.DebugLevel)
-	//logger, err := conf.Build()
-	//require.NoError(t, err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+			traceIds, batches := generateTraces(test.numTraces, test.spansPerTrace)
+			// Shuffle the batches so that the spans for each trace will arrive in a random order
+			rand.Shuffle(len(batches), func(i, j int) { batches[i], batches[j] = batches[j], batches[i] })
 
-	ctx := context.Background()
-	p.Start(ctx, nil)
+			expectedSpanCount := 0
+			for _, b := range batches {
+				expectedSpanCount += b.SpanCount()
+			}
+			require.EqualValues(t, test.numTraces*test.spansPerTrace, expectedSpanCount)
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(batches))
+			st := newMemoryStorage()
+			next := &exportertest.SinkTraceExporter{}
 
-	for _, b := range batches {
-		go func(batch pdata.Traces) {
-			_ = p.ConsumeTraces(context.Background(), batch)
-			wg.Done()
-		}(b)
-	}
+			config := Config{
+				WaitDuration: test.waitDuration,
+				NumTraces:    test.ringBufferSize,
+			}
 
-	// Wait until all calls to ConsumeTraces have completed
-	wg.Wait()
+			logger := zap.NewNop()
+			// For local debugging
+			//conf := zap.NewDevelopmentConfig()
+			//// Debug to help follow the operations on the trace
+			//conf.Level.SetLevel(zapcore.DebugLevel)
+			//logger, err := conf.Build()
+			//require.NoError(t, err)
 
-	// All events have been emitted, this will wait until they are all consumed
-	p.Shutdown(ctx)
+			p, err := newGroupByTraceProcessor(logger, st, next, config)
+			require.NoError(t, err)
 
-	receivedTraceBatches := next.AllTraces()
-	// ideally this would equal len(traceIds) but its not always the case b/c of timing races of the enqueue/dequeue
-	uniqTraceIdsToSpanCount := map[string]int{}
-	for _, batch := range receivedTraceBatches {
-		rs := batch.ResourceSpans()
-		for i := 0; i < rs.Len(); i++ {
-			ils := rs.At(i).InstrumentationLibrarySpans()
-			for k := 0; k < ils.Len(); k++ {
-				spans := ils.At(k).Spans()
-				for s := 0; s < ils.Len(); s++ {
-					traceId := spans.At(s).TraceID().HexString()
-					if _, ok := uniqTraceIdsToSpanCount[traceId]; !ok {
-						uniqTraceIdsToSpanCount[traceId] = 0
+			ctx := context.Background()
+			p.Start(ctx, nil)
+
+			wg := sync.WaitGroup{}
+			wg.Add(len(batches))
+
+			for _, b := range batches {
+				go func(batch pdata.Traces) {
+					_ = p.ConsumeTraces(context.Background(), batch)
+					wg.Done()
+				}(b)
+			}
+
+			// Wait until all calls to ConsumeTraces have completed
+			wg.Wait()
+
+			// All events have been emitted, this will wait until they are all consumed
+			p.Shutdown(ctx)
+
+			// Because the call to nextConsumer happens in a goroutine there is a race here
+			// This will only wait 10s if the test is going to fail, otherwise it should be ~2s
+			deadline := time.Now().Add(10 * time.Second)
+			for true {
+				if expectedSpanCount == next.SpansCount() {
+					break
+				}
+				if time.Now().After(deadline) {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+
+			receivedTraceBatches := next.AllTraces()
+			// ideally this would equal len(traceIds) but its not always the case b/c of timing races of the enqueue/dequeue
+			uniqTraceIdsToSpanCount := map[string]int{}
+			for _, batch := range receivedTraceBatches {
+				rs := batch.ResourceSpans()
+				for i := 0; i < rs.Len(); i++ {
+					ils := rs.At(i).InstrumentationLibrarySpans()
+					for k := 0; k < ils.Len(); k++ {
+						spans := ils.At(k).Spans()
+						for s := 0; s < ils.Len(); s++ {
+							traceId := spans.At(s).TraceID().HexString()
+							if _, ok := uniqTraceIdsToSpanCount[traceId]; !ok {
+								uniqTraceIdsToSpanCount[traceId] = 0
+							}
+							uniqTraceIdsToSpanCount[traceId] = uniqTraceIdsToSpanCount[traceId] + 1
+						}
 					}
-					uniqTraceIdsToSpanCount[traceId] = uniqTraceIdsToSpanCount[traceId] + 1
 				}
 			}
-		}
+
+			assert.EqualValues(t, len(traceIds), len(uniqTraceIdsToSpanCount))
+
+			// Under the current buffer eviction code path it intentionally discards spans, but that seems wrong
+			// There is a separate bug in the release phase where the operation isn't atomic and spans can be release multiple times
+			for k, v := range uniqTraceIdsToSpanCount {
+				assert.EqualValues(t, 100, v, "Trace %s should have 100 spans", k)
+			}
+
+			assert.EqualValues(t, expectedSpanCount, next.SpansCount())
+		})
 	}
-
-	assert.EqualValues(t, len(traceIds), len(uniqTraceIdsToSpanCount))
-
-	// Under the current buffer eviction code path it intentionally discards spans, but that seems wrong
-	// There is a separate bug in the release phase where the operation isn't atomic and spans can be release multiple times
-	for k, v := range uniqTraceIdsToSpanCount {
-		assert.EqualValues(t, 100, v, "Trace %s should have 100 spans", k)
-	}
-
-	assert.EqualValues(t, total, next.SpansCount())
 }
 
 func generateTraces(numTraces int, numSpans int) ([][]byte, []pdata.Traces) {
