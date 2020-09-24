@@ -90,24 +90,54 @@ func appendOcToMetrics(md consumerdata.MetricsData, dest pdata.Metrics) {
 		}
 	}
 	// Total number of resources is equal to:
-	// 1 (for all metrics with nil resource) + numMetricsWithResource (distinctResourceCount).
-	rms.Resize(initialRmsLen + distinctResourceCount + 1)
-	rm0 := rms.At(initialRmsLen)
-	ocNodeResourceToInternal(md.Node, md.Resource, rm0.Resource())
+	// initial + numMetricsWithResource + (optional) 1
+	resourceCount := initialRmsLen + distinctResourceCount
+	if combinedMetricCount > 0 {
+		// +1 for all metrics with nil resource
+		resourceCount++
+	}
+	rms.Resize(resourceCount)
 
-	// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
-	ilms := rm0.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	combinedMetrics := ilms.At(0).Metrics()
-	combinedMetrics.Resize(combinedMetricCount)
+	// Translate "combinedMetrics" first
 
-	// Now do the metric translation and place them in appropriate ResourceMetrics
-	// instances.
+	if combinedMetricCount > 0 {
+		rm0 := rms.At(initialRmsLen)
+		ocNodeResourceToInternal(md.Node, md.Resource, rm0.Resource())
 
-	// Index to next available slot in "combinedMetrics" slice.
-	combinedMetricIdx := 0
-	// First resourcemetric is used for the default resource, so start with 1.
-	resourceMetricIdx := 1
+		// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
+		ilms := rm0.InstrumentationLibraryMetrics()
+		ilms.Resize(1)
+		combinedMetrics := ilms.At(0).Metrics()
+		combinedMetrics.Resize(combinedMetricCount)
+
+		// Index to next available slot in "combinedMetrics" slice.
+		combinedMetricIdx := 0
+
+		for _, ocMetric := range md.Metrics {
+			if ocMetric == nil {
+				// Skip nil metrics.
+				continue
+			}
+
+			if ocMetric.Resource != nil {
+				continue // Those are processed separately below.
+			}
+
+			// Add the metric to the "combinedMetrics". combinedMetrics length is equal
+			// to combinedMetricCount. The loop above that calculates combinedMetricCount
+			// has exact same conditions as we have here in this loop.
+			ocMetricToMetrics(ocMetric, combinedMetrics.At(combinedMetricIdx))
+			combinedMetricIdx++
+		}
+	}
+
+	// Translate distinct metrics
+
+	resourceMetricIdx := 0
+	if combinedMetricCount > 0 {
+		// First resourcemetric is used for the default resource, so start with 1.
+		resourceMetricIdx = 1
+	}
 	for _, ocMetric := range md.Metrics {
 		if ocMetric == nil {
 			// Skip nil metrics.
@@ -115,18 +145,14 @@ func appendOcToMetrics(md consumerdata.MetricsData, dest pdata.Metrics) {
 		}
 
 		if ocMetric.Resource == nil {
-			// Add the metric to the "combinedMetrics". combinedMetrics length is equal
-			// to combinedMetricCount. The loop above that calculates combinedMetricCount
-			// has exact same conditions as we have here in this loop.
-			ocMetricToMetrics(ocMetric, combinedMetrics.At(combinedMetricIdx))
-			combinedMetricIdx++
-		} else {
-			// This metric has a different Resource and must be placed in a different
-			// ResourceMetrics instance. Create a separate ResourceMetrics item just for this metric
-			// and store at resourceMetricIdx.
-			ocMetricToResourceMetrics(ocMetric, md.Node, rms.At(initialRmsLen+resourceMetricIdx))
-			resourceMetricIdx++
+			continue // Already processed above.
 		}
+
+		// This metric has a different Resource and must be placed in a different
+		// ResourceMetrics instance. Create a separate ResourceMetrics item just for this metric
+		// and store at resourceMetricIdx.
+		ocMetricToResourceMetrics(ocMetric, md.Node, rms.At(initialRmsLen+resourceMetricIdx))
+		resourceMetricIdx++
 	}
 }
 
