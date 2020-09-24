@@ -138,8 +138,13 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	}
 }
 
+type policyMetrics struct {
+	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
+}
+
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
-	var idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
+	metrics := policyMetrics{}
+
 	startTime := time.Now()
 	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
@@ -147,71 +152,88 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	for _, id := range batch {
 		d, ok := tsp.idToTrace.Load(traceKey(id.Bytes()))
 		if !ok {
-			idNotFoundOnMapCount++
+			metrics.idNotFoundOnMapCount++
 			continue
 		}
 		trace := d.(*sampling.TraceData)
 		trace.DecisionTime = time.Now()
-		for i, policy := range tsp.policies {
-			policyEvaluateStartTime := time.Now()
-			decision, err := policy.Evaluator.Evaluate(id, trace)
-			stats.Record(
-				policy.ctx,
-				statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
-			if err != nil {
-				trace.Decisions[i] = sampling.NotSampled
-				evaluateErrorCount++
-				tsp.logger.Error("Sampling policy error", zap.Error(err))
-				continue
-			}
 
-			trace.Decisions[i] = decision
-
-			switch decision {
-			case sampling.Sampled:
-				stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				decisionSampled++
-
-				trace.Lock()
-				traceBatches := trace.ReceivedBatches
-				trace.Unlock()
-
-				for j := 0; j < len(traceBatches); j++ {
-					tsp.nextConsumer.ConsumeTraces(policy.ctx, internaldata.OCToTraceData(traceBatches[j]))
-				}
-			case sampling.NotSampled:
-				stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
-					statCountTracesSampled.M(int64(1)),
-				)
-				decisionNotSampled++
-			}
-		}
+		decision, policy := tsp.makeDecision(id, trace, &metrics)
 
 		// Sampled or not, remove the batches
 		trace.Lock()
+		traceBatches := trace.ReceivedBatches
 		trace.ReceivedBatches = nil
 		trace.Unlock()
+
+		if decision == sampling.Sampled {
+			for j := 0; j < len(traceBatches); j++ {
+				_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, internaldata.OCToTraceData(traceBatches[j]))
+			}
+		}
 	}
 
 	stats.Record(tsp.ctx,
 		statOverallDecisionLatencyµs.M(int64(time.Since(startTime)/time.Microsecond)),
-		statDroppedTooEarlyCount.M(idNotFoundOnMapCount),
-		statPolicyEvaluationErrorCount.M(evaluateErrorCount),
+		statDroppedTooEarlyCount.M(metrics.idNotFoundOnMapCount),
+		statPolicyEvaluationErrorCount.M(metrics.evaluateErrorCount),
 		statTracesOnMemoryGauge.M(int64(atomic.LoadUint64(&tsp.numTracesOnMap))))
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
-		zap.Int64("sampled", decisionSampled),
-		zap.Int64("notSampled", decisionNotSampled),
-		zap.Int64("droppedPriorToEvaluation", idNotFoundOnMapCount),
-		zap.Int64("policyEvaluationErrors", evaluateErrorCount),
+		zap.Int64("sampled", metrics.decisionSampled),
+		zap.Int64("notSampled", metrics.decisionNotSampled),
+		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
+		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
+}
+
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *Policy) {
+	finalDecision := sampling.NotSampled
+	var matchingPolicy *Policy = nil
+
+	for i, policy := range tsp.policies {
+		policyEvaluateStartTime := time.Now()
+		decision, err := policy.Evaluator.Evaluate(id, trace)
+		stats.Record(
+			policy.ctx,
+			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
+
+		if err != nil {
+			trace.Decisions[i] = sampling.NotSampled
+			metrics.evaluateErrorCount++
+			tsp.logger.Debug("Sampling policy error", zap.Error(err))
+		} else {
+			trace.Decisions[i] = decision
+
+			switch decision {
+			case sampling.Sampled:
+				// any single policy that decides to sample will cause the decision to be sampled
+				// the nextConsumer will get the context from the first matching policy
+				finalDecision = sampling.Sampled
+				if matchingPolicy == nil {
+					matchingPolicy = policy
+				}
+
+				_ = stats.RecordWithTags(
+					policy.ctx,
+					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
+					statCountTracesSampled.M(int64(1)),
+				)
+				metrics.decisionSampled++
+
+			case sampling.NotSampled:
+				_ = stats.RecordWithTags(
+					policy.ctx,
+					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
+					statCountTracesSampled.M(int64(1)),
+				)
+				metrics.decisionNotSampled++
+			}
+		}
+	}
+
+	return finalDecision, matchingPolicy
 }
 
 // ConsumeTraceData is required by the SpanProcessor interface.
@@ -296,8 +318,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 			actualData.Unlock()
 
 			switch actualDecision {
-			case sampling.Pending:
-				// All process for pending done above, keep the case so it doesn't go to default.
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(spans, singleTrace, td)
@@ -315,6 +335,12 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 				tsp.logger.Warn("Encountered unexpected sampling decision",
 					zap.String("policy", policy.Name),
 					zap.Int("decision", int(actualDecision)))
+			}
+
+			// At this point the late arrival has been passed to nextConsumer. Need to break out of the policy loop
+			// so that it isn't sent to nextConsumer more than once when multiple policies chose to sample
+			if actualDecision == sampling.Sampled {
+				break
 			}
 		}
 	}
