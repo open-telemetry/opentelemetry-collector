@@ -202,7 +202,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 		if err != nil {
 			trace.Decisions[i] = sampling.NotSampled
 			metrics.evaluateErrorCount++
-			tsp.logger.Error("Sampling policy error", zap.Error(err))
+			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 		} else {
 			trace.Decisions[i] = decision
 
