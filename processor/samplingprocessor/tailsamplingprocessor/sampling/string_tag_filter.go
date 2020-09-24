@@ -17,6 +17,8 @@ package sampling
 import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type stringAttributeFilter struct {
@@ -53,7 +55,7 @@ func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*tracepb.Span)
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (saf *stringAttributeFilter) Evaluate(_ []byte, trace *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
@@ -87,7 +89,7 @@ func (saf *stringAttributeFilter) Evaluate(_ []byte, trace *TraceData) (Decision
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (saf *stringAttributeFilter) OnDroppedSpans([]byte, *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
 	saf.logger.Debug("Triggering action for dropped spans in string-tag filter")
 	return NotSampled, nil
 }

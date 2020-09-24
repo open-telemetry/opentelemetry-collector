@@ -341,6 +341,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 		i++
 
 		link.SetTraceID(pdata.NewTraceID(ocLink.TraceId))
+
 		link.SetSpanID(pdata.NewSpanID(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())

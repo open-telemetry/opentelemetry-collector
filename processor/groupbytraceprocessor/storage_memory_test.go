@@ -27,9 +27,9 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceIDs := [][]byte{
-		{1, 2, 3, 4},
-		{2, 3, 4, 5},
+	traceIDs := []pdata.TraceID{
+		pdata.NewTraceID([]byte{1, 2, 3, 4}),
+		pdata.NewTraceID([]byte{2, 3, 4, 5}),
 	}
 
 	baseTrace := pdata.NewResourceSpans()
@@ -41,7 +41,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 
 	// test
 	for _, traceID := range traceIDs {
-		span.SetTraceID(pdata.NewTraceID(traceID))
+		span.SetTraceID(traceID)
 		st.createOrAppend(traceID, baseTrace)
 	}
 
@@ -171,7 +171,7 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 func TestCreateWithNilParameter(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
-	traceID := []byte{1, 2, 3, 4}
+	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
 
 	// test
 	err := st.createOrAppend(traceID, pdata.NewResourceSpans())

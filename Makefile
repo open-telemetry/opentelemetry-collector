@@ -277,6 +277,9 @@ genproto_sub:
 	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/logs/v1/logs.proto \
 	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
 
+	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/metrics/v1/metrics.proto \
+	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
+
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(GO_PKG_DIR) $(file)))
 

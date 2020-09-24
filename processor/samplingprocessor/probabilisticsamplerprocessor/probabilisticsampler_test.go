@@ -464,7 +464,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 
 			for k := 0; k < numTracesPerBatch; k++ {
 				span := ils.Spans().At(k)
-				span.SetTraceID(tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64()))
+				span.SetTraceID(tracetranslator.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)
 				attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
@@ -502,7 +502,7 @@ func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string)
 				for k := 0; k < ils.Spans().Len(); k++ {
 					spanCount++
 					span := ils.Spans().At(k)
-					key := string(span.TraceID())
+					key := string(span.TraceID().Bytes())
 					if traceIDs[key] {
 						t.Errorf("same traceID used more than once %q", key)
 						return
