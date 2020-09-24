@@ -28,6 +28,8 @@ import (
 )
 
 // OCToTraceData converts OC data format to Traces.
+// Deprecated: use pdata.Traces instead. OCToTraceData may be used only by OpenCensus
+// receiver and exporter implementations.
 func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
 	traceData := pdata.NewTraces()
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
