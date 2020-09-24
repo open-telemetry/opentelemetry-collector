@@ -138,8 +138,13 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	}
 }
 
+type policyMetrics struct {
+	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
+}
+
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
-	var idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
+	metrics := policyMetrics{}
+
 	startTime := time.Now()
 	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
@@ -147,16 +152,13 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	for _, id := range batch {
 		d, ok := tsp.idToTrace.Load(traceKey(id.Bytes()))
 		if !ok {
-			idNotFoundOnMapCount++
+			metrics.idNotFoundOnMapCount++
 			continue
 		}
 		trace := d.(*sampling.TraceData)
 		trace.DecisionTime = time.Now()
 
-		decision, policy, sampleCount, notSampleCount, errorCount := tsp.makeDecision(id, trace)
-		decisionSampled += sampleCount
-		decisionNotSampled += notSampleCount
-		evaluateErrorCount += errorCount
+		decision, policy := tsp.makeDecision(id, trace, &metrics)
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -173,21 +175,20 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 	stats.Record(tsp.ctx,
 		statOverallDecisionLatencyµs.M(int64(time.Since(startTime)/time.Microsecond)),
-		statDroppedTooEarlyCount.M(idNotFoundOnMapCount),
-		statPolicyEvaluationErrorCount.M(evaluateErrorCount),
+		statDroppedTooEarlyCount.M(metrics.idNotFoundOnMapCount),
+		statPolicyEvaluationErrorCount.M(metrics.evaluateErrorCount),
 		statTracesOnMemoryGauge.M(int64(atomic.LoadUint64(&tsp.numTracesOnMap))))
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
-		zap.Int64("sampled", decisionSampled),
-		zap.Int64("notSampled", decisionNotSampled),
-		zap.Int64("droppedPriorToEvaluation", idNotFoundOnMapCount),
-		zap.Int64("policyEvaluationErrors", evaluateErrorCount),
+		zap.Int64("sampled", metrics.decisionSampled),
+		zap.Int64("notSampled", metrics.decisionNotSampled),
+		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
+		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData) (sampling.Decision, *Policy, int64, int64, int64) {
-	var decisionSampled, decisionNotSampled, evaluateErrorCount int64
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *Policy) {
 	finalDecision := sampling.NotSampled
 	var matchingPolicy *Policy = nil
 
@@ -200,7 +201,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 
 		if err != nil {
 			trace.Decisions[i] = sampling.NotSampled
-			evaluateErrorCount++
+			metrics.evaluateErrorCount++
 			tsp.logger.Error("Sampling policy error", zap.Error(err))
 		} else {
 			trace.Decisions[i] = decision
@@ -219,7 +220,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
 					statCountTracesSampled.M(int64(1)),
 				)
-				decisionSampled++
+				metrics.decisionSampled++
 
 			case sampling.NotSampled:
 				_ = stats.RecordWithTags(
@@ -227,12 +228,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
 					statCountTracesSampled.M(int64(1)),
 				)
-				decisionNotSampled++
+				metrics.decisionNotSampled++
 			}
 		}
 	}
 
-	return finalDecision, matchingPolicy, decisionSampled, decisionNotSampled, evaluateErrorCount
+	return finalDecision, matchingPolicy
 }
 
 // ConsumeTraceData is required by the SpanProcessor interface.
