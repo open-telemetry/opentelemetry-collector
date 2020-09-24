@@ -1,0 +1,15 @@
+receivers:
+  examplereceiver:
+
+processors:
+  labelfilter:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [labelfilter]
+      exporters: [exampleexporter]
