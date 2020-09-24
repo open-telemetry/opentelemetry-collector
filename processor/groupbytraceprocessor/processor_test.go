@@ -18,13 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
-
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -40,7 +37,6 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 
-	"net/http"
 	_ "net/http/pprof"
 )
 
@@ -112,7 +108,7 @@ func TestInternalCacheLimit(t *testing.T) {
 		NumTraces: 5,
 	}
 
-	wg.Add(5) // 5 traces are expected to be received
+	wg.Add(6) // All 6 traces are expected to be received
 
 	receivedTraceIDs := []pdata.TraceID{}
 	mockProcessor := &mockProcessor{}
@@ -160,15 +156,12 @@ func TestInternalCacheLimit(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.Equal(t, 5, len(receivedTraceIDs))
+	assert.Equal(t, 6, len(receivedTraceIDs))
 
-	for i := 5; i > 0; i-- { // last 5 traces
+	for i := 5; i >= 0; i-- { // last 5 traces
 		traceID := pdata.NewTraceID(traceIDs[i])
 		assert.Contains(t, receivedTraceIDs, traceID)
 	}
-
-	// the first trace should have been evicted
-	assert.NotContains(t, receivedTraceIDs, traceIDs[0])
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -234,7 +227,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 		NumTraces:    5,
 	}
 	st := &mockStorage{
-		onGet: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
+		onDelete: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
 			return nil, nil
 		},
 	}
@@ -244,6 +237,9 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
+	// Create the channel with no buffer so that the test is deterministic
+	p.eventMachine.events = make(chan event, 0)
+
 	traceID := otlpcommon.NewTraceID([]byte{1, 2, 3, 4})
 	batch := []*v1.ResourceSpans{{
 		InstrumentationLibrarySpans: []*v1.InstrumentationLibrarySpans{{
@@ -262,7 +258,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(pdata.TraceID(traceID))
+	err = p.onTraceExpired(pdata.TraceID(traceID))
 
 	// verify
 	assert.Error(t, err)
@@ -271,12 +267,12 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	// prepare
 	config := Config{
-		WaitDuration: time.Second, // we are not waiting for this whole time
+		WaitDuration: 5 * time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
 	}
 	expectedError := errors.New("some unexpected error")
 	st := &mockStorage{
-		onGet: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
+		onDelete: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
 			return nil, expectedError
 		},
 	}
@@ -286,6 +282,9 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
+	// Create the channel with no buffer so that the test is deterministic
+	p.eventMachine.events = make(chan event, 0)
+
 	traceID := otlpcommon.NewTraceID([]byte{1, 2, 3, 4})
 	batch := []*v1.ResourceSpans{{
 		InstrumentationLibrarySpans: []*v1.InstrumentationLibrarySpans{{
@@ -304,9 +303,10 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(pdata.TraceID(traceID))
+	err = p.onTraceExpired(pdata.TraceID(traceID))
 
 	// verify
+	assert.NotNil(t, err)
 	assert.True(t, errors.Is(err, expectedError))
 }
 
@@ -488,9 +488,10 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	p.ringBuffer.put(traceID)
 
 	// test
-	err = p.onTraceRemoved(traceID)
+	err = p.onTraceExpired(traceID)
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -514,9 +515,10 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	p.ringBuffer.put(traceID)
 
 	// test
-	err = p.onTraceRemoved(traceID)
+	err = p.onTraceExpired(traceID)
 
 	// verify
 	assert.Error(t, err)
@@ -758,11 +760,6 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 }
 
 func TestHighConcurrency(t *testing.T) {
-	// To dump the goroutine stacks, http://localhost:6060/debug/pprof/goroutine?debug=2
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
-
 	// Make 400 traces with 100 spans each
 	traceIds, batches := generateTraces(400, 100)
 	// Shuffle the batches so that the spans for each trace will arrive in a random order
@@ -778,17 +775,19 @@ func TestHighConcurrency(t *testing.T) {
 	next := &exportertest.SinkTraceExporter{}
 
 	config := Config{
-		WaitDuration: 1000 * time.Millisecond,
+		WaitDuration: 100 * time.Millisecond,
 		// To reproduce the deadlock we need to trigger the buffer eviction
 		// we also need more to exceed the channel buffer size (200)
 		NumTraces: 100,
 	}
 
-	conf := zap.NewDevelopmentConfig()
-	// Debug to help follow the operations on the trace
-	conf.Level.SetLevel(zapcore.DebugLevel)
-	logger, err := conf.Build()
-	require.NoError(t, err)
+	logger := zap.NewNop()
+	// For local debugging
+	//conf := zap.NewDevelopmentConfig()
+	//// Debug to help follow the operations on the trace
+	//conf.Level.SetLevel(zapcore.DebugLevel)
+	//logger, err := conf.Build()
+	//require.NoError(t, err)
 
 	p, err := newGroupByTraceProcessor(logger, st, next, config)
 	require.NoError(t, err)
@@ -807,16 +806,12 @@ func TestHighConcurrency(t *testing.T) {
 	}
 
 	// Wait until all calls to ConsumeTraces have completed
-	// This reproduces the deadlock since ConsumeTraces synchronizes on the channel
-	logger.Warn("WAITING FOR ALL TRACES TO BE EMITTED")
 	wg.Wait()
-	logger.Warn("DONE TRACE EMIT")
 
-	// This should be ~1s but there seems to be a performance bottleneck, give it some extra time
-	<-time.After(20 * time.Second)
-	logger.Warn("20s TIMEOUT COMPLETE")
+	// This should be ~100ms but there seems to be a performance bottleneck, give it some extra time
+	<-time.After(2 * time.Second)
 
-	// This should work but doesn't appear to, it just blocks forever. A separate bug
+	// It should be possible to use Shutdown without the sleep above, but this triggers another deadlock condition
 	//p.Shutdown(ctx)
 
 	receivedTraceBatches := next.AllTraces()
@@ -829,7 +824,7 @@ func TestHighConcurrency(t *testing.T) {
 			for k := 0; k < ils.Len(); k++ {
 				spans := ils.At(k).Spans()
 				for s := 0; s < ils.Len(); s++ {
-					traceId := spans.At(s).TraceID().String()
+					traceId := spans.At(s).TraceID().HexString()
 					if _, ok := uniqTraceIdsToSpanCount[traceId]; !ok {
 						uniqTraceIdsToSpanCount[traceId] = 0
 					}
@@ -859,7 +854,7 @@ func generateTraces(numTraces int, numSpans int) ([][]byte, []pdata.Traces) {
 		for j := 0; j < numSpans; j++ {
 			td := testdata.GenerateTraceDataOneSpan()
 			span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-			span.SetTraceID(traceIds[i])
+			span.SetTraceID(pdata.NewTraceID(traceIds[i]))
 			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(i<<5) + uint64(j+1)))
 			tds = append(tds, td)
 		}

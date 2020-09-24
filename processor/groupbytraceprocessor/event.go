@@ -29,12 +29,6 @@ const (
 	// traceID to be released
 	traceExpired
 
-	// released traces
-	traceReleased
-
-	// traceID to be removed
-	traceRemoved
-
 	// shutdown
 	stop
 )
@@ -56,8 +50,6 @@ type eventMachine struct {
 
 	onTraceReceived func(pdata.Traces) error
 	onTraceExpired  func(pdata.TraceID) error
-	onTraceReleased func([]pdata.ResourceSpans) error
-	onTraceRemoved  func(pdata.TraceID) error
 
 	onError func(event)
 
@@ -108,32 +100,6 @@ func (em *eventMachine) start() {
 				continue
 			}
 			em.onTraceExpired(payload)
-		case traceReleased:
-			if em.onTraceReleased == nil {
-				em.logger.Debug("onTraceReleased not set, skipping event")
-				em.callOnError(e)
-				continue
-			}
-			payload, ok := e.payload.([]pdata.ResourceSpans)
-			if !ok {
-				// the payload had an unexpected type!
-				em.callOnError(e)
-				continue
-			}
-			em.onTraceReleased(payload)
-		case traceRemoved:
-			if em.onTraceRemoved == nil {
-				em.logger.Debug("onTraceRemoved not set, skipping event")
-				em.callOnError(e)
-				continue
-			}
-			payload, ok := e.payload.(pdata.TraceID)
-			if !ok {
-				// the payload had an unexpected type!
-				em.callOnError(e)
-				continue
-			}
-			em.onTraceRemoved(payload)
 		case stop:
 			em.logger.Info("shuttting down the event machine")
 			em.shutdownLock.Lock()

@@ -76,8 +76,6 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 	// register the callbacks
 	eventMachine.onTraceReceived = sp.onTraceReceived
 	eventMachine.onTraceExpired = sp.onTraceExpired
-	eventMachine.onTraceReleased = sp.onTraceReleased
-	eventMachine.onTraceRemoved = sp.onTraceRemoved
 
 	return sp, nil
 }
@@ -150,15 +148,19 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 	// place the trace ID in the buffer, and check if an item had to be evicted
 	evicted := sp.ringBuffer.put(traceID)
 	if evicted.Bytes() != nil {
-		// delete from the storage
-		sp.eventMachine.fire(event{
-			typ:     traceRemoved,
-			payload: evicted,
-		})
-
 		// TODO: do we want another channel that receives evicted items? record a metric perhaps?
 		sp.logger.Info("trace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
 			zap.String("traceID", evicted.HexString()))
+		// delete from the storage
+		trace, err := sp.st.delete(evicted)
+		if err != nil {
+			sp.logger.Info(fmt.Sprintf("couldn't delete trace %q from the storage: %s", traceID.HexString(), err.Error()))
+		} else if trace == nil {
+			sp.logger.Info(fmt.Sprintf("trace %q not found at the storage", traceID.HexString()))
+		} else {
+			// no need to wait on the nextConsumer
+			go sp.releaseTrace(evicted, trace)
+		}
 	}
 
 	// we have the traceID in the memory, place the spans in the storage too
@@ -194,49 +196,9 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
 	// delete from the map and erase its memory entry
 	sp.ringBuffer.delete(traceID)
 
-	// this might block, but we don't need to wait
 	sp.logger.Debug("marking the trace as released",
 		zap.String("traceID", traceID.HexString()))
-	go sp.markAsReleased(traceID)
 
-	return nil
-}
-
-func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID) error {
-	// #get is a potentially blocking operation
-	trace, err := sp.st.get(traceID)
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve trace %q from the storage: %w", traceID, err)
-	}
-
-	if trace == nil {
-		return fmt.Errorf("the trace %q couldn't be found at the storage", traceID)
-	}
-
-	// signal that the trace is ready to be released
-	sp.logger.Debug("trace marked as released", zap.String("traceID", traceID.HexString()))
-
-	// atomically fire the two events, so that a concurrent shutdown won't leave
-	// an orphaned trace in the storage
-	sp.eventMachine.fire(event{
-		typ:     traceReleased,
-		payload: trace,
-	}, event{
-		typ:     traceRemoved,
-		payload: traceID,
-	})
-	return nil
-}
-
-func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) error {
-	trace := pdata.NewTraces()
-	for _, rs := range rss {
-		trace.ResourceSpans().Append(rs)
-	}
-	return sp.nextConsumer.ConsumeTraces(context.Background(), trace)
-}
-
-func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
 	trace, err := sp.st.delete(traceID)
 	if err != nil {
 		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID.HexString(), err)
@@ -245,8 +207,21 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
 	if trace == nil {
 		return fmt.Errorf("trace %q not found at the storage", traceID.HexString())
 	}
+	// no need to wait on the nextConsumer
+	go sp.releaseTrace(traceID, trace)
 
 	return nil
+}
+
+func (sp *groupByTraceProcessor) releaseTrace(traceId pdata.TraceID, rss []pdata.ResourceSpans) {
+	trace := pdata.NewTraces()
+	for _, rs := range rss {
+		trace.ResourceSpans().Append(rs)
+	}
+
+	if err := sp.nextConsumer.ConsumeTraces(context.Background(), trace); err != nil {
+		sp.logger.Error("next processor failed to process trace", zap.Error(err))
+	}
 }
 
 func (sp *groupByTraceProcessor) addSpans(traceID pdata.TraceID, trace pdata.ResourceSpans) error {

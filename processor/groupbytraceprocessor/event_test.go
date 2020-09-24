@@ -56,29 +56,6 @@ func TestEventCallback(t *testing.T) {
 				}
 			},
 		},
-		{
-			casename: "onTraceReleased",
-			typ:      traceReleased,
-			payload:  []pdata.ResourceSpans{},
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(expired []pdata.ResourceSpans) error {
-					wg.Done()
-					return nil
-				}
-			},
-		},
-		{
-			casename: "onTraceRemoved",
-			typ:      traceRemoved,
-			payload:  pdata.NewTraceID([]byte{1, 2, 3, 4}),
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pdata.TraceID) error {
-					wg.Done()
-					assert.Equal(t, pdata.NewTraceID([]byte{1, 2, 3, 4}), expired)
-					return nil
-				}
-			},
-		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
 			// prepare
@@ -117,14 +94,6 @@ func TestEventCallbackNotSet(t *testing.T) {
 		{
 			casename: "onTraceExpired",
 			typ:      traceExpired,
-		},
-		{
-			casename: "onTraceReleased",
-			typ:      traceReleased,
-		},
-		{
-			casename: "onTraceRemoved",
-			typ:      traceRemoved,
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
@@ -172,24 +141,6 @@ func TestEventInvalidPayload(t *testing.T) {
 			typ:      traceExpired,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
 				em.onTraceExpired = func(expired pdata.TraceID) error {
-					return nil
-				}
-			},
-		},
-		{
-			casename: "onTraceReleased",
-			typ:      traceReleased,
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(expired []pdata.ResourceSpans) error {
-					return nil
-				}
-			},
-		},
-		{
-			casename: "onTraceRemoved",
-			typ:      traceRemoved,
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pdata.TraceID) error {
 					return nil
 				}
 			},
