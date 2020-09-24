@@ -23,6 +23,7 @@ import (
 )
 
 // OCSliceToMetricData converts a slice of OC data format to data.MetricData.
+// Deprecated: use pdata.Metrics instead.
 func OCSliceToMetrics(ocmds []consumerdata.MetricsData) pdata.Metrics {
 	metricData := pdata.NewMetrics()
 	if len(ocmds) == 0 {
@@ -35,6 +36,8 @@ func OCSliceToMetrics(ocmds []consumerdata.MetricsData) pdata.Metrics {
 }
 
 // OCToMetricData converts OC data format to data.MetricData.
+// Deprecated: use pdata.Metrics instead. OCToMetrics may be used only by OpenCensus
+// receiver and exporter implementations.
 func OCToMetrics(md consumerdata.MetricsData) pdata.Metrics {
 	metricData := pdata.NewMetrics()
 	appendOcToMetrics(md, metricData)
