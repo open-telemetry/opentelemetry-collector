@@ -14,107 +14,57 @@
 
 package v1
 
-import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
-)
-
 // TraceID is a custom data type that is used for all trace_id fields in OTLP
 // Protobuf messages.
-type TraceID struct {
-	// Just wrap a byte slice for now. In the future we may change to a fixed array
-	// or a pair of 64 bit integers to reduce allocations.
-	id []byte
-}
+type TraceID bytesID
 
 // NewTraceID creates a TraceID from a byte slice.
-func NewTraceID(bytes []byte) (tid TraceID) {
+func NewTraceID(bytes []byte) TraceID {
 	return TraceID{id: bytes}
 }
 
 // Bytes returns the byte slice representation of the ID.
 func (t TraceID) Bytes() []byte {
-	return t.id
+	return bytesID(t).Bytes()
 }
 
 // HexString returns hex representation of the ID.
 func (t TraceID) HexString() string {
-	return hex.EncodeToString(t.id)
+	return bytesID(t).HexString()
 }
 
 // Size returns the size of the data to serialize.
 func (t *TraceID) Size() int {
-	return len(t.id)
+	return (*bytesID)(t).Size()
 }
 
 // Equal returns true if ids are equal.
 func (t TraceID) Equal(that TraceID) bool {
-	return bytes.Equal(t.id, that.id)
+	return bytesID(t).Equal(bytesID(that))
 }
 
 // Compare the ids. See bytes.Compare for expected return values.
 func (t TraceID) Compare(that TraceID) int {
-	return bytes.Compare(t.id, that.id)
+	return bytesID(t).Compare(bytesID(that))
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
 func (t *TraceID) MarshalTo(data []byte) (n int, err error) {
-	if len(data) < len(t.id) {
-		return 0, fmt.Errorf("buffer is too short")
-	}
-	return copy(data, t.id), nil
+	return (*bytesID)(t).MarshalTo(data)
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
 func (t *TraceID) Unmarshal(data []byte) error {
-	if t.id == nil {
-		if len(data) == 0 {
-			t.id = nil
-			return nil
-		}
-		t.id = make([]byte, len(data))
-	}
-	copy(t.id, data)
-	t.id = t.id[0:len(data)]
-	return nil
+	return (*bytesID)(t).Unmarshal(data)
 }
 
 // MarshalJSON converts trace id into a hex string enclosed in quotes.
 func (t TraceID) MarshalJSON() ([]byte, error) {
-	if t.id == nil {
-		return []byte(`""`), nil
-	}
-
-	byteLen := len(t.id)
-
-	// 2 chars per byte plus 2 quote chars at the start and end.
-	hexLen := 2*byteLen + 2
-
-	b := make([]byte, hexLen)
-	hex.Encode(b[1:hexLen-1], t.id)
-	b[0], b[hexLen-1] = '"', '"'
-
-	return b, nil
+	return bytesID(t).MarshalJSON()
 }
 
 // UnmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
 func (t *TraceID) UnmarshalJSON(data []byte) error {
-	l := len(data)
-	if l < 2 || data[0] != '"' || data[l-1] != '"' {
-		return fmt.Errorf("cannot unmarshal TraceId from string '%s'", string(data))
-	}
-	data = data[1 : l-1]
-	s := string(data)
-	if s == `""` {
-		t.id = nil
-		return nil
-	}
-
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		return fmt.Errorf("cannot unmarshal TraceId from string '%s': %v", string(data), err)
-	}
-	return t.Unmarshal(b)
+	return (*bytesID)(t).UnmarshalJSON(data)
 }
