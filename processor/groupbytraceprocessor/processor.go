@@ -220,7 +220,7 @@ func (sp *groupByTraceProcessor) releaseTrace(traceId pdata.TraceID, rss []pdata
 	}
 
 	if err := sp.nextConsumer.ConsumeTraces(context.Background(), trace); err != nil {
-		sp.logger.Error("next processor failed to process trace", zap.Error(err))
+		sp.logger.Debug("next processor failed to process trace", zap.Error(err))
 	}
 }
 
