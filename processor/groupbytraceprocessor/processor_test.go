@@ -18,9 +18,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"go.opentelemetry.io/collector/internal/data/testdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,6 +39,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var (
@@ -743,6 +755,117 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 		}}
 		p.ConsumeTraces(context.Background(), pdata.TracesFromOtlp(trace))
 	}
+}
+
+func TestHighConcurrency(t *testing.T) {
+	// To dump the goroutine stacks, http://localhost:6060/debug/pprof/goroutine?debug=2
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	// Make 400 traces with 100 spans each
+	traceIds, batches := generateTraces(400, 100)
+	// Shuffle the batches so that the spans for each trace will arrive in a random order
+	rand.Shuffle(len(batches), func(i, j int) { batches[i], batches[j] = batches[j], batches[i] })
+
+	total := 0
+	for _, b := range batches {
+		total += b.SpanCount()
+	}
+	require.EqualValues(t, 400*100, total)
+
+	st := newMemoryStorage()
+	next := &exportertest.SinkTraceExporter{}
+
+	config := Config{
+		WaitDuration: 1000 * time.Millisecond,
+		// To reproduce the deadlock we need to trigger the buffer eviction
+		// we also need more to exceed the channel buffer size (200)
+		NumTraces: 100,
+	}
+
+	conf := zap.NewDevelopmentConfig()
+	// Debug to help follow the operations on the trace
+	conf.Level.SetLevel(zapcore.DebugLevel)
+	logger, err := conf.Build()
+	require.NoError(t, err)
+
+	p, err := newGroupByTraceProcessor(logger, st, next, config)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	p.Start(ctx, nil)
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(batches))
+
+	for _, b := range batches {
+		go func(batch pdata.Traces) {
+			_ = p.ConsumeTraces(context.Background(), batch)
+			wg.Done()
+		}(b)
+	}
+
+	// Wait until all calls to ConsumeTraces have completed
+	// This reproduces the deadlock since ConsumeTraces synchronizes on the channel
+	logger.Warn("WAITING FOR ALL TRACES TO BE EMITTED")
+	wg.Wait()
+	logger.Warn("DONE TRACE EMIT")
+
+	// This should be ~1s but there seems to be a performance bottleneck, give it some extra time
+	<-time.After(20 * time.Second)
+	logger.Warn("20s TIMEOUT COMPLETE")
+
+	// This should work but doesn't appear to, it just blocks forever. A separate bug
+	//p.Shutdown(ctx)
+
+	receivedTraceBatches := next.AllTraces()
+	// ideally this would equal len(traceIds) but its not always the case b/c of timing races of the enqueue/dequeue
+	uniqTraceIdsToSpanCount := map[string]int{}
+	for _, batch := range receivedTraceBatches {
+		rs := batch.ResourceSpans()
+		for i := 0; i < rs.Len(); i++ {
+			ils := rs.At(i).InstrumentationLibrarySpans()
+			for k := 0; k < ils.Len(); k++ {
+				spans := ils.At(k).Spans()
+				for s := 0; s < ils.Len(); s++ {
+					traceId := spans.At(s).TraceID().String()
+					if _, ok := uniqTraceIdsToSpanCount[traceId]; !ok {
+						uniqTraceIdsToSpanCount[traceId] = 0
+					}
+					uniqTraceIdsToSpanCount[traceId] = uniqTraceIdsToSpanCount[traceId] + 1
+				}
+			}
+		}
+	}
+
+	assert.EqualValues(t, len(traceIds), len(uniqTraceIdsToSpanCount))
+
+	// Under the current buffer eviction code path it intentionally discards spans, but that seems wrong
+	// There is a separate bug in the release phase where the operation isn't atomic and spans can be release multiple times
+	for k, v := range uniqTraceIdsToSpanCount {
+		assert.EqualValues(t, 100, v, "Trace %s should have 100 spans", k)
+	}
+
+	assert.EqualValues(t, total, next.SpansCount())
+}
+
+func generateTraces(numTraces int, numSpans int) ([][]byte, []pdata.Traces) {
+	traceIds := make([][]byte, numTraces)
+	var tds []pdata.Traces
+	for i := 0; i < numTraces; i++ {
+		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
+		// Send each span in a separate batch
+		for j := 0; j < numSpans; j++ {
+			td := testdata.GenerateTraceDataOneSpan()
+			span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+			span.SetTraceID(traceIds[i])
+			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(i<<5) + uint64(j+1)))
+			tds = append(tds, td)
+		}
+	}
+
+	return traceIds, tds
 }
 
 type mockProcessor struct {
