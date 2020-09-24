@@ -54,15 +54,14 @@ type eventMachine struct {
 	onError func(event)
 
 	// shutdown sync
-	shutdownLock *sync.RWMutex
-	closed       bool
+	done chan struct{}
 }
 
 func newEventMachine(logger *zap.Logger, bufferSize int) *eventMachine {
 	em := &eventMachine{
-		logger:       logger,
-		events:       make(chan event, bufferSize),
-		shutdownLock: &sync.RWMutex{},
+		logger: logger,
+		events: make(chan event, bufferSize),
+		done:   make(chan struct{}),
 	}
 	return em
 }
@@ -101,10 +100,8 @@ func (em *eventMachine) start() {
 			}
 			em.onTraceExpired(payload)
 		case stop:
-			em.logger.Info("shuttting down the event machine")
-			em.shutdownLock.Lock()
-			em.closed = true
-			em.shutdownLock.Unlock()
+			em.logger.Info("shutting down the event machine")
+			close(em.done)
 			e.payload.(*sync.WaitGroup).Done()
 			return
 		default:
@@ -115,17 +112,12 @@ func (em *eventMachine) start() {
 	}
 }
 
-func (em *eventMachine) fire(events ...event) {
-	em.shutdownLock.RLock()
-	defer em.shutdownLock.RUnlock()
-
-	// we are not accepting new events
-	if em.closed {
+func (em *eventMachine) fire(event event) {
+	select {
+	case em.events <- event:
 		return
-	}
-
-	for _, e := range events {
-		em.events <- e
+	case <-em.done:
+		return
 	}
 }
 

@@ -808,11 +808,8 @@ func TestHighConcurrency(t *testing.T) {
 	// Wait until all calls to ConsumeTraces have completed
 	wg.Wait()
 
-	// This should be ~100ms but there seems to be a performance bottleneck, give it some extra time
-	<-time.After(2 * time.Second)
-
-	// It should be possible to use Shutdown without the sleep above, but this triggers another deadlock condition
-	//p.Shutdown(ctx)
+	// All events have been emitted, this will wait until they are all consumed
+	p.Shutdown(ctx)
 
 	receivedTraceBatches := next.AllTraces()
 	// ideally this would equal len(traceIds) but its not always the case b/c of timing races of the enqueue/dequeue
