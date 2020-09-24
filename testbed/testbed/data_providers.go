@@ -41,7 +41,7 @@ type DataProvider interface {
 	// GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
 	GenerateMetrics() (pdata.Metrics, bool)
 	// GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
-	GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span
+	GetGeneratedSpan(traceID pdata.TraceID, spanID []byte) *otlptrace.Span
 	// GenerateLogs returns the internal pdata.Logs format
 	GenerateLogs() (pdata.Logs, bool)
 }
@@ -104,10 +104,10 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	return traceData, false
 }
 
-func GenerateSequentialTraceID(id uint64) []byte {
+func GenerateSequentialTraceID(id uint64) pdata.TraceID {
 	var traceID [16]byte
 	binary.PutUvarint(traceID[:], id)
-	return traceID[:]
+	return pdata.NewTraceID(traceID[:])
 }
 
 func GenerateSequentialSpanID(id uint64) []byte {
@@ -161,7 +161,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return md, false
 }
 
-func (dp *PerfTestDataProvider) GetGeneratedSpan([]byte, []byte) *otlptrace.Span {
+func (dp *PerfTestDataProvider) GetGeneratedSpan(pdata.TraceID, []byte) *otlptrace.Span {
 	// function not supported for this data provider
 	return nil
 }
@@ -287,7 +287,7 @@ func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	return pdata.NewLogs(), true
 }
 
-func (dp *GoldenDataProvider) GetGeneratedSpan(traceID []byte, spanID []byte) *otlptrace.Span {
+func (dp *GoldenDataProvider) GetGeneratedSpan(traceID pdata.TraceID, spanID []byte) *otlptrace.Span {
 	if dp.spansMap == nil {
 		dp.spansMap = populateSpansMap(dp.resourceSpans)
 	}
@@ -300,7 +300,7 @@ func populateSpansMap(resourceSpansList []*otlptrace.ResourceSpans) map[string]*
 	for _, resourceSpans := range resourceSpansList {
 		for _, libSpans := range resourceSpans.InstrumentationLibrarySpans {
 			for _, span := range libSpans.Spans {
-				key := traceIDAndSpanIDToString(span.TraceId, span.SpanId)
+				key := traceIDAndSpanIDToString(pdata.TraceID(span.TraceId), span.SpanId)
 				spansMap[key] = span
 			}
 		}
@@ -308,6 +308,6 @@ func populateSpansMap(resourceSpansList []*otlptrace.ResourceSpans) map[string]*
 	return spansMap
 }
 
-func traceIDAndSpanIDToString(traceID []byte, spanID []byte) string {
-	return fmt.Sprintf("%s-%s", hex.EncodeToString(traceID), hex.EncodeToString(spanID))
+func traceIDAndSpanIDToString(traceID pdata.TraceID, spanID []byte) string {
+	return fmt.Sprintf("%s-%s", hex.EncodeToString(traceID.Bytes()), hex.EncodeToString(spanID))
 }

@@ -111,7 +111,7 @@ func spanToZipkinSpan(
 
 	zs := &zipkinmodel.SpanModel{}
 
-	hi, lo, err := tracetranslator.BytesToUInt64TraceID(span.TraceID().Bytes())
+	hi, lo, err := tracetranslator.TraceIDToUInt64Pair(span.TraceID())
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 			if err != nil {
 				return err
 			}
-			zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().String(),
+			zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().HexString(),
 				link.SpanID().String(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
 		}
 	}

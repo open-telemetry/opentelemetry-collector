@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -119,7 +120,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	wg := &sync.WaitGroup{}
 	for i := 0; i < len(ids); i++ {
 		wg.Add(1)
-		go func(id []byte) {
+		go func(id pdata.TraceID) {
 			batcher.AddToCurrentBatch(id)
 			wg.Done()
 		}(ids[i])
@@ -143,18 +144,18 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 
 	idSeen := make(map[string]bool, len(ids))
 	for _, id := range got {
-		idSeen[string(id)] = true
+		idSeen[string(id.Bytes())] = true
 	}
 
 	for i := 0; i < len(ids); i++ {
-		require.True(t, idSeen[string(ids[i])], "want id %v but id was not seen", ids[i])
+		require.True(t, idSeen[string(ids[i].Bytes())], "want id %v but id was not seen", ids[i])
 	}
 }
 
-func generateSequentialIds(numIds uint64) [][]byte {
-	ids := make([][]byte, numIds)
+func generateSequentialIds(numIds uint64) []pdata.TraceID {
+	ids := make([]pdata.TraceID, numIds)
 	for i := uint64(0); i < numIds; i++ {
-		ids[i] = tracetranslator.UInt64ToByteTraceID(0, i)
+		ids[i] = tracetranslator.UInt64ToTraceID(0, i)
 	}
 	return ids
 }

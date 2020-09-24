@@ -84,7 +84,7 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 	index := startPos + 1
 	var inputs []string
 	var spanInputs *PICTSpanInputs
-	var traceID []byte
+	var traceID otlpcommon.TraceID
 	var parentID []byte
 	for i := 0; i < count; i++ {
 		if index >= pairsTotal {
@@ -106,7 +106,7 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 			parentID = nil
 		case SpanParentChild:
 			// use existing if available
-			if traceID == nil {
+			if traceID.Bytes() == nil {
 				traceID = generateTraceID(random)
 			}
 			if parentID == nil {
@@ -134,7 +134,7 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 //   random - the random number generator to use in generating ID values
 //
 // The generated span is returned.
-func GenerateSpan(traceID []byte, parentID []byte, spanName string, spanInputs *PICTSpanInputs,
+func GenerateSpan(traceID otlpcommon.TraceID, parentID []byte, spanName string, spanInputs *PICTSpanInputs,
 	random io.Reader) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{

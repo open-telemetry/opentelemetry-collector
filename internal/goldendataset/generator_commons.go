@@ -93,13 +93,13 @@ func loadPictOutputFile(fileName string) ([][]string, error) {
 	return reader.ReadAll()
 }
 
-func generateTraceID(random io.Reader) []byte {
+func generateTraceID(random io.Reader) otlpcommon.TraceID {
 	var r [16]byte
 	_, err := random.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return otlpcommon.NewTraceID(r[:])
 }
 
 func generateSpanID(random io.Reader) []byte {
