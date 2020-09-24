@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"go.opentelemetry.io/collector/internal/data/testdata"
@@ -773,14 +775,14 @@ func TestHighConcurrency(t *testing.T) {
 		{
 			name:           "exceed_ring_buffer_size",
 			numTraces:      400,
-			spansPerTrace:  100,
+			spansPerTrace:  10,
 			ringBufferSize: 100,
 			waitDuration:   100 * time.Millisecond,
 		},
 		{
 			name:           "fast_wait_duration",
 			numTraces:      400,
-			spansPerTrace:  100,
+			spansPerTrace:  10,
 			ringBufferSize: 10000,
 			waitDuration:   1 * time.Millisecond,
 		},
@@ -817,6 +819,9 @@ func TestHighConcurrency(t *testing.T) {
 
 			p, err := newGroupByTraceProcessor(logger, st, next, config)
 			require.NoError(t, err)
+			// swap the timer for an implementation we can wait on
+			timer := waitableTimer{}
+			p.timer = &timer
 
 			ctx := context.Background()
 			p.Start(ctx, nil)
@@ -834,21 +839,11 @@ func TestHighConcurrency(t *testing.T) {
 			// Wait until all calls to ConsumeTraces have completed
 			wg.Wait()
 
+			// Wait for all events to be emitted by the timer
+			timer.wg.Wait()
+
 			// All events have been emitted, this will wait until they are all consumed
 			p.Shutdown(ctx)
-
-			// Because the call to nextConsumer happens in a goroutine there is a race here
-			// This will only wait 10s if the test is going to fail, otherwise it should be ~2s
-			deadline := time.Now().Add(10 * time.Second)
-			for true {
-				if expectedSpanCount == next.SpansCount() {
-					break
-				}
-				if time.Now().After(deadline) {
-					break
-				}
-				time.Sleep(1 * time.Second)
-			}
 
 			receivedTraceBatches := next.AllTraces()
 			// ideally this would equal len(traceIds) but its not always the case b/c of timing races of the enqueue/dequeue
@@ -875,7 +870,7 @@ func TestHighConcurrency(t *testing.T) {
 			// Under the current buffer eviction code path it intentionally discards spans, but that seems wrong
 			// There is a separate bug in the release phase where the operation isn't atomic and spans can be release multiple times
 			for k, v := range uniqTraceIdsToSpanCount {
-				assert.EqualValues(t, 100, v, "Trace %s should have 100 spans", k)
+				assert.EqualValues(t, test.spansPerTrace, v, "Trace %s should have %d spans", k, test.spansPerTrace)
 			}
 
 			assert.EqualValues(t, expectedSpanCount, next.SpansCount())
@@ -948,4 +943,16 @@ func (st *mockStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, err
 		return st.onDelete(traceID)
 	}
 	return nil, nil
+}
+
+type waitableTimer struct {
+	wg sync.WaitGroup
+}
+
+func (t *waitableTimer) AfterFunc(d time.Duration, f func()) *time.Timer {
+	t.wg.Add(1)
+	return time.AfterFunc(d, func() {
+		defer t.wg.Done()
+		f()
+	})
 }

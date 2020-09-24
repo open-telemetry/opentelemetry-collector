@@ -85,7 +85,9 @@ func (em *eventMachine) start() {
 				em.callOnError(e)
 				continue
 			}
-			em.onTraceReceived(payload)
+			if err := em.onTraceReceived(payload); err != nil {
+				em.logger.Debug("onTraceReceived failed", zap.Error(err))
+			}
 		case traceExpired:
 			if em.onTraceExpired == nil {
 				em.logger.Debug("onTraceExpired not set, skipping event")
@@ -98,7 +100,9 @@ func (em *eventMachine) start() {
 				em.callOnError(e)
 				continue
 			}
-			em.onTraceExpired(payload)
+			if err := em.onTraceExpired(payload); err != nil {
+				em.logger.Debug("onTraceExpired failed", zap.Error(err))
+			}
 		case stop:
 			em.logger.Info("shutting down the event machine")
 			close(em.done)

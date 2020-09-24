@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -55,6 +56,12 @@ type groupByTraceProcessor struct {
 
 	// the trace storage
 	st storage
+
+	// keeps track of outstanding goroutines
+	inprogressWg sync.WaitGroup
+
+	// for easier testing of time.AfterFunc
+	timer tTimer
 }
 
 var _ component.TraceProcessor = (*groupByTraceProcessor)(nil)
@@ -71,6 +78,8 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 		eventMachine: eventMachine,
 		ringBuffer:   newRingBuffer(config.NumTraces),
 		st:           st,
+		inprogressWg: sync.WaitGroup{},
+		timer:        &groupbyTimer{},
 	}
 
 	// register the callbacks
@@ -101,6 +110,7 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 	sp.eventMachine.shutdown()
+	sp.inprogressWg.Wait()
 	return nil
 }
 
@@ -154,12 +164,13 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 		// delete from the storage
 		trace, err := sp.st.delete(evicted)
 		if err != nil {
-			sp.logger.Info(fmt.Sprintf("couldn't delete trace %q from the storage: %s", traceID.HexString(), err.Error()))
+			sp.logger.Info(fmt.Sprintf("couldn't delete trace %q from the storage: %s", evicted.HexString(), err.Error()))
 		} else if trace == nil {
-			sp.logger.Info(fmt.Sprintf("trace %q not found at the storage", traceID.HexString()))
+			sp.logger.Info(fmt.Sprintf("trace %q not found at the storage", evicted.HexString()))
 		} else {
 			// no need to wait on the nextConsumer
-			go sp.releaseTrace(evicted, trace)
+			sp.inprogressWg.Add(1)
+			go sp.releaseTrace(trace)
 		}
 	}
 
@@ -170,7 +181,7 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 
 	sp.logger.Debug("scheduled to release trace", zap.Duration("duration", sp.config.WaitDuration))
 
-	time.AfterFunc(sp.config.WaitDuration, func() {
+	sp.timer.AfterFunc(sp.config.WaitDuration, func() {
 		// if the event machine has stopped, it will just discard the event
 		sp.eventMachine.fire(event{
 			typ:     traceExpired,
@@ -208,12 +219,15 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
 		return fmt.Errorf("trace %q not found at the storage", traceID.HexString())
 	}
 	// no need to wait on the nextConsumer
-	go sp.releaseTrace(traceID, trace)
+	sp.inprogressWg.Add(1)
+	go sp.releaseTrace(trace)
 
 	return nil
 }
 
-func (sp *groupByTraceProcessor) releaseTrace(traceId pdata.TraceID, rss []pdata.ResourceSpans) {
+func (sp *groupByTraceProcessor) releaseTrace(rss []pdata.ResourceSpans) {
+	defer sp.inprogressWg.Done()
+
 	trace := pdata.NewTraces()
 	for _, rs := range rss {
 		trace.ResourceSpans().Append(rs)
@@ -284,4 +298,15 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 	}
 
 	return result
+}
+
+// tTimer interface allows easier testing of ticker related functionality used by groupbytraceprocessor
+type tTimer interface {
+	AfterFunc(d time.Duration, f func()) *time.Timer
+}
+
+type groupbyTimer struct{}
+
+func (_ *groupbyTimer) AfterFunc(d time.Duration, f func()) *time.Timer {
+	return time.AfterFunc(d, f)
 }
