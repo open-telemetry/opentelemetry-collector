@@ -127,7 +127,6 @@ func TestScrapeMetrics(t *testing.T) {
 				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor, test.expectedDeviceDataPoints*2)
 			}
 
-			assertFileSystemUsageCommonMetricLabels(t, metrics)
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
@@ -135,6 +134,12 @@ func TestScrapeMetrics(t *testing.T) {
 
 func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, expectedDeviceDataPoints int) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
+	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
+		for _, label := range []string{deviceLabelName, filesystemTypeLabelName, mountModeLabelName, mountPointLabelName} {
+			internal.AssertIntSumMetricLabelExists(t, metric, i, label)
+		}
+	}
+
 	if expectedDeviceDataPoints > 0 {
 		assert.Equal(t, expectedDeviceDataPoints, metric.IntSum().DataPoints().Len())
 	} else {
@@ -142,16 +147,6 @@ func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descrip
 	}
 	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, stateLabelName, usedLabelValue)
 	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
-}
-
-func assertFileSystemUsageCommonMetricLabels(t *testing.T, metrics pdata.MetricSlice) {
-	for i := 0; i < metrics.Len(); i++ {
-		for j := 0; j < metrics.At(i).IntSum().DataPoints().Len(); j++ {
-			for _, label := range []string{deviceLabelName, filesystemTypeLabelName, mountModeLabelName, mountPointLabelName} {
-				internal.AssertIntSumMetricLabelExists(t, metrics.At(i), j, label)
-			}
-		}
-	}
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
