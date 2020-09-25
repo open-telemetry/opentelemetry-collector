@@ -307,6 +307,6 @@ type tTimer interface {
 
 type groupbyTimer struct{}
 
-func (_ *groupbyTimer) AfterFunc(d time.Duration, f func()) {
+func (*groupbyTimer) AfterFunc(d time.Duration, f func()) {
 	time.AfterFunc(d, f)
 }

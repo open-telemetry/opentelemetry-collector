@@ -237,7 +237,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	require.NotNil(t, p)
 
 	// Create the channel with no buffer so that the test is deterministic
-	p.eventMachine.events = make(chan event, 0)
+	p.eventMachine.events = make(chan event)
 
 	traceID := otlpcommon.NewTraceID([]byte{1, 2, 3, 4})
 	batch := []*v1.ResourceSpans{{
@@ -282,7 +282,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	require.NotNil(t, p)
 
 	// Create the channel with no buffer so that the test is deterministic
-	p.eventMachine.events = make(chan event, 0)
+	p.eventMachine.events = make(chan event)
 
 	traceID := otlpcommon.NewTraceID([]byte{1, 2, 3, 4})
 	batch := []*v1.ResourceSpans{{
