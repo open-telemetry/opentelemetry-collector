@@ -28,11 +28,18 @@ import (
 
 const totalInstanceName = "_Total"
 
+// PerfCounterScraper scrapes performance counter data.
 type PerfCounterScraper interface {
+	// Initialize initializes the PerfCounterScraper so that subsequent calls
+	// to Scrape will return performance counter data for the specified set.
+	// of objects
 	Initialize(objects ...string) error
+	// Scrape returns performance data for the initialized objects.
 	Scrape() (PerfDataCollection, error)
 }
 
+// PerfLibScraper is an implementation of PerfCounterScraper that uses
+// perflib to scrape performance counter data.
 type PerfLibScraper struct {
 	objectIndices string
 }
@@ -53,7 +60,7 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 		objectIndicesMap[index] = struct{}{}
 	}
 
-	// convert to space-separated string
+	// convert to a space-separated string
 	objectIndicesSlice := make([]string, 0, len(objectIndicesMap))
 	for k := range objectIndicesMap {
 		objectIndicesSlice = append(objectIndicesSlice, strconv.Itoa(int(k)))
@@ -76,7 +83,10 @@ func (p *PerfLibScraper) Scrape() (PerfDataCollection, error) {
 	return perfDataCollection{perfObject: indexed}, nil
 }
 
+// PerfDataCollection represents a collection of perf counter data.
 type PerfDataCollection interface {
+	// GetObject returns the perf counter data associated with the specified object,
+	// or returns an error if no data exists for this object name.
 	GetObject(objectName string) (PerfDataObject, error)
 }
 
@@ -93,8 +103,15 @@ func (p perfDataCollection) GetObject(objectName string) (PerfDataObject, error)
 	return perfDataObject{obj}, nil
 }
 
+// PerfDataCollection represents a collection of perf counter values
+// and associated instances.
 type PerfDataObject interface {
+	// Filter filters the perf counter data to only retain data related to
+	// relevant instances based on the supplied parameters.
 	Filter(includeFS, excludeFS filterset.FilterSet, includeTotal bool)
+	// GetValues returns the performance counter data associated with the specified
+	// counters, or returns an error if any of the specified counter names do not
+	// exist.
 	GetValues(counterNames ...string) ([]*CounterValues, error)
 }
 
@@ -125,6 +142,7 @@ func includeDevice(deviceName string, includeFS, excludeFS filterset.FilterSet, 
 		(excludeFS == nil || !excludeFS.Matches(deviceName))
 }
 
+// CounterValues represents a set of perf counter values for a given instance.
 type CounterValues struct {
 	InstanceName string
 	Values       map[string]int64

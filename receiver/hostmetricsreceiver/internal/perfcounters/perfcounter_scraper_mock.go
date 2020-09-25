@@ -20,23 +20,27 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
-// MockPerfCounterScraperError returns the supplied errors when Scrape, GetObject,
-// or GetValues are called.
-
+// MockPerfCounterScraperError is an implementation of PerfCounterScraper that returns
+// the supplied errors when Scrape, GetObject, or GetValues are called.
 type MockPerfCounterScraperError struct {
 	scrapeErr    error
 	getObjectErr error
 	getValuesErr error
 }
 
+// NewMockPerfCounterScraperError returns a MockPerfCounterScraperError that will return
+// the specified errors on subsequent function calls.
 func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr error) *MockPerfCounterScraperError {
 	return &MockPerfCounterScraperError{scrapeErr: scrapeErr, getObjectErr: getObjectErr, getValuesErr: getValuesErr}
 }
 
+// Initialize is a no-op
 func (p *MockPerfCounterScraperError) Initialize(objects ...string) error {
 	return nil
 }
 
+// Scrape returns the specified scrapeErr or an object that will return a subsequent error
+// if scrapeErr is nil
 func (p *MockPerfCounterScraperError) Scrape() (PerfDataCollection, error) {
 	if p.scrapeErr != nil {
 		return nil, p.scrapeErr
@@ -50,6 +54,8 @@ type mockPerfDataCollectionError struct {
 	getValuesErr error
 }
 
+// GetObject returns the specified getObjectErr or an object that will return a subsequent
+// error if getObjectErr is nil
 func (p mockPerfDataCollectionError) GetObject(objectName string) (PerfDataObject, error) {
 	if p.getObjectErr != nil {
 		return nil, p.getObjectErr
@@ -62,9 +68,11 @@ type mockPerfDataObjectError struct {
 	getValuesErr error
 }
 
+// Filter is a no-op
 func (obj mockPerfDataObjectError) Filter(includeFS, excludeFS filterset.FilterSet, includeTotal bool) {
 }
 
+// GetValues returns the specified getValuesErr
 func (obj mockPerfDataObjectError) GetValues(counterNames ...string) ([]*CounterValues, error) {
 	return nil, obj.getValuesErr
 }
