@@ -729,7 +729,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 
 	span := spans.At(1)
 	span.SetName("operationB")
-	span.SetSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	span.SetSpanID(pdata.NewSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetKind(pdata.SpanKindSERVER)
 	span.SetTraceID(spans.At(0).TraceID())
@@ -784,7 +784,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 
 	span := spans.At(1)
 	span.SetName("operationC")
-	span.SetSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	span.SetSpanID(pdata.NewSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTime(spans.At(0).EndTime())
 	span.SetEndTime(spans.At(0).EndTime() + 1000000)

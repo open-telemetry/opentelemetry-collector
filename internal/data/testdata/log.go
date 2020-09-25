@@ -281,7 +281,7 @@ func fillLogOne(log pdata.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
-	log.SetSpanID([]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetSpanID(pdata.NewSpanID([]byte{0x01, 0x02, 0x04, 0x08}))
 	log.SetTraceID(pdata.NewTraceID([]byte{0x08, 0x04, 0x02, 0x01}))
 
 	attrs := log.Attributes()
@@ -299,7 +299,7 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
-		SpanId:                 []byte{0x01, 0x02, 0x04, 0x08},
+		SpanId:                 otlpcommon.NewSpanID([]byte{0x01, 0x02, 0x04, 0x08}),
 		TraceId:                otlpcommon.NewTraceID([]byte{0x08, 0x04, 0x02, 0x01}),
 		Attributes: []*otlpcommon.KeyValue{
 			{

@@ -605,7 +605,7 @@ func (ms LogRecord) SpanID() SpanID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = []byte(v)
+	(*ms.orig).SpanId = otlpcommon.SpanID(v)
 }
 
 // Flags returns the flags associated with this LogRecord.

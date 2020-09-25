@@ -231,7 +231,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 				return err
 			}
 			zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().HexString(),
-				link.SpanID().String(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
+				link.SpanID().HexString(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
 		}
 	}
 	return nil

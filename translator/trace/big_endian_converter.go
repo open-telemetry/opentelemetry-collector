@@ -94,10 +94,22 @@ func UInt64ToByteSpanID(id uint64) []byte {
 	return spanID
 }
 
+// UInt64ToSpanID takes a uint64 representation of a SpanID and
+// converts it to a pdata.SpanID representation.
+func UInt64ToSpanID(id uint64) pdata.SpanID {
+	return pdata.NewSpanID(UInt64ToByteSpanID(id))
+}
+
 // Int64ToByteSpanID takes a int64 representation of a SpanID and
 // converts it to a []byte representation.
 func Int64ToByteSpanID(id int64) []byte {
 	return UInt64ToByteSpanID(uint64(id))
+}
+
+// Int64ToByteSpanID takes a int64 representation of a SpanID and
+// converts it to a []byte representation.
+func Int64ToSpanID(id int64) pdata.SpanID {
+	return UInt64ToSpanID(uint64(id))
 }
 
 // BytesToUInt64SpanID takes a []byte representation of a SpanID and

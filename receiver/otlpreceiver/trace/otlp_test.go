@@ -66,7 +66,7 @@ func TestExport(t *testing.T) {
 					Spans: []*otlptrace.Span{
 						{
 							TraceId:           v1.NewTraceID(traceID),
-							SpanId:            spanID,
+							SpanId:            v1.NewSpanID(spanID),
 							Name:              "operationB",
 							Kind:              otlptrace.Span_SPAN_KIND_SERVER,
 							StartTimeUnixNano: unixnanos,

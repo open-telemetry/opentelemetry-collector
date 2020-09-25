@@ -389,8 +389,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			a, _ := tracetranslator.BytesToInt64SpanID(got[i])
-			b, _ := tracetranslator.BytesToInt64SpanID(got[j])
+			a, _ := tracetranslator.BytesToInt64SpanID(got[i].Bytes())
+			b, _ := tracetranslator.BytesToInt64SpanID(got[j].Bytes())
 			return a < b
 		})
 
@@ -440,7 +440,7 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 			span.SetTraceID(traceIds[i])
 
 			spanID++
-			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(spanID)))
+			span.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
 		}
 	}

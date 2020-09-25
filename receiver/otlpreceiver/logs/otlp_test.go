@@ -67,7 +67,7 @@ func TestExport(t *testing.T) {
 					Logs: []*otlplog.LogRecord{
 						{
 							TraceId:      v1.NewTraceID(traceID),
-							SpanId:       spanID,
+							SpanId:       v1.NewSpanID(spanID),
 							Name:         "operationB",
 							TimeUnixNano: unixnanos,
 						},
