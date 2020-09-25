@@ -331,6 +331,54 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	require.Equal(t, 2, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
 }
 
+func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 1
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(exportertest.SinkTraceExporter)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan traceKey, maxSize),
+		policyTicker:    mtt,
+	}
+
+	mpe.NextDecision = sampling.Sampled
+
+	traceIds, batches := generateIdsAndBatches(3)
+	for _, batch := range batches {
+		require.NoError(t, tsp.ConsumeTraces(context.Background(), batch))
+	}
+
+	tsp.samplingPolicyOnTick()
+	tsp.samplingPolicyOnTick()
+
+	require.EqualValues(t, 3, len(msp.AllTraces()), "There should be three batches, one for each trace")
+
+	receivedTraces := msp.AllTraces()
+	for i, traceID := range traceIds {
+		trace := receivedTraces[findTrace(receivedTraces, traceID)]
+		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+	}
+}
+
+func findTrace(a []pdata.Traces, traceID pdata.TraceID) int {
+	for i, batch := range a {
+		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+		if traceID.HexString() == id.HexString() {
+			return i
+		}
+	}
+	return len(a)
+}
+
 func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	traceIds := make([]pdata.TraceID, numIds)
 	var tds []pdata.Traces
