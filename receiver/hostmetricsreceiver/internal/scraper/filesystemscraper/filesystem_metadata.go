@@ -21,8 +21,11 @@ import (
 // labels
 
 const (
-	deviceLabelName = "device"
-	stateLabelName  = "state"
+	deviceLabelName         = "device"
+	filesystemTypeLabelName = "fs.type"
+	mountModeLabelName      = "mount.mode"
+	mountPointLabelName     = "mount.point"
+	stateLabelName          = "state"
 )
 
 // state label values

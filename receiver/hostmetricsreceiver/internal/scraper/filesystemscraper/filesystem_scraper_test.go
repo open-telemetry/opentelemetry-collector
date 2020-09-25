@@ -59,20 +59,6 @@ func TestScrapeMetrics(t *testing.T) {
 			expectedDeviceDataPoints: 1,
 		},
 		{
-			name: "No duplicate metrics for devices having many mount point",
-			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
-				return []disk.PartitionStat{
-					{Device: "a", Mountpoint: "/mnt/a1"},
-					{Device: "a", Mountpoint: "/mnt/a2"},
-				}, nil
-			},
-			usageFunc: func(string) (*disk.UsageStat, error) {
-				return &disk.UsageStat{}, nil
-			},
-			expectMetrics:            true,
-			expectedDeviceDataPoints: 1,
-		},
-		{
 			name:          "Include Filter that matches nothing",
 			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
 			expectMetrics: false,
@@ -141,6 +127,7 @@ func TestScrapeMetrics(t *testing.T) {
 				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor, test.expectedDeviceDataPoints*2)
 			}
 
+			assertFileSystemUsageCommonMetricLabels(t, metrics)
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
@@ -155,6 +142,16 @@ func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descrip
 	}
 	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, stateLabelName, usedLabelValue)
 	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, stateLabelName, freeLabelValue)
+}
+
+func assertFileSystemUsageCommonMetricLabels(t *testing.T, metrics pdata.MetricSlice) {
+	for i := 0; i < metrics.Len(); i++ {
+		for j := 0; j < metrics.At(i).IntSum().DataPoints().Len(); j++ {
+			for _, label := range []string{deviceLabelName, filesystemTypeLabelName, mountModeLabelName, mountPointLabelName} {
+				internal.AssertIntSumMetricLabelExists(t, metrics.At(i), j, label)
+			}
+		}
+	}
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
