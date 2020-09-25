@@ -54,7 +54,7 @@ var swapUsageDescriptor = func() pdata.Metric {
 	metric.InitEmpty()
 	metric.SetName("system.swap.usage")
 	metric.SetDescription("Swap (unix) or pagefile (windows) usage.")
-	metric.SetUnit("pages")
+	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.InitEmpty()
