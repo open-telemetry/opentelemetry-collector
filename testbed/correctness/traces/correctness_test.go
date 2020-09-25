@@ -98,7 +98,7 @@ func testWithTracingGoldenDataset(
 	tc.StopLoad()
 
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
-		duration, "all data items received")
+		duration*3, "all data items received")
 
 	tc.StopAgent()
 
