@@ -385,7 +385,9 @@ func (m *mockRequest) onPartialError(consumererror.PartialError) request {
 }
 
 func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
-	assert.EqualValues(t, want, atomic.LoadInt64(m.requestCount))
+	assert.Eventually(t, func() bool {
+		return int64(want) == atomic.LoadInt64(m.requestCount)
+	}, time.Second, 1*time.Millisecond)
 }
 
 func (m *mockRequest) count() int {
