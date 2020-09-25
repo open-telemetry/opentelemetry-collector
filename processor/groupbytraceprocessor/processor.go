@@ -302,11 +302,11 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 
 // tTimer interface allows easier testing of ticker related functionality used by groupbytraceprocessor
 type tTimer interface {
-	AfterFunc(d time.Duration, f func()) *time.Timer
+	AfterFunc(d time.Duration, f func())
 }
 
 type groupbyTimer struct{}
 
-func (_ *groupbyTimer) AfterFunc(d time.Duration, f func()) *time.Timer {
-	return time.AfterFunc(d, f)
+func (_ *groupbyTimer) AfterFunc(d time.Duration, f func()) {
+	time.AfterFunc(d, f)
 }

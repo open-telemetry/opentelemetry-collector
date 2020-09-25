@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"go.opentelemetry.io/collector/internal/data/testdata"
@@ -99,8 +97,6 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 
 func TestInternalCacheLimit(t *testing.T) {
 	// prepare
-	wg := &sync.WaitGroup{} // we wait for the next (mock) processor to receive the trace
-
 	config := Config{
 		// should be long enough for the test to run without traces being finished, but short enough to not
 		// badly influence the testing experience
@@ -110,26 +106,18 @@ func TestInternalCacheLimit(t *testing.T) {
 		NumTraces: 5,
 	}
 
-	wg.Add(6) // All 6 traces are expected to be received
-
-	receivedTraceIDs := []pdata.TraceID{}
-	mockProcessor := &mockProcessor{}
-	mockProcessor.onTraces = func(ctx context.Context, received pdata.Traces) error {
-		traceID := received.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-		receivedTraceIDs = append(receivedTraceIDs, traceID)
-		fmt.Println("received trace")
-		wg.Done()
-		return nil
-	}
+	next := &exportertest.SinkTraceExporter{}
 
 	st := newMemoryStorage()
 
-	p, err := newGroupByTraceProcessor(logger, st, mockProcessor, config)
+	p, err := newGroupByTraceProcessor(logger, st, next, config)
 	require.NoError(t, err)
+
+	timer := manualTimer{funcs: make(chan func(), 100)}
+	p.timer = &timer
 
 	ctx := context.Background()
 	p.Start(ctx, nil)
-	defer p.Shutdown(ctx)
 
 	// test
 	traceIDs := [][]byte{
@@ -155,12 +143,21 @@ func TestInternalCacheLimit(t *testing.T) {
 		p.ConsumeTraces(ctx, pdata.TracesFromOtlp(batch))
 	}
 
-	wg.Wait()
+	for i := 0; i < 6; i++ {
+		timer.Step()
+	}
+
+	p.Shutdown(ctx)
+
+	receivedTraceIDs := []pdata.TraceID{}
+	for _, batch := range next.AllTraces() {
+		receivedTraceIDs = append(receivedTraceIDs, batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID())
+	}
 
 	// verify
 	assert.Equal(t, 6, len(receivedTraceIDs))
 
-	for i := 5; i >= 0; i-- { // last 5 traces
+	for i := 0; i < 6; i++ {
 		traceID := pdata.NewTraceID(traceIDs[i])
 		assert.Contains(t, receivedTraceIDs, traceID)
 	}
@@ -949,10 +946,23 @@ type waitableTimer struct {
 	wg sync.WaitGroup
 }
 
-func (t *waitableTimer) AfterFunc(d time.Duration, f func()) *time.Timer {
+func (t *waitableTimer) AfterFunc(d time.Duration, f func()) {
 	t.wg.Add(1)
-	return time.AfterFunc(d, func() {
+	time.AfterFunc(d, func() {
 		defer t.wg.Done()
 		f()
 	})
+}
+
+type manualTimer struct {
+	funcs chan func()
+}
+
+func (t *manualTimer) AfterFunc(d time.Duration, f func()) {
+	t.funcs <- f
+}
+
+func (t *manualTimer) Step() {
+	f := <-t.funcs
+	f()
 }
