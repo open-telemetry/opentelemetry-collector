@@ -24,19 +24,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/windows/pdh"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 )
 
 func TestScrapeMetrics_Errors(t *testing.T) {
 	type testCase struct {
-		name                               string
-		pageSize                           uint64
-		getPageFileStats                   func() ([]*pageFileData, error)
-		pageReadsPerSecCounterReturnValue  interface{}
-		pageWritesPerSecCounterReturnValue interface{}
-		expectedError                      string
-		expectedUsedValue                  int64
-		expectedFreeValue                  int64
+		name              string
+		pageSize          uint64
+		getPageFileStats  func() ([]*pageFileData, error)
+		scrapeErr         error
+		getObjectErr      error
+		getValuesErr      error
+		expectedErr       string
+		expectedUsedValue int64
+		expectedFreeValue int64
 	}
 
 	testPageSize := uint64(4096)
@@ -55,24 +56,28 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 		{
 			name:             "pageFileError",
 			getPageFileStats: func() ([]*pageFileData, error) { return nil, errors.New("err1") },
-			expectedError:    "err1",
+			expectedErr:      "err1",
 		},
 		{
-			name:                              "readsPerSecCounterError",
-			pageReadsPerSecCounterReturnValue: errors.New("err2"),
-			expectedError:                     "err2",
+			name:        "scrapeError",
+			scrapeErr:   errors.New("err1"),
+			expectedErr: "err1",
 		},
 		{
-			name:                               "writesPerSecCounterError",
-			pageReadsPerSecCounterReturnValue:  float64(100),
-			pageWritesPerSecCounterReturnValue: errors.New("err3"),
-			expectedError:                      "err3",
+			name:         "getObjectErr",
+			getObjectErr: errors.New("err1"),
+			expectedErr:  "err1",
 		},
 		{
-			name:                              "multipleErrors",
-			getPageFileStats:                  func() ([]*pageFileData, error) { return nil, errors.New("err1") },
-			pageReadsPerSecCounterReturnValue: errors.New("err2"),
-			expectedError:                     "[err1; err2]",
+			name:         "getValuesErr",
+			getValuesErr: errors.New("err1"),
+			expectedErr:  "err1",
+		},
+		{
+			name:             "multipleErrors",
+			getPageFileStats: func() ([]*pageFileData, error) { return nil, errors.New("err1") },
+			getObjectErr:     errors.New("err2"),
+			expectedErr:      "[err1; err2]",
 		},
 	}
 
@@ -88,17 +93,15 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 				assert.Greater(t, pageSize, uint64(0))
 				assert.Zero(t, pageSize%4096) // page size on Windows should always be a multiple of 4KB
 			}
+			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr)
 
 			err := scraper.Initialize(context.Background())
 			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			scraper.pageReadsPerSecCounter = pdh.NewMockPerfCounter(test.pageReadsPerSecCounterReturnValue)
-			scraper.pageWritesPerSecCounter = pdh.NewMockPerfCounter(test.pageWritesPerSecCounterReturnValue)
-
 			metrics, err := scraper.ScrapeMetrics(context.Background())
-			if test.expectedError != "" {
-				assert.EqualError(t, err, test.expectedError)
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
 				return
 			}
 
