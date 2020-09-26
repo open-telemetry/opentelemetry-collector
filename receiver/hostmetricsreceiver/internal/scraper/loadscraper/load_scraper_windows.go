@@ -25,13 +25,16 @@ import (
 	"github.com/shirou/gopsutil/load"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/windows/pdh"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 )
 
 // Sample processor queue length at a 5s frequency, and calculate exponentially weighted moving averages
 // as per https://en.wikipedia.org/wiki/Load_(computing)#Unix-style_load_calculation
 
-const processorQueueLengthPath = `\System\Processor Queue Length`
+const (
+	system               = "System"
+	processorQueueLength = "Processor Queue Length"
+)
 
 var (
 	samplingFrequency = 5 * time.Second
@@ -49,13 +52,13 @@ var (
 )
 
 type sampler struct {
-	done                        chan struct{}
-	logger                      *zap.Logger
-	processorQueueLengthCounter pdh.PerfCounterScraper
-	loadAvg1m                   float64
-	loadAvg5m                   float64
-	loadAvg15m                  float64
-	lock                        sync.RWMutex
+	done               chan struct{}
+	logger             *zap.Logger
+	perfCounterScraper perfcounters.PerfCounterScraper
+	loadAvg1m          float64
+	loadAvg5m          float64
+	loadAvg15m         float64
+	lock               sync.RWMutex
 }
 
 func startSampling(_ context.Context, logger *zap.Logger) error {
@@ -80,15 +83,15 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 }
 
 func newSampler(logger *zap.Logger) (*sampler, error) {
-	processorQueueLengthCounter, err := pdh.NewPerfCounter(processorQueueLengthPath, false)
-	if err != nil {
+	perfCounterScraper := &perfcounters.PerfLibScraper{}
+	if err := perfCounterScraper.Initialize(system); err != nil {
 		return nil, err
 	}
 
 	sampler := &sampler{
-		logger:                      logger,
-		processorQueueLengthCounter: processorQueueLengthCounter,
-		done:                        make(chan struct{}),
+		logger:             logger,
+		perfCounterScraper: perfCounterScraper,
+		done:               make(chan struct{}),
 	}
 
 	return sampler, nil
@@ -111,13 +114,25 @@ func (sw *sampler) startSamplingTicker() {
 }
 
 func (sw *sampler) sampleLoad() {
-	counterValues, err := sw.processorQueueLengthCounter.ScrapeData()
+	counters, err := sw.perfCounterScraper.Scrape()
 	if err != nil {
 		sw.logger.Error("Load Scraper: failed to measure processor queue length", zap.Error(err))
 		return
 	}
 
-	currentLoad := counterValues[0].Value
+	systemObject, err := counters.GetObject(system)
+	if err != nil {
+		sw.logger.Error("Load Scraper: failed to measure processor queue length", zap.Error(err))
+		return
+	}
+
+	counterValues, err := systemObject.GetValues(processorQueueLength)
+	if err != nil {
+		sw.logger.Error("Load Scraper: failed to measure processor queue length", zap.Error(err))
+		return
+	}
+
+	currentLoad := float64(counterValues[0].Values[processorQueueLength])
 
 	sw.lock.Lock()
 	defer sw.lock.Unlock()
@@ -137,7 +152,7 @@ func stopSampling(_ context.Context) error {
 	}
 
 	close(samplerInstance.done)
-	return samplerInstance.processorQueueLengthCounter.Close()
+	return nil
 }
 
 func getSampledLoadAverages() (*load.AvgStat, error) {
