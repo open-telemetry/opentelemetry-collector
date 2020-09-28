@@ -12,25 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package labelfilterprocessor
+package exprfilterprocessor
 
 import (
-	"context"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-type labelFilterProcessor struct {
-	cfg *Config
-}
-
-var _ processorhelper.MProcessor = (*labelFilterProcessor)(nil)
-
-func newLabelFilterProcessor(cfg *Config) (*labelFilterProcessor, error) {
-	return &labelFilterProcessor{cfg: cfg}, nil
-}
-
-func (p *labelFilterProcessor) ProcessMetrics(ctx context.Context, metrics pdata.Metrics) (pdata.Metrics, error) {
-	return pdata.Metrics{}, nil
+type Config struct {
+	configmodels.ProcessorSettings `mapstructure:",squash"`
 }

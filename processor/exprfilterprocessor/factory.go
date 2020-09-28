@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package labelfilterprocessor
+package exprfilterprocessor
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	typeStr = "labelfilter"
+	typeStr = "exprfilter"
 )
 
 func NewFactory() component.ProcessorFactory {
@@ -50,7 +50,7 @@ func createProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	proc, err := newLabelFilterProcessor(cfg.(*Config))
+	proc, err := newProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func createProcessor(
 		nextConsumer,
 		proc,
 		processorhelper.WithCapabilities(
-			component.ProcessorCapabilities{MutatesConsumedData: false}, // TODO verify
+			component.ProcessorCapabilities{MutatesConsumedData: false},
 		),
 	)
 }

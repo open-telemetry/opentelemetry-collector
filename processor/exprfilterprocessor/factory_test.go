@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package labelfilterprocessor
+package exprfilterprocessor
 
 import (
 	"context"
@@ -31,7 +31,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	typ := factory.Type()
-	require.Equal(t, typ, configmodels.Type("labelfilter"))
+	require.Equal(t, typ, configmodels.Type("exprfilter"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

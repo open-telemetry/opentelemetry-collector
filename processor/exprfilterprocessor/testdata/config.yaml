@@ -2,7 +2,7 @@ receivers:
   examplereceiver:
 
 processors:
-  labelfilter:
+  exprfilter:
 
 exporters:
   exampleexporter:
@@ -11,5 +11,5 @@ service:
   pipelines:
     metrics:
       receivers: [examplereceiver]
-      processors: [labelfilter]
+      processors: [exprfilter]
       exporters: [exampleexporter]
