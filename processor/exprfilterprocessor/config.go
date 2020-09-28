@@ -20,4 +20,5 @@ import (
 
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+	Exclude                        []string `mapstructure:"exclude"`
 }
