@@ -20,7 +20,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
-	github.com/golang/snappy v0.0.1
+	github.com/golang/snappy v0.0.2
 	github.com/golangci/golangci-lint v1.31.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
 	github.com/google/go-cmp v0.5.2
