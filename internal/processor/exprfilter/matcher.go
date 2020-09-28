@@ -30,7 +30,8 @@ type Matcher struct {
 
 type env struct {
 	MetricName string
-	LabelsMap  map[string]string
+	HasLabel   func(key string) bool
+	Label      func(key string) string
 }
 
 func NewMatcher(searchStr string) (*Matcher, error) {
@@ -48,11 +49,22 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) bool {
 		pts := metric.IntGauge().DataPoints()
 		for i := 0; i < pts.Len(); i++ {
 			pt := pts.At(i)
-			lbls := map[string]string{}
-			pt.LabelsMap().ForEach(func(k string, v pdata.StringValue) {
-				lbls[k] = v.Value()
-			})
-			if m.match(env{MetricName: metricName, LabelsMap: lbls}) {
+			labelsMap := pt.LabelsMap()
+			e := env{
+				MetricName: metricName,
+				HasLabel: func(key string) bool {
+					_, ok := labelsMap.Get(key)
+					return ok
+				},
+				Label: func(key string) string {
+					v, ok := labelsMap.Get(key)
+					if !ok {
+						return ""
+					}
+					return v.Value()
+				},
+			}
+			if m.match(e) {
 				return true
 			}
 		}

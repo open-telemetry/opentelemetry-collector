@@ -48,5 +48,5 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, cfgType, flProcCfg.TypeVal)
 	assert.Equal(t, "exprfilter", flProcCfg.NameVal)
 
-	assert.Equal(t, flProcCfg.Exclude, []string{"MetricName == 'foo'"})
+	assert.Equal(t, flProcCfg.Query, "MetricName == 'foo'")
 }

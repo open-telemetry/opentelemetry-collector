@@ -50,7 +50,7 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
-	pcfg.Exclude = []string{"foo == 'bar'"}
+	pcfg.Query = "foo == 'bar'"
 	ctx := context.Background()
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	tp, err := factory.CreateTraceProcessor(

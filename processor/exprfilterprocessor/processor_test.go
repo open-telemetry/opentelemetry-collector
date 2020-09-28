@@ -74,7 +74,7 @@ func filterMetrics(t *testing.T, q string, size int) []pdata.Metrics {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
-	pCfg.Exclude = []string{q}
+	pCfg.Query = q
 
 	ctx := context.Background()
 	next := &exportertest.SinkMetricsExporter{}
@@ -118,7 +118,7 @@ func benchmarkProcessor(b *testing.B, size int) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
-	pCfg.Exclude = []string{q()}
+	pCfg.Query = q()
 	ctx := context.Background()
 	nextConsumer := &exportertest.SinkMetricsExporter{}
 	proc, _ := factory.CreateMetricsProcessor(
@@ -159,6 +159,6 @@ func testData(prefix string, size int) pdata.Metrics {
 }
 
 func q() string {
-	format := "MetricName == '%s' && LabelsMap['%s'] == '%s'"
+	format := "!(MetricName == '%s' && Label('%s') == '%s')"
 	return fmt.Sprintf(format, filteredMetric, filteredLblKey, filteredLblVal)
 }

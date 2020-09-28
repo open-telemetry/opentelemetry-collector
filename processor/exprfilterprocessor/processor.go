@@ -16,7 +16,6 @@ package exprfilterprocessor
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/exprfilter"
@@ -24,48 +23,20 @@ import (
 )
 
 type processor struct {
-	exclude *exprfilter.Matcher
+	matcher *exprfilter.Matcher
 }
 
 var _ processorhelper.MProcessor = (*processor)(nil)
 
 func newProcessor(cfg *Config) (*processor, error) {
-	exclude, err := exprfilter.NewMatcher(cfg.Exclude[0])
+	exclude, err := exprfilter.NewMatcher(cfg.Query)
 	if err != nil {
 		return nil, err
 	}
-	return &processor{exclude: exclude}, nil
+	return &processor{matcher: exclude}, nil
 }
 
-func (l *processor) ProcessMetrics(_ context.Context, in pdata.Metrics) (pdata.Metrics, error) {
-	exclusions := findLocations(in, l.exclude)
-	if len(exclusions) > 0 {
-		return filter(in, exclusions)
-	}
-	return in, nil
-}
-
-func findLocations(in pdata.Metrics, matcher *exprfilter.Matcher) locations {
-	locs := locations{}
-	rms := in.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ilm := ilms.At(j)
-			ms := ilm.Metrics()
-			for k := 0; k < ms.Len(); k++ {
-				metric := ms.At(k)
-				if matcher.MatchMetric(metric) {
-					locs.put(i, j, k)
-				}
-			}
-		}
-	}
-	return locs
-}
-
-func filter(in pdata.Metrics, exclude locations) (pdata.Metrics, error) {
+func (p *processor) ProcessMetrics(_ context.Context, in pdata.Metrics) (pdata.Metrics, error) {
 	out := pdata.NewMetrics()
 	rmsOut := out.ResourceMetrics()
 	rmsIn := in.ResourceMetrics()
@@ -84,25 +55,11 @@ func filter(in pdata.Metrics, exclude locations) (pdata.Metrics, error) {
 			msOut := ilmOut.Metrics()
 			for k := 0; k < msIn.Len(); k++ {
 				metricIn := msIn.At(k)
-				if !exclude.contains(i, j, k) {
+				if p.matcher.MatchMetric(metricIn) {
 					msOut.Append(metricIn)
 				}
 			}
 		}
 	}
 	return out, nil
-}
-
-type locations map[string]bool
-
-func (l locations) put(i, j, k int) {
-	l[key(i, j, k)] = true
-}
-
-func (l locations) contains(i, j, k int) bool {
-	return l[key(i, j, k)]
-}
-
-func key(i, j, k int) string {
-	return fmt.Sprintf("%d-%d-%d", i, j, k)
 }
