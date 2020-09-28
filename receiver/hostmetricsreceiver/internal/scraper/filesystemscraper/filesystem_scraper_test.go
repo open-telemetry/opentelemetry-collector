@@ -135,7 +135,7 @@ func TestScrapeMetrics(t *testing.T) {
 func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, expectedDeviceDataPoints int) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
-		for _, label := range []string{deviceLabelName, filesystemTypeLabelName, mountModeLabelName, mountPointLabelName} {
+		for _, label := range []string{deviceLabelName, typeLabelName, mountModeLabelName, mountPointLabelName} {
 			internal.AssertIntSumMetricLabelExists(t, metric, i, label)
 		}
 	}
