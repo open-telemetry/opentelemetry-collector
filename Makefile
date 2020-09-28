@@ -2,7 +2,6 @@
 # This is the code that we want to run tests for and lint, staticcheck, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './testbed/*' \
-							-not -path '*/third_party/*' \
 							-not -path '*/internal/data/opentelemetry-proto/*' \
 							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
 							-not -path './.circleci/scripts/reportgenerator/*' \
