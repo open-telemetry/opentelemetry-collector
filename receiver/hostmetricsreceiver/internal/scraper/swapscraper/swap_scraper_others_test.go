@@ -24,27 +24,17 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestScrapeMetrics_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
-		bootTimeFunc      func() (uint64, error)
 		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
 		swapMemoryFunc    func() (*mem.SwapMemoryStat, error)
-		expectedStartTime pdata.TimestampUnixNano
-		initializationErr string
 		expectedError     string
 	}
 
 	testCases := []testCase{
-		{
-			name:              "bootTimeError",
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
-			initializationErr: "err1",
-		},
 		{
 			name:              "virtualMemoryError",
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
@@ -66,9 +56,6 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newSwapScraper(context.Background(), &Config{})
-			if test.bootTimeFunc != nil {
-				scraper.bootTime = test.bootTimeFunc
-			}
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -77,23 +64,11 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 			}
 
 			err := scraper.Initialize(context.Background())
-			if test.initializationErr != "" {
-				assert.EqualError(t, err, test.initializationErr)
-				return
-			}
 			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
-			if test.expectedError != "" {
-				assert.EqualError(t, err, test.expectedError)
-				return
-			}
-
-			assert.Equal(t, 3, metrics.Len())
-			assertSwapUsageMetricValid(t, metrics.At(0))
-			assertPagingMetricValid(t, metrics.At(1), test.expectedStartTime)
-			assertPageFaultsMetricValid(t, metrics.At(2), test.expectedStartTime)
+			_, err = scraper.ScrapeMetrics(context.Background())
+			assert.EqualError(t, err, test.expectedError)
 		})
 	}
 }
