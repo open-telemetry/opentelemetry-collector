@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/windows/pdh"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 )
 
 func TestStartSampling(t *testing.T) {
@@ -38,13 +38,15 @@ func TestStartSampling(t *testing.T) {
 
 	// override the processor queue length perf counter with a mock
 	// that will ensure a positive value is returned
-	assert.IsType(t, &pdh.PerfCounter{}, samplerInstance.processorQueueLengthCounter)
-	samplerInstance.processorQueueLengthCounter = pdh.NewMockPerfCounter(100.0)
+	assert.IsType(t, &perfcounters.PerfLibScraper{}, samplerInstance.perfCounterScraper)
+	samplerInstance.perfCounterScraper = perfcounters.NewMockPerfCounterScraper(map[string]map[string][]int64{
+		system: map[string][]int64{processorQueueLength: []int64{100}},
+	})
 
 	// second call to startSampling should succeed, but not do anything
 	startSampling(context.Background(), zap.NewNop())
 	assertSamplingUnderway(t)
-	assert.IsType(t, &pdh.MockPerfCounter{}, samplerInstance.processorQueueLengthCounter)
+	assert.IsType(t, &perfcounters.MockPerfCounterScraper{}, samplerInstance.perfCounterScraper)
 
 	// ensure that a positive load avg is returned by a call to
 	// "getSampledLoadAverages" which validates the value from the
@@ -68,7 +70,7 @@ func TestStartSampling(t *testing.T) {
 
 func assertSamplingUnderway(t *testing.T) {
 	assert.NotNil(t, samplerInstance)
-	assert.NotNil(t, samplerInstance.processorQueueLengthCounter)
+	assert.NotNil(t, samplerInstance.perfCounterScraper)
 
 	select {
 	case <-samplerInstance.done:
@@ -78,10 +80,6 @@ func assertSamplingUnderway(t *testing.T) {
 }
 
 func assertSamplingStopped(t *testing.T) {
-	// validate perf counter was closed by trying to close again
-	err := samplerInstance.processorQueueLengthCounter.Close()
-	assert.EqualError(t, err, "attempted to call close more than once")
-
 	select {
 	case <-samplerInstance.done:
 	default:
@@ -90,9 +88,12 @@ func assertSamplingStopped(t *testing.T) {
 }
 
 func TestSampleLoad(t *testing.T) {
-	counterReturnValues := []interface{}{10.0, 20.0, 30.0, 40.0, 50.0}
-	mockCounter := pdh.NewMockPerfCounter(counterReturnValues...)
-	samplerInstance = &sampler{processorQueueLengthCounter: mockCounter}
+	counterReturnValues := []int64{10, 20, 30, 40, 50}
+	mockPerfCounterScraper := perfcounters.NewMockPerfCounterScraper(map[string]map[string][]int64{
+		system: map[string][]int64{processorQueueLength: counterReturnValues},
+	})
+
+	samplerInstance = &sampler{perfCounterScraper: mockPerfCounterScraper}
 
 	for i := 0; i < len(counterReturnValues); i++ {
 		samplerInstance.sampleLoad()
@@ -103,12 +104,12 @@ func TestSampleLoad(t *testing.T) {
 	assert.Equal(t, calcExpectedLoad(counterReturnValues, loadAvgFactor15m), samplerInstance.loadAvg15m)
 }
 
-func calcExpectedLoad(scrapedValues []interface{}, loadAvgFactor float64) float64 {
+func calcExpectedLoad(scrapedValues []int64, loadAvgFactor float64) float64 {
 	// replicate the calculations that should be performed to determine the exponentially
 	// weighted moving averages based on the specified scraped values
 	var expectedLoad float64
 	for i := 0; i < len(scrapedValues); i++ {
-		expectedLoad = expectedLoad*loadAvgFactor + scrapedValues[i].(float64)*(1-loadAvgFactor)
+		expectedLoad = expectedLoad*loadAvgFactor + float64(scrapedValues[i])*(1-loadAvgFactor)
 	}
 	return expectedLoad
 }
