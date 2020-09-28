@@ -40,31 +40,31 @@ func (r *ringBuffer) put(traceID pdata.TraceID) pdata.TraceID {
 	// see if the ring has an item already
 	evicted := r.ids[r.index]
 
-	if evicted != nil {
+	if evicted.Bytes() != nil {
 		// clear space for the new item
 		r.delete(evicted)
 	}
 
 	// place the traceID in memory
 	r.ids[r.index] = traceID
-	r.idToIndex[traceID.String()] = r.index
+	r.idToIndex[traceID.HexString()] = r.index
 
 	return evicted
 }
 
 func (r *ringBuffer) contains(traceID pdata.TraceID) bool {
-	_, found := r.idToIndex[traceID.String()]
+	_, found := r.idToIndex[traceID.HexString()]
 	return found
 }
 
 func (r *ringBuffer) delete(traceID pdata.TraceID) bool {
-	sTraceID := traceID.String()
+	sTraceID := traceID.HexString()
 	index, found := r.idToIndex[sTraceID]
 	if !found {
 		return false
 	}
 
 	delete(r.idToIndex, sTraceID)
-	r.ids[index] = nil
+	r.ids[index] = pdata.NewTraceID(nil)
 	return true
 }

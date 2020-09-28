@@ -19,6 +19,7 @@ package swapscraper
 import (
 	"context"
 	"math"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -39,6 +40,8 @@ type scraper struct {
 	pageReadsPerSecCounter  pdh.PerfCounterScraper
 	pageWritesPerSecCounter pdh.PerfCounterScraper
 
+	pageSize uint64
+
 	startTime            pdata.TimestampUnixNano
 	prevPagingScrapeTime time.Time
 	cumulativePageReads  float64
@@ -48,9 +51,16 @@ type scraper struct {
 	pageFileStats func() ([]*pageFileData, error)
 }
 
+var (
+	once     sync.Once
+	pageSize uint64
+)
+
 // newSwapScraper creates a Swap Scraper
 func newSwapScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, pageFileStats: getPageFileStats}
+	once.Do(func() { pageSize = getPageSize() })
+
+	return &scraper{config: cfg, pageSize: pageSize, pageFileStats: getPageFileStats}
 }
 
 // Initialize
@@ -118,11 +128,11 @@ func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) erro
 
 	idx := metrics.Len()
 	metrics.Resize(idx + 1)
-	initializeSwapUsageMetric(metrics.At(idx), now, pageFiles)
+	s.initializeSwapUsageMetric(metrics.At(idx), now, pageFiles)
 	return nil
 }
 
-func initializeSwapUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
+func (s *scraper) initializeSwapUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
 	swapUsageDescriptor.CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -130,8 +140,8 @@ func initializeSwapUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano,
 
 	idx := 0
 	for _, pageFile := range pageFiles {
-		initializeSwapUsageDataPoint(idps.At(idx+0), now, pageFile.name, usedLabelValue, int64(pageFile.used))
-		initializeSwapUsageDataPoint(idps.At(idx+1), now, pageFile.name, freeLabelValue, int64(pageFile.total-pageFile.used))
+		initializeSwapUsageDataPoint(idps.At(idx+0), now, pageFile.name, usedLabelValue, int64(pageFile.usedPages*s.pageSize))
+		initializeSwapUsageDataPoint(idps.At(idx+1), now, pageFile.name, freeLabelValue, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
 		idx += 2
 	}
 }

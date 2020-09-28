@@ -274,7 +274,7 @@ func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.Instru
 }
 
 func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
-	traceIDHigh, traceIDLow, err := tracetranslator.BytesToUInt64TraceID(traceID)
+	traceIDHigh, traceIDLow, err := tracetranslator.TraceIDToUInt64Pair(traceID)
 	if err != nil {
 		return model.TraceID{}, err
 	}

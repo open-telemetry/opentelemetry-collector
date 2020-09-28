@@ -156,7 +156,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, gogoproto.Equal(*pdataRM.orig, &gogoprotoRM))
+	assert.True(t, assert.EqualValues(t, *pdataRM.orig, &gogoprotoRM))
 }
 
 func TestMetricCount(t *testing.T) {

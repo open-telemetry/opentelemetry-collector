@@ -31,6 +31,8 @@ type labelKeys struct {
 	keyIndices map[string]int
 }
 
+// MetricsToOC may be used only by OpenCensus receiver and exporter implementations.
+// TODO: move this function to OpenCensus package.
 func MetricsToOC(md pdata.Metrics) []consumerdata.MetricsData {
 	resourceMetrics := md.ResourceMetrics()
 

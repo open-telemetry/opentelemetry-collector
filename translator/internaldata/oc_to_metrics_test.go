@@ -178,6 +178,19 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	assert.EqualValues(t, want, got)
 }
 
+func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
+	internal := testdata.GenerateMetricsOneMetric()
+	want := pdata.NewMetrics()
+	internal.Clone().ResourceMetrics().MoveAndAppendTo(want.ResourceMetrics())
+	oc := generateOCTestDataMetricsOneMetric()
+	// Move resource to metric level.
+	// We shouldn't have a "combined" resource after conversion
+	oc.Metrics[0].Resource = oc.Resource
+	oc.Resource = nil
+	got := OCToMetrics(oc)
+	assert.EqualValues(t, want, got)
+}
+
 func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 	ocMetric := consumerdata.MetricsData{
 		Resource: generateOCTestResource(),

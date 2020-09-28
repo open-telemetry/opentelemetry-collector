@@ -24,14 +24,37 @@ import (
 )
 
 var (
-	modPsapi           = windows.NewLazySystemDLL("psapi.dll")
-	procEnumPageFilesW = modPsapi.NewProc("EnumPageFilesW")
+	modKernel32 = windows.NewLazySystemDLL("kernel32.dll")
+	modPsapi    = windows.NewLazySystemDLL("psapi.dll")
+
+	procGetNativeSystemInfo = modKernel32.NewProc("GetNativeSystemInfo")
+	procEnumPageFilesW      = modPsapi.NewProc("EnumPageFilesW")
 )
 
+type systemInfo struct {
+	wProcessorArchitecture      uint16
+	wReserved                   uint16
+	dwPageSize                  uint32
+	lpMinimumApplicationAddress uintptr
+	lpMaximumApplicationAddress uintptr
+	dwActiveProcessorMask       uintptr
+	dwNumberOfProcessors        uint32
+	dwProcessorType             uint32
+	dwAllocationGranularity     uint32
+	wProcessorLevel             uint16
+	wProcessorRevision          uint16
+}
+
+func getPageSize() uint64 {
+	var sysInfo systemInfo
+	procGetNativeSystemInfo.Call(uintptr(unsafe.Pointer(&sysInfo)))
+	return uint64(sysInfo.dwPageSize)
+}
+
 type pageFileData struct {
-	name  string
-	used  uint64
-	total uint64
+	name       string
+	usedPages  uint64
+	totalPages uint64
 }
 
 // system type as defined in https://docs.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-enum_page_file_information
@@ -60,9 +83,9 @@ func pEnumPageFileCallbackW(pageFiles *[]*pageFileData, enumPageFileInfo *enumPa
 	pageFileName := syscall.UTF16ToString((*lpFilenamePtr)[:])
 
 	pfData := &pageFileData{
-		name:  pageFileName,
-		used:  enumPageFileInfo.totalInUse,
-		total: enumPageFileInfo.totalSize,
+		name:       pageFileName,
+		usedPages:  enumPageFileInfo.totalInUse,
+		totalPages: enumPageFileInfo.totalSize,
 	}
 
 	*pageFiles = append(*pageFiles, pfData)

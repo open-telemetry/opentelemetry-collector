@@ -33,6 +33,8 @@ var (
 	defaultProcessID = 0
 )
 
+// TraceDataToOC may be used only by OpenCensus receiver and exporter implementations.
+// TODO: move this function to OpenCensus package.
 func TraceDataToOC(td pdata.Traces) []consumerdata.TraceData {
 	resourceSpans := td.ResourceSpans()
 
@@ -47,13 +49,13 @@ func TraceDataToOC(td pdata.Traces) []consumerdata.TraceData {
 		if rs.IsNil() {
 			continue
 		}
-		ocResourceSpansList = append(ocResourceSpansList, ResourceSpansToOC(rs))
+		ocResourceSpansList = append(ocResourceSpansList, resourceSpansToOC(rs))
 	}
 
 	return ocResourceSpansList
 }
 
-func ResourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
+func resourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
 	ocTraceData := consumerdata.TraceData{
 		SourceFormat: sourceFormat,
 	}
