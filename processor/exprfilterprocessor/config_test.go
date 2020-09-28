@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package labelfilterprocessor
+package exprfilterprocessor
 
 import (
 	"path"
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	cfgType := configmodels.Type("labelfilter")
+	cfgType := configmodels.Type("exprfilter")
 	factories.Processors[cfgType] = factory
 
 	cfgPath := path.Join("testdata", "config.yaml")
@@ -39,12 +39,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	procCfg := cfg.Processors["labelfilter"]
+	procCfg := cfg.Processors["exprfilter"]
 	require.NotNil(t, procCfg)
 
 	flProcCfg := procCfg.(*Config)
 	require.NotNil(t, flProcCfg)
 
 	assert.Equal(t, cfgType, flProcCfg.TypeVal)
-	assert.Equal(t, "labelfilter", flProcCfg.NameVal)
+	assert.Equal(t, "exprfilter", flProcCfg.NameVal)
 }

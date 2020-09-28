@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package labelfilterprocessor
+package exprfilterprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+func TestProcessor(t *testing.T) {
+	proc, _ := newProcessor(&Config{})
+	in := pdata.NewMetrics()
+	out, _ := proc.ProcessMetrics(context.Background(), in)
+	require.Equal(t, in, out)
 }
