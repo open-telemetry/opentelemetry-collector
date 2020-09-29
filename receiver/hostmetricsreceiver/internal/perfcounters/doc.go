@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
-
+// Package perfcounters is a thin wrapper around
+// https://godoc.org/github.com/leoluk/perflib_exporter/perflib that
+// provides functions to scrape raw performance counter data, without
+// calculating rates or formatting them, from the registry.
 package perfcounters

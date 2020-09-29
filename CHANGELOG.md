@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- Host Metrics receiver now reports both system.disk.io_time and system.disk.operation_time
+
+## 🛑 Breaking changes 🛑
+
+- Host metric system.disk.time renamed to system.disk.operation_time
+
 ## v0.12.0 Beta
 
 ## 🚀 New components 🚀

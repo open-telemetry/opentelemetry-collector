@@ -46,6 +46,7 @@ var standardMetrics = []string{
 	"system.memory.usage",
 	"system.disk.io",
 	"system.disk.ops",
+	"system.disk.operation_time",
 	"system.disk.pending_operations",
 	"system.disk.time",
 	"system.filesystem.usage",
