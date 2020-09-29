@@ -73,7 +73,8 @@ testbed-list-correctness:
 
 .PHONY: test
 test:
-	echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
+	echo $(ALL_PKGS) | xargs -n 10 $(GOTEST
+	) $(GOTEST_OPT)
 
 .PHONY: benchmark
 benchmark:

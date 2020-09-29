@@ -15,14 +15,17 @@
 package prometheusreceiver
 
 import (
-	"context"
-	"testing"
+    "context"
+    "path"
+    "testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+    "github.com/stretchr/testify/assert"
+    "go.opentelemetry.io/collector/component/componenttest"
+    "go.opentelemetry.io/collector/config/configtest"
+    "go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcheck"
+    "go.opentelemetry.io/collector/component"
+    "go.opentelemetry.io/collector/config/configcheck"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -40,4 +43,15 @@ func TestCreateReceiver(t *testing.T) {
 	mReceiver, err := createMetricsReceiver(context.Background(), creationParams, cfg, nil)
 	assert.Equal(t, err, errNilScrapeConfig)
 	assert.Nil(t, mReceiver)
+}
+
+func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
+    factories, err := componenttest.ExampleComponents()
+    assert.NoError(t, err)
+
+    factory := NewFactory()
+    factories.Receivers[typeStr] = factory
+    _, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_sd.yaml"), factories)
+
+    assert.NoError(t, err)
 }
