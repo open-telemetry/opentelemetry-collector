@@ -159,6 +159,7 @@ install-tools:
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/securego/gosec/cmd/gosec
 	go install github.com/tcnksm/ghr
+	go install golang.org/x/tools/cmd/goimports
 	go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: otelcol
