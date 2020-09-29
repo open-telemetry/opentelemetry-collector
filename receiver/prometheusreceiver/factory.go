@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
