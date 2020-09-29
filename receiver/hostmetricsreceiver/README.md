@@ -77,8 +77,14 @@ disk:
 
 ```yaml
 filesystem:
-  <include|exclude>:
+  <include_devices|exclude_devices>:
     devices: [ <device name>, ... ]
+    match_type: <strict|regexp>
+  <include_fs_types|exclude_fs_types>:
+    fs_types: [ <filesystem type>, ... ]
+    match_type: <strict|regexp>
+  <include_mount_points|exclude_mount_points>:
+    mount_points: [ <mount point>, ... ]
     match_type: <strict|regexp>
 ```
 
