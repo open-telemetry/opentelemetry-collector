@@ -50,10 +50,7 @@ func createProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	proc, err := newProcessor(cfg.(*Config))
-	if err != nil {
-		return nil, err
-	}
+	proc := newProcessor(cfg.(*Config))
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,

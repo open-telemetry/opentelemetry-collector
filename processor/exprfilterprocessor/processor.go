@@ -27,8 +27,8 @@ type processor struct {
 
 var _ processorhelper.MProcessor = (*processor)(nil)
 
-func newProcessor(cfg *Config) (*processor, error) {
-	return &processor{cfg: cfg}, nil
+func newProcessor(cfg *Config) *processor {
+	return &processor{cfg: cfg}
 }
 
 func (p *processor) ProcessMetrics(ctx context.Context, metrics pdata.Metrics) (pdata.Metrics, error) {

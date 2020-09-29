@@ -24,7 +24,7 @@ import (
 )
 
 func TestProcessor(t *testing.T) {
-	proc, _ := newProcessor(&Config{})
+	proc := newProcessor(&Config{})
 	in := pdata.NewMetrics()
 	out, _ := proc.ProcessMetrics(context.Background(), in)
 	require.Equal(t, in, out)
