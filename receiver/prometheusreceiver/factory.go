@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-    _ "github.com/prometheus/prometheus/discovery/install" //init() of this package registers service discovery impl.
+	_ "github.com/prometheus/prometheus/discovery/install" //init() of this package registers service discovery impl.
 )
 
 // This file implements config for Prometheus receiver.

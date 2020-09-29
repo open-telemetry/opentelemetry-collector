@@ -15,17 +15,18 @@
 package prometheusreceiver
 
 import (
-    "context"
-    "path"
-    "testing"
+	"context"
+	"path"
+	"testing"
 
-    "github.com/stretchr/testify/assert"
-    "go.opentelemetry.io/collector/component/componenttest"
-    "go.opentelemetry.io/collector/config/configtest"
-    "go.uber.org/zap"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
-    "go.opentelemetry.io/collector/component"
-    "go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtest"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcheck"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -46,12 +47,12 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
-    factories, err := componenttest.ExampleComponents()
-    assert.NoError(t, err)
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
 
-    factory := NewFactory()
-    factories.Receivers[typeStr] = factory
-    _, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_sd.yaml"), factories)
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_sd.yaml"), factories)
 
-    assert.NoError(t, err)
+	assert.NoError(t, err)
 }
