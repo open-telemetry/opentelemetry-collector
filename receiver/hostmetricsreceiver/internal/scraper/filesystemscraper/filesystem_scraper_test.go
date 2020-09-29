@@ -141,6 +141,26 @@ func TestScrapeMetrics(t *testing.T) {
 			newErrRegex: "^error creating device exclude filters:",
 		},
 		{
+			name:        "Invalid Include Filesystems Filter",
+			config:      Config{IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			newErrRegex: "^error creating type include filters:",
+		},
+		{
+			name:        "Invalid Exclude Filesystems Filter",
+			config:      Config{ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			newErrRegex: "^error creating type exclude filters:",
+		},
+		{
+			name:        "Invalid Include Moountpoints Filter",
+			config:      Config{IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			newErrRegex: "^error creating mount.point include filters:",
+		},
+		{
+			name:        "Invalid Exclude Moountpoints Filter",
+			config:      Config{ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			newErrRegex: "^error creating mount.point exclude filters:",
+		},
+		{
 			name:           "Partitions Error",
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) { return nil, errors.New("err1") },
 			expectedErr:    "err1",
