@@ -188,14 +188,21 @@ func TestScrapeMetrics(t *testing.T) {
 			assert.GreaterOrEqual(t, metrics.Len(), 1)
 
 			assertFileSystemUsageMetricValid(
-				t, metrics.At(0), fileSystemUsageDescriptor,
-				test.expectedDeviceDataPoints*fileSystemStatesLen, test.expectedDeviceLabelValues,
+				t,
+				metrics.At(0),
+				fileSystemUsageDescriptor,
+				test.expectedDeviceDataPoints*fileSystemStatesLen,
+				test.expectedDeviceLabelValues,
 			)
 
 			if isUnix() {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
-				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor,
-					test.expectedDeviceDataPoints*2, test.expectedDeviceLabelValues,
+				assertFileSystemUsageMetricValid(
+					t,
+					metrics.At(1),
+					fileSystemINodesUsageDescriptor,
+					test.expectedDeviceDataPoints*2,
+					test.expectedDeviceLabelValues,
 				)
 			}
 
@@ -204,8 +211,12 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric,
-	expectedDeviceDataPoints int, expectedDeviceLabelValues []map[string]string) {
+func assertFileSystemUsageMetricValid(
+	t *testing.T,
+	metric pdata.Metric,
+	descriptor pdata.Metric,
+	expectedDeviceDataPoints int,
+	expectedDeviceLabelValues []map[string]string) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
 		for _, label := range []string{deviceLabelName, typeLabelName, mountModeLabelName, mountPointLabelName} {

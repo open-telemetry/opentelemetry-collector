@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -37,15 +36,6 @@ type scraper struct {
 	usage      func(string) (*disk.UsageStat, error)
 }
 
-type fsFilter struct {
-	includeDevice     filterset.FilterSet
-	excludeDevice     filterset.FilterSet
-	includeFSType     filterset.FilterSet
-	excludeFSType     filterset.FilterSet
-	includeMountPoint filterset.FilterSet
-	excludeMountPoint filterset.FilterSet
-}
-
 type deviceUsage struct {
 	partition disk.PartitionStat
 	usage     *disk.UsageStat
@@ -53,7 +43,7 @@ type deviceUsage struct {
 
 // newFileSystemScraper creates a FileSystem Scraper
 func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
-	fsFilter, err := cfg.newFilter()
+	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
@@ -150,25 +140,26 @@ func exists(options []string, opt string) bool {
 }
 
 func (f *fsFilter) includePartition(partition disk.PartitionStat) bool {
-	if f.wantDevice(partition.Device) &&
-		f.wantFSType(partition.Fstype) &&
-		f.wantMountPoint(partition.Mountpoint) {
+	// If filters do not exist, return early.
+	if !f.filtersExist || (f.includeDevice(partition.Device) &&
+		f.includeFSType(partition.Fstype) &&
+		f.includeMountPoint(partition.Mountpoint)) {
 		return true
 	}
 	return false
 }
 
-func (f *fsFilter) wantDevice(deviceName string) bool {
-	return (f.includeDevice == nil || f.includeDevice.Matches(deviceName)) &&
-		(f.excludeDevice == nil || !f.excludeDevice.Matches(deviceName))
+func (f *fsFilter) includeDevice(deviceName string) bool {
+	return (f.includeDeviceFilter == nil || f.includeDeviceFilter.Matches(deviceName)) &&
+		(f.excludeDeviceFilter == nil || !f.excludeDeviceFilter.Matches(deviceName))
 }
 
-func (f *fsFilter) wantFSType(fsType string) bool {
-	return (f.includeFSType == nil || f.includeFSType.Matches(fsType)) &&
-		(f.excludeFSType == nil || !f.excludeFSType.Matches(fsType))
+func (f *fsFilter) includeFSType(fsType string) bool {
+	return (f.includeFSTypeFilter == nil || f.includeFSTypeFilter.Matches(fsType)) &&
+		(f.excludeFSTypeFilter == nil || !f.excludeFSTypeFilter.Matches(fsType))
 }
 
-func (f *fsFilter) wantMountPoint(mountPoint string) bool {
-	return (f.includeMountPoint == nil || f.includeMountPoint.Matches(mountPoint)) &&
-		(f.excludeMountPoint == nil || !f.excludeMountPoint.Matches(mountPoint))
+func (f *fsFilter) includeMountPoint(mountPoint string) bool {
+	return (f.includeMountPointFilter == nil || f.includeMountPointFilter.Matches(mountPoint)) &&
+		(f.excludeMountPointFilter == nil || !f.excludeMountPointFilter.Matches(mountPoint))
 }
