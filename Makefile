@@ -43,6 +43,14 @@ RUN_CONFIG?=examples/otel-local-config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
+# Function to execute a command. Note the empty line before endef to make sure each command
+# gets executed separately instead of concatenated with previous one.
+# Accepts command to execute as first parameter.
+define exec-command
+$(1)
+
+endef
+
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
@@ -237,15 +245,9 @@ PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 # Intermediate directory used during generation.
 PROTO_INTERMEDIATE_DIR=internal/data/.patched-otlp-proto
 
-GO_PKG_DIR:=$(shell go env GOPATH)/pkg/mod/
-
-# Function to execute a command. Note the empty line before endef to make sure each command
-# gets executed separately instead of concatenated with previous one.
-# Accepts command to execute as first parameter.
-define exec-command
-$(1)
-
-endef
+DOCKER_PROTOBUF ?= otel/build-protobuf:latest
+PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
+PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 
 # Generate OTLP Protobuf Go files. This will place generated files in PROTO_TARGET_GEN_DIR.
 genproto:
@@ -280,12 +282,12 @@ genproto_sub:
 	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
 
 	@echo Generate Go code from .proto files in intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(GO_PKG_DIR) $(file)))
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))
 
 	@echo Generate gRPC gateway code.
-	cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(GO_PKG_DIR) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
-	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ -I./ -I$(GO_PKG_DIR) opentelemetry/proto/collector/metrics/v1/metrics_service.proto
-	cd $(PROTO_INTERMEDIATE_DIR) && protoc --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ -I./ -I$(GO_PKG_DIR) opentelemetry/proto/collector/logs/v1/logs_service.proto
+	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/trace/v1/trace_service_http.yaml:./ opentelemetry/proto/collector/trace/v1/trace_service.proto
+	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/metrics/v1/metrics_service_http.yaml:./ opentelemetry/proto/collector/metrics/v1/metrics_service.proto
+	$(PROTOC) $(PROTO_INCLUDES) --grpc-gateway_out=logtostderr=true,grpc_api_configuration=opentelemetry/proto/collector/logs/v1/logs_service_http.yaml:./ opentelemetry/proto/collector/logs/v1/logs_service.proto
 
 	@echo Move generated code to target directory.
 	mkdir -p $(PROTO_TARGET_GEN_DIR)
