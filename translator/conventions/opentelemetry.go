@@ -87,6 +87,14 @@ const (
 	AttributeSDKLangValueWebJS  = "webjs"
 )
 
+// OpenTelemetry Semantic Convention values for Resource attribute "cloud.provider" values.
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+const (
+	AttributeCloudProviderAWS   = "aws"
+	AttributeCloudProviderAzure = "azure"
+	AttributeCloudProviderGCP   = "gcp"
+)
+
 // GetResourceSemanticConventionAttributeNames a slice with all the Resource Semantic Conventions attribute names.
 func GetResourceSemanticConventionAttributeNames() []string {
 	return []string{
