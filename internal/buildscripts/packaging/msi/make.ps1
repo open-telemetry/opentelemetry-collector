@@ -41,7 +41,7 @@ function Install-Tools {
 
 function New-MSI(
     [string]$Version="0.0.1",
-    [string]$Config="./examples/otel-local-config.yaml"
+    [string]$Config="./examples/local/otel-config.yaml"
 ) {
     candle -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-collector.wxs
     light opentelemetry-collector.wixobj
