@@ -59,20 +59,6 @@ func TestScrapeMetrics(t *testing.T) {
 			expectedDeviceDataPoints: 1,
 		},
 		{
-			name: "No duplicate metrics for devices having many mount point",
-			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
-				return []disk.PartitionStat{
-					{Device: "a", Mountpoint: "/mnt/a1"},
-					{Device: "a", Mountpoint: "/mnt/a2"},
-				}, nil
-			},
-			usageFunc: func(string) (*disk.UsageStat, error) {
-				return &disk.UsageStat{}, nil
-			},
-			expectMetrics:            true,
-			expectedDeviceDataPoints: 1,
-		},
-		{
 			name:          "Include Filter that matches nothing",
 			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
 			expectMetrics: false,
@@ -148,6 +134,12 @@ func TestScrapeMetrics(t *testing.T) {
 
 func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, expectedDeviceDataPoints int) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
+	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
+		for _, label := range []string{deviceLabelName, typeLabelName, mountModeLabelName, mountPointLabelName} {
+			internal.AssertIntSumMetricLabelExists(t, metric, i, label)
+		}
+	}
+
 	if expectedDeviceDataPoints > 0 {
 		assert.Equal(t, expectedDeviceDataPoints, metric.IntSum().DataPoints().Len())
 	} else {

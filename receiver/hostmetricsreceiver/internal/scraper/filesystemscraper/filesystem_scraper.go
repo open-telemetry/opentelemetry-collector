@@ -17,6 +17,7 @@ package filesystemscraper
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/disk"
@@ -39,8 +40,8 @@ type scraper struct {
 }
 
 type deviceUsage struct {
-	deviceName string
-	usage      *disk.UsageStat
+	partition disk.PartitionStat
+	usage     *disk.UsageStat
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
@@ -91,18 +92,14 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	var errors []error
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
-		// Skip partition stats having more than one mount point for the same device
-		if deviceUsageAlreadySet(partition.Device, usages) {
-			continue
-		}
-
+		// TODO: Add filters to include/exclude mount points
 		usage, err := s.usage(partition.Mountpoint)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		usages = append(usages, &deviceUsage{partition.Device, usage})
+		usages = append(usages, &deviceUsage{partition, usage})
 	}
 
 	// filter devices by name
@@ -118,15 +115,6 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, componenterror.CombineErrors(errors)
 }
 
-func deviceUsageAlreadySet(device string, usages []*deviceUsage) bool {
-	for _, usage := range usages {
-		if device == usage.deviceName {
-			return true
-		}
-	}
-	return false
-}
-
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
 	fileSystemUsageDescriptor.CopyTo(metric)
 
@@ -137,12 +125,34 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUni
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, partition disk.PartitionStat, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(deviceLabelName, deviceLabel)
+	labelsMap.Insert(deviceLabelName, partition.Device)
+	labelsMap.Insert(typeLabelName, partition.Fstype)
+	labelsMap.Insert(mountModeLabelName, getMountMode(partition.Opts))
+	labelsMap.Insert(mountPointLabelName, partition.Mountpoint)
 	labelsMap.Insert(stateLabelName, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
+}
+
+func getMountMode(opts string) string {
+	splitOptions := strings.Split(opts, ",")
+	if exists(splitOptions, "rw") {
+		return "rw"
+	} else if exists(splitOptions, "ro") {
+		return "ro"
+	}
+	return "unknown"
+}
+
+func exists(options []string, opt string) bool {
+	for _, o := range options {
+		if o == opt {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *scraper) filterByDevice(usages []*deviceUsage) []*deviceUsage {
@@ -152,7 +162,7 @@ func (s *scraper) filterByDevice(usages []*deviceUsage) []*deviceUsage {
 
 	filteredUsages := make([]*deviceUsage, 0, len(usages))
 	for _, usage := range usages {
-		if s.includeDevice(usage.deviceName) {
+		if s.includeDevice(usage.partition.Device) {
 			filteredUsages = append(filteredUsages, usage)
 		}
 	}
