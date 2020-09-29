@@ -17,6 +17,8 @@ package tracetranslator
 import (
 	"encoding/binary"
 	"errors"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 var (
@@ -32,11 +34,26 @@ var (
 
 // UInt64ToByteTraceID takes a two uint64 representation of a TraceID and
 // converts it to a []byte representation.
+func UInt64ToTraceID(high, low uint64) pdata.TraceID {
+	traceID := make([]byte, 16)
+	binary.BigEndian.PutUint64(traceID[:8], high)
+	binary.BigEndian.PutUint64(traceID[8:], low)
+	return pdata.NewTraceID(traceID)
+}
+
+// UInt64ToByteTraceID takes a two uint64 representation of a TraceID and
+// converts it to a []byte representation.
 func UInt64ToByteTraceID(high, low uint64) []byte {
 	traceID := make([]byte, 16)
 	binary.BigEndian.PutUint64(traceID[:8], high)
 	binary.BigEndian.PutUint64(traceID[8:], low)
 	return traceID
+}
+
+// Int64ToByteTraceID takes a two int64 representation of a TraceID and
+// converts it to a []byte representation.
+func Int64ToTraceID(high, low int64) pdata.TraceID {
+	return UInt64ToTraceID(uint64(high), uint64(low))
 }
 
 // Int64ToByteTraceID takes a two int64 representation of a TraceID and
@@ -62,6 +79,11 @@ func BytesToUInt64TraceID(traceID []byte) (uint64, uint64, error) {
 func BytesToInt64TraceID(traceID []byte) (int64, int64, error) {
 	traceIDHigh, traceIDLow, err := BytesToUInt64TraceID(traceID)
 	return int64(traceIDHigh), int64(traceIDLow), err
+}
+
+// TraceIDToUInt64Pair takes a pdata.TraceID and converts it to a pair of uint64 representation.
+func TraceIDToUInt64Pair(traceID pdata.TraceID) (uint64, uint64, error) {
+	return BytesToUInt64TraceID(traceID.Bytes())
 }
 
 // UInt64ToByteSpanID takes a uint64 representation of a SpanID and

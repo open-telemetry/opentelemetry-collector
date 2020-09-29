@@ -57,6 +57,7 @@ func createTraceProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
+	params.Logger.Warn("QueuedRetry processor is deprecated. Use exporter's queued retry config.")
 	return newQueuedTracesProcessor(params, nextConsumer, cfg.(*Config)), nil
 }
 
@@ -66,5 +67,6 @@ func createMetricsProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
+	params.Logger.Warn("QueuedRetry processor is deprecated. Use exporter's queued retry config.")
 	return newQueuedMetricsProcessor(params, nextConsumer, cfg.(*Config)), nil
 }

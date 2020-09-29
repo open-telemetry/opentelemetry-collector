@@ -16,6 +16,7 @@ package swapscraper
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"testing"
 
@@ -27,29 +28,64 @@ import (
 )
 
 func TestScrapeMetrics(t *testing.T) {
-	scraper := newSwapScraper(context.Background(), &Config{})
-	err := scraper.Initialize(context.Background())
-	require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
-
-	metrics, err := scraper.ScrapeMetrics(context.Background())
-	assert.NoError(t, err)
-
-	// expect 3 metrics (windows does not currently support page_faults metric)
-	expectedMetrics := 3
-	if runtime.GOOS == "windows" {
-		expectedMetrics = 2
+	type testCase struct {
+		name              string
+		bootTimeFunc      func() (uint64, error)
+		expectedStartTime pdata.TimestampUnixNano
+		initializationErr string
 	}
-	assert.Equal(t, expectedMetrics, metrics.Len())
 
-	assertSwapUsageMetricValid(t, metrics.At(0))
-	internal.AssertSameTimeStampForMetrics(t, metrics, 0, 1)
-
-	assertPagingMetricValid(t, metrics.At(1), 0)
-	if runtime.GOOS != "windows" {
-		assertPageFaultsMetricValid(t, metrics.At(2), 0)
+	testCases := []testCase{
+		{
+			name: "Standard",
+		},
+		{
+			name:              "Validate Start Time",
+			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			expectedStartTime: 100 * 1e9,
+		},
+		{
+			name:              "Boot Time Error",
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
+		},
 	}
-	internal.AssertSameTimeStampForMetrics(t, metrics, 1, metrics.Len())
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper := newSwapScraper(context.Background(), &Config{})
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
+
+			err := scraper.Initialize(context.Background())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
+			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
+			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+
+			metrics, err := scraper.ScrapeMetrics(context.Background())
+			require.NoError(t, err)
+
+			// expect 3 metrics (windows does not currently support page_faults metric)
+			expectedMetrics := 3
+			if runtime.GOOS == "windows" {
+				expectedMetrics = 2
+			}
+			assert.Equal(t, expectedMetrics, metrics.Len())
+
+			assertSwapUsageMetricValid(t, metrics.At(0))
+			internal.AssertSameTimeStampForMetrics(t, metrics, 0, 1)
+
+			assertPagingMetricValid(t, metrics.At(1), test.expectedStartTime)
+			if runtime.GOOS != "windows" {
+				assertPageFaultsMetricValid(t, metrics.At(2), test.expectedStartTime)
+			}
+			internal.AssertSameTimeStampForMetrics(t, metrics, 1, metrics.Len())
+		})
+	}
 }
 
 func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) {

@@ -17,6 +17,7 @@ package memorylimiter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -27,6 +28,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/memorylimiter/internal/iruntime"
+)
+
+const (
+	mibBytes = 1024 * 1024
 )
 
 var (
@@ -39,18 +45,25 @@ var (
 	errCheckIntervalOutOfRange = errors.New(
 		"checkInterval must be greater than zero")
 
-	errMemAllocLimitOutOfRange = errors.New(
-		"memAllocLimit must be greater than zero")
+	errLimitOutOfRange = errors.New(
+		"memAllocLimit or memoryLimitPercentage must be greater than zero")
 
 	errMemSpikeLimitOutOfRange = errors.New(
 		"memSpikeLimit must be smaller than memAllocLimit")
+
+	errPercentageLimitOutOfRange = errors.New(
+		"memoryLimitPercentage and memorySpikePercentage must be greater than zero and less than or equal to hundred",
+	)
 )
 
+// make it overridable by tests
+var getMemoryFn = iruntime.TotalMemory
+
 type memoryLimiter struct {
-	memAllocLimit uint64
-	memSpikeLimit uint64
-	memCheckWait  time.Duration
-	ballastSize   uint64
+	decision dropDecision
+
+	memCheckWait time.Duration
+	ballastSize  uint64
 
 	// forceDrop is used atomically to indicate when data should be dropped.
 	forceDrop int64
@@ -69,24 +82,27 @@ type memoryLimiter struct {
 
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
-	const mibBytes = 1024 * 1024
-	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
-	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
 	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
 
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}
-	if memAllocLimit == 0 {
-		return nil, errMemAllocLimitOutOfRange
-	}
-	if memSpikeLimit >= memAllocLimit {
-		return nil, errMemSpikeLimitOutOfRange
+	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {
+		return nil, errLimitOutOfRange
 	}
 
+	decision, err := getDecision(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("Memory limiter configured",
+		zap.Uint64("limit_mib", decision.memAllocLimit),
+		zap.Uint64("spike_limit_mib", decision.memSpikeLimit),
+		zap.Duration("check_interval", cfg.CheckInterval))
+
 	ml := &memoryLimiter{
-		memAllocLimit:  memAllocLimit,
-		memSpikeLimit:  memSpikeLimit,
+		decision:       *decision,
 		memCheckWait:   cfg.CheckInterval,
 		ballastSize:    ballastSize,
 		ticker:         time.NewTicker(cfg.CheckInterval),
@@ -98,6 +114,23 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	ml.startMonitoring()
 
 	return ml, nil
+}
+
+func getDecision(cfg *Config, logger *zap.Logger) (*dropDecision, error) {
+	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
+	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
+	if cfg.MemoryLimitMiB != 0 {
+		return newFixedDecision(memAllocLimit, memSpikeLimit)
+	}
+	totalMemory, err := getMemoryFn()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
+	}
+	logger.Info("Using percentage memory limiter",
+		zap.Int64("total_memory", totalMemory),
+		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
+		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
+	return newPercentageDecision(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -170,7 +203,8 @@ func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.
 	return ld, nil
 }
 
-func (ml *memoryLimiter) readMemStats(ms *runtime.MemStats) {
+func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
+	ms := &runtime.MemStats{}
 	ml.readMemStatsFn(ms)
 	// If proper configured ms.Alloc should be at least ml.ballastSize but since
 	// a misconfiguration is possible check for that here.
@@ -182,6 +216,7 @@ func (ml *memoryLimiter) readMemStats(ms *runtime.MemStats) {
 		ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
 			" must be set equal to --mem-ballast-size-mib command line option.")
 	}
+	return ms
 }
 
 // startMonitoring starts a ticker'd goroutine that will check memory usage
@@ -200,17 +235,12 @@ func (ml *memoryLimiter) forcingDrop() bool {
 }
 
 func (ml *memoryLimiter) memCheck() {
-	ms := &runtime.MemStats{}
-	ml.readMemStats(ms)
+	ms := ml.readMemStats()
 	ml.memLimiting(ms)
 }
 
-func (ml *memoryLimiter) shouldForceDrop(ms *runtime.MemStats) bool {
-	return ml.memAllocLimit <= ms.Alloc || ml.memAllocLimit-ms.Alloc <= ml.memSpikeLimit
-}
-
 func (ml *memoryLimiter) memLimiting(ms *runtime.MemStats) {
-	if !ml.shouldForceDrop(ms) {
+	if !ml.decision.shouldDrop(ms) {
 		atomic.StoreInt64(&ml.forceDrop, 0)
 	} else {
 		atomic.StoreInt64(&ml.forceDrop, 1)
@@ -218,4 +248,30 @@ func (ml *memoryLimiter) memLimiting(ms *runtime.MemStats) {
 		// the desired level.
 		runtime.GC()
 	}
+}
+
+type dropDecision struct {
+	memAllocLimit uint64
+	memSpikeLimit uint64
+}
+
+func (d dropDecision) shouldDrop(ms *runtime.MemStats) bool {
+	return d.memAllocLimit <= ms.Alloc || d.memAllocLimit-ms.Alloc <= d.memSpikeLimit
+}
+
+func newFixedDecision(memAllocLimit, memSpikeLimit uint64) (*dropDecision, error) {
+	if memSpikeLimit >= memAllocLimit {
+		return nil, errMemSpikeLimitOutOfRange
+	}
+	return &dropDecision{
+		memAllocLimit: memAllocLimit,
+		memSpikeLimit: memSpikeLimit,
+	}, nil
+}
+
+func newPercentageDecision(totalMemory int64, percentageLimit, percentageSpike int64) (*dropDecision, error) {
+	if percentageLimit > 100 || percentageLimit <= 0 || percentageSpike > 100 || percentageSpike <= 0 {
+		return nil, errPercentageLimitOutOfRange
+	}
+	return newFixedDecision(uint64(percentageLimit*totalMemory)/100, uint64(percentageSpike*totalMemory)/100)
 }

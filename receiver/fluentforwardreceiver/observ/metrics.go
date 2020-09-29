@@ -20,7 +20,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 var (
@@ -80,8 +80,8 @@ var (
 	}
 )
 
-func Views(level telemetry.Level) []*view.View {
-	if level == telemetry.None {
+func Views(level configtelemetry.Level) []*view.View {
+	if level == configtelemetry.LevelNone {
 		return nil
 	}
 

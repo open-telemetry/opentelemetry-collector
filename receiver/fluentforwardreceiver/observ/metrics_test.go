@@ -19,10 +19,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func TestViews(t *testing.T) {
-	require.Greater(t, len(Views(telemetry.Basic)), 2)
-	require.Len(t, Views(telemetry.None), 0)
+	require.Greater(t, len(Views(configtelemetry.LevelBasic)), 2)
+	require.Len(t, Views(configtelemetry.LevelNone), 0)
 }

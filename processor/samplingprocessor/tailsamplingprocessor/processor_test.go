@@ -16,6 +16,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -53,7 +54,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	}
 
 	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
@@ -88,7 +89,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	wg.Wait()
 
 	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
@@ -112,7 +113,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
 	for i := 0; i < len(traceIds)-maxSize; i++ {
-		_, ok := tsp.idToTrace.Load(traceKey(traceIds[i]))
+		_, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
 		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
 	}
 }
@@ -205,11 +206,136 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
 }
 
-func generateIdsAndBatches(numIds int) ([][]byte, []pdata.Traces) {
-	traceIds := make([][]byte, numIds)
+func TestSamplingMultiplePolicies(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(exportertest.SinkTraceExporter)
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies: []*Policy{
+			{
+				Name: "policy-1", Evaluator: mpe1, ctx: context.TODO(),
+			},
+			{
+				Name: "policy-2", Evaluator: mpe2, ctx: context.TODO(),
+			}},
+		deleteChan:   make(chan traceKey, maxSize),
+		policyTicker: mtt,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpansCount() != 0 || mpe1.EvaluationCount != 0 || mpe2.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	// Both policies will decide to sample
+	mpe1.NextDecision = sampling.Sampled
+	mpe2.NextDecision = sampling.Sampled
+	tsp.samplingPolicyOnTick()
+	require.False(
+		t,
+		msp.SpansCount() == 0 || mpe1.EvaluationCount == 0 || mpe2.EvaluationCount == 0,
+		"policy should have been evaluated totalspans == %d and evaluationcount(1) == %d and evaluationcount(2) == %d",
+		msp.SpansCount(),
+		mpe1.EvaluationCount,
+		mpe2.EvaluationCount,
+	)
+
+	require.Equal(t, numSpansPerBatchWindow, msp.SpansCount(), "nextConsumer should've been called with exactly 1 batch of spans")
+
+	// Late span of a sampled trace should be sent directly down the pipeline exporter
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
+	require.Equal(t, expectedNumWithLateSpan, msp.SpansCount(), "late span was not accounted for")
+	require.Equal(t, 1, mpe1.LateArrivingSpansCount, "1st policy was not notified of the late span")
+	require.Equal(t, 0, mpe2.LateArrivingSpansCount, "2nd policy should not have been notified of the late span")
+}
+
+func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(exportertest.SinkTraceExporter)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan traceKey, maxSize),
+		policyTicker:    mtt,
+	}
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			tsp.ConsumeTraces(context.Background(), batches[currItem])
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpansCount() != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	// Now the first batch that waited the decision period.
+	mpe.NextDecision = sampling.NotSampled
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpansCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 4, mpe.EvaluationCount, "policy should have been evaluated 4 times")
+
+	// Late span of a non-sampled trace should be ignored
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.Equal(t, 0, msp.SpansCount())
+	require.Equal(t, 1, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+
+	mpe.NextDecision = sampling.Unspecified
+	mpe.NextError = errors.New("mock policy error")
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, 0, msp.SpansCount(), "exporter should have received zero spans")
+	require.EqualValues(t, 6, mpe.EvaluationCount, "policy should have been evaluated 6 times")
+
+	// Late span of a non-sampled trace should be ignored
+	tsp.ConsumeTraces(context.Background(), batches[0])
+	require.Equal(t, 0, msp.SpansCount())
+	require.Equal(t, 2, mpe.LateArrivingSpansCount, "policy was not notified of the late span")
+}
+
+func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
+	traceIds := make([]pdata.TraceID, numIds)
 	var tds []pdata.Traces
 	for i := 0; i < numIds; i++ {
-		traceIds[i] = tracetranslator.UInt64ToByteTraceID(1, uint64(i+1))
+		traceIds[i] = tracetranslator.UInt64ToTraceID(1, uint64(i+1))
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := testdata.GenerateTraceDataOneSpan()
@@ -237,11 +363,11 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*tracepb.
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate([]byte, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
-func (m *mockPolicyEvaluator) OnDroppedSpans([]byte, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) OnDroppedSpans(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.OnDroppedSpansCount++
 	return m.NextDecision, m.NextError
 }
@@ -280,7 +406,7 @@ func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id idbatcher.ID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pdata.TraceID) {
 	s.Lock()
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()

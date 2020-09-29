@@ -10,5 +10,7 @@ RUN chmod 755 /otelcol
 FROM scratch
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=otelcol /otelcol /
+COPY config.yaml /etc/otel/config.yaml
 ENTRYPOINT ["/otelcol"]
+CMD ["--config", "/etc/otel/config.yaml"]
 EXPOSE 55678 55679

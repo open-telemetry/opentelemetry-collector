@@ -172,7 +172,7 @@ type instrumentationLibrary struct {
 func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	dest := pdata.NewSpan()
 	dest.InitEmpty()
-	dest.SetTraceID(tracetranslator.UInt64ToByteTraceID(span.TraceID.High, span.TraceID.Low))
+	dest.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
 	dest.SetStartTime(pdata.TimestampUnixNano(uint64(span.StartTime.UnixNano())))
@@ -365,7 +365,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 			continue
 		}
 
-		link.SetTraceID(pdata.NewTraceID(tracetranslator.UInt64ToByteTraceID(ref.TraceID.High, ref.TraceID.Low)))
+		link.SetTraceID(tracetranslator.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
 		link.SetSpanID(pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(ref.SpanID))))
 		i++
 	}

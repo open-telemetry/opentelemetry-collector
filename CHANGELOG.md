@@ -2,12 +2,32 @@
 
 ## Unreleased
 
+## v0.11.0 Beta
+
 ## 🛑 Breaking changes 🛑
-<<<<<<< HEAD
 
 - Rename service.Start() to Run() since it's a blocking call
 - Fix slice Append to accept by value the element in pdata
 - Change CreateTraceProcessor and CreateMetricsProcessor to use the same parameter order as receivers/logs processor and exporters.
+- Prevent accidental use of LogsToOtlp and LogsFromOtlp and the OTLP data structs (#1703)
+- Remove SetType from configmodels, ensure all registered factories set the type in config (#1798)
+- Move process telemetry to service/internal (#1794)
+
+## 💡 Enhancements 💡
+
+- Add map and array attribute value type support (#1656)
+- Add authentication support to kafka (#1632)
+- Implement InstrumentationLibrary translation to jaeger (#1645)
+- Add public functions to export pdata to ExportXServicesRequest Protobuf bytes (#1741)
+- Expose telemetry level in the configtelemetry (#1796)
+- Add configauth package (#1807)
+- Add config to docker image (#1792)
+
+## 🧰 Bug fixes 🧰
+
+- Use zap int argument for int values instead of conversion (#1779)
+- Add support for gzip encoded payload in OTLP/HTTP receiver (#1581)
+- Return proto status for OTLP receiver when failed (#1788)
 
 ## v0.10.0 Beta
 

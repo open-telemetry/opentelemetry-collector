@@ -28,6 +28,8 @@ import (
 )
 
 // OCToTraceData converts OC data format to Traces.
+// Deprecated: use pdata.Traces instead. OCToTraceData may be used only by OpenCensus
+// receiver and exporter implementations.
 func OCToTraceData(td consumerdata.TraceData) pdata.Traces {
 	traceData := pdata.NewTraces()
 	if td.Node == nil && td.Resource == nil && len(td.Spans) == 0 {
@@ -341,6 +343,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 		i++
 
 		link.SetTraceID(pdata.NewTraceID(ocLink.TraceId))
+
 		link.SetSpanID(pdata.NewSpanID(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())

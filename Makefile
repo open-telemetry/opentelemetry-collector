@@ -2,7 +2,6 @@
 # This is the code that we want to run tests for and lint, staticcheck, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './testbed/*' \
-							-not -path '*/third_party/*' \
 							-not -path '*/internal/data/opentelemetry-proto/*' \
 							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
 							-not -path './.circleci/scripts/reportgenerator/*' \
@@ -40,7 +39,7 @@ endif
 BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
-RUN_CONFIG?=local/config.yaml
+RUN_CONFIG?=examples/otel-local-config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
@@ -277,6 +276,9 @@ genproto_sub:
 	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/logs/v1/logs.proto \
 	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
 
+	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/metrics/v1/metrics.proto \
+	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
+
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,cd $(PROTO_INTERMEDIATE_DIR) && protoc --gogofaster_out=plugins=grpc:./ -I./ -I$(GO_PKG_DIR) $(file)))
 
@@ -308,3 +310,19 @@ check-contrib:
 	make -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
+
+# List of directories where certificates are stored for unit tests.
+CERT_DIRS := config/configgrpc/testdata \
+             config/confighttp/testdata \
+             receiver/jaegerreceiver/testdata \
+             exporter/jaegerexporter/testdata
+
+# Generate certificates for unit tests relying on certificates.
+.PHONY: certs
+certs:
+	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
+
+# Generate certificates for unit tests relying on certificates without copying certs to specific test directories.
+.PHONY: certs-dryrun
+certs-dryrun:
+	@internal/buildscripts/gen-certs.sh -d

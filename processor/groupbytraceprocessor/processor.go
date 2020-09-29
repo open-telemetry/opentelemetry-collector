@@ -124,7 +124,8 @@ func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) er
 
 	for _, batch := range splitByTrace(rs) {
 		if err := sp.processBatch(batch); err != nil {
-			sp.logger.Info("failed to process batch", zap.Error(err), zap.Stringer("traceID", batch.traceID))
+			sp.logger.Info("failed to process batch", zap.Error(err),
+				zap.String("traceID", batch.traceID.HexString()))
 		}
 	}
 
@@ -148,7 +149,7 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 
 	// place the trace ID in the buffer, and check if an item had to be evicted
 	evicted := sp.ringBuffer.put(traceID)
-	if evicted != nil {
+	if evicted.Bytes() != nil {
 		// delete from the storage
 		sp.eventMachine.fire(event{
 			typ:     traceRemoved,
@@ -156,7 +157,8 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 		})
 
 		// TODO: do we want another channel that receives evicted items? record a metric perhaps?
-		sp.logger.Info("trace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory", zap.Stringer("traceID", evicted))
+		sp.logger.Info("trace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
+			zap.String("traceID", evicted.HexString()))
 	}
 
 	// we have the traceID in the memory, place the spans in the storage too
@@ -178,12 +180,14 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 }
 
 func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
-	sp.logger.Debug("processing expired", zap.Stringer("traceID", traceID))
+	sp.logger.Debug("processing expired", zap.String("traceID",
+		traceID.HexString()))
 
 	if !sp.ringBuffer.contains(traceID) {
 		// we likely received multiple batches with spans for the same trace
 		// and released this trace already
-		sp.logger.Debug("skipping the processing of expired trace", zap.Stringer("traceID", traceID))
+		sp.logger.Debug("skipping the processing of expired trace",
+			zap.String("traceID", traceID.HexString()))
 		return nil
 	}
 
@@ -191,7 +195,8 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
 	sp.ringBuffer.delete(traceID)
 
 	// this might block, but we don't need to wait
-	sp.logger.Debug("marking the trace as released", zap.Stringer("traceID", traceID))
+	sp.logger.Debug("marking the trace as released",
+		zap.String("traceID", traceID.HexString()))
 	go sp.markAsReleased(traceID)
 
 	return nil
@@ -209,7 +214,7 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID) error {
 	}
 
 	// signal that the trace is ready to be released
-	sp.logger.Debug("trace marked as released", zap.Stringer("traceID", traceID))
+	sp.logger.Debug("trace marked as released", zap.String("traceID", traceID.HexString()))
 
 	// atomically fire the two events, so that a concurrent shutdown won't leave
 	// an orphaned trace in the storage
@@ -234,18 +239,18 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) erro
 func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
 	trace, err := sp.st.delete(traceID)
 	if err != nil {
-		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID.String(), err)
+		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID.HexString(), err)
 	}
 
 	if trace == nil {
-		return fmt.Errorf("trace %q not found at the storage", traceID.String())
+		return fmt.Errorf("trace %q not found at the storage", traceID.HexString())
 	}
 
 	return nil
 }
 
 func (sp *groupByTraceProcessor) addSpans(traceID pdata.TraceID, trace pdata.ResourceSpans) error {
-	sp.logger.Debug("creating trace at the storage", zap.Stringer("traceID", traceID))
+	sp.logger.Debug("creating trace at the storage", zap.String("traceID", traceID.HexString()))
 	return sp.st.createOrAppend(traceID, trace)
 }
 
@@ -266,13 +271,13 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 		ils := rs.InstrumentationLibrarySpans().At(i)
 		for j := 0; j < ils.Spans().Len(); j++ {
 			span := ils.Spans().At(j)
-			if span.TraceID() == nil {
+			if span.TraceID().Bytes() == nil {
 				// this should have already been caught before our processor, but let's
 				// protect ourselves against bad clients
 				continue
 			}
 
-			sTraceID := span.TraceID().String()
+			sTraceID := span.TraceID().HexString()
 
 			// for the first traceID in the ILS, initialize the map entry
 			// and add the singleTraceBatch to the result list

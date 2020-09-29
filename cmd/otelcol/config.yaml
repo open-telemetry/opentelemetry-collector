@@ -1,0 +1,55 @@
+extensions:
+  health_check:
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+  opencensus:
+
+  # Collect own metrics
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'otel-collector'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['0.0.0.0:8888']
+
+  jaeger:
+    protocols:
+      grpc:
+      thrift_binary:
+      thrift_compact:
+      thrift_http:
+
+  zipkin:
+
+processors:
+  batch:
+
+exporters:
+  logging:
+    logLevel: debug
+
+service:
+
+  pipelines:
+
+    traces:
+      receivers: [opencensus, jaeger, zipkin]
+      processors: [batch]
+      exporters: [logging]
+
+    metrics:
+      receivers: [otlp, opencensus, prometheus]
+      processors: [batch]
+      exporters: [logging]
+
+  extensions: [health_check, pprof, zpages]

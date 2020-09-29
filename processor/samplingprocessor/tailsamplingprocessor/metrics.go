@@ -19,7 +19,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -45,8 +45,8 @@ var (
 )
 
 // SamplingProcessorMetricViews return the metrics views according to given telemetry level.
-func SamplingProcessorMetricViews(level telemetry.Level) []*view.View {
-	if level == telemetry.None {
+func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
+	if level == configtelemetry.LevelNone {
 		return nil
 	}
 
