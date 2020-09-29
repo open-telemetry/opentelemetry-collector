@@ -40,7 +40,7 @@ func TestStartSampling(t *testing.T) {
 	// that will ensure a positive value is returned
 	assert.IsType(t, &perfcounters.PerfLibScraper{}, samplerInstance.perfCounterScraper)
 	samplerInstance.perfCounterScraper = perfcounters.NewMockPerfCounterScraper(map[string]map[string][]int64{
-		system: map[string][]int64{processorQueueLength: []int64{100}},
+		system: {processorQueueLength: {100}},
 	})
 
 	// second call to startSampling should succeed, but not do anything
@@ -90,7 +90,7 @@ func assertSamplingStopped(t *testing.T) {
 func TestSampleLoad(t *testing.T) {
 	counterReturnValues := []int64{10, 20, 30, 40, 50}
 	mockPerfCounterScraper := perfcounters.NewMockPerfCounterScraper(map[string]map[string][]int64{
-		system: map[string][]int64{processorQueueLength: counterReturnValues},
+		system: {processorQueueLength: counterReturnValues},
 	})
 
 	samplerInstance = &sampler{perfCounterScraper: mockPerfCounterScraper}
