@@ -43,7 +43,7 @@ service:
   pipelines:
 
     traces:
-      receivers: [opencensus, jaeger, zipkin]
+      receivers: [otlp, opencensus, jaeger, zipkin]
       processors: [batch]
       exporters: [logging]
 
