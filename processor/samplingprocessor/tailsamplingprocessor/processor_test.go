@@ -15,6 +15,7 @@
 package tailsamplingprocessor
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"sync"
@@ -372,7 +373,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 func findTrace(a []pdata.Traces, traceID pdata.TraceID) int {
 	for i, batch := range a {
 		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-		if traceID.HexString() == id.HexString() {
+		if bytes.Equal(traceID.Bytes(), id.Bytes()) {
 			return i
 		}
 	}
