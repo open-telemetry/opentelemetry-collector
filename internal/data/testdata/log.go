@@ -66,6 +66,18 @@ func generateLogOtlpOneEmptyOneNilResourceLogs() []*otlplogs.ResourceLogs {
 	}
 }
 
+func GenerateLogDataOneEmptyOneNilInstrumentationLibrary() pdata.Logs {
+	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(generateLogOtlpOneEmptyOneNilInstrumentationLibrary()))
+
+}
+
+func generateLogOtlpOneEmptyOneNilInstrumentationLibrary() []*otlplogs.ResourceLogs {
+	return []*otlplogs.ResourceLogs{
+		{},
+		{nil, []*otlplogs.InstrumentationLibraryLogs{nil}},
+	}
+}
+
 func GenerateLogDataNoLogRecords() pdata.Logs {
 	ld := GenerateLogDataOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)

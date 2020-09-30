@@ -16,7 +16,7 @@ package spanprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 )
 
 // Config is the configuration for the span processor.
@@ -26,7 +26,7 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	filterspan.MatchConfig `mapstructure:",squash"`
+	filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Rename specifies the components required to re-name a span.
 	// The `from_attributes` field needs to be set for this processor to be properly

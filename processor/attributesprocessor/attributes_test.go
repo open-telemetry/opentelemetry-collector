@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -200,12 +200,12 @@ func TestAttributes_FilterSpans(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterspan.MatchProperties{
+	oCfg.Include = &filterconfig.MatchProperties{
 		Services: []string{"svcA", "svcB.*"},
 		Config:   *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterspan.MatchProperties{
-		Attributes: []filterspan.Attribute{
+	oCfg.Exclude = &filterconfig.MatchProperties{
+		Attributes: []filterconfig.Attribute{
 			{Key: "NoModification", Value: true},
 		},
 		Config: *createConfig(filterset.Strict),
@@ -270,11 +270,11 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterspan.MatchProperties{
+	oCfg.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"apply", "dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
-	oCfg.Exclude = &filterspan.MatchProperties{
+	oCfg.Exclude = &filterconfig.MatchProperties{
 		SpanNames: []string{"dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
@@ -338,11 +338,11 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterspan.MatchProperties{
+	oCfg.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterspan.MatchProperties{
+	oCfg.Exclude = &filterconfig.MatchProperties{
 		SpanNames: []string{".*dont_apply$"},
 		Config:    *createConfig(filterset.Regexp),
 	}
@@ -446,7 +446,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterspan.MatchProperties{
+	oCfg.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())

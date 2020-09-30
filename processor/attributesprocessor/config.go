@@ -16,7 +16,7 @@ package attributesprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -30,7 +30,7 @@ import (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	filterspan.MatchConfig `mapstructure:",squash"`
+	filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.

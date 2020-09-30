@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/internal/processor/filterspan"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -82,13 +82,13 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: typeStr,
 			NameVal: "span/includeexclude",
 		},
-		MatchConfig: filterspan.MatchConfig{
-			Include: &filterspan.MatchProperties{
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Regexp),
 				Services:  []string{`banks`},
 				SpanNames: []string{"^(.*?)/(.*?)$"},
 			},
-			Exclude: &filterspan.MatchProperties{
+			Exclude: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Strict),
 				SpanNames: []string{`donot/change`},
 			},
