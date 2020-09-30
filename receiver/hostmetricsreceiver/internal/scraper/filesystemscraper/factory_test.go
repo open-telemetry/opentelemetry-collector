@@ -40,7 +40,7 @@ func TestCreateMetricsScraper(t *testing.T) {
 
 func TestCreateMetricsScraper_Error(t *testing.T) {
 	factory := &Factory{}
-	cfg := &Config{Include: MatchConfig{Devices: []string{""}}}
+	cfg := &Config{IncludeDevices: DeviceMatchConfig{Devices: []string{""}}}
 
 	_, err := factory.CreateMetricsScraper(context.Background(), zap.NewNop(), cfg)
 

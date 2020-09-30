@@ -31,14 +31,15 @@ import (
 
 func TestScrapeMetrics(t *testing.T) {
 	type testCase struct {
-		name                     string
-		config                   Config
-		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
-		usageFunc                func(string) (*disk.UsageStat, error)
-		expectMetrics            bool
-		expectedDeviceDataPoints int
-		newErrRegex              string
-		expectedErr              string
+		name                      string
+		config                    Config
+		partitionsFunc            func(bool) ([]disk.PartitionStat, error)
+		usageFunc                 func(string) (*disk.UsageStat, error)
+		expectMetrics             bool
+		expectedDeviceDataPoints  int
+		expectedDeviceLabelValues []map[string]string
+		newErrRegex               string
+		expectedErr               string
 	}
 
 	testCases := []testCase{
@@ -47,8 +48,8 @@ func TestScrapeMetrics(t *testing.T) {
 			expectMetrics: true,
 		},
 		{
-			name:   "Include single process filter",
-			config: Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}}},
+			name:   "Include single device filter",
+			config: Config{IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}}},
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
 			},
@@ -59,19 +60,105 @@ func TestScrapeMetrics(t *testing.T) {
 			expectedDeviceDataPoints: 1,
 		},
 		{
-			name:          "Include Filter that matches nothing",
-			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			name:          "Include Device Filter that matches nothing",
+			config:        Config{IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
 			expectMetrics: false,
 		},
 		{
-			name:        "Invalid Include Filter",
-			config:      Config{Include: MatchConfig{Devices: []string{"test"}}},
+			name: "Include filter with devices, filesystem type and mount points",
+			config: Config{
+				IncludeDevices: DeviceMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					Devices: []string{"device_a", "device_b"},
+				},
+				ExcludeFSTypes: FSTypeMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					FSTypes: []string{"fs_type_b"},
+				},
+				ExcludeMountPoints: MountPointMatchConfig{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					MountPoints: []string{"mount_point_b", "mount_point_c"},
+				},
+			},
+			usageFunc: func(s string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_b",
+						Fstype:     "fs_type_b",
+					},
+					{
+						Device:     "device_b",
+						Mountpoint: "mount_point_c",
+						Fstype:     "fs_type_b",
+					},
+					{
+						Device:     "device_b",
+						Mountpoint: "mount_point_d",
+						Fstype:     "fs_type_c",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 2,
+			expectedDeviceLabelValues: []map[string]string{
+				{
+					"device":      "device_a",
+					"mount.point": "mount_point_a",
+					"type":        "fs_type_a",
+				},
+				{
+					"device":      "device_b",
+					"mount.point": "mount_point_d",
+					"type":        "fs_type_c",
+				},
+			},
+		},
+		{
+			name:        "Invalid Include Device Filter",
+			config:      Config{IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}}},
 			newErrRegex: "^error creating device include filters:",
 		},
 		{
-			name:        "Invalid Exclude Filter",
-			config:      Config{Exclude: MatchConfig{Devices: []string{"test"}}},
+			name:        "Invalid Exclude Device Filter",
+			config:      Config{ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}}},
 			newErrRegex: "^error creating device exclude filters:",
+		},
+		{
+			name:        "Invalid Include Filesystems Filter",
+			config:      Config{IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			newErrRegex: "^error creating type include filters:",
+		},
+		{
+			name:        "Invalid Exclude Filesystems Filter",
+			config:      Config{ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			newErrRegex: "^error creating type exclude filters:",
+		},
+		{
+			name:        "Invalid Include Moountpoints Filter",
+			config:      Config{IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			newErrRegex: "^error creating mount.point include filters:",
+		},
+		{
+			name:        "Invalid Exclude Moountpoints Filter",
+			config:      Config{ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			newErrRegex: "^error creating mount.point exclude filters:",
 		},
 		{
 			name:           "Partitions Error",
@@ -120,11 +207,23 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.GreaterOrEqual(t, metrics.Len(), 1)
 
-			assertFileSystemUsageMetricValid(t, metrics.At(0), fileSystemUsageDescriptor, test.expectedDeviceDataPoints*fileSystemStatesLen)
+			assertFileSystemUsageMetricValid(
+				t,
+				metrics.At(0),
+				fileSystemUsageDescriptor,
+				test.expectedDeviceDataPoints*fileSystemStatesLen,
+				test.expectedDeviceLabelValues,
+			)
 
 			if isUnix() {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
-				assertFileSystemUsageMetricValid(t, metrics.At(1), fileSystemINodesUsageDescriptor, test.expectedDeviceDataPoints*2)
+				assertFileSystemUsageMetricValid(
+					t,
+					metrics.At(1),
+					fileSystemINodesUsageDescriptor,
+					test.expectedDeviceDataPoints*2,
+					test.expectedDeviceLabelValues,
+				)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -132,7 +231,12 @@ func TestScrapeMetrics(t *testing.T) {
 	}
 }
 
-func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, expectedDeviceDataPoints int) {
+func assertFileSystemUsageMetricValid(
+	t *testing.T,
+	metric pdata.Metric,
+	descriptor pdata.Metric,
+	expectedDeviceDataPoints int,
+	expectedDeviceLabelValues []map[string]string) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	for i := 0; i < metric.IntSum().DataPoints().Len(); i++ {
 		for _, label := range []string{deviceLabelName, typeLabelName, mountModeLabelName, mountPointLabelName} {
@@ -142,6 +246,20 @@ func assertFileSystemUsageMetricValid(t *testing.T, metric pdata.Metric, descrip
 
 	if expectedDeviceDataPoints > 0 {
 		assert.Equal(t, expectedDeviceDataPoints, metric.IntSum().DataPoints().Len())
+
+		// Assert label values if specified.
+		if expectedDeviceLabelValues != nil {
+			dpsPerDevice := expectedDeviceDataPoints / len(expectedDeviceLabelValues)
+			deviceIdx := 0
+			for i := 0; i < metric.IntSum().DataPoints().Len(); i += dpsPerDevice {
+				for j := i; j < i+dpsPerDevice; j++ {
+					for labelKey, labelValue := range expectedDeviceLabelValues[deviceIdx] {
+						internal.AssertIntSumMetricLabelHasValue(t, metric, j, labelKey, labelValue)
+					}
+				}
+				deviceIdx++
+			}
+		}
 	} else {
 		assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), fileSystemStatesLen)
 	}
