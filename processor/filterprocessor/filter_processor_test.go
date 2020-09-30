@@ -16,6 +16,7 @@ package filterprocessor
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -27,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -240,77 +243,6 @@ func TestFilterMetricProcessor(t *testing.T) {
 	}
 }
 
-func BenchmarkFilter_MetricNames(b *testing.B) {
-	// runs 1000 metrics through a filterprocessor with both include and exclude filters.
-	stressTest := metricNameTest{
-		name: "includeAndExcludeFilter1000Metrics",
-		inc:  regexpMetricsFilterProperties,
-		exc: &filtermetric.MatchProperties{
-			Config: filterset.Config{
-				MatchType: filterset.Strict,
-			},
-			MetricNames: []string{
-				"prefix_test_match",
-				"test_contains_match",
-			},
-		},
-		outMN: [][]string{{
-			"full_name_match",
-			"prefix/test/match",
-			// "prefix_test_match", excluded by exclude filter
-			"prefixprefix/test/match",
-			"test/match/suffix",
-			"test_match_suffix",
-			"test/match/suffixsuffix",
-			"test/contains/match",
-			// "test_contains_match", excluded by exclude filter
-			"full/name/match",
-			"full_name_match",
-		}},
-	}
-
-	for len(stressTest.inMN[0]) < 1000 {
-		stressTest.inMN[0] = append(stressTest.inMN[0], metricsWithName(inMetricNames)...)
-	}
-
-	benchmarkTests := append(standardTests, stressTest)
-
-	for _, test := range benchmarkTests {
-		// next stores the results of the filter metric processor
-		next := &etest.SinkMetricsExporter{}
-		cfg := &Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
-			Metrics: MetricFilters{
-				Include: test.inc,
-				Exclude: test.exc,
-			},
-		}
-		factory := NewFactory()
-		fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, next)
-		assert.NotNil(b, fmp)
-		assert.Nil(b, err)
-
-		md := consumerdata.MetricsData{
-			Metrics: make([]*metricspb.Metric, len(test.inMN)),
-		}
-
-		mds := make([]consumerdata.MetricsData, len(test.inMN))
-		for i, metrics := range test.inMN {
-			mds[i] = consumerdata.MetricsData{
-				Metrics: metrics,
-			}
-		}
-
-		pdm := internaldata.OCToMetrics(md)
-		b.Run(test.name, func(b *testing.B) {
-			assert.NoError(b, fmp.ConsumeMetrics(context.Background(), pdm))
-		})
-	}
-}
-
 func metricsWithName(names []string) []*metricspb.Metric {
 	ret := make([]*metricspb.Metric, len(names))
 	now := time.Now()
@@ -335,4 +267,55 @@ func metricsWithName(names []string) []*metricspb.Metric {
 		}
 	}
 	return ret
+}
+
+func BenchmarkFilter(b *testing.B) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	pcfg := cfg.(*Config)
+	pcfg.Metrics = MetricFilters{
+		Exclude: &filtermetric.MatchProperties{
+			Config: filterset.Config{
+				MatchType: "strict",
+			},
+			MetricNames: []string{"p10_metric_0"},
+		},
+	}
+	next := &etest.SinkMetricsExporter{}
+	ctx := context.Background()
+	proc, _ := factory.CreateMetricsProcessor(
+		ctx,
+		component.ProcessorCreateParams{},
+		cfg,
+		next,
+	)
+	mds := metricSlice(128)
+	for i := 0; i < b.N; i++ {
+		for _, md := range mds {
+			_ = proc.ConsumeMetrics(ctx, md)
+		}
+	}
+}
+
+func metricSlice(numMetrics int) []pdata.Metrics {
+	var out []pdata.Metrics
+	for i := 0; i < numMetrics; i++ {
+		const size = 2
+		out = append(out, pdm(fmt.Sprintf("p%d_", i), size))
+	}
+	return out
+}
+
+func pdm(prefix string, size int) pdata.Metrics {
+	c := goldendataset.MetricCfg{
+		MetricDescriptorType: pdata.MetricDataTypeIntGauge,
+		MetricNamePrefix:     prefix,
+		NumILMPerResource:    size,
+		NumMetricsPerILM:     size,
+		NumPtLabels:          size,
+		NumPtsPerMetric:      size,
+		NumResourceAttrs:     size,
+		NumResourceMetrics:   size,
+	}
+	return goldendataset.MetricDataFromCfg(c)
 }
