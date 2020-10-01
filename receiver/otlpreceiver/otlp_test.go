@@ -75,7 +75,7 @@ var traceJSON = []byte(`
 			  "spans": [
 				{
 				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
-				  "span_id": "7uGbfsPBsXM=",
+				  "span_id": "EEE19B7EC3C1B173",
 				  "name": "testSpan",
 				  "start_time_unix_nano": 1544712660000000000,
 				  "end_time_unix_nano": 1544712661000000000,
@@ -108,7 +108,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 			Spans: []*otlptrace.Span{
 				{
 					TraceId:           otlpcommon.NewTraceID([]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
-					SpanId:            []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
+					SpanId:            otlpcommon.NewSpanID([]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
 					Name:              "testSpan",
 					StartTimeUnixNano: 1544712660000000000,
 					EndTimeUnixNano:   1544712661000000000,

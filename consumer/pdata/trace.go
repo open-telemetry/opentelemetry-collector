@@ -15,8 +15,6 @@
 package pdata
 
 import (
-	"encoding/hex"
-
 	"github.com/gogo/protobuf/proto"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
@@ -104,17 +102,6 @@ func (td Traces) Size() int {
 func (td Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(td.orig)
 }
-
-type SpanID []byte
-
-// NewSpanID returns a new SpanID.
-func NewSpanID(bytes []byte) SpanID { return bytes }
-
-func (s SpanID) Bytes() []byte {
-	return s
-}
-
-func (s SpanID) String() string { return hex.EncodeToString(s) }
 
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string

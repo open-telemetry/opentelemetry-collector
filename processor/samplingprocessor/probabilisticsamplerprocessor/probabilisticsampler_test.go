@@ -465,7 +465,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			for k := 0; k < numTracesPerBatch; k++ {
 				span := ils.Spans().At(k)
 				span.SetTraceID(tracetranslator.UInt64ToTraceID(r.Uint64(), r.Uint64()))
-				span.SetSpanID(tracetranslator.UInt64ToByteSpanID(r.Uint64()))
+				span.SetSpanID(tracetranslator.UInt64ToSpanID(r.Uint64()))
 				attributes := make(map[string]pdata.AttributeValue)
 				attributes[tracetranslator.TagHTTPStatusCode] = pdata.NewAttributeValueInt(404)
 				attributes[tracetranslator.TagHTTPStatusMsg] = pdata.NewAttributeValueString("Not Found")

@@ -128,14 +128,14 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.InitEmpty()
 
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
-	dest.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(zspan.ID)))
+	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(zspan.ID)))
 	if value, ok := tags[tracetranslator.TagW3CTraceState]; ok {
 		dest.SetTraceState(pdata.TraceState(value))
 		delete(tags, tracetranslator.TagW3CTraceState)
 	}
 	parentID := zspan.ParentID
 	if parentID != nil && *parentID != zspan.ID {
-		dest.SetParentSpanID(tracetranslator.UInt64ToByteSpanID(uint64(*parentID)))
+		dest.SetParentSpanID(tracetranslator.UInt64ToSpanID(uint64(*parentID)))
 	}
 
 	dest.SetName(zspan.Name)

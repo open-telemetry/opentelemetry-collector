@@ -591,7 +591,7 @@ func (ms Span) SpanID() SpanID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = []byte(v)
+	(*ms.orig).SpanId = otlpcommon.SpanID(v)
 }
 
 // TraceState returns the tracestate associated with this Span.
@@ -619,7 +619,7 @@ func (ms Span) ParentSpanID() SpanID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) SetParentSpanID(v SpanID) {
-	(*ms.orig).ParentSpanId = []byte(v)
+	(*ms.orig).ParentSpanId = otlpcommon.SpanID(v)
 }
 
 // Name returns the name associated with this Span.
@@ -1190,7 +1190,7 @@ func (ms SpanLink) SpanID() SpanID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanLink) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = []byte(v)
+	(*ms.orig).SpanId = otlpcommon.SpanID(v)
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
