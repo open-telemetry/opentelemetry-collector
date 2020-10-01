@@ -167,9 +167,16 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
+
+			// Combine all individual batches into a single batch so
+			// consumers may operate on the entire trace
+			allSpans := pdata.NewTraces()
 			for j := 0; j < len(traceBatches); j++ {
-				_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, internaldata.OCToTraceData(traceBatches[j]))
+				batch := internaldata.OCToTraceData(traceBatches[j])
+				batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
 			}
+
+			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
 		}
 	}
 
