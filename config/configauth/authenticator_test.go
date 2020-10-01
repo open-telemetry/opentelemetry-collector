@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package configauth
 
 import (
 	"context"
@@ -22,14 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-
-	"go.opentelemetry.io/collector/config/configauth"
 )
 
-func TestNew(t *testing.T) {
+func TestNewAuthenticator(t *testing.T) {
 	// test
-	p, err := New(configauth.Authentication{
-		OIDC: &configauth.OIDC{
+	p, err := NewAuthenticator(Authentication{
+		OIDC: &OIDC{
 			Audience:  "some-audience",
 			IssuerURL: "http://example.com",
 		},
@@ -42,7 +40,7 @@ func TestNew(t *testing.T) {
 
 func TestMissingOIDC(t *testing.T) {
 	// test
-	p, err := New(configauth.Authentication{})
+	p, err := NewAuthenticator(Authentication{})
 
 	// verify
 	assert.Nil(t, p)
