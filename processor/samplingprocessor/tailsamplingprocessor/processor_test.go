@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -363,25 +364,72 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	require.EqualValues(t, 3, len(msp.AllTraces()), "There should be three batches, one for each trace")
 
+	expectedSpanIds := make(map[int][]pdata.SpanID)
+	expectedSpanIds[0] = []pdata.SpanID{
+		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(1))),
+	}
+	expectedSpanIds[1] = []pdata.SpanID{
+		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(2))),
+		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(3))),
+	}
+	expectedSpanIds[2] = []pdata.SpanID{
+		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(4))),
+		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(5))),
+		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(6))),
+	}
+
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIds {
-		trace := receivedTraces[findTrace(receivedTraces, traceID)]
+		trace := findTrace(receivedTraces, traceID)
+		require.NotNil(t, trace, "Trace was not received. TraceId %s", traceID.HexString())
 		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+
+		expected := expectedSpanIds[i]
+		got := collectSpanIds(trace)
+
+		// might have received out of order, sort for comparison
+		sort.Slice(got, func(i, j int) bool {
+			a, _ := tracetranslator.BytesToInt64SpanID(got[i])
+			b, _ := tracetranslator.BytesToInt64SpanID(got[j])
+			return a < b
+		})
+
+		require.EqualValues(t, expected, got)
 	}
 }
 
-func findTrace(a []pdata.Traces, traceID pdata.TraceID) int {
-	for i, batch := range a {
-		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-		if bytes.Equal(traceID.Bytes(), id.Bytes()) {
-			return i
+func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
+	spanIDs := make([]pdata.SpanID, 0)
+
+	for i := 0; i < trace.ResourceSpans().Len(); i++ {
+		ilss := trace.ResourceSpans().At(i).InstrumentationLibrarySpans()
+
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+
+			for k := 0; k < ils.Spans().Len(); k++ {
+				span := ils.Spans().At(k)
+				spanIDs = append(spanIDs, span.SpanID())
+			}
 		}
 	}
-	return len(a)
+
+	return spanIDs
+}
+
+func findTrace(a []pdata.Traces, traceID pdata.TraceID) *pdata.Traces {
+	for _, batch := range a {
+		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+		if bytes.Equal(traceID.Bytes(), id.Bytes()) {
+			return &batch
+		}
+	}
+	return nil
 }
 
 func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	traceIds := make([]pdata.TraceID, numIds)
+	spanID := 0
 	var tds []pdata.Traces
 	for i := 0; i < numIds; i++ {
 		traceIds[i] = tracetranslator.UInt64ToTraceID(1, uint64(i+1))
@@ -390,7 +438,9 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 			td := testdata.GenerateTraceDataOneSpan()
 			span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			span.SetTraceID(traceIds[i])
-			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(i + 1)))
+
+			spanID++
+			span.SetSpanID(tracetranslator.UInt64ToByteSpanID(uint64(spanID)))
 			tds = append(tds, td)
 		}
 	}
