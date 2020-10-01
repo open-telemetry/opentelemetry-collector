@@ -19,8 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -38,9 +36,6 @@ func TestDefaultConfiguration(t *testing.T) {
 
 func TestCreateTestProcessor(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
 
 	params := component.ProcessorCreateParams{
 		Logger: logger,

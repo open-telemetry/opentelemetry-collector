@@ -17,7 +17,6 @@ package groupbytraceprocessor
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -107,7 +106,6 @@ func TestInternalCacheLimit(t *testing.T) {
 	mockProcessor.onTraces = func(ctx context.Context, received pdata.Traces) error {
 		traceID := received.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
 		receivedTraceIDs = append(receivedTraceIDs, traceID)
-		fmt.Println("received trace")
 		wg.Done()
 		return nil
 	}
@@ -141,7 +139,6 @@ func TestInternalCacheLimit(t *testing.T) {
 			}},
 		}}
 
-		fmt.Println("sent trace")
 		p.ConsumeTraces(ctx, pdata.TracesFromOtlp(batch))
 	}
 
@@ -208,7 +205,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	require.Error(t, err)
 
 	// test
-	err = p.onTraceReceived(batch)
+	err = p.onBatchReceived(batch)
 
 	// verify
 	assert.NoError(t, err)
@@ -771,6 +768,8 @@ type mockStorage struct {
 	onCreateOrAppend func(pdata.TraceID, pdata.ResourceSpans) error
 	onGet            func(pdata.TraceID) ([]pdata.ResourceSpans, error)
 	onDelete         func(pdata.TraceID) ([]pdata.ResourceSpans, error)
+	onStart          func() error
+	onShutdown       func() error
 }
 
 var _ storage = (*mockStorage)(nil)
@@ -792,4 +791,16 @@ func (st *mockStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, err
 		return st.onDelete(traceID)
 	}
 	return nil, nil
+}
+func (st *mockStorage) start() error {
+	if st.onStart != nil {
+		return st.onStart()
+	}
+	return nil
+}
+func (st *mockStorage) shutdown() error {
+	if st.onShutdown != nil {
+		return st.onShutdown()
+	}
+	return nil
 }

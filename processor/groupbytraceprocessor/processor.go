@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -38,7 +39,7 @@ var (
 // Each in-flight trace is registered with a go routine, which will be called after the given duration and dispatched to the event
 // machine for further processing.
 // The typical data flow looks like this:
-// ConsumeTraces -> event(traceReceived) -> onTraceReceived -> AfterFunc(duration, event(traceExpired)) -> onTraceExpired
+// ConsumeTraces -> event(traceReceived) -> onBatchReceived -> AfterFunc(duration, event(traceExpired)) -> onTraceExpired
 // async markAsReleased -> event(traceReleased) -> onTraceReleased -> nextConsumer
 // This processor uses also a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
@@ -61,8 +62,8 @@ var _ component.TraceProcessor = (*groupByTraceProcessor)(nil)
 
 // newGroupByTraceProcessor returns a new processor.
 func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TraceConsumer, config Config) (*groupByTraceProcessor, error) {
-	// the event machine will buffer up to 200 concurrent events before blocking
-	eventMachine := newEventMachine(logger, 200)
+	// the event machine will buffer up to N concurrent events before blocking
+	eventMachine := newEventMachine(logger, 10000)
 
 	sp := &groupByTraceProcessor{
 		logger:       logger,
@@ -74,7 +75,7 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 	}
 
 	// register the callbacks
-	eventMachine.onTraceReceived = sp.onTraceReceived
+	eventMachine.onBatchReceived = sp.onBatchReceived
 	eventMachine.onTraceExpired = sp.onTraceExpired
 	eventMachine.onTraceReleased = sp.onTraceReleased
 	eventMachine.onTraceRemoved = sp.onTraceRemoved
@@ -96,20 +97,25 @@ func (sp *groupByTraceProcessor) GetCapabilities() component.ProcessorCapabiliti
 
 // Start is invoked during service startup.
 func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
+	// start these metrics, as it might take a while for them to receive their first event
+	stats.Record(context.Background(), mTracesEvicted.M(0))
+	stats.Record(context.Background(), mIncompleteReleases.M(0))
+	stats.Record(context.Background(), mNumTracesConf.M(int64(sp.config.NumTraces)))
+
 	sp.eventMachine.startInBackground()
-	return nil
+	return sp.st.start()
 }
 
 // Shutdown is invoked during service shutdown.
 func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 	sp.eventMachine.shutdown()
-	return nil
+	return sp.st.shutdown()
 }
 
-func (sp *groupByTraceProcessor) onTraceReceived(batch pdata.Traces) error {
+func (sp *groupByTraceProcessor) onBatchReceived(batch pdata.Traces) error {
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		if err := sp.processResourceSpans(batch.ResourceSpans().At(i)); err != nil {
-			sp.logger.Info("failed to process trace", zap.Error(err))
+			sp.logger.Info("failed to process batch", zap.Error(err))
 		}
 	}
 
@@ -124,7 +130,7 @@ func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) er
 
 	for _, batch := range splitByTrace(rs) {
 		if err := sp.processBatch(batch); err != nil {
-			sp.logger.Info("failed to process batch", zap.Error(err),
+			sp.logger.Warn("failed to process batch", zap.Error(err),
 				zap.String("traceID", batch.traceID.HexString()))
 		}
 	}
@@ -156,7 +162,8 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 			payload: evicted,
 		})
 
-		// TODO: do we want another channel that receives evicted items? record a metric perhaps?
+		stats.Record(context.Background(), mTracesEvicted.M(1))
+
 		sp.logger.Info("trace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
 			zap.String("traceID", evicted.HexString()))
 	}
@@ -188,6 +195,8 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
 		// and released this trace already
 		sp.logger.Debug("skipping the processing of expired trace",
 			zap.String("traceID", traceID.HexString()))
+
+		stats.Record(context.Background(), mIncompleteReleases.M(1))
 		return nil
 	}
 
@@ -233,6 +242,8 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) erro
 	for _, rs := range rss {
 		trace.ResourceSpans().Append(rs)
 	}
+	stats.Record(context.Background(), mReleasedSpans.M(int64(trace.SpanCount())))
+	stats.Record(context.Background(), mReleasedTraces.M(1))
 	return sp.nextConsumer.ConsumeTraces(context.Background(), trace)
 }
 
