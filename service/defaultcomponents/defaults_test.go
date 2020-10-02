@@ -52,7 +52,6 @@ func TestDefaultComponents(t *testing.T) {
 		"probabilistic_sampler",
 		"span",
 		"filter",
-		"groupbytrace",
 	}
 	expectedExporters := []configmodels.Type{
 		"opencensus",

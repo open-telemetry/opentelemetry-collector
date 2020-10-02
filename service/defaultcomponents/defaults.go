@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/filterprocessor"
-	"go.opentelemetry.io/collector/processor/groupbytraceprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
 	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
@@ -108,7 +107,6 @@ func Components() (
 		probabilisticsamplerprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
-		groupbytraceprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)
