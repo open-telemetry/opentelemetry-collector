@@ -130,21 +130,38 @@ func (ts *testClose) close(context.Context) error {
 	return ts.err
 }
 
-type testScrape struct {
+type testScrapeMetrics struct {
 	ch                chan int
 	timesScrapeCalled int
 	err               error
 }
 
-func (ts *testScrape) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (ts *testScrapeMetrics) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 	ts.timesScrapeCalled++
 	ts.ch <- ts.timesScrapeCalled
 
 	if ts.err != nil {
-		return pdata.NewMetrics(), ts.err
+		return pdata.NewMetricSlice(), ts.err
 	}
 
 	return singleMetric(), nil
+}
+
+type testScrapeResourceMetrics struct {
+	ch                chan int
+	timesScrapeCalled int
+	err               error
+}
+
+func (ts *testScrapeResourceMetrics) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+	ts.timesScrapeCalled++
+	ts.ch <- ts.timesScrapeCalled
+
+	if ts.err != nil {
+		return pdata.NewResourceMetricsSlice(), ts.err
+	}
+
+	return singleResourceMetric(), nil
 }
 
 type metricsTestCase struct {
@@ -156,6 +173,7 @@ type metricsTestCase struct {
 	shutdownErr error
 
 	scrapers                  int
+	resourceScrapers          int
 	defaultCollectionInterval time.Duration
 	scraperSettings           ScraperSettings
 	nilNextConsumer           bool
@@ -187,42 +205,80 @@ func TestMetricReceiver(t *testing.T) {
 			shutdownErr: errors.New("err2"),
 		},
 		{
-			name:                      "AddScrapersWithDefaultCollectionInterval",
+			name:                      "AddMetricsScrapersWithDefaultCollectionInterval",
 			scrapers:                  2,
 			defaultCollectionInterval: time.Millisecond,
 			expectScraped:             true,
 		},
 		{
-			name:            "AddScrapersWithCollectionInterval",
+			name:            "AddMetricsScrapersWithCollectionInterval",
 			scrapers:        2,
 			scraperSettings: ScraperSettings{CollectionIntervalVal: time.Millisecond},
 			expectScraped:   true,
 		},
 		{
-			name:            "AddScrapers_NewError",
+			name:            "AddMetricsScrapers_NewError",
 			scrapers:        2,
 			nilNextConsumer: true,
 			expectedNewErr:  "nil nextConsumer",
 		},
 		{
-			name:                      "AddScrapers_ScrapeError",
+			name:                      "AddMetricsScrapers_ScrapeError",
 			scrapers:                  2,
 			defaultCollectionInterval: time.Millisecond,
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
-			name:       "AddScrapersWithInitializeAndClose",
+			name:       "AddMetricsScrapersWithInitializeAndClose",
 			scrapers:   2,
 			initialize: true,
 			close:      true,
 		},
 		{
-			name:          "AddScrapersWithInitializeAndCloseErrors",
+			name:          "AddMetricsScrapersWithInitializeAndCloseErrors",
 			scrapers:      2,
 			initialize:    true,
 			close:         true,
 			initializeErr: errors.New("err1"),
 			closeErr:      errors.New("err2"),
+		},
+		{
+			name:                      "AddResourceMetricsScrapersWithDefaultCollectionInterval",
+			resourceScrapers:          2,
+			defaultCollectionInterval: time.Millisecond,
+			expectScraped:             true,
+		},
+		{
+			name:             "AddResourceMetricsScrapersWithCollectionInterval",
+			resourceScrapers: 2,
+			scraperSettings:  ScraperSettings{CollectionIntervalVal: time.Millisecond},
+			expectScraped:    true,
+		},
+		{
+			name:             "AddResourceMetricsScrapers_NewError",
+			resourceScrapers: 2,
+			nilNextConsumer:  true,
+			expectedNewErr:   "nil nextConsumer",
+		},
+		{
+			name:                      "AddResourceMetricsScrapers_ScrapeError",
+			resourceScrapers:          2,
+			defaultCollectionInterval: time.Millisecond,
+			scrapeErr:                 errors.New("err1"),
+		},
+		{
+			name:             "AddResourceMetricsScrapersWithInitializeAndClose",
+			resourceScrapers: 2,
+			initialize:       true,
+			close:            true,
+		},
+		{
+			name:             "AddResourceMetricsScrapersWithInitializeAndCloseErrors",
+			resourceScrapers: 2,
+			initialize:       true,
+			close:            true,
+			initializeErr:    errors.New("err1"),
+			closeErr:         errors.New("err2"),
 		},
 	}
 
@@ -232,10 +288,11 @@ func TestMetricReceiver(t *testing.T) {
 			shutdownCh := make(chan bool, 1)
 			baseOptions := configureBaseOptions(test.start, test.shutdown, test.startErr, test.shutdownErr, startCh, shutdownCh)
 
-			initializeChs := make([]chan bool, test.scrapers)
-			scrapeChs := make([]chan int, test.scrapers)
-			closeChs := make([]chan bool, test.scrapers)
-			options := configureMetricOptions(baseOptions, test, initializeChs, scrapeChs, closeChs)
+			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
+			scrapeMetricsChs := make([]chan int, test.scrapers)
+			scrapeResourceMetricsChs := make([]chan int, test.resourceScrapers)
+			closeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
+			options := configureMetricOptions(baseOptions, test, initializeChs, scrapeMetricsChs, scrapeResourceMetricsChs, closeChs)
 
 			var nextConsumer consumer.MetricsConsumer
 			sink := &exportertest.SinkMetricsExporter{}
@@ -267,11 +324,14 @@ func TestMetricReceiver(t *testing.T) {
 
 			// validate that scrape is called at least 5 times for each configured scraper
 			if test.expectScraped {
-				for _, ch := range scrapeChs {
+				for _, ch := range scrapeMetricsChs {
+					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
+				}
+				for _, ch := range scrapeResourceMetricsChs {
 					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
 				}
 
-				assert.Greater(t, sink.MetricsCount(), 5)
+				assert.GreaterOrEqual(t, sink.MetricsCount(), 5)
 			}
 
 			err = mr.Shutdown(context.Background())
@@ -303,7 +363,7 @@ func configureBaseOptions(start, shutdown bool, startErr, shutdownErr error, sta
 	return baseOptions
 }
 
-func configureMetricOptions(baseOptions []Option, test metricsTestCase, initializeChs []chan bool, scrapeChs []chan int, closeChs []chan bool) []MetricOption {
+func configureMetricOptions(baseOptions []Option, test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs, testScrapeResourceMetricsChs []chan int, closeChs []chan bool) []MetricOption {
 	metricOptions := []MetricOption{}
 	metricOptions = append(metricOptions, WithBaseOptions(baseOptions...))
 
@@ -324,9 +384,27 @@ func configureMetricOptions(baseOptions []Option, test metricsTestCase, initiali
 			scraperOptions = append(scraperOptions, WithClose(tc.close))
 		}
 
-		scrapeChs[i] = make(chan int, 10)
-		ts := &testScrape{ch: scrapeChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddScraper(&test.scraperSettings, ts.scrape, scraperOptions...))
+		scrapeMetricsChs[i] = make(chan int, 10)
+		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
+		metricOptions = append(metricOptions, AddMetricsScraper(&test.scraperSettings, tsm.scrape, scraperOptions...))
+	}
+
+	for i := 0; i < test.resourceScrapers; i++ {
+		scraperOptions := []ScraperOption{}
+		if test.initialize {
+			initializeChs[test.scrapers+i] = make(chan bool, 1)
+			ti := &testInitialize{ch: initializeChs[test.scrapers+i], err: test.initializeErr}
+			scraperOptions = append(scraperOptions, WithInitialize(ti.initialize))
+		}
+		if test.close {
+			closeChs[test.scrapers+i] = make(chan bool, 1)
+			tc := &testClose{ch: closeChs[test.scrapers+i], err: test.closeErr}
+			scraperOptions = append(scraperOptions, WithClose(tc.close))
+		}
+
+		testScrapeResourceMetricsChs[i] = make(chan int, 10)
+		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
+		metricOptions = append(metricOptions, AddResourceMetricsScraper(&test.scraperSettings, tsrm.scrape, scraperOptions...))
 	}
 
 	return metricOptions
@@ -369,15 +447,20 @@ func assertChannelCalled(t *testing.T, ch chan bool, message string) {
 		assert.Fail(t, message)
 	}
 }
-func singleMetric() pdata.Metrics {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
+
+func singleMetric() pdata.MetricSlice {
+	metrics := pdata.NewMetricSlice()
+	metrics.Resize(1)
+	return metrics
+}
+
+func singleResourceMetric() pdata.ResourceMetricsSlice {
+	rms := pdata.NewResourceMetricsSlice()
 	rms.Resize(1)
 	rm := rms.At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilms.Resize(1)
 	ilm := ilms.At(0)
-	metrics := ilm.Metrics()
-	metrics.Resize(1)
-	return md
+	singleMetric().MoveAndAppendTo(ilm.Metrics())
+	return rms
 }
