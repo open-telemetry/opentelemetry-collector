@@ -319,3 +319,26 @@ func pdm(prefix string, size int) pdata.Metrics {
 	}
 	return goldendataset.MetricDataFromCfg(c)
 }
+
+func TestMetricIndexSingle(t *testing.T) {
+	metrics := pdm("", 1)
+	idx := newMetricIndex()
+	idx.add(0, 0, 0)
+	extracted := idx.extract(metrics)
+	require.Equal(t, metrics, extracted)
+}
+
+func TestMetricIndexAll(t *testing.T) {
+	metrics := pdm("", 2)
+	idx := newMetricIndex()
+	idx.add(0, 0, 0)
+	idx.add(0, 0, 1)
+	idx.add(0, 1, 0)
+	idx.add(0, 1, 1)
+	idx.add(1, 0, 0)
+	idx.add(1, 0, 1)
+	idx.add(1, 1, 0)
+	idx.add(1, 1, 1)
+	extracted := idx.extract(metrics)
+	require.Equal(t, metrics, extracted)
+}

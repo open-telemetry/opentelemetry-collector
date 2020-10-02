@@ -61,30 +61,27 @@ func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, err
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	rms := md.ResourceMetrics()
-	foundMetricToKeep := false
+func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
+	rms := pdm.ResourceMetrics()
+	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			ms := ilm.Metrics()
-			filteredMetrics := pdata.NewMetricSlice()
 			for k := 0; k < ms.Len(); k++ {
 				metric := ms.At(k)
 				if fmp.shouldKeepMetric(metric) {
-					foundMetricToKeep = true
-					filteredMetrics.Append(metric)
+					idx.add(i, j, k)
 				}
 			}
-			filteredMetrics.CopyTo(ilm.Metrics())
 		}
 	}
-	if !foundMetricToKeep {
-		return md, processorhelper.ErrSkipProcessingData
+	if idx.isEmpty() {
+		return pdm, processorhelper.ErrSkipProcessingData
 	}
-	return md, nil
+	return idx.extract(pdm), nil
 }
 
 func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) bool {
