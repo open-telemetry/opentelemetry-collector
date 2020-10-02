@@ -71,7 +71,7 @@ type MatchProperties struct {
 	// Config configures the matching patterns used when matching span properties.
 	filterset.Config `mapstructure:",squash"`
 
-	// Note: For spans, one of Services, SpanNames or Attributes must be specified with a
+	// Note: For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
 	// non-empty value for a valid configuration.
 
 	// For logs, one of LogNames or Attributes must be specified with a
@@ -96,6 +96,16 @@ type MatchProperties struct {
 	// Only match_type=strict is allowed if "attributes" are specified.
 	// This is an optional field.
 	Attributes []Attribute `mapstructure:"attributes"`
+
+	// Resources specify the list of items to match the resources against.
+	// A match occurs if the span's resources matches at least one item in this list.
+	// This is an optional field.
+	Resources []Attribute `mapstructure:"resource"`
+
+	// Libraries specify the list of items to match the implementation library against.
+	// A match occurs if the span's implementation library matches at least one item in this list.
+	// This is an optional field.
+	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
 }
 
 func (mp *MatchProperties) ValidateForSpans() error {
@@ -103,16 +113,17 @@ func (mp *MatchProperties) ValidateForSpans() error {
 		return errors.New("log_names should not be specified for trace spans")
 	}
 
-	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 {
-		return errors.New(`at least one of "services", "span_names" or "attributes" field must be specified`)
+	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
+		len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
+		return errors.New(`at least one of "services", "span_names", "attributes", "libraries" or "resources" field must be specified`)
 	}
 
 	return nil
 }
 
 func (mp *MatchProperties) ValidateForLogs() error {
-	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 {
-		return errors.New("neither services nor span_names should be specified for log records")
+	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.Resources) > 0 || len(mp.Libraries) > 0 {
+		return errors.New("neither services nor span_names nor resources nor libraries should be specified for log records")
 	}
 
 	if len(mp.LogNames) == 0 && len(mp.Attributes) == 0 {
@@ -133,4 +144,18 @@ type Attribute struct {
 	// Values specifies the value to match against.
 	// If it is not set, any value will match.
 	Value interface{} `mapstructure:"value"`
+}
+
+// InstrumentationLibrary specifies the instrumentation library and optional version to match against.
+type InstrumentationLibrary struct {
+	Name string `mapstructure:"name"`
+	// version match
+	//  expected actual  match
+	//  nil      <blank> yes
+	//  nil      1       yes
+	//  <blank>  <blank> yes
+	//  <blank>  1       no
+	//  1        <blank> no
+	//  1        1       yes
+	Version *string `mapstructure:"version"`
 }

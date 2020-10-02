@@ -15,13 +15,13 @@
 package filterspan
 
 import (
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 // TODO: Modify Matcher to invoke both the include and exclude properties so
@@ -29,7 +29,7 @@ import (
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
 type Matcher interface {
-	MatchSpan(span pdata.Span, serviceName string) bool
+	MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
 }
 
 // propertiesMatcher allows matching a span against various span properties.
@@ -40,17 +40,18 @@ type propertiesMatcher struct {
 	// Span names to compare to.
 	nameFilters filterset.FilterSet
 
+	// Instrumentation libraries to compare against
+	Libraries []instrumentationLibraryMatcher
+
 	// The attribute values are stored in the internal format.
-	Attributes attributesMatcher
+	Attributes filterhelper.AttributesMatcher
+
+	Resources filterhelper.AttributesMatcher
 }
 
-type attributesMatcher []attributeMatcher
-
-// attributeMatcher is a attribute key/value pair to match to.
-type attributeMatcher struct {
-	Key string
-	// If nil only check for key existence.
-	AttributeValue *pdata.AttributeValue
+type instrumentationLibraryMatcher struct {
+	Name    filterset.FilterSet
+	Version filterset.FilterSet
 }
 
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
@@ -63,13 +64,39 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		return nil, err
 	}
 
-	var err error
-
-	var am attributesMatcher
-	if len(mp.Attributes) > 0 {
-		am, err = newAttributesMatcher(mp)
+	var lm []instrumentationLibraryMatcher
+	for _, library := range mp.Libraries {
+		name, err := filterset.CreateFilterSet([]string{library.Name}, &mp.Config)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error creating library name filters: %v", err)
+		}
+
+		var version filterset.FilterSet
+		if library.Version != nil {
+			filter, err := filterset.CreateFilterSet([]string{*library.Version}, &mp.Config)
+			if err != nil {
+				return nil, fmt.Errorf("error creating library version filters: %v", err)
+			}
+			version = filter
+		}
+
+		lm = append(lm, instrumentationLibraryMatcher{Name: name, Version: version})
+	}
+
+	var err error
+	var am filterhelper.AttributesMatcher
+	if len(mp.Attributes) > 0 {
+		am, err = filterhelper.NewAttributesMatcher(mp.Config, mp.Attributes)
+		if err != nil {
+			return nil, fmt.Errorf("error creating attribute filters: %v", err)
+		}
+	}
+
+	var rm filterhelper.AttributesMatcher
+	if len(mp.Resources) > 0 {
+		rm, err = filterhelper.NewAttributesMatcher(mp.Config, mp.Resources)
+		if err != nil {
+			return nil, fmt.Errorf("error creating resource filters: %v", err)
 		}
 	}
 
@@ -92,41 +119,34 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	return &propertiesMatcher{
 		serviceFilters: serviceFS,
 		nameFilters:    nameFS,
+		Libraries:      lm,
 		Attributes:     am,
+		Resources:      rm,
 	}, nil
 }
 
-func newAttributesMatcher(mp *filterconfig.MatchProperties) (attributesMatcher, error) {
-	// attribute matching is only supported with strict matching
-	if mp.Config.MatchType != filterset.Strict {
-		return nil, fmt.Errorf(
-			"%s=%s is not supported for %q",
-			filterset.MatchTypeFieldName, filterset.Regexp, filterconfig.AttributesFieldName,
-		)
+// SkipSpan determines if a span should be processed.
+// True is returned when a span should be skipped.
+// False is returned when a span should not be skipped.
+// The logic determining if a span should be processed is set
+// in the attribute configuration with the include and exclude settings.
+// Include properties are checked before exclude settings are checked.
+func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+	if include != nil {
+		// A false returned in this case means the span should not be processed.
+		if i := include.MatchSpan(span, resource, library); !i {
+			return true
+		}
 	}
 
-	// Convert attribute values from mp representation to in-memory representation.
-	var rawAttributes []attributeMatcher
-	for _, attribute := range mp.Attributes {
-
-		if attribute.Key == "" {
-			return nil, errors.New("error creating processor. Can't have empty key in the list of attributes")
+	if exclude != nil {
+		// A true returned in this case means the span should not be processed.
+		if e := exclude.MatchSpan(span, resource, library); e {
+			return true
 		}
-
-		entry := attributeMatcher{
-			Key: attribute.Key,
-		}
-		if attribute.Value != nil {
-			val, err := filterhelper.NewAttributeValueRaw(attribute.Value)
-			if err != nil {
-				return nil, err
-			}
-			entry.AttributeValue = &val
-		}
-
-		rawAttributes = append(rawAttributes, entry)
 	}
-	return rawAttributes, nil
+
+	return false
 }
 
 // MatchSpan matches a span and service to a set of properties.
@@ -136,49 +156,46 @@ func newAttributesMatcher(mp *filterconfig.MatchProperties) (attributesMatcher, 
 // At least one of services, span names or attributes must be specified. It is supported
 // to have more than one of these specified, and all specified must evaluate
 // to true for a match to occur.
-func (mp *propertiesMatcher) MatchSpan(span pdata.Span, serviceName string) bool {
+func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
-	if mp.serviceFilters != nil && !mp.serviceFilters.Matches(serviceName) {
-		return false
+	if mp.serviceFilters != nil {
+		serviceName := serviceNameForResource(resource)
+		if !mp.serviceFilters.Matches(serviceName) {
+			return false
+		}
 	}
 
 	if mp.nameFilters != nil && !mp.nameFilters.Matches(span.Name()) {
 		return false
 	}
 
-	// Service name and span name matched. Now match attributes.
-	return mp.Attributes.match(span)
-}
-
-// match attributes specification against a span.
-func (ma attributesMatcher) match(span pdata.Span) bool {
-	// If there are no attributes to match against, the span matches.
-	if len(ma) == 0 {
-		return true
+	for _, matcher := range mp.Libraries {
+		if !matcher.Name.Matches(library.Name()) {
+			return false
+		}
+		if matcher.Version != nil && !matcher.Version.Matches(library.Version()) {
+			return false
+		}
 	}
 
-	attrs := span.Attributes()
-	// At this point, it is expected of the span to have attributes because of
-	// len(ma) != 0. This means for spans with no attributes, it does not match.
-	if attrs.Len() == 0 {
+	attributes := span.Attributes()
+	if mp.Resources != nil && !mp.Resources.Match(attributes) {
 		return false
 	}
 
-	// Check that all expected properties are set.
-	for _, property := range ma {
-		attr, exist := attrs.Get(property.Key)
-		if !exist {
-			return false
-		}
+	return mp.Attributes.Match(attributes)
+}
 
-		// This is for the case of checking that the key existed.
-		if property.AttributeValue == nil {
-			continue
-		}
-
-		if !attr.Equal(*property.AttributeValue) {
-			return false
-		}
+// serviceNameForResource gets the service name for a specified Resource.
+func serviceNameForResource(resource pdata.Resource) string {
+	if resource.IsNil() {
+		return "<nil-resource>"
 	}
-	return true
+
+	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
+	if !found {
+		return "<nil-service-name>"
+	}
+
+	return service.StringVal()
 }

@@ -15,7 +15,6 @@
 package filterlog
 
 import (
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,16 +37,7 @@ type propertiesMatcher struct {
 	nameFilters filterset.FilterSet
 
 	// The attribute values are stored in the internal format.
-	Attributes attributesMatcher
-}
-
-type attributesMatcher []attributeMatcher
-
-// attributeMatcher is a attribute key/value pair to match to.
-type attributeMatcher struct {
-	Key string
-	// If nil only check for key existence.
-	AttributeValue *pdata.AttributeValue
+	Attributes filterhelper.AttributesMatcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -62,9 +52,9 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 
 	var err error
 
-	var am attributesMatcher
+	var am filterhelper.AttributesMatcher
 	if len(mp.Attributes) > 0 {
-		am, err = newAttributesMatcher(mp)
+		am, err = filterhelper.NewAttributesMatcher(mp.Config, mp.Attributes)
 		if err != nil {
 			return nil, err
 		}
@@ -84,39 +74,6 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	}, nil
 }
 
-func newAttributesMatcher(mp *filterconfig.MatchProperties) (attributesMatcher, error) {
-	// attribute matching is only supported with strict matching
-	if mp.Config.MatchType != filterset.Strict {
-		return nil, fmt.Errorf(
-			"%s=%s is not supported for %q",
-			filterset.MatchTypeFieldName, filterset.Regexp, filterconfig.AttributesFieldName,
-		)
-	}
-
-	// Convert attribute values from mp representation to in-memory representation.
-	var rawAttributes []attributeMatcher
-	for _, attribute := range mp.Attributes {
-
-		if attribute.Key == "" {
-			return nil, errors.New("error creating processor. Can't have empty key in the list of attributes")
-		}
-
-		entry := attributeMatcher{
-			Key: attribute.Key,
-		}
-		if attribute.Value != nil {
-			val, err := filterhelper.NewAttributeValueRaw(attribute.Value)
-			if err != nil {
-				return nil, err
-			}
-			entry.AttributeValue = &val
-		}
-
-		rawAttributes = append(rawAttributes, entry)
-	}
-	return rawAttributes, nil
-}
-
 // MatchLogRecord matches a log record to a set of properties.
 // There are 3 sets of properties to match against.
 // The log record names are matched, if specified.
@@ -129,39 +86,5 @@ func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord) bool {
 		return false
 	}
 
-	return mp.Attributes.match(lr)
-}
-
-// match attributes specification against a log record.
-func (ma attributesMatcher) match(lr pdata.LogRecord) bool {
-	// If there are no attributes to match against, the log matches.
-	if len(ma) == 0 {
-		return true
-	}
-
-	attrs := lr.Attributes()
-	// At this point, it is expected of the log record to have attributes
-	// because of len(ma) != 0. This means for log records with no attributes,
-	// it does not match.
-	if attrs.Len() == 0 {
-		return false
-	}
-
-	// Check that all expected properties are set.
-	for _, property := range ma {
-		attr, exist := attrs.Get(property.Key)
-		if !exist {
-			return false
-		}
-
-		// This is for the case of checking that the key existed.
-		if property.AttributeValue == nil {
-			continue
-		}
-
-		if !attr.Equal(*property.AttributeValue) {
-			return false
-		}
-	}
-	return true
+	return mp.Attributes.Match(lr.Attributes())
 }

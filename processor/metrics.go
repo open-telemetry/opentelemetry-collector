@@ -148,21 +148,6 @@ func ServiceNameForNode(node *commonpb.Node) string {
 	}
 }
 
-// ServiceNameForResource gets the service name for a specified Resource.
-// TODO: Find a better package for this function.
-func ServiceNameForResource(resource pdata.Resource) string {
-	if resource.IsNil() {
-		return "<nil-resource>"
-	}
-
-	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
-	if !found {
-		return "<nil-service-name>"
-	}
-
-	return service.StringVal()
-}
-
 // RecordsSpanCountMetrics reports span count metrics for specified measure.
 func RecordsSpanCountMetrics(ctx context.Context, scm *SpanCountStats, measure *stats.Int64Measure) {
 	if scm.isDetailed {

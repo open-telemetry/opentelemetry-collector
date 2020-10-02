@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
@@ -54,7 +55,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			property: filterconfig.MatchProperties{
 				SpanNames: []string{"span"},
 			},
-			errorString: "neither services nor span_names should be specified for log records",
+			errorString: "neither services nor span_names nor resources nor libraries should be specified for log records",
 		},
 		{
 			name: "invalid_match_type",
@@ -70,16 +71,6 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 				LogNames: []string{"abc"},
 			},
 			errorString: "error creating log record name filters: unrecognized match_type: '', valid types are: [regexp strict]",
-		},
-		{
-			name: "regexp_match_type_for_attributes",
-			property: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Regexp),
-				Attributes: []filterconfig.Attribute{
-					{Key: "key", Value: "value"},
-				},
-			},
-			errorString: `match_type=regexp is not supported for "attributes"`,
 		},
 		{
 			name: "invalid_regexp_pattern",
@@ -349,7 +340,7 @@ func TestLogRecord_validateMatchesConfigurationForAttributes(t *testing.T) {
 				},
 			},
 			output: &propertiesMatcher{
-				Attributes: []attributeMatcher{
+				Attributes: []filterhelper.AttributeMatcher{
 					{
 						Key: "key1",
 					},
@@ -376,7 +367,7 @@ func TestLogRecord_validateMatchesConfigurationForAttributes(t *testing.T) {
 				},
 			},
 			output: &propertiesMatcher{
-				Attributes: []attributeMatcher{
+				Attributes: []filterhelper.AttributeMatcher{
 					{
 						Key: "key1",
 					},
