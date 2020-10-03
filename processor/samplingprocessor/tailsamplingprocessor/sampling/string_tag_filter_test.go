@@ -15,8 +15,10 @@
 package sampling
 
 import (
+	"math"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -94,4 +96,19 @@ func newTraceStringAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey 
 	return &TraceData{
 		ReceivedBatches: traceBatches,
 	}
+}
+
+func TestOnDroppedSpans_StringAttribute(t *testing.T) {
+	var empty = map[string]pdata.AttributeValue{}
+	u, _ := uuid.NewRandom()
+	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"})
+	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	assert.Nil(t, err)
+	assert.Equal(t, decision, NotSampled)
+}
+
+func TestOnLateArrivingSpans_StringAttribute(t *testing.T) {
+	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"})
+	err := filter.OnLateArrivingSpans(NotSampled, nil)
+	assert.Nil(t, err)
 }

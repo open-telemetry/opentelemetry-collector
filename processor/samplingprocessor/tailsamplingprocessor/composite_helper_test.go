@@ -39,7 +39,7 @@ func TestCompositeHelper(t *testing.T) {
 				Type: Composite,
 				CompositeCfg: CompositeCfg{
 					MaxTotalSpansPerSecond: 1000,
-					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2"},
+					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3", "test-composite-policy-4", "test-composite-policy-5"},
 					SubPolicyCfg: []SubPolicyCfg{
 						{
 							Name:                "test-composite-policy-1",
@@ -50,6 +50,18 @@ func TestCompositeHelper(t *testing.T) {
 							Name:               "test-composite-policy-2",
 							Type:               StringAttribute,
 							StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+						},
+						{
+							Name:            "test-composite-policy-3",
+							Type:            RateLimiting,
+							RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+						},
+						{
+							Name: "test-composite-policy-4",
+							Type: AlwaysSample,
+						},
+						{
+							Name: "test-composite-policy-5",
 						},
 					},
 					RateAllocation: []RateAllocationCfg{
@@ -70,5 +82,4 @@ func TestCompositeHelper(t *testing.T) {
 	composite, e := getNewCompositePolicy(zap.NewNop(), rlfCfg)
 	require.NotNil(t, composite)
 	require.Nil(t, e)
-
 }

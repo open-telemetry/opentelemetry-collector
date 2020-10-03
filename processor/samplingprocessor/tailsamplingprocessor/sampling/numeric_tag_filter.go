@@ -50,23 +50,6 @@ func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) 
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
-	/*	naf.logger.Debug("Evaluating spans in numeric-attribute filter")
-		trace.Lock()
-		batches := trace.ReceivedBatches
-		trace.Unlock()
-		for _, batch := range batches {
-			for _, span := range batch.Spans {
-				if span == nil || span.Attributes == nil {
-					continue
-				}
-				if v, ok := span.Attributes.AttributeMap[naf.key]; ok {
-					value := v.GetIntValue()
-					if value >= naf.minValue && value <= naf.maxValue {
-						return Sampled, nil
-					}
-				}
-			}
-		}*/
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()

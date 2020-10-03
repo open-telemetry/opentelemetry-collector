@@ -15,8 +15,10 @@
 package sampling
 
 import (
+	"math"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -53,4 +55,19 @@ func TestRateLimiter(t *testing.T) {
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
+}
+
+func TestOnDroppedSpans_RateLimiter(t *testing.T) {
+	var empty = map[string]pdata.AttributeValue{}
+	u, _ := uuid.NewRandom()
+	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
+	decision, err := rateLimiter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	assert.Nil(t, err)
+	assert.Equal(t, decision, Sampled)
+}
+
+func TestOnLateArrivingSpans_RateLimiter(t *testing.T) {
+	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
+	err := rateLimiter.OnLateArrivingSpans(NotSampled, nil)
+	assert.Nil(t, err)
 }
