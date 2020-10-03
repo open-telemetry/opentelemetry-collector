@@ -15,10 +15,12 @@
 package sampling
 
 import (
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestRateLimiter(t *testing.T) {
@@ -46,4 +48,9 @@ func TestRateLimiter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 
+	// Trace span count less than spans per second
+	trace.SpanCount = 0
+	decision, err = rateLimiter.Evaluate(traceID, trace)
+	assert.Nil(t, err)
+	assert.Equal(t, decision, Sampled)
 }
