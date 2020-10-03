@@ -287,7 +287,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(ctx context.Context, resourc
 	idToSpans := tsp.groupSpansByTraceKey(resourceSpans, td)
 
 	var newTraceIDs int64
-	//singleTrace := len(idToSpans) == 1
+	// singleTrace := len(idToSpans) == 1
 	for id, spans := range idToSpans {
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)

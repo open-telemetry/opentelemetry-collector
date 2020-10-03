@@ -94,7 +94,7 @@ func (c *Composite) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (c *Composite) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
-	//func (c *Composite) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
+	// func (c *Composite) Evaluate(traceID []byte, trace *TraceData) (Decision, error) {
 	// Rate limiting works by counting spans that are sampled during each 1 second
 	// time period. Until the total number of spans during a particular second
 	// exceeds the allocated number of spans-per-second the traces are sampled,
