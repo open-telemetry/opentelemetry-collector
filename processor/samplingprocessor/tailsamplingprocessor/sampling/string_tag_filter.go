@@ -15,7 +15,6 @@
 package sampling
 
 import (
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -49,7 +48,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string) P
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
+func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 	saf.logger.Debug("Triggering action for late arriving spans in string-tag filter")
 	return nil
 }
@@ -61,29 +60,47 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 	batches := trace.ReceivedBatches
 	trace.Unlock()
 	for _, batch := range batches {
-		node := batch.Node
-		if node != nil && node.Attributes != nil {
-			if v, ok := node.Attributes[saf.key]; ok {
-				if _, ok := saf.values[v]; ok {
-					return Sampled, nil
-				}
-			}
-		}
-		for _, span := range batch.Spans {
-			if span == nil || span.Attributes == nil {
+		rspans := batch.ResourceSpans()
+
+		for i := 0; i < rspans.Len(); i++ {
+			rs := rspans.At(i)
+			if rs.IsNil() {
 				continue
 			}
-			if v, ok := span.Attributes.AttributeMap[saf.key]; ok {
-				truncableStr := v.GetStringValue()
-				if truncableStr != nil {
-					if _, ok := saf.values[truncableStr.Value]; ok {
+
+			resource := rs.Resource()
+			if !resource.IsNil() {
+				if v, ok := resource.Attributes().Get(saf.key); ok {
+					if _, ok := saf.values[v.StringVal()]; ok {
 						return Sampled, nil
 					}
 				}
 			}
+
+			ilss := rs.InstrumentationLibrarySpans()
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				if ils.IsNil() {
+					continue
+				}
+				for k := 0; k < ils.Spans().Len(); k++ {
+					span := ils.Spans().At(k)
+					if span.IsNil() {
+						continue
+					}
+					if v, ok := span.Attributes().Get(saf.key); ok {
+						truncableStr := v.StringVal()
+						if len(truncableStr) > 0 {
+							if _, ok := saf.values[truncableStr]; ok {
+								return Sampled, nil
+							}
+						}
+					}
+
+				}
+			}
 		}
 	}
-
 	return NotSampled, nil
 }
 

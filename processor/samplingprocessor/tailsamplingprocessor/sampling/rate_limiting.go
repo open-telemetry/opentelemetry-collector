@@ -17,7 +17,6 @@ package sampling
 import (
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -44,7 +43,7 @@ func NewRateLimiting(logger *zap.Logger, spansPerSecond int64) PolicyEvaluator {
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (r *rateLimiting) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
+func (r *rateLimiting) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 	r.logger.Debug("Triggering action for late arriving spans in rate-limiting filter")
 	return nil
 }
