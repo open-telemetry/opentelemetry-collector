@@ -15,4 +15,4 @@ Ex. Adding a feature - Explain what this achieves.>
 
 **Documentation:** < Describe the documentation added.>
 
-_Plesae delete paragraphs that you did not use before submitting._
+_Please delete paragraphs that you did not use before submitting._
