@@ -37,7 +37,7 @@ require (
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/mjibson/esc v0.2.0
 	github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c
-	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
+	github.com/orijtech/prometheus-go-metrics-exporter v0.0.6
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect

@@ -851,6 +851,8 @@ github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c h1:r2TNN46R
 github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c/go.mod h1:KpXfKdgRDnnhsxw4pNIH9Md5lyFqKUa4YDFlwRYAMyE=
 github.com/orijtech/prometheus-go-metrics-exporter v0.0.5 h1:76JFgRIgNDA3pW1fUhmqinU2u5ndHv1gvapDfGG+7/c=
 github.com/orijtech/prometheus-go-metrics-exporter v0.0.5/go.mod h1:BiTx/ugZex8LheBk3j53tktWaRdFjV5FCfT2o0P7msE=
+github.com/orijtech/prometheus-go-metrics-exporter v0.0.6 h1:ExkpQsyDDcyp0U3zhoNUQaCQ/o0Ovq7e1jRCL9lQ/4o=
+github.com/orijtech/prometheus-go-metrics-exporter v0.0.6/go.mod h1:BiTx/ugZex8LheBk3j53tktWaRdFjV5FCfT2o0P7msE=
 github.com/ory/go-acc v0.2.6 h1:YfI+L9dxI7QCtWn2RbawqO0vXhiThdXu/RgizJBbaq0=
 github.com/ory/go-acc v0.2.6/go.mod h1:4Kb/UnPcT8qRAk3IAxta+hvVapdxTLWtrr7bFLlEgpw=
 github.com/ory/viper v1.7.5 h1:+xVdq7SU3e1vNaCsk/ixsfxE4zylk1TJUiJrY647jUE=
