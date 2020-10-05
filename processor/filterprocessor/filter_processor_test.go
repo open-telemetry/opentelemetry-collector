@@ -289,10 +289,10 @@ func BenchmarkFilter(b *testing.B) {
 		cfg,
 		next,
 	)
-	mds := metricSlice(128)
+	pdms := metricSlice(128)
 	for i := 0; i < b.N; i++ {
-		for _, md := range mds {
-			_ = proc.ConsumeMetrics(ctx, md)
+		for _, pdm := range pdms {
+			_ = proc.ConsumeMetrics(ctx, pdm)
 		}
 	}
 }
@@ -341,4 +341,62 @@ func TestMetricIndexAll(t *testing.T) {
 	idx.add(1, 1, 1)
 	extracted := idx.extract(metrics)
 	require.Equal(t, metrics, extracted)
+}
+
+func TestNilResourceMetrics(t *testing.T) {
+	metrics := pdata.NewMetrics()
+	rms := metrics.ResourceMetrics()
+	rms.Append(pdata.NewResourceMetrics())
+	requireNotPanics(t, metrics)
+}
+
+func TestNilILM(t *testing.T) {
+	metrics := pdata.NewMetrics()
+	rms := metrics.ResourceMetrics()
+	rm := pdata.NewResourceMetrics()
+	rm.InitEmpty()
+	rms.Append(rm)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilms.Append(pdata.NewInstrumentationLibraryMetrics())
+	requireNotPanics(t, metrics)
+}
+
+func TestNilMetric(t *testing.T) {
+	metrics := pdata.NewMetrics()
+	rms := metrics.ResourceMetrics()
+	rm := pdata.NewResourceMetrics()
+	rm.InitEmpty()
+	rms.Append(rm)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilms.Append(ilm)
+	ilm.InitEmpty()
+	ms := ilm.Metrics()
+	ms.Append(pdata.NewMetric())
+	requireNotPanics(t, metrics)
+}
+
+func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	pcfg := cfg.(*Config)
+	pcfg.Metrics = MetricFilters{
+		Exclude: &filtermetric.MatchProperties{
+			Config: filterset.Config{
+				MatchType: "strict",
+			},
+			MetricNames: []string{"foo"},
+		},
+	}
+	next := &etest.SinkMetricsExporter{}
+	ctx := context.Background()
+	proc, _ := factory.CreateMetricsProcessor(
+		ctx,
+		component.ProcessorCreateParams{},
+		cfg,
+		next,
+	)
+	require.NotPanics(t, func() {
+		_ = proc.ConsumeMetrics(ctx, metrics)
+	})
 }
