@@ -23,7 +23,10 @@ import (
 // metricIndex holds paths to metrics in a pdata.Metrics struct via the indexes
 // ResourceMetrics -> InstrumentationLibraryMetrics -> Metrics. Once these
 // indexes are populated, you can extract a pdata.Metrics from an existing
-// pdata.Metrics with just the metrics at the specified paths.
+// pdata.Metrics with just the metrics at the specified paths. The motivation
+// for this type is to allow the output of filtered metrics to not contain
+// parent structs (InstrumentationLibrary, Resource, etc.) for a MetricSlice
+// that has become empty after filtering.
 type metricIndex struct {
 	m map[int]map[int]map[int]bool
 }
