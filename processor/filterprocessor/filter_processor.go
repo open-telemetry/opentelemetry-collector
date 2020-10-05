@@ -66,12 +66,21 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Me
 	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				continue
+			}
 			ms := ilm.Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				metric := ms.At(k)
+				if metric.IsNil() {
+					continue
+				}
 				if fmp.shouldKeepMetric(metric) {
 					idx.add(i, j, k)
 				}
