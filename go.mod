@@ -31,7 +31,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.15.0
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/jaegertracing/jaeger v1.19.2
+	github.com/jaegertracing/jaeger v1.20.0
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/leoluk/perflib_exporter v0.1.0
