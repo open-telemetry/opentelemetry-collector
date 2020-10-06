@@ -22,8 +22,8 @@ import (
 
 const (
 	deviceLabelName     = "device"
-	mountModeLabelName  = "mount.mode"
-	mountPointLabelName = "mount.point"
+	mountModeLabelName  = "mode"
+	mountPointLabelName = "mountpoint"
 	stateLabelName      = "state"
 	typeLabelName       = "type"
 )

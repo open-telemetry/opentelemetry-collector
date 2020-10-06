@@ -119,14 +119,16 @@ func TestScrapeMetrics(t *testing.T) {
 			expectedDeviceDataPoints: 2,
 			expectedDeviceLabelValues: []map[string]string{
 				{
-					"device":      "device_a",
-					"mount.point": "mount_point_a",
-					"type":        "fs_type_a",
+					"device":     "device_a",
+					"mountpoint": "mount_point_a",
+					"type":       "fs_type_a",
+					"mode":       "unknown",
 				},
 				{
-					"device":      "device_b",
-					"mount.point": "mount_point_d",
-					"type":        "fs_type_c",
+					"device":     "device_b",
+					"mountpoint": "mount_point_d",
+					"type":       "fs_type_c",
+					"mode":       "unknown",
 				},
 			},
 		},
@@ -153,12 +155,12 @@ func TestScrapeMetrics(t *testing.T) {
 		{
 			name:        "Invalid Include Moountpoints Filter",
 			config:      Config{IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
-			newErrRegex: "^error creating mount.point include filters:",
+			newErrRegex: "^error creating mountpoint include filters:",
 		},
 		{
 			name:        "Invalid Exclude Moountpoints Filter",
 			config:      Config{ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
-			newErrRegex: "^error creating mount.point exclude filters:",
+			newErrRegex: "^error creating mountpoint exclude filters:",
 		},
 		{
 			name:           "Partitions Error",
