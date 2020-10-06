@@ -17,7 +17,6 @@ package config
 import (
 	"os"
 	"path"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -560,19 +559,10 @@ func TestLoadEmptyConfig(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
-	// Open the file for reading.
-	file, err := os.Open(filepath.Clean(fileName))
-	require.NoErrorf(t, err, "unable to open the file %v", fileName)
-	require.NotNil(t, file)
-
-	defer func() {
-		require.NoErrorf(t, file.Close(), "unable to close the file %v", fileName)
-	}()
-
 	// Read yaml config from file
 	v := NewViper()
-	v.SetConfigType("yaml")
-	require.NoErrorf(t, v.ReadConfig(file), "unable to read the file %v", fileName)
+	v.SetConfigFile(fileName)
+	require.NoErrorf(t, v.ReadInConfig(), "unable to read the file %v", fileName)
 
 	// Load the config from viper using the given factories.
 	cfg, err := Load(v, factories)
