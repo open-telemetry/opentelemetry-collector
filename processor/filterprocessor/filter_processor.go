@@ -17,12 +17,9 @@ package filterprocessor
 import (
 	"context"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 type filterMetricProcessor struct {
@@ -64,31 +61,39 @@ func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, err
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	mds := internaldata.MetricsToOC(md)
-	foundMetricToKeep := false
-	for i := range mds {
-		if len(mds[i].Metrics) == 0 {
+func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
+	rms := pdm.ResourceMetrics()
+	idx := newMetricIndex()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		if rm.IsNil() {
 			continue
 		}
-		keep := make([]*metricspb.Metric, 0, len(mds[i].Metrics))
-		for _, m := range mds[i].Metrics {
-			if fmp.shouldKeepMetric(m) {
-				foundMetricToKeep = true
-				keep = append(keep, m)
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				continue
+			}
+			ms := ilm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				metric := ms.At(k)
+				if metric.IsNil() {
+					continue
+				}
+				if fmp.shouldKeepMetric(metric) {
+					idx.add(i, j, k)
+				}
 			}
 		}
-		mds[i].Metrics = keep
 	}
-
-	if !foundMetricToKeep {
-		return md, processorhelper.ErrSkipProcessingData
+	if idx.isEmpty() {
+		return pdm, processorhelper.ErrSkipProcessingData
 	}
-	return internaldata.OCSliceToMetrics(mds), nil
+	return idx.extract(pdm), nil
 }
 
-// shouldKeepMetric determines whether a metric should be kept based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) shouldKeepMetric(metric *metricspb.Metric) bool {
+func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) bool {
 	if fmp.include != nil {
 		if !fmp.include.MatchMetric(metric) {
 			return false

@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 	"sort"
@@ -27,10 +26,8 @@ import (
 	"strings"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/prometheus/common/expfmt"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,10 +38,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
-	"go.opentelemetry.io/collector/service/builder"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -144,7 +137,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 
 	params := Parameters{
 		ApplicationStartInfo: componenttest.TestApplicationStartInfo(),
-		ConfigFactory: func(v *viper.Viper, command *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(v *viper.Viper, factories component.Factories) (*configmodels.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
 		Factories: factories,
@@ -419,7 +412,7 @@ func createExampleApplication(t *testing.T) *Application {
 
 	app, err := New(Parameters{
 		Factories: factories,
-		ConfigFactory: func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (c *configmodels.Config, err error) {
+		ConfigFactory: func(v *viper.Viper, factories component.Factories) (c *configmodels.Config, err error) {
 			config := &configmodels.Config{
 				Receivers: map[string]configmodels.Receiver{
 					string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
@@ -516,105 +509,6 @@ func TestApplication_GetExporters(t *testing.T) {
 	// Stop the Application.
 	close(app.stopTestChan)
 	<-appDone
-}
-
-func TestSetFlag(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-	params := Parameters{
-		Factories: factories,
-	}
-	t.Run("unknown_component", func(t *testing.T) {
-		app, err := New(params)
-		require.NoError(t, err)
-		err = app.rootCmd.ParseFlags([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.doesnotexist.timeout=2s",
-		})
-		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
-		require.Error(t, err)
-		require.Nil(t, cfg)
-
-	})
-	t.Run("component_not_added_to_pipeline", func(t *testing.T) {
-		app, err := New(params)
-		require.NoError(t, err)
-		err = app.rootCmd.ParseFlags([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.batch/foo.timeout=2s",
-		})
-		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
-		require.NoError(t, err)
-		assert.NotNil(t, cfg)
-		err = config.ValidateConfig(cfg, zap.NewNop())
-		require.NoError(t, err)
-
-		var processors []string
-		for k := range cfg.Processors {
-			processors = append(processors, k)
-		}
-		sort.Strings(processors)
-		// batch/foo is not added to the pipeline
-		assert.Equal(t, []string{"attributes", "batch", "batch/foo", "queued_retry"}, processors)
-		assert.Equal(t, []string{"attributes", "batch", "queued_retry"}, cfg.Service.Pipelines["traces"].Processors)
-	})
-	t.Run("ok", func(t *testing.T) {
-		app, err := New(params)
-		require.NoError(t, err)
-
-		err = app.rootCmd.ParseFlags([]string{
-			"--config=testdata/otelcol-config.yaml",
-			"--set=processors.batch.timeout=2s",
-			// Arrays are overridden and object arrays cannot be indexed
-			// this creates actions array of size 1
-			"--set=processors.attributes.actions.key=foo",
-			"--set=processors.attributes.actions.value=bar",
-			"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-			"--set=extensions.health_check.port=8080",
-		})
-		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
-		require.NoError(t, err)
-		require.NotNil(t, cfg)
-		err = config.ValidateConfig(cfg, zap.NewNop())
-		require.NoError(t, err)
-
-		assert.Equal(t, 3, len(cfg.Processors))
-		batch := cfg.Processors["batch"].(*batchprocessor.Config)
-		assert.Equal(t, time.Second*2, batch.Timeout)
-		jaeger := cfg.Receivers["jaeger"].(*jaegerreceiver.Config)
-		assert.Equal(t, "localhost:12345", jaeger.GRPC.NetAddr.Endpoint)
-		attributes := cfg.Processors["attributes"].(*attributesprocessor.Config)
-		require.Equal(t, 1, len(attributes.Actions))
-		assert.Equal(t, "foo", attributes.Actions[0].Key)
-		assert.Equal(t, "bar", attributes.Actions[0].Value)
-	})
-}
-
-func TestSetFlag_component_does_not_exist(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-
-	v := config.NewViper()
-	cmd := &cobra.Command{}
-	addSetFlag(cmd.Flags())
-	fs := &flag.FlagSet{}
-	builder.Flags(fs)
-	cmd.Flags().AddGoFlagSet(fs)
-	cmd.ParseFlags([]string{
-		"--config=testdata/otelcol-config.yaml",
-		"--set=processors.batch.timeout=2s",
-		// Arrays are overridden and object arrays cannot be indexed
-		// this creates actions array of size 1
-		"--set=processors.attributes.actions.key=foo",
-		"--set=processors.attributes.actions.value=bar",
-		"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-	})
-	cfg, err := FileLoaderConfigFactory(v, cmd, factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
 }
 
 func constructMimumalOpConfig(t *testing.T, factories component.Factories) *configmodels.Config {

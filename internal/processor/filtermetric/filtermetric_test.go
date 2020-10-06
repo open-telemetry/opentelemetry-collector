@@ -17,9 +17,9 @@ package filtermetric
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
@@ -42,19 +42,18 @@ var (
 	}
 )
 
-func createMetric(name string) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: name,
-		},
-	}
+func createMetric(name string) pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName(name)
+	return metric
 }
 
 func TestMatcherMatches(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *MatchProperties
-		metric      *metricspb.Metric
+		metric      pdata.Metric
 		shouldMatch bool
 	}{
 		{

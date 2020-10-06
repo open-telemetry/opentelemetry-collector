@@ -15,21 +15,13 @@
 package filtermetric
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
 // Matcher matches metrics by metric properties against prespecified values for each property.
 type Matcher struct {
 	nameFilters filterset.FilterSet
-}
-
-// MatchMetric matches a metric using the metric properties configured on the Matcher.
-// A metric only matches if every metric property configured on the Matcher is a match.
-func (m *Matcher) MatchMetric(metric *metricspb.Metric) bool {
-	name := metric.GetMetricDescriptor().GetName()
-	return m.nameFilters.Matches(name)
 }
 
 // NewMatcher constructs a metric Matcher that can be used to match metrics by metric properties.
@@ -48,4 +40,10 @@ func NewMatcher(config *MatchProperties) (Matcher, error) {
 	return Matcher{
 		nameFilters: nameFS,
 	}, nil
+}
+
+// MatchMetric matches a metric using the metric properties configured on the Matcher.
+// A metric only matches if every metric property configured on the Matcher is a match.
+func (m *Matcher) MatchMetric(metric pdata.Metric) bool {
+	return m.nameFilters.Matches(metric.Name())
 }

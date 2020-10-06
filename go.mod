@@ -31,13 +31,13 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.15.0
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/jaegertracing/jaeger v1.19.2
+	github.com/jaegertracing/jaeger v1.20.0
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/mjibson/esc v0.2.0
 	github.com/openzipkin/zipkin-go v0.2.4-0.20200818204336-dc18516bbb4c
-	github.com/orijtech/prometheus-go-metrics-exporter v0.0.5
+	github.com/orijtech/prometheus-go-metrics-exporter v0.0.6
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect
@@ -46,17 +46,16 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20200827201422-1195cc24e3c8
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec/v2 v2.4.0
-	github.com/shirou/gopsutil v2.20.6+incompatible
+	github.com/shirou/gopsutil v2.20.9+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
-	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
 	github.com/tinylib/msgp v1.1.2
-	github.com/uber/jaeger-lib v2.3.0+incompatible
+	github.com/uber/jaeger-lib v2.4.0+incompatible
 	go.opencensus.io v0.22.4
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
