@@ -111,6 +111,7 @@ func generateOnpremK8sAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeK8sNamespace] = "cert-manager"
 	attrMap[conventions.AttributeK8sDeployment] = "cm-1-cert-manager"
 	attrMap[conventions.AttributeK8sPod] = "cm-1-cert-manager-6448b4949b-t2jtd"
+	attrMap[conventions.AttributeK8sPodHostname] = "cm-1-cert-manager"
 	attrMap[conventions.AttributeHostHostname] = "docker-desktop"
 	attrMap[conventions.AttributeHostName] = "192.168.65.3"
 	return attrMap
