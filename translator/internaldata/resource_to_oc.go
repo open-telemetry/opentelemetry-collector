@@ -15,7 +15,6 @@
 package internaldata
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -94,7 +93,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 
 	labels := make(map[string]string, attrs.Len())
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
-		val := attributeValueToString(v, false)
+		val := tracetranslator.AttributeValueToString(v, false)
 
 		switch k {
 		case conventions.OCAttributeResourceType:
@@ -161,39 +160,6 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	}
 
 	return &ocNode, &ocResource
-}
-
-func attributeValueToString(attr pdata.AttributeValue, jsonLike bool) string {
-	switch attr.Type() {
-	case pdata.AttributeValueNULL:
-		if jsonLike {
-			return "null"
-		}
-		return ""
-	case pdata.AttributeValueSTRING:
-		if jsonLike {
-			return fmt.Sprintf("%q", attr.StringVal())
-		}
-		return attr.StringVal()
-
-	case pdata.AttributeValueBOOL:
-		return strconv.FormatBool(attr.BoolVal())
-
-	case pdata.AttributeValueDOUBLE:
-		return strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
-
-	case pdata.AttributeValueINT:
-		return strconv.FormatInt(attr.IntVal(), 10)
-
-	case pdata.AttributeValueMAP:
-		return tracetranslator.AttributeValueToString(attr, false)
-
-	case pdata.AttributeValueARRAY:
-		return tracetranslator.AttributeValueToString(attr, false)
-
-	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", attr.Type())
-	}
 }
 
 func inferResourceType(labels map[string]string) (string, bool) {
