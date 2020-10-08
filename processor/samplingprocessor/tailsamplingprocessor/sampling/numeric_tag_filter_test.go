@@ -63,11 +63,6 @@ func TestNumericTagFilter(t *testing.T) {
 			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
 			Decision: NotSampled,
 		},
-		{
-			Desc:     "resource attribute above max limit",
-			Trace:    newTraceIntAttrs(resAttr, "example", math.MaxInt32+1),
-			Decision: Sampled,
-		},
 	}
 
 	for _, c := range cases {

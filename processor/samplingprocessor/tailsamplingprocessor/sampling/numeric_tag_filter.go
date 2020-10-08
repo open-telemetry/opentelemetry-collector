@@ -60,15 +60,6 @@ func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (
 			if rs.IsNil() {
 				continue
 			}
-			resource := rs.Resource()
-			if !resource.IsNil() {
-				if v, ok := resource.Attributes().Get(naf.key); ok {
-					value := v.IntVal()
-					if value >= naf.minValue && value <= naf.maxValue {
-						return Sampled, nil
-					}
-				}
-			} //
 			ilss := rs.InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
