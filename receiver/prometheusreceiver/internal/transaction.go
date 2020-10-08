@@ -157,8 +157,16 @@ func (tr *transaction) Commit() error {
 	}
 
 	if tr.useStartTimeMetric {
-		// AdjustStartTime - startTime has to be non-zero in this case.
+		// startTime is mandatory in this case, but may be zero when the
+		// process_start_time_seconds metric is missing from the target endpoint.
 		if tr.metricBuilder.startTime == 0.0 {
+			// Since we are unable to adjust metrics properly, we will drop them
+			// and log a message.
+			tr.logger.Info(
+				"Dropping metrics - unable to adjust start time due to 'process_start_time_seconds' metric missing",
+				zap.String("prometheus_job", tr.job),
+				zap.String("prometheus_instance", tr.instance),
+				zap.Int("dropped_metrics_count", len(metrics)))
 			metrics = []*metricspb.Metric{}
 		} else {
 			adjustStartTime(tr.metricBuilder.startTime, metrics)
