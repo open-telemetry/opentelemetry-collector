@@ -17,6 +17,7 @@ package otlpexporter
 import (
 	"context"
 	"net"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -125,6 +126,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 type mockMetricsReceiver struct {
 	mockReceiver
+	mux         sync.Mutex
 	lastRequest *otlpmetrics.ExportMetricsServiceRequest
 }
 
@@ -135,9 +137,17 @@ func (r *mockMetricsReceiver) Export(
 	atomic.AddInt32(&r.requestCount, 1)
 	_, recordCount := pdata.MetricsFromOtlp(req.ResourceMetrics).MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
+	r.mux.Lock()
 	r.lastRequest = req
+	r.mux.Unlock()
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlpmetrics.ExportMetricsServiceResponse{}, nil
+}
+
+func (r *mockMetricsReceiver) GetLastRequest() *otlpmetrics.ExportMetricsServiceRequest {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	return r.lastRequest
 }
 
 func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
@@ -295,7 +305,7 @@ func TestSendMetrics(t *testing.T) {
 	// Verify received metrics.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, 4, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
 
 	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
 }
