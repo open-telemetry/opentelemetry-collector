@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filterhelper
+package filtermatcher
 
 import (
 	"errors"
@@ -21,13 +21,14 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
-type AttributesMatcher []AttributeMatcher
+type attributesMatcher []attributeMatcher
 
-// AttributeMatcher is a attribute key/value pair to match to.
-type AttributeMatcher struct {
+// attributeMatcher is a attribute key/value pair to match to.
+type attributeMatcher struct {
 	Key string
 	// If both AttributeValue and StringFilter are nil only check for key existence.
 	AttributeValue *pdata.AttributeValue
@@ -37,20 +38,20 @@ type AttributeMatcher struct {
 
 var errUnexpectedAttributeType = errors.New("unexpected attribute type")
 
-func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Attribute) (AttributesMatcher, error) {
+func newAttributesMatcher(config filterset.Config, attributes []filterconfig.Attribute) (attributesMatcher, error) {
 	// Convert attribute values from mp representation to in-memory representation.
-	var rawAttributes []AttributeMatcher
+	var rawAttributes []attributeMatcher
 	for _, attribute := range attributes {
 
 		if attribute.Key == "" {
-			return nil, errors.New("error creating processor. Can't have empty key in the list of attributes")
+			return nil, errors.New("can't have empty key in the list of attributes")
 		}
 
-		entry := AttributeMatcher{
+		entry := attributeMatcher{
 			Key: attribute.Key,
 		}
 		if attribute.Value != nil {
-			val, err := NewAttributeValueRaw(attribute.Value)
+			val, err := filterhelper.NewAttributeValueRaw(attribute.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -79,7 +80,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 }
 
 // match attributes specification against a span/log.
-func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
+func (ma attributesMatcher) Match(attrs pdata.AttributeMap) bool {
 	// If there are no attributes to match against, the span/log matches.
 	if len(ma) == 0 {
 		return true

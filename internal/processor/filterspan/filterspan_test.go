@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
-	"go.opentelemetry.io/collector/internal/processor/filterhelper"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -155,7 +154,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 					},
 				},
 			},
-			errorString: "error creating attribute filters: error creating processor. Can't have empty key in the list of attributes",
+			errorString: "error creating attribute filters: can't have empty key in the list of attributes",
 		},
 	}
 	for _, tc := range testcases {
@@ -479,7 +478,7 @@ func TestSpan_Matching_True(t *testing.T) {
 				Config: *createConfig(filterset.Strict),
 				Resources: []filterconfig.Attribute{
 					{
-						Key:   "keyString",
+						Key:   "resString",
 						Value: "arithmetic",
 					},
 				},
@@ -533,7 +532,7 @@ func TestSpan_Matching_True(t *testing.T) {
 	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
-		"keyString":                      pdata.NewAttributeValueString("arithmetic"),
+		"resString":                      pdata.NewAttributeValueString("arithmetic"),
 	})
 
 	library := pdata.NewInstrumentationLibrary()
@@ -550,80 +549,6 @@ func TestSpan_Matching_True(t *testing.T) {
 			assert.True(t, mp.MatchSpan(span, resource, library))
 		})
 	}
-}
-
-func TestSpan_validateMatchesConfigurationForAttributes(t *testing.T) {
-	testcase := []struct {
-		name   string
-		input  filterconfig.MatchProperties
-		output Matcher
-	}{
-		{
-			name: "attributes_build",
-			input: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: &propertiesMatcher{
-				Attributes: []filterhelper.AttributeMatcher{
-					{
-						Key: "key1",
-					},
-					{
-						Key:            "key2",
-						AttributeValue: newAttributeValueInt(1234),
-					},
-				},
-			},
-		},
-
-		{
-			name: "both_set_of_attributes",
-			input: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: &propertiesMatcher{
-				Attributes: []filterhelper.AttributeMatcher{
-					{
-						Key: "key1",
-					},
-					{
-						Key:            "key2",
-						AttributeValue: newAttributeValueInt(1234),
-					},
-				},
-			},
-		},
-	}
-	for _, tc := range testcase {
-		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.input)
-			require.NoError(t, err)
-			assert.Equal(t, tc.output, output)
-		})
-	}
-}
-
-func newAttributeValueInt(v int64) *pdata.AttributeValue {
-	attr := pdata.NewAttributeValueInt(v)
-	return &attr
 }
 
 func TestServiceNameForResource(t *testing.T) {

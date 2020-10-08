@@ -74,7 +74,7 @@ type MatchProperties struct {
 	// Note: For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
 	// non-empty value for a valid configuration.
 
-	// For logs, one of LogNames or Attributes must be specified with a
+	// For logs, one of LogNames, Attributes, Resources or Libraries must be specified with a
 	// non-empty value for a valid configuration.
 
 	// Services specify the list of of items to match service name against.
@@ -122,12 +122,12 @@ func (mp *MatchProperties) ValidateForSpans() error {
 }
 
 func (mp *MatchProperties) ValidateForLogs() error {
-	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.Resources) > 0 || len(mp.Libraries) > 0 {
-		return errors.New("neither services nor span_names nor resources nor libraries should be specified for log records")
+	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 {
+		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.LogNames) == 0 && len(mp.Attributes) == 0 {
-		return errors.New(`at least one of "log_names" or "attributes" field must be specified`)
+	if len(mp.LogNames) == 0 && len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
+		return errors.New(`at least one of "log_names", "attributes", "libraries" or "resources" field must be specified`)
 	}
 
 	return nil

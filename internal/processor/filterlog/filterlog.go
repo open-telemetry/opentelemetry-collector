@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
-	"go.opentelemetry.io/collector/internal/processor/filterhelper"
+	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
@@ -28,16 +28,15 @@ import (
 // Matcher is an interface that allows matching a log record against a
 // configuration of a match.
 type Matcher interface {
-	MatchLogRecord(lr pdata.LogRecord) bool
+	MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
 }
 
 // propertiesMatcher allows matching a log record against various log record properties.
 type propertiesMatcher struct {
+	filtermatcher.PropertiesMatcher
+
 	// log names to compare to.
 	nameFilters filterset.FilterSet
-
-	// The attribute values are stored in the internal format.
-	Attributes filterhelper.AttributesMatcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -50,14 +49,9 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		return nil, err
 	}
 
-	var err error
-
-	var am filterhelper.AttributesMatcher
-	if len(mp.Attributes) > 0 {
-		am, err = filterhelper.NewAttributesMatcher(mp.Config, mp.Attributes)
-		if err != nil {
-			return nil, err
-		}
+	rm, err := filtermatcher.NewMatcher(mp)
+	if err != nil {
+		return nil, err
 	}
 
 	var nameFS filterset.FilterSet = nil
@@ -69,8 +63,8 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	}
 
 	return &propertiesMatcher{
-		nameFilters: nameFS,
-		Attributes:  am,
+		PropertiesMatcher: rm,
+		nameFilters:       nameFS,
 	}, nil
 }
 
@@ -81,10 +75,10 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // At least one of log record names or attributes must be specified. It is
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
-func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord) bool {
+func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	if mp.nameFilters != nil && !mp.nameFilters.Matches(lr.Name()) {
 		return false
 	}
 
-	return mp.Attributes.Match(lr.Attributes())
+	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)
 }
