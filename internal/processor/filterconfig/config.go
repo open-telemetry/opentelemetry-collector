@@ -100,7 +100,7 @@ type MatchProperties struct {
 	// Resources specify the list of items to match the resources against.
 	// A match occurs if the span's resources matches at least one item in this list.
 	// This is an optional field.
-	Resources []Attribute `mapstructure:"resource"`
+	Resources []Attribute `mapstructure:"resources"`
 
 	// Libraries specify the list of items to match the implementation library against.
 	// A match occurs if the span's implementation library matches at least one item in this list.
