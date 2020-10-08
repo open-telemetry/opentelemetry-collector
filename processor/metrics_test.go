@@ -20,20 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal/data/testdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 )
-
-func TestServiceNameForResource(t *testing.T) {
-	td := testdata.GenerateTraceDataOneSpanNoResource()
-	require.Equal(t, ServiceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-resource>")
-
-	td = testdata.GenerateTraceDataOneSpan()
-	resource := td.ResourceSpans().At(0).Resource()
-	require.Equal(t, ServiceNameForResource(resource), "<nil-service-name>")
-
-	resource.Attributes().InsertString(conventions.AttributeServiceName, "test-service")
-	require.Equal(t, ServiceNameForResource(resource), "test-service")
-}
 
 func TestSpanCountByResourceStringAttribute(t *testing.T) {
 	td := testdata.GenerateTraceDataEmpty()
