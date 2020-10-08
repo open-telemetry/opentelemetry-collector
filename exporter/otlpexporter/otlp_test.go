@@ -50,6 +50,7 @@ type mockReceiver struct {
 
 type mockTraceReceiver struct {
 	mockReceiver
+	mux         sync.Mutex
 	lastRequest *otlptraces.ExportTraceServiceRequest
 }
 
@@ -65,9 +66,17 @@ func (r *mockTraceReceiver) Export(
 		}
 	}
 	atomic.AddInt32(&r.totalItems, int32(spanCount))
+	r.mux.Lock()
 	r.lastRequest = req
+	r.mux.Unlock()
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlptraces.ExportTraceServiceResponse{}, nil
+}
+
+func (r *mockTraceReceiver) GetLastRequest() *otlptraces.ExportTraceServiceRequest {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	return r.lastRequest
 }
 
 func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
@@ -88,6 +97,7 @@ func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
 
 type mockLogsReceiver struct {
 	mockReceiver
+	mux         sync.Mutex
 	lastRequest *otlplogs.ExportLogsServiceRequest
 }
 
@@ -103,9 +113,17 @@ func (r *mockLogsReceiver) Export(
 		}
 	}
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
+	r.mux.Lock()
 	r.lastRequest = req
+	r.mux.Unlock()
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlplogs.ExportLogsServiceResponse{}, nil
+}
+
+func (r *mockLogsReceiver) GetLastRequest() *otlplogs.ExportLogsServiceRequest {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	return r.lastRequest
 }
 
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
@@ -233,7 +251,7 @@ func TestSendTraces(t *testing.T) {
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
-	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
 
 	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
 }
@@ -444,7 +462,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pda
 
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
 }
 
 func TestSendLogData(t *testing.T) {
@@ -509,5 +527,5 @@ func TestSendLogData(t *testing.T) {
 	// Verify received logs.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, expectedOTLPReq, rcv.lastRequest)
+	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
 }
