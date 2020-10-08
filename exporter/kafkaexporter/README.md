@@ -50,7 +50,7 @@ The following settings can be optionally configured:
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue`
-  - `enabled` (default = false)
+  - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data; ignored if `enabled` is `false`;
   User should calculate this as `num_seconds * requests_per_second` where:
