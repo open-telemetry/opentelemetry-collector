@@ -35,7 +35,6 @@ receivers:%v
 exporters:%v
 processors:
   batch:
-  queued_retry:
 
 extensions:
 
@@ -44,7 +43,7 @@ service:
   pipelines:
     traces:
       receivers: [%v]
-      processors: [batch, queued_retry]
+      processors: [batch]
       exporters: [%v]
 `
 	config := fmt.Sprintf(
