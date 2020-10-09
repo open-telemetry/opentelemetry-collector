@@ -223,7 +223,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	compressedData := snappy.Encode(buf, data)
 
 	// Create the HTTP POST request to send to the endpoint
-	httpReq, err := http.NewRequest("POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
 		return err
 	}
@@ -233,11 +233,6 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-
-	httpReq = httpReq.WithContext(ctx)
-
-	_, cancel := context.WithTimeout(context.Background(), prwe.client.Timeout)
-	defer cancel()
 
 	httpResp, err := prwe.client.Do(httpReq)
 	if err != nil {
