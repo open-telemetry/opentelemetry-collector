@@ -16,13 +16,22 @@ package filtermetric
 
 import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/processor/filterset/regexp"
+)
+
+type MatchType string
+
+const (
+	Regexp MatchType = MatchType(filterset.Regexp)
+	Strict MatchType = MatchType(filterset.Strict)
+	Expr   MatchType = "expr"
 )
 
 // MatchProperties specifies the set of properties in a metric to match against and the
 // type of string pattern matching to use.
 type MatchProperties struct {
-	// MatchConfig configures the matching patterns used when matching metric properties.
-	filterset.Config `mapstructure:",squash"`
+	MatchType    MatchType      `mapstructure:"match_type"`
+	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 
 	// MetricNames specifies the list of string patterns to match metric names against.
 	// A match occurs if the metric name matches at least one string pattern in this list.
