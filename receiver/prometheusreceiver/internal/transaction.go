@@ -47,6 +47,7 @@ const (
 var errMetricNameNotFound = errors.New("metricName not found from labels")
 var errTransactionAborted = errors.New("transaction aborted")
 var errNoJobInstance = errors.New("job or instance cannot be found from labels")
+var errNoStartTimeMetrics = errors.New("process_start_time_seconds metric is missing")
 
 // A transaction is corresponding to an individual scrape operation or stale report.
 // That said, whenever prometheus receiver scrapped a target metric endpoint a page of raw metrics is returned,
@@ -161,16 +162,13 @@ func (tr *transaction) Commit() error {
 		// process_start_time_seconds metric is missing from the target endpoint.
 		if tr.metricBuilder.startTime == 0.0 {
 			// Since we are unable to adjust metrics properly, we will drop them
-			// and log a message.
-			tr.logger.Info(
-				"Dropping metrics - unable to adjust start time due to 'process_start_time_seconds' metric missing",
-				zap.String("prometheus_job", tr.job),
-				zap.String("prometheus_instance", tr.instance),
-				zap.Int("dropped_metrics_count", len(metrics)))
-			metrics = []*metricspb.Metric{}
-		} else {
-			adjustStartTime(tr.metricBuilder.startTime, metrics)
+			// and return an error.
+			err := errNoStartTimeMetrics
+			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+			return err
 		}
+
+		adjustStartTime(tr.metricBuilder.startTime, metrics)
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
 		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
