@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-func TestLoadingConifg(t *testing.T) {
+func TestLoadingConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 

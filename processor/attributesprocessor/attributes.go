@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -48,7 +47,7 @@ func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) 
 		if rs.IsNil() {
 			continue
 		}
-		serviceName := processor.ServiceNameForResource(rs.Resource())
+		resource := rs.Resource()
 		ilss := rss.At(i).InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
@@ -56,6 +55,7 @@ func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) 
 				continue
 			}
 			spans := ils.Spans()
+			library := ils.InstrumentationLibrary()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.IsNil() {
@@ -63,7 +63,7 @@ func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) 
 					continue
 				}
 
-				if a.skipSpan(span, serviceName) {
+				if filterspan.SkipSpan(a.include, a.exclude, span, resource, library) {
 					continue
 				}
 
@@ -72,28 +72,4 @@ func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) 
 		}
 	}
 	return td, nil
-}
-
-// skipSpan determines if a span should be processed.
-// True is returned when a span should be skipped.
-// False is returned when a span should not be skipped.
-// The logic determining if a span should be processed is set
-// in the attribute configuration with the include and exclude settings.
-// Include properties are checked before exclude settings are checked.
-func (a *attributesProcessor) skipSpan(span pdata.Span, serviceName string) bool {
-	if a.include != nil {
-		// A false returned in this case means the span should not be processed.
-		if include := a.include.MatchSpan(span, serviceName); !include {
-			return true
-		}
-	}
-
-	if a.exclude != nil {
-		// A true returned in this case means the span should not be processed.
-		if exclude := a.exclude.MatchSpan(span, serviceName); exclude {
-			return true
-		}
-	}
-
-	return false
 }

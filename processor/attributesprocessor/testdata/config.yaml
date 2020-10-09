@@ -119,6 +119,38 @@ processors:
       - key: duplicate_key
         action: delete
 
+  # The following demonstrates excluding spans from this attributes processor based on a resource.
+  attributes/excluderesources:
+    # Specifies the spans properties that exclude a span from being processed.
+    exclude:
+      # match_type defines that "resources" is an map where values must match strictly.
+      match_type: strict
+      resources:
+        # This exact resource ('host.type', 'n1-standard-1') must exist in the span for a match.
+        - {key: host.type, value: "n1-standard-1"}
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
+  # The following demonstrates excluding spans from this attributes processor based on an instrumenting library.
+  # If no version is provided, any version will match, even no version.
+  # If a blank version provided, only no version will match.
+  attributes/excludelibrary:
+    # Specifies the spans properties that exclude a span from being processed.
+    exclude:
+      # match_type defines that "libraries" is an map where values must match strictly.
+      match_type: strict
+      libraries:
+        # This exact library ('mongo-java-driver', version '3.8.0') must exist in the span for a match.
+        - {name: "mongo-java-driver", version: "3.8.0"}
+    actions:
+      - key: credit_card
+        action: delete
+      - key: duplicate_key
+        action: delete
+
   # The following demonstrates including spans for this attributes processor.
   # All other spans that do no match the properties are not processed
   # by this processor.
@@ -163,8 +195,7 @@ processors:
       # The Span service name must be equal to "svcA" or "svcB".
       services: ["svcA", "svcB"]
     exclude:
-      # match_type defines that "attributes" values must match strictly. It is the
-      # only supported match_type for "attributes" setting.
+      # match_type defines that "attributes" values must match strictly.
       match_type: strict
       attributes:
         - { key: redact_trace, value: false}
@@ -242,7 +273,7 @@ processors:
       # The span service name must match "auth.*" pattern.
       services: ["auth.*"]
     exclude:
-      # match_type defines that "services" is an array of regexp-es.
+      # match_type defines that "span_names" is an array of regexp-es.
       match_type: regexp
       # The span name must not match "login.*" pattern.
       span_names: ["login.*"]
@@ -252,6 +283,22 @@ processors:
         value: "obfuscated"
       - key: token
         action: delete
+
+  # The following demonstrates how to process spans that have an attribute that matches a regexp patterns.
+  # This processor will obfuscate "db.statement" attribute in spans where "db.statement attribute
+  # matches a regex pattern.
+  attributes/regexp2:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # match_type defines that "attributes" is a map where values are regexp-es.
+      match_type: regexp
+      attributes:
+        # This attribute ('db.statement') must exist in the span and match the regex ('SELECT \* FROM USERS.*') for a match.
+        - {key: env, value: "'SELECT * FROM USERS WHERE ID=1'"}
+    actions:
+      - key: db.statement
+        action: update
+        value: "SELECT * FROM USERS [obfuscated]"
 
 receivers:
   examplereceiver:

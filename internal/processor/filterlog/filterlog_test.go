@@ -40,14 +40,14 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"log_names\" or \"attributes\" field must be specified",
+			errorString: "at least one of \"log_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "empty_log_names_and_attributes",
 			property: filterconfig.MatchProperties{
 				LogNames: []string{},
 			},
-			errorString: "at least one of \"log_names\" or \"attributes\" field must be specified",
+			errorString: "at least one of \"log_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "span_properties",
@@ -70,16 +70,6 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 				LogNames: []string{"abc"},
 			},
 			errorString: "error creating log record name filters: unrecognized match_type: '', valid types are: [regexp strict]",
-		},
-		{
-			name: "regexp_match_type_for_attributes",
-			property: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Regexp),
-				Attributes: []filterconfig.Attribute{
-					{Key: "key", Value: "value"},
-				},
-			},
-			errorString: `match_type=regexp is not supported for "attributes"`,
 		},
 		{
 			name: "invalid_regexp_pattern",
@@ -107,7 +97,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 					},
 				},
 			},
-			errorString: "error creating processor. Can't have empty key in the list of attributes",
+			errorString: "error creating attribute filters: can't have empty key in the list of attributes",
 		},
 	}
 	for _, tc := range testcases {
@@ -195,7 +185,7 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchLogRecord(lr))
+			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 		})
 	}
 }
@@ -218,10 +208,10 @@ func TestLogRecord_MatchingCornerCases(t *testing.T) {
 
 	emptyLogRecord := pdata.NewLogRecord()
 	emptyLogRecord.InitEmpty()
-	assert.False(t, mp.MatchLogRecord(emptyLogRecord))
+	assert.False(t, mp.MatchLogRecord(emptyLogRecord, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 
 	emptyLogRecord.SetName("svcA")
-	assert.False(t, mp.MatchLogRecord(emptyLogRecord))
+	assert.False(t, mp.MatchLogRecord(emptyLogRecord, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 }
 
 func TestLogRecord_Matching_True(t *testing.T) {
@@ -323,81 +313,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			assert.NotNil(t, mp)
 
 			assert.NotNil(t, lr)
-			assert.True(t, mp.MatchLogRecord(lr))
+			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 		})
 	}
-}
-
-func TestLogRecord_validateMatchesConfigurationForAttributes(t *testing.T) {
-	testcase := []struct {
-		name   string
-		input  filterconfig.MatchProperties
-		output Matcher
-	}{
-		{
-			name: "attributes_build",
-			input: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: &propertiesMatcher{
-				Attributes: []attributeMatcher{
-					{
-						Key: "key1",
-					},
-					{
-						Key:            "key2",
-						AttributeValue: newAttributeValueInt(1234),
-					},
-				},
-			},
-		},
-
-		{
-			name: "both_set_of_attributes",
-			input: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key: "key1",
-					},
-					{
-						Key:   "key2",
-						Value: 1234,
-					},
-				},
-			},
-			output: &propertiesMatcher{
-				Attributes: []attributeMatcher{
-					{
-						Key: "key1",
-					},
-					{
-						Key:            "key2",
-						AttributeValue: newAttributeValueInt(1234),
-					},
-				},
-			},
-		},
-	}
-	for _, tc := range testcase {
-		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.input)
-			require.NoError(t, err)
-			assert.Equal(t, tc.output, output)
-		})
-	}
-}
-
-func newAttributeValueInt(v int64) *pdata.AttributeValue {
-	attr := pdata.NewAttributeValueInt(v)
-	return &attr
 }

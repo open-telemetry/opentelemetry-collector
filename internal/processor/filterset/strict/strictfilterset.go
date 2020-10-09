@@ -33,7 +33,7 @@ func NewFilterSet(filters []string) (*FilterSet, error) {
 	return fs, nil
 }
 
-// Matches returns true if the given string matches any of the FitlerSet's filters.
+// Matches returns true if the given string matches any of the FilterSet's filters.
 func (sfs *FilterSet) Matches(toMatch string) bool {
 	_, ok := sfs.filters[toMatch]
 	return ok

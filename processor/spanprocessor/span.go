@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterspan"
-	"go.opentelemetry.io/collector/processor"
 )
 
 type spanProcessor struct {
@@ -87,21 +86,22 @@ func (sp *spanProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdat
 		if rs.IsNil() {
 			continue
 		}
-		serviceName := processor.ServiceNameForResource(rs.Resource())
-		ilss := rss.At(i).InstrumentationLibrarySpans()
+		ilss := rs.InstrumentationLibrarySpans()
+		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			if ils.IsNil() {
 				continue
 			}
 			spans := ils.Spans()
+			library := ils.InstrumentationLibrary()
 			for k := 0; k < spans.Len(); k++ {
 				s := spans.At(k)
 				if s.IsNil() {
 					continue
 				}
 
-				if sp.skipSpan(s, serviceName) {
+				if filterspan.SkipSpan(sp.include, sp.exclude, s, resource, library) {
 					continue
 				}
 				sp.processFromAttributes(s)
@@ -228,28 +228,4 @@ func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 			break
 		}
 	}
-}
-
-// skipSpan determines if a span should be processed.
-// True is returned when a span should be skipped.
-// False is returned when a span should not be skipped.
-// The logic determining if a span should be processed is set
-// in the attribute configuration with the include and exclude settings.
-// Include properties are checked before exclude settings are checked.
-func (sp *spanProcessor) skipSpan(span pdata.Span, serviceName string) bool {
-	if sp.include != nil {
-		// A false returned in this case means the span should not be processed.
-		if include := sp.include.MatchSpan(span, serviceName); !include {
-			return true
-		}
-	}
-
-	if sp.exclude != nil {
-		// A true returned in this case means the span should not be processed.
-		if exclude := sp.exclude.MatchSpan(span, serviceName); exclude {
-			return true
-		}
-	}
-
-	return false
 }
