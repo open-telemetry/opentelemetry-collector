@@ -21,8 +21,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// Scraper provides a function to scrape metrics.
-type Scrape func(context.Context) (pdata.Metrics, error)
+// Scrape metrics.
+type ScrapeMetrics func(context.Context) (pdata.MetricSlice, error)
+
+// Scrape resource metrics.
+type ScrapeResourceMetrics func(context.Context) (pdata.ResourceMetricsSlice, error)
 
 // Initialize performs any timely initialization tasks such as
 // setting up performance counters for initial collection.
@@ -33,7 +36,7 @@ type Initialize func(ctx context.Context) error
 type Close func(ctx context.Context) error
 
 // ScraperOption apply changes to internal options.
-type ScraperOption func(*scraper)
+type ScraperOption func(*baseScraper)
 
 // ScraperConfig is the configuration of a scraper. Specific scrapers must implement this
 // interface and will typically embed ScraperSettings struct or a struct that extends it.
@@ -58,40 +61,72 @@ func (ss *ScraperSettings) SetCollectionInterval(collectionInterval time.Duratio
 	ss.CollectionIntervalVal = collectionInterval
 }
 
-type scraper struct {
+type baseScraper struct {
 	cfg        ScraperConfig
-	scrape     Scrape
 	initialize Initialize
 	close      Close
 }
 
-// NewScraper creates a Scraper that calls Scrape at the specified collection
-// interval, reports observability information, and passes the scraped metrics
-// to the next consumer.
-func newScraper(
-	cfg ScraperConfig,
-	scrape Scrape,
-	options ...ScraperOption,
-) *scraper {
-	bs := &scraper{cfg: cfg, scrape: scrape}
-
-	for _, op := range options {
-		op(bs)
-	}
-
-	return bs
-}
-
 // WithInitialize sets the function that will be called on startup.
 func WithInitialize(initialize Initialize) ScraperOption {
-	return func(o *scraper) {
+	return func(o *baseScraper) {
 		o.initialize = initialize
 	}
 }
 
 // WithClose sets the function that will be called on shutdown.
 func WithClose(close Close) ScraperOption {
-	return func(o *scraper) {
+	return func(o *baseScraper) {
 		o.close = close
 	}
+}
+
+type metricsScraper struct {
+	baseScraper
+	scrape ScrapeMetrics
+}
+
+// newMetricsScraper creates a Scraper that calls Scrape at the specified
+// collection interval, reports observability information, and passes the
+// scraped metrics to the next consumer.
+func newMetricsScraper(
+	cfg ScraperConfig,
+	scrape ScrapeMetrics,
+	options ...ScraperOption,
+) *metricsScraper {
+	ms := &metricsScraper{
+		baseScraper: baseScraper{cfg: cfg},
+		scrape:      scrape,
+	}
+
+	for _, op := range options {
+		op(&ms.baseScraper)
+	}
+
+	return ms
+}
+
+type resourceMetricsScraper struct {
+	baseScraper
+	scrape ScrapeResourceMetrics
+}
+
+// newResourceMetricsScraper creates a Scraper that calls Scrape at the
+// specified collection interval, reports observability information, and
+// passes the scraped resource metrics to the next consumer.
+func newResourceMetricsScraper(
+	cfg ScraperConfig,
+	scrape ScrapeResourceMetrics,
+	options ...ScraperOption,
+) *resourceMetricsScraper {
+	rms := &resourceMetricsScraper{
+		baseScraper: baseScraper{cfg: cfg},
+		scrape:      scrape,
+	}
+
+	for _, op := range options {
+		op(&rms.baseScraper)
+	}
+
+	return rms
 }
