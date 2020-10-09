@@ -45,7 +45,14 @@ type mockReceiver struct {
 	srv          *grpc.Server
 	requestCount int32
 	totalItems   int32
+	mux          sync.Mutex
 	metadata     metadata.MD
+}
+
+func (r *mockReceiver) GetMetadata() metadata.MD {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	return r.metadata
 }
 
 type mockTraceReceiver struct {
@@ -67,8 +74,8 @@ func (r *mockTraceReceiver) Export(
 	}
 	atomic.AddInt32(&r.totalItems, int32(spanCount))
 	r.mux.Lock()
+	defer r.mux.Unlock()
 	r.lastRequest = req
-	r.mux.Unlock()
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlptraces.ExportTraceServiceResponse{}, nil
 }
@@ -97,7 +104,6 @@ func otlpTraceReceiverOnGRPCServer(ln net.Listener) *mockTraceReceiver {
 
 type mockLogsReceiver struct {
 	mockReceiver
-	mux         sync.Mutex
 	lastRequest *otlplogs.ExportLogsServiceRequest
 }
 
@@ -114,8 +120,8 @@ func (r *mockLogsReceiver) Export(
 	}
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.mux.Lock()
+	defer r.mux.Unlock()
 	r.lastRequest = req
-	r.mux.Unlock()
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlplogs.ExportLogsServiceResponse{}, nil
 }
@@ -156,8 +162,8 @@ func (r *mockMetricsReceiver) Export(
 	_, recordCount := pdata.MetricsFromOtlp(req.ResourceMetrics).MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.mux.Lock()
+	defer r.mux.Unlock()
 	r.lastRequest = req
-	r.mux.Unlock()
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
 	return &otlpmetrics.ExportMetricsServiceResponse{}, nil
 }
@@ -253,7 +259,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
 	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
 
-	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
+	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
 }
 
 func TestSendMetrics(t *testing.T) {
@@ -325,7 +331,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 4, atomic.LoadInt32(&rcv.totalItems))
 	assert.EqualValues(t, expectedOTLPReq, rcv.GetLastRequest())
 
-	require.EqualValues(t, rcv.metadata.Get("header"), expectedHeader)
+	require.EqualValues(t, rcv.GetMetadata().Get("header"), expectedHeader)
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
