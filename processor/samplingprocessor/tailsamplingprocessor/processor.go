@@ -246,20 +246,18 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdat
 		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
 	})
-
 	resourceSpans := td.ResourceSpans()
-	sampledTraceData := pdata.NewTraces()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		resourceSpan := resourceSpans.At(i)
 		if resourceSpan.IsNil() {
 			continue
 		}
-		tsp.processTraces(ctx, resourceSpan, sampledTraceData)
+		tsp.processTraces(resourceSpan)
 	}
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans, td pdata.Traces) map[traceKey][]*pdata.Span {
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[traceKey][]*pdata.Span {
 	idToSpans := make(map[traceKey][]*pdata.Span)
 	ilss := resourceSpans.InstrumentationLibrarySpans()
 	for j := 0; j < ilss.Len(); j++ {
@@ -267,7 +265,8 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.R
 		if ils.IsNil() {
 			continue
 		}
-		for k := 0; k < ils.Spans().Len(); k++ {
+		spansLen := ils.Spans().Len()
+		for k := 0; k < spansLen; k++ {
 			span := ils.Spans().At(k)
 			tk := traceKey(span.TraceID().Bytes())
 			if len(tk) != 16 {
@@ -279,9 +278,9 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.R
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTraces(ctx context.Context, resourceSpans pdata.ResourceSpans, td pdata.Traces) error {
+func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) error {
 	// Groupd spans per their traceId to minimize contention on idToTrace
-	idToSpans := tsp.groupSpansByTraceKey(resourceSpans, td)
+	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
 
 	var newTraceIDs int64
 	for id, spans := range idToSpans {
@@ -319,6 +318,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(ctx context.Context, resourc
 		}
 
 		for i, policy := range tsp.policies {
+			var traceTd pdata.Traces
 			actualData.Lock()
 			actualDecision := actualData.Decisions[i]
 			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
@@ -326,7 +326,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(ctx context.Context, resourc
 			if actualDecision == sampling.Pending {
 				// Add the spans to the trace, but only once for all policy, otherwise same spans will
 				// be duplicated in the final trace.
-				traceTd := prepareTraceBatch(resourceSpans)
+				traceTd = prepareTraceBatch(resourceSpans, spans)
 				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
 				actualData.Unlock()
 				break
@@ -336,7 +336,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(ctx context.Context, resourc
 			switch actualDecision {
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
-				traceTd := prepareTraceBatch(resourceSpans)
+				traceTd := prepareTraceBatch(resourceSpans, spans)
 				if err := tsp.nextConsumer.ConsumeTraces(policy.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", policy.Name),
@@ -406,13 +406,17 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 	}
 }
 
-func prepareTraceBatch(rss pdata.ResourceSpans) pdata.Traces {
+func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {
 	traceTd := pdata.NewTraces()
-	traceTd.ResourceSpans().Resize(traceTd.ResourceSpans().Len() + 1)
-	rs := traceTd.ResourceSpans().At(traceTd.ResourceSpans().Len() - 1)
+	traceTd.ResourceSpans().Resize(1)
+	rs := traceTd.ResourceSpans().At(0)
 	rs.Resource().InitEmpty()
 	rss.Resource().CopyTo(rs.Resource())
-	rss.InstrumentationLibrarySpans().CopyTo(rs.InstrumentationLibrarySpans())
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	for _, span := range spans {
+		ils.Spans().Append(*span)
+	}
 	return traceTd
 }
 
