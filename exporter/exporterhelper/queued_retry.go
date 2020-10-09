@@ -15,6 +15,7 @@
 package exporterhelper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -24,6 +25,22 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+type noCancellationContext struct {
+	context.Context
+}
+
+func (noCancellationContext) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (noCancellationContext) Done() <-chan struct{} {
+	return nil
+}
+
+func (noCancellationContext) Err() error {
+	return nil
+}
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
@@ -110,6 +127,10 @@ func (qrs *queuedRetrySender) send(req request) (int, error) {
 		return qrs.consumerSender.send(req)
 	}
 
+	// We need to decouple the context we store for async requests from the
+	// context received by the receiver. The grpc/http based receivers will cancel
+	// the request context after this function returns.
+	req.setContext(noCancellationContext{Context: req.context()})
 	if !qrs.queue.Produce(req) {
 		return req.count(), errorRefused
 	}
