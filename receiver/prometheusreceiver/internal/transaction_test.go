@@ -138,7 +138,7 @@ func Test_transaction(t *testing.T) {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
 		tr.metricBuilder.startTime = 0 // zero value means the start time metric is missing
-		got := tr.Commit();
+		got := tr.Commit()
 		if got == nil {
 			t.Error("expecting error from Commit() but got nil")
 		} else if got.Error() != errNoStartTimeMetrics.Error() {

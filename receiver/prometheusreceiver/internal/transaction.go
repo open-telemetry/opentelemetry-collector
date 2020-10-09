@@ -163,7 +163,7 @@ func (tr *transaction) Commit() error {
 		if tr.metricBuilder.startTime == 0.0 {
 			// Since we are unable to adjust metrics properly, we will drop them
 			// and return an error.
-			err := errNoStartTimeMetrics
+			err = errNoStartTimeMetrics
 			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
 			return err
 		}
