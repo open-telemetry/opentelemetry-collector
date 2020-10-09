@@ -39,14 +39,7 @@ import (
 type exporterImp struct {
 	// Input configuration.
 	config *Config
-	w      sender
-}
-
-type sender interface {
-	exportTrace(ctx context.Context, request *otlptrace.ExportTraceServiceRequest) error
-	exportMetrics(ctx context.Context, request *otlpmetrics.ExportMetricsServiceRequest) error
-	exportLogs(ctx context.Context, request *otlplogs.ExportLogsServiceRequest) error
-	stop() error
+	w      *grpcSender
 }
 
 var (
@@ -122,7 +115,7 @@ type grpcSender struct {
 	waitForReady   bool
 }
 
-func newGrpcSender(config *Config) (sender, error) {
+func newGrpcSender(config *Config) (*grpcSender, error) {
 	dialOpts, err := config.GRPCClientSettings.ToDialOptions()
 	if err != nil {
 		return nil, err
