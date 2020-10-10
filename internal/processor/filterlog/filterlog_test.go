@@ -87,18 +87,6 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			},
 			errorString: "error creating log record name filters: error parsing regexp: missing closing ]: `[`",
 		},
-		{
-			name: "empty_key_name_in_attributes_list",
-			property: filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key: "",
-					},
-				},
-			},
-			errorString: "error creating attribute filters: can't have empty key in the list of attributes",
-		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -136,49 +124,11 @@ func TestLogRecord_Matching_False(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
-
-		{
-			name: "wrong_property_value",
-			properties: &filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key:   "keyInt",
-						Value: 1234,
-					},
-				},
-			},
-		},
-		{
-			name: "incompatible_property_value",
-			properties: &filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key:   "keyInt",
-						Value: "123",
-					},
-				},
-			},
-		},
-		{
-			name: "property_key_does_not_exist",
-			properties: &filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key:   "doesnotexist",
-						Value: nil,
-					},
-				},
-			},
-		},
 	}
 
 	lr := pdata.NewLogRecord()
 	lr.InitEmpty()
 	lr.SetName("logName")
-	lr.Attributes().InitFromMap(map[string]pdata.AttributeValue{"keyInt": pdata.NewAttributeValueInt(123)})
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
@@ -188,30 +138,6 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 		})
 	}
-}
-
-func TestLogRecord_MatchingCornerCases(t *testing.T) {
-	cfg := &filterconfig.MatchProperties{
-		Config:   *createConfig(filterset.Strict),
-		LogNames: []string{"svcA"},
-		Attributes: []filterconfig.Attribute{
-			{
-				Key:   "keyOne",
-				Value: nil,
-			},
-		},
-	}
-
-	mp, err := NewMatcher(cfg)
-	assert.Nil(t, err)
-	assert.NotNil(t, mp)
-
-	emptyLogRecord := pdata.NewLogRecord()
-	emptyLogRecord.InitEmpty()
-	assert.False(t, mp.MatchLogRecord(emptyLogRecord, pdata.Resource{}, pdata.InstrumentationLibrary{}))
-
-	emptyLogRecord.SetName("svcA")
-	assert.False(t, mp.MatchLogRecord(emptyLogRecord, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 }
 
 func TestLogRecord_Matching_True(t *testing.T) {
@@ -240,71 +166,11 @@ func TestLogRecord_Matching_True(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
-		{
-			name: "property_exact_value_match",
-			properties: &filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key:   "keyString",
-						Value: "arithmetic",
-					},
-					{
-						Key:   "keyInt",
-						Value: 123,
-					},
-					{
-						Key:   "keyDouble",
-						Value: 3245.6,
-					},
-					{
-						Key:   "keyBool",
-						Value: true,
-					},
-				},
-			},
-		},
-		{
-			name: "property_exists",
-			properties: &filterconfig.MatchProperties{
-				Config: *createConfig(filterset.Strict),
-				Attributes: []filterconfig.Attribute{
-					{
-						Key:   "keyExists",
-						Value: nil,
-					},
-				},
-			},
-		},
-		{
-			name: "match_all_settings_exists",
-			properties: &filterconfig.MatchProperties{
-				Config:   *createConfig(filterset.Strict),
-				LogNames: []string{"logName"},
-				Attributes: []filterconfig.Attribute{
-					{
-						Key:   "keyExists",
-						Value: nil,
-					},
-					{
-						Key:   "keyString",
-						Value: "arithmetic",
-					},
-				},
-			},
-		},
 	}
 
 	lr := pdata.NewLogRecord()
 	lr.InitEmpty()
 	lr.SetName("logName")
-	lr.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"keyString": pdata.NewAttributeValueString("arithmetic"),
-		"keyInt":    pdata.NewAttributeValueInt(123),
-		"keyDouble": pdata.NewAttributeValueDouble(3245.6),
-		"keyBool":   pdata.NewAttributeValueBool(true),
-		"keyExists": pdata.NewAttributeValueString("present"),
-	})
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
