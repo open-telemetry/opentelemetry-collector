@@ -57,7 +57,6 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 
 type mockTraceReceiver struct {
 	mockReceiver
-	mux         sync.Mutex
 	lastRequest *otlptraces.ExportTraceServiceRequest
 }
 
@@ -150,7 +149,6 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 type mockMetricsReceiver struct {
 	mockReceiver
-	mux         sync.Mutex
 	lastRequest *otlpmetrics.ExportMetricsServiceRequest
 }
 
