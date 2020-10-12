@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -197,7 +198,7 @@ func (lg *LoadGenerator) generateTrace() {
 		return
 	}
 
-	err := traceSender.SendSpans(traceData)
+	err := traceSender.ConsumeTraces(context.Background(), traceData)
 	if err == nil {
 		lg.prevErr = nil
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
@@ -214,7 +215,7 @@ func (lg *LoadGenerator) generateMetrics() {
 		return
 	}
 
-	err := metricSender.SendMetrics(metricData)
+	err := metricSender.ConsumeMetrics(context.Background(), metricData)
 	if err == nil {
 		lg.prevErr = nil
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
@@ -231,7 +232,7 @@ func (lg *LoadGenerator) generateLog() {
 		return
 	}
 
-	err := logSender.SendLogs(logData)
+	err := logSender.ConsumeLogs(context.Background(), logData)
 	if err == nil {
 		lg.prevErr = nil
 	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {

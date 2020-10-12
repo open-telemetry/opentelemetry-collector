@@ -65,7 +65,7 @@ func testWithTracingGoldenDataset(
 		161803)
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err, "default components resulted in: %v", err)
-	runner := testbed.NewInProcessCollector(factories, sender.GetCollectorPort())
+	runner := testbed.NewInProcessCollector(factories)
 	validator := testbed.NewCorrectTestValidator(dataProvider)
 	config := correctness.CreateConfigYaml(sender, receiver, processors, "traces")
 	configCleanup, cfgErr := runner.PrepareConfig(config)

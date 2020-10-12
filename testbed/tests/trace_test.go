@@ -21,6 +21,7 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -333,7 +334,7 @@ func verifySingleSpan(
 	spans.At(0).SetName(spanName)
 
 	sender := tc.Sender.(testbed.TraceDataSender)
-	sender.SendSpans(td)
+	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.
@@ -430,7 +431,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			tc.EnableRecording()
 
-			test.sender.Start()
+			require.NoError(t, test.sender.Start())
 
 			// Create a span that matches "include" filter.
 			spanToInclude := "span-to-add-attr"

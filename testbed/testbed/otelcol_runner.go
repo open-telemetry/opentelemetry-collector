@@ -39,7 +39,7 @@ type OtelcolRunner interface {
 	PrepareConfig(configStr string) (configCleanup func(), err error)
 	// Starts the otelcol instance(s) if not already running which is the subject of the test to be run.
 	// It returns the host:port of the data receiver to post test data to.
-	Start(args StartParams) (receiverAddr string, err error)
+	Start(args StartParams) error
 	// Stops the otelcol instance(s) which are the subject of the test just run if applicable. Returns whether
 	// the instance was actually stopped or not.
 	Stop() (stopped bool, err error)
@@ -56,20 +56,18 @@ type OtelcolRunner interface {
 // InProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 // same process as the test executor.
 type InProcessCollector struct {
-	logger       *zap.Logger
-	factories    component.Factories
-	receiverPort int
-	config       *configmodels.Config
-	svc          *service.Application
-	appDone      chan struct{}
-	stopped      bool
+	logger    *zap.Logger
+	factories component.Factories
+	config    *configmodels.Config
+	svc       *service.Application
+	appDone   chan struct{}
+	stopped   bool
 }
 
 // NewInProcessCollector crewtes a new InProcessCollector using the supplied component factories.
-func NewInProcessCollector(factories component.Factories, receiverPort int) *InProcessCollector {
+func NewInProcessCollector(factories component.Factories) *InProcessCollector {
 	return &InProcessCollector{
-		factories:    factories,
-		receiverPort: receiverPort,
+		factories: factories,
 	}
 }
 
@@ -98,7 +96,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 	return configCleanup, err
 }
 
-func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err error) {
+func (ipp *InProcessCollector) Start(args StartParams) error {
 	params := service.Parameters{
 		ApplicationStartInfo: component.ApplicationStartInfo{
 			ExeName:  "otelcol",
@@ -111,9 +109,10 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 		},
 		Factories: ipp.factories,
 	}
+	var err error
 	ipp.svc, err = service.New(params)
 	if err != nil {
-		return receiverAddr, err
+		return err
 	}
 	ipp.svc.Command().SetArgs(args.CmdArgs)
 
@@ -131,13 +130,12 @@ func (ipp *InProcessCollector) Start(args StartParams) (receiverAddr string, err
 		case service.Starting:
 			// NoOp
 		case service.Running:
-			receiverAddr = fmt.Sprintf("%s:%d", DefaultHost, ipp.receiverPort)
-			return receiverAddr, err
+			return err
 		default:
 			err = fmt.Errorf("unable to start, otelcol state is %d", state)
 		}
 	}
-	return receiverAddr, err
+	return err
 }
 
 func (ipp *InProcessCollector) Stop() (stopped bool, err error) {
