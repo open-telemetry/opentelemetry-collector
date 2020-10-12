@@ -29,14 +29,14 @@ import (
 // builtExporter is an exporter that is built based on a config. It can have
 // a trace and/or a metrics consumer and have a shutdown function.
 type builtExporter struct {
-	logger    *zap.Logger
-	expByType map[configmodels.DataType]component.Exporter
+	logger        *zap.Logger
+	expByDataType map[configmodels.DataType]component.Exporter
 }
 
 // Start the exporter.
 func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error {
 	var errors []error
-	for _, exporter := range bexp.expByType {
+	for _, exporter := range bexp.expByDataType {
 		err := exporter.Start(ctx, host)
 		if err != nil {
 			errors = append(errors, err)
@@ -49,7 +49,7 @@ func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error
 // Shutdown the trace component and the metrics component of an exporter.
 func (bexp *builtExporter) Shutdown(ctx context.Context) error {
 	var errors []error
-	for _, exporter := range bexp.expByType {
+	for _, exporter := range bexp.expByDataType {
 		err := exporter.Shutdown(ctx)
 		if err != nil {
 			errors = append(errors, err)
@@ -60,7 +60,7 @@ func (bexp *builtExporter) Shutdown(ctx context.Context) error {
 }
 
 func (bexp *builtExporter) getTraceExporter() component.TraceExporter {
-	exp := bexp.expByType[configmodels.TracesDataType]
+	exp := bexp.expByDataType[configmodels.TracesDataType]
 	if exp == nil {
 		return nil
 	}
@@ -68,7 +68,7 @@ func (bexp *builtExporter) getTraceExporter() component.TraceExporter {
 }
 
 func (bexp *builtExporter) getMetricExporter() component.MetricsExporter {
-	exp := bexp.expByType[configmodels.MetricsDataType]
+	exp := bexp.expByDataType[configmodels.MetricsDataType]
 	if exp == nil {
 		return nil
 	}
@@ -76,7 +76,7 @@ func (bexp *builtExporter) getMetricExporter() component.MetricsExporter {
 }
 
 func (bexp *builtExporter) getLogExporter() component.LogsExporter {
-	exp := bexp.expByType[configmodels.LogsDataType]
+	exp := bexp.expByDataType[configmodels.LogsDataType]
 	if exp == nil {
 		return nil
 	}
@@ -121,7 +121,7 @@ func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmode
 	exportersMap[configmodels.LogsDataType] = make(map[configmodels.Exporter]component.Exporter, len(exps))
 
 	for cfg, bexp := range exps {
-		for t, exp := range bexp.expByType {
+		for t, exp := range bexp.expByDataType {
 			exportersMap[t][cfg] = exp
 		}
 	}
@@ -226,8 +226,8 @@ func (eb *ExportersBuilder) buildExporter(
 	}
 
 	exporter := &builtExporter{
-		logger:    logger,
-		expByType: make(map[configmodels.DataType]component.Exporter, 3),
+		logger:        logger,
+		expByDataType: make(map[configmodels.DataType]component.Exporter, 3),
 	}
 
 	inputDataTypes := exportersInputDataTypes[config]
@@ -259,7 +259,7 @@ func (eb *ExportersBuilder) buildExporter(
 				return nil, fmt.Errorf("factory for %q produced a nil exporter", config.Name())
 			}
 
-			exporter.expByType[configmodels.TracesDataType] = te
+			exporter.expByDataType[configmodels.TracesDataType] = te
 
 		case configmodels.MetricsDataType:
 			// Metrics data type is required. Create a trace exporter based on config.
@@ -278,7 +278,7 @@ func (eb *ExportersBuilder) buildExporter(
 				return nil, fmt.Errorf("factory for %q produced a nil exporter", config.Name())
 			}
 
-			exporter.expByType[configmodels.MetricsDataType] = me
+			exporter.expByDataType[configmodels.MetricsDataType] = me
 
 		case configmodels.LogsDataType:
 			le, err := factory.CreateLogsExporter(ctx, creationParams, config)
@@ -295,7 +295,7 @@ func (eb *ExportersBuilder) buildExporter(
 				return nil, fmt.Errorf("factory for %q produced a nil exporter", config.Name())
 			}
 
-			exporter.expByType[configmodels.LogsDataType] = le
+			exporter.expByDataType[configmodels.LogsDataType] = le
 
 		default:
 			// Could not create because this exporter does not support this data type.

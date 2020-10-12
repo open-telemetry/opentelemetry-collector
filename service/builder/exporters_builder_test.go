@@ -178,7 +178,7 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 	logsExporter := &componenttest.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
-		expByType: map[configmodels.DataType]component.Exporter{
+		expByDataType: map[configmodels.DataType]component.Exporter{
 			configmodels.TracesDataType:  traceExporter,
 			configmodels.MetricsDataType: metricExporter,
 			configmodels.LogsDataType:    logsExporter,
@@ -203,7 +203,7 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 	logsExporter := &componenttest.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
-		expByType: map[configmodels.DataType]component.Exporter{
+		expByDataType: map[configmodels.DataType]component.Exporter{
 			configmodels.TracesDataType:  traceExporter,
 			configmodels.MetricsDataType: metricExporter,
 			configmodels.LogsDataType:    logsExporter,

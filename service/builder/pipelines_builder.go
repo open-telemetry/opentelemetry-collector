@@ -232,11 +232,6 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].getTraceExporter()
-	}
-
 	var exporters []consumer.TraceConsumer
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.getTraceExporter())
@@ -249,11 +244,6 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].getMetricExporter()
-	}
-
 	var exporters []consumer.MetricsConsumer
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.getMetricExporter())
@@ -265,11 +255,6 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 
 func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
-
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].getLogExporter()
-	}
 
 	exporters := make([]consumer.LogsConsumer, len(builtExporters))
 	for i, builtExp := range builtExporters {
