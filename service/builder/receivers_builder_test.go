@@ -128,7 +128,7 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.te.(*componenttest.ExampleExporterConsumer)
+		consumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
@@ -158,7 +158,7 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.te.(*componenttest.ExampleExporterConsumer)
+			traceConsumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -168,7 +168,7 @@ func testReceivers(
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.me.(*componenttest.ExampleExporterConsumer)
+			metricsConsumer := exporter.getMetricExporter().(*componenttest.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.EqualValues(t, metrics, metricsConsumer.Metrics[0])
 		}
@@ -234,7 +234,7 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 
 			// First check that there are no traces in the exporters yet.
 			for _, exporter := range exporters {
-				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
@@ -249,7 +249,7 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 				exporter := allExporters[cfg.Exporters[name]]
 
 				// Validate exported data.
-				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
 				require.Equal(t, 1, len(consumer.Logs))
 				assert.EqualValues(t, log, consumer.Logs[0])
 			}
