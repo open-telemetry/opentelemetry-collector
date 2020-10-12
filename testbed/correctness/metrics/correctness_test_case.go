@@ -17,6 +17,7 @@ package metrics
 import (
 	"log"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -92,8 +93,16 @@ func (tc *correctnessTestCase) sendFirstMetric() {
 
 func (tc *correctnessTestCase) waitForAllMetrics() {
 	log.Println("waiting for allMetricsReceived")
-	<-tc.harness.allMetricsReceived
-	log.Println("all metrics received")
+	for {
+		select {
+		case <-time.After(10 * time.Second):
+			tc.t.Fatal("Deadline exceeded while waiting to receive metrics")
+			return
+		case <-tc.harness.allMetricsReceived:
+			log.Println("all metrics received")
+			return
+		}
+	}
 }
 
 func componentFactories(t *testing.T) component.Factories {
