@@ -232,14 +232,9 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].te
-	}
-
 	var exporters []consumer.TraceConsumer
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.te)
+		exporters = append(exporters, builtExp.getTraceExporter())
 	}
 
 	// Create a junction point that fans out to all exporters.
@@ -249,33 +244,21 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].me
-	}
-
 	var exporters []consumer.MetricsConsumer
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.me)
+		exporters = append(exporters, builtExp.getMetricExporter())
 	}
 
 	// Create a junction point that fans out to all exporters.
 	return processor.NewMetricsFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
-	exporterNames []string,
-) consumer.LogsConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
-
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].le
-	}
 
 	exporters := make([]consumer.LogsConsumer, len(builtExporters))
 	for i, builtExp := range builtExporters {
-		exporters[i] = builtExp.le
+		exporters[i] = builtExp.getLogExporter()
 	}
 
 	// Create a junction point that fans out to all exporters.
