@@ -24,8 +24,8 @@ import (
 
 type filterMetricProcessor struct {
 	cfg     *Config
-	include *filtermetric.Matcher
-	exclude *filtermetric.Matcher
+	include filtermetric.Matcher
+	exclude filtermetric.Matcher
 }
 
 func newFilterMetricProcessor(cfg *Config) (*filterMetricProcessor, error) {
@@ -46,18 +46,12 @@ func newFilterMetricProcessor(cfg *Config) (*filterMetricProcessor, error) {
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, error) {
+func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
 		return nil, nil
 	}
-
-	matcher, err := filtermetric.NewMatcher(mp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &matcher, nil
+	return filtermetric.NewMatcher(mp)
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.

@@ -258,15 +258,36 @@ func metricsWithName(names []string) []*metricspb.Metric {
 	return ret
 }
 
-func BenchmarkFilter(b *testing.B) {
+func BenchmarkStrictFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "strict",
+		MetricNames: []string{"p10_metric_0"},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func BenchmarkRegexpFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "regexp",
+		MetricNames: []string{"p10_metric_0"},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func BenchmarkExprFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "expr",
+		Expressions: []string{`MetricName == "p10_metric_0"`},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
 	pcfg.Metrics = MetricFilters{
-		Exclude: &filtermetric.MatchProperties{
-			MatchType:   "strict",
-			MetricNames: []string{"p10_metric_0"},
-		},
+		Exclude: mp,
 	}
 	next := &etest.SinkMetricsExporter{}
 	ctx := context.Background()

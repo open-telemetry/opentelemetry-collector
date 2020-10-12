@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,30 @@ package filtermetric
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterexpr"
 )
 
-type Matcher interface {
-	MatchMetric(metric pdata.Metric) bool
+type exprMatcher struct {
+	matchers []*filterexpr.Matcher
 }
 
-// NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
-// returns an expr matcher, otherwise a name matcher.
-func NewMatcher(config *MatchProperties) (Matcher, error) {
-	if config.MatchType == Expr {
-		return newExprMatcher(config.Expressions)
+func newExprMatcher(expressions []string) (*exprMatcher, error) {
+	m := &exprMatcher{}
+	for _, expression := range expressions {
+		matcher, err := filterexpr.NewMatcher(expression)
+		if err != nil {
+			return nil, err
+		}
+		m.matchers = append(m.matchers, matcher)
 	}
-	return newNameMatcher(config)
+	return m, nil
+}
+
+func (m *exprMatcher) MatchMetric(metric pdata.Metric) bool {
+	for _, matcher := range m.matchers {
+		if matcher.MatchMetric(metric) {
+			return true
+		}
+	}
+	return false
 }
