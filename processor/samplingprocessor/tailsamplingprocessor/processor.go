@@ -278,10 +278,9 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.R
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) error {
-	// Groupd spans per their traceId to minimize contention on idToTrace
+func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) {
+	// Group spans per their traceId to minimize contention on idToTrace
 	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
-
 	var newTraceIDs int64
 	for id, spans := range idToSpans {
 		lenSpans := int64(len(spans))
@@ -362,7 +361,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 	}
 
 	stats.Record(tsp.ctx, statNewTraceIDReceivedCount.M(newTraceIDs))
-	return nil
 }
 
 func (tsp *tailSamplingSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
