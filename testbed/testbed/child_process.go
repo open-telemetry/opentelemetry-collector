@@ -165,7 +165,7 @@ func (cp *ChildProcess) PrepareConfig(configStr string) (configCleanup func(), e
 // the process to.
 // cmd is the executable to run.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err error) {
+func (cp *ChildProcess) Start(params StartParams) error {
 
 	cp.name = params.Name
 	cp.doneSignal = make(chan struct{})
@@ -174,10 +174,9 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 	log.Printf("Starting %s (%s)", cp.name, params.Cmd)
 
 	// Prepare log file
-	var logFile *os.File
-	logFile, err = os.Create(params.LogFilePath)
+	logFile, err := os.Create(params.LogFilePath)
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot create %s: %s", params.LogFilePath, err.Error())
+		return fmt.Errorf("cannot create %s: %s", params.LogFilePath, err.Error())
 	}
 	log.Printf("Writing %s log to %s", cp.name, params.LogFilePath)
 
@@ -189,7 +188,7 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 			configFile := path.Join("testdata", "agent-config.yaml")
 			cp.configFileName, err = filepath.Abs(configFile)
 			if err != nil {
-				return receiverAddr, err
+				return err
 			}
 		}
 		args = append(args, "--config")
@@ -200,16 +199,16 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot capture stdout of %s: %s", params.Cmd, err.Error())
+		return fmt.Errorf("cannot capture stdout of %s: %s", params.Cmd, err.Error())
 	}
 	stderrIn, err := cp.cmd.StderrPipe()
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot capture stderr of %s: %s", params.Cmd, err.Error())
+		return fmt.Errorf("cannot capture stderr of %s: %s", params.Cmd, err.Error())
 	}
 
 	// Start the process.
 	if err = cp.cmd.Start(); err != nil {
-		return receiverAddr, fmt.Errorf("cannot start executable at %s: %s", params.Cmd, err.Error())
+		return fmt.Errorf("cannot start executable at %s: %s", params.Cmd, err.Error())
 	}
 
 	cp.startTime = time.Now()
@@ -230,8 +229,7 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 		cp.outputWG.Done()
 	}()
 
-	receiverAddr = fmt.Sprintf("%s:%d", DefaultHost, 0)
-	return receiverAddr, err
+	return err
 }
 
 func (cp *ChildProcess) Stop() (stopped bool, err error) {

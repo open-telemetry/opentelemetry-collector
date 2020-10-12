@@ -45,7 +45,7 @@ func newCorrectnessTestCase(
 }
 
 func (tc *correctnessTestCase) startCollector() {
-	tc.collector = testbed.NewInProcessCollector(componentFactories(tc.t), tc.sender.GetCollectorPort())
+	tc.collector = testbed.NewInProcessCollector(componentFactories(tc.t))
 	_, err := tc.collector.PrepareConfig(correctness.CreateConfigYaml(tc.sender, tc.receiver, nil, "metrics"))
 	require.NoError(tc.t, err)
 	rd, err := newResultsDir(tc.t.Name())
@@ -55,7 +55,7 @@ func (tc *correctnessTestCase) startCollector() {
 	fname, err := rd.fullPath("agent.log")
 	require.NoError(tc.t, err)
 	log.Println("starting collector")
-	_, err = tc.collector.Start(testbed.StartParams{
+	err = tc.collector.Start(testbed.StartParams{
 		Name:        "Agent",
 		LogFilePath: fname,
 		Cmd:         "foo",
