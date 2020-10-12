@@ -25,18 +25,51 @@ import (
 
 func TestLog10kDPS(t *testing.T) {
 	flw := testbed.NewFluentBitFileLogWriter(testbed.DefaultHost, testbed.GetAvailablePort(t))
-
-	Scenario10kItemsPerSecond(
-		t,
-		flw,
-		testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-		testbed.ResourceSpec{
-			ExpectedMaxCPU: 50,
-			ExpectedMaxRAM: 99,
+	tests := []struct {
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
+		extensions   map[string]string
+	}{
+		{
+			name:     "OTLP",
+			sender:   testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 20,
+				ExpectedMaxRAM: 70,
+			},
 		},
-		performanceResultsSummary,
-		nil,
-		flw.Extensions(),
-	)
+		{
+			name:     "FluentBitToOTLP",
+			sender:   flw,
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 50,
+				ExpectedMaxRAM: 150,
+			},
+			extensions: flw.Extensions(),
+		},
+	}
 
+	processors := map[string]string{
+		"batch": `
+  batch:
+`,
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			Scenario10kItemsPerSecond(
+				t,
+				test.sender,
+				test.receiver,
+				test.resourceSpec,
+				performanceResultsSummary,
+				processors,
+				test.extensions,
+			)
+		})
+	}
 }

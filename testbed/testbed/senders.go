@@ -140,8 +140,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 		Insecure: true,
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -162,9 +161,32 @@ func (je *JaegerGRPCDataSender) ProtocolName() string {
 	return "jaeger"
 }
 
+type ocDataSender struct {
+	DataSenderBase
+}
+
+func (ods *ocDataSender) fillConfig(cfg *opencensusexporter.Config) *opencensusexporter.Config {
+	cfg.Endpoint = ods.GetEndpoint()
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		Insecure: true,
+	}
+	return cfg
+}
+
+func (ods *ocDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  opencensus:
+    endpoint: "%s"`, ods.GetEndpoint())
+}
+
+func (ods *ocDataSender) ProtocolName() string {
+	return "opencensus"
+}
+
 // OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
 type OCTraceDataSender struct {
-	DataSenderBase
+	ocDataSender
 	consumer.TraceConsumer
 }
 
@@ -175,23 +197,19 @@ var _ TraceDataSender = (*OCTraceDataSender)(nil)
 // to the specified port after Start is called.
 func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
 	return &OCTraceDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
+		ocDataSender: ocDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
 		},
 	}
 }
 
 func (ote *OCTraceDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*opencensusexporter.Config)
-	cfg.Endpoint = ote.GetEndpoint()
-	cfg.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-
-	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
+	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -200,20 +218,9 @@ func (ote *OCTraceDataSender) Start() error {
 	return exporter.Start(context.Background(), ote)
 }
 
-func (ote *OCTraceDataSender) GenConfigYAMLStr() string {
-	// Note that this generates a receiver config for agent.
-	return fmt.Sprintf(`
-  opencensus:
-    endpoint: "%s"`, ote.GetEndpoint())
-}
-
-func (ote *OCTraceDataSender) ProtocolName() string {
-	return "opencensus"
-}
-
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
 type OCMetricsDataSender struct {
-	DataSenderBase
+	ocDataSender
 	consumer.MetricsConsumer
 }
 
@@ -224,23 +231,19 @@ var _ MetricDataSender = (*OCMetricsDataSender)(nil)
 // to the specified port after Start is called.
 func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 	return &OCMetricsDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
+		ocDataSender: ocDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
 		},
 	}
 }
 
 func (ome *OCMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*opencensusexporter.Config)
-	cfg.Endpoint = ome.GetEndpoint()
-	cfg.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-
-	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
+	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -249,47 +252,56 @@ func (ome *OCMetricsDataSender) Start() error {
 	return exporter.Start(context.Background(), ome)
 }
 
-func (ome *OCMetricsDataSender) GenConfigYAMLStr() string {
+type otlpDataSender struct {
+	DataSenderBase
+}
+
+func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
+	cfg.Endpoint = ods.GetEndpoint()
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		Insecure: true,
+	}
+	return cfg
+}
+
+func (ods *otlpDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	return fmt.Sprintf(`
-  opencensus:
-    endpoint: "%s"`, ome.GetEndpoint())
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ome *OCMetricsDataSender) ProtocolName() string {
-	return "opencensus"
+func (ods *otlpDataSender) ProtocolName() string {
+	return "otlp"
 }
 
-// OTLPTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
+// OTLPTraceDataSender implements TraceDataSender for OTLP trace protocol.
 type OTLPTraceDataSender struct {
-	DataSenderBase
+	otlpDataSender
 	consumer.TraceConsumer
 }
 
 // Ensure OTLPTraceDataSender implements TraceDataSender.
 var _ TraceDataSender = (*OTLPTraceDataSender)(nil)
 
-// NewOTLPTraceDataSender creates a new OTLPTraceDataSender that will send
-// to the specified port after Start is called.
+// NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces protocol.
 func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 	return &OTLPTraceDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
+		otlpDataSender: otlpDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
 		},
 	}
 }
 
 func (ote *OTLPTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*otlpexporter.Config)
-	cfg.Endpoint = ote.GetEndpoint()
-	cfg.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-
-	creationParams := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
+	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -298,50 +310,32 @@ func (ote *OTLPTraceDataSender) Start() error {
 	return exporter.Start(context.Background(), ote)
 }
 
-func (ote *OTLPTraceDataSender) GenConfigYAMLStr() string {
-	// Note that this generates a receiver config for agent.
-	return fmt.Sprintf(`
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "%s"`, ote.GetEndpoint())
-}
-
-func (ote *OTLPTraceDataSender) ProtocolName() string {
-	return "otlp"
-}
-
-// OTLPMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
+// OTLPMetricsDataSender implements MetricDataSender for OTLP metrics protocol.
 type OTLPMetricsDataSender struct {
-	DataSenderBase
+	otlpDataSender
 	consumer.MetricsConsumer
 }
 
 // Ensure OTLPMetricsDataSender implements MetricDataSender.
 var _ MetricDataSender = (*OTLPMetricsDataSender)(nil)
 
-// NewOTLPMetricDataSender creates a new OpenCensus metric protocol sender that will send
+// NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
 // to the specified port after Start is called.
 func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 	return &OTLPMetricsDataSender{
-		DataSenderBase: DataSenderBase{
-			Port: port,
-			Host: host,
+		otlpDataSender: otlpDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
 		},
 	}
 }
 
 func (ome *OTLPMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*otlpexporter.Config)
-	cfg.Endpoint = ome.GetEndpoint()
-
-	cfg.TLSSetting = configtls.TLSClientSetting{
-		Insecure: true,
-	}
-
-	creationParams := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
+	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -350,17 +344,38 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	return exporter.Start(context.Background(), ome)
 }
 
-func (ome *OTLPMetricsDataSender) GenConfigYAMLStr() string {
-	// Note that this generates a receiver config for agent.
-	return fmt.Sprintf(`
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "%s"`, ome.GetEndpoint())
+// OTLPLogsDataSender implements LogsDataSender for OTLP logs protocol.
+type OTLPLogsDataSender struct {
+	otlpDataSender
+	consumer.LogsConsumer
 }
 
-func (ome *OTLPMetricsDataSender) ProtocolName() string {
-	return "otlp"
+// Ensure OTLPMetricsDataSender implements MetricDataSender.
+var _ LogDataSender = (*OTLPLogsDataSender)(nil)
+
+// NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
+// to the specified port after Start is called.
+func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
+	return &OTLPLogsDataSender{
+		otlpDataSender: otlpDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (olds *OTLPLogsDataSender) Start() error {
+	factory := otlpexporter.NewFactory()
+	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
+	exporter, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	olds.LogsConsumer = exporter
+	return exporter.Start(context.Background(), olds)
 }
 
 // ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
@@ -388,8 +403,7 @@ func (zs *ZipkinDataSender) Start() error {
 	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("http://%s/api/v2/spans", zs.GetEndpoint())
 
-	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -433,7 +447,7 @@ func (pds *PrometheusDataSender) Start() error {
 	cfg.Endpoint = pds.GetEndpoint()
 	cfg.Namespace = pds.namespace
 
-	exporter, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -587,4 +601,8 @@ func (f *FluentBitFileLogWriter) Extensions() map[string]string {
 
 func (f *FluentBitFileLogWriter) ProtocolName() string {
 	return "fluentforward"
+}
+
+func defaultExporterParams() component.ExporterCreateParams {
+	return component.ExporterCreateParams{Logger: zap.L()}
 }
