@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix bug where the service does not correctly start/stop the log exporters (#1943)
+
 ## v0.12.0 Beta
 
 ## 🚀 New components 🚀
