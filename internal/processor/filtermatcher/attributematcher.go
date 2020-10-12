@@ -105,8 +105,22 @@ func (ma attributesMatcher) Match(attrs pdata.AttributeMap) bool {
 				return false
 			}
 		} else if property.AttributeValue != nil {
-			if !attr.Equal(*property.AttributeValue) {
+			propertyAttrValue := property.AttributeValue
+			switch propertyAttrValue.Type() {
+			// Case when Attribute Values are of list values.
+			case pdata.AttributeValueARRAY:
+				for i := 0; i < propertyAttrValue.ArrayVal().Len(); i++ {
+					// Check attr value is exists in the AttributeValue array.
+					// Equal checks for any of int, string, bool and double.
+					if attr.Equal(propertyAttrValue.ArrayVal().At(i)) {
+						return true
+					}
+				}
 				return false
+			default:
+				if !attr.Equal(*property.AttributeValue) {
+					return false
+				}
 			}
 		}
 	}

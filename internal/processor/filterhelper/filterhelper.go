@@ -34,7 +34,48 @@ func NewAttributeValueRaw(value interface{}) (pdata.AttributeValue, error) {
 		return pdata.NewAttributeValueString(val), nil
 	case bool:
 		return pdata.NewAttributeValueBool(val), nil
+	case []interface{}:
+		return fromArray(val), nil
+	case map[string]interface{}:
+		return fromMap(val), nil
 	default:
 		return pdata.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
+}
+
+func fromArray(val []interface{}) pdata.AttributeValue {
+	arr := pdata.NewAnyValueArray()
+	for _, v := range val {
+		arr.Append(fromVal(v))
+	}
+	av := pdata.NewAttributeValueArray()
+	av.SetArrayVal(arr)
+	return av
+}
+
+func fromMap(v map[string]interface{}) pdata.AttributeValue {
+	m := pdata.NewAttributeMap()
+	for k, v := range v {
+		m.Insert(k, fromVal(v))
+	}
+	m.Sort()
+	av := pdata.NewAttributeValueMap()
+	av.SetMapVal(m)
+	return av
+}
+
+func fromVal(val interface{}) pdata.AttributeValue {
+	switch v := val.(type) {
+	case string:
+		return pdata.NewAttributeValueString(v)
+	case int:
+		return pdata.NewAttributeValueInt(int64(v))
+	case float64:
+		return pdata.NewAttributeValueDouble(v)
+	case []interface{}:
+		return fromArray(v)
+	case map[string]interface{}:
+		return fromMap(v)
+	}
+	panic("data type is not supported in fromVal()")
 }
