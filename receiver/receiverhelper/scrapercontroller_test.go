@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -31,84 +30,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
-
-type testStart struct {
-	ch  chan bool
-	err error
-}
-
-func (ts *testStart) start(context.Context, component.Host) error {
-	ts.ch <- true
-	return ts.err
-}
-
-type testShutdown struct {
-	ch  chan bool
-	err error
-}
-
-func (ts *testShutdown) shutdown(context.Context) error {
-	ts.ch <- true
-	return ts.err
-}
-
-type baseTestCase struct {
-	name        string
-	start       bool
-	shutdown    bool
-	startErr    error
-	shutdownErr error
-}
-
-func TestBaseReceiver(t *testing.T) {
-	testCases := []baseTestCase{
-		{
-			name: "Standard",
-		},
-		{
-			name:     "WithStartAndShutdown",
-			start:    true,
-			shutdown: true,
-		},
-		{
-			name:        "WithStartAndShutdownErrors",
-			start:       true,
-			shutdown:    true,
-			startErr:    errors.New("err1"),
-			shutdownErr: errors.New("err2"),
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			startCh := make(chan bool, 1)
-			shutdownCh := make(chan bool, 1)
-			options := configureBaseOptions(test.start, test.shutdown, test.startErr, test.shutdownErr, startCh, shutdownCh)
-
-			bp := newBaseReceiver("", options...)
-
-			err := bp.Start(context.Background(), componenttest.NewNopHost())
-			if test.startErr != nil {
-				assert.Equal(t, test.startErr, err)
-			} else {
-				assert.NoError(t, err)
-				if test.start {
-					assertChannelCalled(t, startCh, "start was not called")
-				}
-			}
-
-			err = bp.Shutdown(context.Background())
-			if test.shutdownErr != nil {
-				assert.Equal(t, test.shutdownErr, err)
-			} else {
-				assert.NoError(t, err)
-				if test.shutdown {
-					assertChannelCalled(t, shutdownCh, "shutdown was not called")
-				}
-			}
-		})
-	}
-}
 
 type testInitialize struct {
 	ch  chan bool
@@ -136,7 +57,7 @@ type testScrapeMetrics struct {
 	err               error
 }
 
-func (ts *testScrapeMetrics) scrape(ctx context.Context) (pdata.MetricSlice, error) {
+func (ts *testScrapeMetrics) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	ts.timesScrapeCalled++
 	ts.ch <- ts.timesScrapeCalled
 
@@ -153,7 +74,7 @@ type testScrapeResourceMetrics struct {
 	err               error
 }
 
-func (ts *testScrapeResourceMetrics) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (ts *testScrapeResourceMetrics) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
 	ts.timesScrapeCalled++
 	ts.ch <- ts.timesScrapeCalled
 
@@ -166,11 +87,6 @@ func (ts *testScrapeResourceMetrics) scrape(ctx context.Context) (pdata.Resource
 
 type metricsTestCase struct {
 	name string
-
-	start       bool
-	shutdown    bool
-	startErr    error
-	shutdownErr error
 
 	scrapers                  int
 	resourceScrapers          int
@@ -191,18 +107,6 @@ func TestMetricReceiver(t *testing.T) {
 	testCases := []metricsTestCase{
 		{
 			name: "Standard",
-		},
-		{
-			name:     "WithBaseOptions",
-			start:    true,
-			shutdown: true,
-		},
-		{
-			name:        "WithBaseOptionsStartAndShutdownErrors",
-			start:       true,
-			shutdown:    true,
-			startErr:    errors.New("err1"),
-			shutdownErr: errors.New("err2"),
 		},
 		{
 			name:                      "AddMetricsScrapersWithDefaultCollectionInterval",
@@ -284,22 +188,19 @@ func TestMetricReceiver(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			startCh := make(chan bool, 1)
-			shutdownCh := make(chan bool, 1)
-			baseOptions := configureBaseOptions(test.start, test.shutdown, test.startErr, test.shutdownErr, startCh, shutdownCh)
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
 			scrapeResourceMetricsChs := make([]chan int, test.resourceScrapers)
 			closeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
-			options := configureMetricOptions(baseOptions, test, initializeChs, scrapeMetricsChs, scrapeResourceMetricsChs, closeChs)
+			options := configureMetricOptions(test, initializeChs, scrapeMetricsChs, scrapeResourceMetricsChs, closeChs)
 
 			var nextConsumer consumer.MetricsConsumer
 			sink := &exportertest.SinkMetricsExporter{}
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			mr, err := NewMetricReceiver(&configmodels.ReceiverSettings{}, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(&configmodels.ReceiverSettings{}, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -310,13 +211,8 @@ func TestMetricReceiver(t *testing.T) {
 			expectedStartErr := getExpectedStartErr(test)
 			if expectedStartErr != nil {
 				assert.Equal(t, expectedStartErr, err)
-			} else {
-				if test.start {
-					assertChannelCalled(t, startCh, "start was not called")
-				}
-				if test.initialize {
-					assertChannelsCalled(t, initializeChs, "initialize was not called")
-				}
+			} else if test.initialize {
+				assertChannelsCalled(t, initializeChs, "initialize was not called")
 			}
 
 			// TODO: validate that observability information is reported correctly on error
@@ -338,41 +234,22 @@ func TestMetricReceiver(t *testing.T) {
 			expectedShutdownErr := getExpectedShutdownErr(test)
 			if expectedShutdownErr != nil {
 				assert.EqualError(t, err, expectedShutdownErr.Error())
-			} else {
-				if test.shutdown {
-					assertChannelCalled(t, shutdownCh, "shutdown was not called")
-				}
-				if test.close {
-					assertChannelsCalled(t, closeChs, "clost was not called")
-				}
+			} else if test.close {
+				assertChannelsCalled(t, closeChs, "close was not called")
 			}
 		})
 	}
 }
 
-func configureBaseOptions(start, shutdown bool, startErr, shutdownErr error, startCh, shutdownCh chan bool) []Option {
-	baseOptions := []Option{}
-	if start {
-		ts := &testStart{ch: startCh, err: startErr}
-		baseOptions = append(baseOptions, WithStart(ts.start))
-	}
-	if shutdown {
-		ts := &testShutdown{ch: shutdownCh, err: shutdownErr}
-		baseOptions = append(baseOptions, WithShutdown(ts.shutdown))
-	}
-	return baseOptions
-}
-
-func configureMetricOptions(baseOptions []Option, test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs, testScrapeResourceMetricsChs []chan int, closeChs []chan bool) []MetricOption {
-	metricOptions := []MetricOption{}
-	metricOptions = append(metricOptions, WithBaseOptions(baseOptions...))
+func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs, testScrapeResourceMetricsChs []chan int, closeChs []chan bool) []ScraperControllerOption {
+	var metricOptions []ScraperControllerOption
 
 	if test.defaultCollectionInterval != 0 {
 		metricOptions = append(metricOptions, WithDefaultCollectionInterval(test.defaultCollectionInterval))
 	}
 
 	for i := 0; i < test.scrapers; i++ {
-		scraperOptions := []ScraperOption{}
+		var scraperOptions []ScraperOption
 		if test.initialize {
 			initializeChs[i] = make(chan bool, 1)
 			ti := &testInitialize{ch: initializeChs[i], err: test.initializeErr}
@@ -390,7 +267,7 @@ func configureMetricOptions(baseOptions []Option, test metricsTestCase, initiali
 	}
 
 	for i := 0; i < test.resourceScrapers; i++ {
-		scraperOptions := []ScraperOption{}
+		var scraperOptions []ScraperOption
 		if test.initialize {
 			initializeChs[test.scrapers+i] = make(chan bool, 1)
 			ti := &testInitialize{ch: initializeChs[test.scrapers+i], err: test.initializeErr}
@@ -411,27 +288,19 @@ func configureMetricOptions(baseOptions []Option, test metricsTestCase, initiali
 }
 
 func getExpectedStartErr(test metricsTestCase) error {
-	if test.startErr != nil {
-		return test.startErr
-	}
-
 	return test.initializeErr
 }
 
 func getExpectedShutdownErr(test metricsTestCase) error {
-	var errors []error
+	var errs []error
 
 	if test.closeErr != nil {
 		for i := 0; i < test.scrapers; i++ {
-			errors = append(errors, test.closeErr)
+			errs = append(errs, test.closeErr)
 		}
 	}
 
-	if test.shutdownErr != nil {
-		errors = append(errors, test.shutdownErr)
-	}
-
-	return componenterror.CombineErrors(errors)
+	return componenterror.CombineErrors(errs)
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {
