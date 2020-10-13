@@ -67,19 +67,13 @@ func createTraceExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporter(
 		cfg,
 		oce.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(oce.shutdown))
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
+		exporterhelper.WithQueue(oCfg.QueueSettings))
 }
 
 func createMetricsExporter(
@@ -92,20 +86,13 @@ func createMetricsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
 		oce.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(oce.shutdown),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
+		exporterhelper.WithQueue(oCfg.QueueSettings))
 }
 
 func createLogsExporter(
@@ -118,18 +105,11 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	oexp, err := exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogsExporter(
 		cfg,
 		oce.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(oce.shutdown),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return oexp, nil
+		exporterhelper.WithQueue(oCfg.QueueSettings))
 }
