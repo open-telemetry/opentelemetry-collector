@@ -386,7 +386,7 @@ func configureMetricOptions(baseOptions []Option, test metricsTestCase, initiali
 
 		scrapeMetricsChs[i] = make(chan int, 10)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddMetricsScraper(&test.scraperSettings, tsm.scrape, scraperOptions...))
+		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper(test.scraperSettings, tsm.scrape, scraperOptions...)))
 	}
 
 	for i := 0; i < test.resourceScrapers; i++ {
@@ -404,7 +404,7 @@ func configureMetricOptions(baseOptions []Option, test metricsTestCase, initiali
 
 		testScrapeResourceMetricsChs[i] = make(chan int, 10)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddResourceMetricsScraper(&test.scraperSettings, tsrm.scrape, scraperOptions...))
+		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(test.scraperSettings, tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
