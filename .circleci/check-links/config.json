@@ -5,6 +5,9 @@
         },
         {
             "pattern": "http(s)?://localhost"
+        },
+        {
+            "pattern": "http(s)?://example.com"
         }
     ]
 }
