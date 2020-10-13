@@ -200,7 +200,7 @@ func TestMetricReceiver(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			mr, err := NewScraperController(&configmodels.ReceiverSettings{}, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(&configmodels.ReceiverSettings{}, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -211,10 +211,8 @@ func TestMetricReceiver(t *testing.T) {
 			expectedStartErr := getExpectedStartErr(test)
 			if expectedStartErr != nil {
 				assert.Equal(t, expectedStartErr, err)
-			} else {
-				if test.initialize {
-					assertChannelsCalled(t, initializeChs, "initialize was not called")
-				}
+			} else if test.initialize {
+				assertChannelsCalled(t, initializeChs, "initialize was not called")
 			}
 
 			// TODO: validate that observability information is reported correctly on error
@@ -236,10 +234,8 @@ func TestMetricReceiver(t *testing.T) {
 			expectedShutdownErr := getExpectedShutdownErr(test)
 			if expectedShutdownErr != nil {
 				assert.EqualError(t, err, expectedShutdownErr.Error())
-			} else {
-				if test.close {
-					assertChannelsCalled(t, closeChs, "clost was not called")
-				}
+			} else if test.close {
+				assertChannelsCalled(t, closeChs, "close was not called")
 			}
 		})
 	}

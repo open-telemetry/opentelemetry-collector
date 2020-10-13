@@ -70,8 +70,8 @@ type scraperController struct {
 	done           chan struct{}
 }
 
-// NewScraperController creates a Receiver with the configured options, that can control multiple scrapers.
-func NewScraperController(_ configmodels.Receiver, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
+// NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
+func NewScraperControllerReceiver(_ configmodels.Receiver, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
