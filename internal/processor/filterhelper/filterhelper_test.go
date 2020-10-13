@@ -65,13 +65,19 @@ func TestHelper_AttributeValue(t *testing.T) {
 func TestHelper_AttributeValueArray(t *testing.T) {
 	testData := []interface{}{"alpha", "beta", "gamma", "delta"}
 	val, err := NewAttributeValueRaw(testData)
+	assert.Equal(t, val.Type(), pdata.AttributeValueARRAY)
+	assert.NotNil(t, val.ArrayVal())
+	assert.Equal(t, 4, val.ArrayVal().Len())
 	assert.NoError(t, err)
 	for i := 0; i < val.ArrayVal().Len(); i++ {
 		assert.Equal(t, pdata.NewAttributeValueString(testData[i].(string)), val.ArrayVal().At(i))
 	}
 
-	testData = []interface{}{int64(200), int64(203)}
+	testData = []interface{}{int64(200), int64(203), int64(500)}
 	val, err = NewAttributeValueRaw(testData)
+	assert.Equal(t, val.Type(), pdata.AttributeValueARRAY)
+	assert.NotNil(t, val.ArrayVal())
+	assert.Equal(t, 3, val.ArrayVal().Len())
 	assert.NoError(t, err)
 	for i := 0; i < val.ArrayVal().Len(); i++ {
 		assert.Equal(t, pdata.NewAttributeValueInt(testData[i].(int64)), val.ArrayVal().At(i))
@@ -79,13 +85,19 @@ func TestHelper_AttributeValueArray(t *testing.T) {
 
 	testData = []interface{}{float32(5341.129312), float32(888.102)}
 	val, err = NewAttributeValueRaw(testData)
+	assert.Equal(t, val.Type(), pdata.AttributeValueARRAY)
+	assert.NotNil(t, val.ArrayVal())
+	assert.Equal(t, 2, val.ArrayVal().Len())
 	assert.NoError(t, err)
 	for i := 0; i < val.ArrayVal().Len(); i++ {
 		assert.Equal(t, pdata.NewAttributeValueDouble(float64(float32(testData[i].(float32)))), val.ArrayVal().At(i))
 	}
 
-	testData = []interface{}{true, false}
+	testData = []interface{}{true}
 	val, err = NewAttributeValueRaw(testData)
+	assert.Equal(t, val.Type(), pdata.AttributeValueARRAY)
+	assert.NotNil(t, val.ArrayVal())
+	assert.Equal(t, 1, val.ArrayVal().Len())
 	assert.NoError(t, err)
 	for i := 0; i < val.ArrayVal().Len(); i++ {
 		assert.Equal(t, pdata.NewAttributeValueBool(testData[i].(bool)), val.ArrayVal().At(i))
