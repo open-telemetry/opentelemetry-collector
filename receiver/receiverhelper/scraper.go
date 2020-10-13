@@ -38,13 +38,6 @@ type Close func(ctx context.Context) error
 // ScraperOption apply changes to internal options.
 type ScraperOption func(*baseScraper)
 
-// ScraperConfig is the configuration of a scraper. Specific scrapers must implement this
-// interface and will typically embed ScraperSettings struct or a struct that extends it.
-type ScraperConfig interface {
-	CollectionInterval() time.Duration
-	SetCollectionInterval(collectionInterval time.Duration)
-}
-
 // ScraperSettings defines common settings for a scraper configuration.
 // Specific scrapers can embed this struct and extend it with more fields if needed.
 type ScraperSettings struct {
@@ -56,15 +49,51 @@ func (ss *ScraperSettings) CollectionInterval() time.Duration {
 	return ss.CollectionIntervalVal
 }
 
-// SetCollectionInterval sets the scraper collection interval.
-func (ss *ScraperSettings) SetCollectionInterval(collectionInterval time.Duration) {
-	ss.CollectionIntervalVal = collectionInterval
+type BaseScraper interface {
+	// Initialize performs any timely initialization tasks such as
+	// setting up performance counters for initial collection.
+	Initialize(ctx context.Context) error
+
+	// CollectionInterval gets the scraper collection interval.
+	CollectionInterval() time.Duration
+
+	// Close should clean up any unmanaged resources such as
+	// performance counter handles.
+	Close(ctx context.Context) error
 }
 
+// MetricsScraper is an interface for scrapers that scrape metrics.
+type MetricsScraper interface {
+	BaseScraper
+	Scrape(context.Context) (pdata.MetricSlice, error)
+}
+
+// ResourceMetricsScraper is an interface for scrapers that scrape resource metrics.
+type ResourceMetricsScraper interface {
+	BaseScraper
+	Scrape(context.Context) (pdata.ResourceMetricsSlice, error)
+}
+
+var _ BaseScraper = (*baseScraper)(nil)
+
 type baseScraper struct {
-	cfg        ScraperConfig
+	ScraperSettings
 	initialize Initialize
 	close      Close
+}
+
+func (b baseScraper) Initialize(ctx context.Context) error {
+	if b.initialize == nil {
+		return nil
+	}
+	return b.initialize(ctx)
+}
+
+func (b baseScraper) Close(ctx context.Context) error {
+	if b.close == nil {
+		return nil
+	}
+	return b.close(ctx)
 }
 
 // WithInitialize sets the function that will be called on startup.
@@ -83,20 +112,22 @@ func WithClose(close Close) ScraperOption {
 
 type metricsScraper struct {
 	baseScraper
-	scrape ScrapeMetrics
+	ScrapeMetrics
 }
 
-// newMetricsScraper creates a Scraper that calls Scrape at the specified
+var _ MetricsScraper = (*metricsScraper)(nil)
+
+// NewMetricsScraper creates a Scraper that calls Scrape at the specified
 // collection interval, reports observability information, and passes the
 // scraped metrics to the next consumer.
-func newMetricsScraper(
-	cfg ScraperConfig,
+func NewMetricsScraper(
+	cfg ScraperSettings,
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
-) *metricsScraper {
+) MetricsScraper {
 	ms := &metricsScraper{
-		baseScraper: baseScraper{cfg: cfg},
-		scrape:      scrape,
+		baseScraper:   baseScraper{ScraperSettings: cfg},
+		ScrapeMetrics: scrape,
 	}
 
 	for _, op := range options {
@@ -106,22 +137,28 @@ func newMetricsScraper(
 	return ms
 }
 
-type resourceMetricsScraper struct {
-	baseScraper
-	scrape ScrapeResourceMetrics
+func (m metricsScraper) Scrape(ctx context.Context) (pdata.MetricSlice, error) {
+	return m.ScrapeMetrics(ctx)
 }
 
-// newResourceMetricsScraper creates a Scraper that calls Scrape at the
+type resourceMetricsScraper struct {
+	baseScraper
+	ScrapeResourceMetrics
+}
+
+var _ ResourceMetricsScraper = (*resourceMetricsScraper)(nil)
+
+// NewResourceMetricsScraper creates a Scraper that calls Scrape at the
 // specified collection interval, reports observability information, and
 // passes the scraped resource metrics to the next consumer.
-func newResourceMetricsScraper(
-	cfg ScraperConfig,
+func NewResourceMetricsScraper(
+	cfg ScraperSettings,
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
-) *resourceMetricsScraper {
+) ResourceMetricsScraper {
 	rms := &resourceMetricsScraper{
-		baseScraper: baseScraper{cfg: cfg},
-		scrape:      scrape,
+		baseScraper:           baseScraper{ScraperSettings: cfg},
+		ScrapeResourceMetrics: scrape,
 	}
 
 	for _, op := range options {
@@ -129,4 +166,8 @@ func newResourceMetricsScraper(
 	}
 
 	return rms
+}
+
+func (r resourceMetricsScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+	return r.ScrapeResourceMetrics(ctx)
 }

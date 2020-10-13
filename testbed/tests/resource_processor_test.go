@@ -15,6 +15,7 @@
 package tests
 
 import (
+	"context"
 	"path"
 	"path/filepath"
 	"testing"
@@ -259,7 +260,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			tc.EnableRecording()
 
-			sender.Start()
+			require.NoError(t, sender.Start())
 
 			// Clear previously received metrics.
 			tc.MockBackend.ClearReceivedItems()
@@ -268,8 +269,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			sender, ok := tc.Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
-			err = sender.SendMetrics(test.mockedConsumedMetricData)
-			require.NoError(t, err, "failed to send metrics", err)
+			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetricData))
 
 			// We bypass the load generator in this test, but make sure to increment the
 			// counter since it is used in final reports.

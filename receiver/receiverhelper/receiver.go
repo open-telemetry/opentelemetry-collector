@@ -110,9 +110,9 @@ func WithDefaultCollectionInterval(defaultCollectionInterval time.Duration) Metr
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
-func AddMetricsScraper(cfg ScraperConfig, scrape ScrapeMetrics, options ...ScraperOption) MetricOption {
+func AddMetricsScraper(scraper MetricsScraper) MetricOption {
 	return func(o *metricsReceiver) {
-		o.metricScrapers = append(o.metricScrapers, newMetricsScraper(cfg, scrape, options...))
+		o.metricScrapers = append(o.metricScrapers, scraper)
 	}
 }
 
@@ -122,9 +122,9 @@ func AddMetricsScraper(cfg ScraperConfig, scrape ScrapeMetrics, options ...Scrap
 //
 // Observability information will be reported, and the scraped resource
 // metrics will be passed to the next consumer.
-func AddResourceMetricsScraper(cfg ScraperConfig, scrape ScrapeResourceMetrics, options ...ScraperOption) MetricOption {
+func AddResourceMetricsScraper(scrape ResourceMetricsScraper) MetricOption {
 	return func(o *metricsReceiver) {
-		o.resourceMetricScrapers = append(o.resourceMetricScrapers, newResourceMetricsScraper(cfg, scrape, options...))
+		o.resourceMetricScrapers = append(o.resourceMetricScrapers, scrape)
 	}
 }
 
@@ -133,8 +133,8 @@ type metricsReceiver struct {
 	defaultCollectionInterval time.Duration
 	nextConsumer              consumer.MetricsConsumer
 
-	metricScrapers         []*metricsScraper
-	resourceMetricScrapers []*resourceMetricsScraper
+	metricScrapers         []MetricsScraper
+	resourceMetricScrapers []ResourceMetricsScraper
 	done                   chan struct{}
 }
 
@@ -199,12 +199,14 @@ func NewMetricReceiver(config configmodels.Receiver, nextConsumer consumer.Metri
 
 // initializeScrapers initializes all the scrapers
 func (mr *metricsReceiver) initializeScrapers(ctx context.Context) error {
-	for _, scraper := range mr.allBaseScrapers() {
-		if scraper.initialize == nil {
-			continue
+	for _, scraper := range mr.metricScrapers {
+		if err := scraper.Initialize(ctx); err != nil {
+			return err
 		}
+	}
 
-		if err := scraper.initialize(ctx); err != nil {
+	for _, scraper := range mr.resourceMetricScrapers {
+		if err := scraper.Initialize(ctx); err != nil {
 			return err
 		}
 	}
@@ -226,8 +228,8 @@ func (mr *metricsReceiver) startScrapingMetrics() {
 		scraper := mr.metricScrapers[i]
 		go func() {
 			collectionInterval := mr.defaultCollectionInterval
-			if scraper.cfg.CollectionInterval() != 0 {
-				collectionInterval = scraper.cfg.CollectionInterval()
+			if scraper.CollectionInterval() != 0 {
+				collectionInterval = scraper.CollectionInterval()
 			}
 
 			ticker := time.NewTicker(collectionInterval)
@@ -248,9 +250,9 @@ func (mr *metricsReceiver) startScrapingMetrics() {
 // scrapeMetricsAndReport calls the Scrape function of the provided Metrics Scraper,
 // records observability information, and passes the scraped metrics to the next
 // component.
-func (mr *metricsReceiver) scrapeMetricsAndReport(ctx context.Context, ms *metricsScraper) {
+func (mr *metricsReceiver) scrapeMetricsAndReport(ctx context.Context, ms MetricsScraper) {
 	// TODO: Add observability metrics support
-	metrics, err := ms.scrape(ctx)
+	metrics, err := ms.Scrape(ctx)
 	if err != nil {
 		return
 	}
@@ -274,8 +276,8 @@ func (mr *metricsReceiver) startScrapingResourceMetrics() {
 		scraper := mr.resourceMetricScrapers[i]
 		go func() {
 			collectionInterval := mr.defaultCollectionInterval
-			if scraper.cfg.CollectionInterval() != 0 {
-				collectionInterval = scraper.cfg.CollectionInterval()
+			if scraper.CollectionInterval() != 0 {
+				collectionInterval = scraper.CollectionInterval()
 			}
 
 			ticker := time.NewTicker(collectionInterval)
@@ -296,9 +298,9 @@ func (mr *metricsReceiver) startScrapingResourceMetrics() {
 // scrapeResourceMetricsAndReport calls the Scrape function of the provided Resource
 // Metrics Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
-func (mr *metricsReceiver) scrapeResourceMetricsAndReport(ctx context.Context, rms *resourceMetricsScraper) {
+func (mr *metricsReceiver) scrapeResourceMetricsAndReport(ctx context.Context, rms ResourceMetricsScraper) {
 	// TODO: Add observability metrics support
-	metrics, err := rms.scrape(ctx)
+	metrics, err := rms.Scrape(ctx)
 	if err != nil {
 		return
 	}
@@ -321,27 +323,17 @@ func (mr *metricsReceiver) stopScraping() {
 func (mr *metricsReceiver) closeScrapers(ctx context.Context) error {
 	var errors []error
 
-	for _, scraper := range mr.allBaseScrapers() {
-		if scraper.close == nil {
-			continue
+	for _, scraper := range mr.metricScrapers {
+		if err := scraper.Close(ctx); err != nil {
+			errors = append(errors, err)
 		}
+	}
 
-		if err := scraper.close(ctx); err != nil {
+	for _, scraper := range mr.resourceMetricScrapers {
+		if err := scraper.Close(ctx); err != nil {
 			errors = append(errors, err)
 		}
 	}
 
 	return componenterror.CombineErrors(errors)
-}
-
-func (mr *metricsReceiver) allBaseScrapers() []baseScraper {
-	scrapers := make([]baseScraper, len(mr.metricScrapers)+len(mr.resourceMetricScrapers))
-	for i, ms := range mr.metricScrapers {
-		scrapers[i] = ms.baseScraper
-	}
-	startIdx := len(mr.metricScrapers)
-	for i, rms := range mr.resourceMetricScrapers {
-		scrapers[startIdx+i] = rms.baseScraper
-	}
-	return scrapers
 }
