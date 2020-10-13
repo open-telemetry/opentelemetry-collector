@@ -40,12 +40,6 @@ func NewAttributeValueRaw(value interface{}) (pdata.AttributeValue, error) {
 			return attributeVal, err
 		}
 		return attributeVal, nil
-	case map[string]interface{}:
-		attributeVal, err := fromMap(val)
-		if err != nil {
-			return attributeVal, err
-		}
-		return attributeVal, nil
 	default:
 		return pdata.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
@@ -62,20 +56,5 @@ func fromArray(val []interface{}) (pdata.AttributeValue, error) {
 	}
 	av := pdata.NewAttributeValueArray()
 	av.SetArrayVal(arr)
-	return av, nil
-}
-
-func fromMap(v map[string]interface{}) (pdata.AttributeValue, error) {
-	m := pdata.NewAttributeMap()
-	for k, v := range v {
-		attributeVal, err := NewAttributeValueRaw(v)
-		if err != nil {
-			return attributeVal, err
-		}
-		m.Insert(k, attributeVal)
-	}
-	m.Sort()
-	av := pdata.NewAttributeValueMap()
-	av.SetMapVal(m)
 	return av, nil
 }
