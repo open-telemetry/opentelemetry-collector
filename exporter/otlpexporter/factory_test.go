@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -37,12 +38,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings.Enabled, true, "default retry is enabled")
-	assert.Equal(t, ocfg.RetrySettings.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
-	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
-	assert.Equal(t, ocfg.RetrySettings.MaxInterval, 30*time.Second, "default retry MaxInterval")
-	assert.Equal(t, ocfg.QueueSettings.Enabled, false, "default sending queue is disabled")
-	assert.Equal(t, ocfg.Timeout, 5*time.Second, "default timeout is 5 second")
+	assert.Equal(t, ocfg.RetrySettings, exporterhelper.CreateDefaultRetrySettings())
+	assert.Equal(t, ocfg.QueueSettings, exporterhelper.CreateDefaultQueueSettings())
+	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.CreateDefaultTimeoutSettings())
 }
 
 func TestCreateMetricsExporter(t *testing.T) {

@@ -114,23 +114,16 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
    check_interval: 1s
    limit_mib: 10
 `,
-		"queued_retry": `
-  queued_retry:
-`,
 	}
 
-	noLimitProcessors := map[string]string{
-		"queued_retry": `
-  queued_retry:
-`,
-	}
+	noLimitProcessors := map[string]string{}
 
 	var processorsConfig = []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
 			ExpectedMaxRAM:      200,
-			ExpectedMinFinalRAM: 100,
+			ExpectedMinFinalRAM: 30,
 		},
 		{
 			Name:                "MemoryLimit",
@@ -400,9 +393,6 @@ func TestTraceAttributesProcessor(t *testing.T) {
       - action: insert
         key: "new_attr"
         value: "string value"
-`,
-				"queued_retry": `
-  queued_retry:
 `,
 			}
 

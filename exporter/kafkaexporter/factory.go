@@ -63,9 +63,6 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings by default.
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -73,7 +70,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
 		Topic:           defaultTopic,
 		Encoding:        defaultEncoding,
