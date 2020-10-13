@@ -20,22 +20,19 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// ScraperControllerSettings defines common settings for a scraper controller
+// configuration. Scraper controller receivers can embed this struct and
+// extend it with more fields if needed.
+type ScraperControllerSettings struct {
+	CollectionIntervalVal time.Duration `mapstructure:"collection_interval"`
+}
+
 // ScraperControllerOption apply changes to internal options.
 type ScraperControllerOption func(*scraperController)
-
-// WithDefaultCollectionInterval overrides the default collection
-// interval (1 minute) that will be applied to all scrapers if not
-// overridden by the individual scraper.
-func WithDefaultCollectionInterval(defaultCollectionInterval time.Duration) ScraperControllerOption {
-	return func(o *scraperController) {
-		o.defaultCollectionInterval = defaultCollectionInterval
-	}
-}
 
 // AddMetricsScraper configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval
@@ -45,8 +42,7 @@ func WithDefaultCollectionInterval(defaultCollectionInterval time.Duration) Scra
 // will be passed to the next consumer.
 func AddMetricsScraper(scraper MetricsScraper) ScraperControllerOption {
 	return func(o *scraperController) {
-		// TODO: Instead of creating one wrapper per MetricsScraper, combine all with same collection interval.
-		o.metricScrapers = append(o.metricScrapers, &multiMetricScraper{scrapers: []MetricsScraper{scraper}})
+		o.metricsScrapers.scrapers = append(o.metricsScrapers.scrapers, scraper)
 	}
 }
 
@@ -58,54 +54,64 @@ func AddMetricsScraper(scraper MetricsScraper) ScraperControllerOption {
 // metrics will be passed to the next consumer.
 func AddResourceMetricsScraper(scrape ResourceMetricsScraper) ScraperControllerOption {
 	return func(o *scraperController) {
-		o.metricScrapers = append(o.metricScrapers, scrape)
+		o.resourceMetricScrapers = append(o.resourceMetricScrapers, scrape)
 	}
 }
 
 type scraperController struct {
-	defaultCollectionInterval time.Duration
-	nextConsumer              consumer.MetricsConsumer
+	collectionInterval time.Duration
+	nextConsumer       consumer.MetricsConsumer
 
-	metricScrapers []ResourceMetricsScraper
-	done           chan struct{}
+	metricsScrapers        *multiMetricScraper
+	resourceMetricScrapers []ResourceMetricsScraper
+	done                   chan struct{}
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
-func NewScraperControllerReceiver(_ configmodels.Receiver, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
+func NewScraperControllerReceiver(cfg ScraperControllerSettings, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	mr := &scraperController{
-		defaultCollectionInterval: time.Minute,
-		nextConsumer:              nextConsumer,
-		done:                      make(chan struct{}),
+	sc := &scraperController{
+		collectionInterval: time.Minute,
+		nextConsumer:       nextConsumer,
+		metricsScrapers:    &multiMetricScraper{},
+		done:               make(chan struct{}),
+	}
+
+	if cfg.CollectionIntervalVal > 0 {
+		sc.collectionInterval = cfg.CollectionIntervalVal
 	}
 
 	for _, op := range options {
-		op(mr)
+		op(sc)
 	}
 
-	return mr, nil
+	if len(sc.metricsScrapers.scrapers) > 0 {
+		sc.resourceMetricScrapers = append(sc.resourceMetricScrapers, sc.metricsScrapers)
+	}
+
+	return sc, nil
 }
 
 // Start the receiver, invoked during service start.
-func (mr *scraperController) Start(ctx context.Context, _ component.Host) error {
-	if err := mr.initializeScrapers(ctx); err != nil {
+func (sc *scraperController) Start(ctx context.Context, _ component.Host) error {
+	if err := sc.initializeScrapers(ctx); err != nil {
 		return err
 	}
 
-	mr.startScraping()
+	sc.startScraping()
 	return nil
 }
 
 // Shutdown the receiver, invoked during service shutdown.
-func (mr *scraperController) Shutdown(ctx context.Context) error {
-	mr.stopScraping()
+func (sc *scraperController) Shutdown(ctx context.Context) error {
+	sc.stopScraping()
 
 	var errors []error
 
-	if err := mr.closeScrapers(ctx); err != nil {
+	if err := sc.closeScrapers(ctx); err != nil {
 		errors = append(errors, err)
 	}
 
@@ -113,8 +119,8 @@ func (mr *scraperController) Shutdown(ctx context.Context) error {
 }
 
 // initializeScrapers initializes all the scrapers
-func (mr *scraperController) initializeScrapers(ctx context.Context) error {
-	for _, scraper := range mr.metricScrapers {
+func (sc *scraperController) initializeScrapers(ctx context.Context) error {
+	for _, scraper := range sc.resourceMetricScrapers {
 		if err := scraper.Initialize(ctx); err != nil {
 			return err
 		}
@@ -125,60 +131,59 @@ func (mr *scraperController) initializeScrapers(ctx context.Context) error {
 
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
-func (mr *scraperController) startScraping() {
-	// TODO: use one ticker for each set of scrapers that have the same collection interval.
+func (sc *scraperController) startScraping() {
+	go func() {
+		ticker := time.NewTicker(sc.collectionInterval)
+		defer ticker.Stop()
 
-	for i := 0; i < len(mr.metricScrapers); i++ {
-		scraper := mr.metricScrapers[i]
-		go func() {
-			collectionInterval := mr.defaultCollectionInterval
-			if scraper.CollectionInterval() != 0 {
-				collectionInterval = scraper.CollectionInterval()
-			}
-
-			ticker := time.NewTicker(collectionInterval)
-			defer ticker.Stop()
-
-			for {
-				select {
-				case <-ticker.C:
-					mr.scrapeMetricsAndReport(context.Background(), scraper)
-				case <-mr.done:
-					return
+		for {
+			select {
+			case <-ticker.C:
+				for i := 0; i < len(sc.resourceMetricScrapers); i++ {
+					sc.scrapeMetricsAndReport(context.Background(), sc.resourceMetricScrapers[i])
 				}
+			case <-sc.done:
+				return
 			}
-		}()
-	}
+		}
+	}()
 }
 
 // scrapeMetricsAndReport calls the Scrape function of the provided Scraper, records observability information,
 // and passes the scraped metrics to the next component.
-func (mr *scraperController) scrapeMetricsAndReport(ctx context.Context, rms ResourceMetricsScraper) {
-	// TODO: Add observability metrics support
-	metrics, err := rms.Scrape(ctx)
-	if err != nil {
-		return
+func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context, rms ResourceMetricsScraper) {
+	// TODO: add observability metrics support
+	var errs []error
+
+	metrics := pdata.NewMetrics()
+
+	for i := 0; i < len(sc.resourceMetricScrapers); i++ {
+		resourceMetrics, err := rms.Scrape(ctx)
+		if err != nil {
+			errs = append(errs, err) // TODO: handle partial errors
+			continue
+		}
+
+		resourceMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	mr.nextConsumer.ConsumeMetrics(ctx, resourceMetricsSliceToMetricData(metrics))
-}
+	if len(errs) > 0 {
+		// TODO: report error
+	}
 
-func resourceMetricsSliceToMetricData(resourceMetrics pdata.ResourceMetricsSlice) pdata.Metrics {
-	md := pdata.NewMetrics()
-	resourceMetrics.MoveAndAppendTo(md.ResourceMetrics())
-	return md
+	sc.nextConsumer.ConsumeMetrics(ctx, metrics)
 }
 
 // stopScraping stops the ticker
-func (mr *scraperController) stopScraping() {
-	close(mr.done)
+func (sc *scraperController) stopScraping() {
+	close(sc.done)
 }
 
 // closeScrapers closes all the scrapers
-func (mr *scraperController) closeScrapers(ctx context.Context) error {
+func (sc *scraperController) closeScrapers(ctx context.Context) error {
 	var errs []error
 
-	for _, scraper := range mr.metricScrapers {
+	for _, scraper := range sc.resourceMetricScrapers {
 		if err := scraper.Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
@@ -200,10 +205,6 @@ func (mms *multiMetricScraper) Initialize(ctx context.Context) error {
 		}
 	}
 	return nil
-}
-
-func (mms *multiMetricScraper) CollectionInterval() time.Duration {
-	return mms.scrapers[0].CollectionInterval()
 }
 
 func (mms *multiMetricScraper) Close(ctx context.Context) error {
