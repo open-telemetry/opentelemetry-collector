@@ -21,6 +21,7 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -113,23 +114,16 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
    check_interval: 1s
    limit_mib: 10
 `,
-		"queued_retry": `
-  queued_retry:
-`,
 	}
 
-	noLimitProcessors := map[string]string{
-		"queued_retry": `
-  queued_retry:
-`,
-	}
+	noLimitProcessors := map[string]string{}
 
 	var processorsConfig = []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
 			ExpectedMaxRAM:      200,
-			ExpectedMinFinalRAM: 100,
+			ExpectedMinFinalRAM: 30,
 		},
 		{
 			Name:                "MemoryLimit",
@@ -333,7 +327,7 @@ func verifySingleSpan(
 	spans.At(0).SetName(spanName)
 
 	sender := tc.Sender.(testbed.TraceDataSender)
-	sender.SendSpans(td)
+	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.
@@ -400,9 +394,6 @@ func TestTraceAttributesProcessor(t *testing.T) {
         key: "new_attr"
         value: "string value"
 `,
-				"queued_retry": `
-  queued_retry:
-`,
 			}
 
 			agentProc := &testbed.ChildProcess{}
@@ -430,7 +421,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			tc.EnableRecording()
 
-			test.sender.Start()
+			require.NoError(t, test.sender.Start())
 
 			// Create a span that matches "include" filter.
 			spanToInclude := "span-to-add-attr"

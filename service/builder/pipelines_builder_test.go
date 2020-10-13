@@ -173,7 +173,7 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			// First check that there are no logs in the exporters yet.
 			var exporterConsumers []*componenttest.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				consumer := exporter.le.(*componenttest.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
 				exporterConsumers = append(exporterConsumers, consumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
@@ -235,7 +235,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// First check that there are no traces in the exporters yet.
 	var exporterConsumers []*componenttest.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		consumer := exporter.te.(*componenttest.ExampleExporterConsumer)
+		consumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, consumer)
 		require.Equal(t, len(consumer.Traces), 0)
 	}

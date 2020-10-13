@@ -299,7 +299,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 	tc.Sleep(tc.Duration)
 
 	rss, _, _ := tc.AgentMemoryInfo()
-	assert.True(t, rss > configuration.ExpectedMinFinalRAM)
+	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)
 }
 
 func constructLoadOptions(test TestCase) testbed.LoadOptions {

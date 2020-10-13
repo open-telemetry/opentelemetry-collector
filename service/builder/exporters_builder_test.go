@@ -70,8 +70,9 @@ func TestExportersBuilder_Build(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.te)
-	assert.Nil(t, e1.me)
+	assert.NotNil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getMetricExporter())
+	assert.Nil(t, e1.getLogExporter())
 
 	// Ensure it can be started.
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
@@ -98,8 +99,9 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
-	assert.Nil(t, e1.te)
-	assert.Nil(t, e1.me)
+	assert.Nil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getMetricExporter())
+	assert.Nil(t, e1.getLogExporter())
 
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
@@ -138,9 +140,9 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 
 	// Ensure exporter has its fields correctly populated.
 	require.NotNil(t, e1)
-	assert.NotNil(t, e1.le)
-	assert.Nil(t, e1.te)
-	assert.Nil(t, e1.me)
+	assert.NotNil(t, e1.getLogExporter())
+	assert.Nil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getMetricExporter())
 
 	// Ensure it can be started.
 	err = exporters.StartAll(context.Background(), componenttest.NewNopHost())
@@ -163,9 +165,9 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
 	// Metrics Exporter are nil.
 	require.NotNil(t, e1)
-	assert.Nil(t, e1.te)
-	assert.Nil(t, e1.me)
-	assert.Nil(t, e1.le)
+	assert.Nil(t, e1.getTraceExporter())
+	assert.Nil(t, e1.getMetricExporter())
+	assert.Nil(t, e1.getLogExporter())
 }
 
 func TestExportersBuilder_StartAll(t *testing.T) {
@@ -173,18 +175,24 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 	expCfg := &configmodels.ExporterSettings{}
 	traceExporter := &componenttest.ExampleExporterConsumer{}
 	metricExporter := &componenttest.ExampleExporterConsumer{}
+	logsExporter := &componenttest.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
-		te:     traceExporter,
-		me:     metricExporter,
+		expByDataType: map[configmodels.DataType]component.Exporter{
+			configmodels.TracesDataType:  traceExporter,
+			configmodels.MetricsDataType: metricExporter,
+			configmodels.LogsDataType:    logsExporter,
+		},
 	}
 	assert.False(t, traceExporter.ExporterStarted)
 	assert.False(t, metricExporter.ExporterStarted)
+	assert.False(t, logsExporter.ExporterStarted)
 
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
 
 	assert.True(t, traceExporter.ExporterStarted)
 	assert.True(t, metricExporter.ExporterStarted)
+	assert.True(t, logsExporter.ExporterStarted)
 }
 
 func TestExportersBuilder_StopAll(t *testing.T) {
@@ -192,17 +200,23 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 	expCfg := &configmodels.ExporterSettings{}
 	traceExporter := &componenttest.ExampleExporterConsumer{}
 	metricExporter := &componenttest.ExampleExporterConsumer{}
+	logsExporter := &componenttest.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
-		te:     traceExporter,
-		me:     metricExporter,
+		expByDataType: map[configmodels.DataType]component.Exporter{
+			configmodels.TracesDataType:  traceExporter,
+			configmodels.MetricsDataType: metricExporter,
+			configmodels.LogsDataType:    logsExporter,
+		},
 	}
 	assert.False(t, traceExporter.ExporterShutdown)
 	assert.False(t, metricExporter.ExporterShutdown)
+	assert.False(t, logsExporter.ExporterShutdown)
 	assert.NoError(t, exporters.ShutdownAll(context.Background()))
 
 	assert.True(t, traceExporter.ExporterShutdown)
 	assert.True(t, metricExporter.ExporterShutdown)
+	assert.True(t, logsExporter.ExporterShutdown)
 }
 
 func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {

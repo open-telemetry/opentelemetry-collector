@@ -15,6 +15,7 @@
 package exporterhelper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -110,6 +111,9 @@ func (qrs *queuedRetrySender) send(req request) (int, error) {
 		return qrs.consumerSender.send(req)
 	}
 
+	// Prevent cancellation and deadline to propagate to the context stored in the queue.
+	// The grpc/http based receivers will cancel the request context after this function returns.
+	req.setContext(noCancellationContext{Context: req.context()})
 	if !qrs.queue.Produce(req) {
 		return req.count(), errorRefused
 	}
@@ -208,4 +212,20 @@ func max(x, y time.Duration) time.Duration {
 		return y
 	}
 	return x
+}
+
+type noCancellationContext struct {
+	context.Context
+}
+
+func (noCancellationContext) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (noCancellationContext) Done() <-chan struct{} {
+	return nil
+}
+
+func (noCancellationContext) Err() error {
+	return nil
 }

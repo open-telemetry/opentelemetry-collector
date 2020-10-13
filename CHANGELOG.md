@@ -9,6 +9,13 @@
 ## 🛑 Breaking changes 🛑
 
 - Host metric system.disk.time renamed to system.disk.operation_time
+- Use consumer for sender interface, remove unnecessary receiver address from Runner #1941
+- Enable sending queue by default in all exporters configured to use it #1924
+
+## 🧰 Bug fixes 🧰
+
+- Fix bug where the service does not correctly start/stop the log exporters (#1943)
+- Fix Queued Retry Unusable without Batch Processor (#1813) - #1930
 
 ## v0.12.0 Beta
 
