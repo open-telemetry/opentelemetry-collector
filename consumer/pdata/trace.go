@@ -48,15 +48,15 @@ func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
 	})
 }
 
-// TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes to the internal Traces.
-func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
+// FromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
+// ProtoBuf bytes to the internal Traces. Overrides current data.
+func (td Traces) FromOtlpProtoBytes(data []byte) error {
 	traces := &otlpcollectortrace.ExportTraceServiceRequest{}
-	err := proto.Unmarshal(data, traces)
-	if err != nil {
-		return NewTraces(), err
+	if err := proto.Unmarshal(data, traces); err != nil {
+		return err
 	}
-	return TracesFromOtlp(traces.ResourceSpans), nil
+	*td.orig = traces.ResourceSpans
+	return nil
 }
 
 // NewTraces creates a new Traces.

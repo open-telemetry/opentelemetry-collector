@@ -159,7 +159,10 @@ func TestFromOtlpProtoBytes(t *testing.T) {
 	bytes, err := td.ToOtlpProtoBytes()
 	assert.Nil(t, err)
 
-	tdFromBytes, err := TracesFromOtlpProtoBytes(bytes)
+	err = td.FromOtlpProtoBytes(bytes)
 	assert.Nil(t, err)
-	assert.EqualValues(t, td, tdFromBytes)
+	assert.EqualValues(t, NewTraces(), td)
+
+	err = td.FromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
 }
