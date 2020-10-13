@@ -102,4 +102,21 @@ func TestHelper_AttributeValueArray(t *testing.T) {
 	for i := 0; i < val.ArrayVal().Len(); i++ {
 		assert.Equal(t, pdata.NewAttributeValueBool(testData[i].(bool)), val.ArrayVal().At(i))
 	}
+
+	var southWeather = make(map[string]interface{})
+	southWeather["NY"] = 15.9
+	southWeather["VT"] = 13.1
+	southWeather["NH"] = 18.0
+	val, err = NewAttributeValueRaw(southWeather)
+	assert.Equal(t, pdata.AttributeValue{}, val)
+	assert.Error(t, err)
+
+	var northWeather = make(map[string]interface{})
+	northWeather["AR"] = 45.7
+	northWeather["TX"] = 43.3
+	northWeather["MS"] = 41.1
+
+	val, err = NewAttributeValueRaw([]interface{}{southWeather, northWeather})
+	assert.Equal(t, pdata.AttributeValue{}, val)
+	assert.Error(t, err)
 }
