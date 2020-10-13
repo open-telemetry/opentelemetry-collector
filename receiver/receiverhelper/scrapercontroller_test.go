@@ -101,7 +101,7 @@ type metricsTestCase struct {
 	closeErr      error
 }
 
-func TestMetricReceiver(t *testing.T) {
+func TestScrapeController(t *testing.T) {
 	testCases := []metricsTestCase{
 		{
 			name: "Standard",
@@ -109,7 +109,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddMetricsScrapersWithCollectionInterval",
 			scrapers:                  2,
-			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			expectScraped:             true,
 		},
 		{
@@ -121,13 +121,13 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
 			scrapers:                  2,
-			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: -time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: -time.Millisecond},
 			expectedNewErr:            "collection_interval must be a positive duration",
 		},
 		{
 			name:                      "AddMetricsScrapers_ScrapeError",
 			scrapers:                  2,
-			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
@@ -147,7 +147,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddResourceMetricsScrapersWithCollectionInterval",
 			resourceScrapers:          2,
-			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			expectScraped:             true,
 		},
 		{
@@ -159,7 +159,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddResourceMetricsScrapers_ScrapeError",
 			resourceScrapers:          2,
-			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
@@ -191,7 +191,8 @@ func TestMetricReceiver(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			cfg := DefaultScraperControllerSettings("")
+			defaultCfg := DefaultScraperControllerSettings("")
+			cfg := &defaultCfg
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
 			}
@@ -215,7 +216,7 @@ func TestMetricReceiver(t *testing.T) {
 			//       i.e. if test.scrapeErr != nil { ... }
 
 			// validate that scrape is called at least 5 times for each configured scraper
-			if test.expectScraped {
+			if test.expectScraped || test.scrapeErr != nil {
 				for _, ch := range scrapeMetricsChs {
 					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
 				}
@@ -223,7 +224,9 @@ func TestMetricReceiver(t *testing.T) {
 					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
 				}
 
-				assert.GreaterOrEqual(t, sink.MetricsCount(), 5)
+				if test.expectScraped {
+					assert.GreaterOrEqual(t, sink.MetricsCount(), 5)
+				}
 			}
 
 			err = mr.Shutdown(context.Background())
@@ -324,4 +327,42 @@ func singleResourceMetric() pdata.ResourceMetricsSlice {
 	ilm := ilms.At(0)
 	singleMetric().MoveAndAppendTo(ilm.Metrics())
 	return rms
+}
+
+func TestSingleScrapePerTick(t *testing.T) {
+	scrapeMetricsCh := make(chan int, 10)
+	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
+
+	scrapeResourceMetricsCh := make(chan int, 10)
+	tsrm := &testScrapeResourceMetrics{ch: scrapeResourceMetricsCh}
+
+	defaultCfg := DefaultScraperControllerSettings("")
+	cfg := &defaultCfg
+
+	tickerCh := make(chan time.Time)
+
+	receiver, err := NewScraperControllerReceiver(
+		cfg,
+		&exportertest.SinkMetricsExporter{},
+		AddMetricsScraper(NewMetricsScraper(tsm.scrape)),
+		AddResourceMetricsScraper(NewResourceMetricsScraper(tsrm.scrape)),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+
+	tickerCh <- time.Now()
+
+	assert.Equal(t, 1, <-scrapeMetricsCh)
+	assert.Equal(t, 1, <-scrapeResourceMetricsCh)
+
+	select {
+	case <-scrapeMetricsCh:
+		assert.Fail(t, "Scrape was called more than once")
+	case <-scrapeResourceMetricsCh:
+		assert.Fail(t, "Scrape was called more than once")
+	case <-time.After(100 * time.Millisecond):
+		return
+	}
 }

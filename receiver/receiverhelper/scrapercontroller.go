@@ -26,36 +26,24 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// ScraperControllerConfig is the configuration of a scraper controller.
-// Specific scrapers must implement this interface and will typically embed
-// ScraperControllerSettings struct or a struct that extends it.
-type ScraperControllerConfig interface {
-	CollectionInterval() time.Duration
-}
-
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
 // of configmodels.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	configmodels.ReceiverSettings
-	CollectionIntervalVal time.Duration `mapstructure:"collection_interval"`
+	configmodels.ReceiverSettings `mapstructure:"squash"`
+	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
 }
 
 // DefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func DefaultScraperControllerSettings(cfgType configmodels.Type) *ScraperControllerSettings {
-	return &ScraperControllerSettings{
+func DefaultScraperControllerSettings(cfgType configmodels.Type) ScraperControllerSettings {
+	return ScraperControllerSettings{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			NameVal: string(cfgType),
 			TypeVal: cfgType,
 		},
-		CollectionIntervalVal: time.Minute,
+		CollectionInterval: time.Minute,
 	}
-}
-
-// CollectionInterval gets the scraper controller collection interval.
-func (scs *ScraperControllerSettings) CollectionInterval() time.Duration {
-	return scs.CollectionIntervalVal
 }
 
 // ScraperControllerOption apply changes to internal options.
@@ -84,27 +72,38 @@ func AddResourceMetricsScraper(scrape ResourceMetricsScraper) ScraperControllerO
 	}
 }
 
+// WithTickerChannel allows you to override the scraper controllers ticker
+// channel to specify when scrape is called. This is only expected to be
+// used by tests.
+func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
+	return func(o *scraperController) {
+		o.tickerCh = tickerCh
+	}
+}
+
 type scraperController struct {
 	collectionInterval time.Duration
 	nextConsumer       consumer.MetricsConsumer
 
 	metricsScrapers        *multiMetricScraper
 	resourceMetricScrapers []ResourceMetricsScraper
-	done                   chan struct{}
+
+	tickerCh <-chan time.Time
+	done     chan struct{}
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
-func NewScraperControllerReceiver(cfg ScraperControllerConfig, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
+func NewScraperControllerReceiver(cfg *ScraperControllerSettings, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	if cfg.CollectionInterval() <= 0 {
+	if cfg.CollectionInterval <= 0 {
 		return nil, errors.New("collection_interval must be a positive duration")
 	}
 
 	sc := &scraperController{
-		collectionInterval: cfg.CollectionInterval(),
+		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,
 		metricsScrapers:    &multiMetricScraper{},
 		done:               make(chan struct{}),
@@ -159,15 +158,17 @@ func (sc *scraperController) initializeScrapers(ctx context.Context) error {
 // collection interval.
 func (sc *scraperController) startScraping() {
 	go func() {
-		ticker := time.NewTicker(sc.collectionInterval)
-		defer ticker.Stop()
+		if sc.tickerCh == nil {
+			ticker := time.NewTicker(sc.collectionInterval)
+			defer ticker.Stop()
+
+			sc.tickerCh = ticker.C
+		}
 
 		for {
 			select {
-			case <-ticker.C:
-				for i := 0; i < len(sc.resourceMetricScrapers); i++ {
-					sc.scrapeMetricsAndReport(context.Background(), sc.resourceMetricScrapers[i])
-				}
+			case <-sc.tickerCh:
+				sc.scrapeMetricsAndReport(context.Background())
 			case <-sc.done:
 				return
 			}
@@ -175,26 +176,27 @@ func (sc *scraperController) startScraping() {
 	}()
 }
 
-// scrapeMetricsAndReport calls the Scrape function of the provided Scraper, records observability information,
-// and passes the scraped metrics to the next component.
-func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context, rms ResourceMetricsScraper) {
+// scrapeMetricsAndReport calls the Scrape function for each of the configured
+// Scrapers, records observability information, and passes the scraped metrics
+// to the next component.
+func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
 	// TODO: add observability metrics support
 	var errs []error
 
 	metrics := pdata.NewMetrics()
 
-	for i := 0; i < len(sc.resourceMetricScrapers); i++ {
+	for _, rms := range sc.resourceMetricScrapers {
 		resourceMetrics, err := rms.Scrape(ctx)
 		if err != nil {
 			errs = append(errs, err) // TODO: handle partial errors
-			continue
 		}
 
 		resourceMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
+	// TODO: report error
 	if len(errs) > 0 {
-		// TODO: report error
+		componenterror.CombineErrors(errs)
 	}
 
 	sc.nextConsumer.ConsumeMetrics(ctx, metrics)
