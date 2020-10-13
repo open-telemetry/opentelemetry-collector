@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -192,7 +191,7 @@ func TestMetricReceiver(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			cfg := DefaultScraperControllerSettings(configmodels.ReceiverSettings{})
+			cfg := DefaultScraperControllerSettings("")
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
 			}

@@ -43,8 +43,14 @@ type ScraperControllerSettings struct {
 
 // DefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func DefaultScraperControllerSettings(receiverSettings configmodels.ReceiverSettings) *ScraperControllerSettings {
-	return &ScraperControllerSettings{ReceiverSettings: receiverSettings, CollectionIntervalVal: time.Minute}
+func DefaultScraperControllerSettings(cfgType configmodels.Type) *ScraperControllerSettings {
+	return &ScraperControllerSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: string(cfgType),
+			TypeVal: cfgType,
+		},
+		CollectionIntervalVal: time.Minute,
+	}
 }
 
 // CollectionInterval gets the scraper controller collection interval.
