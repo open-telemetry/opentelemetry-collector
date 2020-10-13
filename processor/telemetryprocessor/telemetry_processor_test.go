@@ -27,14 +27,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestErrorPath(t *testing.T) {
@@ -42,7 +42,7 @@ func TestErrorPath(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	views := processor.MetricViews(telemetry.Detailed)
+	views := processor.MetricViews(configtelemetry.LevelDetailed)
 	assert.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -73,10 +73,10 @@ func TestTraceHappyPath(t *testing.T) {
 
 	lvl, err := telemetry.GetLevel()
 	require.NoError(t, err)
-	telemetry.SetLevel(telemetry.Detailed)
+	telemetry.SetLevel(configtelemetry.LevelDetailed)
 	defer telemetry.SetLevel(lvl)
 
-	views := processor.MetricViews(telemetry.Detailed)
+	views := processor.MetricViews(configtelemetry.LevelDetailed)
 	assert.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -96,7 +96,7 @@ func TestTraceHappyPath(t *testing.T) {
 		rs := td.ResourceSpans()
 		for j := 0; j < rs.Len(); j++ {
 			r := rs.At(j)
-			r.Resource().Attributes().InsertString(string(semconv.ServiceNameKey), "foobar")
+			r.Resource().Attributes().InsertString(conventions.AttributeServiceName, "foobar")
 		}
 		require.NoError(t, qp.ConsumeTraces(context.Background(), td))
 	}
@@ -151,7 +151,7 @@ func TestMetricsQueueProcessorHappyPath(t *testing.T) {
 	wantBatches := 10
 	wantMetricPoints := 2 * 20
 	for i := 0; i < wantBatches; i++ {
-		md := pdatautil.MetricsFromInternalMetrics(testdata.GenerateMetricDataTwoMetrics())
+		md := testdata.GenerateMetricsTwoMetrics()
 		require.NoError(t, qp.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -165,7 +165,6 @@ type mockSpanProcessor struct {
 	batchCount        int64
 	spanCount         int64
 	metricPointsCount int64
-	stopped           int32
 }
 
 var _ consumer.TraceConsumer = (*mockSpanProcessor)(nil)
@@ -183,7 +182,7 @@ func (p *mockSpanProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) er
 
 func (p *mockSpanProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	p.batchCount++
-	_, mpc := pdatautil.MetricAndDataPointCount(md)
+	_, mpc := md.MetricAndDataPointCount()
 	p.metricPointsCount += int64(mpc)
 	return p.consumeError
 }
@@ -205,10 +204,6 @@ func (p *mockSpanProcessor) checkNumSpans(t *testing.T, want int) {
 func (p *mockSpanProcessor) checkNumPoints(t *testing.T, want int) {
 	t.Helper()
 	assert.EqualValues(t, want, int(p.metricPointsCount))
-}
-
-func (p *mockSpanProcessor) updateError(err error) {
-	p.consumeError = err
 }
 
 func findViewNamed(views []*view.View, name string) (*view.View, error) {
