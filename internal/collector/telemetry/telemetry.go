@@ -91,6 +91,25 @@ func GetAddInstanceID() bool {
 	return *addInstanceIDPtr
 }
 
+func SetLevel(l configtelemetry.Level) {
+	var levelStr string
+	switch l {
+	case configtelemetry.LevelNone:
+		levelStr = "none"
+	case configtelemetry.LevelBasic:
+		levelStr = "basic"
+	case configtelemetry.LevelNormal:
+		levelStr = "normal"
+	case configtelemetry.LevelDetailed:
+		levelStr = "detailed"
+	}
+	if metricsLevelPtr == nil {
+		metricsLevelPtr = &levelStr
+		return
+	}
+	*metricsLevelPtr = levelStr
+}
+
 // GetLevel returns the Level represented by the string. The parsing is case-insensitive
 // and it returns error if the string value is unknown.
 func GetLevel() (configtelemetry.Level, error) {
