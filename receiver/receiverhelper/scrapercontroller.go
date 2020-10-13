@@ -16,27 +16,47 @@ package receiverhelper
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// ScraperControllerConfig is the configuration of a scraper controller.
+// Specific scrapers must implement this interface and will typically embed
+// ScraperControllerSettings struct or a struct that extends it.
+type ScraperControllerConfig interface {
+	CollectionInterval() time.Duration
+}
+
 // ScraperControllerSettings defines common settings for a scraper controller
-// configuration. Scraper controller receivers can embed this struct and
-// extend it with more fields if needed.
+// configuration. Scraper controller receivers can embed this struct, instead
+// of configmodels.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
+	configmodels.ReceiverSettings
 	CollectionIntervalVal time.Duration `mapstructure:"collection_interval"`
+}
+
+// DefaultScraperControllerSettings returns default scraper controller
+// settings with a collection interval of one minute.
+func DefaultScraperControllerSettings(receiverSettings configmodels.ReceiverSettings) *ScraperControllerSettings {
+	return &ScraperControllerSettings{ReceiverSettings: receiverSettings, CollectionIntervalVal: time.Minute}
+}
+
+// CollectionInterval gets the scraper controller collection interval.
+func (scs *ScraperControllerSettings) CollectionInterval() time.Duration {
+	return scs.CollectionIntervalVal
 }
 
 // ScraperControllerOption apply changes to internal options.
 type ScraperControllerOption func(*scraperController)
 
 // AddMetricsScraper configures the provided scrape function to be called
-// with the specified options, and at the specified collection interval
-// (one minute by default).
+// with the specified options, and at the specified collection interval.
 //
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
@@ -48,7 +68,7 @@ func AddMetricsScraper(scraper MetricsScraper) ScraperControllerOption {
 
 // AddResourceMetricsScraper configures the provided scrape function to
 // be called with the specified options, and at the specified collection
-// interval (one minute by default).
+// interval.
 //
 // Observability information will be reported, and the scraped resource
 // metrics will be passed to the next consumer.
@@ -68,20 +88,20 @@ type scraperController struct {
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
-func NewScraperControllerReceiver(cfg ScraperControllerSettings, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
+func NewScraperControllerReceiver(cfg ScraperControllerConfig, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
+	if cfg.CollectionInterval() <= 0 {
+		return nil, errors.New("collection_interval must be a positive duration")
+	}
+
 	sc := &scraperController{
-		collectionInterval: time.Minute,
+		collectionInterval: cfg.CollectionInterval(),
 		nextConsumer:       nextConsumer,
 		metricsScrapers:    &multiMetricScraper{},
 		done:               make(chan struct{}),
-	}
-
-	if cfg.CollectionIntervalVal > 0 {
-		sc.collectionInterval = cfg.CollectionIntervalVal
 	}
 
 	for _, op := range options {

@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -89,7 +90,7 @@ type metricsTestCase struct {
 
 	scrapers                  int
 	resourceScrapers          int
-	scraperControllerSettings ScraperControllerSettings
+	scraperControllerSettings *ScraperControllerSettings
 	nilNextConsumer           bool
 	scrapeErr                 error
 	expectedNewErr            string
@@ -109,7 +110,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddMetricsScrapersWithCollectionInterval",
 			scrapers:                  2,
-			scraperControllerSettings: ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
 			expectScraped:             true,
 		},
 		{
@@ -121,7 +122,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddMetricsScrapers_ScrapeError",
 			scrapers:                  2,
-			scraperControllerSettings: ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
@@ -141,7 +142,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddResourceMetricsScrapersWithCollectionInterval",
 			resourceScrapers:          2,
-			scraperControllerSettings: ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
 			expectScraped:             true,
 		},
 		{
@@ -153,7 +154,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddResourceMetricsScrapers_ScrapeError",
 			resourceScrapers:          2,
-			scraperControllerSettings: ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
+			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: time.Millisecond},
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
@@ -174,7 +175,6 @@ func TestMetricReceiver(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
 			scrapeResourceMetricsChs := make([]chan int, test.resourceScrapers)
@@ -186,7 +186,12 @@ func TestMetricReceiver(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			mr, err := NewScraperControllerReceiver(test.scraperControllerSettings, nextConsumer, options...)
+			cfg := DefaultScraperControllerSettings(configmodels.ReceiverSettings{})
+			if test.scraperControllerSettings != nil {
+				cfg = test.scraperControllerSettings
+			}
+
+			mr, err := NewScraperControllerReceiver(cfg, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
