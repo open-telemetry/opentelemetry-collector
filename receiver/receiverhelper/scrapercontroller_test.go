@@ -114,10 +114,16 @@ func TestMetricReceiver(t *testing.T) {
 			expectScraped:             true,
 		},
 		{
-			name:            "AddMetricsScrapers_NewError",
+			name:            "AddMetricsScrapers_NilNextConsumerError",
 			scrapers:        2,
 			nilNextConsumer: true,
 			expectedNewErr:  "nil nextConsumer",
+		},
+		{
+			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
+			scrapers:                  2,
+			scraperControllerSettings: &ScraperControllerSettings{CollectionIntervalVal: -time.Millisecond},
+			expectedNewErr:            "collection_interval must be a positive duration",
 		},
 		{
 			name:                      "AddMetricsScrapers_ScrapeError",
