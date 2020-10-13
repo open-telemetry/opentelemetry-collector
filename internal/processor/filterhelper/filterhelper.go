@@ -35,47 +35,47 @@ func NewAttributeValueRaw(value interface{}) (pdata.AttributeValue, error) {
 	case bool:
 		return pdata.NewAttributeValueBool(val), nil
 	case []interface{}:
-		return fromArray(val), nil
+		attributeVal, err := fromArray(val)
+		if err != nil {
+			return attributeVal, err
+		}
+		return attributeVal, nil
 	case map[string]interface{}:
-		return fromMap(val), nil
+		attributeVal, err := fromMap(val)
+		if err != nil {
+			return attributeVal, err
+		}
+		return attributeVal, nil
 	default:
 		return pdata.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
 }
 
-func fromArray(val []interface{}) pdata.AttributeValue {
+func fromArray(val []interface{}) (pdata.AttributeValue, error) {
 	arr := pdata.NewAnyValueArray()
 	for _, v := range val {
-		arr.Append(fromVal(v))
+		attributeVal, err := NewAttributeValueRaw(v)
+		if err != nil {
+			return attributeVal, err
+		}
+		arr.Append(attributeVal)
 	}
 	av := pdata.NewAttributeValueArray()
 	av.SetArrayVal(arr)
-	return av
+	return av, nil
 }
 
-func fromMap(v map[string]interface{}) pdata.AttributeValue {
+func fromMap(v map[string]interface{}) (pdata.AttributeValue, error) {
 	m := pdata.NewAttributeMap()
 	for k, v := range v {
-		m.Insert(k, fromVal(v))
+		attributeVal, err := NewAttributeValueRaw(v)
+		if err != nil {
+			return attributeVal, err
+		}
+		m.Insert(k, attributeVal)
 	}
 	m.Sort()
 	av := pdata.NewAttributeValueMap()
 	av.SetMapVal(m)
-	return av
-}
-
-func fromVal(val interface{}) pdata.AttributeValue {
-	switch v := val.(type) {
-	case string:
-		return pdata.NewAttributeValueString(v)
-	case int:
-		return pdata.NewAttributeValueInt(int64(v))
-	case float64:
-		return pdata.NewAttributeValueDouble(v)
-	case []interface{}:
-		return fromArray(v)
-	case map[string]interface{}:
-		return fromMap(v)
-	}
-	panic("data type is not supported in fromVal()")
+	return av, nil
 }
