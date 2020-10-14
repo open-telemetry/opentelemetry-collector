@@ -20,6 +20,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
@@ -29,7 +30,11 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-var blankJaegerProtoSpan = new(jaeger.Span)
+var (
+	blankJaegerProtoSpan = new(jaeger.Span)
+
+	zeroTime = time.Time{}
+)
 
 // ProtoBatchesToInternalTraces converts multiple Jaeger proto batches to internal traces
 func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
@@ -175,8 +180,12 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID.High, span.TraceID.Low))
 	dest.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(span.SpanID)))
 	dest.SetName(span.OperationName)
-	dest.SetStartTime(pdata.TimestampUnixNano(uint64(span.StartTime.UnixNano())))
-	dest.SetEndTime(pdata.TimestampUnixNano(uint64(span.StartTime.Add(span.Duration).UnixNano())))
+	if span.StartTime != zeroTime {
+		dest.SetStartTime(pdata.TimestampUnixNano(uint64(span.StartTime.UnixNano())))
+	}
+	if endTime := span.StartTime.Add(span.Duration); endTime != zeroTime {
+		dest.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
+	}
 
 	parentSpanID := span.ParentSpanID()
 	if parentSpanID != model.SpanID(0) {
