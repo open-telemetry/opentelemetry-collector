@@ -31,6 +31,7 @@ func TestUnixNanosConverters(t *testing.T) {
 	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 1585012403, Nanos: 789}, tp)
 	assert.EqualValues(t, tun, TimestampToUnixNano(tp))
 	assert.EqualValues(t, tun, TimeToUnixNano(t1))
+	assert.EqualValues(t, t1, UnixNanoToTime(TimeToUnixNano(t1)))
 }
 
 func TestZeroTimestamps(t *testing.T) {
