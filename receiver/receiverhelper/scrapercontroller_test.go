@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -90,8 +89,7 @@ type metricsTestCase struct {
 
 	scrapers                  int
 	resourceScrapers          int
-	defaultCollectionInterval time.Duration
-	scraperSettings           ScraperSettings
+	scraperControllerSettings *ScraperControllerSettings
 	nilNextConsumer           bool
 	scrapeErr                 error
 	expectedNewErr            string
@@ -103,33 +101,33 @@ type metricsTestCase struct {
 	closeErr      error
 }
 
-func TestMetricReceiver(t *testing.T) {
+func TestScrapeController(t *testing.T) {
 	testCases := []metricsTestCase{
 		{
 			name: "Standard",
 		},
 		{
-			name:                      "AddMetricsScrapersWithDefaultCollectionInterval",
+			name:                      "AddMetricsScrapersWithCollectionInterval",
 			scrapers:                  2,
-			defaultCollectionInterval: time.Millisecond,
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			expectScraped:             true,
 		},
 		{
-			name:            "AddMetricsScrapersWithCollectionInterval",
-			scrapers:        2,
-			scraperSettings: ScraperSettings{CollectionIntervalVal: time.Millisecond},
-			expectScraped:   true,
-		},
-		{
-			name:            "AddMetricsScrapers_NewError",
+			name:            "AddMetricsScrapers_NilNextConsumerError",
 			scrapers:        2,
 			nilNextConsumer: true,
 			expectedNewErr:  "nil nextConsumer",
 		},
 		{
+			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",
+			scrapers:                  2,
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: -time.Millisecond},
+			expectedNewErr:            "collection_interval must be a positive duration",
+		},
+		{
 			name:                      "AddMetricsScrapers_ScrapeError",
 			scrapers:                  2,
-			defaultCollectionInterval: time.Millisecond,
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
@@ -147,16 +145,10 @@ func TestMetricReceiver(t *testing.T) {
 			closeErr:      errors.New("err2"),
 		},
 		{
-			name:                      "AddResourceMetricsScrapersWithDefaultCollectionInterval",
+			name:                      "AddResourceMetricsScrapersWithCollectionInterval",
 			resourceScrapers:          2,
-			defaultCollectionInterval: time.Millisecond,
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			expectScraped:             true,
-		},
-		{
-			name:             "AddResourceMetricsScrapersWithCollectionInterval",
-			resourceScrapers: 2,
-			scraperSettings:  ScraperSettings{CollectionIntervalVal: time.Millisecond},
-			expectScraped:    true,
 		},
 		{
 			name:             "AddResourceMetricsScrapers_NewError",
@@ -167,7 +159,7 @@ func TestMetricReceiver(t *testing.T) {
 		{
 			name:                      "AddResourceMetricsScrapers_ScrapeError",
 			resourceScrapers:          2,
-			defaultCollectionInterval: time.Millisecond,
+			scraperControllerSettings: &ScraperControllerSettings{CollectionInterval: time.Millisecond},
 			scrapeErr:                 errors.New("err1"),
 		},
 		{
@@ -188,7 +180,6 @@ func TestMetricReceiver(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
 			scrapeResourceMetricsChs := make([]chan int, test.resourceScrapers)
@@ -200,7 +191,13 @@ func TestMetricReceiver(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			mr, err := NewScraperControllerReceiver(&configmodels.ReceiverSettings{}, nextConsumer, options...)
+			defaultCfg := DefaultScraperControllerSettings("")
+			cfg := &defaultCfg
+			if test.scraperControllerSettings != nil {
+				cfg = test.scraperControllerSettings
+			}
+
+			mr, err := NewScraperControllerReceiver(cfg, nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -219,7 +216,7 @@ func TestMetricReceiver(t *testing.T) {
 			//       i.e. if test.scrapeErr != nil { ... }
 
 			// validate that scrape is called at least 5 times for each configured scraper
-			if test.expectScraped {
+			if test.expectScraped || test.scrapeErr != nil {
 				for _, ch := range scrapeMetricsChs {
 					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
 				}
@@ -227,7 +224,9 @@ func TestMetricReceiver(t *testing.T) {
 					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
 				}
 
-				assert.GreaterOrEqual(t, sink.MetricsCount(), 5)
+				if test.expectScraped {
+					assert.GreaterOrEqual(t, sink.MetricsCount(), 5)
+				}
 			}
 
 			err = mr.Shutdown(context.Background())
@@ -244,10 +243,6 @@ func TestMetricReceiver(t *testing.T) {
 func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scrapeMetricsChs, testScrapeResourceMetricsChs []chan int, closeChs []chan bool) []ScraperControllerOption {
 	var metricOptions []ScraperControllerOption
 
-	if test.defaultCollectionInterval != 0 {
-		metricOptions = append(metricOptions, WithDefaultCollectionInterval(test.defaultCollectionInterval))
-	}
-
 	for i := 0; i < test.scrapers; i++ {
 		var scraperOptions []ScraperOption
 		if test.initialize {
@@ -263,7 +258,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		scrapeMetricsChs[i] = make(chan int, 10)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper(test.scraperSettings, tsm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper(tsm.scrape, scraperOptions...)))
 	}
 
 	for i := 0; i < test.resourceScrapers; i++ {
@@ -281,7 +276,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int, 10)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(test.scraperSettings, tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -332,4 +327,42 @@ func singleResourceMetric() pdata.ResourceMetricsSlice {
 	ilm := ilms.At(0)
 	singleMetric().MoveAndAppendTo(ilm.Metrics())
 	return rms
+}
+
+func TestSingleScrapePerTick(t *testing.T) {
+	scrapeMetricsCh := make(chan int, 10)
+	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
+
+	scrapeResourceMetricsCh := make(chan int, 10)
+	tsrm := &testScrapeResourceMetrics{ch: scrapeResourceMetricsCh}
+
+	defaultCfg := DefaultScraperControllerSettings("")
+	cfg := &defaultCfg
+
+	tickerCh := make(chan time.Time)
+
+	receiver, err := NewScraperControllerReceiver(
+		cfg,
+		&exportertest.SinkMetricsExporter{},
+		AddMetricsScraper(NewMetricsScraper(tsm.scrape)),
+		AddResourceMetricsScraper(NewResourceMetricsScraper(tsrm.scrape)),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+
+	tickerCh <- time.Now()
+
+	assert.Equal(t, 1, <-scrapeMetricsCh)
+	assert.Equal(t, 1, <-scrapeResourceMetricsCh)
+
+	select {
+	case <-scrapeMetricsCh:
+		assert.Fail(t, "Scrape was called more than once")
+	case <-scrapeResourceMetricsCh:
+		assert.Fail(t, "Scrape was called more than once")
+	case <-time.After(100 * time.Millisecond):
+		return
+	}
 }
