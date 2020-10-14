@@ -22,7 +22,7 @@ import (
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
 
-	// BallastSizeMiB is the size, in MiB, of the memory ballast
+	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.
-	BallastSizeMiB uint32 `mapstructure:"ballast_size_mib"`
+	SizeMiB uint32 `mapstructure:"size_mib"`
 }

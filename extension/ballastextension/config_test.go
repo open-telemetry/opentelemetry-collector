@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "memory_ballast",
 				NameVal: "memory_ballast/1",
 			},
-			BallastSizeMiB: 123,
+			SizeMiB: 123,
 		},
 		ext1)
 

@@ -1,7 +1,7 @@
 extensions:
   memory_ballast:
   memory_ballast/1:
-    ballast_size_mib: 123
+    size_mib: 123
 
 service:
   extensions: [memory_ballast/1]

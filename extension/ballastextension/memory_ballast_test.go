@@ -27,7 +27,7 @@ import (
 
 func TestMemoryBallast(t *testing.T) {
 	config := &Config{
-		BallastSizeMiB: 13,
+		SizeMiB: 13,
 	}
 
 	mbExt := newMemoryBallast(config, zap.NewNop())

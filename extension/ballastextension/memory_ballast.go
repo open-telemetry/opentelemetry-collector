@@ -31,10 +31,10 @@ type memoryBallast struct {
 }
 
 func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
-	if m.cfg.BallastSizeMiB > 0 {
-		ballastSizeBytes := uint64(m.cfg.BallastSizeMiB) * megaBytes
+	if m.cfg.SizeMiB > 0 {
+		ballastSizeBytes := uint64(m.cfg.SizeMiB) * megaBytes
 		m.ballast = make([]byte, ballastSizeBytes)
-		m.logger.Info("Using memory ballast", zap.Uint32("MiBs", m.cfg.BallastSizeMiB))
+		m.logger.Info("Using memory ballast", zap.Uint32("MiBs", m.cfg.SizeMiB))
 	}
 	return nil
 }
