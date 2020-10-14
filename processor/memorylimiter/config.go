@@ -52,5 +52,5 @@ type Config struct {
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
 }
 
-// Name of BallastSizeMiB config option.
+// Name of SizeMiB config option.
 const ballastSizeMibKey = "ballast_size_mib"
