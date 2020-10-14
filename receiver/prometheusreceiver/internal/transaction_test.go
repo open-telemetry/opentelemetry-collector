@@ -131,6 +131,21 @@ func Test_transaction(t *testing.T) {
 		// assert.Len(t, ocmds[0].Metrics, 1)
 	})
 
+	t.Run("Error when start time is zero", func(t *testing.T) {
+		sink := new(exportertest.SinkMetricsExporter)
+		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
+		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
+			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
+		}
+		tr.metricBuilder.startTime = 0 // zero value means the start time metric is missing
+		got := tr.Commit()
+		if got == nil {
+			t.Error("expecting error from Commit() but got nil")
+		} else if got.Error() != errNoStartTimeMetrics.Error() {
+			t.Errorf("expected error %q but got %q", errNoStartTimeMetrics, got)
+		}
+	})
+
 	t.Run("Drop NaN value", func(t *testing.T) {
 		sink := new(exportertest.SinkMetricsExporter)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
