@@ -122,7 +122,7 @@ func TestCreateTraceExporter(t *testing.T) {
 					},
 				},
 			},
-			mustFail: false, // TODO: change to true when error handling is implemented.
+			mustFail: true,
 		},
 	}
 
@@ -133,7 +133,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			consumer, err := factory.CreateTraceExporter(context.Background(), creationParams, &tt.config)
 
 			if tt.mustFail {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, consumer)
