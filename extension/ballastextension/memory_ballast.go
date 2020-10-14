@@ -17,20 +17,36 @@ package ballastextension
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 )
 
+const megaBytes = 1024 * 1024
+
 type memoryBallast struct {
+	cfg     *Config
+	logger  *zap.Logger
+	ballast []byte
 }
 
-func (m memoryBallast) Start(_ context.Context, _ component.Host) error {
+func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
+	if m.cfg.BallastSizeMiB > 0 {
+		ballastSizeBytes := uint64(m.cfg.BallastSizeMiB) * megaBytes
+		m.ballast = make([]byte, ballastSizeBytes)
+		m.logger.Info("Using memory ballast", zap.Uint32("MiBs", m.cfg.BallastSizeMiB))
+	}
 	return nil
 }
 
-func (m memoryBallast) Shutdown(_ context.Context) error {
+func (m *memoryBallast) Shutdown(_ context.Context) error {
+	m.ballast = nil
 	return nil
 }
 
-func newMemoryBallast(_ *Config) *memoryBallast {
-	return &memoryBallast{}
+func newMemoryBallast(cfg *Config, logger *zap.Logger) *memoryBallast {
+	return &memoryBallast{
+		cfg:    cfg,
+		logger: logger,
+	}
 }
