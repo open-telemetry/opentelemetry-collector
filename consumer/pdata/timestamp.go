@@ -44,6 +44,7 @@ func UnixNanoToTime(u TimestampUnixNano) time.Time {
 }
 
 func TimeToUnixNano(t time.Time) TimestampUnixNano {
+	// 0 is a special case and want to make sure we return zero timestamp to support inverse function for UnixNanoToTime
 	if t.IsZero() {
 		return 0
 	}
