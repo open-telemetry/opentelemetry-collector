@@ -87,7 +87,7 @@ func TestScrapeMetrics(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.Len())
 
-			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime, test.expectedStartTime)
+			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime.New(), test.expectedStartTime)
 
 			if runtime.GOOS == "linux" {
 				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))

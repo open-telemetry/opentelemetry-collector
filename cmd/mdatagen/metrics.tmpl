@@ -24,35 +24,91 @@ import (
 // Type is the component type name.
 const Type configmodels.Type = "{{ .Name }}"
 
-{{- /* Renders metric descriptors. */}}
-// Metrics contains the metric descriptors for the possible metrics.
-var Metrics = struct {
-	{{- range $name, $metric := .Metrics }}
-	// {{ $name.Render }} in {{ $metric.Unit }} ({{ $metric.Description }})
-	{{ $name.Render }} pdata.Metric
-	{{- end }}
-}{
-	{{- range $name, $metric := .Metrics }}
-	func() pdata.Metric {
-		metric := pdata.NewMetric()
-		metric.InitEmpty()
-		metric.SetName("{{ $name }}")
-		metric.SetDescription("{{ $metric.Description }}")
-		metric.SetUnit("{{ $metric.Unit }}")
-		metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
-		data := metric.{{ $metric.Data.Type }}()
-		data.InitEmpty()
-		{{- if $metric.Data.HasMonotonic }}
-		data.SetIsMonotonic({{ $metric.Data.Monotonic }})
-		{{- end }}
-		{{- if $metric.Data.HasAggregated }}
-		data.SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
-		{{- end }}
+type metricIntf interface {
+	Name() string
+	New() pdata.Metric
+}
 
-		return metric
-    }(),
+// Intentionally not exposing this so that it is opaque and can change freely.
+type metricImpl struct {
+	name string
+	newFunc func() pdata.Metric
+}
+
+func (m *metricImpl) Name() string {
+	return m.name
+}
+
+func (m *metricImpl) New() pdata.Metric {
+	return m.newFunc()
+}
+
+type metricStruct struct {
+	{{- range $name, $metric := .Metrics }}
+	{{ $name.Render }} metricIntf
 	{{- end }}
 }
+
+// Names returns a list of all the metric name strings.
+func (m *metricStruct) Names() []string {
+    return []string {
+    {{- range $name, $metric := .Metrics }}
+        "{{ $name }}",
+    {{- end }}
+    }
+}
+
+var metricsByName = map[string]metricIntf {
+{{- range $name, $metric := .Metrics }}
+  "{{ $name }}": Metrics.{{ $name.Render }},
+{{- end }}
+}
+
+func (m *metricStruct) ByName(n string) metricIntf {
+    return metricsByName[n]
+}
+
+func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
+    return map[string]func() pdata.Metric {
+    {{- range $name, $metric := .Metrics }}
+      Metrics.{{ $name.Render }}.Name(): Metrics.{{ $name.Render }}.New,
+    {{- end }}
+    }
+}
+
+
+{{- /* Renders metric descriptors. */}}
+// Metrics contains a set of methods for each metric that help with
+// manipulating those metrics.
+var Metrics = &metricStruct{
+	{{- range $name, $metric := .Metrics }}
+	&metricImpl{
+		"{{ $name }}",
+		func() pdata.Metric {
+			metric := pdata.NewMetric()
+			metric.InitEmpty()
+			metric.SetName("{{ $name }}")
+			metric.SetDescription("{{ $metric.Description }}")
+			metric.SetUnit("{{ $metric.Unit }}")
+			metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
+			data := metric.{{ $metric.Data.Type }}()
+			data.InitEmpty()
+			{{- if $metric.Data.HasMonotonic }}
+			data.SetIsMonotonic({{ $metric.Data.Monotonic }})
+			{{- end }}
+			{{- if $metric.Data.HasAggregated }}
+			data.SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
+			{{- end }}
+
+			return metric
+		},
+	},
+	{{- end }}
+}
+
+// M contains a set of methods for each metric that help with
+// manipulating those metrics. M is an alias for Metrics
+var M = Metrics
 
 {{- /* Renders label names. */}}
 // Labels contains the possible metric labels that can be used.
@@ -70,6 +126,10 @@ var Labels = struct {
     {{- end }}
     {{- end }}
 }
+
+// L contains the possible metric labels that can be used. L is an alias for
+// Labels.
+var L = Labels
 
 {{- /* Renders label enum values. */}}
 

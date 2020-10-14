@@ -64,7 +64,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 }
 
 func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	metadata.Metrics.SystemMemoryUsage.CopyTo(metric)
+	metadata.Metrics.SystemMemoryUsage.New().CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(memStatesLen)

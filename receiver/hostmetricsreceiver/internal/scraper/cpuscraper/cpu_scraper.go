@@ -73,7 +73,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 }
 
 func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
-	metadata.Metrics.SystemCPUTime.CopyTo(metric)
+	metadata.Metrics.SystemCPUTime.New().CopyTo(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(len(cpuTimes) * cpuStatesLen)
