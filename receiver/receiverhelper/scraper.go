@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // Scrape metrics.
@@ -38,6 +39,9 @@ type Close func(ctx context.Context) error
 type ScraperOption func(*baseScraper)
 
 type BaseScraper interface {
+	// Name returns the scraper name
+	Name() string
+
 	// Initialize performs any timely initialization tasks such as
 	// setting up performance counters for initial collection.
 	Initialize(ctx context.Context) error
@@ -50,20 +54,25 @@ type BaseScraper interface {
 // MetricsScraper is an interface for scrapers that scrape metrics.
 type MetricsScraper interface {
 	BaseScraper
-	Scrape(context.Context) (pdata.MetricSlice, error)
+	Scrape(context.Context, string) (pdata.MetricSlice, error)
 }
 
 // ResourceMetricsScraper is an interface for scrapers that scrape resource metrics.
 type ResourceMetricsScraper interface {
 	BaseScraper
-	Scrape(context.Context) (pdata.ResourceMetricsSlice, error)
+	Scrape(context.Context, string) (pdata.ResourceMetricsSlice, error)
 }
 
 var _ BaseScraper = (*baseScraper)(nil)
 
 type baseScraper struct {
+	name       string
 	initialize Initialize
 	close      Close
+}
+
+func (b baseScraper) Name() string {
+	return b.name
 }
 
 func (b baseScraper) Initialize(ctx context.Context) error {
@@ -105,11 +114,12 @@ var _ MetricsScraper = (*metricsScraper)(nil)
 // collection interval, reports observability information, and passes the
 // scraped metrics to the next consumer.
 func NewMetricsScraper(
+	name string,
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
 ) MetricsScraper {
 	ms := &metricsScraper{
-		baseScraper:   baseScraper{},
+		baseScraper:   baseScraper{name: name},
 		ScrapeMetrics: scrape,
 	}
 
@@ -120,8 +130,12 @@ func NewMetricsScraper(
 	return ms
 }
 
-func (m metricsScraper) Scrape(ctx context.Context) (pdata.MetricSlice, error) {
-	return m.ScrapeMetrics(ctx)
+func (ms metricsScraper) Scrape(ctx context.Context, receiverName string) (pdata.MetricSlice, error) {
+	ctx = obsreport.ScraperContext(ctx, receiverName, ms.Name())
+	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, ms.Name())
+	metrics, err := ms.ScrapeMetrics(ctx)
+	obsreport.EndMetricsScrapeOp(ctx, metrics.Len(), err)
+	return metrics, err
 }
 
 type resourceMetricsScraper struct {
@@ -135,11 +149,12 @@ var _ ResourceMetricsScraper = (*resourceMetricsScraper)(nil)
 // specified collection interval, reports observability information, and
 // passes the scraped resource metrics to the next consumer.
 func NewResourceMetricsScraper(
+	name string,
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
 ) ResourceMetricsScraper {
 	rms := &resourceMetricsScraper{
-		baseScraper:           baseScraper{},
+		baseScraper:           baseScraper{name: name},
 		ScrapeResourceMetrics: scrape,
 	}
 
@@ -150,6 +165,23 @@ func NewResourceMetricsScraper(
 	return rms
 }
 
-func (r resourceMetricsScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
-	return r.ScrapeResourceMetrics(ctx)
+func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {
+	ctx = obsreport.ScraperContext(ctx, receiverName, rms.Name())
+	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, rms.Name())
+	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
+	obsreport.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
+	return resourceMetrics, err
+}
+
+func metricCount(resourceMetrics pdata.ResourceMetricsSlice) int {
+	count := 0
+
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		ilm := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilm.Len(); j++ {
+			count += ilm.At(j).Metrics().Len()
+		}
+	}
+
+	return count
 }
