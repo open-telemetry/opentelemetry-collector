@@ -15,7 +15,6 @@
 package sampling
 
 import (
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -44,31 +43,44 @@ func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValu
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
+func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 	naf.logger.Debug("Triggering action for late arriving spans in numeric-attribute filter")
 	return nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
-	naf.logger.Debug("Evaluating spans in numeric-attribute filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
 	for _, batch := range batches {
-		for _, span := range batch.Spans {
-			if span == nil || span.Attributes == nil {
+		rspans := batch.ResourceSpans()
+		for i := 0; i < rspans.Len(); i++ {
+			rs := rspans.At(i)
+			if rs.IsNil() {
 				continue
 			}
-			if v, ok := span.Attributes.AttributeMap[naf.key]; ok {
-				value := v.GetIntValue()
-				if value >= naf.minValue && value <= naf.maxValue {
-					return Sampled, nil
+			ilss := rs.InstrumentationLibrarySpans()
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				if ils.IsNil() {
+					continue
+				}
+				for k := 0; k < ils.Spans().Len(); k++ {
+					span := ils.Spans().At(k)
+					if span.IsNil() {
+						continue
+					}
+					if v, ok := span.Attributes().Get(naf.key); ok {
+						value := v.IntVal()
+						if value >= naf.minValue && value <= naf.maxValue {
+							return Sampled, nil
+						}
+					}
 				}
 			}
 		}
 	}
-
 	return NotSampled, nil
 }
 

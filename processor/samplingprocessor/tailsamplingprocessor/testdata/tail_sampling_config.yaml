@@ -29,7 +29,7 @@ processors:
             name: test-policy-4,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
-         }
+         },
       ]
 
 service:

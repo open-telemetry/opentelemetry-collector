@@ -18,9 +18,6 @@ import (
 	"sync"
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -36,7 +33,7 @@ type TraceData struct {
 	// SpanCount track the number of spans on the trace.
 	SpanCount int64
 	// ReceivedBatches stores all the batches received for the trace.
-	ReceivedBatches []consumerdata.TraceData
+	ReceivedBatches []pdata.Traces
 }
 
 // Decision gives the status of sampling decision.
@@ -65,7 +62,7 @@ type PolicyEvaluator interface {
 	// after the sampling decision was already taken for the trace.
 	// This gives the evaluator a chance to log any message/metrics and/or update any
 	// related internal state.
-	OnLateArrivingSpans(earlyDecision Decision, spans []*tracepb.Span) error
+	OnLateArrivingSpans(earlyDecision Decision, spans []*pdata.Span) error
 
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error)

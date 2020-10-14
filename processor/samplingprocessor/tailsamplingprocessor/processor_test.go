@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -458,7 +457,7 @@ type mockPolicyEvaluator struct {
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*tracepb.Span) error {
+func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Span) error {
 	m.LateArrivingSpansCount++
 	return m.NextError
 }

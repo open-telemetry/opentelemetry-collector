@@ -15,7 +15,6 @@
 package sampling
 
 import (
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,7 +37,7 @@ func NewAlwaysSample(logger *zap.Logger) PolicyEvaluator {
 // after the sampling decision was already taken for the trace.
 // This gives the evaluator a chance to log any message/metrics and/or update any
 // related internal state.
-func (as *alwaysSample) OnLateArrivingSpans(Decision, []*tracepb.Span) error {
+func (as *alwaysSample) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 	as.logger.Debug("Triggering action for late arriving spans in always-sample filter")
 	return nil
 }

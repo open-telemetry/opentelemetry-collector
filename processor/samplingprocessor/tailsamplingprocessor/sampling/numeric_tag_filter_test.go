@@ -18,18 +18,20 @@ import (
 	"math"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestNumericTagFilter(t *testing.T) {
 
+	var empty = map[string]pdata.AttributeValue{}
 	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
+
+	resAttr := map[string]pdata.AttributeValue{}
+	resAttr["example"] = pdata.NewAttributeValueInt(8)
 
 	cases := []struct {
 		Desc     string
@@ -38,27 +40,27 @@ func TestNumericTagFilter(t *testing.T) {
 	}{
 		{
 			Desc:     "nonmatching span attribute",
-			Trace:    newTraceIntAttrs("non_matching", math.MinInt32),
+			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "span attribute with lower limit",
-			Trace:    newTraceIntAttrs("example", math.MinInt32),
+			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
 			Decision: Sampled,
 		},
 		{
 			Desc:     "span attribute with upper limit",
-			Trace:    newTraceIntAttrs("example", math.MaxInt32),
+			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
 			Decision: Sampled,
 		},
 		{
 			Desc:     "span attribute below min limit",
-			Trace:    newTraceIntAttrs("example", math.MinInt32-1),
+			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "span attribute above max limit",
-			Trace:    newTraceIntAttrs("example", math.MaxInt32+1),
+			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
 			Decision: NotSampled,
 		},
 	}
@@ -73,25 +75,39 @@ func TestNumericTagFilter(t *testing.T) {
 	}
 }
 
-func newTraceIntAttrs(attrKey string, attrValue int64) *TraceData {
+func TestOnDroppedSpans_NumericTagFilter(t *testing.T) {
+	var empty = map[string]pdata.AttributeValue{}
+	u, _ := uuid.NewRandom()
+	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
+	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	assert.Nil(t, err)
+	assert.Equal(t, decision, NotSampled)
+}
 
+func TestOnLateArrivingSpans_NumericTagFilter(t *testing.T) {
+	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
+	err := filter.OnLateArrivingSpans(NotSampled, nil)
+	assert.Nil(t, err)
+}
+
+func newTraceIntAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey string, spanAttrValue int64) *TraceData {
+	var traceBatches []pdata.Traces
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	rs.Resource().InitEmpty()
+	rs.Resource().Attributes().InitFromMap(nodeAttrs)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[spanAttrKey] = pdata.NewAttributeValueInt(spanAttrValue)
+	span.Attributes().InitFromMap(attributes)
+	traceBatches = append(traceBatches, traces)
 	return &TraceData{
-		ReceivedBatches: []consumerdata.TraceData{
-			{
-				Spans: []*tracepb.Span{
-					{
-						Attributes: &tracepb.Span_Attributes{
-							AttributeMap: map[string]*tracepb.AttributeValue{
-								attrKey: {
-									Value: &tracepb.AttributeValue_IntValue{
-										IntValue: attrValue,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		ReceivedBatches: traceBatches,
 	}
 }

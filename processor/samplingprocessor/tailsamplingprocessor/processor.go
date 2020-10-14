@@ -22,7 +22,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
@@ -30,11 +29,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // Policy combines a sampling policy evaluator with the destinations to be
@@ -172,7 +169,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			// consumers may operate on the entire trace
 			allSpans := pdata.NewTraces()
 			for j := 0; j < len(traceBatches); j++ {
-				batch := internaldata.OCToTraceData(traceBatches[j])
+				batch := traceBatches[j]
 				batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
 			}
 
@@ -244,37 +241,47 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 }
 
 // ConsumeTraceData is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	tsp.start.Do(func() {
 		tsp.logger.Info("First trace data arrived, starting tail_sampling timers")
 		tsp.policyTicker.Start(1 * time.Second)
 	})
-
-	octds := internaldata.TraceDataToOC(td)
-	var errs []error
-	for _, octd := range octds {
-		if err := tsp.processTraces(octd); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return componenterror.CombineErrors(errs)
-}
-
-func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) error {
-
-	// Groupd spans per their traceId to minimize contention on idToTrace
-	idToSpans := make(map[traceKey][]*tracepb.Span)
-	for _, span := range td.Spans {
-		if len(span.TraceId) != 16 {
-			tsp.logger.Warn("Span without valid TraceId", zap.String("SourceFormat", td.SourceFormat))
+	resourceSpans := td.ResourceSpans()
+	for i := 0; i < resourceSpans.Len(); i++ {
+		resourceSpan := resourceSpans.At(i)
+		if resourceSpan.IsNil() {
 			continue
 		}
-		tk := traceKey(span.TraceId)
-		idToSpans[tk] = append(idToSpans[tk], span)
+		tsp.processTraces(resourceSpan)
 	}
+	return nil
+}
 
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[traceKey][]*pdata.Span {
+	idToSpans := make(map[traceKey][]*pdata.Span)
+	ilss := resourceSpans.InstrumentationLibrarySpans()
+	for j := 0; j < ilss.Len(); j++ {
+		ils := ilss.At(j)
+		if ils.IsNil() {
+			continue
+		}
+		spansLen := ils.Spans().Len()
+		for k := 0; k < spansLen; k++ {
+			span := ils.Spans().At(k)
+			tk := traceKey(span.TraceID().Bytes())
+			if len(tk) != 16 {
+				tsp.logger.Warn("Span without valid TraceId")
+			}
+			idToSpans[tk] = append(idToSpans[tk], &span)
+		}
+	}
+	return idToSpans
+}
+
+func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) {
+	// Group spans per their traceId to minimize contention on idToTrace
+	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
-	singleTrace := len(idToSpans) == 1
 	for id, spans := range idToSpans {
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
@@ -310,6 +317,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 		}
 
 		for i, policy := range tsp.policies {
+			var traceTd pdata.Traces
 			actualData.Lock()
 			actualDecision := actualData.Decisions[i]
 			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
@@ -317,7 +325,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 			if actualDecision == sampling.Pending {
 				// Add the spans to the trace, but only once for all policy, otherwise same spans will
 				// be duplicated in the final trace.
-				traceTd := prepareTraceBatch(spans, singleTrace, td)
+				traceTd = prepareTraceBatch(resourceSpans, spans)
 				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
 				actualData.Unlock()
 				break
@@ -327,8 +335,8 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 			switch actualDecision {
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
-				traceTd := prepareTraceBatch(spans, singleTrace, td)
-				if err := tsp.nextConsumer.ConsumeTraces(policy.ctx, internaldata.OCToTraceData(traceTd)); err != nil {
+				traceTd := prepareTraceBatch(resourceSpans, spans)
+				if err := tsp.nextConsumer.ConsumeTraces(policy.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", policy.Name),
 						zap.Error(err))
@@ -353,7 +361,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(td consumerdata.TraceData) e
 	}
 
 	stats.Record(tsp.ctx, statNewTraceIDReceivedCount.M(newTraceIDs))
-	return nil
 }
 
 func (tsp *tailSamplingSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
@@ -397,17 +404,16 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 	}
 }
 
-func prepareTraceBatch(spans []*tracepb.Span, singleTrace bool, td consumerdata.TraceData) consumerdata.TraceData {
-	var traceTd consumerdata.TraceData
-	if singleTrace {
-		// Special case no need to prepare a batch
-		traceTd = td
-	} else {
-		traceTd = consumerdata.TraceData{
-			Node:     td.Node,
-			Resource: td.Resource,
-			Spans:    spans,
-		}
+func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {
+	traceTd := pdata.NewTraces()
+	traceTd.ResourceSpans().Resize(1)
+	rs := traceTd.ResourceSpans().At(0)
+	rs.Resource().InitEmpty()
+	rss.Resource().CopyTo(rs.Resource())
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	for _, span := range spans {
+		ils.Spans().Append(*span)
 	}
 	return traceTd
 }

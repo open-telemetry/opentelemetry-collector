@@ -15,21 +15,19 @@
 package sampling
 
 import (
+	"math"
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestStringTagFilter(t *testing.T) {
 
-	var empty = map[string]string{}
+	var empty = map[string]pdata.AttributeValue{}
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"})
 
 	cases := []struct {
@@ -39,73 +37,78 @@ func TestStringTagFilter(t *testing.T) {
 	}{
 		{
 			Desc:     "nonmatching node attribute key",
-			Trace:    newTraceStringAttrs(map[string]string{"non_matching": "value"}, nil),
+			Trace:    newTraceStringAttrs(map[string]pdata.AttributeValue{"non_matching": pdata.NewAttributeValueString("value")}, "", ""),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "nonmatching node attribute value",
-			Trace:    newTraceStringAttrs(map[string]string{"example": "non_matching"}, nil),
+			Trace:    newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("non_matching")}, "", ""),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "matching node attribute",
-			Trace:    newTraceStringAttrs(map[string]string{"example": "value"}, nil),
+			Trace:    newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
 			Decision: Sampled,
 		},
 		{
 			Desc:     "nonmatching span attribute key",
-			Trace:    newTraceStringAttrs(empty, newSpan("nonmatching", "value")),
+			Trace:    newTraceStringAttrs(empty, "nonmatching", "value"),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "nonmatching span attribute value",
-			Trace:    newTraceStringAttrs(empty, newSpan("example", "nonmatching")),
+			Trace:    newTraceStringAttrs(empty, "example", "nonmatching"),
 			Decision: NotSampled,
 		},
 		{
 			Desc:     "matching span attribute",
-			Trace:    newTraceStringAttrs(empty, newSpan("example", "value")),
+			Trace:    newTraceStringAttrs(empty, "example", "value"),
 			Decision: Sampled,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pdata.NewTraceID(u[:]), c.Trace)
+			decision, err := filter.Evaluate(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
 	}
 }
 
-func newSpan(attrKey string, attrValue string) *tracepb.Span {
-	return &tracepb.Span{
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: map[string]*tracepb.AttributeValue{
-				attrKey: {
-					Value: &tracepb.AttributeValue_StringValue{
-						StringValue: &tracepb.TruncatableString{
-							Value: attrValue,
-						},
-					},
-				},
-			},
-		},
+func newTraceStringAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey string, spanAttrValue string) *TraceData {
+	var traceBatches []pdata.Traces
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	rs.Resource().InitEmpty()
+	rs.Resource().Attributes().InitFromMap(nodeAttrs)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[spanAttrKey] = pdata.NewAttributeValueString(spanAttrValue)
+	span.Attributes().InitFromMap(attributes)
+	traceBatches = append(traceBatches, traces)
+	return &TraceData{
+		ReceivedBatches: traceBatches,
 	}
 }
 
-func newTraceStringAttrs(nodeAttrs map[string]string, span *tracepb.Span) *TraceData {
-	return &TraceData{
-		ReceivedBatches: []consumerdata.TraceData{
-			{
-				Node: &commonpb.Node{
-					Attributes: nodeAttrs,
-				},
-				Spans: []*tracepb.Span{
-					span,
-				},
-			},
-		},
-	}
+func TestOnDroppedSpans_StringAttribute(t *testing.T) {
+	var empty = map[string]pdata.AttributeValue{}
+	u, _ := uuid.NewRandom()
+	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"})
+	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	assert.Nil(t, err)
+	assert.Equal(t, decision, NotSampled)
+}
+
+func TestOnLateArrivingSpans_StringAttribute(t *testing.T) {
+	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"})
+	err := filter.OnLateArrivingSpans(NotSampled, nil)
+	assert.Nil(t, err)
 }
