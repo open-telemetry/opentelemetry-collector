@@ -42,3 +42,10 @@ func UnixNanoToTime(u TimestampUnixNano) time.Time {
 	}
 	return time.Unix(0, int64(u)).UTC()
 }
+
+func TimeToUnixNano(t time.Time) TimestampUnixNano {
+	if t.IsZero() {
+		return 0
+	}
+	return TimestampUnixNano(uint64(t.UnixNano()))
+}
