@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // Scrape metrics.
@@ -38,6 +39,9 @@ type Close func(ctx context.Context) error
 type ScraperOption func(*baseScraper)
 
 type BaseScraper interface {
+	// Name returns the scraper name
+	Name() string
+
 	// Initialize performs any timely initialization tasks such as
 	// setting up performance counters for initial collection.
 	Initialize(ctx context.Context) error
@@ -62,8 +66,13 @@ type ResourceMetricsScraper interface {
 var _ BaseScraper = (*baseScraper)(nil)
 
 type baseScraper struct {
+	name       string
 	initialize Initialize
 	close      Close
+}
+
+func (b baseScraper) Name() string {
+	return b.name
 }
 
 func (b baseScraper) Initialize(ctx context.Context) error {
@@ -105,11 +114,12 @@ var _ MetricsScraper = (*metricsScraper)(nil)
 // collection interval, reports observability information, and passes the
 // scraped metrics to the next consumer.
 func NewMetricsScraper(
+	name string,
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
 ) MetricsScraper {
 	ms := &metricsScraper{
-		baseScraper:   baseScraper{},
+		baseScraper:   baseScraper{name: name},
 		ScrapeMetrics: scrape,
 	}
 
@@ -121,7 +131,11 @@ func NewMetricsScraper(
 }
 
 func (m metricsScraper) Scrape(ctx context.Context) (pdata.MetricSlice, error) {
-	return m.ScrapeMetrics(ctx)
+	ctx = obsreport.ScraperContext(ctx, m.Name())
+	ctx = obsreport.StartMetricsScrapeOp(ctx, m.Name())
+	metrics, err := m.ScrapeMetrics(ctx)
+	obsreport.EndMetricsScrapeOp(ctx, metrics.Len(), err)
+	return metrics, err
 }
 
 type resourceMetricsScraper struct {
@@ -135,11 +149,12 @@ var _ ResourceMetricsScraper = (*resourceMetricsScraper)(nil)
 // specified collection interval, reports observability information, and
 // passes the scraped resource metrics to the next consumer.
 func NewResourceMetricsScraper(
+	name string,
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
 ) ResourceMetricsScraper {
 	rms := &resourceMetricsScraper{
-		baseScraper:           baseScraper{},
+		baseScraper:           baseScraper{name: name},
 		ScrapeResourceMetrics: scrape,
 	}
 
@@ -151,5 +166,22 @@ func NewResourceMetricsScraper(
 }
 
 func (r resourceMetricsScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
-	return r.ScrapeResourceMetrics(ctx)
+	ctx = obsreport.ScraperContext(ctx, r.Name())
+	ctx = obsreport.StartMetricsScrapeOp(ctx, r.Name())
+	resourceMetrics, err := r.ScrapeResourceMetrics(ctx)
+	obsreport.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
+	return resourceMetrics, err
+}
+
+func metricCount(resourceMetrics pdata.ResourceMetricsSlice) int {
+	count := 0
+
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		ilm := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilm.Len(); j++ {
+			count += ilm.At(j).Metrics().Len()
+		}
+	}
+
+	return count
 }

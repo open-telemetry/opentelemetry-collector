@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // ScraperControllerSettings defines common settings for a scraper controller
@@ -66,9 +67,9 @@ func AddMetricsScraper(scraper MetricsScraper) ScraperControllerOption {
 //
 // Observability information will be reported, and the scraped resource
 // metrics will be passed to the next consumer.
-func AddResourceMetricsScraper(scrape ResourceMetricsScraper) ScraperControllerOption {
+func AddResourceMetricsScraper(scraper ResourceMetricsScraper) ScraperControllerOption {
 	return func(o *scraperController) {
-		o.resourceMetricScrapers = append(o.resourceMetricScrapers, scrape)
+		o.resourceMetricScrapers = append(o.resourceMetricScrapers, scraper)
 	}
 }
 
@@ -82,6 +83,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
 }
 
 type scraperController struct {
+	name               string
 	collectionInterval time.Duration
 	nextConsumer       consumer.MetricsConsumer
 
@@ -103,6 +105,7 @@ func NewScraperControllerReceiver(cfg *ScraperControllerSettings, nextConsumer c
 	}
 
 	sc := &scraperController{
+		name:               cfg.Name(),
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,
 		metricsScrapers:    &multiMetricScraper{},
@@ -180,26 +183,21 @@ func (sc *scraperController) startScraping() {
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
 func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
-	// TODO: add observability metrics support
-	var errs []error
+	ctx = obsreport.ReceiverContext(ctx, sc.name, "", "")
 
 	metrics := pdata.NewMetrics()
 
 	for _, rms := range sc.resourceMetricScrapers {
-		resourceMetrics, err := rms.Scrape(ctx)
-		if err != nil {
-			errs = append(errs, err) // TODO: handle partial errors
-		}
-
+		// ignore errors while scraping
+		resourceMetrics, _ := rms.Scrape(ctx)
 		resourceMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	// TODO: report error
-	if len(errs) > 0 {
-		componenterror.CombineErrors(errs)
-	}
+	metricCount, dataPointCount := metrics.MetricAndDataPointCount()
 
-	sc.nextConsumer.ConsumeMetrics(ctx, metrics)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, sc.name, "")
+	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
+	obsreport.EndMetricsReceiveOp(ctx, "", metricCount, dataPointCount, err)
 }
 
 // stopScraping stops the ticker
@@ -224,6 +222,10 @@ var _ ResourceMetricsScraper = (*multiMetricScraper)(nil)
 
 type multiMetricScraper struct {
 	scrapers []MetricsScraper
+}
+
+func (mms *multiMetricScraper) Name() string {
+	return ""
 }
 
 func (mms *multiMetricScraper) Initialize(ctx context.Context) error {

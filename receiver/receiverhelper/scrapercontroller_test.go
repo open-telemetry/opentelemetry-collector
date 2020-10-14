@@ -17,17 +17,22 @@ package receiverhelper
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 type testInitialize struct {
@@ -180,6 +185,16 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+
+			ss := &spanStore{}
+			trace.RegisterExporter(ss)
+			defer trace.UnregisterExporter(ss)
+
+			views := obsreport.Configure(false, true)
+			require.NoError(t, view.Register(views...))
+			defer view.Unregister(views...)
+
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
 			scrapeResourceMetricsChs := make([]chan int, test.resourceScrapers)
@@ -191,10 +206,11 @@ func TestScrapeController(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			defaultCfg := DefaultScraperControllerSettings("")
+			defaultCfg := DefaultScraperControllerSettings("receiver")
 			cfg := &defaultCfg
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
+				cfg.NameVal = "receiver"
 			}
 
 			mr, err := NewScraperControllerReceiver(cfg, nextConsumer, options...)
@@ -212,11 +228,8 @@ func TestScrapeController(t *testing.T) {
 				assertChannelsCalled(t, initializeChs, "initialize was not called")
 			}
 
-			// TODO: validate that observability information is reported correctly on error
-			//       i.e. if test.scrapeErr != nil { ... }
-
-			// validate that scrape is called at least 5 times for each configured scraper
 			if test.expectScraped || test.scrapeErr != nil {
+				// validate that scrape is called at least 5 times for each configured scraper
 				for _, ch := range scrapeMetricsChs {
 					require.Eventually(t, func() bool { return (<-ch) > 5 }, 500*time.Millisecond, time.Millisecond)
 				}
@@ -226,6 +239,29 @@ func TestScrapeController(t *testing.T) {
 
 				if test.expectScraped {
 					assert.GreaterOrEqual(t, sink.MetricsCount(), 5)
+				}
+
+				spans := ss.PullAllSpans()
+				require.Greater(t, len(spans), 0)
+
+				// TODO: scrape errors should show as refused
+				// TODO: what if there are more metrics scraped due to another tick just as we check this,
+				//       need a way to stop the scrapers
+				obsreporttest.CheckReceiverMetricsViews(t, "receiver", "", int64(sink.MetricsCount()), 0)
+
+				if test.scrapeErr == nil {
+					// obsreporttest.CheckScraperMetricsViews(t, "scraper", int64(sink.MetricsCount()), 0)
+				} else {
+					// obsreporttest.CheckScraperMetricsViews(t, "scraper", 0, int64(sink.MetricsCount()))
+
+					// validate scrape error reported in scraper trace
+					for _, span := range spans {
+						if span.Name == "scraper/scraper/MetricsScraped" {
+							assert.Equal(t, test.scrapeErr.Error(), span.Message)
+							assert.Equal(t, trace.Status{Code: 2, Message: test.scrapeErr.Error()}, span.Status)
+							break
+						}
+					}
 				}
 			}
 
@@ -258,7 +294,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		scrapeMetricsChs[i] = make(chan int, 10)
 		tsm := &testScrapeMetrics{ch: scrapeMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper(tsm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddMetricsScraper(NewMetricsScraper("scraper", tsm.scrape, scraperOptions...)))
 	}
 
 	for i := 0; i < test.resourceScrapers; i++ {
@@ -276,7 +312,7 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 
 		testScrapeResourceMetricsChs[i] = make(chan int, 10)
 		tsrm := &testScrapeResourceMetrics{ch: testScrapeResourceMetricsChs[i], err: test.scrapeErr}
-		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper(tsrm.scrape, scraperOptions...)))
+		metricOptions = append(metricOptions, AddResourceMetricsScraper(NewResourceMetricsScraper("scraper", tsrm.scrape, scraperOptions...)))
 	}
 
 	return metricOptions
@@ -344,8 +380,8 @@ func TestSingleScrapePerTick(t *testing.T) {
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
 		&exportertest.SinkMetricsExporter{},
-		AddMetricsScraper(NewMetricsScraper(tsm.scrape)),
-		AddResourceMetricsScraper(NewResourceMetricsScraper(tsrm.scrape)),
+		AddMetricsScraper(NewMetricsScraper("", tsm.scrape)),
+		AddResourceMetricsScraper(NewResourceMetricsScraper("", tsrm.scrape)),
 		WithTickerChannel(tickerCh),
 	)
 	require.NoError(t, err)
@@ -365,4 +401,23 @@ func TestSingleScrapePerTick(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		return
 	}
+}
+
+type spanStore struct {
+	sync.Mutex
+	spans []*trace.SpanData
+}
+
+func (ss *spanStore) ExportSpan(sd *trace.SpanData) {
+	ss.Lock()
+	ss.spans = append(ss.spans, sd)
+	ss.Unlock()
+}
+
+func (ss *spanStore) PullAllSpans() []*trace.SpanData {
+	ss.Lock()
+	capturedSpans := ss.spans
+	ss.spans = nil
+	ss.Unlock()
+	return capturedSpans
 }

@@ -144,10 +144,14 @@ func CheckValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName stri
 
 // tagsForReceiverView returns the tags that are needed for the receiver views.
 func tagsForReceiverView(receiver, transport string) []tag.Tag {
-	return []tag.Tag{
-		{Key: receiverTag, Value: receiver},
-		{Key: transportTag, Value: transport},
+	tags := make([]tag.Tag, 0, 2)
+
+	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver})
+	if transport != "" {
+		tags = append(tags, tag.Tag{Key: transportTag, Value: transport})
 	}
+
+	return tags
 }
 
 // tagsForProcessorView returns the tags that are needed for the processor views.
