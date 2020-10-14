@@ -44,7 +44,7 @@ func createDefaultConfig() configmodels.Extension {
 	}
 }
 
-func createExtension(_ context.Context, _ component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
-	return newMemoryBallast(config), nil
+	return newMemoryBallast(config, params.Logger), nil
 }
