@@ -2,10 +2,16 @@
 
 ## Unreleased
 
+## 🚀 New components 🚀
+
+- Add memory ballast extension (#1958, #1959) 
+
 ## 🛑 Breaking changes 🛑
 
 - Use consumer for sender interface, remove unnecessary receiver address from Runner #1941
 - Enable sending queue by default in all exporters configured to use it #1924
+- Remove "mem-ballast-size-mib" flag, memory ballast can be configured as an extension.
+- Internal memory metric "process/runtime/heap_alloc_bytes", "process/runtime/total_alloc_bytes", and "process/runtime/total_sys_memory_bytes" no longer ignore memory ballast.
 
 ## 🧰 Bug fixes 🧰
 

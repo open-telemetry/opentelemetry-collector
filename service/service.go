@@ -78,6 +78,7 @@ type Application struct {
 	builtExtensions builder.Extensions
 	stateChannel    chan State
 
+	tel       *appTelemetry
 	factories component.Factories
 	config    *configmodels.Config
 
@@ -236,10 +237,11 @@ func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
 	return nil
 }
 
-func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
+func (app *Application) setupTelemetry() error {
 	app.logger.Info("Setting up own telemetry...")
 
-	err := applicationTelemetry.init(app.asyncErrorChannel, ballastSizeBytes, app.logger)
+	var err error
+	app.tel, err = newAppTelemetry(app.asyncErrorChannel, app.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
@@ -400,13 +402,10 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	)
 	app.stateChannel <- Starting
 
-	// Set memory ballast
-	ballast, ballastSizeBytes := app.createMemoryBallast()
-
 	app.asyncErrorChannel = make(chan error)
 
 	// Setup everything.
-	err := app.setupTelemetry(ballastSizeBytes)
+	err := app.setupTelemetry()
 	if err != nil {
 		return err
 	}
@@ -428,7 +427,6 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	var errs []error
 
 	// Begin shutdown sequence.
-	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
 	err = app.builtExtensions.NotifyPipelineNotReady()
@@ -446,9 +444,9 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
-	err = applicationTelemetry.shutdown()
+	err = app.tel.shutdown()
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
+		errs = append(errs, fmt.Errorf("failed to shutdown application telemetry: %w", err))
 	}
 
 	app.logger.Info("Shutdown complete.")
@@ -567,15 +565,4 @@ func (app *Application) getExtensionsSummaryTableData() internal.SummaryExtensio
 		return data.Rows[i].FullName < data.Rows[j].FullName
 	})
 	return data
-}
-
-func (app *Application) createMemoryBallast() ([]byte, uint64) {
-	ballastSizeMiB := builder.MemBallastSize()
-	if ballastSizeMiB > 0 {
-		ballastSizeBytes := uint64(ballastSizeMiB) * 1024 * 1024
-		ballast := make([]byte, ballastSizeBytes)
-		app.logger.Info("Using memory ballast", zap.Int("MiBs", ballastSizeMiB))
-		return ballast, ballastSizeBytes
-	}
-	return nil, 0
 }

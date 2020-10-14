@@ -27,10 +27,11 @@ import (
 
 func TestDefaultComponents(t *testing.T) {
 	expectedExtensions := []configmodels.Type{
+		"fluentbit",
 		"health_check",
+		"memory_ballast",
 		"pprof",
 		"zpages",
-		"fluentbit",
 	}
 	expectedReceivers := []configmodels.Type{
 		"jaeger",

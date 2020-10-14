@@ -38,34 +38,27 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// applicationTelemetry is application's own telemetry.
-var applicationTelemetry appTelemetryExporter = &appTelemetry{}
-
-type appTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
-	shutdown() error
-}
-
 type appTelemetry struct {
 	views  []*view.View
 	server *http.Server
 }
 
-func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func newAppTelemetry(asyncErrorChannel chan<- error, logger *zap.Logger) (*appTelemetry, error) {
 	level, err := telemetry.GetLevel()
 	if err != nil {
-		return fmt.Errorf("failed to parse metrics level: %w", err)
+		return nil, fmt.Errorf("failed to parse metrics level: %w", err)
 	}
+
+	tel := &appTelemetry{}
 
 	metricsAddr := telemetry.GetMetricsAddr()
-
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
-		return nil
+		return tel, nil
 	}
 
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(0)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var views []*view.View
@@ -79,7 +72,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, fluentobserv.Views(level)...)
 	tel.views = views
 	if err = view.Register(views...); err != nil {
-		return err
+		return nil, err
 	}
 
 	processMetricsViews.StartCollection()
@@ -100,7 +93,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	pe, err := prometheus.NewExporter(opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	view.RegisterExporter(pe)
@@ -129,7 +122,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		}
 	}()
 
-	return nil
+	return tel, nil
 }
 
 func (tel *appTelemetry) shutdown() error {

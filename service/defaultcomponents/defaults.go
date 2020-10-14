@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
+	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/fluentbitextension"
 	"go.opentelemetry.io/collector/extension/healthcheckextension"
 	"go.opentelemetry.io/collector/extension/pprofextension"
@@ -59,10 +60,11 @@ func Components() (
 	var errs []error
 
 	extensions, err := component.MakeExtensionFactoryMap(
+		ballastextension.NewFactory(),
+		fluentbitextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		fluentbitextension.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

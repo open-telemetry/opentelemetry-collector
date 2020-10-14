@@ -108,6 +108,7 @@ var viewRSSMemory = &view.View{
 
 // NewProcessMetricsViews creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
+// TODO: Remove ballast, these metric should not deal with the ballast.
 func NewProcessMetricsViews(ballastSizeBytes uint64) (*ProcessMetricsViews, error) {
 	pmv := &ProcessMetricsViews{
 		prevTimeUnixNano: time.Now().UnixNano(),
