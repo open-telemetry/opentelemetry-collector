@@ -80,7 +80,7 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 		{
 			name: "TwoSpansOneNil",
 			td:   generateTraceTwoSpansOneNil(),
-			zs:   []*zipkinmodel.SpanModel{ zipkinOneSpan() },
+			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan()},
 			err:  nil,
 		},
 	}
@@ -141,12 +141,12 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 			Sampled:  &trueBool,
 			Err:      nil,
 		},
-		LocalEndpoint:  &zipkinmodel.Endpoint{
+		LocalEndpoint: &zipkinmodel.Endpoint{
 			ServiceName: "OTLPResourceNoServiceName",
 		},
 		RemoteEndpoint: nil,
 		Annotations:    nil,
-		Tags:           map[string]string{
+		Tags: map[string]string{
 			"resource-attr": "resource-attr-val-1",
 		},
 	}
