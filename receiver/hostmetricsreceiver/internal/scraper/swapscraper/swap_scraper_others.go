@@ -23,9 +23,15 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+)
+
+const (
+	swapUsageMetricsLen = 1
+	pagingMetricsLen    = 2
 )
 
 // scraper for Swap Metrics
@@ -55,13 +61,8 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	var errors []error
@@ -76,18 +77,18 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	return metrics, componenterror.CombineErrors(errors)
+	return metrics, receiverhelper.CombineScrapeErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 	vmem, err := s.virtualMemory()
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, swapUsageMetricsLen)
 	}
 
 	idx := metrics.Len()
-	metrics.Resize(idx + 1)
+	metrics.Resize(idx + swapUsageMetricsLen)
 	initializeSwapUsageMetric(metrics.At(idx), now, vmem)
 	return nil
 }
@@ -113,11 +114,11 @@ func (s *scraper) scrapeAndAppendPagingMetrics(metrics pdata.MetricSlice) error 
 	now := internal.TimeToUnixNano(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
 	}
 
 	idx := metrics.Len()
-	metrics.Resize(idx + 2)
+	metrics.Resize(idx + pagingMetricsLen)
 	initializePagingMetric(metrics.At(idx+0), s.startTime, now, swap)
 	initializePageFaultsMetric(metrics.At(idx+1), s.startTime, now, swap)
 	return nil

@@ -21,9 +21,15 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+)
+
+const (
+	standardMetricsLen = 1
+	metricsLen         = standardMetricsLen + systemSpecificMetricsLen
 )
 
 // scraper for FileSystem Metrics
@@ -52,18 +58,8 @@ func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
 	return scraper, nil
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
-	return nil
-}
-
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
@@ -71,7 +67,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	var errors []error
@@ -80,9 +76,9 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		usage, err := s.usage(partition.Mountpoint)
-		if err != nil {
-			errors = append(errors, err)
+		usage, usageErr := s.usage(partition.Mountpoint)
+		if usageErr != nil {
+			errors = append(errors, consumererror.NewPartialScrapeError(usageErr, 0))
 			continue
 		}
 
@@ -90,13 +86,19 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 	}
 
 	if len(usages) > 0 {
-		metrics.Resize(1 + systemSpecificMetricsLen)
-
+		metrics.Resize(metricsLen)
 		initializeFileSystemUsageMetric(metrics.At(0), now, usages)
 		appendSystemSpecificMetrics(metrics, 1, now, usages)
 	}
 
-	return metrics, componenterror.CombineErrors(errors)
+	err = receiverhelper.CombineScrapeErrors(errors)
+	if err != nil && len(usages) == 0 {
+		partialErr := err.(consumererror.PartialScrapeError)
+		partialErr.Failed = metricsLen
+		err = partialErr
+	}
+
+	return metrics, err
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {

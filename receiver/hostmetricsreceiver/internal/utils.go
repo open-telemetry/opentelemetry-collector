@@ -20,17 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// Initializes a metric with a metric slice and returns it.
-func InitializeMetricSlice(metricData pdata.Metrics) pdata.MetricSlice {
-	rms := metricData.ResourceMetrics()
-	rms.Resize(1)
-	rm := rms.At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
-	return ilm.Metrics()
-}
-
 func TimeToUnixNano(t time.Time) pdata.TimestampUnixNano {
 	return pdata.TimestampUnixNano(uint64(t.UnixNano()))
 }

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
@@ -41,12 +42,12 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, nil)
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, &exportertest.SinkTraceExporter{})
 
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, &exportertest.SinkMetricsExporter{})
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
@@ -58,6 +59,6 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{Scrapers: map[string]internal.Config{errorKey: &mockConfig{}}}
 
-	_, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, nil)
+	_, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, &exportertest.SinkMetricsExporter{})
 	assert.EqualError(t, err, fmt.Sprintf("host metrics scraper factory not found for key: %q", errorKey))
 }
