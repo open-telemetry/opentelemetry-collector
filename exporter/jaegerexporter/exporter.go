@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -32,7 +33,7 @@ import (
 // newTraceExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func newTraceExporter(cfg *Config) (component.TraceExporter, error) {
+func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporter, error) {
 
 	opts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {
@@ -46,6 +47,7 @@ func newTraceExporter(cfg *Config) (component.TraceExporter, error) {
 
 	collectorServiceClient := jaegerproto.NewCollectorServiceClient(client)
 	s := &protoGRPCSender{
+		logger:       logger,
 		client:       collectorServiceClient,
 		metadata:     metadata.New(cfg.GRPCClientSettings.Headers),
 		waitForReady: cfg.WaitForReady,
@@ -64,6 +66,7 @@ func newTraceExporter(cfg *Config) (component.TraceExporter, error) {
 // protoGRPCSender forwards spans encoded in the jaeger proto
 // format, to a grpc server.
 type protoGRPCSender struct {
+	logger       *zap.Logger
 	client       jaegerproto.CollectorServiceClient
 	metadata     metadata.MD
 	waitForReady bool
@@ -89,6 +92,7 @@ func (s *protoGRPCSender) pushTraceData(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
 		if err != nil {
+			s.logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return td.SpanCount() - sentSpans, fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
 		}
 		sentSpans += len(batch.Spans)

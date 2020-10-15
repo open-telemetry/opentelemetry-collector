@@ -25,6 +25,7 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -154,7 +155,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTraceExporter(&tt.args.config)
+			got, err := newTraceExporter(&tt.args.config, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("newTraceExporter() error = %v, wantErr %v", err, tt.wantErr)
 				return
