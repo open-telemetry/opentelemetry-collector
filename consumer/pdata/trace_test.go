@@ -143,7 +143,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.EqualValues(t, *pdataRS.orig, &gogoprotoRS2)
 }
 
-func TestTraces_ToOtlpProtoBytes(t *testing.T) {
+func TestToOtlpProtoBytes(t *testing.T) {
 	td := NewTraces()
 	bytes, err := td.ToOtlpProtoBytes()
 	assert.Nil(t, err)
@@ -152,4 +152,17 @@ func TestTraces_ToOtlpProtoBytes(t *testing.T) {
 	err = gogoproto.Unmarshal(bytes, &etsr)
 	assert.Nil(t, err)
 	assert.EqualValues(t, etsr.ResourceSpans, TracesToOtlp(td))
+}
+
+func TestFromOtlpProtoBytes(t *testing.T) {
+	td := NewTraces()
+	bytes, err := td.ToOtlpProtoBytes()
+	assert.Nil(t, err)
+
+	err = td.FromOtlpProtoBytes(bytes)
+	assert.Nil(t, err)
+	assert.EqualValues(t, NewTraces(), td)
+
+	err = td.FromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
 }

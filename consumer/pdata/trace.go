@@ -40,13 +40,25 @@ func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
 	return *td.orig
 }
 
-// ToOtlpProtoBytes returns the internal Traces to OTLP Collector
-// ExportTraceServiceRequest ProtoBuf bytes. This is intended to export OTLP
-// Protobuf bytes for OTLP/HTTP transports.
+// ToOtlpProtoBytes converts the internal Traces to OTLP Collector
+// ExportTraceServiceRequest ProtoBuf bytes.
 func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
 	return proto.Marshal(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: *td.orig,
 	})
+}
+
+// FromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
+// ProtoBuf bytes to the internal Traces. Overrides current data.
+// Calling this function on zero-initialized structure causes panic.
+// Use it with NewTraces or on existing initialized Traces
+func (td Traces) FromOtlpProtoBytes(data []byte) error {
+	traces := &otlpcollectortrace.ExportTraceServiceRequest{}
+	if err := proto.Unmarshal(data, traces); err != nil {
+		return err
+	}
+	*td.orig = traces.ResourceSpans
+	return nil
 }
 
 // NewTraces creates a new Traces.
