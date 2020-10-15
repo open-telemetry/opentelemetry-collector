@@ -78,8 +78,8 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			err:  errors.New("TraceID is nil"),
 		},
 		{
-			name: "TwoSpansOneNil",
-			td:   generateTraceTwoSpansOneNil(),
+			name: "oneSpanOneNil",
+			td:   generateTraceOneSpanOneNilWithTraceID(),
 			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan()},
 			err:  nil,
 		},
@@ -118,15 +118,12 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	}
 }
 
-func generateTraceTwoSpansOneNil() pdata.Traces {
-	td := testdata.GenerateTraceDataOneEmptyInstrumentationLibrary()
-	span := pdata.NewSpan()
-	span.InitEmpty()
+func generateTraceOneSpanOneNilWithTraceID() pdata.Traces {
+	td := testdata.GenerateTraceDataOneSpanOneNil()
+	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	span.SetTraceID(pdata.NewTraceID([]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))
 	span.SetSpanID(pdata.NewSpanID([]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Append(span)
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Append(pdata.NewSpan())
 	return td
 }
 
@@ -139,15 +136,30 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 			ParentID: nil,
 			Debug:    false,
 			Sampled:  &trueBool,
-			Err:      nil,
+			Err:      errors.New("status-cancelled"),
 		},
 		LocalEndpoint: &zipkinmodel.Endpoint{
 			ServiceName: "OTLPResourceNoServiceName",
 		},
 		RemoteEndpoint: nil,
-		Annotations:    nil,
-		Tags: map[string]string{
-			"resource-attr": "resource-attr-val-1",
+		Annotations: []zipkinmodel.Annotation{
+			{
+				Timestamp: testdata.TestSpanEventTime,
+				Value:     "event-with-attr|{\"span-event-attr\":\"span-event-attr-val\"}|2",
+			},
+			{
+				Timestamp: testdata.TestSpanEventTime,
+				Value:     "event|{}|2",
+			},
 		},
+		Tags: map[string]string{
+			"resource-attr":  "resource-attr-val-1",
+			"status.code":    "STATUS_CODE_CANCELLED",
+			"status.message": "status-cancelled",
+		},
+		Name:      "operationA",
+		Timestamp: testdata.TestSpanStartTime,
+		Duration:  1000000468,
+		Shared:    false,
 	}
 }
