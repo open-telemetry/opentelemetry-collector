@@ -15,12 +15,12 @@
 package ballastextension
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config has the configuration for the fluentbit extension.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	*config.ExtensionSettings `mapstructure:"-"`
 
 	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.

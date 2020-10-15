@@ -6,7 +6,7 @@ Memory Ballast extension enables applications to configure memory ballast for th
 
 The following settings can be configured:
 
-- `ballast_size_mib` (default = 0, disabled): Is the memory ballast size, in MiB.
+- `size_mib` (default = 0, disabled): Is the memory ballast size, in MiB.
 
 Example:
 
