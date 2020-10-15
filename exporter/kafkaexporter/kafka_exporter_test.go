@@ -32,17 +32,31 @@ import (
 )
 
 func TestNewExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	c := Config{ProtocolVersion: "0.0.0", TracesEncoding: defaultEncoding, MetricsEncoding: defaultEncoding}
+	texp, err := newTracesExporter(c, component.ExporterCreateParams{}, tracesMarshallers())
 	assert.Error(t, err)
-	assert.Nil(t, exp)
+	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "foo"}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	c := Config{TracesEncoding: "foo", MetricsEncoding: "bar"}
+	texp, err := newTracesExporter(c, component.ExporterCreateParams{}, tracesMarshallers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, exp)
+	assert.Nil(t, texp)
+}
+
+func TestNewMetricsExporter_err_version(t *testing.T) {
+	c := Config{ProtocolVersion: "0.0.0", TracesEncoding: defaultEncoding, MetricsEncoding: defaultEncoding}
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{}, metricsMarshallers())
+	assert.Error(t, err)
+	assert.Nil(t, mexp)
+}
+
+func TestNewMetricsExporter_err_encoding(t *testing.T) {
+	c := Config{TracesEncoding: "foo", MetricsEncoding: "bar"}
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{}, metricsMarshallers())
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, mexp)
 }
 
 func TestNewExporter_err_auth_type(t *testing.T) {
@@ -55,15 +69,20 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 				},
 			},
 		},
-		Encoding: defaultEncoding,
+		TracesEncoding: defaultEncoding,
+		MetricsEncoding: defaultEncoding,
 		Metadata: Metadata{
 			Full: false,
 		},
 	}
-	exp, err := newExporter(c, component.ExporterCreateParams{}, defaultMarshallers())
+	texp, err := newTracesExporter(c, component.ExporterCreateParams{}, tracesMarshallers())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, exp)
+	assert.Nil(t, texp)
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{}, metricsMarshallers())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.Nil(t, mexp)
 }
 
 func TestTraceDataPusher(t *testing.T) {
@@ -71,9 +90,9 @@ func TestTraceDataPusher(t *testing.T) {
 	producer := mocks.NewSyncProducer(t, c)
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaProducer{
+	p := kafkaTracesProducer{
 		producer:   producer,
-		marshaller: &otlpProtoMarshaller{},
+		marshaller: &otlpTracesPbMarshaller{},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -89,9 +108,9 @@ func TestTraceDataPusher_err(t *testing.T) {
 	expErr := fmt.Errorf("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
-	p := kafkaProducer{
+	p := kafkaTracesProducer{
 		producer:   producer,
-		marshaller: &otlpProtoMarshaller{},
+		marshaller: &otlpTracesPbMarshaller{},
 		logger:     zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -105,8 +124,8 @@ func TestTraceDataPusher_err(t *testing.T) {
 
 func TestTraceDataPusher_marshall_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshall")
-	p := kafkaProducer{
-		marshaller: &errorMarshaller{err: expErr},
+	p := kafkaTracesProducer{
+		marshaller: &tracesErrorMarshaller{err: expErr},
 		logger:     zap.NewNop(),
 	}
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
@@ -116,16 +135,78 @@ func TestTraceDataPusher_marshall_error(t *testing.T) {
 	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
 
-type errorMarshaller struct {
+func TestMetricsDataPusher(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		producer: producer,
+		marshaller: &otlpMetricsPbMarshaller{},
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	dropped, err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	require.NoError(t, err)
+	assert.Equal(t, 0, dropped)
+}
+
+func TestMetricsDataPusher_err(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	expErr := fmt.Errorf("failed to send")
+	producer.ExpectSendMessageAndFail(expErr)
+
+	p := kafkaMetricsProducer{
+		producer: producer,
+		marshaller: &otlpMetricsPbMarshaller{},
+		logger: zap.NewNop(),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	md := testdata.GenerateMetricsTwoMetrics()
+	dropped, err := p.metricsDataPusher(context.Background(), md)
+	assert.EqualError(t, err, expErr.Error())
+	assert.Equal(t, md.MetricCount(), dropped)
+}
+
+func TestMetricsDataPusher_marshal_error(t *testing.T) {
+	expErr := fmt.Errorf("failed to marshall")
+	p := kafkaMetricsProducer{
+		marshaller: &metricsErrorMarshaller{err: expErr},
+		logger: zap.NewNop(),
+	}
+	md := testdata.GenerateMetricsTwoMetrics()
+	dropped, err := p.metricsDataPusher(context.Background(), md)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), expErr.Error())
+	assert.Equal(t, md.MetricCount(), dropped)
+}
+
+type tracesErrorMarshaller struct {
 	err error
 }
 
-var _ Marshaller = (*errorMarshaller)(nil)
+type metricsErrorMarshaller struct {
+	err error
+}
 
-func (e errorMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+func (e metricsErrorMarshaller) Marshal(traces pdata.Metrics) ([]Message, error) {
 	return nil, e.err
 }
 
-func (e errorMarshaller) Encoding() string {
+func (e metricsErrorMarshaller) Encoding() string {
+	panic("implement me")
+}
+
+var _ TracesMarshaller = (*tracesErrorMarshaller)(nil)
+
+func (e tracesErrorMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
+	return nil, e.err
+}
+
+func (e tracesErrorMarshaller) Encoding() string {
 	panic("implement me")
 }

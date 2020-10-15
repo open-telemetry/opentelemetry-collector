@@ -21,14 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlpmetric "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
-func TestOTLPMarshaller(t *testing.T) {
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
-	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
+func TestOTLPTracesPbMarshaller(t *testing.T) {
+	td := testdata.GenerateTraceDataTwoSpansSameResource()
 	request := &otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(td),
 	}
@@ -36,9 +35,25 @@ func TestOTLPMarshaller(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, expected)
 
-	m := otlpProtoMarshaller{}
+	m := otlpTracesPbMarshaller{}
 	assert.Equal(t, "otlp_proto", m.Encoding())
 	messages, err := m.Marshal(td)
+	require.NoError(t, err)
+	assert.Equal(t, []Message{{Value: expected}}, messages)
+}
+
+func TestOTLPMetricsPbJSONMarshaller(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	request := &otlpmetric.ExportMetricsServiceRequest{
+		ResourceMetrics: pdata.MetricsToOtlp(md),
+	}
+	expected, err := request.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, expected)
+
+	m := otlpMetricsPbMarshaller{}
+	assert.Equal(t, "otlp_proto", m.Encoding())
+	messages, err := m.Marshal(md)
 	require.NoError(t, err)
 	assert.Equal(t, []Message{{Value: expected}}, messages)
 }
