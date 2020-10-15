@@ -77,6 +77,12 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  errors.New("TraceID is nil"),
 		},
+		{
+			name: "TwoSpansOneNil",
+			td:   generateTraceTwoSpansOneNil(),
+			zs:   []*zipkinmodel.SpanModel{ zipkinOneSpan() },
+			err:  nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -109,5 +115,39 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, zErr)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
+	}
+}
+
+func generateTraceTwoSpansOneNil() pdata.Traces {
+	td := testdata.GenerateTraceDataOneEmptyInstrumentationLibrary()
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(pdata.NewTraceID([]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))
+	span.SetSpanID(pdata.NewSpanID([]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Append(span)
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Append(pdata.NewSpan())
+	return td
+}
+
+func zipkinOneSpan() *zipkinmodel.SpanModel {
+	trueBool := true
+	return &zipkinmodel.SpanModel{
+		SpanContext: zipkinmodel.SpanContext{
+			TraceID:  zipkinmodel.TraceID{High: 72623859790382856, Low: 651345242494996240},
+			ID:       72623859790382856,
+			ParentID: nil,
+			Debug:    false,
+			Sampled:  &trueBool,
+			Err:      nil,
+		},
+		LocalEndpoint:  &zipkinmodel.Endpoint{
+			ServiceName: "OTLPResourceNoServiceName",
+		},
+		RemoteEndpoint: nil,
+		Annotations:    nil,
+		Tags:           map[string]string{
+			"resource-attr": "resource-attr-val-1",
+		},
 	}
 }

@@ -78,11 +78,15 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
+			span := spans.At(j)
+			if span.IsNil() {
+				continue
+			}
+			zSpan, err := spanToZipkinSpan(span, localServiceName, zTags)
 			if err != nil {
 				return zSpans, err
 			}
-			zSpans = append(zSpans, span)
+			zSpans = append(zSpans, zSpan)
 		}
 	}
 
