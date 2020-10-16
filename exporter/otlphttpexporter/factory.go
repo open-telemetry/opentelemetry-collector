@@ -16,6 +16,8 @@ package otlphttpexporter
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -57,6 +59,21 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
+func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string) (string, error) {
+	switch {
+	case signalOverrideURL != "":
+		_, err := url.Parse(signalOverrideURL)
+		if err != nil {
+			return "", fmt.Errorf("%s_endpoint must be a valid URL", signalName)
+		}
+		return signalOverrideURL, nil
+	case oCfg.Endpoint == "":
+		return "", fmt.Errorf("either endpoint or %s_endpoint must be specified", signalName)
+	default:
+		return oCfg.Endpoint + "/v1/" + signalName, nil
+	}
+}
+
 func createTraceExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
@@ -67,6 +84,12 @@ func createTraceExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
+
+	oce.tracesURL, err = composeSignalURL(oCfg, oCfg.TracesEndpoint, "traces")
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		oce.pushTraceData,
@@ -86,6 +109,12 @@ func createMetricsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
+
+	oce.metricsURL, err = composeSignalURL(oCfg, oCfg.MetricsEndpoint, "metrics")
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		oce.pushMetricsData,
@@ -105,6 +134,12 @@ func createLogsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
+
+	oce.logsURL, err = composeSignalURL(oCfg, oCfg.LogsEndpoint, "logs")
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		oce.pushLogData,
