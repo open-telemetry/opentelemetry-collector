@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 )
@@ -254,6 +255,132 @@ func (ome *OCMetricsDataSender) Start() error {
 	return exporter.Start(context.Background(), ome)
 }
 
+type otlpHTTPDataSender struct {
+	DataSenderBase
+}
+
+func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config, path string) *otlphttpexporter.Config {
+	cfg.Endpoint = fmt.Sprintf("http://%s/%s", ods.GetEndpoint(), path)
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		Insecure: true,
+	}
+	return cfg
+}
+
+func (ods *otlpHTTPDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  otlp:
+    protocols:
+      http:
+        endpoint: "%s"`, ods.GetEndpoint())
+}
+
+func (ods *otlpHTTPDataSender) ProtocolName() string {
+	return "otlp"
+}
+
+// OTLPHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace protocol.
+type OTLPHTTPTraceDataSender struct {
+	otlpHTTPDataSender
+	consumer.TracesConsumer
+}
+
+// Ensure OTLPHTTPTraceDataSender implements TraceDataSender.
+var _ TraceDataSender = (*OTLPHTTPTraceDataSender)(nil)
+
+// NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces protocol.
+func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender {
+	return &OTLPHTTPTraceDataSender{
+		otlpHTTPDataSender: otlpHTTPDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (ote *OTLPHTTPTraceDataSender) Start() error {
+	factory := otlphttpexporter.NewFactory()
+	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config), "v1/trace")
+	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	ote.TracesConsumer = exporter
+	return exporter.Start(context.Background(), ote)
+}
+
+// OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics protocol.
+type OTLPHTTPMetricsDataSender struct {
+	otlpHTTPDataSender
+	consumer.MetricsConsumer
+}
+
+// Ensure OTLPHTTPMetricsDataSender implements MetricDataSender.
+var _ MetricDataSender = (*OTLPHTTPMetricsDataSender)(nil)
+
+// NewOTLPHTTPMetricDataSender creates a new OTLP/HTTP metric protocol sender that will send
+// to the specified port after Start is called.
+func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSender {
+	return &OTLPHTTPMetricsDataSender{
+		otlpHTTPDataSender: otlpHTTPDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (ome *OTLPHTTPMetricsDataSender) Start() error {
+	factory := otlphttpexporter.NewFactory()
+	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config), "v1/metrics")
+	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	ome.MetricsConsumer = exporter
+	return exporter.Start(context.Background(), ome)
+}
+
+// OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs protocol.
+type OTLPHTTPLogsDataSender struct {
+	otlpHTTPDataSender
+	consumer.LogsConsumer
+}
+
+// Ensure OTLPHTTPLogsDataSender implements MetricDataSender.
+var _ LogDataSender = (*OTLPHTTPLogsDataSender)(nil)
+
+// NewOTLPMetricDataSender creates a new OTLP/HTTP metric protocol sender that will send
+// to the specified port after Start is called.
+func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
+	return &OTLPHTTPLogsDataSender{
+		otlpHTTPDataSender: otlpHTTPDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (olds *OTLPHTTPLogsDataSender) Start() error {
+	factory := otlphttpexporter.NewFactory()
+	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config), "v1/logs")
+	exporter, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	olds.LogsConsumer = exporter
+	return exporter.Start(context.Background(), olds)
+}
+
 type otlpDataSender struct {
 	DataSenderBase
 }
@@ -356,7 +483,7 @@ type OTLPLogsDataSender struct {
 	consumer.LogsConsumer
 }
 
-// Ensure OTLPMetricsDataSender implements MetricDataSender.
+// Ensure OTLPLogsDataSender implements LogDataSender.
 var _ LogDataSender = (*OTLPLogsDataSender)(nil)
 
 // NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
