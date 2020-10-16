@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			QueueSize:    10,
 		},
 		Topic:           "spans",
-		TracesEncoding:   "otlp_proto",
+		TracesEncoding:  "otlp_proto",
 		MetricsEncoding: "otlp_proto",
 		Brokers:         []string{"foo:123", "bar:456"},
 		Authentication: Authentication{

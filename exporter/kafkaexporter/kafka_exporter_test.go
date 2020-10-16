@@ -69,7 +69,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 				},
 			},
 		},
-		TracesEncoding: defaultEncoding,
+		TracesEncoding:  defaultEncoding,
 		MetricsEncoding: defaultEncoding,
 		Metadata: Metadata{
 			Full: false,
@@ -141,7 +141,7 @@ func TestMetricsDataPusher(t *testing.T) {
 	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaMetricsProducer{
-		producer: producer,
+		producer:   producer,
 		marshaller: &otlpMetricsPbMarshaller{},
 	}
 	t.Cleanup(func() {
@@ -159,9 +159,9 @@ func TestMetricsDataPusher_err(t *testing.T) {
 	producer.ExpectSendMessageAndFail(expErr)
 
 	p := kafkaMetricsProducer{
-		producer: producer,
+		producer:   producer,
 		marshaller: &otlpMetricsPbMarshaller{},
-		logger: zap.NewNop(),
+		logger:     zap.NewNop(),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -176,7 +176,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	expErr := fmt.Errorf("failed to marshall")
 	p := kafkaMetricsProducer{
 		marshaller: &metricsErrorMarshaller{err: expErr},
-		logger: zap.NewNop(),
+		logger:     zap.NewNop(),
 	}
 	md := testdata.GenerateMetricsTwoMetrics()
 	dropped, err := p.metricsDataPusher(context.Background(), md)

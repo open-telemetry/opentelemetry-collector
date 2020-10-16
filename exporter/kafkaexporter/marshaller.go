@@ -47,7 +47,7 @@ func tracesMarshallers() map[string]TracesMarshaller {
 	jaegerProto := jaegerMarshaller{marshaller: jaegerProtoSpanMarshaller{}}
 	jaegerJSON := jaegerMarshaller{marshaller: newJaegerJSONMarshaller()}
 	return map[string]TracesMarshaller{
-		otlppb.Encoding():        otlppb,
+		otlppb.Encoding():      otlppb,
 		jaegerProto.Encoding(): jaegerProto,
 		jaegerJSON.Encoding():  jaegerJSON,
 	}

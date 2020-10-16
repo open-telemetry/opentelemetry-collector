@@ -58,7 +58,6 @@ func TestCreateMetricsExport(t *testing.T) {
 	assert.NotNil(t, mr)
 }
 
-
 func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
