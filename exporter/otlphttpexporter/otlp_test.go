@@ -57,14 +57,18 @@ func TestInvalidConfig(t *testing.T) {
 
 func TestTraceNoBackend(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	exp := startTraceExporter(t, fmt.Sprintf("http://%s/v1/trace", addr))
+	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/trace", addr))
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
 func TestTraceInvalidUrl(t *testing.T) {
-	exp := startTraceExporter(t, "http:/\\//this_is_an/*/invalid_url")
+	exp := startTraceExporter(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraceDataOneSpan()
+	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
+
+	exp = startTraceExporter(t, "", "http:/\\//this_is_an/*/invalid_url")
+	td = testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
@@ -74,7 +78,7 @@ func TestTraceError(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporter)
 	sink.SetConsumeTraceError(errors.New("my_error"))
 	startTraceReceiver(t, addr, sink)
-	exp := startTraceExporter(t, fmt.Sprintf("http://%s/v1/trace", addr))
+	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/trace", addr))
 
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
@@ -83,18 +87,46 @@ func TestTraceError(t *testing.T) {
 func TestTraceRoundTrip(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkTraceExporter)
-	startTraceReceiver(t, addr, sink)
-	exp := startTraceExporter(t, fmt.Sprintf("http://%s/v1/trace", addr))
+	tests := []struct {
+		name        string
+		baseURL     string
+		overrideURL string
+	}{
+		{
+			name:        "wrongbase",
+			baseURL:     "http://wronghostname",
+			overrideURL: fmt.Sprintf("http://%s/v1/trace", addr),
+		},
+		// TODO: open this test case after fixing this bug:
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/1968
+		// {
+		//	name:        "onlybase",
+		//	baseURL:     fmt.Sprintf("http://%s", addr),
+		//	overrideURL: "",
+		// },
+		{
+			name:        "override",
+			baseURL:     "",
+			overrideURL: fmt.Sprintf("http://%s/v1/trace", addr),
+		},
+	}
 
-	td := testdata.GenerateTraceDataOneSpan()
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-	require.Eventually(t, func() bool {
-		return sink.SpansCount() > 0
-	}, 1*time.Second, 10*time.Millisecond)
-	allTraces := sink.AllTraces()
-	require.Len(t, allTraces, 1)
-	assert.EqualValues(t, td, allTraces[0])
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sink := new(exportertest.SinkTraceExporter)
+			startTraceReceiver(t, addr, sink)
+			exp := startTraceExporter(t, test.baseURL, test.overrideURL)
+
+			td := testdata.GenerateTraceDataOneSpan()
+			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+			require.Eventually(t, func() bool {
+				return sink.SpansCount() > 0
+			}, 1*time.Second, 10*time.Millisecond)
+			allTraces := sink.AllTraces()
+			require.Len(t, allTraces, 1)
+			assert.EqualValues(t, td, allTraces[0])
+		})
+	}
 }
 
 func TestMetricsError(t *testing.T) {
@@ -103,7 +135,7 @@ func TestMetricsError(t *testing.T) {
 	sink := new(exportertest.SinkMetricsExporter)
 	sink.SetConsumeMetricsError(errors.New("my_error"))
 	startMetricsReceiver(t, addr, sink)
-	exp := startMetricsExporter(t, fmt.Sprintf("http://%s/v1/metrics", addr))
+	exp := startMetricsExporter(t, "", fmt.Sprintf("http://%s/v1/metrics", addr))
 
 	md := testdata.GenerateMetricsOneMetric()
 	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
@@ -112,18 +144,44 @@ func TestMetricsError(t *testing.T) {
 func TestMetricsRoundTrip(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkMetricsExporter)
-	startMetricsReceiver(t, addr, sink)
-	exp := startMetricsExporter(t, fmt.Sprintf("http://%s/v1/metrics", addr))
+	tests := []struct {
+		name        string
+		baseURL     string
+		overrideURL string
+	}{
+		{
+			name:        "wrongbase",
+			baseURL:     "http://wronghostname",
+			overrideURL: fmt.Sprintf("http://%s/v1/metrics", addr),
+		},
+		{
+			name:        "onlybase",
+			baseURL:     fmt.Sprintf("http://%s", addr),
+			overrideURL: "",
+		},
+		{
+			name:        "override",
+			baseURL:     "",
+			overrideURL: fmt.Sprintf("http://%s/v1/metrics", addr),
+		},
+	}
 
-	md := testdata.GenerateMetricsOneMetric()
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
-	require.Eventually(t, func() bool {
-		return sink.MetricsCount() > 0
-	}, 1*time.Second, 10*time.Millisecond)
-	allMetrics := sink.AllMetrics()
-	require.Len(t, allMetrics, 1)
-	assert.EqualValues(t, md, allMetrics[0])
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sink := new(exportertest.SinkMetricsExporter)
+			startMetricsReceiver(t, addr, sink)
+			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
+
+			md := testdata.GenerateMetricsOneMetric()
+			assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+			require.Eventually(t, func() bool {
+				return sink.MetricsCount() > 0
+			}, 1*time.Second, 10*time.Millisecond)
+			allMetrics := sink.AllMetrics()
+			require.Len(t, allMetrics, 1)
+			assert.EqualValues(t, md, allMetrics[0])
+		})
+	}
 }
 
 func TestLogsError(t *testing.T) {
@@ -132,7 +190,7 @@ func TestLogsError(t *testing.T) {
 	sink := new(exportertest.SinkLogsExporter)
 	sink.SetConsumeLogError(errors.New("my_error"))
 	startLogsReceiver(t, addr, sink)
-	exp := startLogsExporter(t, fmt.Sprintf("http://%s/v1/logs", addr))
+	exp := startLogsExporter(t, "", fmt.Sprintf("http://%s/v1/logs", addr))
 
 	md := testdata.GenerateLogDataOneLog()
 	assert.Error(t, exp.ConsumeLogs(context.Background(), md))
@@ -141,50 +199,79 @@ func TestLogsError(t *testing.T) {
 func TestLogsRoundTrip(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkLogsExporter)
-	startLogsReceiver(t, addr, sink)
-	exp := startLogsExporter(t, fmt.Sprintf("http://%s/v1/logs", addr))
+	tests := []struct {
+		name        string
+		baseURL     string
+		overrideURL string
+	}{
+		{
+			name:        "wrongbase",
+			baseURL:     "http://wronghostname",
+			overrideURL: fmt.Sprintf("http://%s/v1/logs", addr),
+		},
+		{
+			name:        "onlybase",
+			baseURL:     fmt.Sprintf("http://%s", addr),
+			overrideURL: "",
+		},
+		{
+			name:        "override",
+			baseURL:     "",
+			overrideURL: fmt.Sprintf("http://%s/v1/logs", addr),
+		},
+	}
 
-	md := testdata.GenerateLogDataOneLog()
-	assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
-	require.Eventually(t, func() bool {
-		return sink.LogRecordsCount() > 0
-	}, 1*time.Second, 10*time.Millisecond)
-	allLogs := sink.AllLogs()
-	require.Len(t, allLogs, 1)
-	assert.EqualValues(t, md, allLogs[0])
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sink := new(exportertest.SinkLogsExporter)
+			startLogsReceiver(t, addr, sink)
+			exp := startLogsExporter(t, test.baseURL, test.overrideURL)
+
+			md := testdata.GenerateLogDataOneLog()
+			assert.NoError(t, exp.ConsumeLogs(context.Background(), md))
+			require.Eventually(t, func() bool {
+				return sink.LogRecordsCount() > 0
+			}, 1*time.Second, 10*time.Millisecond)
+			allLogs := sink.AllLogs()
+			require.Len(t, allLogs, 1)
+			assert.EqualValues(t, md, allLogs[0])
+		})
+	}
 }
 
-func startTraceExporter(t *testing.T, addr string) component.TraceExporter {
+func startTraceExporter(t *testing.T, baseURL string, overrideURL string) component.TraceExporter {
 	factory := NewFactory()
-	cfg := createExporterConfig(addr, factory.CreateDefaultConfig())
+	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
+	cfg.TracesEndpoint = overrideURL
 	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func startMetricsExporter(t *testing.T, addr string) component.MetricsExporter {
+func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) component.MetricsExporter {
 	factory := NewFactory()
-	cfg := createExporterConfig(addr, factory.CreateDefaultConfig())
+	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
+	cfg.MetricsEndpoint = overrideURL
 	exp, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func startLogsExporter(t *testing.T, addr string) component.LogsExporter {
+func startLogsExporter(t *testing.T, baseURL string, overrideURL string) component.LogsExporter {
 	factory := NewFactory()
-	cfg := createExporterConfig(addr, factory.CreateDefaultConfig())
+	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
+	cfg.LogsEndpoint = overrideURL
 	exp, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func createExporterConfig(addr string, defaultCfg configmodels.Exporter) *Config {
+func createExporterConfig(baseURL string, defaultCfg configmodels.Exporter) *Config {
 	cfg := defaultCfg.(*Config)
-	cfg.Endpoint = addr
+	cfg.Endpoint = baseURL
 	cfg.QueueSettings.Enabled = false
 	cfg.RetrySettings.Enabled = false
 	return cfg

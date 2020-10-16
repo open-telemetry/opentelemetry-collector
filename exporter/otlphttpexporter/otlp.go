@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -28,16 +29,22 @@ import (
 
 type exporterImp struct {
 	// Input configuration.
-	config *Config
-	client *http.Client
+	config     *Config
+	client     *http.Client
+	tracesURL  string
+	metricsURL string
+	logsURL    string
 }
 
 // Crete new exporter.
 func newExporter(cfg configmodels.Exporter) (*exporterImp, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Endpoint == "" {
-		return nil, errors.New("OTLP exporter config requires an Endpoint")
+	if oCfg.Endpoint != "" {
+		_, err := url.Parse(oCfg.Endpoint)
+		if err != nil {
+			return nil, errors.New("endpoint must be a valid URL")
+		}
 	}
 
 	client, err := oCfg.HTTPClientSettings.ToClient()
@@ -57,7 +64,7 @@ func (e *exporterImp) pushTraceData(ctx context.Context, traces pdata.Traces) (i
 		return traces.SpanCount(), consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, request)
+	err = e.export(ctx, e.tracesURL, request)
 	if err != nil {
 		return traces.SpanCount(), err
 	}
@@ -71,7 +78,7 @@ func (e *exporterImp) pushMetricsData(ctx context.Context, metrics pdata.Metrics
 		return metrics.MetricCount(), consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, request)
+	err = e.export(ctx, e.metricsURL, request)
 	if err != nil {
 		return metrics.MetricCount(), err
 	}
@@ -85,7 +92,7 @@ func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, er
 		return logs.LogRecordCount(), consumererror.Permanent(err)
 	}
 
-	err = e.export(ctx, request)
+	err = e.export(ctx, e.logsURL, request)
 	if err != nil {
 		return logs.LogRecordCount(), err
 	}
@@ -93,8 +100,8 @@ func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, er
 	return 0, nil
 }
 
-func (e *exporterImp) export(ctx context.Context, request []byte) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.config.Endpoint, bytes.NewReader(request))
+func (e *exporterImp) export(ctx context.Context, url string, request []byte) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
