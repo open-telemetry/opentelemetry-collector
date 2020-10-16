@@ -75,8 +75,7 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
 		Topic:           defaultTopic,
-		TracesEncoding:  defaultEncoding,
-		MetricsEncoding: defaultEncoding,
+		Encoding:        defaultEncoding,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{

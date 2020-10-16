@@ -32,28 +32,35 @@ import (
 )
 
 func TestNewExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", TracesEncoding: defaultEncoding, MetricsEncoding: defaultEncoding}
+	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
 	texp, err := newTracesExporter(c, component.ExporterCreateParams{}, tracesMarshallers())
 	assert.Error(t, err)
 	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
-	c := Config{TracesEncoding: "foo", MetricsEncoding: "bar"}
+	c := Config{Encoding: "foo"}
 	texp, err := newTracesExporter(c, component.ExporterCreateParams{}, tracesMarshallers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", TracesEncoding: defaultEncoding, MetricsEncoding: defaultEncoding}
+	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
 	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{}, metricsMarshallers())
 	assert.Error(t, err)
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
-	c := Config{TracesEncoding: "foo", MetricsEncoding: "bar"}
+	c := Config{Encoding: "bar"}
+	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{}, metricsMarshallers())
+	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, mexp)
+}
+
+func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
+	c := Config{Encoding: "jaeger_proto"}
 	mexp, err := newMetricsExporter(c, component.ExporterCreateParams{}, metricsMarshallers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
@@ -69,8 +76,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 				},
 			},
 		},
-		TracesEncoding:  defaultEncoding,
-		MetricsEncoding: defaultEncoding,
+		Encoding: defaultEncoding,
 		Metadata: Metadata{
 			Full: false,
 		},

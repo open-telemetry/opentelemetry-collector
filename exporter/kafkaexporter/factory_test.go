@@ -87,13 +87,13 @@ func TestWithMarshallers(t *testing.T) {
 	cfg.Metadata.Full = false
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.TracesEncoding = cm.Encoding()
+		cfg.Encoding = cm.Encoding()
 		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.TracesEncoding = new(otlpTracesPbMarshaller).Encoding()
+		cfg.Encoding = new(otlpTracesPbMarshaller).Encoding()
 		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)

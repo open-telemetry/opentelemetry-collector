@@ -73,7 +73,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 }
 
 func newMetricsExporter(config Config, params component.ExporterCreateParams, marshallers map[string]MetricsMarshaller) (*kafkaMetricsProducer, error) {
-	marshaller := marshallers[config.MetricsEncoding]
+	marshaller := marshallers[config.Encoding]
 	if marshaller == nil {
 		return nil, errUnrecognizedEncoding
 	}
@@ -93,7 +93,7 @@ func newMetricsExporter(config Config, params component.ExporterCreateParams, ma
 
 // newTracesExporter creates Kafka exporter.
 func newTracesExporter(config Config, params component.ExporterCreateParams, marshallers map[string]TracesMarshaller) (*kafkaTracesProducer, error) {
-	marshaller := marshallers[config.TracesEncoding]
+	marshaller := marshallers[config.Encoding]
 	if marshaller == nil {
 		return nil, errUnrecognizedEncoding
 	}
