@@ -143,13 +143,13 @@ func (je *JaegerGRPCDataSender) Start() error {
 		Insecure: true,
 	}
 
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	je.TracesConsumer = exporter
-	return exporter.Start(context.Background(), je)
+	je.TracesConsumer = exp
+	return exp.Start(context.Background(), je)
 }
 
 func (je *JaegerGRPCDataSender) GenConfigYAMLStr() string {
@@ -212,13 +212,13 @@ func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
 func (ote *OCTraceDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ote.TracesConsumer = exporter
-	return exporter.Start(context.Background(), ote)
+	ote.TracesConsumer = exp
+	return exp.Start(context.Background(), ote)
 }
 
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
@@ -246,13 +246,13 @@ func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 func (ome *OCMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ome.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), ome)
+	ome.MetricsConsumer = exp
+	return exp.Start(context.Background(), ome)
 }
 
 type otlpHTTPDataSender struct {
@@ -260,7 +260,6 @@ type otlpHTTPDataSender struct {
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
-	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
@@ -304,13 +303,15 @@ func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender 
 func (ote *OTLPHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	// TODO: Fix this when receiver is fixed.
+	cfg.TracesEndpoint = fmt.Sprintf("http://%s/v1/trace", ote.GetEndpoint())
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ote.TracesConsumer = exporter
-	return exporter.Start(context.Background(), ote)
+	ote.TracesConsumer = exp
+	return exp.Start(context.Background(), ote)
 }
 
 // OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics protocol.
@@ -338,13 +339,14 @@ func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSend
 func (ome *OTLPHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	cfg.MetricsEndpoint = fmt.Sprintf("http://%s/v1/metrics", ome.GetEndpoint())
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ome.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), ome)
+	ome.MetricsConsumer = exp
+	return exp.Start(context.Background(), ome)
 }
 
 // OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs protocol.
@@ -372,13 +374,14 @@ func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
 func (olds *OTLPHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exporter, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	cfg.LogsEndpoint = fmt.Sprintf("http://%s/v1/logs", olds.GetEndpoint())
+	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	olds.LogsConsumer = exporter
-	return exporter.Start(context.Background(), olds)
+	olds.LogsConsumer = exp
+	return exp.Start(context.Background(), olds)
 }
 
 type otlpDataSender struct {
@@ -434,13 +437,13 @@ func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 func (ote *OTLPTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ote.TracesConsumer = exporter
-	return exporter.Start(context.Background(), ote)
+	ote.TracesConsumer = exp
+	return exp.Start(context.Background(), ote)
 }
 
 // OTLPMetricsDataSender implements MetricDataSender for OTLP metrics protocol.
@@ -468,13 +471,13 @@ func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 func (ome *OTLPMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ome.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), ome)
+	ome.MetricsConsumer = exp
+	return exp.Start(context.Background(), ome)
 }
 
 // OTLPLogsDataSender implements LogsDataSender for OTLP logs protocol.
@@ -502,13 +505,13 @@ func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
 func (olds *OTLPLogsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exporter, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	olds.LogsConsumer = exporter
-	return exporter.Start(context.Background(), olds)
+	olds.LogsConsumer = exp
+	return exp.Start(context.Background(), olds)
 }
 
 // ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
@@ -540,13 +543,13 @@ func (zs *ZipkinDataSender) Start() error {
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
 
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	zs.TracesConsumer = exporter
-	return exporter.Start(context.Background(), zs)
+	zs.TracesConsumer = exp
+	return exp.Start(context.Background(), zs)
 }
 
 func (zs *ZipkinDataSender) GenConfigYAMLStr() string {
@@ -584,13 +587,13 @@ func (pds *PrometheusDataSender) Start() error {
 	cfg.Endpoint = pds.GetEndpoint()
 	cfg.Namespace = pds.namespace
 
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	pds.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), pds)
+	pds.MetricsConsumer = exp
+	return exp.Start(context.Background(), pds)
 }
 
 func (pds *PrometheusDataSender) GenConfigYAMLStr() string {
