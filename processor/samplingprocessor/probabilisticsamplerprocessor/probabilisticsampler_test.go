@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -45,23 +46,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: exportertest.NewNopTraceExporter(),
+			nextConsumer: consumertest.NewNopTraces(),
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: consumertest.NewNopTraces(),
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: exportertest.NewNopTraceExporter(),
+			nextConsumer: consumertest.NewNopTraces(),
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: consumertest.NewNopTraces(),
 				hashSeed:     4321,
 			},
 		},

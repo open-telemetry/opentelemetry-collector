@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const typeStr = "test"
@@ -35,9 +35,15 @@ var (
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	nopTracesExporter  = exportertest.NewNopTraceExporter()
-	nopMetricsExporter = exportertest.NewNopMetricsExporter()
-	nopLogsExporter    = exportertest.NewNopLogsExporter()
+	nopTracesExporter, _ = NewTraceExporter(defaultCfg, func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error) {
+		return 0, nil
+	})
+	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
+		return 0, nil
+	})
+	nopLogsExporter, _ = NewLogsExporter(defaultCfg, func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error) {
+		return 0, nil
+	})
 )
 
 func TestNewFactory(t *testing.T) {
