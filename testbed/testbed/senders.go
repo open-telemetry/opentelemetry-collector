@@ -260,6 +260,7 @@ type otlpHTTPDataSender struct {
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
+	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
@@ -303,8 +304,6 @@ func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender 
 func (ote *OTLPHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	// TODO: Fix this when receiver is fixed.
-	cfg.TracesEndpoint = fmt.Sprintf("http://%s/v1/trace", ote.GetEndpoint())
 	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
@@ -339,7 +338,6 @@ func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSend
 func (ome *OTLPHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	cfg.MetricsEndpoint = fmt.Sprintf("http://%s/v1/metrics", ome.GetEndpoint())
 	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
@@ -374,7 +372,6 @@ func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
 func (olds *OTLPHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	cfg.LogsEndpoint = fmt.Sprintf("http://%s/v1/logs", olds.GetEndpoint())
 	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err

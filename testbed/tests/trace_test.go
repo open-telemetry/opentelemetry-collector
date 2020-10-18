@@ -74,15 +74,7 @@ func TestTrace10kSPS(t *testing.T) {
 				ExpectedMaxRAM: 70,
 			},
 		},
-		{
-			"OTLP-HTTP",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 20,
-				ExpectedMaxRAM: 100,
-			},
-		},
+		// TODO: Add OTLP-HTTP when #1968 is resolved.
 		{
 			"Zipkin",
 			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
