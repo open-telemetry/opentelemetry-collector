@@ -46,7 +46,7 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   testbed.NewOTLPHTTPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			receiver: testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 20,
+				ExpectedMaxCPU: 30,
 				ExpectedMaxRAM: 70,
 			},
 		},

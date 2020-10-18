@@ -259,8 +259,8 @@ type otlpHTTPDataSender struct {
 	DataSenderBase
 }
 
-func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config, path string) *otlphttpexporter.Config {
-	cfg.Endpoint = fmt.Sprintf("http://%s/%s", ods.GetEndpoint(), path)
+func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
+	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
@@ -303,7 +303,7 @@ func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender 
 
 func (ote *OTLPHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
-	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config), "v1/trace")
+	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
 	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
@@ -337,7 +337,7 @@ func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSend
 
 func (ome *OTLPHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
-	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config), "v1/metrics")
+	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
 	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
@@ -371,7 +371,7 @@ func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
 
 func (olds *OTLPHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
-	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config), "v1/logs")
+	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
 	exporter, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
