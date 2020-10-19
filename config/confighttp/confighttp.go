@@ -62,15 +62,13 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
-	var clientTransport http.RoundTripper
 
-	if hcs.Headers != nil && len(hcs.Headers) > 0 {
-		clientTransport = &clientInterceptorRoundTripper{
+	clientTransport := (http.RoundTripper)(transport)
+	if len(hcs.Headers) > 0 {
+		clientTransport = &headerRoundTripper{
 			transport: transport,
 			headers:   hcs.Headers,
 		}
-	} else {
-		clientTransport = transport
 	}
 
 	return &http.Client{
@@ -80,20 +78,18 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 }
 
 // Custom RoundTripper that add headers
-type clientInterceptorRoundTripper struct {
+type headerRoundTripper struct {
 	transport http.RoundTripper
 	headers   map[string]string
 }
 
 // Custom RoundTrip that add headers
-func (interceptor *clientInterceptorRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	for k, v := range interceptor.headers {
 		req.Header.Set(k, v)
 	}
-	// Send the request to Cortex
-	response, err := interceptor.transport.RoundTrip(req)
-
-	return response, err
+	// Send the request to next transport.
+	return interceptor.transport.RoundTrip(req)
 }
 
 type HTTPServerSettings struct {
