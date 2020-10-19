@@ -76,7 +76,8 @@ serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 IMPORTANT: bytes fields are encoded as base64 strings.
 
-To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The default
+To write traces with HTTP/JSON, `POST` to `[address]/v1/traces` for traces,
+to `[address]/v1/metrics` for metrics, to `[address]/v1/logs` for logs. The default
 port is `55681`.
 
 The HTTP/JSON endpoint can also optionally configure

@@ -57,7 +57,7 @@ func TestInvalidConfig(t *testing.T) {
 
 func TestTraceNoBackend(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/trace", addr))
+	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
@@ -78,7 +78,7 @@ func TestTraceError(t *testing.T) {
 	sink := new(exportertest.SinkTraceExporter)
 	sink.SetConsumeTraceError(errors.New("my_error"))
 	startTraceReceiver(t, addr, sink)
-	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/trace", addr))
+	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 
 	td := testdata.GenerateTraceDataOneSpan()
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
@@ -95,19 +95,17 @@ func TestTraceRoundTrip(t *testing.T) {
 		{
 			name:        "wrongbase",
 			baseURL:     "http://wronghostname",
-			overrideURL: fmt.Sprintf("http://%s/v1/trace", addr),
+			overrideURL: fmt.Sprintf("http://%s/v1/traces", addr),
 		},
-		// TODO: open this test case after fixing this bug:
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/1968
-		// {
-		//	name:        "onlybase",
-		//	baseURL:     fmt.Sprintf("http://%s", addr),
-		//	overrideURL: "",
-		// },
+		{
+			name:        "onlybase",
+			baseURL:     fmt.Sprintf("http://%s", addr),
+			overrideURL: "",
+		},
 		{
 			name:        "override",
 			baseURL:     "",
-			overrideURL: fmt.Sprintf("http://%s/v1/trace", addr),
+			overrideURL: fmt.Sprintf("http://%s/v1/traces", addr),
 		},
 	}
 

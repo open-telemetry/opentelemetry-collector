@@ -164,60 +164,77 @@ func TestJsonHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
+	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
+	// is /v1/traces. We currently support both on the receiving side to give graceful
+	// period for senders to roll out a fix, so we test for both paths to make sure
+	// the receiver works correctly.
+	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var buf *bytes.Buffer
-			var err error
-			switch test.encoding {
-			case "gzip":
-				buf, err = compressGzip(traceJSON)
-				require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-			default:
-				buf = bytes.NewBuffer(traceJSON)
-			}
-			sink.SetConsumeTraceError(test.err)
-			req, err := http.NewRequest("POST", url, buf)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Content-Encoding", test.encoding)
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
-
-			respBytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				t.Errorf("Error reading response from trace grpc-gateway, %v", err)
-			}
-			respStr := string(respBytes)
-			err = resp.Body.Close()
-			if err != nil {
-				t.Errorf("Error closing response body, %v", err)
-			}
-
-			if test.err == nil {
-				assert.Equal(t, 200, resp.StatusCode)
-				var respJSON map[string]interface{}
-				assert.NoError(t, json.Unmarshal([]byte(respStr), &respJSON))
-				assert.Len(t, respJSON, 0, "Got unexpected response from trace grpc-gateway")
-			} else {
-				errStatus := &spb.Status{}
-				assert.NoError(t, json.Unmarshal([]byte(respStr), errStatus))
-				if s, ok := status.FromError(test.err); ok {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, s.Proto()))
-				} else {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
-				}
-			}
-
-			got := sink.AllTraces()[0]
-			assert.EqualValues(t, got, traceOtlp)
-		})
+		for _, targetURLPath := range targetURLPaths {
+			t.Run(test.name+targetURLPath, func(t *testing.T) {
+				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
+				sink.Reset()
+				testHTTPJSONRequest(t, url, sink, test.encoding, test.err)
+			})
+		}
 	}
+}
+
+func testHTTPJSONRequest(t *testing.T, url string, sink *exportertest.SinkTraceExporter, encoding string, expectedErr error) {
+	var buf *bytes.Buffer
+	var err error
+	switch encoding {
+	case "gzip":
+		buf, err = compressGzip(traceJSON)
+		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
+	default:
+		buf = bytes.NewBuffer(traceJSON)
+	}
+	sink.SetConsumeTraceError(expectedErr)
+	req, err := http.NewRequest("POST", url, buf)
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", encoding)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
+	}
+	respStr := string(respBytes)
+	err = resp.Body.Close()
+	if err != nil {
+		t.Errorf("Error closing response body, %v", err)
+	}
+
+	allTraces := sink.AllTraces()
+	if expectedErr == nil {
+		assert.Equal(t, 200, resp.StatusCode)
+		var respJSON map[string]interface{}
+		assert.NoError(t, json.Unmarshal([]byte(respStr), &respJSON))
+		assert.Len(t, respJSON, 0, "Got unexpected response from trace grpc-gateway")
+
+		require.Len(t, allTraces, 1)
+
+		got := allTraces[0]
+		assert.EqualValues(t, got, traceOtlp)
+	} else {
+		errStatus := &spb.Status{}
+		assert.NoError(t, json.Unmarshal([]byte(respStr), errStatus))
+		if s, ok := status.FromError(expectedErr); ok {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, s.Proto()))
+		} else {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+		}
+		require.Len(t, allTraces, 0)
+	}
+
 }
 
 func TestJsonMarshaling(t *testing.T) {
@@ -326,8 +343,6 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
-
 	wantOtlp := pdata.TracesToOtlp(testdata.GenerateTraceDataOneSpan())
 	traceProto := collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: wantOtlp,
@@ -336,65 +351,93 @@ func TestProtoHttp(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
+
+	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
+	// is /v1/traces. We currently support both on the receiving side to give graceful
+	// period for senders to roll out a fix, so we test for both paths to make sure
+	// the receiver works correctly.
+	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
+
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var buf *bytes.Buffer
-			var err error
-			switch test.encoding {
-			case "gzip":
-				buf, err = compressGzip(traceBytes)
-				require.NoError(t, err, "Error while gzip compressing trace: %v", err)
-			default:
-				buf = bytes.NewBuffer(traceBytes)
-			}
-			tSink.SetConsumeTraceError(test.err)
-			req, err := http.NewRequest("POST", url, buf)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
-			req.Header.Set("Content-Type", "application/x-protobuf")
-			req.Header.Set("Content-Encoding", test.encoding)
+		for _, targetURLPath := range targetURLPaths {
+			t.Run(test.name+targetURLPath, func(t *testing.T) {
+				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
+				tSink.Reset()
+				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, wantOtlp)
+			})
+		}
+	}
+}
 
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+func testHTTPProtobufRequest(
+	t *testing.T,
+	url string,
+	tSink *exportertest.SinkTraceExporter,
+	encoding string,
+	traceBytes []byte,
+	expectedErr error,
+	wantOtlp []*otlptrace.ResourceSpans,
+) {
+	var buf *bytes.Buffer
+	var err error
+	switch encoding {
+	case "gzip":
+		buf, err = compressGzip(traceBytes)
+		require.NoError(t, err, "Error while gzip compressing trace: %v", err)
+	default:
+		buf = bytes.NewBuffer(traceBytes)
+	}
+	tSink.SetConsumeTraceError(expectedErr)
+	req, err := http.NewRequest("POST", url, buf)
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("Content-Encoding", encoding)
 
-			respBytes, err := ioutil.ReadAll(resp.Body)
-			require.NoError(t, err, "Error reading response from trace grpc-gateway")
-			require.NoError(t, resp.Body.Close(), "Error closing response body")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-			if test.err == nil {
-				require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-				tmp := &collectortrace.ExportTraceServiceResponse{}
-				err = tmp.Unmarshal(respBytes)
-				require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
-			} else {
-				errStatus := &spb.Status{}
-				assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
-				if s, ok := status.FromError(test.err); ok {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, s.Proto()))
-				} else {
-					assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-					assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
-				}
-			}
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err, "Error reading response from trace grpc-gateway")
+	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
-			require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	allTraces := tSink.AllTraces()
 
-			gotOtlp := pdata.TracesToOtlp(tSink.AllTraces()[0])
+	require.Equal(t, "application/x-protobuf", resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
-			if len(gotOtlp) != len(wantOtlp) {
-				t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
-			}
+	if expectedErr == nil {
+		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
+		tmp := &collectortrace.ExportTraceServiceResponse{}
+		err = tmp.Unmarshal(respBytes)
+		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
 
-			got := gotOtlp[0]
-			want := wantOtlp[0]
+		require.Len(t, allTraces, 1)
 
-			if !assert.EqualValues(t, got, want) {
-				t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
-					got.String(),
-					want.String())
-			}
-		})
+		gotOtlp := pdata.TracesToOtlp(allTraces[0])
+
+		if len(gotOtlp) != len(wantOtlp) {
+			t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
+		}
+
+		got := gotOtlp[0]
+		want := wantOtlp[0]
+
+		if !assert.EqualValues(t, got, want) {
+			t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
+				got.String(),
+				want.String())
+		}
+	} else {
+		errStatus := &spb.Status{}
+		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
+		if s, ok := status.FromError(expectedErr); ok {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, s.Proto()))
+		} else {
+			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+			assert.True(t, proto.Equal(errStatus, &spb.Status{Code: int32(codes.Unknown), Message: "my error"}))
+		}
+		require.Len(t, allTraces, 0)
 	}
 }
 
@@ -442,7 +485,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())
 
-	url := fmt.Sprintf("http://%s/v1/trace", addr)
+	url := fmt.Sprintf("http://%s/v1/traces", addr)
 
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
