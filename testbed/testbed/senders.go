@@ -261,6 +261,10 @@ type otlpHTTPDataSender struct {
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
 	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
+	// Disable retries, we should push data and if error just log it.
+	cfg.RetrySettings.Enabled = false
+	// Disable sending queue, we should push data from the caller goroutine.
+	cfg.QueueSettings.Enabled = false
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
