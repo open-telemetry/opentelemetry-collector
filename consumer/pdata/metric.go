@@ -42,6 +42,12 @@ type Metrics struct {
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
+// NewMetricData creates a new MetricData.
+func NewMetrics() Metrics {
+	orig := []*otlpmetrics.ResourceMetrics(nil)
+	return Metrics{&orig}
+}
+
 // MetricDataFromOtlp creates the internal MetricData representation from the OTLP.
 func MetricsFromOtlp(orig []*otlpmetrics.ResourceMetrics) Metrics {
 	return Metrics{&orig}
@@ -56,15 +62,23 @@ func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
 // ExportMetricsServiceRequest ProtoBuf bytes. This is intended to export
 // OTLP Protobuf bytes for OTLP/HTTP transports.
 func (md Metrics) ToOtlpProtoBytes() ([]byte, error) {
-	return proto.Marshal(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	metrics := otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: *md.orig,
-	})
+	}
+	return metrics.Marshal()
 }
 
-// NewMetricData creates a new MetricData.
-func NewMetrics() Metrics {
-	orig := []*otlpmetrics.ResourceMetrics(nil)
-	return Metrics{&orig}
+// FromOtlpProtoBytes converts OTLP Collector ExportMetricsServiceRequest
+// ProtoBuf bytes to the internal Metrics. Overrides current data.
+// Calling this function on zero-initialized structure causes panic.
+// Use it with NewMetrics or on existing initialized Metrics.
+func (md Metrics) FromOtlpProtoBytes(data []byte) error {
+	metrics := otlpcollectormetrics.ExportMetricsServiceRequest{}
+	if err := metrics.Unmarshal(data); err != nil {
+		return err
+	}
+	*md.orig = metrics.ResourceMetrics
+	return nil
 }
 
 // Clone returns a copy of MetricData.
@@ -298,9 +312,4 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		newDoubleHistogram(&srcData.DoubleHistogram).CopyTo(newDoubleHistogram(&data.DoubleHistogram))
 		dest.Data = data
 	}
-}
-
-// DeprecatedNewMetricsResourceSlice temporary public function.
-func DeprecatedNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
-	return newResourceMetricsSlice(orig)
 }
