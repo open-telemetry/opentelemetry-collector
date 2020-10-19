@@ -17,11 +17,9 @@ package pdata
 import (
 	"testing"
 
-	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal"
-	otlpcollectorlogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
@@ -73,14 +71,19 @@ func TestToFromLogProto(t *testing.T) {
 	assert.EqualValues(t, otlp, *td.orig)
 }
 
-func TestLogs_ToOtlpProtoBytes(t *testing.T) {
-	otlp := []*otlplogs.ResourceLogs(nil)
-	ld := LogsFromInternalRep(internal.LogsFromOtlp(otlp))
-	bytes, err := ld.ToOtlpProtoBytes()
-	assert.Nil(t, err)
+func TestLogsToFromOtlpProtoBytes(t *testing.T) {
+	send := NewLogs()
+	fillTestResourceLogsSlice(send.ResourceLogs())
+	bytes, err := send.ToOtlpProtoBytes()
+	assert.NoError(t, err)
 
-	elsr := otlpcollectorlogs.ExportLogsServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &elsr)
-	assert.Nil(t, err)
-	assert.EqualValues(t, elsr.ResourceLogs, *ld.orig)
+	recv := NewLogs()
+	err = recv.FromOtlpProtoBytes(bytes)
+	assert.NoError(t, err)
+	assert.EqualValues(t, send, recv)
+}
+
+func TestLogsFromInvalidOtlpProtoBytes(t *testing.T) {
+	err := NewLogs().FromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
 }

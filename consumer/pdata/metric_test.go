@@ -23,7 +23,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -676,25 +675,21 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	}, MetricsToOtlp(metricData))
 }
 
-func TestMetrics_ToOtlpProtoBytes(t *testing.T) {
-	md := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
-				},
-			},
-		},
-	})
-	bytes, err := md.ToOtlpProtoBytes()
-	assert.Nil(t, err)
+func TestMetricsToFromOtlpProtoBytes(t *testing.T) {
+	send := NewMetrics()
+	fillTestResourceMetricsSlice(send.ResourceMetrics())
+	bytes, err := send.ToOtlpProtoBytes()
+	assert.NoError(t, err)
 
-	emsr := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &emsr)
-	assert.Nil(t, err)
-	assert.EqualValues(t, emsr.GetResourceMetrics(), MetricsToOtlp(md))
+	recv := NewMetrics()
+	err = recv.FromOtlpProtoBytes(bytes)
+	assert.NoError(t, err)
+	assert.EqualValues(t, send, recv)
+}
+
+func TestMetricsFromInvalidOtlpProtoBytes(t *testing.T) {
+	err := NewMetrics().FromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {

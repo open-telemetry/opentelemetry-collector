@@ -57,20 +57,34 @@ func (ld Logs) InternalRep() internal.OtlpLogsWrapper {
 // ToOtlpProtoBytes returns the internal Logs to OTLP Collector ExportTraceServiceRequest
 // ProtoBuf bytes. This is intended to export OTLP Protobuf bytes for OTLP/HTTP transports.
 func (ld Logs) ToOtlpProtoBytes() ([]byte, error) {
-	return proto.Marshal(&otlpcollectorlog.ExportLogsServiceRequest{
+	logs := otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: *ld.orig,
-	})
+	}
+	return logs.Marshal()
+}
+
+// FromOtlpProtoBytes converts OTLP Collector ExportLogsServiceRequest
+// ProtoBuf bytes to the internal Logs. Overrides current data.
+// Calling this function on zero-initialized structure causes panic.
+// Use it with NewLogs or on existing initialized Logs.
+func (ld Logs) FromOtlpProtoBytes(data []byte) error {
+	logs := otlpcollectorlog.ExportLogsServiceRequest{}
+	if err := logs.Unmarshal(data); err != nil {
+		return err
+	}
+	*ld.orig = logs.ResourceLogs
+	return nil
 }
 
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
 	otlp := *ld.orig
-	resourceSpansClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
-	for _, resourceSpans := range otlp {
-		resourceSpansClones = append(resourceSpansClones,
-			proto.Clone(resourceSpans).(*otlplogs.ResourceLogs))
+	resourceLogsClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
+	for _, resourceLogs := range otlp {
+		resourceLogsClones = append(resourceLogsClones,
+			proto.Clone(resourceLogs).(*otlplogs.ResourceLogs))
 	}
-	return Logs{orig: &resourceSpansClones}
+	return Logs{orig: &resourceLogsClones}
 }
 
 // LogRecordCount calculates the total number of log records.
