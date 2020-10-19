@@ -74,7 +74,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TracesConsumer
 	instanceName string
 
 	startOnce sync.Once
@@ -122,7 +122,7 @@ var (
 func newJaegerReceiver(
 	instanceName string,
 	config *configuration,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 	params component.ReceiverCreateParams,
 ) (*jReceiver, error) {
 	return &jReceiver{
@@ -245,7 +245,7 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.TraceConsumer) (int, error) {
+func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.TracesConsumer) (int, error) {
 	if batch == nil {
 		return 0, nil
 	}
@@ -260,7 +260,7 @@ var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
 type agentHandler struct {
 	name         string
 	transport    string
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TracesConsumer
 }
 
 // EmitZipkinBatch is unsupported agent's

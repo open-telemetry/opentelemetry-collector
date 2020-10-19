@@ -49,14 +49,14 @@ const (
 )
 
 type tracesamplerprocessor struct {
-	nextConsumer       consumer.TraceConsumer
+	nextConsumer       consumer.TracesConsumer
 	scaledSamplingRate uint32
 	hashSeed           uint32
 }
 
 // newTraceProcessor returns a processor.TraceProcessor that will perform head sampling according to the given
 // configuration.
-func newTraceProcessor(nextConsumer consumer.TraceConsumer, cfg Config) (component.TraceProcessor, error) {
+func newTraceProcessor(nextConsumer consumer.TracesConsumer, cfg Config) (component.TraceProcessor, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}

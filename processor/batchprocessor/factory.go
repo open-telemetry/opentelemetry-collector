@@ -58,7 +58,7 @@ func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 ) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
 	// error can be ignored, level is parsed at the service startup

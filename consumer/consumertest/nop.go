@@ -40,7 +40,7 @@ func (nc *nopConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 }
 
 // NewTracesNop creates an TraceConsumer that just drops the received data.
-func NewTracesNop() consumer.TraceConsumer {
+func NewTracesNop() consumer.TracesConsumer {
 	return nopInstance
 }
 

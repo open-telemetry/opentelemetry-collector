@@ -35,7 +35,7 @@ type Processor interface {
 // TraceProcessor is a processor that can consume traces.
 type TraceProcessor interface {
 	Processor
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // MetricsProcessor is a processor that can consume metrics.
@@ -91,7 +91,7 @@ type ProcessorFactory interface {
 		ctx context.Context,
 		params ProcessorCreateParams,
 		cfg configmodels.Processor,
-		nextConsumer consumer.TraceConsumer,
+		nextConsumer consumer.TracesConsumer,
 	) (TraceProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.

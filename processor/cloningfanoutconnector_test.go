@@ -27,12 +27,12 @@ import (
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewTracesNop()
-	tfc := NewTracesCloningFanOutConnector([]consumer.TraceConsumer{nop})
+	tfc := NewTracesCloningFanOutConnector([]consumer.TracesConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
 
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TracesConsumer, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)
 	}

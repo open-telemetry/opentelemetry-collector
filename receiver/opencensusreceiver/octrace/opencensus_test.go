@@ -361,7 +361,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TracesConsumer) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

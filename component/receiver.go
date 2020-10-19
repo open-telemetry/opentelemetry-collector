@@ -30,7 +30,7 @@ type Receiver interface {
 
 // A TraceReceiver is an "arbitrary data"-to-"internal format" converter.
 // Its purpose is to translate data from the wild into internal trace format.
-// TraceReceiver feeds a consumer.TraceConsumer with data.
+// TraceReceiver feeds a consumer.TracesConsumer with data.
 //
 // For example it could be Zipkin data source which translates
 // Zipkin spans into consumerdata.TraceData.
@@ -83,7 +83,7 @@ type ReceiverFactory interface {
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTraceReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.TraceConsumer) (TraceReceiver, error)
+		cfg configmodels.Receiver, nextConsumer consumer.TracesConsumer) (TraceReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid

@@ -66,7 +66,7 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md 
 
 // NewTracesCloningFanOutConnector wraps multiple traces consumers in a single one and clones the data
 // before fanning out.
-func NewTracesCloningFanOutConnector(tcs []consumer.TraceConsumer) consumer.TraceConsumer {
+func NewTracesCloningFanOutConnector(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
 		return tcs[0]
@@ -74,9 +74,9 @@ func NewTracesCloningFanOutConnector(tcs []consumer.TraceConsumer) consumer.Trac
 	return tracesCloningFanOutConnector(tcs)
 }
 
-type tracesCloningFanOutConnector []consumer.TraceConsumer
+type tracesCloningFanOutConnector []consumer.TracesConsumer
 
-var _ consumer.TraceConsumer = (*tracesCloningFanOutConnector)(nil)
+var _ consumer.TracesConsumer = (*tracesCloningFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
 func (tfc tracesCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {

@@ -59,7 +59,7 @@ func createTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 ) (component.TraceReceiver, error) {
 	r, err := createReceiver(cfg)
 	if err != nil {

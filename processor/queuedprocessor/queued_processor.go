@@ -39,7 +39,7 @@ type queuedProcessor struct {
 	name                     string
 	queue                    *queue.BoundedQueue
 	logger                   *zap.Logger
-	traceNext                consumer.TraceConsumer
+	traceNext                consumer.TracesConsumer
 	metricNext               consumer.MetricsConsumer
 	numWorkers               int
 	retryOnProcessingFailure bool
@@ -48,7 +48,7 @@ type queuedProcessor struct {
 	stopOnce                 sync.Once
 }
 
-var _ consumer.TraceConsumer = (*queuedProcessor)(nil)
+var _ consumer.TracesConsumer = (*queuedProcessor)(nil)
 var errorRefused = errors.New("failed to add to the queue")
 
 type queueItem interface {
@@ -169,7 +169,7 @@ func (item *metricsQueueItem) export(sp *queuedProcessor) error {
 
 func newQueuedTracesProcessor(
 	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 	cfg *Config,
 ) *queuedProcessor {
 	return &queuedProcessor{

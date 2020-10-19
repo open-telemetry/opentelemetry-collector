@@ -276,13 +276,13 @@ func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 	return rcv, nil
 }
 
-func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TraceConsumer {
+func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TracesConsumer {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstTC
 	}
 
-	var pipelineConsumers []consumer.TraceConsumer
+	var pipelineConsumers []consumer.TracesConsumer
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)

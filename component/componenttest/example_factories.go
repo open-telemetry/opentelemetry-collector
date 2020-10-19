@@ -83,7 +83,7 @@ func (f *ExampleReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 ) (component.TraceReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
@@ -143,7 +143,7 @@ func (f *ExampleReceiverFactory) CreateLogsReceiver(
 type ExampleReceiverProducer struct {
 	Started         bool
 	Stopped         bool
-	TraceConsumer   consumer.TraceConsumer
+	TraceConsumer   consumer.TracesConsumer
 	MetricsConsumer consumer.MetricsConsumer
 	LogConsumer     consumer.LogsConsumer
 }
@@ -220,7 +220,7 @@ func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	_ consumer.TraceConsumer,
+	_ consumer.TracesConsumer,
 ) (component.TraceReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
@@ -330,7 +330,7 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 	return nil
 }
 
-// ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
+// ConsumeTraceData receives consumerdata.TraceData for processing by the TracesConsumer.
 func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
@@ -385,7 +385,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *ExampleProcessorFactory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
+func (f *ExampleProcessorFactory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TraceProcessor, error) {
 	return &ExampleProcessor{nextTraces: nextConsumer}, nil
 }
 
@@ -404,7 +404,7 @@ func (f *ExampleProcessorFactory) CreateLogsProcessor(
 }
 
 type ExampleProcessor struct {
-	nextTraces  consumer.TraceConsumer
+	nextTraces  consumer.TracesConsumer
 	nextMetrics consumer.MetricsConsumer
 	nextLogs    consumer.LogsConsumer
 }

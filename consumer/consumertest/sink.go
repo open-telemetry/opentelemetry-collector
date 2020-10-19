@@ -41,7 +41,7 @@ type TracesSink struct {
 	spansCount int
 }
 
-var _ consumer.TraceConsumer = (*TracesSink)(nil)
+var _ consumer.TracesConsumer = (*TracesSink)(nil)
 
 // ConsumeTraceData stores traces for tests.
 func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {

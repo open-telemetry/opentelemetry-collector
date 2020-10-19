@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Rename consumer.TraceConsumer to consumer.TracesConsumer #1974
+
 ## v0.13.0 Beta
 
 ## 🛑 Breaking changes 🛑
