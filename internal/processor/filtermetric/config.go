@@ -29,8 +29,8 @@ type MatchType string
 // These are the MatchTypes that users can specify for filtering
 // `pdata.Metric`s.
 const (
-	Regexp MatchType = MatchType(filterset.Regexp)
-	Strict MatchType = MatchType(filterset.Strict)
+	Regexp           = MatchType(filterset.Regexp)
+	Strict           = MatchType(filterset.Strict)
 	Expr   MatchType = "expr"
 )
 
