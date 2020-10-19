@@ -2,8 +2,13 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- Host Metrics receiver now reports both system.disk.io_time and system.disk.operation_time
+
 ## 🛑 Breaking changes 🛑
 
+- Host metric system.disk.time renamed to system.disk.operation_time
 - Use consumer for sender interface, remove unnecessary receiver address from Runner #1941
 - Enable sending queue by default in all exporters configured to use it #1924
 
