@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
@@ -541,7 +542,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg.Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 	}
-	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
 	require.NoError(t, err)
 	host := &componenttest.ErrorWaitingHost{}
 	err = exp.Start(context.Background(), host)
@@ -580,7 +581,7 @@ func TestConsumeThriftTrace(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		numSpans, err := consumeTraces(context.Background(), test.batch, exportertest.NewNopTraceExporter())
+		numSpans, err := consumeTraces(context.Background(), test.batch, consumertest.NewTracesNop())
 		require.NoError(t, err)
 		assert.Equal(t, test.numSpans, numSpans)
 	}

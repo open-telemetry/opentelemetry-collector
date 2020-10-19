@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -49,7 +49,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -62,7 +62,7 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
-	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -75,7 +75,7 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 		{Key: "a key", Action: processorhelper.DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Action: processorhelper.DELETE},
 	}
-	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }

@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor/memorylimiter/internal/iruntime"
@@ -116,7 +117,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				NameVal: typeStr,
 			},
 		},
-		exportertest.NewNopMetricsExporter(),
+		consumertest.NewMetricsNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
@@ -185,7 +186,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				NameVal: typeStr,
 			},
 		},
-		exportertest.NewNopTraceExporter(),
+		consumertest.NewTracesNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
@@ -254,7 +255,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				NameVal: typeStr,
 			},
 		},
-		exportertest.NewNopLogsExporter(),
+		consumertest.NewLogsNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))

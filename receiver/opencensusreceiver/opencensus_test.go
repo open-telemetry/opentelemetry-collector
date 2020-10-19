@@ -45,6 +45,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
@@ -160,7 +161,7 @@ func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, exportertest.NewNopTraceExporter(), nil, withCorsOrigins(corsOrigins))
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, consumertest.NewTracesNop(), nil, withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
@@ -184,7 +185,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	corsOrigins := []string{"allowed-*.com"}
 
-	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, exportertest.NewNopMetricsExporter(), withCorsOrigins(corsOrigins))
+	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, nil, consumertest.NewMetricsNop(), withCorsOrigins(corsOrigins))
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 	defer ocr.Shutdown(context.Background())
 
@@ -262,7 +263,7 @@ func TestNewPortAlreadyUsed(t *testing.T) {
 
 func TestMultipleStopReceptionShouldNotError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	r, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, exportertest.NewNopTraceExporter(), exportertest.NewNopMetricsExporter())
+	r, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, consumertest.NewTracesNop(), consumertest.NewMetricsNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 
@@ -290,7 +291,7 @@ func tempSocketName(t *testing.T) string {
 
 func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 	socketName := tempSocketName(t)
-	cbts := exportertest.NewNopTraceExporter()
+	cbts := consumertest.NewTracesNop()
 	r, err := newOpenCensusReceiver(ocReceiverName, "unix", socketName, cbts, nil)
 	require.NoError(t, err)
 	require.NotNil(t, r)

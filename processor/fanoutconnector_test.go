@@ -22,12 +22,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
-	nop := exportertest.NewNopTraceExporter()
+	nop := consumertest.NewTracesNop()
 	tfc := NewTracesFanOutConnector([]consumer.TraceConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
@@ -86,7 +87,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestMetricsProcessorNotMultiplexing(t *testing.T) {
-	nop := exportertest.NewNopMetricsExporter()
+	nop := consumertest.NewMetricsNop()
 	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
 	assert.Same(t, nop, mfc)
 }
@@ -145,7 +146,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestLogsProcessorNotMultiplexing(t *testing.T) {
-	nop := exportertest.NewNopLogsExporter()
+	nop := consumertest.NewLogsNop()
 	lfc := NewLogsFanOutConnector([]consumer.LogsConsumer{nop})
 	assert.Same(t, nop, lfc)
 }

@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -47,11 +47,11 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopMetricsExporter())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewMetricsNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 }
@@ -60,10 +60,10 @@ func TestInvalidEmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	_, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopMetricsExporter())
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewMetricsNop())
 	assert.Error(t, err)
 }
 

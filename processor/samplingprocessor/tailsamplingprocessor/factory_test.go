@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -46,7 +46,7 @@ func TestCreateProcessor(t *testing.T) {
 	}
 
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
-	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 }

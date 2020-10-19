@@ -21,31 +21,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const (
-	nopTraceExporterName   = "nop_trace"
-	nopMetricsExporterName = "nop_metrics"
-	nopLogsExporterName    = "nop_log"
-)
-
-type nopExporter struct {
-	name     string
-	retError error
-}
+type nopExporter struct{}
 
 func (ne *nopExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
 func (ne *nopExporter) ConsumeTraces(context.Context, pdata.Traces) error {
-	return ne.retError
+	return nil
 }
 
 func (ne *nopExporter) ConsumeMetrics(context.Context, pdata.Metrics) error {
-	return ne.retError
+	return nil
 }
 
 func (ne *nopExporter) ConsumeLogs(context.Context, pdata.Logs) error {
-	return ne.retError
+	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
@@ -54,25 +45,19 @@ func (ne *nopExporter) Shutdown(context.Context) error {
 }
 
 // NewNopTraceExporter creates an TraceExporter that just drops the received data.
+// Deprecated: Use consumertest.NewNopTraces.
 func NewNopTraceExporter() component.TraceExporter {
-	ne := &nopExporter{
-		name: nopTraceExporterName,
-	}
-	return ne
+	return &nopExporter{}
 }
 
 // NewNopMetricsExporter creates an MetricsExporter that just drops the received data.
+// Deprecated: Use consumertest.NewNopMetrics.
 func NewNopMetricsExporter() component.MetricsExporter {
-	ne := &nopExporter{
-		name: nopMetricsExporterName,
-	}
-	return ne
+	return &nopExporter{}
 }
 
 // NewNopLogsExporter creates an LogsExporter that just drops the received data.
+// Deprecated: Use consumertest.NewNopLogs.
 func NewNopLogsExporter() component.LogsExporter {
-	ne := &nopExporter{
-		name: nopLogsExporterName,
-	}
-	return ne
+	return &nopExporter{}
 }
