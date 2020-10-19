@@ -27,7 +27,7 @@ import (
 )
 
 type HTTPClientSettings struct {
-	// The target URL to send data to (e.g.: http://some.url:9411/v1/trace).
+	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
 
 	// TLSSetting struct exposes TLS client configuration.
