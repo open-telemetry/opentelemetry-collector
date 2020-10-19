@@ -24,19 +24,19 @@ import (
 )
 
 func TestNewNopTraces(t *testing.T) {
-	nt := NewNopTraces()
+	nt := NewTracesNop()
 	require.NotNil(t, nt)
 	require.NoError(t, nt.ConsumeTraces(context.Background(), pdata.NewTraces()))
 }
 
 func TestNewNopMetrics(t *testing.T) {
-	nm := NewNopMetrics()
+	nm := NewMetricsNop()
 	require.NotNil(t, nm)
 	require.NoError(t, nm.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 }
 
 func TestNopLogsConsumer(t *testing.T) {
-	nl := NewNopLogs()
+	nl := NewLogsNop()
 	require.NotNil(t, nl)
 	require.NoError(t, nl.ConsumeLogs(context.Background(), pdata.NewLogs()))
 }

@@ -28,7 +28,7 @@ import (
 )
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
-	nop := consumertest.NewNopTraces()
+	nop := consumertest.NewTracesNop()
 	tfc := NewTracesFanOutConnector([]consumer.TraceConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
@@ -87,7 +87,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestMetricsProcessorNotMultiplexing(t *testing.T) {
-	nop := consumertest.NewNopMetrics()
+	nop := consumertest.NewMetricsNop()
 	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
 	assert.Same(t, nop, mfc)
 }
@@ -146,7 +146,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 }
 
 func TestLogsProcessorNotMultiplexing(t *testing.T) {
-	nop := consumertest.NewNopLogs()
+	nop := consumertest.NewLogsNop()
 	lfc := NewLogsFanOutConnector([]consumer.LogsConsumer{nop})
 	assert.Same(t, nop, lfc)
 }

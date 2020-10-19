@@ -42,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	require.Equal(t, configmodels.Type("fluentforward"), factory.Type())
 
-	tReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNopLogs())
+	tReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewLogsNop())
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

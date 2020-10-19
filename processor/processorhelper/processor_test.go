@@ -81,7 +81,7 @@ func TestWithCapabilities(t *testing.T) {
 }
 
 func TestNewTraceExporter(t *testing.T) {
-	me, err := NewTraceProcessor(testCfg, consumertest.NewNopTraces(), newTestTProcessor(nil))
+	me, err := NewTraceProcessor(testCfg, consumertest.NewTracesNop(), newTestTProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -90,7 +90,7 @@ func TestNewTraceExporter(t *testing.T) {
 }
 
 func TestNewTraceExporter_NilRequiredFields(t *testing.T) {
-	_, err := NewTraceProcessor(testCfg, consumertest.NewNopTraces(), nil)
+	_, err := NewTraceProcessor(testCfg, consumertest.NewTracesNop(), nil)
 	assert.Error(t, err)
 
 	_, err = NewTraceProcessor(testCfg, nil, newTestTProcessor(nil))
@@ -99,13 +99,13 @@ func TestNewTraceExporter_NilRequiredFields(t *testing.T) {
 
 func TestNewTraceExporter_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewTraceProcessor(testCfg, consumertest.NewNopTraces(), newTestTProcessor(want))
+	me, err := NewTraceProcessor(testCfg, consumertest.NewTracesNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeTraces(context.Background(), testdata.GenerateTraceDataEmpty()))
 }
 
 func TestNewMetricsExporter(t *testing.T) {
-	me, err := NewMetricsProcessor(testCfg, consumertest.NewNopMetrics(), newTestMProcessor(nil))
+	me, err := NewMetricsProcessor(testCfg, consumertest.NewMetricsNop(), newTestMProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -114,7 +114,7 @@ func TestNewMetricsExporter(t *testing.T) {
 }
 
 func TestNewMetricsExporter_NilRequiredFields(t *testing.T) {
-	_, err := NewMetricsProcessor(testCfg, consumertest.NewNopMetrics(), nil)
+	_, err := NewMetricsProcessor(testCfg, consumertest.NewMetricsNop(), nil)
 	assert.Error(t, err)
 
 	_, err = NewMetricsProcessor(testCfg, nil, newTestMProcessor(nil))
@@ -123,19 +123,19 @@ func TestNewMetricsExporter_NilRequiredFields(t *testing.T) {
 
 func TestNewMetricsExporter_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsProcessor(testCfg, consumertest.NewNopMetrics(), newTestMProcessor(want))
+	me, err := NewMetricsProcessor(testCfg, consumertest.NewMetricsNop(), newTestMProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
 }
 
 func TestNewMetricsExporter_ProcessMetricsErrSkipProcessingData(t *testing.T) {
-	me, err := NewMetricsProcessor(testCfg, consumertest.NewNopMetrics(), newTestMProcessor(ErrSkipProcessingData))
+	me, err := NewMetricsProcessor(testCfg, consumertest.NewMetricsNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.Equal(t, nil, me.ConsumeMetrics(context.Background(), testdata.GenerateMetricsEmpty()))
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	me, err := NewLogsProcessor(testCfg, consumertest.NewNopLogs(), newTestLProcessor(nil))
+	me, err := NewLogsProcessor(testCfg, consumertest.NewLogsNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.NoError(t, me.Start(context.Background(), componenttest.NewNopHost()))
@@ -144,7 +144,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestNewLogsExporter_NilRequiredFields(t *testing.T) {
-	_, err := NewLogsProcessor(testCfg, consumertest.NewNopLogs(), nil)
+	_, err := NewLogsProcessor(testCfg, consumertest.NewLogsNop(), nil)
 	assert.Error(t, err)
 
 	_, err = NewLogsProcessor(testCfg, nil, newTestLProcessor(nil))
@@ -153,7 +153,7 @@ func TestNewLogsExporter_NilRequiredFields(t *testing.T) {
 
 func TestNewLogsExporter_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogsProcessor(testCfg, consumertest.NewNopLogs(), newTestLProcessor(want))
+	me, err := NewLogsProcessor(testCfg, consumertest.NewLogsNop(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, me.ConsumeLogs(context.Background(), testdata.GenerateLogDataEmpty()))
 }

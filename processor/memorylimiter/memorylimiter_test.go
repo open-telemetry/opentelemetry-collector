@@ -117,7 +117,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				NameVal: typeStr,
 			},
 		},
-		consumertest.NewNopMetrics(),
+		consumertest.NewMetricsNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
@@ -186,7 +186,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				NameVal: typeStr,
 			},
 		},
-		consumertest.NewNopTraces(),
+		consumertest.NewTracesNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))
@@ -255,7 +255,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				NameVal: typeStr,
 			},
 		},
-		consumertest.NewNopLogs(),
+		consumertest.NewLogsNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithShutdown(ml.shutdown))

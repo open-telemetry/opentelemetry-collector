@@ -63,7 +63,7 @@ func Test_transaction(t *testing.T) {
 	rn := "prometheus"
 
 	t.Run("Commit Without Adding", func(t *testing.T) {
-		nomc := consumertest.NewNopMetrics()
+		nomc := consumertest.NewMetricsNop()
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
@@ -71,7 +71,7 @@ func Test_transaction(t *testing.T) {
 	})
 
 	t.Run("Rollback dose nothing", func(t *testing.T) {
-		nomc := consumertest.NewNopMetrics()
+		nomc := consumertest.NewMetricsNop()
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
@@ -80,7 +80,7 @@ func Test_transaction(t *testing.T) {
 
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
-		nomc := consumertest.NewNopMetrics()
+		nomc := consumertest.NewMetricsNop()
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
 		if _, got := tr.Add(badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
@@ -92,7 +92,7 @@ func Test_transaction(t *testing.T) {
 		{Name: "job", Value: "test2"},
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
-		nomc := consumertest.NewNopMetrics()
+		nomc := consumertest.NewMetricsNop()
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, nomc, testLogger)
 		if _, got := tr.Add(jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")

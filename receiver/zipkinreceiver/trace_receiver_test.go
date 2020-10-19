@@ -70,7 +70,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: consumertest.NewNopTraces(),
+				nextConsumer: consumertest.NewTracesNop(),
 			},
 		},
 	}
@@ -109,7 +109,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := New(cfg, consumertest.NewNopTraces())
+	traceReceiver, err := New(cfg, consumertest.NewTracesNop())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -205,7 +205,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: consumertest.NewNopTraces()}
+	zi := &ZipkinReceiver{nextConsumer: consumertest.NewTracesNop()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 

@@ -43,7 +43,7 @@ func TestNewReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewNopTraces())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -52,7 +52,7 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewNopTraces())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewTracesNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -73,7 +73,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewNopTraces())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -82,7 +82,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 func TestReceiverStart(t *testing.T) {
 	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaConsumer{
-		nextConsumer:  consumertest.NewNopTraces(),
+		nextConsumer:  consumertest.NewTracesNop(),
 		logger:        zap.NewNop(),
 		consumerGroup: testClient,
 	}
@@ -95,7 +95,7 @@ func TestReceiverStart(t *testing.T) {
 func TestReceiverStartConsume(t *testing.T) {
 	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaConsumer{
-		nextConsumer:  consumertest.NewNopTraces(),
+		nextConsumer:  consumertest.NewTracesNop(),
 		logger:        zap.NewNop(),
 		consumerGroup: testClient,
 	}
@@ -115,7 +115,7 @@ func TestReceiver_error(t *testing.T) {
 	expectedErr := fmt.Errorf("handler error")
 	testClient := testConsumerGroup{once: &sync.Once{}, err: expectedErr}
 	c := kafkaConsumer{
-		nextConsumer:  consumertest.NewNopTraces(),
+		nextConsumer:  consumertest.NewTracesNop(),
 		logger:        logger,
 		consumerGroup: testClient,
 	}
@@ -138,7 +138,7 @@ func TestConsumerGroupHandler(t *testing.T) {
 		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNopTraces(),
+		nextConsumer: consumertest.NewTracesNop(),
 	}
 
 	testSession := testConsumerGroupSession{}
@@ -182,7 +182,7 @@ func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNopTraces(),
+		nextConsumer: consumertest.NewTracesNop(),
 	}
 
 	wg := sync.WaitGroup{}

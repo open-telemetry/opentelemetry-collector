@@ -39,17 +39,17 @@ func (nc *nopConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 	return nil
 }
 
-// NewNopTraces creates an TraceConsumer that just drops the received data.
-func NewNopTraces() consumer.TraceConsumer {
+// NewTracesNop creates an TraceConsumer that just drops the received data.
+func NewTracesNop() consumer.TraceConsumer {
 	return nopInstance
 }
 
-// NewNopMetrics creates an MetricsConsumer that just drops the received data.
-func NewNopMetrics() consumer.MetricsConsumer {
+// NewMetricsNop creates an MetricsConsumer that just drops the received data.
+func NewMetricsNop() consumer.MetricsConsumer {
 	return nopInstance
 }
 
-// NewNopLogs creates an LogsConsumer that just drops the received data.
-func NewNopLogs() consumer.LogsConsumer {
+// NewLogsNop creates an LogsConsumer that just drops the received data.
+func NewLogsNop() consumer.LogsConsumer {
 	return nopInstance
 }
