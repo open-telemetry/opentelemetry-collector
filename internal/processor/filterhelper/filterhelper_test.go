@@ -90,7 +90,7 @@ func TestHelper_AttributeValueArray(t *testing.T) {
 	assert.Equal(t, 2, val.ArrayVal().Len())
 	assert.NoError(t, err)
 	for i := 0; i < val.ArrayVal().Len(); i++ {
-		assert.Equal(t, pdata.NewAttributeValueDouble(float64(float32(testData[i].(float32)))), val.ArrayVal().At(i))
+		assert.Equal(t, pdata.NewAttributeValueDouble(float64(testData[i].(float32))), val.ArrayVal().At(i))
 	}
 
 	testData = []interface{}{true}
