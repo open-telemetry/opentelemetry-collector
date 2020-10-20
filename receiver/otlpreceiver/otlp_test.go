@@ -749,7 +749,7 @@ func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, t
 	require.NoError(t, err)
 	if tc != nil {
 		params := component.ReceiverCreateParams{}
-		_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+		_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {

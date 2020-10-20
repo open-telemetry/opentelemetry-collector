@@ -95,6 +95,6 @@ func createExporter(config configmodels.Exporter) (*fileExporter, error) {
 
 // This is the map of already created File exporters for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var exporters = map[*Config]*fileExporter{}

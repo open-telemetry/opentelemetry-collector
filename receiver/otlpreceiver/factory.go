@@ -114,13 +114,13 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 	return nil
 }
 
-// CreateTraceReceiver creates a  trace receiver based on provided config.
+// CreateTracesReceiver creates a  trace receiver based on provided config.
 func createTraceReceiver(
 	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg)
 	if err != nil {
 		return nil, err
@@ -188,6 +188,6 @@ func createReceiver(cfg configmodels.Receiver) (*otlpReceiver, error) {
 
 // This is the map of already created OTLP receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one otlpReceiver object per configuration.
 var receivers = map[*Config]*otlpReceiver{}

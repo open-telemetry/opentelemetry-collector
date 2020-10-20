@@ -39,10 +39,10 @@ type ExampleReceiver struct {
 	ExtraMapSetting  map[string]string `mapstructure:"extra_map"`
 	ExtraListSetting []string          `mapstructure:"extra_list"`
 
-	// FailTraceCreation causes CreateTraceReceiver to fail. Useful for testing.
+	// FailTraceCreation causes CreateTracesReceiver to fail. Useful for testing.
 	FailTraceCreation bool `mapstructure:"-"`
 
-	// FailMetricsCreation causes CreateTraceReceiver to fail. Useful for testing.
+	// FailMetricsCreation causes CreateMetricsReceiver to fail. Useful for testing.
 	FailMetricsCreation bool `mapstructure:"-"`
 }
 
@@ -79,12 +79,12 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *ExampleReceiverFactory) CreateTraceReceiver(
+func (f *ExampleReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -162,7 +162,7 @@ func (erp *ExampleReceiverProducer) Shutdown(context.Context) error {
 
 // This is the map of already created example receivers for particular configurations.
 // We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
-// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
 
@@ -216,12 +216,12 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver 
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
+func (f *MultiProtoReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
 	_ consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }

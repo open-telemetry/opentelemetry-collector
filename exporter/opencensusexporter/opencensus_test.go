@@ -40,7 +40,7 @@ func TestSendTraces(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.GRPCServerSettings.NetAddr.Endpoint = endpoint
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	recv, err := rFactory.CreateTraceReceiver(context.Background(), params, rCfg, sink)
+	recv, err := rFactory.CreateTracesReceiver(context.Background(), params, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
