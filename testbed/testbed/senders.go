@@ -58,7 +58,7 @@ type DataSender interface {
 	// so that it can receive data from this sender.
 	GenConfigYAMLStr() string
 
-	// Return protocol name to use in collector config pipeline.
+	// Return exporterType name to use in collector config pipeline.
 	ProtocolName() string
 }
 
@@ -114,7 +114,7 @@ func (dsb *DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
-// JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http protocol.
+// JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http exporterType.
 type JaegerGRPCDataSender struct {
 	DataSenderBase
 	consumer.TracesConsumer
@@ -123,7 +123,7 @@ type JaegerGRPCDataSender struct {
 // Ensure JaegerGRPCDataSender implements TraceDataSender.
 var _ TraceDataSender = (*JaegerGRPCDataSender)(nil)
 
-// NewJaegerGRPCDataSender creates a new Jaeger protocol sender that will send
+// NewJaegerGRPCDataSender creates a new Jaeger exporterType sender that will send
 // to the specified port after Start is called.
 func NewJaegerGRPCDataSender(host string, port int) *JaegerGRPCDataSender {
 	return &JaegerGRPCDataSender{
@@ -187,7 +187,7 @@ func (ods *ocDataSender) ProtocolName() string {
 	return "opencensus"
 }
 
-// OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
+// OCTraceDataSender implements TraceDataSender for OpenCensus trace exporterType.
 type OCTraceDataSender struct {
 	ocDataSender
 	consumer.TracesConsumer
@@ -221,7 +221,7 @@ func (ote *OCTraceDataSender) Start() error {
 	return exp.Start(context.Background(), ote)
 }
 
-// OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
+// OCMetricsDataSender implements MetricDataSender for OpenCensus metrics exporterType.
 type OCMetricsDataSender struct {
 	ocDataSender
 	consumer.MetricsConsumer
@@ -230,7 +230,7 @@ type OCMetricsDataSender struct {
 // Ensure OCMetricsDataSender implements MetricDataSender.
 var _ MetricDataSender = (*OCMetricsDataSender)(nil)
 
-// NewOCMetricDataSender creates a new OpenCensus metric protocol sender that will send
+// NewOCMetricDataSender creates a new OpenCensus metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 	return &OCMetricsDataSender{
@@ -284,7 +284,7 @@ func (ods *otlpHTTPDataSender) ProtocolName() string {
 	return "otlp"
 }
 
-// OTLPHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace protocol.
+// OTLPHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace exporterType.
 type OTLPHTTPTraceDataSender struct {
 	otlpHTTPDataSender
 	consumer.TracesConsumer
@@ -293,7 +293,7 @@ type OTLPHTTPTraceDataSender struct {
 // Ensure OTLPHTTPTraceDataSender implements TraceDataSender.
 var _ TraceDataSender = (*OTLPHTTPTraceDataSender)(nil)
 
-// NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces protocol.
+// NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporterType.
 func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender {
 	return &OTLPHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
@@ -317,7 +317,7 @@ func (ote *OTLPHTTPTraceDataSender) Start() error {
 	return exp.Start(context.Background(), ote)
 }
 
-// OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics protocol.
+// OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics exporterType.
 type OTLPHTTPMetricsDataSender struct {
 	otlpHTTPDataSender
 	consumer.MetricsConsumer
@@ -326,7 +326,7 @@ type OTLPHTTPMetricsDataSender struct {
 // Ensure OTLPHTTPMetricsDataSender implements MetricDataSender.
 var _ MetricDataSender = (*OTLPHTTPMetricsDataSender)(nil)
 
-// NewOTLPHTTPMetricDataSender creates a new OTLP/HTTP metric protocol sender that will send
+// NewOTLPHTTPMetricDataSender creates a new OTLP/HTTP metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSender {
 	return &OTLPHTTPMetricsDataSender{
@@ -351,7 +351,7 @@ func (ome *OTLPHTTPMetricsDataSender) Start() error {
 	return exp.Start(context.Background(), ome)
 }
 
-// OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs protocol.
+// OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs exporterType.
 type OTLPHTTPLogsDataSender struct {
 	otlpHTTPDataSender
 	consumer.LogsConsumer
@@ -360,7 +360,7 @@ type OTLPHTTPLogsDataSender struct {
 // Ensure OTLPHTTPLogsDataSender implements MetricDataSender.
 var _ LogDataSender = (*OTLPHTTPLogsDataSender)(nil)
 
-// NewOTLPMetricDataSender creates a new OTLP/HTTP metric protocol sender that will send
+// NewOTLPMetricDataSender creates a new OTLP/HTTP metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
 	return &OTLPHTTPLogsDataSender{
@@ -414,7 +414,7 @@ func (ods *otlpDataSender) ProtocolName() string {
 	return "otlp"
 }
 
-// OTLPTraceDataSender implements TraceDataSender for OTLP trace protocol.
+// OTLPTraceDataSender implements TraceDataSender for OTLP trace exporterType.
 type OTLPTraceDataSender struct {
 	otlpDataSender
 	consumer.TracesConsumer
@@ -423,7 +423,7 @@ type OTLPTraceDataSender struct {
 // Ensure OTLPTraceDataSender implements TraceDataSender.
 var _ TraceDataSender = (*OTLPTraceDataSender)(nil)
 
-// NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces protocol.
+// NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces exporterType.
 func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 	return &OTLPTraceDataSender{
 		otlpDataSender: otlpDataSender{
@@ -447,7 +447,7 @@ func (ote *OTLPTraceDataSender) Start() error {
 	return exp.Start(context.Background(), ote)
 }
 
-// OTLPMetricsDataSender implements MetricDataSender for OTLP metrics protocol.
+// OTLPMetricsDataSender implements MetricDataSender for OTLP metrics exporterType.
 type OTLPMetricsDataSender struct {
 	otlpDataSender
 	consumer.MetricsConsumer
@@ -456,7 +456,7 @@ type OTLPMetricsDataSender struct {
 // Ensure OTLPMetricsDataSender implements MetricDataSender.
 var _ MetricDataSender = (*OTLPMetricsDataSender)(nil)
 
-// NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
+// NewOTLPMetricDataSender creates a new OTLP metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 	return &OTLPMetricsDataSender{
@@ -481,7 +481,7 @@ func (ome *OTLPMetricsDataSender) Start() error {
 	return exp.Start(context.Background(), ome)
 }
 
-// OTLPLogsDataSender implements LogsDataSender for OTLP logs protocol.
+// OTLPLogsDataSender implements LogsDataSender for OTLP logs exporterType.
 type OTLPLogsDataSender struct {
 	otlpDataSender
 	consumer.LogsConsumer
@@ -490,7 +490,7 @@ type OTLPLogsDataSender struct {
 // Ensure OTLPLogsDataSender implements LogDataSender.
 var _ LogDataSender = (*OTLPLogsDataSender)(nil)
 
-// NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
+// NewOTLPMetricDataSender creates a new OTLP metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
 	return &OTLPLogsDataSender{
@@ -515,7 +515,7 @@ func (olds *OTLPLogsDataSender) Start() error {
 	return exp.Start(context.Background(), olds)
 }
 
-// ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
+// ZipkinDataSender implements TraceDataSender for Zipkin http exporterType.
 type ZipkinDataSender struct {
 	DataSenderBase
 	consumer.TracesConsumer
@@ -524,7 +524,7 @@ type ZipkinDataSender struct {
 // Ensure ZipkinDataSender implements TraceDataSender.
 var _ TraceDataSender = (*ZipkinDataSender)(nil)
 
-// NewZipkinDataSender creates a new Zipkin protocol sender that will send
+// NewZipkinDataSender creates a new Zipkin exporterType sender that will send
 // to the specified port after Start is called.
 func NewZipkinDataSender(host string, port int) *ZipkinDataSender {
 	return &ZipkinDataSender{

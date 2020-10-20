@@ -50,7 +50,7 @@ type DataReceiver interface {
 	// so that it can send data to this receiver.
 	GenConfigYAMLStr() string
 
-	// Return protocol name to use in collector config pipeline.
+	// Return exporterType name to use in collector config pipeline.
 	ProtocolName() string
 }
 
@@ -186,10 +186,11 @@ func (jr *JaegerDataReceiver) ProtocolName() string {
 	return "jaeger"
 }
 
-// OTLPDataReceiver implements OTLP format receiver.
+// baseOTLPDataReceiver implements the OTLP format receiver.
 type baseOTLPDataReceiver struct {
 	DataReceiverBase
-	protocol        string
+	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
+	exporterType    string
 	traceReceiver   component.TraceReceiver
 	metricsReceiver component.MetricsReceiver
 	logReceiver     component.LogsReceiver
@@ -198,8 +199,8 @@ type baseOTLPDataReceiver struct {
 func (bor *baseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.SetName(bor.protocol)
-	if bor.protocol == "otlp" {
+	cfg.SetName(bor.exporterType)
+	if bor.exporterType == "otlp" {
 		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", bor.Port), Transport: "tcp"}
 		cfg.HTTP = nil
 	} else {
@@ -238,19 +239,19 @@ func (bor *baseOTLPDataReceiver) Stop() error {
 }
 
 func (bor *baseOTLPDataReceiver) ProtocolName() string {
-	return bor.protocol
+	return bor.exporterType
 }
 
 func (bor *baseOTLPDataReceiver) GenConfigYAMLStr() string {
 	addr := fmt.Sprintf("localhost:%d", bor.Port)
-	if bor.protocol == "otlphttp" {
+	if bor.exporterType == "otlphttp" {
 		addr = "http://" + addr
 	}
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   %s:
     endpoint: "%s"
-    insecure: true`, bor.protocol, addr)
+    insecure: true`, bor.exporterType, addr)
 }
 
 const DefaultOTLPPort = 55680
@@ -260,7 +261,7 @@ const DefaultOTLPPort = 55680
 func NewOTLPDataReceiver(port int) DataReceiver {
 	return &baseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
-		protocol:         "otlp",
+		exporterType:     "otlp",
 	}
 }
 
@@ -269,7 +270,7 @@ func NewOTLPDataReceiver(port int) DataReceiver {
 func NewOTLPHTTPDataReceiver(port int) DataReceiver {
 	return &baseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
-		protocol:         "otlphttp",
+		exporterType:     "otlphttp",
 	}
 }
 
