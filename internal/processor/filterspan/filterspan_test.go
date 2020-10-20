@@ -562,3 +562,72 @@ func TestServiceNameForResource(t *testing.T) {
 	resource.Attributes().InsertString(conventions.AttributeServiceName, "test-service")
 	require.Equal(t, serviceNameForResource(resource), "test-service")
 }
+
+// TestSpan_Matching_Array tests matcher.MatchSpan
+// Attributes include array values and default values covering switch case in Properties matcher attributes.Match
+func TestSpan_Matching_Array(t *testing.T) {
+	// True case
+	cfg := &filterconfig.MatchProperties{
+		Config:   *createConfig(filterset.Strict),
+		Services: []string{"svc"},
+		Attributes: []filterconfig.Attribute{
+			{
+				Key:   "http.url",
+				Value: []interface{}{"https://play.golang.org/"},
+			},
+		},
+	}
+
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.Attributes().InsertString("http.url", "https://play.golang.org/")
+	assert.NotNil(t, span)
+
+	matcher, err := NewMatcher(cfg)
+	spanRes := matcher.MatchSpan(span, resource("svc"), pdata.NewInstrumentationLibrary())
+	require.NoError(t, err)
+	assert.NotNil(t, matcher)
+	assert.True(t, spanRes)
+
+	// False case
+	cfg = &filterconfig.MatchProperties{
+		Config:   *createConfig(filterset.Strict),
+		Services: []string{"svc"},
+		Attributes: []filterconfig.Attribute{
+			{
+				Key:   "keyBool",
+				Value: []interface{}{false},
+			},
+		},
+	}
+
+	span.Attributes().InsertBool("keyBool", true)
+	assert.NotNil(t, span)
+
+	matcher, err = NewMatcher(cfg)
+	spanRes = matcher.MatchSpan(span, resource("svc"), pdata.NewInstrumentationLibrary())
+	require.NoError(t, err)
+	assert.NotNil(t, matcher)
+	assert.False(t, spanRes)
+
+	// Default case
+	cfg = &filterconfig.MatchProperties{
+		Config:   *createConfig(filterset.Strict),
+		Services: []string{"svc"},
+		Attributes: []filterconfig.Attribute{
+			{
+				Key:   "keyInt",
+				Value: 1243,
+			},
+		},
+	}
+
+	span.Attributes().InsertInt("keyInt", 1243)
+	assert.NotNil(t, span)
+
+	matcher, err = NewMatcher(cfg)
+	spanRes = matcher.MatchSpan(span, resource("svc"), pdata.NewInstrumentationLibrary())
+	require.NoError(t, err)
+	assert.NotNil(t, matcher)
+	assert.True(t, spanRes)
+}
