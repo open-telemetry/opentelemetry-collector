@@ -23,10 +23,8 @@ import (
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -41,20 +39,6 @@ type zipkinExporter struct {
 	url        string
 	client     *http.Client
 	serializer zipkinreporter.SpanSerializer
-}
-
-// newTraceExporter creates an zipkin trace exporter.
-func newTraceExporter(config *Config) (component.TraceExporter, error) {
-	ze, err := createZipkinExporter(config)
-	if err != nil {
-		return nil, err
-	}
-	zexp, err := exporterhelper.NewTraceExporter(config, ze.pushTraceData)
-	if err != nil {
-		return nil, err
-	}
-
-	return zexp, nil
 }
 
 func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {

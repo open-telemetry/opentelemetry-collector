@@ -17,11 +17,14 @@ package zipkinexporter
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration settings for the Zipkin exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
 	// Configures the exporter client.
 	// The Endpoint to send the Zipkin trace data to (e.g.: http://some.url:9411/api/v2/spans).
