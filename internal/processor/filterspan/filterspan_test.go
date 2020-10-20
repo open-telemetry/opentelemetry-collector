@@ -563,7 +563,7 @@ func TestServiceNameForResource(t *testing.T) {
 	require.Equal(t, serviceNameForResource(resource), "test-service")
 }
 
-// TestSpan_Matching_Array tests matcher.MatchSpan
+// TestSpan_Matching_Array tests matcher.MatchSpan for attributes specification against a span
 // Attributes include array values and default values covering switch case in Properties matcher attributes.Match
 func TestSpan_Matching_Array(t *testing.T) {
 	// True case
