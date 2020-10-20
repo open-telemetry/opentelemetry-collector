@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/idbatcher"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor/sampling"
@@ -157,7 +156,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(exportertest.SinkTraceExporter)
+	msp := new(consumertest.TracesSink)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
@@ -213,7 +212,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(exportertest.SinkTraceExporter)
+	msp := new(consumertest.TracesSink)
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
@@ -279,7 +278,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(exportertest.SinkTraceExporter)
+	msp := new(consumertest.TracesSink)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
@@ -338,7 +337,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	const decisionWaitSeconds = 1
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(exportertest.SinkTraceExporter)
+	msp := new(consumertest.TracesSink)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{

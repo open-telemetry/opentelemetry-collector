@@ -26,7 +26,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -103,7 +102,7 @@ func Test_transaction(t *testing.T) {
 		{Name: "job", Value: "test"},
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
-		sink := new(exportertest.SinkMetricsExporter)
+		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
@@ -133,7 +132,7 @@ func Test_transaction(t *testing.T) {
 	})
 
 	t.Run("Error when start time is zero", func(t *testing.T) {
-		sink := new(exportertest.SinkMetricsExporter)
+		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
@@ -148,7 +147,7 @@ func Test_transaction(t *testing.T) {
 	})
 
 	t.Run("Drop NaN value", func(t *testing.T) {
-		sink := new(exportertest.SinkMetricsExporter)
+		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(context.Background(), nil, true, "", rn, ms, sink, testLogger)
 		if _, got := tr.Add(goodLabels, time.Now().Unix()*1000, math.NaN()); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)

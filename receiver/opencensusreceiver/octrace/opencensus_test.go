@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -46,7 +46,7 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -84,7 +84,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportTrace request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -213,7 +213,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -281,7 +281,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // spans should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()

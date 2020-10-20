@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -36,7 +35,7 @@ func TestTracesProcessorNotMultiplexing(t *testing.T) {
 func TestTracesProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkTraceExporter)
+		processors[i] = new(consumertest.TracesSink)
 	}
 
 	tfc := NewTracesFanOutConnector(processors)
@@ -53,7 +52,7 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*exportertest.SinkTraceExporter)
+		m := p.(*consumertest.TracesSink)
 		assert.Equal(t, wantSpansCount, m.SpansCount())
 		assert.EqualValues(t, td, m.AllTraces()[0])
 	}
@@ -62,11 +61,11 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]consumer.TraceConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkTraceExporter)
+		processors[i] = new(consumertest.TracesSink)
 	}
 
 	// Make one processor return error
-	processors[1].(*exportertest.SinkTraceExporter).SetConsumeTraceError(errors.New("my_error"))
+	processors[1].(*consumertest.TracesSink).SetConsumeError(errors.New("my_error"))
 
 	tfc := NewTracesFanOutConnector(processors)
 	td := testdata.GenerateTraceDataOneSpan()
@@ -81,9 +80,9 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 0, processors[1].(*exportertest.SinkTraceExporter).SpansCount())
-	assert.Equal(t, wantSpansCount, processors[0].(*exportertest.SinkTraceExporter).SpansCount())
-	assert.Equal(t, wantSpansCount, processors[2].(*exportertest.SinkTraceExporter).SpansCount())
+	assert.Equal(t, 0, processors[1].(*consumertest.TracesSink).SpansCount())
+	assert.Equal(t, wantSpansCount, processors[0].(*consumertest.TracesSink).SpansCount())
+	assert.Equal(t, wantSpansCount, processors[2].(*consumertest.TracesSink).SpansCount())
 }
 
 func TestMetricsProcessorNotMultiplexing(t *testing.T) {
@@ -95,7 +94,7 @@ func TestMetricsProcessorNotMultiplexing(t *testing.T) {
 func TestMetricsProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkMetricsExporter)
+		processors[i] = new(consumertest.MetricsSink)
 	}
 
 	mfc := NewMetricsFanOutConnector(processors)
@@ -112,7 +111,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*exportertest.SinkMetricsExporter)
+		m := p.(*consumertest.MetricsSink)
 		assert.Equal(t, wantMetricsCount, m.MetricsCount())
 		assert.EqualValues(t, md, m.AllMetrics()[0])
 	}
@@ -121,11 +120,11 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkMetricsExporter)
+		processors[i] = new(consumertest.MetricsSink)
 	}
 
 	// Make one processor return error
-	processors[1].(*exportertest.SinkMetricsExporter).SetConsumeMetricsError(errors.New("my_error"))
+	processors[1].(*consumertest.MetricsSink).SetConsumeError(errors.New("my_error"))
 
 	mfc := NewMetricsFanOutConnector(processors)
 	md := testdata.GenerateMetricsOneMetric()
@@ -140,9 +139,9 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 0, processors[1].(*exportertest.SinkMetricsExporter).MetricsCount())
-	assert.Equal(t, wantMetricsCount, processors[0].(*exportertest.SinkMetricsExporter).MetricsCount())
-	assert.Equal(t, wantMetricsCount, processors[2].(*exportertest.SinkMetricsExporter).MetricsCount())
+	assert.Equal(t, 0, processors[1].(*consumertest.MetricsSink).MetricsCount())
+	assert.Equal(t, wantMetricsCount, processors[0].(*consumertest.MetricsSink).MetricsCount())
+	assert.Equal(t, wantMetricsCount, processors[2].(*consumertest.MetricsSink).MetricsCount())
 }
 
 func TestLogsProcessorNotMultiplexing(t *testing.T) {
@@ -154,7 +153,7 @@ func TestLogsProcessorNotMultiplexing(t *testing.T) {
 func TestLogsProcessorMultiplexing(t *testing.T) {
 	processors := make([]consumer.LogsConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkLogsExporter)
+		processors[i] = new(consumertest.LogsSink)
 	}
 
 	lfc := NewLogsFanOutConnector(processors)
@@ -171,7 +170,7 @@ func TestLogsProcessorMultiplexing(t *testing.T) {
 	}
 
 	for _, p := range processors {
-		m := p.(*exportertest.SinkLogsExporter)
+		m := p.(*consumertest.LogsSink)
 		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
 		assert.EqualValues(t, ld, m.AllLogs()[0])
 	}
@@ -180,11 +179,11 @@ func TestLogsProcessorMultiplexing(t *testing.T) {
 func TestLogsProcessorWhenOneErrors(t *testing.T) {
 	processors := make([]consumer.LogsConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkLogsExporter)
+		processors[i] = new(consumertest.LogsSink)
 	}
 
 	// Make one processor return error
-	processors[1].(*exportertest.SinkLogsExporter).SetConsumeLogError(errors.New("my_error"))
+	processors[1].(*consumertest.LogsSink).SetConsumeError(errors.New("my_error"))
 
 	lfc := NewLogsFanOutConnector(processors)
 	ld := testdata.GenerateLogDataOneLog()
@@ -199,7 +198,7 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 0, processors[1].(*exportertest.SinkLogsExporter).LogRecordsCount())
-	assert.Equal(t, wantMetricsCount, processors[0].(*exportertest.SinkLogsExporter).LogRecordsCount())
-	assert.Equal(t, wantMetricsCount, processors[2].(*exportertest.SinkLogsExporter).LogRecordsCount())
+	assert.Equal(t, 0, processors[1].(*consumertest.LogsSink).LogRecordsCount())
+	assert.Equal(t, wantMetricsCount, processors[0].(*consumertest.LogsSink).LogRecordsCount())
+	assert.Equal(t, wantMetricsCount, processors[2].(*consumertest.LogsSink).LogRecordsCount())
 }

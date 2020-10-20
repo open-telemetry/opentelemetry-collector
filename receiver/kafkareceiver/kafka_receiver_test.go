@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
@@ -201,9 +200,9 @@ func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 }
 
 func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
-	nextConsumer := &exportertest.SinkTraceExporter{}
+	nextConsumer := new(consumertest.TracesSink)
 	consumerError := fmt.Errorf("failed to consumer")
-	nextConsumer.SetConsumeTraceError(consumerError)
+	nextConsumer.SetConsumeError(consumerError)
 	c := consumerGroupHandler{
 		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),

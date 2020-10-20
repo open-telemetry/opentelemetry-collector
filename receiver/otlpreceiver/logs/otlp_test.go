@@ -26,8 +26,8 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal"
 	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
@@ -41,7 +41,7 @@ var _ collectorlog.LogsServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	logSink := new(exportertest.SinkLogsExporter)
+	logSink := new(consumertest.LogsSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
@@ -97,7 +97,7 @@ func TestExport(t *testing.T) {
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	logSink := new(exportertest.SinkLogsExporter)
+	logSink := new(consumertest.LogsSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()
@@ -112,8 +112,8 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	logSink := new(exportertest.SinkLogsExporter)
-	logSink.SetConsumeLogError(fmt.Errorf("error"))
+	logSink := new(consumertest.LogsSink)
+	logSink.SetConsumeError(fmt.Errorf("error"))
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, logSink)
 	defer doneFn()

@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
@@ -144,7 +143,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := new(consumertest.TracesSink)
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
@@ -206,7 +205,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := new(consumertest.TracesSink)
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
@@ -323,7 +322,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := new(consumertest.TracesSink)
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 

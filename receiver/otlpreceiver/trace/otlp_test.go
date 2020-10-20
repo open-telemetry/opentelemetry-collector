@@ -26,8 +26,8 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
@@ -40,7 +40,7 @@ var _ collectortrace.TraceServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	traceSink := new(exportertest.SinkTraceExporter)
+	traceSink := new(consumertest.TracesSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
@@ -100,7 +100,7 @@ func TestExport(t *testing.T) {
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	traceSink := new(exportertest.SinkTraceExporter)
+	traceSink := new(consumertest.TracesSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()
@@ -115,8 +115,8 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	traceSink := new(exportertest.SinkTraceExporter)
-	traceSink.SetConsumeTraceError(fmt.Errorf("error"))
+	traceSink := new(consumertest.TracesSink)
+	traceSink.SetConsumeError(fmt.Errorf("error"))
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
 	defer doneFn()

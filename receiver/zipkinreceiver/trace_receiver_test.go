@@ -44,7 +44,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -283,7 +282,7 @@ func TestStartTraceReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(consumertest.TracesSink)
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
 					NameVal: zipkinReceiverName,
