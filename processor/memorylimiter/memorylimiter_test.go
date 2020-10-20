@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor/memorylimiter/internal/iruntime"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -40,7 +39,7 @@ func TestNew(t *testing.T) {
 		memoryLimitMiB      uint32
 		memorySpikeLimitMiB uint32
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	tests := []struct {
 		name    string
 		args    args

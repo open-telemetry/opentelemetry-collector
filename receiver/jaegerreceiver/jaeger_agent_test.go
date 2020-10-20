@@ -37,8 +37,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
@@ -188,7 +188,7 @@ func TestJaegerHTTP(t *testing.T) {
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")

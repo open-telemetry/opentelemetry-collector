@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/testutil"
@@ -75,8 +75,8 @@ func TestTraceInvalidUrl(t *testing.T) {
 func TestTraceError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkTraceExporter)
-	sink.SetConsumeTraceError(errors.New("my_error"))
+	sink := new(consumertest.TracesSink)
+	sink.SetConsumeError(errors.New("my_error"))
 	startTraceReceiver(t, addr, sink)
 	exp := startTraceExporter(t, "", fmt.Sprintf("http://%s/v1/traces", addr))
 
@@ -111,7 +111,7 @@ func TestTraceRoundTrip(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(consumertest.TracesSink)
 			startTraceReceiver(t, addr, sink)
 			exp := startTraceExporter(t, test.baseURL, test.overrideURL)
 
@@ -130,8 +130,8 @@ func TestTraceRoundTrip(t *testing.T) {
 func TestMetricsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkMetricsExporter)
-	sink.SetConsumeMetricsError(errors.New("my_error"))
+	sink := new(consumertest.MetricsSink)
+	sink.SetConsumeError(errors.New("my_error"))
 	startMetricsReceiver(t, addr, sink)
 	exp := startMetricsExporter(t, "", fmt.Sprintf("http://%s/v1/metrics", addr))
 
@@ -166,7 +166,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			startMetricsReceiver(t, addr, sink)
 			exp := startMetricsExporter(t, test.baseURL, test.overrideURL)
 
@@ -185,8 +185,8 @@ func TestMetricsRoundTrip(t *testing.T) {
 func TestLogsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkLogsExporter)
-	sink.SetConsumeLogError(errors.New("my_error"))
+	sink := new(consumertest.LogsSink)
+	sink.SetConsumeError(errors.New("my_error"))
 	startLogsReceiver(t, addr, sink)
 	exp := startLogsExporter(t, "", fmt.Sprintf("http://%s/v1/logs", addr))
 
@@ -221,7 +221,7 @@ func TestLogsRoundTrip(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			startLogsReceiver(t, addr, sink)
 			exp := startLogsExporter(t, test.baseURL, test.overrideURL)
 

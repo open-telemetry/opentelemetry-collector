@@ -28,13 +28,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
@@ -74,7 +74,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 }
 
 func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 128
@@ -120,7 +120,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	view.Register(views...)
 	defer view.Unregister(views...)
 
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
@@ -177,7 +177,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 }
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
@@ -230,7 +230,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 		Timeout:       3 * time.Second,
 		SendBatchSize: 1000,
 	}
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchTracesProcessor(creationParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -259,7 +259,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 	requestCount := 100
 	metricsPerRequest := 5
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -310,7 +310,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 
 	requestCount := 100
 	metricsPerRequest := 5
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -365,7 +365,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 	requestCount := 5
 	metricsPerRequest := 10
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -412,7 +412,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	}
 	requestCount := 5
 	metricsPerRequest := 10
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchMetricsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -515,7 +515,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	requestCount := 100
 	logsPerRequest := 5
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -566,7 +566,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 
 	requestCount := 100
 	logsPerRequest := 5
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -621,7 +621,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	}
 	requestCount := 5
 	logsPerRequest := 10
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)
@@ -668,7 +668,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	}
 	requestCount := 5
 	logsPerRequest := 10
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 
 	createParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	batcher := newBatchLogsProcessor(createParams, sink, &cfg, configtelemetry.LevelDetailed)

@@ -49,7 +49,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -135,7 +134,7 @@ func TestReception(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: int(port), // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
@@ -169,7 +168,7 @@ func TestPortsNotOpen(t *testing.T) {
 	// an empty config should result in no open ports
 	config := &configuration{}
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
@@ -199,7 +198,7 @@ func TestGRPCReception(t *testing.T) {
 	config := &configuration{
 		CollectorGRPCPort: 14250, // that's the only one used by this test
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
@@ -257,7 +256,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		CollectorGRPCPort:    int(port),
 		CollectorGRPCOptions: grpcServerOptions,
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
@@ -397,7 +396,7 @@ func TestSampling(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "testdata/strategies.json",
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
@@ -450,7 +449,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	config := &configuration{
 		CollectorGRPCPort: int(port),
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
@@ -480,7 +479,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 		CollectorGRPCPort:          int(port),
 		RemoteSamplingStrategyFile: "does-not-exist",
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)

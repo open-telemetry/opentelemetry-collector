@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 type testInitialize struct {
@@ -187,7 +187,7 @@ func TestScrapeController(t *testing.T) {
 			options := configureMetricOptions(test, initializeChs, scrapeMetricsChs, scrapeResourceMetricsChs, closeChs)
 
 			var nextConsumer consumer.MetricsConsumer
-			sink := &exportertest.SinkMetricsExporter{}
+			sink := new(consumertest.MetricsSink)
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
@@ -343,7 +343,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		&exportertest.SinkMetricsExporter{},
+		new(consumertest.MetricsSink),
 		AddMetricsScraper(NewMetricsScraper(tsm.scrape)),
 		AddResourceMetricsScraper(NewResourceMetricsScraper(tsrm.scrape)),
 		WithTickerChannel(tickerCh),

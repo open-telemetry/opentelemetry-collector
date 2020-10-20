@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -50,11 +50,11 @@ func TestCreateReceiver(t *testing.T) {
 	config.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, new(exportertest.SinkTraceExporter))
+	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, new(consumertest.TracesSink))
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, new(exportertest.SinkMetricsExporter))
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, new(consumertest.MetricsSink))
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
@@ -130,7 +130,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(consumertest.TracesSink)
 			tr, err := factory.CreateTraceReceiver(ctx, creationParams, tt.cfg, sink)
 			assert.NoError(t, err)
 			require.NotNil(t, tr)
@@ -215,7 +215,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	creationParams := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			mr, err := factory.CreateMetricsReceiver(ctx, creationParams, tt.cfg, sink)
 			assert.NoError(t, err)
 			require.NotNil(t, mr)
@@ -261,7 +261,7 @@ func TestCreateLogReceiver(t *testing.T) {
 					HTTP: defaultHTTPSettings,
 				},
 			},
-			sink: new(exportertest.SinkLogsExporter),
+			sink: new(consumertest.LogsSink),
 		},
 		{
 			name: "invalid_grpc_address",
@@ -281,7 +281,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				},
 			},
 			wantStartErr: true,
-			sink:         new(exportertest.SinkLogsExporter),
+			sink:         new(consumertest.LogsSink),
 		},
 		{
 			name: "invalid_http_address",
@@ -298,7 +298,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				},
 			},
 			wantStartErr: true,
-			sink:         new(exportertest.SinkLogsExporter),
+			sink:         new(consumertest.LogsSink),
 		},
 		{
 			name: "no_next_consumer",
@@ -327,7 +327,7 @@ func TestCreateLogReceiver(t *testing.T) {
 				Protocols: Protocols{},
 			},
 			wantErr: false,
-			sink:    new(exportertest.SinkLogsExporter),
+			sink:    new(consumertest.LogsSink),
 		},
 	}
 	ctx := context.Background()

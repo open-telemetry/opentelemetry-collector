@@ -46,7 +46,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -59,7 +58,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	ocr, err := newOpenCensusReceiver(ocReceiverName, "tcp", addr, sink, nil)
 	require.NoError(t, err, "Failed to create trace receiver: %v", err)
 
@@ -433,7 +432,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(exportertest.SinkTraceExporter)
+				sink := new(consumertest.TracesSink)
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
@@ -452,9 +451,9 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				for _, ingestionState := range tt.ingestionStates {
 					if ingestionState.okToIngest {
-						sink.SetConsumeTraceError(nil)
+						sink.SetConsumeError(nil)
 					} else {
-						sink.SetConsumeTraceError(fmt.Errorf("%q: consumer error", tt.name))
+						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
 					}
 
 					err = exporter.exportFn(t, cc, msg)
@@ -582,7 +581,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(exportertest.SinkMetricsExporter)
+				sink := new(consumertest.MetricsSink)
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver(exporter.receiverTag, "tcp", addr, nil, nil, opts...)
@@ -601,9 +600,9 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 				for _, ingestionState := range tt.ingestionStates {
 					if ingestionState.okToIngest {
-						sink.SetConsumeMetricsError(nil)
+						sink.SetConsumeError(nil)
 					} else {
-						sink.SetConsumeMetricsError(fmt.Errorf("%q: consumer error", tt.name))
+						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
 					}
 
 					err = exporter.exportFn(t, cc, msg)

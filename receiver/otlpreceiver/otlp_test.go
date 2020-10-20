@@ -44,8 +44,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -154,7 +154,7 @@ func TestJsonHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	ocr := newHTTPReceiver(t, addr, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
@@ -181,7 +181,7 @@ func TestJsonHttp(t *testing.T) {
 	}
 }
 
-func testHTTPJSONRequest(t *testing.T, url string, sink *exportertest.SinkTraceExporter, encoding string, expectedErr error) {
+func testHTTPJSONRequest(t *testing.T, url string, sink *consumertest.TracesSink, encoding string, expectedErr error) {
 	var buf *bytes.Buffer
 	var err error
 	switch encoding {
@@ -191,7 +191,7 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *exportertest.SinkTraceE
 	default:
 		buf = bytes.NewBuffer(traceJSON)
 	}
-	sink.SetConsumeTraceError(expectedErr)
+	sink.SetConsumeError(expectedErr)
 	req, err := http.NewRequest("POST", url, buf)
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
@@ -332,8 +332,8 @@ func TestProtoHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := new(exportertest.SinkTraceExporter)
-	mSink := new(exportertest.SinkMetricsExporter)
+	tSink := new(consumertest.TracesSink)
+	mSink := new(consumertest.MetricsSink)
 	ocr := newHTTPReceiver(t, addr, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
@@ -368,11 +368,10 @@ func TestProtoHttp(t *testing.T) {
 		}
 	}
 }
-
 func testHTTPProtobufRequest(
 	t *testing.T,
 	url string,
-	tSink *exportertest.SinkTraceExporter,
+	tSink *consumertest.TracesSink,
 	encoding string,
 	traceBytes []byte,
 	expectedErr error,
@@ -387,7 +386,7 @@ func testHTTPProtobufRequest(
 	default:
 		buf = bytes.NewBuffer(traceBytes)
 	}
-	tSink.SetConsumeTraceError(expectedErr)
+	tSink.SetConsumeError(expectedErr)
 	req, err := http.NewRequest("POST", url, buf)
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/x-protobuf")
@@ -478,8 +477,8 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := new(exportertest.SinkTraceExporter)
-	mSink := new(exportertest.SinkMetricsExporter)
+	tSink := new(consumertest.TracesSink)
+	mSink := new(consumertest.MetricsSink)
 	ocr := newHTTPReceiver(t, addr, tSink, mSink)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
@@ -523,7 +522,7 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newGRPCReceiver(t, otlpReceiverName, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newGRPCReceiver(t, otlpReceiverName, addr, new(consumertest.TracesSink), new(consumertest.MetricsSink))
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -535,7 +534,7 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
 	defer ln.Close()
 
-	r := newHTTPReceiver(t, addr, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newHTTPReceiver(t, addr, new(consumertest.TracesSink), new(consumertest.MetricsSink))
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -645,7 +644,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(exportertest.SinkTraceExporter)
+				sink := new(consumertest.TracesSink)
 
 				ocr := newGRPCReceiver(t, exporter.receiverTag, addr, sink, nil)
 				require.NotNil(t, ocr)
@@ -658,9 +657,9 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				for _, ingestionState := range tt.ingestionStates {
 					if ingestionState.okToIngest {
-						sink.SetConsumeTraceError(nil)
+						sink.SetConsumeError(nil)
 					} else {
-						sink.SetConsumeTraceError(fmt.Errorf("%q: consumer error", tt.name))
+						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
 					}
 
 					err = exporter.exportFn(t, cc, req)
@@ -722,7 +721,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Start for HTTP.
-	r := newReceiver(t, NewFactory(), cfg, new(exportertest.SinkTraceExporter), new(exportertest.SinkMetricsExporter))
+	r := newReceiver(t, NewFactory(), cfg, new(consumertest.TracesSink), new(consumertest.MetricsSink))
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }

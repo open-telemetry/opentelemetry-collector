@@ -39,7 +39,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -954,7 +954,7 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(exportertest.SinkMetricsExporter)
+	cms := new(consumertest.MetricsSink)
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
@@ -1041,7 +1041,7 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	require.Nilf(t, err, "Failed to create Promtheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(exportertest.SinkMetricsExporter)
+	cms := new(consumertest.MetricsSink)
 	rcvr := newPrometheusReceiver(logger, &Config{PrometheusConfig: cfg, UseStartTimeMetric: useStartTimeMetric, StartTimeMetricRegex: startTimeMetricRegex}, cms)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
