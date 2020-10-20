@@ -62,6 +62,7 @@ func TestDefaultComponents(t *testing.T) {
 		"jaeger",
 		"file",
 		"otlp",
+		"otlphttp",
 		"kafka",
 	}
 

@@ -70,6 +70,15 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 60,
 			},
 		},
+		{
+			"OTLP-HTTP",
+			testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 50,
+				ExpectedMaxRAM: 60,
+			},
+		},
 	}
 
 	for _, test := range tests {

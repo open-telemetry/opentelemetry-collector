@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 )
@@ -57,7 +58,7 @@ type DataSender interface {
 	// so that it can receive data from this sender.
 	GenConfigYAMLStr() string
 
-	// Return protocol name to use in collector config pipeline.
+	// Return exporterType name to use in collector config pipeline.
 	ProtocolName() string
 }
 
@@ -113,7 +114,7 @@ func (dsb *DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
-// JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http protocol.
+// JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http exporterType.
 type JaegerGRPCDataSender struct {
 	DataSenderBase
 	consumer.TracesConsumer
@@ -122,7 +123,7 @@ type JaegerGRPCDataSender struct {
 // Ensure JaegerGRPCDataSender implements TraceDataSender.
 var _ TraceDataSender = (*JaegerGRPCDataSender)(nil)
 
-// NewJaegerGRPCDataSender creates a new Jaeger protocol sender that will send
+// NewJaegerGRPCDataSender creates a new Jaeger exporterType sender that will send
 // to the specified port after Start is called.
 func NewJaegerGRPCDataSender(host string, port int) *JaegerGRPCDataSender {
 	return &JaegerGRPCDataSender{
@@ -142,13 +143,13 @@ func (je *JaegerGRPCDataSender) Start() error {
 		Insecure: true,
 	}
 
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	je.TracesConsumer = exporter
-	return exporter.Start(context.Background(), je)
+	je.TracesConsumer = exp
+	return exp.Start(context.Background(), je)
 }
 
 func (je *JaegerGRPCDataSender) GenConfigYAMLStr() string {
@@ -186,7 +187,7 @@ func (ods *ocDataSender) ProtocolName() string {
 	return "opencensus"
 }
 
-// OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
+// OCTraceDataSender implements TraceDataSender for OpenCensus trace exporterType.
 type OCTraceDataSender struct {
 	ocDataSender
 	consumer.TracesConsumer
@@ -211,16 +212,16 @@ func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
 func (ote *OCTraceDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ote.TracesConsumer = exporter
-	return exporter.Start(context.Background(), ote)
+	ote.TracesConsumer = exp
+	return exp.Start(context.Background(), ote)
 }
 
-// OCMetricsDataSender implements MetricDataSender for OpenCensus metrics protocol.
+// OCMetricsDataSender implements MetricDataSender for OpenCensus metrics exporterType.
 type OCMetricsDataSender struct {
 	ocDataSender
 	consumer.MetricsConsumer
@@ -229,7 +230,7 @@ type OCMetricsDataSender struct {
 // Ensure OCMetricsDataSender implements MetricDataSender.
 var _ MetricDataSender = (*OCMetricsDataSender)(nil)
 
-// NewOCMetricDataSender creates a new OpenCensus metric protocol sender that will send
+// NewOCMetricDataSender creates a new OpenCensus metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 	return &OCMetricsDataSender{
@@ -245,13 +246,143 @@ func NewOCMetricDataSender(host string, port int) *OCMetricsDataSender {
 func (ome *OCMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ome.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), ome)
+	ome.MetricsConsumer = exp
+	return exp.Start(context.Background(), ome)
+}
+
+type otlpHTTPDataSender struct {
+	DataSenderBase
+}
+
+func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
+	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
+	// Disable retries, we should push data and if error just log it.
+	cfg.RetrySettings.Enabled = false
+	// Disable sending queue, we should push data from the caller goroutine.
+	cfg.QueueSettings.Enabled = false
+	cfg.TLSSetting = configtls.TLSClientSetting{
+		Insecure: true,
+	}
+	return cfg
+}
+
+func (ods *otlpHTTPDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  otlp:
+    protocols:
+      http:
+        endpoint: "%s"`, ods.GetEndpoint())
+}
+
+func (ods *otlpHTTPDataSender) ProtocolName() string {
+	return "otlp"
+}
+
+// OTLPHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace exporterType.
+type OTLPHTTPTraceDataSender struct {
+	otlpHTTPDataSender
+	consumer.TracesConsumer
+}
+
+// Ensure OTLPHTTPTraceDataSender implements TraceDataSender.
+var _ TraceDataSender = (*OTLPHTTPTraceDataSender)(nil)
+
+// NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporterType.
+func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender {
+	return &OTLPHTTPTraceDataSender{
+		otlpHTTPDataSender: otlpHTTPDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (ote *OTLPHTTPTraceDataSender) Start() error {
+	factory := otlphttpexporter.NewFactory()
+	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	ote.TracesConsumer = exp
+	return exp.Start(context.Background(), ote)
+}
+
+// OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics exporterType.
+type OTLPHTTPMetricsDataSender struct {
+	otlpHTTPDataSender
+	consumer.MetricsConsumer
+}
+
+// Ensure OTLPHTTPMetricsDataSender implements MetricDataSender.
+var _ MetricDataSender = (*OTLPHTTPMetricsDataSender)(nil)
+
+// NewOTLPHTTPMetricDataSender creates a new OTLP/HTTP metric exporterType sender that will send
+// to the specified port after Start is called.
+func NewOTLPHTTPMetricDataSender(host string, port int) *OTLPHTTPMetricsDataSender {
+	return &OTLPHTTPMetricsDataSender{
+		otlpHTTPDataSender: otlpHTTPDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (ome *OTLPHTTPMetricsDataSender) Start() error {
+	factory := otlphttpexporter.NewFactory()
+	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	ome.MetricsConsumer = exp
+	return exp.Start(context.Background(), ome)
+}
+
+// OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs exporterType.
+type OTLPHTTPLogsDataSender struct {
+	otlpHTTPDataSender
+	consumer.LogsConsumer
+}
+
+// Ensure OTLPHTTPLogsDataSender implements MetricDataSender.
+var _ LogDataSender = (*OTLPHTTPLogsDataSender)(nil)
+
+// NewOTLPMetricDataSender creates a new OTLP/HTTP metric exporterType sender that will send
+// to the specified port after Start is called.
+func NewOTLPHTTPLogsDataSender(host string, port int) *OTLPHTTPLogsDataSender {
+	return &OTLPHTTPLogsDataSender{
+		otlpHTTPDataSender: otlpHTTPDataSender{
+			DataSenderBase: DataSenderBase{
+				Port: port,
+				Host: host,
+			},
+		},
+	}
+}
+
+func (olds *OTLPHTTPLogsDataSender) Start() error {
+	factory := otlphttpexporter.NewFactory()
+	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
+	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	if err != nil {
+		return err
+	}
+
+	olds.LogsConsumer = exp
+	return exp.Start(context.Background(), olds)
 }
 
 type otlpDataSender struct {
@@ -283,7 +414,7 @@ func (ods *otlpDataSender) ProtocolName() string {
 	return "otlp"
 }
 
-// OTLPTraceDataSender implements TraceDataSender for OTLP trace protocol.
+// OTLPTraceDataSender implements TraceDataSender for OTLP trace exporterType.
 type OTLPTraceDataSender struct {
 	otlpDataSender
 	consumer.TracesConsumer
@@ -292,7 +423,7 @@ type OTLPTraceDataSender struct {
 // Ensure OTLPTraceDataSender implements TraceDataSender.
 var _ TraceDataSender = (*OTLPTraceDataSender)(nil)
 
-// NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces protocol.
+// NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces exporterType.
 func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 	return &OTLPTraceDataSender{
 		otlpDataSender: otlpDataSender{
@@ -307,16 +438,16 @@ func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 func (ote *OTLPTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ote.TracesConsumer = exporter
-	return exporter.Start(context.Background(), ote)
+	ote.TracesConsumer = exp
+	return exp.Start(context.Background(), ote)
 }
 
-// OTLPMetricsDataSender implements MetricDataSender for OTLP metrics protocol.
+// OTLPMetricsDataSender implements MetricDataSender for OTLP metrics exporterType.
 type OTLPMetricsDataSender struct {
 	otlpDataSender
 	consumer.MetricsConsumer
@@ -325,7 +456,7 @@ type OTLPMetricsDataSender struct {
 // Ensure OTLPMetricsDataSender implements MetricDataSender.
 var _ MetricDataSender = (*OTLPMetricsDataSender)(nil)
 
-// NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
+// NewOTLPMetricDataSender creates a new OTLP metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 	return &OTLPMetricsDataSender{
@@ -341,25 +472,25 @@ func NewOTLPMetricDataSender(host string, port int) *OTLPMetricsDataSender {
 func (ome *OTLPMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	ome.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), ome)
+	ome.MetricsConsumer = exp
+	return exp.Start(context.Background(), ome)
 }
 
-// OTLPLogsDataSender implements LogsDataSender for OTLP logs protocol.
+// OTLPLogsDataSender implements LogsDataSender for OTLP logs exporterType.
 type OTLPLogsDataSender struct {
 	otlpDataSender
 	consumer.LogsConsumer
 }
 
-// Ensure OTLPMetricsDataSender implements MetricDataSender.
+// Ensure OTLPLogsDataSender implements LogDataSender.
 var _ LogDataSender = (*OTLPLogsDataSender)(nil)
 
-// NewOTLPMetricDataSender creates a new OTLP metric protocol sender that will send
+// NewOTLPMetricDataSender creates a new OTLP metric exporterType sender that will send
 // to the specified port after Start is called.
 func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
 	return &OTLPLogsDataSender{
@@ -375,16 +506,16 @@ func NewOTLPLogsDataSender(host string, port int) *OTLPLogsDataSender {
 func (olds *OTLPLogsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exporter, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	olds.LogsConsumer = exporter
-	return exporter.Start(context.Background(), olds)
+	olds.LogsConsumer = exp
+	return exp.Start(context.Background(), olds)
 }
 
-// ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
+// ZipkinDataSender implements TraceDataSender for Zipkin http exporterType.
 type ZipkinDataSender struct {
 	DataSenderBase
 	consumer.TracesConsumer
@@ -393,7 +524,7 @@ type ZipkinDataSender struct {
 // Ensure ZipkinDataSender implements TraceDataSender.
 var _ TraceDataSender = (*ZipkinDataSender)(nil)
 
-// NewZipkinDataSender creates a new Zipkin protocol sender that will send
+// NewZipkinDataSender creates a new Zipkin exporterType sender that will send
 // to the specified port after Start is called.
 func NewZipkinDataSender(host string, port int) *ZipkinDataSender {
 	return &ZipkinDataSender{
@@ -413,13 +544,13 @@ func (zs *ZipkinDataSender) Start() error {
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
 
-	exporter, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	zs.TracesConsumer = exporter
-	return exporter.Start(context.Background(), zs)
+	zs.TracesConsumer = exp
+	return exp.Start(context.Background(), zs)
 }
 
 func (zs *ZipkinDataSender) GenConfigYAMLStr() string {
@@ -457,13 +588,13 @@ func (pds *PrometheusDataSender) Start() error {
 	cfg.Endpoint = pds.GetEndpoint()
 	cfg.Namespace = pds.namespace
 
-	exporter, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
 
-	pds.MetricsConsumer = exporter
-	return exporter.Start(context.Background(), pds)
+	pds.MetricsConsumer = exp
+	return exp.Start(context.Background(), pds)
 }
 
 func (pds *PrometheusDataSender) GenConfigYAMLStr() string {

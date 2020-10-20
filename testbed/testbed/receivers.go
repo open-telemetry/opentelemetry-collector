@@ -50,7 +50,7 @@ type DataReceiver interface {
 	// so that it can send data to this receiver.
 	GenConfigYAMLStr() string
 
-	// Return protocol name to use in collector config pipeline.
+	// Return exporterType name to use in collector config pipeline.
 	ProtocolName() string
 }
 
@@ -186,72 +186,92 @@ func (jr *JaegerDataReceiver) ProtocolName() string {
 	return "jaeger"
 }
 
-// OTLPDataReceiver implements OTLP format receiver.
-type OTLPDataReceiver struct {
+// baseOTLPDataReceiver implements the OTLP format receiver.
+type baseOTLPDataReceiver struct {
 	DataReceiverBase
+	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
+	exporterType    string
 	traceReceiver   component.TraceReceiver
 	metricsReceiver component.MetricsReceiver
 	logReceiver     component.LogsReceiver
 }
 
-// Ensure OTLPDataReceiver implements DataReceiver.
-var _ DataReceiver = (*OTLPDataReceiver)(nil)
+func (bor *baseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
+	factory := otlpreceiver.NewFactory()
+	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
+	cfg.SetName(bor.exporterType)
+	if bor.exporterType == "otlp" {
+		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", bor.Port), Transport: "tcp"}
+		cfg.HTTP = nil
+	} else {
+		cfg.HTTP.Endpoint = fmt.Sprintf("localhost:%d", bor.Port)
+		cfg.GRPC = nil
+	}
+	var err error
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	if bor.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
+		return err
+	}
+	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
+		return err
+	}
+	if bor.logReceiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, lc); err != nil {
+		return err
+	}
+
+	if err = bor.traceReceiver.Start(context.Background(), bor); err != nil {
+		return err
+	}
+	if err = bor.metricsReceiver.Start(context.Background(), bor); err != nil {
+		return err
+	}
+	return bor.logReceiver.Start(context.Background(), bor)
+}
+
+func (bor *baseOTLPDataReceiver) Stop() error {
+	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
+		return err
+	}
+	if err := bor.metricsReceiver.Shutdown(context.Background()); err != nil {
+		return err
+	}
+	return bor.logReceiver.Shutdown(context.Background())
+}
+
+func (bor *baseOTLPDataReceiver) ProtocolName() string {
+	return bor.exporterType
+}
+
+func (bor *baseOTLPDataReceiver) GenConfigYAMLStr() string {
+	addr := fmt.Sprintf("localhost:%d", bor.Port)
+	if bor.exporterType == "otlphttp" {
+		addr = "http://" + addr
+	}
+	// Note that this generates an exporter config for agent.
+	return fmt.Sprintf(`
+  %s:
+    endpoint: "%s"
+    insecure: true`, bor.exporterType, addr)
+}
 
 const DefaultOTLPPort = 55680
 
-// NewOTLPDataReceiver creates a new OTLPDataReceiver that will listen on the specified port after Start
+// NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPDataReceiver(port int) *OTLPDataReceiver {
-	return &OTLPDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+func NewOTLPDataReceiver(port int) DataReceiver {
+	return &baseOTLPDataReceiver{
+		DataReceiverBase: DataReceiverBase{Port: port},
+		exporterType:     "otlp",
+	}
 }
 
-func (or *OTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
-	factory := otlpreceiver.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.SetName(or.ProtocolName())
-	cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
-	cfg.HTTP = nil
-	var err error
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
-		return err
+// NewOTLPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
+// is called.
+func NewOTLPHTTPDataReceiver(port int) DataReceiver {
+	return &baseOTLPDataReceiver{
+		DataReceiverBase: DataReceiverBase{Port: port},
+		exporterType:     "otlphttp",
 	}
-	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
-		return err
-	}
-	if or.logReceiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, lc); err != nil {
-		return err
-	}
-
-	if err = or.traceReceiver.Start(context.Background(), or); err != nil {
-		return err
-	}
-	if err = or.metricsReceiver.Start(context.Background(), or); err != nil {
-		return err
-	}
-	return or.logReceiver.Start(context.Background(), or)
-}
-
-func (or *OTLPDataReceiver) Stop() error {
-	if err := or.traceReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	if err := or.metricsReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (or *OTLPDataReceiver) GenConfigYAMLStr() string {
-	// Note that this generates an exporter config for agent.
-	return fmt.Sprintf(`
-  otlp:
-    endpoint: "localhost:%d"
-    insecure: true`, or.Port)
-}
-
-func (or *OTLPDataReceiver) ProtocolName() string {
-	return "otlp"
 }
 
 // ZipkinDataReceiver implements Zipkin format receiver.

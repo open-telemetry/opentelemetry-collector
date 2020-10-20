@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🚀 New components 🚀
+
+- `otlphttp` exporter which implements OTLP over HTTP protocol.
+
 ## 🛑 Breaking changes 🛑
 
 - Rename consumer.TraceConsumer to consumer.TracesConsumer #1974
