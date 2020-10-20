@@ -33,7 +33,7 @@ import (
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
 //
-// batch_processor implements consumer.TraceConsumer and consumer.MetricsConsumer
+// batch_processor implements consumer.TracesConsumer and consumer.MetricsConsumer
 //
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.SendBatchSize
@@ -70,7 +70,7 @@ type batch interface {
 	add(item interface{})
 }
 
-var _ consumer.TraceConsumer = (*batchProcessor)(nil)
+var _ consumer.TracesConsumer = (*batchProcessor)(nil)
 var _ consumer.MetricsConsumer = (*batchProcessor)(nil)
 var _ consumer.LogsConsumer = (*batchProcessor)(nil)
 
@@ -188,7 +188,7 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TraceConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TracesConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchTraces(trace), telemetryLevel)
 }
 
@@ -203,12 +203,12 @@ func newBatchLogsProcessor(params component.ProcessorCreateParams, logs consumer
 }
 
 type batchTraces struct {
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TracesConsumer
 	traceData    pdata.Traces
 	spanCount    uint32
 }
 
-func newBatchTraces(nextConsumer consumer.TraceConsumer) *batchTraces {
+func newBatchTraces(nextConsumer consumer.TracesConsumer) *batchTraces {
 	b := &batchTraces{nextConsumer: nextConsumer}
 	b.reset()
 	return b

@@ -154,7 +154,7 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 	}
 }
 
-var _ consumer.TraceConsumer = (*MockTraceConsumer)(nil)
+var _ consumer.TracesConsumer = (*MockTraceConsumer)(nil)
 
 func (mb *MockBackend) ConsumeLogs(ld pdata.Logs) {
 	mb.recordMutex.Lock()

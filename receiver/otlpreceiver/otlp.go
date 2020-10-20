@@ -142,7 +142,7 @@ func (r *otlpReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TraceConsumer) error {
+func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TracesConsumer) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}

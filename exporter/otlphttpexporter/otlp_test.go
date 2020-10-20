@@ -275,7 +275,7 @@ func createExporterConfig(baseURL string, defaultCfg configmodels.Exporter) *Con
 	return cfg
 }
 
-func startTraceReceiver(t *testing.T, addr string, next consumer.TraceConsumer) {
+func startTraceReceiver(t *testing.T, addr string, next consumer.TracesConsumer) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
 	recv, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, next)

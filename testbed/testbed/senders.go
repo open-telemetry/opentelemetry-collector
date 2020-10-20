@@ -65,7 +65,7 @@ type DataSender interface {
 // to send a batch of Spans to the DataSender interface.
 type TraceDataSender interface {
 	DataSender
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // MetricDataSender defines the interface that allows sending metric data. It adds ability
@@ -116,7 +116,7 @@ func (dsb *DataSenderBase) Flush() {
 // JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http protocol.
 type JaegerGRPCDataSender struct {
 	DataSenderBase
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // Ensure JaegerGRPCDataSender implements TraceDataSender.
@@ -145,7 +145,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 		return err
 	}
 
-	je.TraceConsumer = exporter
+	je.TracesConsumer = exporter
 	return exporter.Start(context.Background(), je)
 }
 
@@ -187,7 +187,7 @@ func (ods *ocDataSender) ProtocolName() string {
 // OCTraceDataSender implements TraceDataSender for OpenCensus trace protocol.
 type OCTraceDataSender struct {
 	ocDataSender
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // Ensure OCTraceDataSender implements TraceDataSender.
@@ -214,7 +214,7 @@ func (ote *OCTraceDataSender) Start() error {
 		return err
 	}
 
-	ote.TraceConsumer = exporter
+	ote.TracesConsumer = exporter
 	return exporter.Start(context.Background(), ote)
 }
 
@@ -280,7 +280,7 @@ func (ods *otlpDataSender) ProtocolName() string {
 // OTLPTraceDataSender implements TraceDataSender for OTLP trace protocol.
 type OTLPTraceDataSender struct {
 	otlpDataSender
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // Ensure OTLPTraceDataSender implements TraceDataSender.
@@ -306,7 +306,7 @@ func (ote *OTLPTraceDataSender) Start() error {
 		return err
 	}
 
-	ote.TraceConsumer = exporter
+	ote.TracesConsumer = exporter
 	return exporter.Start(context.Background(), ote)
 }
 
@@ -381,7 +381,7 @@ func (olds *OTLPLogsDataSender) Start() error {
 // ZipkinDataSender implements TraceDataSender for Zipkin http protocol.
 type ZipkinDataSender struct {
 	DataSenderBase
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // Ensure ZipkinDataSender implements TraceDataSender.
@@ -408,7 +408,7 @@ func (zs *ZipkinDataSender) Start() error {
 		return err
 	}
 
-	zs.TraceConsumer = exporter
+	zs.TracesConsumer = exporter
 	return exporter.Start(context.Background(), zs)
 }
 

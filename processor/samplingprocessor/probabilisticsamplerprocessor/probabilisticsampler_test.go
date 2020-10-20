@@ -34,7 +34,7 @@ import (
 func TestNewTraceProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
-		nextConsumer consumer.TraceConsumer
+		nextConsumer consumer.TracesConsumer
 		cfg          Config
 		want         component.TraceProcessor
 		wantErr      bool

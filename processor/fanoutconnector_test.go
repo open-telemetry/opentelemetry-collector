@@ -28,12 +28,12 @@ import (
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewTracesNop()
-	tfc := NewTracesFanOutConnector([]consumer.TraceConsumer{nop})
+	tfc := NewTracesFanOutConnector([]consumer.TracesConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
 
 func TestTracesProcessorMultiplexing(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TracesConsumer, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)
 	}
@@ -59,7 +59,7 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 }
 
 func TestTraceProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TracesConsumer, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)
 	}

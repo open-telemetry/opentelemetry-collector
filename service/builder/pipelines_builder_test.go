@@ -241,7 +241,7 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	}
 
 	td := testdata.GenerateTraceDataOneSpan()
-	processor.firstTC.(consumer.TraceConsumer).ConsumeTraces(context.Background(), td)
+	processor.firstTC.(consumer.TracesConsumer).ConsumeTraces(context.Background(), td)
 
 	// Now verify received data.
 	for _, consumer := range exporterConsumers {

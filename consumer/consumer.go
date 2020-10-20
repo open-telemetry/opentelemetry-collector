@@ -27,9 +27,9 @@ type MetricsConsumer interface {
 	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
 }
 
-// TraceConsumer is an interface that receives pdata.Traces, processes it
+// TracesConsumer is an interface that receives pdata.Traces, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type TraceConsumer interface {
+type TracesConsumer interface {
 	// ConsumeTraces receives pdata.Traces for processing.
 	ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }

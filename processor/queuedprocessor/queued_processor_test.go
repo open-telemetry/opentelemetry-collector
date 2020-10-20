@@ -373,7 +373,7 @@ type mockConcurrentSpanProcessor struct {
 	stopped           int32
 }
 
-var _ consumer.TraceConsumer = (*mockConcurrentSpanProcessor)(nil)
+var _ consumer.TracesConsumer = (*mockConcurrentSpanProcessor)(nil)
 var _ consumer.MetricsConsumer = (*mockConcurrentSpanProcessor)(nil)
 
 func newMockConcurrentSpanProcessor() *mockConcurrentSpanProcessor {

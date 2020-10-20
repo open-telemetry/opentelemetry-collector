@@ -60,7 +60,7 @@ func WithLogs(createLogsReceiver CreateLogsReceiver) FactoryOption {
 type CreateDefaultConfig func() configmodels.Receiver
 
 // CreateTraceReceiver is the equivalent of component.ReceiverFactory.CreateTraceReceiver()
-type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.TraceConsumer) (component.TraceReceiver, error)
+type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.TracesConsumer) (component.TraceReceiver, error)
 
 // CreateMetricsReceiver is the equivalent of component.ReceiverFactory.CreateMetricsReceiver()
 type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (component.MetricsReceiver, error)
@@ -113,7 +113,7 @@ func (f *factory) CreateTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer) (component.TraceReceiver, error) {
+	nextConsumer consumer.TracesConsumer) (component.TraceReceiver, error) {
 	if f.createTraceReceiver != nil {
 		return f.createTraceReceiver(ctx, params, cfg, nextConsumer)
 	}
