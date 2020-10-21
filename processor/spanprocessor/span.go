@@ -246,7 +246,7 @@ func (sp *spanProcessor) processReplaceChars(span pdata.Span) {
 	for i := 0; i < len(sp.config.Rename.ReplaceChars); i++ {
 		fromChar := sp.config.Rename.ReplaceChars[i].FromChar
 		toChar := sp.config.Rename.ReplaceChars[i].ToChar
-		name = strings.Replace(name, fromChar, toChar, -1)
+		name = strings.ReplaceAll(name, fromChar, toChar)
 	}
 
 	span.SetName(name)
