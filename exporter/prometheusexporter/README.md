@@ -10,6 +10,8 @@ The following settings can be optionally configured:
 
 - `constlabels` (no default): key/values that are applied for every exported metric.
 - `namespace` (no default): if set, exports metrics under the provided value.
+- `send_timestamps` (default false): if true, sends the timestamp of the underlying
+  metric sample in the response.
 
 Example:
 
@@ -21,6 +23,7 @@ exporters:
     const_labels:
       label1: value1
       "another label": spaced value
+    send_timestamps: true
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
