@@ -20,9 +20,7 @@ import (
 
 func createConfig(filters []string, matchType filterset.MatchType) *MatchProperties {
 	return &MatchProperties{
-		Config: filterset.Config{
-			MatchType: matchType,
-		},
+		MatchType:   MatchType(matchType),
 		MetricNames: filters,
 	}
 }
