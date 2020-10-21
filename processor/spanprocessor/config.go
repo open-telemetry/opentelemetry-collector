@@ -62,6 +62,7 @@ type Name struct {
 	ReplaceChars []*ReplaceChar `mapstructure:"replace_chars"`
 }
 
+// ToAttributes specifies rules to extract attribute values from span name.
 type ToAttributes struct {
 	// Rules is a list of rules to extract attribute values from span name. The values
 	// in the span name are replaced by extracted attribute names. Each rule in the list
