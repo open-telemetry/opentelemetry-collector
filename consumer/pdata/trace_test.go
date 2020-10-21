@@ -142,6 +142,20 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	assert.EqualValues(t, *pdataRS.orig, &gogoprotoRS2)
 }
 
+func TestTracesToOtlpProtoBytesWithNilValues(t *testing.T) {
+	send := NewTraces()
+	fillTestResourceSpansSlice(send.ResourceSpans())
+	send.ResourceSpans().At(0).InstrumentationLibrarySpans().Append(NewInstrumentationLibrarySpans())
+
+	bytes, err := send.ToOtlpProtoBytes()
+	assert.NoError(t, err)
+
+	recv := NewTraces()
+	err = recv.FromOtlpProtoBytes(bytes)
+	assert.NoError(t, err)
+	assert.EqualValues(t, send, recv)
+}
+
 func TestTracesToFromOtlpProtoBytes(t *testing.T) {
 	send := NewTraces()
 	fillTestResourceSpansSlice(send.ResourceSpans())
