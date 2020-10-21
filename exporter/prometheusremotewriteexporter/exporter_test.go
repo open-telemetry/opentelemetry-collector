@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/version"
 )
 
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
@@ -143,6 +144,7 @@ func Test_export(t *testing.T) {
 		// Receives the http requests and unzip, unmarshals, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
+		assert.Equal(t, "OpenTelemetry-Collector/"+version.Version, r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
 		unzipped := []byte{}
 
@@ -437,6 +439,7 @@ func Test_PushMetrics(t *testing.T) {
 		dest, err := snappy.Decode(buf, body)
 		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
+		assert.Equal(t, "OpenTelemetry-Collector/"+version.Version, r.Header.Get("user-agent"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
