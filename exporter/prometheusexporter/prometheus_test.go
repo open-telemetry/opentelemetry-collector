@@ -42,10 +42,11 @@ func TestPrometheusExporter(t *testing.T) {
 			config: &Config{
 				Namespace: "test",
 				ConstLabels: map[string]string{
-					"foo":  "bar",
-					"code": "one",
+					"foo0":  "bar0",
+					"code0": "one0",
 				},
-				Endpoint: ":8999",
+				Endpoint:       ":8999",
+				SendTimestamps: false,
 			},
 		},
 		{
@@ -80,8 +81,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	config := &Config{
 		Namespace: "test",
 		ConstLabels: map[string]string{
-			"foo":  "bar",
-			"code": "one",
+			"foo1":  "bar1",
+			"code1": "one1",
 		},
 		Endpoint: ":7777",
 	}
@@ -93,6 +94,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
+		// trigger a get so that the server cleans up our keepalive socket
+		http.Get("http://localhost:7777/metrics")
 	})
 
 	assert.NotNil(t, exp)
@@ -112,8 +115,59 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		want := []string{
 			`# HELP test_this_one_there_where_ Extra ones`,
 			`# TYPE test_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code="one",foo="bar",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code="one",foo="bar",os="linux"} %v`, 100+delta),
+			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
+		}
+
+		for _, w := range want {
+			if !strings.Contains(string(blob), w) {
+				t.Errorf("Missing %v from response:\n%v", w, string(blob))
+			}
+		}
+	}
+}
+
+func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
+	config := &Config{
+		Namespace: "test",
+		ConstLabels: map[string]string{
+			"foo2":  "bar2",
+			"code2": "one2",
+		},
+		Endpoint:       ":7777",
+		SendTimestamps: true,
+	}
+
+	factory := NewFactory()
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateMetricsExporter(context.Background(), creationParams, config)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+		// trigger a get so that the server cleans up our keepalive socket
+		http.Get("http://localhost:7777/metrics")
+	})
+
+	assert.NotNil(t, exp)
+
+	for delta := 0; delta <= 20; delta += 10 {
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
+		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
+		res, err := http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err, "Failed to perform a scrape")
+
+		if g, w := res.StatusCode, 200; g != w {
+			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
+		}
+		blob, _ := ioutil.ReadAll(res.Body)
+		_ = res.Body.Close()
+		want := []string{
+			`# HELP test_this_one_there_where_ Extra ones`,
+			`# TYPE test_this_one_there_where_ counter`,
+			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100),
+			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {

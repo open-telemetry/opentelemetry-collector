@@ -32,4 +32,7 @@ type Config struct {
 
 	// ConstLabels are values that are applied for every exported metric.
 	ConstLabels prometheus.Labels `mapstructure:"const_labels"`
+
+	// SendTimestamps will send the underlying scrape timestamp with the export
+	SendTimestamps bool `mapstructure:"send_timestamps"`
 }

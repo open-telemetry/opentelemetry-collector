@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
 	fsregexp "go.opentelemetry.io/collector/internal/processor/filterset/regexp"
 )
 
@@ -38,9 +37,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 	}
 
 	testDataMetricProperties := &filtermetric.MatchProperties{
-		Config: filterset.Config{
-			MatchType: filterset.Strict,
-		},
+		MatchType:   filtermetric.Strict,
 		MetricNames: testDataFilters,
 	}
 
@@ -67,9 +64,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 				},
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
-						Config: filterset.Config{
-							MatchType: filterset.Strict,
-						},
+						MatchType: filtermetric.Strict,
 					},
 				},
 			},
@@ -105,9 +100,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 					Exclude: &filtermetric.MatchProperties{
-						Config: filterset.Config{
-							MatchType: filterset.Strict,
-						},
+						MatchType:   filtermetric.Strict,
 						MetricNames: []string{"hello_world"},
 					},
 				},
@@ -138,9 +131,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 	}
 
 	testDataMetricProperties := &filtermetric.MatchProperties{
-		Config: filterset.Config{
-			MatchType: filterset.Regexp,
-		},
+		MatchType:   filtermetric.Regexp,
 		MetricNames: testDataFilters,
 	}
 
@@ -189,11 +180,9 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
-						Config: filterset.Config{
-							MatchType: filterset.Regexp,
-							RegexpConfig: &fsregexp.Config{
-								CacheEnabled: true,
-							},
+						MatchType: filtermetric.Regexp,
+						RegexpConfig: &fsregexp.Config{
+							CacheEnabled: true,
 						},
 						MetricNames: testDataFilters,
 					},
@@ -208,12 +197,10 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
-						Config: filterset.Config{
-							MatchType: filterset.Regexp,
-							RegexpConfig: &fsregexp.Config{
-								CacheEnabled:       true,
-								CacheMaxNumEntries: 10,
-							},
+						MatchType: filtermetric.Regexp,
+						RegexpConfig: &fsregexp.Config{
+							CacheEnabled:       true,
+							CacheMaxNumEntries: 10,
 						},
 						MetricNames: testDataFilters,
 					},

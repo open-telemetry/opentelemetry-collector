@@ -32,7 +32,6 @@ import (
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -75,9 +74,7 @@ var (
 	}
 
 	regexpMetricsFilterProperties = &filtermetric.MatchProperties{
-		Config: filterset.Config{
-			MatchType: filterset.Regexp,
-		},
+		MatchType:   filtermetric.Regexp,
 		MetricNames: validFilters,
 	}
 
@@ -114,9 +111,7 @@ var (
 			name: "includeAndExclude",
 			inc:  regexpMetricsFilterProperties,
 			exc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 				MetricNames: []string{
 					"prefix_test_match",
 					"test_contains_match",
@@ -141,9 +136,7 @@ var (
 			name: "includeAndExcludeWithEmptyAndNil",
 			inc:  regexpMetricsFilterProperties,
 			exc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 				MetricNames: []string{
 					"prefix_test_match",
 					"test_contains_match",
@@ -169,9 +162,7 @@ var (
 		{
 			name: "emptyFilterInclude",
 			inc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 			},
 			inMN:               [][]*metricspb.Metric{metricsWithName(inMetricNames)},
 			allMetricsFiltered: true,
@@ -179,9 +170,7 @@ var (
 		{
 			name: "emptyFilterExclude",
 			exc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 			},
 			inMN:  [][]*metricspb.Metric{metricsWithName(inMetricNames)},
 			outMN: [][]string{inMetricNames},
@@ -275,9 +264,7 @@ func BenchmarkFilter(b *testing.B) {
 	pcfg := cfg.(*Config)
 	pcfg.Metrics = MetricFilters{
 		Exclude: &filtermetric.MatchProperties{
-			Config: filterset.Config{
-				MatchType: "strict",
-			},
+			MatchType:   "strict",
 			MetricNames: []string{"p10_metric_0"},
 		},
 	}
@@ -382,9 +369,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	pcfg := cfg.(*Config)
 	pcfg.Metrics = MetricFilters{
 		Exclude: &filtermetric.MatchProperties{
-			Config: filterset.Config{
-				MatchType: "strict",
-			},
+			MatchType:   "strict",
 			MetricNames: []string{"foo"},
 		},
 	}
