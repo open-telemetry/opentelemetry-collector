@@ -290,7 +290,7 @@ func attributeValueArrayToString(av pdata.AnyValueArray) string {
 	for i := 0; i < av.Len(); i++ {
 		retStr += attributeValueToString(av.At(i))
 
-		if i < av.Len() - 1 {
+		if i < av.Len()-1 {
 			retStr += ", "
 		}
 	}
