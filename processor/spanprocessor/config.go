@@ -57,6 +57,9 @@ type Name struct {
 
 	// ToAttributes specifies a configuration to extract attributes from span name.
 	ToAttributes *ToAttributes `mapstructure:"to_attributes"`
+
+	// ReplaceChars contains array of substitution characters for the span name
+	ReplaceChars []*ReplaceChar `mapstructure:"replace_chars"`
 }
 
 type ToAttributes struct {
@@ -76,4 +79,13 @@ type ToAttributes struct {
 	// match. If it is false rule processing will continue to be performed over the
 	// modified span name.
 	BreakAfterMatch bool `mapstructure:"break_after_match"`
+}
+
+// ReplaceChar contains character to replace and the substitution character.
+type ReplaceChar struct {
+	// FromChar specifies the character to replace.
+	FromChar string `mapstructure:"from_char"`
+
+	// ToChar specifies the substitution character.
+	ToChar string `mapstructure:"to_char"`
 }

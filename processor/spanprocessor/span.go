@@ -106,6 +106,7 @@ func (sp *spanProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdat
 				}
 				sp.processFromAttributes(s)
 				sp.processToAttributes(s)
+				sp.processReplaceChars(s)
 			}
 		}
 	}
@@ -228,4 +229,25 @@ func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 			break
 		}
 	}
+}
+
+func (sp *spanProcessor) processReplaceChars(span pdata.Span) {
+	if span.Name() == "" {
+		// There is no span name to work on.
+		return
+	}
+
+	if len(sp.config.Rename.ReplaceChars) == 0 {
+		// There are no ReplaceChars mappings.
+		return
+	}
+
+	name := span.Name()
+	for i := 0; i < len(sp.config.Rename.ReplaceChars); i++ {
+		fromChar := sp.config.Rename.ReplaceChars[i].FromChar
+		toChar := sp.config.Rename.ReplaceChars[i].ToChar
+		name = strings.Replace(name, fromChar, toChar, -1)
+	}
+
+	span.SetName(name)
 }

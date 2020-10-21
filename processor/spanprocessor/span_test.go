@@ -53,6 +53,7 @@ type testCase struct {
 	inputAttributes  map[string]pdata.AttributeValue
 	outputName       string
 	outputAttributes map[string]pdata.AttributeValue
+	replaceChars     []*ReplaceChar
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -618,5 +619,121 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
+	}
+}
+
+func TestSpanProcessor_ReplaceChar(t *testing.T) {
+
+	testCases := []struct {
+		replaceChars []*ReplaceChar
+		err          error
+		testCase
+	}{
+		{
+			replaceChars: []*ReplaceChar{},
+			err:          errMissingRequiredField,
+			testCase: testCase{
+				inputName:        "",
+				inputAttributes:  nil,
+				outputName:       "",
+				outputAttributes: nil,
+			},
+		},
+		{
+			replaceChars: []*ReplaceChar{},
+			err:          errMissingRequiredField,
+			testCase: testCase{
+				inputName:        "name*",
+				inputAttributes:  nil,
+				outputName:       "name*",
+				outputAttributes: nil,
+			},
+		},
+		{
+			replaceChars: []*ReplaceChar{
+				{
+					FromChar: "*",
+				},
+			},
+			err: nil,
+			testCase: testCase{
+				inputName:        "name*",
+				inputAttributes:  nil,
+				outputName:       "name",
+				outputAttributes: nil,
+			},
+		},
+		{
+			replaceChars: []*ReplaceChar{
+				{
+					FromChar: "*",
+					ToChar:   "+",
+				},
+			},
+			err: nil,
+			testCase: testCase{
+				inputName:        "name*",
+				inputAttributes:  nil,
+				outputName:       "name+",
+				outputAttributes: nil,
+			},
+		},
+		{
+			replaceChars: []*ReplaceChar{
+				{
+					FromChar: "*",
+					ToChar:   "+",
+				},
+				{
+					FromChar: "~",
+				},
+			},
+			err: nil,
+			testCase: testCase{
+				inputName:        "name*/~",
+				inputAttributes:  nil,
+				outputName:       "name+/",
+				outputAttributes: nil,
+			},
+		},
+		{
+			replaceChars: []*ReplaceChar{
+				{
+					FromChar: "*",
+					ToChar:   "+",
+				},
+				{
+					FromChar: "~",
+					ToChar:   "-",
+				},
+			},
+			err: nil,
+			testCase: testCase{
+				inputName:        "name*/~",
+				inputAttributes:  nil,
+				outputName:       "name+/-",
+				outputAttributes: nil,
+			},
+		},
+	}
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Rename.ToAttributes = &ToAttributes{}
+
+	for _, tc := range testCases {
+		oCfg.Rename.ReplaceChars = tc.replaceChars
+		tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
+		if tc.err != nil {
+			require.NotNil(t, err)
+			assert.EqualValues(t, err, tc.err)
+			require.Nil(t, tp)
+			continue
+		}
+
+		require.Nil(t, err)
+		require.NotNil(t, tp)
+		runIndividualTestCase(t, tc.testCase, tp)
 	}
 }

@@ -99,6 +99,56 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	})
+
+	p4 := cfg.Processors["span/replace_char"]
+	assert.Equal(t, p4, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: "span/replace_char",
+		},
+		Rename: Name{
+			ReplaceChars: []*ReplaceChar{
+				{
+					FromChar: "*",
+					ToChar:   "+",
+				},
+			},
+		},
+	})
+
+	p5 := cfg.Processors["span/remove_char"]
+	assert.Equal(t, p5, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: "span/remove_char",
+		},
+		Rename: Name{
+			ReplaceChars: []*ReplaceChar{
+				{
+					FromChar: "~",
+				},
+			},
+		},
+	})
+
+	p6 := cfg.Processors["span/combo_chars"]
+	assert.Equal(t, p6, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: typeStr,
+			NameVal: "span/combo_chars",
+		},
+		Rename: Name{
+			ReplaceChars: []*ReplaceChar{
+				{
+					FromChar: "*",
+					ToChar:   "+",
+				},
+				{
+					FromChar: "~",
+				},
+			},
+		},
+	})
 }
 
 func createMatchConfig(matchType filterset.MatchType) *filterset.Config {

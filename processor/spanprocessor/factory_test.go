@@ -46,13 +46,30 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, typeStr, cfg.Name())
 }
 
-func TestFactory_CreateTraceProcessor(t *testing.T) {
+func TestFactory_CreateTraceProcessor_FromAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
+
+	require.Nil(t, err)
+	assert.NotNil(t, tp)
+}
+
+func TestFactory_CreateTraceProcessor_ReplaceChars(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+
+	// Name.ReplaceChar field needs to be set for the configuration to be valid.
+	oCfg.Rename.ReplaceChars = []*ReplaceChar{
+		{
+			FromChar: "*",
+		},
+	}
 	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 
 	require.Nil(t, err)
@@ -73,7 +90,13 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 			name: "missing_config",
 			err:  errMissingRequiredField,
 		},
-
+		{
+			name: "missing_config_replace_chars_empty",
+			cfg: Name{
+				ReplaceChars: []*ReplaceChar{},
+			},
+			err: errMissingRequiredField,
+		},
 		{
 			name: "invalid_regexp",
 			cfg: Name{

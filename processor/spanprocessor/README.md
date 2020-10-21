@@ -14,10 +14,12 @@ The following actions are supported:
 
 ### Name a span
 
-The following settings are required:
+Either `from_attributes` or `replace_chars` is required:
 
 - `from_attributes`: The attribute value for the keys are used to create a
 new name in the order specified in the configuration.
+
+- `replace_chars`: Replace or remove illegal characters.
 
 The following settings can be optionally configured:
 
@@ -35,6 +37,11 @@ span:
     from_attributes: [<key1>, <key2>, ...]
     # Separator is the string used to concatenate various parts of the span name.
     separator: <value>
+    # replace_chars represents the illegal characters to replace or remove from span name.
+    replace_chars:
+      - from_char: <original char>
+        to_char: <replacement char>
+      - from_char: <original char>
 ```
 
 Example:
@@ -44,6 +51,10 @@ span:
   name:
     from_attributes: ["db.svc", "operation"]
     separator: "::"
+    replace_chars:
+      - from_char: "*"
+        to_char: "+"
+      - from_char: "~"
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed

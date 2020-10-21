@@ -84,6 +84,27 @@ processors:
         rules:
           - "(?P<operation_website>.*?)$"
 
+  # The following demonstrates substitution of illegal characters
+  span/replace_char:
+    name:
+      replace_chars:
+        - from_char: '*'
+          to_char: '+'
+
+  # The following demonstrates removal of illegal characters
+  span/remove_char:
+    name:
+      replace_chars:
+        - from_char: '~'
+
+  # The following demonstrates combination of substitution and removal of illegal characters
+  span/combo_chars:
+    name:
+      replace_chars:
+        - from_char: '*'
+          to_char: '+'
+        - from_char: '~'
+
 exporters:
   exampleexporter:
 

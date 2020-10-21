@@ -35,7 +35,7 @@ var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData:
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
-var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\"")
+var errMissingRequiredField = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" or \"replace_chars\" must be specified in \"name:\"")
 
 // NewFactory returns a new factory for the Span processor.
 func NewFactory() component.ProcessorFactory {
@@ -61,11 +61,12 @@ func createTraceProcessor(
 	nextConsumer consumer.TracesConsumer,
 ) (component.TraceProcessor, error) {
 
-	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
+	// 'from_attributes' or 'to_attributes' or 'replace_chars' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.
 	oCfg := cfg.(*Config)
 	if len(oCfg.Rename.FromAttributes) == 0 &&
-		(oCfg.Rename.ToAttributes == nil || len(oCfg.Rename.ToAttributes.Rules) == 0) {
+		(oCfg.Rename.ToAttributes == nil || len(oCfg.Rename.ToAttributes.Rules) == 0) &&
+		(oCfg.Rename.ReplaceChars == nil || len(oCfg.Rename.ReplaceChars) == 0) {
 		return nil, errMissingRequiredField
 	}
 
