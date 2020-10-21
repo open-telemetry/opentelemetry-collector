@@ -278,9 +278,24 @@ func attributeValueToString(av pdata.AttributeValue) string {
 		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
 	case pdata.AttributeValueINT:
 		return strconv.FormatInt(av.IntVal(), 10)
+	case pdata.AttributeValueARRAY:
+		return attributeValueArrayToString(av.ArrayVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
+}
+
+func attributeValueArrayToString(av pdata.AnyValueArray) string {
+	retStr := "["
+	for i := 0; i < av.Len(); i++ {
+		retStr += attributeValueToString(av.At(i))
+
+		if i < av.Len() - 1 {
+			retStr += ", "
+		}
+	}
+
+	return retStr + "]"
 }
 
 type loggingExporter struct {
