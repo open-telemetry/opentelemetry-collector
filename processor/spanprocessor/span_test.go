@@ -53,7 +53,6 @@ type testCase struct {
 	inputAttributes  map[string]pdata.AttributeValue
 	outputName       string
 	outputAttributes map[string]pdata.AttributeValue
-	replaceChars     []*ReplaceChar
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
