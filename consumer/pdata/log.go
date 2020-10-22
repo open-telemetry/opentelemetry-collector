@@ -15,8 +15,6 @@
 package pdata
 
 import (
-	"github.com/gogo/protobuf/proto"
-
 	"go.opentelemetry.io/collector/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
@@ -78,13 +76,9 @@ func (ld Logs) FromOtlpProtoBytes(data []byte) error {
 
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
-	otlp := *ld.orig
-	resourceLogsClones := make([]*otlplogs.ResourceLogs, 0, len(otlp))
-	for _, resourceLogs := range otlp {
-		resourceLogsClones = append(resourceLogsClones,
-			proto.Clone(resourceLogs).(*otlplogs.ResourceLogs))
-	}
-	return Logs{orig: &resourceLogsClones}
+	rls := NewResourceLogsSlice()
+	ld.ResourceLogs().CopyTo(rls)
+	return Logs(rls)
 }
 
 // LogRecordCount calculates the total number of log records.

@@ -15,8 +15,6 @@
 package pdata
 
 import (
-	"github.com/gogo/protobuf/proto"
-
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
@@ -83,13 +81,9 @@ func (md Metrics) FromOtlpProtoBytes(data []byte) error {
 
 // Clone returns a copy of MetricData.
 func (md Metrics) Clone() Metrics {
-	otlp := MetricsToOtlp(md)
-	resourceMetricsClones := make([]*otlpmetrics.ResourceMetrics, 0, len(otlp))
-	for _, resourceMetrics := range otlp {
-		resourceMetricsClones = append(resourceMetricsClones,
-			proto.Clone(resourceMetrics).(*otlpmetrics.ResourceMetrics))
-	}
-	return MetricsFromOtlp(resourceMetricsClones)
+	rms := NewResourceMetricsSlice()
+	md.ResourceMetrics().CopyTo(rms)
+	return Metrics(rms)
 }
 
 func (md Metrics) ResourceMetrics() ResourceMetricsSlice {

@@ -15,8 +15,6 @@
 package pdata
 
 import (
-	"github.com/gogo/protobuf/proto"
-
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
@@ -70,13 +68,9 @@ func (td Traces) FromOtlpProtoBytes(data []byte) error {
 
 // Clone returns a copy of Traces.
 func (td Traces) Clone() Traces {
-	otlp := TracesToOtlp(td)
-	resourceSpansClones := make([]*otlptrace.ResourceSpans, 0, len(otlp))
-	for _, resourceSpans := range otlp {
-		resourceSpansClones = append(resourceSpansClones,
-			proto.Clone(resourceSpans).(*otlptrace.ResourceSpans))
-	}
-	return TracesFromOtlp(resourceSpansClones)
+	rss := NewResourceSpansSlice()
+	td.ResourceSpans().CopyTo(rss)
+	return Traces(rss)
 }
 
 // SpanCount calculates the total number of spans.
