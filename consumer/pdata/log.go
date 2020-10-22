@@ -78,7 +78,7 @@ func (ld Logs) FromOtlpProtoBytes(data []byte) error {
 func (ld Logs) Clone() Logs {
 	rls := NewResourceLogsSlice()
 	ld.ResourceLogs().CopyTo(rls)
-	return Logs{orig: rls.orig}
+	return Logs(rls)
 }
 
 // LogRecordCount calculates the total number of log records.

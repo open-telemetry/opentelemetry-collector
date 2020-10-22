@@ -367,7 +367,11 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 }
 
 func (a AttributeValue) CopyTo(dest AttributeValue) {
-	if *a.orig != nil && dest.IsNil() {
+	if *a.orig == nil {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
 		dest.InitEmpty()
 	}
 	a.copyTo(*dest.orig)

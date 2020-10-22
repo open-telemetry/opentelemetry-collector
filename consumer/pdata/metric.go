@@ -83,7 +83,7 @@ func (md Metrics) FromOtlpProtoBytes(data []byte) error {
 func (md Metrics) Clone() Metrics {
 	rms := NewResourceMetricsSlice()
 	md.ResourceMetrics().CopyTo(rms)
-	return Metrics{orig: rms.orig}
+	return Metrics(rms)
 }
 
 func (md Metrics) ResourceMetrics() ResourceMetricsSlice {

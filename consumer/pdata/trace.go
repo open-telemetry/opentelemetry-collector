@@ -70,7 +70,7 @@ func (td Traces) FromOtlpProtoBytes(data []byte) error {
 func (td Traces) Clone() Traces {
 	rss := NewResourceSpansSlice()
 	td.ResourceSpans().CopyTo(rss)
-	return Traces{orig: rss.orig}
+	return Traces(rss)
 }
 
 // SpanCount calculates the total number of spans.
