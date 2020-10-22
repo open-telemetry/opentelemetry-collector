@@ -48,7 +48,7 @@ func (a *spanAttributesProcessor) ProcessTraces(_ context.Context, td pdata.Trac
 			continue
 		}
 		resource := rs.Resource()
-		ilss := rss.At(i).InstrumentationLibrarySpans()
+		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			if ils.IsNil() {

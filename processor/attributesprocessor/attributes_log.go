@@ -47,13 +47,15 @@ func (a *logAttributesProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (
 		if rs.IsNil() {
 			continue
 		}
-		ilss := rls.At(i).InstrumentationLibraryLogs()
+		ilss := rs.InstrumentationLibraryLogs()
+		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			if ils.IsNil() {
 				continue
 			}
 			logs := ils.Logs()
+			library := ils.InstrumentationLibrary()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
 				if lr.IsNil() {
@@ -61,7 +63,7 @@ func (a *logAttributesProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (
 					continue
 				}
 
-				if a.skipLog(lr) {
+				if a.skipLog(lr, resource, library) {
 					continue
 				}
 
@@ -78,17 +80,17 @@ func (a *logAttributesProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (
 // The logic determining if a log should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func (a *logAttributesProcessor) skipLog(lr pdata.LogRecord) bool {
+func (a *logAttributesProcessor) skipLog(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	if a.include != nil {
 		// A false returned in this case means the log should not be processed.
-		if include := a.include.MatchLogRecord(lr); !include {
+		if include := a.include.MatchLogRecord(lr, resource, library); !include {
 			return true
 		}
 	}
 
 	if a.exclude != nil {
 		// A true returned in this case means the log should not be processed.
-		if exclude := a.exclude.MatchLogRecord(lr); exclude {
+		if exclude := a.exclude.MatchLogRecord(lr, resource, library); exclude {
 			return true
 		}
 	}
