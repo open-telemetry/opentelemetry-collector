@@ -87,3 +87,21 @@ func TestLogsFromInvalidOtlpProtoBytes(t *testing.T) {
 	err := NewLogs().FromOtlpProtoBytes([]byte{0xFF})
 	assert.EqualError(t, err, "unexpected EOF")
 }
+
+func TestLogsClone(t *testing.T) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	assert.EqualValues(t, logs, logs.Clone())
+}
+
+func BenchmarkLogsClone(b *testing.B) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		clone := logs.Clone()
+		if clone.ResourceLogs().Len() != logs.ResourceLogs().Len() {
+			b.Fail()
+		}
+	}
+}

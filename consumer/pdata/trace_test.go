@@ -158,3 +158,21 @@ func TestTracesFromInvalidOtlpProtoBytes(t *testing.T) {
 	err := NewTraces().FromOtlpProtoBytes([]byte{0xFF})
 	assert.EqualError(t, err, "unexpected EOF")
 }
+
+func TestTracesClone(t *testing.T) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	assert.EqualValues(t, traces, traces.Clone())
+}
+
+func BenchmarkTracesClone(b *testing.B) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		clone := traces.Clone()
+		if clone.ResourceSpans().Len() != traces.ResourceSpans().Len() {
+			b.Fail()
+		}
+	}
+}

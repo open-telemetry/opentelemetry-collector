@@ -692,6 +692,24 @@ func TestMetricsFromInvalidOtlpProtoBytes(t *testing.T) {
 	assert.EqualError(t, err, "unexpected EOF")
 }
 
+func TestMetricsClone(t *testing.T) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	assert.EqualValues(t, metrics, metrics.Clone())
+}
+
+func BenchmarkMetricsClone(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		clone := metrics.Clone()
+		if clone.ResourceMetrics().Len() != metrics.ResourceMetrics().Len() {
+			b.Fail()
+		}
+	}
+}
+
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 	resourceMetricsList := []*otlpmetrics.ResourceMetrics{
 		{
