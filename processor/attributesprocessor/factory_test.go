@@ -103,7 +103,7 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 func TestFactoryCreateLogsProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -116,7 +116,7 @@ func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
-	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -130,7 +130,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+		context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
@@ -143,7 +143,7 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 		{Action: processorhelper.DELETE},
 	}
 	tp, err = factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+		context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }
