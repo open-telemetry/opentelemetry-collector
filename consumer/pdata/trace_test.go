@@ -92,12 +92,20 @@ func TestSpanCountWithNils(t *testing.T) {
 	}).SpanCount())
 }
 
-func TestTraceID(t *testing.T) {
-	tid := NewTraceID(nil)
-	assert.EqualValues(t, []byte(nil), tid.Bytes())
+func TestSpanID(t *testing.T) {
+	sid := InvalidSpanID()
+	assert.EqualValues(t, [8]byte{}, sid.Bytes())
 
-	tid = NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
+	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
+}
+
+func TestTraceID(t *testing.T) {
+	tid := InvalidTraceID()
+	assert.EqualValues(t, [16]byte{}, tid.Bytes())
+
+	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
 }
 
 func TestToFromOtlp(t *testing.T) {

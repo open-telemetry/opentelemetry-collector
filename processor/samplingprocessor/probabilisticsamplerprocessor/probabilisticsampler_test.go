@@ -480,8 +480,8 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
-func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[string]bool, spanCount int) {
-	traceIDs = make(map[string]bool)
+func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[[16]byte]bool, spanCount int) {
+	traceIDs = make(map[[16]byte]bool)
 	for _, td := range sampled {
 		rspans := td.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
@@ -502,7 +502,7 @@ func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string)
 				for k := 0; k < ils.Spans().Len(); k++ {
 					spanCount++
 					span := ils.Spans().At(k)
-					key := string(span.TraceID().Bytes())
+					key := span.TraceID().Bytes()
 					if traceIDs[key] {
 						t.Errorf("same traceID used more than once %q", key)
 						return

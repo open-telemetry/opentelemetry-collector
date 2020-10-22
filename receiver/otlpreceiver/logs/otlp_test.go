@@ -16,7 +16,6 @@ package logs
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net"
 	"testing"
@@ -53,13 +52,8 @@ func TestExport(t *testing.T) {
 	// when
 
 	unixnanos := uint64(12578940000000012345)
-
-	traceID, err := base64.StdEncoding.DecodeString("SEhaOVO7YSQ=")
-	assert.NoError(t, err)
-
-	spanID, err := base64.StdEncoding.DecodeString("QuHicGYRg4U=")
-	assert.NoError(t, err)
-
+	traceID := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
+	spanID := [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 	resourceLogs := []*otlplog.ResourceLogs{
 		{
 			InstrumentationLibraryLogs: []*otlplog.InstrumentationLibraryLogs{

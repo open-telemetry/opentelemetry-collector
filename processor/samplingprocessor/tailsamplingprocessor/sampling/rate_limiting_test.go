@@ -29,7 +29,7 @@ func TestRateLimiter(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 
 	trace := newTraceStringAttrs(empty, "example", "value")
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
 
 	// Trace span count greater than spans per second
@@ -61,7 +61,7 @@ func TestOnDroppedSpans_RateLimiter(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 	u, _ := uuid.NewRandom()
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
-	decision, err := rateLimiter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	decision, err := rateLimiter.OnDroppedSpans(pdata.NewTraceID(u), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }

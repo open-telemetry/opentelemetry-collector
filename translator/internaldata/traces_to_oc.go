@@ -100,10 +100,10 @@ func spanToOC(span pdata.Span) *octrace.Span {
 	}
 
 	return &octrace.Span{
-		TraceId:                 span.TraceID().Bytes(),
-		SpanId:                  span.SpanID().Bytes(),
+		TraceId:                 traceIDToOC(span.TraceID()),
+		SpanId:                  spanIDToOC(span.SpanID()),
 		Tracestate:              traceStateToOC(span.TraceState()),
-		ParentSpanId:            span.ParentSpanID().Bytes(),
+		ParentSpanId:            spanIDToOC(span.ParentSpanID()),
 		Name:                    stringToTruncatableString(span.Name()),
 		Kind:                    spanKindToOC(span.Kind()),
 		StartTime:               pdata.UnixNanoToTimestamp(span.StartTime()),
@@ -354,8 +354,8 @@ func linksToOC(links pdata.SpanLinkSlice, droppedCount uint32) *octrace.Span_Lin
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		ocLink := &octrace.Span_Link{
-			TraceId:    link.TraceID().Bytes(),
-			SpanId:     link.SpanID().Bytes(),
+			TraceId:    traceIDToOC(link.TraceID()),
+			SpanId:     spanIDToOC(link.SpanID()),
 			Tracestate: traceStateToOC(link.TraceState()),
 			Attributes: attributesMapToOCSpanAttributes(link.Attributes(), link.DroppedAttributesCount()),
 		}
@@ -366,6 +366,22 @@ func linksToOC(links pdata.SpanLinkSlice, droppedCount uint32) *octrace.Span_Lin
 		Link:              ocLinks,
 		DroppedLinksCount: int32(droppedCount),
 	}
+}
+
+func traceIDToOC(tid pdata.TraceID) []byte {
+	if !tid.IsValid() {
+		return nil
+	}
+	tidBytes := tid.Bytes()
+	return tidBytes[:]
+}
+
+func spanIDToOC(sid pdata.SpanID) []byte {
+	if !sid.IsValid() {
+		return nil
+	}
+	sidBytes := sid.Bytes()
+	return sidBytes[:]
 }
 
 func statusToOC(status pdata.SpanStatus) *octrace.Status {

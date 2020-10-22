@@ -75,7 +75,7 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			name: "oneSpanNoResrouce",
 			td:   testdata.GenerateTraceDataOneSpanNoResource(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
-			err:  errors.New("TraceID is nil"),
+			err:  errors.New("TraceID is invalid"),
 		},
 		{
 			name: "oneSpanOneNil",
@@ -112,7 +112,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
 		tdFromZS, zErr := V2SpansToInternalTraces(zipkinSpans)
-		assert.NoError(t, zErr)
+		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
 	}
@@ -121,9 +121,9 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 func generateTraceOneSpanOneNilWithTraceID() pdata.Traces {
 	td := testdata.GenerateTraceDataOneSpanOneNil()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-	span.SetTraceID(pdata.NewTraceID([]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+	span.SetTraceID(pdata.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))
-	span.SetSpanID(pdata.NewSpanID([]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
 	return td
 }
 

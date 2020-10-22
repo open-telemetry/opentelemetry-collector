@@ -411,7 +411,8 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	return tracetranslator.UInt64ToByteTraceID(high, low), nil
+	tidBytes := tracetranslator.UInt64ToByteTraceID(high, low)
+	return tidBytes[:], nil
 }
 
 func hexIDToOCID(hex string) ([]byte, error) {
@@ -429,7 +430,8 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	return tracetranslator.UInt64ToByteSpanID(idValue), nil
+	idBytes := tracetranslator.UInt64ToByteSpanID(idValue)
+	return idBytes[:], nil
 }
 
 func epochMicrosecondsToTimestamp(msecs int64) *timestamppb.Timestamp {

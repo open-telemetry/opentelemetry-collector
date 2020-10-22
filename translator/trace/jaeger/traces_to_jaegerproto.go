@@ -274,10 +274,7 @@ func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.Instru
 }
 
 func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
-	traceIDHigh, traceIDLow, err := tracetranslator.TraceIDToUInt64Pair(traceID)
-	if err != nil {
-		return model.TraceID{}, err
-	}
+	traceIDHigh, traceIDLow := tracetranslator.TraceIDToUInt64Pair(traceID)
 	if traceIDLow == 0 && traceIDHigh == 0 {
 		return model.TraceID{}, errZeroTraceID
 	}
@@ -288,10 +285,7 @@ func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
 }
 
 func spanIDToJaegerProto(spanID pdata.SpanID) (model.SpanID, error) {
-	uSpanID, err := tracetranslator.BytesToUInt64SpanID(spanID.Bytes())
-	if err != nil {
-		return model.SpanID(0), err
-	}
+	uSpanID := tracetranslator.BytesToUInt64SpanID(spanID.Bytes())
 	if uSpanID == 0 {
 		return model.SpanID(0), errZeroSpanID
 	}
@@ -304,7 +298,7 @@ func makeJaegerProtoReferences(
 	parentSpanID pdata.SpanID,
 	traceID model.TraceID,
 ) ([]model.SpanRef, error) {
-	parentSpanIDSet := len(parentSpanID.Bytes()) != 0
+	parentSpanIDSet := parentSpanID.IsValid()
 	if !parentSpanIDSet && links.Len() == 0 {
 		return nil, nil
 	}

@@ -142,13 +142,13 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 
 	require.Equal(t, len(ids), len(got), "Batcher got incorrect count of traces from batches")
 
-	idSeen := make(map[string]bool, len(ids))
+	idSeen := make(map[[16]byte]bool, len(ids))
 	for _, id := range got {
-		idSeen[string(id.Bytes())] = true
+		idSeen[id.Bytes()] = true
 	}
 
 	for i := 0; i < len(ids); i++ {
-		require.True(t, idSeen[string(ids[i].Bytes())], "want id %v but id was not seen", ids[i])
+		require.True(t, idSeen[ids[i].Bytes()], "want id %v but id was not seen", ids[i])
 	}
 }
 

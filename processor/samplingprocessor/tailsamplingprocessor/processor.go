@@ -47,7 +47,7 @@ type Policy struct {
 
 // traceKey is defined since sync.Map requires a comparable type, isolating it on its own
 // type to help track usage.
-type traceKey string
+type traceKey [16]byte
 
 // tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
 // policy to sample traces.
@@ -301,7 +301,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			atomic.AddInt64(&actualData.SpanCount, lenSpans)
 		} else {
 			newTraceIDs++
-			tsp.decisionBatcher.AddToCurrentBatch(pdata.NewTraceID([]byte(id)))
+			tsp.decisionBatcher.AddToCurrentBatch(pdata.NewTraceID(id))
 			atomic.AddUint64(&tsp.numTracesOnMap, 1)
 			postDeletion := false
 			currTime := time.Now()
@@ -394,7 +394,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 	for j := 0; j < policiesLen; j++ {
 		if trace.Decisions[j] == sampling.Pending {
 			policy := tsp.policies[j]
-			if decision, err := policy.Evaluator.OnDroppedSpans(pdata.NewTraceID([]byte(traceID)), trace); err != nil {
+			if decision, err := policy.Evaluator.OnDroppedSpans(pdata.NewTraceID(traceID), trace); err != nil {
 				tsp.logger.Warn("OnDroppedSpans",
 					zap.String("policy", policy.Name),
 					zap.Int("decision", int(decision)),

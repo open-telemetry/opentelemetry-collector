@@ -21,14 +21,25 @@ import (
 // SpanID is an alias of OTLP SpanID data type.
 type SpanID otlpcommon.SpanID
 
-func NewSpanID(bytes []byte) SpanID {
+func InvalidSpanID() SpanID {
+	return SpanID(otlpcommon.NewSpanID([8]byte{}))
+}
+
+func NewSpanID(bytes [8]byte) SpanID {
 	return SpanID(otlpcommon.NewSpanID(bytes))
 }
 
-func (t SpanID) Bytes() []byte {
+// Bytes returns the byte array representation of the SpanID.
+func (t SpanID) Bytes() [8]byte {
 	return otlpcommon.SpanID(t).Bytes()
 }
 
+// HexString returns hex representation of the SpanID.
 func (t SpanID) HexString() string {
 	return otlpcommon.SpanID(t).HexString()
+}
+
+// IsValid returns true if id contains at leas one non-zero byte.
+func (t SpanID) IsValid() bool {
+	return otlpcommon.SpanID(t).IsValid()
 }

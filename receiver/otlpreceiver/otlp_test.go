@@ -107,8 +107,8 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 		{
 			Spans: []*otlptrace.Span{
 				{
-					TraceId:           otlpcommon.NewTraceID([]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
-					SpanId:            otlpcommon.NewSpanID([]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
+					TraceId:           otlpcommon.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
+					SpanId:            otlpcommon.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
 					Name:              "testSpan",
 					StartTimeUnixNano: 1544712660000000000,
 					EndTimeUnixNano:   1544712661000000000,
@@ -268,17 +268,17 @@ func TestJsonUnmarshaling(t *testing.T) {
 	tests := []struct {
 		name  string
 		json  string
-		bytes []byte
+		bytes [16]byte
 	}{
 		{
 			name:  "empty string trace id",
 			json:  `""`,
-			bytes: nil,
+			bytes: [16]byte{},
 		},
 		{
 			name:  "zero bytes trace id",
 			json:  `"00000000000000000000000000000000"`,
-			bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			bytes: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}
 
@@ -601,7 +601,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 						Spans: []*otlptrace.Span{
 							{
 								TraceId: otlpcommon.NewTraceID(
-									[]byte{
+									[16]byte{
 										0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 										0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
 									},

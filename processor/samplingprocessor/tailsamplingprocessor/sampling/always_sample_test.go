@@ -27,7 +27,7 @@ import (
 
 func TestEvaluate_AlwaysSample(t *testing.T) {
 	filter := NewAlwaysSample(zap.NewNop())
-	decision, err := filter.Evaluate(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), newTraceStringAttrs(map[string]pdata.AttributeValue{}, "example", "value"))
+	decision, err := filter.Evaluate(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), newTraceStringAttrs(map[string]pdata.AttributeValue{}, "example", "value"))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }
@@ -36,7 +36,7 @@ func TestOnDroppedSpans_AlwaysSample(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 	u, _ := uuid.NewRandom()
 	filter := NewAlwaysSample(zap.NewNop())
-	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }
