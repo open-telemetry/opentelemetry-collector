@@ -165,7 +165,7 @@ func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDat
 
 		buckets := p.BucketCounts()
 		if len(buckets) != 0 {
-			for _, bucket := range buckets {
+			for i, bucket := range buckets {
 				b.logEntry("Buckets #%d, Count: %d", i, bucket)
 			}
 		}
