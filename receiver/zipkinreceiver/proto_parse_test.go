@@ -123,7 +123,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 					},
 				},
 			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						{
@@ -201,7 +201,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 					},
 				},
 			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						{

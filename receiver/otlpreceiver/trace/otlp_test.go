@@ -61,7 +61,7 @@ func TestExport(t *testing.T) {
 
 	resourceSpans := []*otlptrace.ResourceSpans{
 		{
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						{
@@ -128,7 +128,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	req := &collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 					{
 						Spans: []*otlptrace.Span{
 							{

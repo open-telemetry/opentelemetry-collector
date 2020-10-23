@@ -252,7 +252,7 @@ func (es InstrumentationLibrarySpansSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpans {
-	return newInstrumentationLibrarySpans(&(es.orig)[ix])
+	return newInstrumentationLibrarySpans(&(*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -277,24 +277,22 @@ func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationL
 func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpansSlice) {
 	newLen := es.Len()
 	if newLen == 0 {
-		*dest.orig = []otlptrace.InstrumentationLibrarySpans(nil)
+		*dest.orig = nil
 		return
 	}
 	oldLen := dest.Len()
 	if newLen <= oldLen {
 		(*dest.orig) = (*dest.orig)[:newLen]
 		for i, el := range *es.orig {
-			newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&(dest.orig)[i]))
+			newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&(*dest.orig)[i]))
 		}
 		return
 	}
 	origs := make([]otlptrace.InstrumentationLibrarySpans, newLen)
-	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, newLen)
 	for i, el := range *es.orig {
-		wrappers[i] = &origs[i]
-		newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&wrappers[i]))
+		newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&origs[i]))
 	}
-	*dest.orig = wrappers
+	*dest.orig = origs
 }
 
 // Resize is an operation that resizes the slice:
@@ -311,21 +309,24 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 // }
 func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 	if newLen == 0 {
-		(*es.orig) = []*otlptrace.InstrumentationLibrarySpans(nil)
+		*es.orig = nil
 		return
 	}
 	oldLen := len(*es.orig)
-	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+	oldCap := cap(*es.orig)
+	if newLen <= oldCap {
+		// Reset all previous values, allow memory GC, as well as in case of another resize old data are not reused.
+		for i := newLen; i < oldLen; i++ {
+			(*es.orig)[i] = otlptrace.InstrumentationLibrarySpans{}
+		}
+		*es.orig = (*es.orig)[0:newLen:oldCap]
 		return
 	}
+
 	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
-	}
-	(*es.orig) = oldOrig
+	newOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen)
+	copy(newOrigs[0:oldLen:newLen], *es.orig)
+	*es.orig = newOrigs
 }
 
 // Append will increase the length of the InstrumentationLibrarySpansSlice by one and set the
@@ -358,7 +359,7 @@ func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans)
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	return newInstrumentationLibrarySpans(nil)
+	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
 }
 
 // InitEmpty overwrites the current value with empty.

@@ -103,7 +103,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 			},
 		},
 	},
-	InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+	InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 		{
 			Spans: []*otlptrace.Span{
 				{
@@ -596,7 +596,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	req := &collectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 					{
 						Spans: []*otlptrace.Span{
 							{

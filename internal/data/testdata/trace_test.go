@@ -115,7 +115,7 @@ func TestToFromOtlpTraceWithNils(t *testing.T) {
 	rs := md.ResourceSpans().At(0)
 	assert.EqualValues(t, 2, rs.InstrumentationLibrarySpans().Len())
 	assert.False(t, rs.InstrumentationLibrarySpans().At(0).IsNil())
-	assert.True(t, rs.InstrumentationLibrarySpans().At(1).IsNil())
+	assert.False(t, rs.InstrumentationLibrarySpans().At(1).IsNil())
 
 	md = GenerateTraceDataOneSpanOneNil()
 	ilss := md.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)

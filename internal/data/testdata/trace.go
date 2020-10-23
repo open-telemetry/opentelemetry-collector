@@ -96,7 +96,7 @@ func generateTraceOtlpOneEmptyInstrumentationLibrary() []*otlptrace.ResourceSpan
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{},
 			},
 		},
@@ -111,9 +111,9 @@ func generateTraceOtlpOneEmptyOneNilInstrumentationLibrary() []*otlptrace.Resour
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{},
-				nil,
+				{},
 			},
 		},
 	}
@@ -132,7 +132,7 @@ func GenerateTraceDataOneSpanNoResource() pdata.Traces {
 func generateTraceOtlpOneSpanNoResource() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanOne(),
@@ -155,7 +155,7 @@ func generateTraceOtlpOneSpan() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanOne(),
@@ -174,7 +174,7 @@ func generateTraceOtlpOneSpanOneNil() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanOne(),
@@ -200,7 +200,7 @@ func GenerateTraceOtlpSameResourceTwoSpans() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanOne(),
@@ -245,7 +245,7 @@ func generateTraceOtlpTwoSpansSameResourceOneDifferent() []*otlptrace.ResourceSp
 	return []*otlptrace.ResourceSpans{
 		{
 			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanOne(),
@@ -256,7 +256,7 @@ func generateTraceOtlpTwoSpansSameResourceOneDifferent() []*otlptrace.ResourceSp
 		},
 		{
 			Resource: generateOtlpResource2(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+			InstrumentationLibrarySpans: []otlptrace.InstrumentationLibrarySpans{
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanThree(),

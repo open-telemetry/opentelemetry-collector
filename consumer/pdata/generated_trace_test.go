@@ -180,7 +180,7 @@ func TestResourceSpans_InstrumentationLibrarySpans(t *testing.T) {
 func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 	es := NewInstrumentationLibrarySpansSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.InstrumentationLibrarySpans{})
+	es = newInstrumentationLibrarySpansSlice(&[]otlptrace.InstrumentationLibrarySpans{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
@@ -243,14 +243,14 @@ func TestInstrumentationLibrarySpansSlice_Resize(t *testing.T) {
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlptrace.InstrumentationLibrarySpans]bool, resizeSmallLen)
 	for i := 0; i < resizeSmallLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
 	assert.EqualValues(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*otlptrace.InstrumentationLibrarySpans]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
@@ -259,14 +259,14 @@ func TestInstrumentationLibrarySpansSlice_Resize(t *testing.T) {
 	oldLen := es.Len()
 	expectedEs = make(map[*otlptrace.InstrumentationLibrarySpans]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
 	assert.EqualValues(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*otlptrace.InstrumentationLibrarySpans]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[(es.At(i).orig)] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 	for i := oldLen; i < resizeLargeLen; i++ {
@@ -297,7 +297,7 @@ func TestInstrumentationLibrarySpansSlice_Append(t *testing.T) {
 
 func TestInstrumentationLibrarySpans_InitEmpty(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
-	assert.True(t, ms.IsNil())
+	assert.False(t, ms.IsNil())
 	ms.InitEmpty()
 	assert.False(t, ms.IsNil())
 }
@@ -305,7 +305,7 @@ func TestInstrumentationLibrarySpans_InitEmpty(t *testing.T) {
 func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	NewInstrumentationLibrarySpans().CopyTo(ms)
-	assert.True(t, ms.IsNil())
+	assert.False(t, ms.IsNil())
 	generateTestInstrumentationLibrarySpans().CopyTo(ms)
 	assert.EqualValues(t, generateTestInstrumentationLibrarySpans(), ms)
 }

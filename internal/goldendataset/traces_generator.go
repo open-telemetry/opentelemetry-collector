@@ -69,7 +69,7 @@ func GenerateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string
 }
 
 func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader) ([]*otlptrace.InstrumentationLibrarySpans, error) {
+	random io.Reader) ([]otlptrace.InstrumentationLibrarySpans, error) {
 	var count int
 	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:
@@ -80,7 +80,7 @@ func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile s
 		count = 2
 	}
 	var err error
-	libSpans := make([]*otlptrace.InstrumentationLibrarySpans, count)
+	libSpans := make([]otlptrace.InstrumentationLibrarySpans, count)
 	for i := 0; i < count; i++ {
 		libSpans[i], err = generateLibrarySpans(tracingInputs, i, spanPairsFile, random)
 	}
@@ -88,10 +88,10 @@ func generateLibrarySpansArray(tracingInputs *PICTTracingInputs, spanPairsFile s
 }
 
 func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string,
-	random io.Reader) (*otlptrace.InstrumentationLibrarySpans, error) {
+	random io.Reader) (otlptrace.InstrumentationLibrarySpans, error) {
 	spanCaseCount, err := countTotalSpanCases(spanPairsFile)
 	if err != nil {
-		return nil, err
+		return otlptrace.InstrumentationLibrarySpans{}, err
 	}
 	var spans []*otlptrace.Span
 	switch tracingInputs.Spans {
@@ -106,7 +106,7 @@ func generateLibrarySpans(tracingInputs *PICTTracingInputs, index int, spanPairs
 	default:
 		spans, _, err = GenerateSpans(16, 0, spanPairsFile, random)
 	}
-	return &otlptrace.InstrumentationLibrarySpans{
+	return otlptrace.InstrumentationLibrarySpans{
 		InstrumentationLibrary: generateInstrumentationLibrary(tracingInputs, index),
 		Spans:                  spans,
 	}, err
