@@ -17,3 +17,9 @@ s+bytes \(.*span_id\) = \(.*\);+bytes \1 = \2\
   (gogoproto.nullable) = false,\
   (gogoproto.customtype) = "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1.SpanID"\
   ];+g
+
+s+repeated InstrumentationLibrarySpans \(.*\) = \(.*\);+repeated InstrumentationLibrarySpans \1 = \2\
+  [\
+  // Use custom SpanId data type for this field.\
+  (gogoproto.nullable) = false\
+  ];+g

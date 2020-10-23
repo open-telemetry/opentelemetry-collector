@@ -223,17 +223,17 @@ func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 type InstrumentationLibrarySpansSlice struct {
 	// orig points to the slice otlptrace.InstrumentationLibrarySpans field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
-	orig *[]*otlptrace.InstrumentationLibrarySpans
+	orig *[]otlptrace.InstrumentationLibrarySpans
 }
 
-func newInstrumentationLibrarySpansSlice(orig *[]*otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpansSlice {
+func newInstrumentationLibrarySpansSlice(orig *[]otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpansSlice {
 	return InstrumentationLibrarySpansSlice{orig}
 }
 
 // NewInstrumentationLibrarySpansSlice creates a InstrumentationLibrarySpansSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
 func NewInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansSlice {
-	orig := []*otlptrace.InstrumentationLibrarySpans(nil)
+	orig := []otlptrace.InstrumentationLibrarySpans(nil)
 	return InstrumentationLibrarySpansSlice{&orig}
 }
 
@@ -252,7 +252,7 @@ func (es InstrumentationLibrarySpansSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpans {
-	return newInstrumentationLibrarySpans(&(*es.orig)[ix])
+	return newInstrumentationLibrarySpans(&(es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -277,14 +277,14 @@ func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationL
 func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpansSlice) {
 	newLen := es.Len()
 	if newLen == 0 {
-		*dest.orig = []*otlptrace.InstrumentationLibrarySpans(nil)
+		*dest.orig = []otlptrace.InstrumentationLibrarySpans(nil)
 		return
 	}
 	oldLen := dest.Len()
 	if newLen <= oldLen {
 		(*dest.orig) = (*dest.orig)[:newLen]
 		for i, el := range *es.orig {
-			newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&(*dest.orig)[i]))
+			newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&(dest.orig)[i]))
 		}
 		return
 	}
@@ -346,10 +346,10 @@ func (es InstrumentationLibrarySpansSlice) Append(e InstrumentationLibrarySpans)
 type InstrumentationLibrarySpans struct {
 	// orig points to the pointer otlptrace.InstrumentationLibrarySpans field contained somewhere else.
 	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.InstrumentationLibrarySpans
+	orig *otlptrace.InstrumentationLibrarySpans
 }
 
-func newInstrumentationLibrarySpans(orig **otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
+func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
 	return InstrumentationLibrarySpans{orig}
 }
 
@@ -358,20 +358,19 @@ func newInstrumentationLibrarySpans(orig **otlptrace.InstrumentationLibrarySpans
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	orig := (*otlptrace.InstrumentationLibrarySpans)(nil)
-	return newInstrumentationLibrarySpans(&orig)
+	return newInstrumentationLibrarySpans(nil)
 }
 
 // InitEmpty overwrites the current value with empty.
 func (ms InstrumentationLibrarySpans) InitEmpty() {
-	*ms.orig = &otlptrace.InstrumentationLibrarySpans{}
+	*ms.orig = otlptrace.InstrumentationLibrarySpans{}
 }
 
 // IsNil returns true if the underlying data are nil.
 //
 // Important: All other functions will cause a runtime error if this returns "true".
 func (ms InstrumentationLibrarySpans) IsNil() bool {
-	return *ms.orig == nil
+	return false
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
@@ -394,7 +393,7 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
 	if ms.IsNil() {
-		*dest.orig = nil
+		dest.InitEmpty()
 		return
 	}
 	if dest.IsNil() {
