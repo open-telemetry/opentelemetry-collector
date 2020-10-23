@@ -16,14 +16,17 @@ package v1
 
 import (
 	"encoding/hex"
+	"errors"
 )
 
-const traceIdSize = 16
+const traceIDSize = 16
+
+var errInvalidTraceIDSize = errors.New("invalid length for SpanID")
 
 // TraceID is a custom data type that is used for all trace_id fields in OTLP
 // Protobuf messages.
 type TraceID struct {
-	id [traceIdSize]byte
+	id [traceIDSize]byte
 }
 
 // NewTraceID creates a TraceID from a byte slice.
@@ -46,7 +49,7 @@ func (tid *TraceID) Size() int {
 	if !tid.IsValid() {
 		return 0
 	}
-	return traceIdSize
+	return traceIDSize
 }
 
 // Equal returns true if ids are equal.
@@ -79,8 +82,8 @@ func (tid *TraceID) Unmarshal(data []byte) error {
 		return nil
 	}
 
-	if len(data) != traceIdSize {
-		return invalidSpanIdSize
+	if len(data) != traceIDSize {
+		return errInvalidTraceIDSize
 	}
 
 	copy(tid.id[:], data)

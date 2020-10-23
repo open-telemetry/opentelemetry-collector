@@ -19,14 +19,14 @@ import (
 	"errors"
 )
 
-const spanIdSize = 8
+const spanIDSize = 8
 
-var invalidSpanIdSize = errors.New("invalid length for SpanID")
+var errInvalidSpanIDSize = errors.New("invalid length for SpanID")
 
 // SpanID is a custom data type that is used for all span_id fields in OTLP
 // Protobuf messages.
 type SpanID struct {
-	id [spanIdSize]byte
+	id [spanIDSize]byte
 }
 
 // NewSpanID creates a SpanID from a byte slice.
@@ -47,7 +47,7 @@ func (sid *SpanID) Size() int {
 	if !sid.IsValid() {
 		return 0
 	}
-	return spanIdSize
+	return spanIDSize
 }
 
 // Equal returns true if ids are equal.
@@ -80,8 +80,8 @@ func (sid *SpanID) Unmarshal(data []byte) error {
 		return nil
 	}
 
-	if len(data) != spanIdSize {
-		return invalidSpanIdSize
+	if len(data) != spanIDSize {
+		return errInvalidSpanIDSize
 	}
 
 	copy(sid.id[:], data)

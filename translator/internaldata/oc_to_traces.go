@@ -140,10 +140,10 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 
 	tid := [16]byte{}
 	copy(tid[:], src.TraceId)
-	dest.SetTraceID(traceIdToInternal(src.TraceId))
-	dest.SetSpanID(spanIdToInternal(src.SpanId))
+	dest.SetTraceID(traceIDToInternal(src.TraceId))
+	dest.SetSpanID(spanIDToInternal(src.SpanId))
 	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
-	dest.SetParentSpanID(spanIdToInternal(src.ParentSpanId))
+	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
 	dest.SetStartTime(pdata.TimestampToUnixNano(src.StartTime))
@@ -159,17 +159,17 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 
 // Transforms the byte slice trace ID into a [16]byte internal pdata.TraceID.
 // If larger input then it is truncated to 16 bytes.
-func traceIdToInternal(traceId []byte) pdata.TraceID {
+func traceIDToInternal(traceID []byte) pdata.TraceID {
 	tid := [16]byte{}
-	copy(tid[:], traceId)
+	copy(tid[:], traceID)
 	return pdata.NewTraceID(tid)
 }
 
 // Transforms the byte slice span ID into a [8]byte internal pdata.SpanID.
 // If larger input then it is truncated to 8 bytes.
-func spanIdToInternal(spanId []byte) pdata.SpanID {
+func spanIDToInternal(spanID []byte) pdata.SpanID {
 	sid := [8]byte{}
-	copy(sid[:], spanId)
+	copy(sid[:], spanID)
 	return pdata.NewSpanID(sid)
 }
 
@@ -347,8 +347,8 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 		link := links.At(i)
 		i++
 
-		link.SetTraceID(traceIdToInternal(ocLink.TraceId))
-		link.SetSpanID(spanIdToInternal(ocLink.SpanId))
+		link.SetTraceID(traceIDToInternal(ocLink.TraceId))
+		link.SetSpanID(spanIDToInternal(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))
