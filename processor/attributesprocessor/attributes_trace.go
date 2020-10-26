@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-type attributesProcessor struct {
+type spanAttributesProcessor struct {
 	attrProc *processorhelper.AttrProc
 	include  filterspan.Matcher
 	exclude  filterspan.Matcher
@@ -31,8 +31,8 @@ type attributesProcessor struct {
 // newTraceProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newAttributesProcessor(attrProc *processorhelper.AttrProc, include, exclude filterspan.Matcher) *attributesProcessor {
-	return &attributesProcessor{
+func newSpanAttributesProcessor(attrProc *processorhelper.AttrProc, include, exclude filterspan.Matcher) *spanAttributesProcessor {
+	return &spanAttributesProcessor{
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
@@ -40,7 +40,7 @@ func newAttributesProcessor(attrProc *processorhelper.AttrProc, include, exclude
 }
 
 // ProcessTraces implements the TProcessor
-func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (a *spanAttributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -48,7 +48,7 @@ func (a *attributesProcessor) ProcessTraces(_ context.Context, td pdata.Traces) 
 			continue
 		}
 		resource := rs.Resource()
-		ilss := rss.At(i).InstrumentationLibrarySpans()
+		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			if ils.IsNil() {

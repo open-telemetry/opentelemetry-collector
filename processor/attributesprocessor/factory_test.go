@@ -99,3 +99,51 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	require.Nil(t, mp)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 }
+
+func TestFactoryCreateLogsProcessor_EmptyActions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
+	assert.Error(t, err)
+	assert.Nil(t, ap)
+}
+
+func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	// Missing key
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "", Value: 123, Action: processorhelper.UPSERT},
+	}
+	ap, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
+	assert.Error(t, err)
+	assert.Nil(t, ap)
+}
+
+func TestFactoryCreateLogsProcessor(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Key: "a key", Action: processorhelper.DELETE},
+	}
+
+	tp, err := factory.CreateLogsProcessor(
+		context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
+	assert.NotNil(t, tp)
+	assert.NoError(t, err)
+
+	tp, err = factory.CreateLogsProcessor(
+		context.Background(), component.ProcessorCreateParams{}, cfg, nil)
+	assert.Nil(t, tp)
+	assert.Error(t, err)
+
+	oCfg.Actions = []processorhelper.ActionKeyValue{
+		{Action: processorhelper.DELETE},
+	}
+	tp, err = factory.CreateLogsProcessor(
+		context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
+	assert.Nil(t, tp)
+	assert.Error(t, err)
+}
