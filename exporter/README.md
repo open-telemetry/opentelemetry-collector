@@ -6,10 +6,10 @@ exporter translates the internal format into another defined format.
 Supported trace exporters (sorted alphabetically):
 
 - [Jaeger](jaegerexporter/README.md)
+- [Kafka](kafkaexporter/README.md)
 - [OpenCensus](opencensusexporter/README.md)
 - [OTLP](otlpexporter/README.md)
 - [Zipkin](zipkinexporter/README.md)
-- [Kafka](kafkaexporter/README.md)
 
 Supported metric exporters (sorted alphabetically):
 
