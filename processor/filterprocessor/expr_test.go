@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -125,7 +126,9 @@ func filterMetrics(t *testing.T, include []string, exclude []string, mds []pdata
 	next := &exportertest.SinkMetricsExporter{}
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{},
+		component.ProcessorCreateParams{
+			Logger: zap.NewNop(),
+		},
 		cfg,
 		next,
 	)

@@ -19,7 +19,7 @@ import (
 )
 
 type Matcher interface {
-	MatchMetric(metric pdata.Metric) bool
+	MatchMetric(metric pdata.Metric) (bool, error)
 }
 
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,

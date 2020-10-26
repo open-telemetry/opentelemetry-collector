@@ -42,6 +42,6 @@ func newNameMatcher(config *MatchProperties) (*nameMatcher, error) {
 
 // MatchMetric matches a metric using the metric properties configured on the nameMatcher.
 // A metric only matches if every metric property configured on the nameMatcher is a match.
-func (m *nameMatcher) MatchMetric(metric pdata.Metric) bool {
-	return m.nameFilters.Matches(metric.Name())
+func (m *nameMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
+	return m.nameFilters.Matches(metric.Name()), nil
 }

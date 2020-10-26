@@ -35,11 +35,15 @@ func newExprMatcher(expressions []string) (*exprMatcher, error) {
 	return m, nil
 }
 
-func (m *exprMatcher) MatchMetric(metric pdata.Metric) bool {
+func (m *exprMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
 	for _, matcher := range m.matchers {
-		if matcher.MatchMetric(metric) {
-			return true
+		matched, err := matcher.MatchMetric(metric)
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
