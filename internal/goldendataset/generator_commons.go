@@ -99,7 +99,7 @@ func generateTraceID(random io.Reader) otlpcommon.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return otlpcommon.NewTraceID(r[:])
+	return otlpcommon.NewTraceID(r)
 }
 
 func generateSpanID(random io.Reader) otlpcommon.SpanID {
@@ -108,5 +108,5 @@ func generateSpanID(random io.Reader) otlpcommon.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return otlpcommon.NewSpanID(r[:])
+	return otlpcommon.NewSpanID(r)
 }

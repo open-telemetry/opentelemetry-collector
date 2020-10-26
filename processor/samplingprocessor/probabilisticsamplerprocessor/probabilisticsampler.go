@@ -111,8 +111,9 @@ func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpa
 			// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 			// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 			// Hashing here prevents bias due to such systems.
+			tidBytes := span.TraceID().Bytes()
 			sampled := sp == mustSampleSpan ||
-				hash(span.TraceID().Bytes(), tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
+				hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
 			if sampled {
 				spns.Append(span)

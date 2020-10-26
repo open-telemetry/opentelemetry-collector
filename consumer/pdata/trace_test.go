@@ -92,12 +92,20 @@ func TestSpanCountWithNils(t *testing.T) {
 	}).SpanCount())
 }
 
-func TestTraceID(t *testing.T) {
-	tid := NewTraceID(nil)
-	assert.EqualValues(t, []byte(nil), tid.Bytes())
+func TestSpanID(t *testing.T) {
+	sid := InvalidSpanID()
+	assert.EqualValues(t, [8]byte{}, sid.Bytes())
 
-	tid = NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
+	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
+}
+
+func TestTraceID(t *testing.T) {
+	tid := InvalidTraceID()
+	assert.EqualValues(t, [16]byte{}, tid.Bytes())
+
+	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
 }
 
 func TestToFromOtlp(t *testing.T) {
@@ -174,5 +182,31 @@ func BenchmarkTracesClone(b *testing.B) {
 		if clone.ResourceSpans().Len() != traces.ResourceSpans().Len() {
 			b.Fail()
 		}
+	}
+}
+
+func BenchmarkTracesToOtlp(b *testing.B) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkTracesFromOtlp(b *testing.B) {
+	baseTraces := NewTraces()
+	fillTestResourceSpansSlice(baseTraces.ResourceSpans())
+	buf, err := baseTraces.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		traces := NewTraces()
+		require.NoError(b, traces.FromOtlpProtoBytes(buf))
+		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
 	}
 }

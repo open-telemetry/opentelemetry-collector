@@ -541,9 +541,9 @@ func generateProtoProcess() *model.Process {
 func generateTraceDataOneSpanNoResource() pdata.Traces {
 	td := testdata.GenerateTraceDataOneSpanNoResource()
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-	span.SetSpanID(pdata.NewSpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetTraceID(pdata.NewTraceID(
-		[]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
 	span.SetStartTime(testSpanStartTimestamp)
@@ -729,7 +729,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 
 	span := spans.At(1)
 	span.SetName("operationB")
-	span.SetSpanID(pdata.NewSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetKind(pdata.SpanKindSERVER)
 	span.SetTraceID(spans.At(0).TraceID())
@@ -784,7 +784,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 
 	span := spans.At(1)
 	span.SetName("operationC")
-	span.SetSpanID(pdata.NewSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTime(spans.At(0).EndTime())
 	span.SetEndTime(spans.At(0).EndTime() + 1000000)

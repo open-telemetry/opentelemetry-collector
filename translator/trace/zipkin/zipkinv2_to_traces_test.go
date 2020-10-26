@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestZipkinSpansToInternalTraces(t *testing.T) {
@@ -80,8 +79,8 @@ func generateSpanNoEndpoints() []*zipkinmodel.SpanModel {
 	spans[0] = &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID: convertTraceID(
-				pdata.NewTraceID([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
-			ID: convertSpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+				pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
+			ID: convertSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 		},
 		Name:           "MinimalData",
 		Kind:           zipkinmodel.Client,
@@ -113,8 +112,8 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	ils.Spans().Resize(1)
 	span := ils.Spans().At(0)
 	span.SetTraceID(
-		pdata.NewTraceID([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
-	span.SetSpanID(pdata.NewSpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
+		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
 	span.SetKind(pdata.SpanKindCLIENT)
 	span.SetStartTime(1596911098294000000)
@@ -131,14 +130,4 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 	rsc.Attributes().InitEmptyWithCapacity(1)
 	rsc.Attributes().UpsertString(conventions.AttributeServiceName, "SoleAttr")
 	return td
-}
-
-func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
-	h, l, _ := tracetranslator.TraceIDToUInt64Pair(t)
-	return zipkinmodel.TraceID{High: h, Low: l}
-}
-
-func convertSpanID(s []byte) zipkinmodel.ID {
-	id, _ := tracetranslator.BytesToUInt64SpanID(s)
-	return zipkinmodel.ID(id)
 }

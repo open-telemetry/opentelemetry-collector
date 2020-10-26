@@ -138,14 +138,10 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	// span kind).
 	dest.SetKind(ocSpanKindToInternal(src.Kind, src.Attributes))
 
-	dest.SetTraceID(pdata.NewTraceID(src.TraceId))
-	dest.SetSpanID(pdata.NewSpanID(src.SpanId))
+	dest.SetTraceID(traceIDToInternal(src.TraceId))
+	dest.SetSpanID(spanIDToInternal(src.SpanId))
 	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
-
-	// Empty parentSpanId can be set as a nil value, an zero len slice or an all-zeros slice
-	if hasBytesValue(src.ParentSpanId) {
-		dest.SetParentSpanID(pdata.NewSpanID(src.ParentSpanId))
-	}
+	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
 	dest.SetStartTime(pdata.TimestampToUnixNano(src.StartTime))
@@ -159,13 +155,20 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	ocSameProcessAsParentSpanToInternal(src.SameProcessAsParentSpan, dest)
 }
 
-func hasBytesValue(s []byte) bool {
-	for _, b := range s {
-		if b != 0 {
-			return true
-		}
-	}
-	return false
+// Transforms the byte slice trace ID into a [16]byte internal pdata.TraceID.
+// If larger input then it is truncated to 16 bytes.
+func traceIDToInternal(traceID []byte) pdata.TraceID {
+	tid := [16]byte{}
+	copy(tid[:], traceID)
+	return pdata.NewTraceID(tid)
+}
+
+// Transforms the byte slice span ID into a [8]byte internal pdata.SpanID.
+// If larger input then it is truncated to 8 bytes.
+func spanIDToInternal(spanID []byte) pdata.SpanID {
+	sid := [8]byte{}
+	copy(sid[:], spanID)
+	return pdata.NewSpanID(sid)
 }
 
 func ocStatusToInternal(ocStatus *octrace.Status, dest pdata.SpanStatus) {
@@ -342,9 +345,8 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 		link := links.At(i)
 		i++
 
-		link.SetTraceID(pdata.NewTraceID(ocLink.TraceId))
-
-		link.SetSpanID(pdata.NewSpanID(ocLink.SpanId))
+		link.SetTraceID(traceIDToInternal(ocLink.TraceId))
+		link.SetSpanID(spanIDToInternal(ocLink.SpanId))
 		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))

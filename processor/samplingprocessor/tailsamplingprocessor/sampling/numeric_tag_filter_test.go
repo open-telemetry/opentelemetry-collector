@@ -68,7 +68,7 @@ func TestNumericTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pdata.NewTraceID(u[:]), c.Trace)
+			decision, err := filter.Evaluate(pdata.NewTraceID(u), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
@@ -79,7 +79,7 @@ func TestOnDroppedSpans_NumericTagFilter(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 	u, _ := uuid.NewRandom()
 	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
-	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 }
@@ -101,8 +101,8 @@ func newTraceIntAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey str
 	ils := rs.InstrumentationLibrarySpans().At(0)
 	ils.Spans().Resize(1)
 	span := ils.Spans().At(0)
-	span.SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	attributes := make(map[string]pdata.AttributeValue)
 	attributes[spanAttrKey] = pdata.NewAttributeValueInt(spanAttrValue)
 	span.Attributes().InitFromMap(attributes)

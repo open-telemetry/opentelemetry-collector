@@ -17,7 +17,6 @@ package zipkin
 import (
 	"encoding/json"
 	"io/ioutil"
-	"reflect"
 	"sort"
 	"strconv"
 	"testing"
@@ -77,13 +76,8 @@ func Test_hexIDToOCID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := hexIDToOCID(tt.hexStr)
-			if tt.wantErr != nil && tt.wantErr != err {
-				t.Errorf("hexIDToOCID() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("hexIDToOCID() = %v, want %v", got, tt.want)
-			}
+			require.Equal(t, tt.wantErr, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -129,13 +123,8 @@ func Test_hexTraceIDToOCTraceID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := hexTraceIDToOCTraceID(tt.hexStr)
-			if tt.wantErr != nil && tt.wantErr != err {
-				t.Errorf("hexTraceIDToOCTraceID() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("hexTraceIDToOCTraceID() = %v, want %v", got, tt.want)
-			}
+			require.Equal(t, tt.wantErr, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

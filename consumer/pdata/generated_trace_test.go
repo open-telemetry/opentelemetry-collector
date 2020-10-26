@@ -465,8 +465,8 @@ func TestSpan_CopyTo(t *testing.T) {
 func TestSpan_TraceID(t *testing.T) {
 	ms := NewSpan()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
-	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
+	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
 }
@@ -474,8 +474,8 @@ func TestSpan_TraceID(t *testing.T) {
 func TestSpan_SpanID(t *testing.T) {
 	ms := NewSpan()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
-	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
+	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
 }
@@ -492,8 +492,8 @@ func TestSpan_TraceState(t *testing.T) {
 func TestSpan_ParentSpanID(t *testing.T) {
 	ms := NewSpan()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewSpanID(nil), ms.ParentSpanID())
-	testValParentSpanID := NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, NewSpanID([8]byte{}), ms.ParentSpanID())
+	testValParentSpanID := NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetParentSpanID(testValParentSpanID)
 	assert.EqualValues(t, testValParentSpanID, ms.ParentSpanID())
 }
@@ -903,8 +903,8 @@ func TestSpanLink_CopyTo(t *testing.T) {
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
-	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
+	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
 }
@@ -912,8 +912,8 @@ func TestSpanLink_TraceID(t *testing.T) {
 func TestSpanLink_SpanID(t *testing.T) {
 	ms := NewSpanLink()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
-	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
+	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
 }
@@ -1051,10 +1051,10 @@ func generateTestSpan() Span {
 }
 
 func fillTestSpan(tv Span) {
-	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetTraceState(TraceState("congo=congos"))
-	tv.SetParentSpanID(NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetParentSpanID(NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
 	tv.SetKind(SpanKindSERVER)
 	tv.SetStartTime(TimestampUnixNano(1234567890))
@@ -1117,8 +1117,8 @@ func generateTestSpanLink() SpanLink {
 }
 
 func fillTestSpanLink(tv SpanLink) {
-	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetTraceState(TraceState("congo=congos"))
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))

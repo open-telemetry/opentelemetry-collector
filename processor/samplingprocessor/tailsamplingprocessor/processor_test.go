@@ -15,7 +15,6 @@
 package tailsamplingprocessor
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"sort"
@@ -388,8 +387,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			a, _ := tracetranslator.BytesToInt64SpanID(got[i].Bytes())
-			b, _ := tracetranslator.BytesToInt64SpanID(got[j].Bytes())
+			a := tracetranslator.BytesToInt64SpanID(got[i].Bytes())
+			b := tracetranslator.BytesToInt64SpanID(got[j].Bytes())
 			return a < b
 		})
 
@@ -419,7 +418,7 @@ func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
 func findTrace(a []pdata.Traces, traceID pdata.TraceID) *pdata.Traces {
 	for _, batch := range a {
 		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-		if bytes.Equal(traceID.Bytes(), id.Bytes()) {
+		if traceID.Bytes() == id.Bytes() {
 			return &batch
 		}
 	}

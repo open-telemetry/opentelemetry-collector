@@ -60,7 +60,8 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	spanID := tracetranslator.Int64ToByteSpanID(zSpan.ID)
 	var parentID []byte
 	if zSpan.ParentID != nil {
-		parentID = tracetranslator.Int64ToByteSpanID(*zSpan.ParentID)
+		parentIDBytes := tracetranslator.Int64ToByteSpanID(*zSpan.ParentID)
+		parentID = parentIDBytes[:]
 	}
 
 	parsedAnnotations := parseZipkinV1ThriftAnnotations(zSpan.Annotations)
@@ -83,8 +84,8 @@ func zipkinV1ThriftToOCSpan(zSpan *zipkincore.Span) (*tracepb.Span, *annotationP
 	}
 
 	ocSpan := &tracepb.Span{
-		TraceId:      traceID,
-		SpanId:       spanID,
+		TraceId:      traceID[:],
+		SpanId:       spanID[:],
 		ParentSpanId: parentID,
 		Status:       ocStatus,
 		Kind:         parsedAnnotations.Kind,

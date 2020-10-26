@@ -103,13 +103,13 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = otlpcommon.NewSpanID(nil)
+			parentID = otlpcommon.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
-			if traceID.Bytes() == nil {
+			if !traceID.IsValid() {
 				traceID = generateTraceID(random)
 			}
-			if parentID.Bytes() == nil {
+			if !parentID.IsValid() {
 				parentID = generateSpanID(random)
 			}
 		}

@@ -106,13 +106,13 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 func GenerateSequentialTraceID(id uint64) pdata.TraceID {
 	var traceID [16]byte
 	binary.PutUvarint(traceID[:], id)
-	return pdata.NewTraceID(traceID[:])
+	return pdata.NewTraceID(traceID)
 }
 
 func GenerateSequentialSpanID(id uint64) pdata.SpanID {
 	var spanID [8]byte
 	binary.PutUvarint(spanID[:], id)
-	return pdata.NewSpanID(spanID[:])
+	return pdata.NewSpanID(spanID)
 }
 
 func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {

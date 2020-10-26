@@ -69,7 +69,7 @@ func TestStringTagFilter(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
+			decision, err := filter.Evaluate(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
@@ -87,8 +87,8 @@ func newTraceStringAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey 
 	ils := rs.InstrumentationLibrarySpans().At(0)
 	ils.Spans().Resize(1)
 	span := ils.Spans().At(0)
-	span.SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	attributes := make(map[string]pdata.AttributeValue)
 	attributes[spanAttrKey] = pdata.NewAttributeValueString(spanAttrValue)
 	span.Attributes().InitFromMap(attributes)
@@ -102,7 +102,7 @@ func TestOnDroppedSpans_StringAttribute(t *testing.T) {
 	var empty = map[string]pdata.AttributeValue{}
 	u, _ := uuid.NewRandom()
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"})
-	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u[:]), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
+	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, NotSampled)
 }

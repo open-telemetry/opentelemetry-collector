@@ -14,57 +14,93 @@
 
 package v1
 
+import (
+	"encoding/hex"
+	"errors"
+)
+
+const traceIDSize = 16
+
+var errInvalidTraceIDSize = errors.New("invalid length for SpanID")
+
 // TraceID is a custom data type that is used for all trace_id fields in OTLP
 // Protobuf messages.
-type TraceID bytesID
-
-// NewTraceID creates a TraceID from a byte slice.
-func NewTraceID(bytes []byte) TraceID {
-	return TraceID{id: bytes}
+type TraceID struct {
+	id [traceIDSize]byte
 }
 
-// Bytes returns the byte slice representation of the ID.
-func (t TraceID) Bytes() []byte {
-	return bytesID(t).Bytes()
+// NewTraceID creates a TraceID from a byte slice.
+func NewTraceID(bytes [16]byte) TraceID {
+	return TraceID{
+		id: bytes,
+	}
 }
 
 // HexString returns hex representation of the ID.
-func (t TraceID) HexString() string {
-	return bytesID(t).HexString()
+func (tid TraceID) HexString() string {
+	if !tid.IsValid() {
+		return ""
+	}
+	return hex.EncodeToString(tid.id[:])
 }
 
 // Size returns the size of the data to serialize.
-func (t *TraceID) Size() int {
-	return (*bytesID)(t).Size()
+func (tid *TraceID) Size() int {
+	if !tid.IsValid() {
+		return 0
+	}
+	return traceIDSize
 }
 
 // Equal returns true if ids are equal.
-func (t TraceID) Equal(that TraceID) bool {
-	return bytesID(t).Equal(bytesID(that))
+func (tid TraceID) Equal(that TraceID) bool {
+	return tid.id == that.id
 }
 
-// Compare the ids. See bytes.Compare for expected return values.
-func (t TraceID) Compare(that TraceID) int {
-	return bytesID(t).Compare(bytesID(that))
+// IsValid returns true if id contains at leas one non-zero byte.
+func (tid TraceID) IsValid() bool {
+	return tid.id != [16]byte{}
+}
+
+// Bytes returns the byte array representation of the TraceID.
+func (tid TraceID) Bytes() [16]byte {
+	return tid.id
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
-func (t *TraceID) MarshalTo(data []byte) (n int, err error) {
-	return (*bytesID)(t).MarshalTo(data)
+func (tid *TraceID) MarshalTo(data []byte) (n int, err error) {
+	if !tid.IsValid() {
+		return 0, nil
+	}
+	return marshalBytes(data, tid.id[:])
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
-func (t *TraceID) Unmarshal(data []byte) error {
-	return (*bytesID)(t).Unmarshal(data)
+func (tid *TraceID) Unmarshal(data []byte) error {
+	if len(data) == 0 {
+		tid.id = [16]byte{}
+		return nil
+	}
+
+	if len(data) != traceIDSize {
+		return errInvalidTraceIDSize
+	}
+
+	copy(tid.id[:], data)
+	return nil
 }
 
 // MarshalJSON converts trace id into a hex string enclosed in quotes.
-func (t TraceID) MarshalJSON() ([]byte, error) {
-	return bytesID(t).MarshalJSON()
+func (tid TraceID) MarshalJSON() ([]byte, error) {
+	if !tid.IsValid() {
+		return []byte(`""`), nil
+	}
+	return marshalJSON(tid.id[:])
 }
 
 // UnmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
-func (t *TraceID) UnmarshalJSON(data []byte) error {
-	return (*bytesID)(t).UnmarshalJSON(data)
+func (tid *TraceID) UnmarshalJSON(data []byte) error {
+	tid.id = [16]byte{}
+	return unmarshalJSON(tid.id[:], data)
 }

@@ -231,8 +231,8 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	defer exporter.Shutdown(context.Background())
 
-	traceID := otlpcommon.NewTraceID([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := otlpcommon.NewSpanID([]byte("01234567"))
+	traceID := otlpcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := otlpcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	traces := pdata.TracesFromOtlp([]*tracev1.ResourceSpans{
 		{InstrumentationLibrarySpans: []*tracev1.InstrumentationLibrarySpans{{Spans: []*tracev1.Span{{TraceId: traceID, SpanId: spanID}}}}},
 	})
@@ -240,7 +240,8 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))
-	jTraceID, err := model.TraceIDFromBytes(traceID.Bytes())
+	tidBytes := traceID.Bytes()
+	jTraceID, err := model.TraceIDFromBytes(tidBytes[:])
 	require.NoError(t, err)
 	require.Len(t, requestes, 1)
 	require.Len(t, requestes[0].GetBatch().Spans, 1)
