@@ -273,3 +273,17 @@ the automated [Testbed](testbed/README.md).
 ## Release
 
 See [release](docs/release.md) for details.
+
+## Common Issues
+
+Build fails due to depenedency issues, e.g.
+
+```sh
+go: github.com/golangci/golangci-lint@v1.31.0 requires
+	github.com/tommy-muehle/go-mnd@v1.3.1-0.20200224220436-e6f9a994e8fa: invalid pseudo-version: git fetch --unshallow -f origin in /root/go/pkg/mod/cache/vcs/053b1e985f53e43f78db2b3feaeb7e40a2ae482c92734ba3982ca463d5bf19ce: exit status 128:
+	fatal: git fetch-pack: expected shallow list
+ ```
+
+`go env GOPROXY` should return `https://proxy.golang.org,direct`. If it does not, set it as an environment variable:
+
+`export GOPROXY=https://proxy.golang.org,direct`
