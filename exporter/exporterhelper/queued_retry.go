@@ -154,10 +154,7 @@ func (qrs *queuedRetrySender) start(name string) {
 		_, _ = qrs.consumerSender.send(value)
 		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)
 		inQueueLatencyMs := int64(time.Since(value.queueTime()) / time.Millisecond)
-		stats.Record(ctx,
-			statSendLatencyMs.M(sendLatencyMs),
-			statInQueueLatencyMs.M(inQueueLatencyMs))
-
+		stats.Record(ctx, statSendLatencyMs.M(sendLatencyMs), statInQueueLatencyMs.M(inQueueLatencyMs))
 	})
 	ticker := time.NewTicker(1 * time.Second)
 	go func() {
@@ -176,6 +173,7 @@ func (qrs *queuedRetrySender) start(name string) {
 // send implements the requestSender interface
 func (qrs *queuedRetrySender) send(req request) (int, error) {
 	if !qrs.cfg.Enabled {
+		fmt.Println("queued retry not enabled!!")
 		return qrs.consumerSender.send(req)
 	}
 
@@ -183,6 +181,7 @@ func (qrs *queuedRetrySender) send(req request) (int, error) {
 	// The grpc/http based receivers will cancel the request context after this function returns.
 	req.setContext(noCancellationContext{Context: req.context()})
 	if !qrs.queue.Produce(req) {
+		fmt.Println("ERROR IN QUEUE PRODUCE")
 		return req.count(), errorRefused
 	}
 
