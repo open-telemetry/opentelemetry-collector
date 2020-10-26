@@ -24,7 +24,6 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/queue"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -43,21 +42,18 @@ var (
 		Name:        statQueueLength.Name(),
 		Measure:     statQueueLength,
 		Description: "Current number of batches in the queue",
-		TagKeys:     []tag.Key{processor.TagProcessorNameKey},
 		Aggregation: view.LastValue(),
 	}
 	sendLatencyView = &view.View{
 		Name:        statSendLatencyMs.Name(),
 		Measure:     statSendLatencyMs,
 		Description: "The latency of the successful send operations.",
-		TagKeys:     []tag.Key{processor.TagProcessorNameKey},
 		Aggregation: latencyDistributionAggregation,
 	}
 	inQueueLatencyView = &view.View{
 		Name:        statInQueueLatencyMs.Name(),
 		Measure:     statInQueueLatencyMs,
 		Description: "The \"in queue\" latency of the successful send operations.",
-		TagKeys:     []tag.Key{processor.TagProcessorNameKey},
 		Aggregation: latencyDistributionAggregation,
 	}
 )
@@ -75,7 +71,7 @@ func MetricViews(level configtelemetry.Level) []*view.View {
 
 	legacyViews := []*view.View{queueLengthView, sendLatencyView, inQueueLatencyView}
 
-	return obsreport.ProcessorMetricViews("queued_retry", legacyViews)
+	return obsreport.ProcessorMetricViews("exporter_queued_retry", legacyViews)
 }
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
