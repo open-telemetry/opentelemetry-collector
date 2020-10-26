@@ -95,8 +95,6 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 		return
 	}
 
-	dest.InitEmpty()
-
 	serviceName := process.GetServiceName()
 	if serviceName == tracetranslator.ResourceNoAttrs {
 		return

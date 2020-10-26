@@ -154,8 +154,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-
-		if rm.Resource().IsNil() || rm.Resource().Attributes().Len() == 0 {
+		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
 		} else {
 			appendMapInto(returnedResourceMetrics, returnedMetricNames)

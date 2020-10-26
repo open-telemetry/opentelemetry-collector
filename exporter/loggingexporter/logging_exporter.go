@@ -325,7 +325,7 @@ func (s *loggingExporter) pushTraceData(
 			buf.logEntry("* Nil ResourceSpans")
 			continue
 		}
-		if !rs.Resource().IsNil() {
+		if !rs.Resource().IsEmpty() {
 			buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
 		}
 		ilss := rs.InstrumentationLibrarySpans()
@@ -391,7 +391,7 @@ func (s *loggingExporter) pushMetricsData(
 			buf.logEntry("* Nil ResourceMetrics")
 			continue
 		}
-		if !rm.Resource().IsNil() {
+		if !rm.Resource().IsEmpty() {
 			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
 		}
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -504,7 +504,7 @@ func (s *loggingExporter) pushLogData(
 			buf.logEntry("* Nil ResourceLog")
 			continue
 		}
-		if !rl.Resource().IsNil() {
+		if !rl.Resource().IsEmpty() {
 			buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
 		}
 

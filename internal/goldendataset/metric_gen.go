@@ -94,7 +94,6 @@ func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
 	for i := 0; i < cfg.NumResourceMetrics; i++ {
 		rm := rms.At(i)
 		resource := rm.Resource()
-		resource.InitEmpty()
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
 			resource.Attributes().Insert(
 				fmt.Sprintf("resource-attr-name-%d", j),

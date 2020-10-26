@@ -68,7 +68,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 			if rs.IsNil() {
 				continue
 			}
-			if !rs.Resource().IsNil() {
+			if !rs.Resource().IsEmpty() {
 				rs.Resource().Attributes().Sort()
 			}
 			ilss := rss.At(i).InstrumentationLibrarySpans()
@@ -95,7 +95,6 @@ func generateTraceData(serviceName, inputName string, attrs map[string]pdata.Att
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
-		rs.Resource().InitEmpty()
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
 	rs.InstrumentationLibrarySpans().Resize(1)

@@ -368,12 +368,8 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 }
 
 func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
-	if tracetranslator.ResourceNotSet == localServiceName {
-		return
-	}
-
-	resource.InitEmpty()
-	if tracetranslator.ResourceNoAttrs == localServiceName {
+	if tracetranslator.ResourceNotSet == localServiceName ||
+		tracetranslator.ResourceNoAttrs == localServiceName {
 		return
 	}
 

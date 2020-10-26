@@ -617,11 +617,7 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 
 // IsEmpty returns true if the underlying data are equivalent with an empty message.
 func (am AttributeMap) IsEmpty() bool {
-	if len(*am.orig) == 0 {
-		return true
-	}
-
-	return false
+	return len(*am.orig) == 0
 }
 
 // Sort sorts the entries in the AttributeMap so two instances can be compared.

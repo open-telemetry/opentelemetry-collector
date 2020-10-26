@@ -174,7 +174,6 @@ func generateTraceData(attributes map[string]string) pdata.Traces {
 		return td
 	}
 	resource := td.ResourceSpans().At(0).Resource()
-	resource.InitEmpty()
 	for k, v := range attributes {
 		resource.Attributes().InsertString(k, v)
 	}
@@ -188,7 +187,6 @@ func generateMetricData(attributes map[string]string) pdata.Metrics {
 		return md
 	}
 	resource := md.ResourceMetrics().At(0).Resource()
-	resource.InitEmpty()
 	for k, v := range attributes {
 		resource.Attributes().InsertString(k, v)
 	}
@@ -202,7 +200,6 @@ func generateLogData(attributes map[string]string) pdata.Logs {
 		return ld
 	}
 	resource := ld.ResourceLogs().At(0).Resource()
-	resource.InitEmpty()
 	for k, v := range attributes {
 		resource.Attributes().InsertString(k, v)
 	}
@@ -250,7 +247,7 @@ func (tln *testLogsConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error
 }
 
 func sortResourceAttributes(resource pdata.Resource) {
-	if resource.IsNil() {
+	if resource.IsEmpty() {
 		return
 	}
 	resource.Attributes().Sort()

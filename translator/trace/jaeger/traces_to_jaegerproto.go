@@ -57,7 +57,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.IsEmpty() && ilss.Len() == 0 {
 		return nil, nil
 	}
 
@@ -104,7 +104,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 
 	process := model.Process{}
-	if resource.IsNil() {
+	if resource.IsEmpty() {
 		process.ServiceName = tracetranslator.ResourceNotSet
 		return &process
 	}

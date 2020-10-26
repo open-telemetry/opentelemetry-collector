@@ -79,7 +79,7 @@ func getSDKLangToOCLangCodeMap() map[string]int32 {
 }
 
 func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
-	if resource.IsNil() {
+	if resource.IsEmpty() {
 		return nil, nil
 	}
 	attrs := resource.Attributes()

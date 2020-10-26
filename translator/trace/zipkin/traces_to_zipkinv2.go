@@ -64,7 +64,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.IsEmpty() && ilss.Len() == 0 {
 		return nil, nil
 	}
 
@@ -253,7 +253,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 ) (serviceName string, zTags map[string]string) {
 
 	zTags = make(map[string]string)
-	if resource.IsNil() {
+	if resource.IsEmpty() {
 		return tracetranslator.ResourceNotSet, zTags
 	}
 

@@ -21,7 +21,6 @@ import (
 )
 
 func initResource1(r pdata.Resource) {
-	r.InitEmpty()
 	initResourceAttributes1(r.Attributes())
 }
 
@@ -32,7 +31,6 @@ func generateOtlpResource1() otlpresource.Resource {
 }
 
 func initResource2(r pdata.Resource) {
-	r.InitEmpty()
 	initResourceAttributes2(r.Attributes())
 }
 

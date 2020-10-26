@@ -496,7 +496,6 @@ func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 
 func generateResourceWithOcNodeAndResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.OCAttributeProcessStartTime:   pdata.NewAttributeValueString("2020-02-11T20:26:00Z"),
 		conventions.AttributeHostHostname:         pdata.NewAttributeValueString("host1"),

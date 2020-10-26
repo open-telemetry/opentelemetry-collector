@@ -316,7 +316,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name: "one-empty-resource-spans",
-			td:   wrapTraceWithEmptyResource(testdata.GenerateTraceDataOneEmptyResourceSpans()),
+			td:   testdata.GenerateTraceDataOneEmptyResourceSpans(),
 			oc:   consumerdata.TraceData{Node: ocNode},
 		},
 
@@ -328,7 +328,7 @@ func TestOcToInternal(t *testing.T) {
 
 		{
 			name: "one-span-no-resource",
-			td:   wrapTraceWithEmptyResource(testdata.GenerateTraceDataOneSpanNoResource()),
+			td:   testdata.GenerateTraceDataOneSpanNoResource(),
 			oc: consumerdata.TraceData{
 				Node:     ocNode,
 				Resource: &ocresource.Resource{},
@@ -468,12 +468,6 @@ func BenchmarkSpansWithAttributesUnmarshal(b *testing.B) {
 			b.Fail()
 		}
 	}
-}
-
-// TODO: Try to avoid unnecessary Resource object allocation.
-func wrapTraceWithEmptyResource(td pdata.Traces) pdata.Traces {
-	td.ResourceSpans().At(0).Resource().InitEmpty()
-	return td
 }
 
 func generateSpanWithAttributes(len int) *octrace.Span {

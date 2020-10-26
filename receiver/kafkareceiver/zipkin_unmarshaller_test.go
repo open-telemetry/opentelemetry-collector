@@ -32,7 +32,6 @@ import (
 func TestUnmarshallZipkin(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
 	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(
 		map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString("my_service")})
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)

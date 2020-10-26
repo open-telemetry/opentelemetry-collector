@@ -302,7 +302,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	rs.Resource().InitEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
 	rs.Resource().Attributes().InsertBool("bool", true)
 	rs.Resource().Attributes().InsertString("string", "yes")

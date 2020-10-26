@@ -36,7 +36,6 @@ import (
 
 func TestResourceToOC(t *testing.T) {
 	emptyResource := pdata.NewResource()
-	emptyResource.InitEmpty()
 
 	ocNode := generateOcNode()
 	ocResource := generateOcResource()
@@ -84,7 +83,6 @@ func TestResourceToOC(t *testing.T) {
 
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("cluster1"),
 		conventions.AttributeK8sPod:        pdata.NewAttributeValueString("pod1"),
@@ -243,8 +241,8 @@ func TestResourceToOCAndBack(t *testing.T) {
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
-			if expected.IsNil() {
-				assert.True(t, actual.IsNil())
+			if expected.IsEmpty() {
+				assert.True(t, actual.IsEmpty())
 			} else {
 				expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 					a, ok := actual.Attributes().Get(k)

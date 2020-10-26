@@ -30,9 +30,6 @@ func (rp *resourceProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		resource := rss.At(i).Resource()
-		if resource.IsNil() {
-			resource.InitEmpty()
-		}
 		attrs := resource.Attributes()
 		rp.attrProc.Process(attrs)
 	}
@@ -44,9 +41,6 @@ func (rp *resourceProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics)
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
-		if resource.IsNil() {
-			resource.InitEmpty()
-		}
 		if resource.Attributes().Len() == 0 {
 			resource.Attributes().InitEmptyWithCapacity(1)
 		}
@@ -60,9 +54,6 @@ func (rp *resourceProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdat
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		resource := rls.At(i).Resource()
-		if resource.IsNil() {
-			resource.InitEmpty()
-		}
 		attrs := resource.Attributes()
 		rp.attrProc.Process(attrs)
 	}

@@ -162,6 +162,33 @@ func TestSpan_Matching_False(t *testing.T) {
 	}
 }
 
+func resource(service string) pdata.Resource {
+	r := pdata.NewResource()
+	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString(service)})
+	return r
+}
+
+func TestSpan_MatchingCornerCases(t *testing.T) {
+	cfg := &filterconfig.MatchProperties{
+		Config:   *createConfig(filterset.Strict),
+		Services: []string{"svcA"},
+		Attributes: []filterconfig.Attribute{
+			{
+				Key:   "keyOne",
+				Value: nil,
+			},
+		},
+	}
+
+	mp, err := NewMatcher(cfg)
+	assert.Nil(t, err)
+	assert.NotNil(t, mp)
+
+	emptySpan := pdata.NewSpan()
+	emptySpan.InitEmpty()
+	assert.False(t, mp.MatchSpan(emptySpan, resource("svcA"), pdata.NewInstrumentationLibrary()))
+}
+
 func TestSpan_MissingServiceName(t *testing.T) {
 	cfg := &filterconfig.MatchProperties{
 		Config:   *createConfig(filterset.Regexp),
@@ -234,7 +261,6 @@ func TestSpan_Matching_True(t *testing.T) {
 	assert.NotNil(t, span)
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
 	})
