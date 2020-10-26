@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
@@ -77,6 +78,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, processMetricsViews.Views()...)
 	views = append(views, fluentobserv.Views(level)...)
+	views = append(views, exporterhelper.MetricViews(level)...)
 	tel.views = views
 	if err = view.Register(views...); err != nil {
 		return err
