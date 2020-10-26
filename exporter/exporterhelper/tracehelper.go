@@ -33,16 +33,13 @@ type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
 	pusher traceDataPusher
-
-	queuedAt time.Time
 }
 
 func newTracesRequest(ctx context.Context, td pdata.Traces, pusher traceDataPusher) request {
 	return &tracesRequest{
-		baseRequest: baseRequest{ctx: ctx},
+		baseRequest: baseRequest{ctx: ctx, queuedAt: time.Now()},
 		td:          td,
 		pusher:      pusher,
-		queuedAt:    time.Now(),
 	}
 }
 

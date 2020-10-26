@@ -16,6 +16,7 @@ package exporterhelper
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -46,7 +47,7 @@ type metricsRequest struct {
 
 func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetricsData) request {
 	return &metricsRequest{
-		baseRequest: baseRequest{ctx: ctx},
+		baseRequest: baseRequest{ctx: ctx, queuedAt: time.Now()},
 		md:          md,
 		pusher:      pusher,
 	}

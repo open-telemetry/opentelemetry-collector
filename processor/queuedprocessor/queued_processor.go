@@ -215,7 +215,6 @@ func (sp *queuedProcessor) Start(ctx context.Context, _ component.Host) error {
 
 	sp.queue.StartConsumers(sp.numWorkers, func(item interface{}) {
 		value := item.(queueItem)
-		startTime := timeNow()
 		sp.processItemFromQueue(value)
 	})
 

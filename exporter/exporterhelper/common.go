@@ -66,7 +66,12 @@ type requestSender interface {
 
 // baseRequest is a base implementation for the request.
 type baseRequest struct {
-	ctx context.Context
+	ctx      context.Context
+	queuedAt time.Time
+}
+
+func (req *baseRequest) queueTime() time.Time {
+	return req.queuedAt
 }
 
 func (req *baseRequest) context() context.Context {
