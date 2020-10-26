@@ -144,7 +144,7 @@ func TestConsumerGroupHandler(t *testing.T) {
 	err := c.Setup(testSession)
 	require.NoError(t, err)
 	_, ok := <-c.ready
-	assert.Equal(t, false, ok)
+	assert.False(t, ok)
 	viewData, err := view.RetrieveData(statPartitionStart.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))

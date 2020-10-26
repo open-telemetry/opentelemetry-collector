@@ -161,9 +161,9 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Resource().IsNil())
+	assert.True(t, ms.Resource().IsNil())
 	ms.Resource().InitEmpty()
-	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.False(t, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
@@ -313,9 +313,9 @@ func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	assert.True(t, ms.InstrumentationLibrary().IsNil())
 	ms.InstrumentationLibrary().InitEmpty()
-	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -528,9 +528,9 @@ func TestLogRecord_Name(t *testing.T) {
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Body().IsNil())
+	assert.True(t, ms.Body().IsNil())
 	ms.Body().InitEmpty()
-	assert.EqualValues(t, false, ms.Body().IsNil())
+	assert.False(t, ms.Body().IsNil())
 	fillTestAttributeValue(ms.Body())
 	assert.EqualValues(t, generateTestAttributeValue(), ms.Body())
 }
