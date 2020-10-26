@@ -16,6 +16,7 @@ package exporterhelper
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -32,6 +33,8 @@ type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
 	pusher traceDataPusher
+
+	queuedAt time.Time
 }
 
 func newTracesRequest(ctx context.Context, td pdata.Traces, pusher traceDataPusher) request {
@@ -39,6 +42,7 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher traceDataPush
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
 		pusher:      pusher,
+		queuedAt:    time.Now(),
 	}
 }
 

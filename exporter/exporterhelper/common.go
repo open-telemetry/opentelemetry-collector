@@ -55,6 +55,8 @@ type request interface {
 	onPartialError(consumererror.PartialError) request
 	// Returns the count of spans/metric points or log records.
 	count() int
+
+	queueTime() time.Time
 }
 
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
@@ -196,7 +198,7 @@ func (be *baseExporter) Start(ctx context.Context, host component.Host) error {
 		}
 
 		// If no error then start the queuedRetrySender.
-		be.qrSender.start()
+		be.qrSender.start(be.cfg.Name())
 	})
 	return err
 }

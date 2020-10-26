@@ -22,9 +22,61 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/jaegertracing/jaeger/pkg/queue"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor"
 )
+
+var (
+	statInQueueLatencyMs = stats.Int64("queue_latency", "Latency (in milliseconds) that a batch stayed in queue", stats.UnitMilliseconds)
+	statSendLatencyMs    = stats.Int64("send_latency", "Latency (in milliseconds) to send a batch", stats.UnitMilliseconds)
+	statQueueLength      = stats.Int64("queue_length", "Current length of the queue (in batches)", stats.UnitDimensionless)
+
+	latencyDistributionAggregation = view.Distribution(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000)
+
+	queueLengthView = &view.View{
+		Name:        statQueueLength.Name(),
+		Measure:     statQueueLength,
+		Description: "Current number of batches in the queue",
+		TagKeys:     []tag.Key{processor.TagProcessorNameKey},
+		Aggregation: view.LastValue(),
+	}
+	sendLatencyView = &view.View{
+		Name:        statSendLatencyMs.Name(),
+		Measure:     statSendLatencyMs,
+		Description: "The latency of the successful send operations.",
+		TagKeys:     []tag.Key{processor.TagProcessorNameKey},
+		Aggregation: latencyDistributionAggregation,
+	}
+	inQueueLatencyView = &view.View{
+		Name:        statInQueueLatencyMs.Name(),
+		Measure:     statInQueueLatencyMs,
+		Description: "The \"in queue\" latency of the successful send operations.",
+		TagKeys:     []tag.Key{processor.TagProcessorNameKey},
+		Aggregation: latencyDistributionAggregation,
+	}
+)
+
+// MetricViews return the metrics views according to given telemetry level.
+func MetricViews(level configtelemetry.Level) []*view.View {
+	if level == configtelemetry.LevelNone {
+		return nil
+	}
+
+	tagKeys := processor.MetricTagKeys(level)
+	if tagKeys == nil {
+		return nil
+	}
+
+	legacyViews := []*view.View{queueLengthView, sendLatencyView, inQueueLatencyView}
+
+	return obsreport.ProcessorMetricViews("queued_retry", legacyViews)
+}
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
@@ -98,11 +150,31 @@ func newQueuedRetrySender(qCfg QueueSettings, rCfg RetrySettings, nextSender req
 }
 
 // start is invoked during service startup.
-func (qrs *queuedRetrySender) start() {
+func (qrs *queuedRetrySender) start(name string) {
+	ctx := obsreport.ExporterContext(context.Background(), name)
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		value := item.(request)
+		startTime := time.Now()
 		_, _ = qrs.consumerSender.send(value)
+		sendLatencyMs := int64(time.Since(startTime) / time.Millisecond)
+		inQueueLatencyMs := int64(time.Since(value.queueTime()) / time.Millisecond)
+		stats.Record(ctx,
+			statSendLatencyMs.M(sendLatencyMs),
+			statInQueueLatencyMs.M(inQueueLatencyMs))
+
 	})
+	ticker := time.NewTicker(1 * time.Second)
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-qrs.retryStopCh:
+				return
+			case <-ticker.C:
+				stats.Record(ctx, statQueueLength.M(int64(qrs.queue.Size())))
+			}
+		}
+	}()
 }
 
 // send implements the requestSender interface
