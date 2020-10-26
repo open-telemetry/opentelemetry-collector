@@ -286,16 +286,18 @@ func attributeValueToString(av pdata.AttributeValue) string {
 }
 
 func attributeValueArrayToString(av pdata.AnyValueArray) string {
-	retStr := "["
+	var b strings.Builder
+	b.WriteByte('[')
 	for i := 0; i < av.Len(); i++ {
-		retStr += attributeValueToString(av.At(i))
-
 		if i < av.Len()-1 {
-			retStr += ", "
+			fmt.Fprintf(&b, "%s, ", attributeValueToString(av.At(i)))
+		} else {
+			b.WriteString(attributeValueToString(av.At(i)))
 		}
 	}
 
-	return retStr + "]"
+	b.WriteByte(']')
+	return b.String()
 }
 
 type loggingExporter struct {
