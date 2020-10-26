@@ -22,7 +22,7 @@ import (
 
 // GenerateResource generates a OTLP Resource object with representative attributes for the
 // underlying resource type specified by the rscID input parameter.
-func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
+func GenerateResource(rscID PICTInputResource) otlpresource.Resource {
 	var attrs map[string]interface{}
 	switch rscID {
 	case ResourceNil:
@@ -50,7 +50,7 @@ func GenerateResource(rscID PICTInputResource) *otlpresource.Resource {
 	} else {
 		dropped = uint32(len(attrs) % 4)
 	}
-	return &otlpresource.Resource{
+	return otlpresource.Resource{
 		Attributes:             convertMapToAttributeKeyValues(attrs),
 		DroppedAttributesCount: dropped,
 	}

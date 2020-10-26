@@ -61,8 +61,8 @@ func TestResourceToOC(t *testing.T) {
 		{
 			name:       "empty",
 			resource:   emptyResource,
-			ocNode:     &occommon.Node{},
-			ocResource: &ocresource.Resource{},
+			ocNode:     nil,
+			ocResource: nil,
 		},
 
 		{

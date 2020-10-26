@@ -31,12 +31,12 @@ import (
 func TestOcNodeResourceToInternal(t *testing.T) {
 	resource := pdata.NewResource()
 	ocNodeResourceToInternal(nil, nil, resource)
-	assert.True(t, resource.IsNil())
+	assert.True(t, resource.IsEmpty())
 
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
-	assert.False(t, resource.IsNil())
+	assert.True(t, resource.IsEmpty())
 
 	ocNode = generateOcNode()
 	ocResource = generateOcResource()
