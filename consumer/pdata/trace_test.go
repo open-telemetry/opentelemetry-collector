@@ -184,3 +184,29 @@ func BenchmarkTracesClone(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkTracesToOtlp(b *testing.B) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkTracesFromOtlp(b *testing.B) {
+	baseTraces := NewTraces()
+	fillTestResourceSpansSlice(baseTraces.ResourceSpans())
+	buf, err := baseTraces.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		traces := NewTraces()
+		require.NoError(b, traces.FromOtlpProtoBytes(buf))
+		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
+	}
+}
