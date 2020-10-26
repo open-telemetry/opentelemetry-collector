@@ -22,11 +22,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 )
@@ -34,6 +36,24 @@ import (
 const filteredMetric = "p0_metric_1"
 const filteredLblKey = "pt-label-key-1"
 const filteredLblVal = "pt-label-val-1"
+
+func TestExprError(t *testing.T) {
+	for mdType := pdata.MetricDataTypeIntGauge; mdType <= pdata.MetricDataTypeDoubleHistogram; mdType++ {
+		testMatchError(t, mdType)
+	}
+}
+
+func testMatchError(t *testing.T, mdType pdata.MetricDataType) {
+	// the "foo" expr expression will cause expr Run() to return an error
+	proc, next, logs := testProcessor(t, nil, []string{"foo"})
+	pdm := testData("", 1, mdType)
+	err := proc.ConsumeMetrics(context.Background(), pdm)
+	assert.NoError(t, err)
+	// assert that metrics not be filtered as a result
+	assert.Equal(t, []pdata.Metrics{pdm}, next.AllMetrics())
+	assert.Equal(t, 1, logs.Len())
+	assert.Equal(t, "shouldKeepMetric failed", logs.All()[0].Message)
+}
 
 func TestExprProcessor(t *testing.T) {
 	testFilter(t, pdata.MetricDataTypeIntGauge)
@@ -118,28 +138,31 @@ func assertFiltered(t *testing.T, lm pdata.StringMap) {
 }
 
 func filterMetrics(t *testing.T, include []string, exclude []string, mds []pdata.Metrics) []pdata.Metrics {
+	proc, next, _ := testProcessor(t, include, exclude)
+	for _, md := range mds {
+		err := proc.ConsumeMetrics(context.Background(), md)
+		require.NoError(t, err)
+	}
+	return next.AllMetrics()
+}
+
+func testProcessor(t *testing.T, include []string, exclude []string) (component.MetricsProcessor, *consumertest.MetricsSink, *observer.ObservedLogs) {
 	factory := NewFactory()
-
 	cfg := exprConfig(factory, include, exclude)
-
 	ctx := context.Background()
-	next := &exportertest.SinkMetricsExporter{}
+	next := &consumertest.MetricsSink{}
+	core, logs := observer.New(zapcore.WarnLevel)
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
 		component.ProcessorCreateParams{
-			Logger: zap.NewNop(),
+			Logger: zap.New(core),
 		},
 		cfg,
 		next,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, proc)
-
-	for _, md := range mds {
-		err = proc.ConsumeMetrics(ctx, md)
-		require.NoError(t, err)
-	}
-	return next.AllMetrics()
+	return proc, next, logs
 }
 
 func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) configmodels.Processor {
