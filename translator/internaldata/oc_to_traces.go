@@ -138,8 +138,6 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	// span kind).
 	dest.SetKind(ocSpanKindToInternal(src.Kind, src.Attributes))
 
-	tid := [16]byte{}
-	copy(tid[:], src.TraceId)
 	dest.SetTraceID(traceIDToInternal(src.TraceId))
 	dest.SetSpanID(spanIDToInternal(src.SpanId))
 	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
