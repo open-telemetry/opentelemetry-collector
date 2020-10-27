@@ -179,7 +179,6 @@ func (mb *Metrics) getMetricsSlice() pdata.MetricSlice {
 	rm.InitEmpty()
 
 	res := rm.Resource()
-	res.InitEmpty()
 	for k, v := range mb.ResourceAttributes {
 		res.Attributes().Insert(k, pdata.NewAttributeValueString(v))
 	}

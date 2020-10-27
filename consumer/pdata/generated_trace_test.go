@@ -161,9 +161,7 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	ms.InitEmpty()
-	assert.True(t, ms.Resource().IsEmpty())
 	fillTestResource(ms.Resource())
-	assert.False(t, ms.Resource().IsEmpty())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 

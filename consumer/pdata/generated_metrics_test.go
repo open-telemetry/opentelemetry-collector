@@ -161,9 +161,7 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	ms.InitEmpty()
-	assert.True(t, ms.Resource().IsEmpty())
 	fillTestResource(ms.Resource())
-	assert.False(t, ms.Resource().IsEmpty())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 

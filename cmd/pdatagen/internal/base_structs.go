@@ -372,35 +372,21 @@ func (ms ${structName}) InitEmpty() {
 	*ms.orig = ${originName}{}
 }
 
-// Deprecated: Use IsEmpty instead
+// Deprecated: This function will be removed soon.
 func (ms ${structName}) IsNil() bool {
-	return ms.IsEmpty()
+	return false
 }`
 
-const messageValueIsEmptyHeaderTemplate = `// IsEmpty returns true if the underlying data are equivalent with an empty message.
-func (ms ${structName}) IsEmpty() bool {
-	return `
-
-const messageValueIsEmptyFooterTemplate = `}`
-
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
-func (ms ${structName}) CopyTo(dest ${structName}) {
-	if ms.IsEmpty() {
-		*dest.orig = emptyValue${structName}
-		return
-	}`
+func (ms ${structName}) CopyTo(dest ${structName}) {`
 
 const messageValueCopyToFooterTemplate = `}`
 
 const messageValueTestTemplate = `
 func Test${structName}_CopyTo(t *testing.T) {
 	ms := New${structName}()
-	assert.True(t, ms.IsEmpty())
-	New${structName}().CopyTo(ms)
-	assert.True(t, ms.IsEmpty())
 	generateTest${structName}().CopyTo(ms)
 	assert.EqualValues(t, generateTest${structName}(), ms)
-	assert.False(t, ms.IsEmpty())
 }`
 
 const messageValueGenerateTestTemplate = `func generateTest${structName}() ${structName} {
@@ -606,26 +592,6 @@ func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
 		sb.WriteString(newLine + newLine)
 		f.generateAccessors(ms, sb)
 	}
-	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageValueIsEmptyHeaderTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		default:
-			panic(name)
-		}
-	}))
-	// Write accessors IsEmpty for the struct
-	for i, f := range ms.fields {
-		f.generateIsEmpty(sb)
-		if i != len(ms.fields)-1 {
-			sb.WriteString(" ||")
-		}
-	}
-	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messageValueIsEmptyFooterTemplate, func(name string) string {
-		panic(name)
-	}))
 	sb.WriteString(newLine + newLine)
 	sb.WriteString(os.Expand(messageValueCopyToHeaderTemplate, func(name string) string {
 		switch name {

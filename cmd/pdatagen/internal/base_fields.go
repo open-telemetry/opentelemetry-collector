@@ -68,9 +68,7 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	ms.InitEmpty()
-	assert.True(t, ms.${fieldName}().IsEmpty())
 	fillTest${returnType}(ms.${fieldName}())
-	assert.False(t, ms.${fieldName}().IsEmpty())
 	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
 }`
 

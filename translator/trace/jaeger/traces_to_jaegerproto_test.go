@@ -253,7 +253,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
 			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpanWithTraceState(),
@@ -266,7 +266,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			td:   generateTraceDataWithLibraryInfo(),
 			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpanWithLibraryInfo("io.opentelemetry.test"),
@@ -279,7 +279,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			td:   generateTraceDataTwoSpansChildParent(),
 			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
@@ -294,7 +294,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			td:   generateTraceDataTwoSpansWithFollower(),
 			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),

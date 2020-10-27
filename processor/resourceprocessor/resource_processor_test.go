@@ -214,7 +214,7 @@ type testTraceConsumer struct {
 func (ttn *testTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		sortResourceAttributes(td.ResourceSpans().At(i).Resource())
+		td.ResourceSpans().At(i).Resource().Attributes().Sort()
 	}
 	ttn.td = td
 	return nil
@@ -227,7 +227,7 @@ type testMetricsConsumer struct {
 func (tmn *testMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		sortResourceAttributes(md.ResourceMetrics().At(i).Resource())
+		md.ResourceMetrics().At(i).Resource().Attributes().Sort()
 	}
 	tmn.md = md
 	return nil
@@ -240,15 +240,8 @@ type testLogsConsumer struct {
 func (tln *testLogsConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		sortResourceAttributes(ld.ResourceLogs().At(i).Resource())
+		ld.ResourceLogs().At(i).Resource().Attributes().Sort()
 	}
 	tln.ld = ld
 	return nil
-}
-
-func sortResourceAttributes(resource pdata.Resource) {
-	if resource.IsEmpty() {
-		return
-	}
-	resource.Attributes().Sort()
 }

@@ -51,9 +51,9 @@ func (ms Resource) InitEmpty() {
 	*ms.orig = otlpresource.Resource{}
 }
 
-// Deprecated: Use IsEmpty instead
+// Deprecated: This function will be removed soon.
 func (ms Resource) IsNil() bool {
-	return ms.IsEmpty()
+	return false
 }
 
 // Attributes returns the Attributes associated with this Resource.
@@ -63,16 +63,7 @@ func (ms Resource) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
-// IsEmpty returns true if the underlying data are equivalent with an empty message.
-func (ms Resource) IsEmpty() bool {
-	return ms.Attributes().IsEmpty()
-}
-
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Resource) CopyTo(dest Resource) {
-	if ms.IsEmpty() {
-		*dest.orig = emptyValueResource
-		return
-	}
 	ms.Attributes().CopyTo(dest.Attributes())
 }

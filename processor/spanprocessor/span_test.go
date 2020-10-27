@@ -68,9 +68,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 			if rs.IsNil() {
 				continue
 			}
-			if !rs.Resource().IsEmpty() {
-				rs.Resource().Attributes().Sort()
-			}
+			rs.Resource().Attributes().Sort()
 			ilss := rss.At(i).InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)

@@ -241,22 +241,21 @@ func TestResourceToOCAndBack(t *testing.T) {
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
-			if expected.IsEmpty() {
-				assert.True(t, actual.IsEmpty())
-			} else {
-				expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-					a, ok := actual.Attributes().Get(k)
-					assert.True(t, ok)
-					switch v.Type() {
-					case pdata.AttributeValueINT:
-						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
-					case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
-						assert.Equal(t, a, a)
-					default:
-						assert.Equal(t, v, a)
-					}
-				})
-			}
+			// Remove opencensus resource type from actual. This will be added during translation.
+			actual.Attributes().Delete(conventions.OCAttributeResourceType)
+			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
+			expected.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+				a, ok := actual.Attributes().Get(k)
+				assert.True(t, ok)
+				switch v.Type() {
+				case pdata.AttributeValueINT:
+					assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+				case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
+					assert.Equal(t, a, a)
+				default:
+					assert.Equal(t, v, a)
+				}
+			})
 		})
 	}
 }

@@ -25,12 +25,8 @@ import (
 
 func TestResource_CopyTo(t *testing.T) {
 	ms := NewResource()
-	assert.True(t, ms.IsEmpty())
-	NewResource().CopyTo(ms)
-	assert.True(t, ms.IsEmpty())
 	generateTestResource().CopyTo(ms)
 	assert.EqualValues(t, generateTestResource(), ms)
-	assert.False(t, ms.IsEmpty())
 }
 
 func TestResource_Attributes(t *testing.T) {

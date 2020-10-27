@@ -69,9 +69,7 @@ func sortLogAttributes(ld pdata.Logs) {
 		if rs.IsNil() {
 			continue
 		}
-		if !rs.Resource().IsEmpty() {
-			rs.Resource().Attributes().Sort()
-		}
+		rs.Resource().Attributes().Sort()
 		ilss := rss.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)

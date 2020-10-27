@@ -207,7 +207,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			name: "no-resource-attrs",
 			jb: model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoAttrs,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 			},
 			td: generateTraceDataResourceOnlyWithNoAttrs(),
@@ -217,7 +217,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			name: "one-span-no-resources",
 			jb: model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpanWithTraceState(),
@@ -229,7 +229,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			name: "two-spans-child-parent",
 			jb: model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
@@ -243,7 +243,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 			name: "two-spans-with-follower",
 			jb: model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
@@ -265,7 +265,7 @@ func TestProtoBatchToInternalTraces(t *testing.T) {
 func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 	jb := model.Batch{
 		Process: &model.Process{
-			ServiceName: tracetranslator.ResourceNotSet,
+			ServiceName: tracetranslator.ResourceNoServiceName,
 		},
 		Spans: []*model.Span{
 			{

@@ -368,8 +368,7 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 }
 
 func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
-	if tracetranslator.ResourceNotSet == localServiceName ||
-		tracetranslator.ResourceNoAttrs == localServiceName {
+	if localServiceName == tracetranslator.ResourceNoServiceName {
 		return
 	}
 
@@ -422,7 +421,7 @@ func copySpanTags(tags map[string]string) map[string]string {
 
 func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || zspan.LocalEndpoint == nil || zspan.LocalEndpoint.ServiceName == "" {
-		return tracetranslator.ResourceNotSet
+		return tracetranslator.ResourceNoServiceName
 	}
 	return zspan.LocalEndpoint.ServiceName
 }

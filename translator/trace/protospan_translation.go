@@ -55,8 +55,6 @@ const (
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required
 // by other protocols.
 const (
-	ResourceNotSet        = "OTLPResourceNotSet"
-	ResourceNoAttrs       = "OTLPResourceNoAttributes"
 	ResourceNoServiceName = "OTLPResourceNoServiceName"
 )
 
