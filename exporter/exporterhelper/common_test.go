@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -37,7 +38,7 @@ func TestErrorToStatus(t *testing.T) {
 }
 
 func TestBaseExporter(t *testing.T) {
-	be := newBaseExporter(defaultExporterCfg)
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
 }
@@ -45,6 +46,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	be := newBaseExporter(
 		defaultExporterCfg,
+		zap.NewNop(),
 		WithStart(func(ctx context.Context, host component.Host) error { return errors.New("my error") }),
 		WithShutdown(func(ctx context.Context) error { return errors.New("my error") }))
 	require.Error(t, be.Start(context.Background(), componenttest.NewNopHost()))

@@ -36,7 +36,7 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
+func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 
 	prwCfg, ok := cfg.(*Config)
@@ -58,6 +58,7 @@ func createMetricsExporter(_ context.Context, _ component.ExporterCreateParams,
 
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(prwCfg.QueueSettings),

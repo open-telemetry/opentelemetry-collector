@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -164,7 +165,7 @@ type baseExporter struct {
 	shutdownOnce sync.Once
 }
 
-func newBaseExporter(cfg configmodels.Exporter, options ...ExporterOption) *baseExporter {
+func newBaseExporter(cfg configmodels.Exporter, logger *zap.Logger, options ...ExporterOption) *baseExporter {
 	opts := fromConfiguredOptions(options...)
 	be := &baseExporter{
 		cfg:      cfg,
@@ -172,7 +173,7 @@ func newBaseExporter(cfg configmodels.Exporter, options ...ExporterOption) *base
 		shutdown: opts.Shutdown,
 	}
 
-	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings})
+	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be

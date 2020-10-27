@@ -232,7 +232,7 @@ func (eb *ExportersBuilder) buildExporter(
 
 	inputDataTypes := exportersInputDataTypes[config]
 	if inputDataTypes == nil {
-		logger.Info("Ignoring exporter as it is not used by any pipeline")
+		eb.logger.Info("Ignoring exporter as it is not used by any pipeline")
 		return exporter, nil
 	}
 
