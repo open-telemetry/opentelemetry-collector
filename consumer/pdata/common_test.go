@@ -715,7 +715,7 @@ func TestNilStringMap(t *testing.T) {
 	assert.EqualValues(t, NewStringMap(), NewStringMap().Sort())
 }
 
-func TestStringMapWithEmoty(t *testing.T) {
+func TestStringMapWithEmpty(t *testing.T) {
 	origWithNil := []otlpcommon.StringKeyValue{
 		{},
 		{
