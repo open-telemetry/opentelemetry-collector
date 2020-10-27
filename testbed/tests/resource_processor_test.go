@@ -32,7 +32,7 @@ import (
 var (
 	mockedConsumedResourceWithType = &otlpmetrics.ResourceMetrics{
 		Resource: &otlpresource.Resource{
-			Attributes: []*otlpcommon.KeyValue{
+			Attributes: []otlpcommon.KeyValue{
 				{
 					Key: "opencensus.resourcetype",
 					Value: &otlpcommon.AnyValue{
@@ -98,7 +98,7 @@ var (
 
 	mockedConsumedResourceWithoutAttributes = &otlpmetrics.ResourceMetrics{
 		Resource: &otlpresource.Resource{
-			Attributes: []*otlpcommon.KeyValue{},
+			Attributes: []otlpcommon.KeyValue{},
 		},
 		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 			{
@@ -150,7 +150,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithType),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "resource-type",
 							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
@@ -177,7 +177,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 
 				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
 							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
@@ -199,7 +199,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 
 				Resource: &otlpresource.Resource{
-					Attributes: []*otlpcommon.KeyValue{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
 							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
