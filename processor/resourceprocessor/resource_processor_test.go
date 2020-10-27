@@ -107,7 +107,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			factory := NewFactory()
 			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
 			require.NoError(t, err)
-			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceTraceData := generateTraceData(tt.sourceAttributes)
 			wantTraceData := generateTraceData(tt.wantAttributes)
@@ -119,7 +119,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			tmn := &testMetricsConsumer{}
 			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tmn)
 			require.NoError(t, err)
-			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceMetricData := generateMetricData(tt.sourceAttributes)
 			wantMetricData := generateMetricData(tt.wantAttributes)
@@ -131,7 +131,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			tln := &testLogsConsumer{}
 			rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tln)
 			require.NoError(t, err)
-			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceLogData := generateLogData(tt.sourceAttributes)
 			wantLogData := generateLogData(tt.wantAttributes)

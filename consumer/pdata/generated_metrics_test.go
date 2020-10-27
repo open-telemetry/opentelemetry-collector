@@ -161,9 +161,9 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Resource().IsNil())
+	assert.True(t, ms.Resource().IsNil())
 	ms.Resource().InitEmpty()
-	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.False(t, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
@@ -313,9 +313,9 @@ func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	assert.True(t, ms.InstrumentationLibrary().IsNil())
 	ms.InstrumentationLibrary().InitEmpty()
-	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }

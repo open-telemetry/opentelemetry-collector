@@ -41,7 +41,7 @@ func TestAttributeValue(t *testing.T) {
 
 	v = NewAttributeValueBool(true)
 	assert.EqualValues(t, AttributeValueBOOL, v.Type())
-	assert.EqualValues(t, true, v.BoolVal())
+	assert.True(t, v.BoolVal())
 
 	v = NewAttributeValueNull()
 	assert.EqualValues(t, AttributeValueNULL, v.Type())
@@ -60,7 +60,7 @@ func TestAttributeValue(t *testing.T) {
 
 	v.SetBoolVal(true)
 	assert.EqualValues(t, AttributeValueBOOL, v.Type())
-	assert.EqualValues(t, true, v.BoolVal())
+	assert.True(t, v.BoolVal())
 }
 
 func TestAttributeValueType(t *testing.T) {
@@ -220,7 +220,7 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 
 	av = createNilOrigSetAttributeValue()
 	av.SetBoolVal(true)
-	assert.EqualValues(t, true, av.BoolVal())
+	assert.True(t, av.BoolVal())
 
 	av = createNilOrigSetAttributeValue()
 	av.SetDoubleVal(1.23)
@@ -438,7 +438,7 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueBOOL, val.Type())
-	assert.EqualValues(t, true, val.BoolVal())
+	assert.True(t, val.BoolVal())
 
 	sm.Update("other_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("other_key")
@@ -468,7 +468,7 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueBOOL, val.Type())
-	assert.EqualValues(t, false, val.BoolVal())
+	assert.False(t, val.BoolVal())
 
 	sm.Upsert("other_key", NewAttributeValueString("other_value"))
 	val, exist = sm.Get("other_key")
@@ -498,7 +498,7 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueBOOL, val.Type())
-	assert.EqualValues(t, true, val.BoolVal())
+	assert.True(t, val.BoolVal())
 
 	sm.Upsert("yet_another_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("yet_another_key")
@@ -528,7 +528,7 @@ func TestAttributeMapWithNilValues(t *testing.T) {
 	val, exist = sm.Get("yet_another_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueBOOL, val.Type())
-	assert.EqualValues(t, false, val.BoolVal())
+	assert.False(t, val.BoolVal())
 
 	assert.True(t, sm.Delete("other_key"))
 	assert.True(t, sm.Delete("other_key_string"))
@@ -726,7 +726,7 @@ func TestAttributeMap_UpdateWithNilValues(t *testing.T) {
 	av2, exists = sm.Get("test_key3")
 	assert.True(t, exists)
 	assert.EqualValues(t, AttributeValueBOOL, av2.Type())
-	assert.EqualValues(t, true, av2.BoolVal())
+	assert.True(t, av2.BoolVal())
 }
 
 func TestNilStringMap(t *testing.T) {
@@ -852,7 +852,7 @@ func TestStringMap(t *testing.T) {
 	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 
-	assert.EqualValues(t, false, sm.Delete("k3"))
+	assert.False(t, sm.Delete("k3"))
 	assert.EqualValues(t, 3, sm.Len())
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
 

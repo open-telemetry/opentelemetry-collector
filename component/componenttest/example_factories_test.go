@@ -26,10 +26,10 @@ import (
 func TestExampleExporterConsumer(t *testing.T) {
 	exp := &ExampleExporterConsumer{}
 	host := NewNopHost()
-	assert.Equal(t, false, exp.ExporterStarted)
+	assert.False(t, exp.ExporterStarted)
 	err := exp.Start(context.Background(), host)
 	assert.NoError(t, err)
-	assert.Equal(t, true, exp.ExporterStarted)
+	assert.True(t, exp.ExporterStarted)
 
 	assert.Equal(t, 0, len(exp.Traces))
 	err = exp.ConsumeTraces(context.Background(), pdata.Traces{})
@@ -41,21 +41,21 @@ func TestExampleExporterConsumer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(exp.Metrics))
 
-	assert.Equal(t, false, exp.ExporterShutdown)
+	assert.False(t, exp.ExporterShutdown)
 	err = exp.Shutdown(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, true, exp.ExporterShutdown)
+	assert.True(t, exp.ExporterShutdown)
 }
 
 func TestExampleReceiverProducer(t *testing.T) {
 	rcv := &ExampleReceiverProducer{}
 	host := NewNopHost()
-	assert.Equal(t, false, rcv.Started)
+	assert.False(t, rcv.Started)
 	err := rcv.Start(context.Background(), host)
 	assert.NoError(t, err)
-	assert.Equal(t, true, rcv.Started)
+	assert.True(t, rcv.Started)
 
 	err = rcv.Shutdown(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, true, rcv.Started)
+	assert.True(t, rcv.Started)
 }

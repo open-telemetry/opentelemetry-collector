@@ -161,9 +161,9 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Resource().IsNil())
+	assert.True(t, ms.Resource().IsNil())
 	ms.Resource().InitEmpty()
-	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.False(t, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
@@ -313,9 +313,9 @@ func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
 func TestInstrumentationLibrarySpans_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibrarySpans()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	assert.True(t, ms.InstrumentationLibrary().IsNil())
 	ms.InstrumentationLibrary().InitEmpty()
-	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -591,9 +591,9 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Status().IsNil())
+	assert.True(t, ms.Status().IsNil())
 	ms.Status().InitEmpty()
-	assert.EqualValues(t, false, ms.Status().IsNil())
+	assert.False(t, ms.Status().IsNil())
 	fillTestSpanStatus(ms.Status())
 	assert.EqualValues(t, generateTestSpanStatus(), ms.Status())
 }
