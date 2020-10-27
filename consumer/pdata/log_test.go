@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
@@ -103,5 +104,31 @@ func BenchmarkLogsClone(b *testing.B) {
 		if clone.ResourceLogs().Len() != logs.ResourceLogs().Len() {
 			b.Fail()
 		}
+	}
+}
+
+func BenchmarkLogsToOtlp(b *testing.B) {
+	traces := NewLogs()
+	fillTestResourceLogsSlice(traces.ResourceLogs())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkLogsFromOtlp(b *testing.B) {
+	baseLogs := NewLogs()
+	fillTestResourceLogsSlice(baseLogs.ResourceLogs())
+	buf, err := baseLogs.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		traces := NewLogs()
+		require.NoError(b, traces.FromOtlpProtoBytes(buf))
+		assert.Equal(b, baseLogs.ResourceLogs().Len(), traces.ResourceLogs().Len())
 	}
 }

@@ -715,14 +715,13 @@ func TestNilStringMap(t *testing.T) {
 	assert.EqualValues(t, NewStringMap(), NewStringMap().Sort())
 }
 
-func TestStringMapWithNilValues(t *testing.T) {
-	origWithNil := []*otlpcommon.StringKeyValue{
-		nil,
+func TestStringMapWithEmpty(t *testing.T) {
+	origWithNil := []otlpcommon.StringKeyValue{
+		{},
 		{
 			Key:   "test_key",
 			Value: "test_value",
 		},
-		nil,
 	}
 	sm := StringMap{
 		orig: &origWithNil,
@@ -844,38 +843,6 @@ func TestStringMap_ForEach(t *testing.T) {
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
-func TestStringMap_ForEach_WithNils(t *testing.T) {
-	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
-	rawOrigWithNil := []*otlpcommon.StringKeyValue{
-		nil,
-		{
-			Key:   "k0",
-			Value: "v0",
-		},
-		nil,
-		{
-			Key:   "k1",
-			Value: "v1",
-		},
-		nil,
-		{
-			Key:   "k2",
-			Value: "v2",
-		},
-		nil,
-	}
-	sm := StringMap{
-		orig: &rawOrigWithNil,
-	}
-	assert.EqualValues(t, 7, sm.Len())
-
-	sm.ForEach(func(k string, v StringValue) {
-		assert.EqualValues(t, rawMap[k], v.Value())
-		delete(rawMap, k)
-	})
-	assert.EqualValues(t, 0, len(rawMap))
-}
-
 func TestStringMap_CopyTo(t *testing.T) {
 	dest := NewStringMap()
 	// Test CopyTo to empty
@@ -896,7 +863,7 @@ func TestStringMap_InitFromMap(t *testing.T) {
 	assert.EqualValues(t, NewStringMap(), sm)
 
 	rawMap := map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"}
-	rawOrig := []*otlpcommon.StringKeyValue{
+	rawOrig := []otlpcommon.StringKeyValue{
 		{
 			Key:   "k0",
 			Value: "v0",
@@ -987,15 +954,15 @@ func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
 
 func BenchmarkStringMap_ForEach(b *testing.B) {
 	const numElements = 20
-	rawOrigWithNil := make([]*otlpcommon.StringKeyValue, 2*numElements)
+	rawOrig := make([]otlpcommon.StringKeyValue, numElements)
 	for i := 0; i < numElements; i++ {
-		rawOrigWithNil[i*2] = &otlpcommon.StringKeyValue{
+		rawOrig[i] = otlpcommon.StringKeyValue{
 			Key:   "k" + strconv.Itoa(i),
 			Value: "v" + strconv.Itoa(i),
 		}
 	}
 	sm := StringMap{
-		orig: &rawOrigWithNil,
+		orig: &rawOrig,
 	}
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -1014,7 +981,8 @@ func BenchmarkStringMap_RangeOverMap(b *testing.B) {
 	rawOrig := make(map[string]StringValue, numElements)
 	for i := 0; i < numElements; i++ {
 		key := "k" + strconv.Itoa(i)
-		rawOrig[key] = StringValue{newStringKeyValue(key, "v"+strconv.Itoa(i))}
+		skv := newStringKeyValue(key, "v"+strconv.Itoa(i))
+		rawOrig[key] = StringValue{&skv}
 	}
 
 	b.ResetTimer()

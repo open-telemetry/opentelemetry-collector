@@ -499,7 +499,7 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 								IntGauge: &otlpmetrics.IntGauge{
 									DataPoints: []*otlpmetrics.IntDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "k",
 													Value: "v",
@@ -576,7 +576,7 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 									DataPoints: []*otlpmetrics.DoubleDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "k",
 													Value: "v",
@@ -653,7 +653,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 									DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "k",
 													Value: "v",
@@ -812,6 +812,32 @@ func BenchmarkMetrics_ToOtlpProtoBytes_PassThrough(b *testing.B) {
 	}
 }
 
+func BenchmarkMetricsToOtlp(b *testing.B) {
+	traces := NewMetrics()
+	fillTestResourceMetricsSlice(traces.ResourceMetrics())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkMetricsFromOtlp(b *testing.B) {
+	baseMetrics := NewMetrics()
+	fillTestResourceMetricsSlice(baseMetrics.ResourceMetrics())
+	buf, err := baseMetrics.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		traces := NewMetrics()
+		require.NoError(b, traces.FromOtlpProtoBytes(buf))
+		assert.Equal(b, baseMetrics.ResourceMetrics().Len(), traces.ResourceMetrics().Len())
+	}
+}
+
 func generateTestProtoResource() *otlpresource.Resource {
 	return &otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
@@ -839,7 +865,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 			IntGauge: &otlpmetrics.IntGauge{
 				DataPoints: []*otlpmetrics.IntDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -850,7 +876,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 						Value:             123,
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -875,7 +901,7 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.DoubleDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -886,7 +912,7 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 						Value:             123.1,
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -912,7 +938,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -924,7 +950,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",

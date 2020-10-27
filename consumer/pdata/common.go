@@ -724,7 +724,8 @@ func (am AttributeMap) Len() int {
 // })
 func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
 	for i := range *am.orig {
-		f((*am.orig)[i].Key, AttributeValue{&(*am.orig)[i].Value})
+		kv := &(*am.orig)[i]
+		f(kv.Key, AttributeValue{&kv.Value})
 	}
 }
 
@@ -792,22 +793,22 @@ func (akv StringValue) SetValue(v string) {
 	akv.orig.Value = v
 }
 
-func newStringKeyValue(k, v string) *otlpcommon.StringKeyValue {
-	return &otlpcommon.StringKeyValue{Key: k, Value: v}
+func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
+	return otlpcommon.StringKeyValue{Key: k, Value: v}
 }
 
 // StringMap stores a map of attribute keys to values.
 type StringMap struct {
-	orig *[]*otlpcommon.StringKeyValue
+	orig *[]otlpcommon.StringKeyValue
 }
 
 // NewStringMap creates a StringMap with 0 elements.
 func NewStringMap() StringMap {
-	orig := []*otlpcommon.StringKeyValue(nil)
+	orig := []otlpcommon.StringKeyValue(nil)
 	return StringMap{&orig}
 }
 
-func newStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
+func newStringMap(orig *[]otlpcommon.StringKeyValue) StringMap {
 	return StringMap{orig}
 }
 
@@ -818,37 +819,36 @@ func newStringMap(orig *[]*otlpcommon.StringKeyValue) StringMap {
 // assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{...}), actual)
 func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 	if len(attrMap) == 0 {
-		*sm.orig = []*otlpcommon.StringKeyValue(nil)
+		*sm.orig = []otlpcommon.StringKeyValue(nil)
 		return sm
 	}
 	origs := make([]otlpcommon.StringKeyValue, len(attrMap))
-	wrappers := make([]*otlpcommon.StringKeyValue, len(attrMap))
 	ix := 0
 	for k, v := range attrMap {
-		wrappers[ix] = &origs[ix]
-		wrappers[ix].Key = k
-		wrappers[ix].Value = v
+		origs[ix].Key = k
+		origs[ix].Value = v
 		ix++
 	}
-	*sm.orig = wrappers
+	*sm.orig = origs
 	return sm
 }
 
 // InitEmptyWithCapacity constructs an empty StringMap with predefined slice capacity.
 func (sm StringMap) InitEmptyWithCapacity(cap int) {
 	if cap == 0 {
-		*sm.orig = []*otlpcommon.StringKeyValue(nil)
+		*sm.orig = []otlpcommon.StringKeyValue(nil)
 	}
-	*sm.orig = make([]*otlpcommon.StringKeyValue, 0, cap)
+	*sm.orig = make([]otlpcommon.StringKeyValue, 0, cap)
 }
 
 // Get returns the StringValue associated with the key and true,
 // otherwise an invalid instance of the StringKeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
 func (sm StringMap) Get(k string) (StringValue, bool) {
-	for _, a := range *sm.orig {
-		if a != nil && a.Key == k {
-			return StringValue{a}, true
+	for i := range *sm.orig {
+		skv := &(*sm.orig)[i]
+		if skv.Key == k {
+			return StringValue{skv}, true
 		}
 	}
 	return StringValue{nil}, false
@@ -857,8 +857,9 @@ func (sm StringMap) Get(k string) (StringValue, bool) {
 // Delete deletes the entry associated with the key and returns true if the key
 // was present in the map, otherwise returns false.
 func (sm StringMap) Delete(k string) bool {
-	for i, a := range *sm.orig {
-		if a != nil && a.Key == k {
+	for i := range *sm.orig {
+		skv := &(*sm.orig)[i]
+		if skv.Key == k {
 			(*sm.orig)[i] = (*sm.orig)[len(*sm.orig)-1]
 			*sm.orig = (*sm.orig)[:len(*sm.orig)-1]
 			return true
@@ -910,11 +911,9 @@ func (sm StringMap) Len() int {
 //   ...
 // })
 func (sm StringMap) ForEach(f func(k string, v StringValue)) {
-	for _, kv := range *sm.orig {
-		if kv == nil {
-			continue
-		}
-		f(kv.Key, StringValue{kv})
+	for i := range *sm.orig {
+		skv := &(*sm.orig)[i]
+		f(skv.Key, StringValue{skv})
 	}
 }
 
@@ -922,26 +921,25 @@ func (sm StringMap) ForEach(f func(k string, v StringValue)) {
 func (sm StringMap) CopyTo(dest StringMap) {
 	newLen := len(*sm.orig)
 	if newLen == 0 {
-		*dest.orig = []*otlpcommon.StringKeyValue(nil)
+		*dest.orig = []otlpcommon.StringKeyValue(nil)
 		return
 	}
 	oldLen := len(*dest.orig)
 	if newLen <= oldLen {
 		*dest.orig = (*dest.orig)[:newLen]
-		for i, kv := range *sm.orig {
-			(*dest.orig)[i].Key = kv.Key
-			(*dest.orig)[i].Value = kv.Value
+		for i := range *sm.orig {
+			skv := &(*sm.orig)[i]
+			(*dest.orig)[i].Key = skv.Key
+			(*dest.orig)[i].Value = skv.Value
 		}
 		return
 	}
 	origs := make([]otlpcommon.StringKeyValue, len(*sm.orig))
-	wrappers := make([]*otlpcommon.StringKeyValue, len(*sm.orig))
 	for i, kv := range *sm.orig {
-		wrappers[i] = &origs[i]
-		wrappers[i].Key = kv.Key
-		wrappers[i].Value = kv.Value
+		origs[i].Key = kv.Key
+		origs[i].Value = kv.Value
 	}
-	*dest.orig = wrappers
+	*dest.orig = origs
 }
 
 // Sort sorts the entries in the StringMap so two instances can be compared.
@@ -950,7 +948,7 @@ func (sm StringMap) CopyTo(dest StringMap) {
 func (sm StringMap) Sort() StringMap {
 	sort.SliceStable(*sm.orig, func(i, j int) bool {
 		// Intention is to move the nil values at the end.
-		return ((*sm.orig)[j] == nil) || ((*sm.orig)[i] != nil && (*sm.orig)[i].Key < (*sm.orig)[j].Key)
+		return (*sm.orig)[i].Key < (*sm.orig)[j].Key
 	})
 	return sm
 }

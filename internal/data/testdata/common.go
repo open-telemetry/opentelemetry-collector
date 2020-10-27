@@ -109,8 +109,8 @@ func initMetricLabels1(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1})
 }
 
-func generateOtlpMetricLabels1() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
+func generateOtlpMetricLabels1() []otlpcommon.StringKeyValue {
+	return []otlpcommon.StringKeyValue{
 		{
 			Key:   TestLabelKey1,
 			Value: TestLabelValue1,
@@ -122,8 +122,8 @@ func initMetricLabels12(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1, TestLabelKey2: TestLabelValue2}).Sort()
 }
 
-func generateOtlpMetricLabels12() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
+func generateOtlpMetricLabels12() []otlpcommon.StringKeyValue {
+	return []otlpcommon.StringKeyValue{
 		{
 			Key:   TestLabelKey1,
 			Value: TestLabelValue1,
@@ -139,8 +139,8 @@ func initMetricLabels13(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestLabelKey1: TestLabelValue1, TestLabelKey3: TestLabelValue3}).Sort()
 }
 
-func generateOtlpMetricLabels13() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
+func generateOtlpMetricLabels13() []otlpcommon.StringKeyValue {
+	return []otlpcommon.StringKeyValue{
 		{
 			Key:   TestLabelKey1,
 			Value: TestLabelValue1,
@@ -156,8 +156,8 @@ func initMetricLabels2(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestLabelKey2: TestLabelValue2})
 }
 
-func generateOtlpMetricLabels2() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
+func generateOtlpMetricLabels2() []otlpcommon.StringKeyValue {
+	return []otlpcommon.StringKeyValue{
 		{
 			Key:   TestLabelKey2,
 			Value: TestLabelValue2,
@@ -169,8 +169,8 @@ func initMetricAttachment(dest pdata.StringMap) {
 	dest.InitFromMap(map[string]string{TestAttachmentKey: TestAttachmentValue})
 }
 
-func generateOtlpMetricAttachment() []*otlpcommon.StringKeyValue {
-	return []*otlpcommon.StringKeyValue{
+func generateOtlpMetricAttachment() []otlpcommon.StringKeyValue {
+	return []otlpcommon.StringKeyValue{
 		{
 			Key:   TestAttachmentKey,
 			Value: TestAttachmentValue,
