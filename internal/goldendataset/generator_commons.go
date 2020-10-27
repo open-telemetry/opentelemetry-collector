@@ -25,11 +25,11 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
-func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcommon.KeyValue {
+func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []otlpcommon.KeyValue {
 	if attrsMap == nil {
 		return nil
 	}
-	attrList := make([]*otlpcommon.KeyValue, len(attrsMap))
+	attrList := make([]otlpcommon.KeyValue, len(attrsMap))
 	index := 0
 	for key, value := range attrsMap {
 		attrList[index] = constructAttributeKeyValue(key, value)
@@ -38,7 +38,7 @@ func convertMapToAttributeKeyValues(attrsMap map[string]interface{}) []*otlpcomm
 	return attrList
 }
 
-func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.KeyValue {
+func constructAttributeKeyValue(key string, value interface{}) otlpcommon.KeyValue {
 	var attr otlpcommon.KeyValue
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
@@ -72,7 +72,7 @@ func constructAttributeKeyValue(key string, value interface{}) *otlpcommon.KeyVa
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: val.(string)}},
 		}
 	}
-	return &attr
+	return attr
 }
 
 func loadPictOutputFile(fileName string) ([][]string, error) {

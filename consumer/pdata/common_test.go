@@ -374,19 +374,17 @@ func TestNilAttributeMap(t *testing.T) {
 	assert.EqualValues(t, NewAttributeMap(), NewAttributeMap().Sort())
 }
 
-func TestAttributeMapWithNilValues(t *testing.T) {
-	origWithNil := []*otlpcommon.KeyValue{
-		nil,
+func TestAttributeMapWithEmpty(t *testing.T) {
+	origWithNil := []otlpcommon.KeyValue{
+		{},
 		{
 			Key:   "test_key",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
-		nil,
 		{
 			Key:   "test_key2",
 			Value: nil,
 		},
-		nil,
 		{
 			Key:   "test_key3",
 			Value: &otlpcommon.AnyValue{Value: nil},
@@ -588,42 +586,6 @@ func TestAttributeMap_ForEach(t *testing.T) {
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
-func TestAttributeMap_ForEach_WithNils(t *testing.T) {
-	rawMap := map[string]AttributeValue{
-		"k_string": NewAttributeValueString("123"),
-		"k_int":    NewAttributeValueInt(123),
-		"k_double": NewAttributeValueDouble(1.23),
-		"k_bool":   NewAttributeValueBool(true),
-		"k_null":   NewAttributeValueNull(),
-		"k_null2":  NewAttributeValueNull(),
-	}
-	rawOrigWithNil := []*otlpcommon.KeyValue{
-		nil,
-		newAttributeKeyValueString("k_string", "123"),
-		nil,
-		newAttributeKeyValueInt("k_int", 123),
-		nil,
-		newAttributeKeyValueDouble("k_double", 1.23),
-		nil,
-		newAttributeKeyValueBool("k_bool", true),
-		nil,
-		newAttributeKeyValueNull("k_null"),
-		nil,
-		{Key: "k_null2", Value: nil},
-		nil,
-	}
-	am := AttributeMap{
-		orig: &rawOrigWithNil,
-	}
-	assert.EqualValues(t, 13, am.Len())
-
-	am.ForEach(func(k string, v AttributeValue) {
-		assert.True(t, v.Equal(rawMap[k]))
-		delete(rawMap, k)
-	})
-	assert.EqualValues(t, 0, len(rawMap))
-}
-
 func TestAttributeMap_InitFromMap(t *testing.T) {
 	am := NewAttributeMap().InitFromMap(map[string]AttributeValue(nil))
 	assert.EqualValues(t, NewAttributeMap(), am)
@@ -635,7 +597,7 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		"k_bool":   NewAttributeValueBool(true),
 		"k_null":   NewAttributeValueNull(),
 	}
-	rawOrig := []*otlpcommon.KeyValue{
+	rawOrig := []otlpcommon.KeyValue{
 		newAttributeKeyValueString("k_string", "123"),
 		newAttributeKeyValueInt("k_int", 123),
 		newAttributeKeyValueDouble("k_double", 1.23),
@@ -673,19 +635,16 @@ func TestAttributeValue_copyTo(t *testing.T) {
 	assert.EqualValues(t, nil, destVal.Value)
 }
 
-func TestAttributeMap_UpdateWithNilValues(t *testing.T) {
-	origWithNil := []*otlpcommon.KeyValue{
-		nil,
+func TestAttributeMap_Update(t *testing.T) {
+	origWithNil := []otlpcommon.KeyValue{
 		{
 			Key:   "test_key",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
-		nil,
 		{
 			Key:   "test_key2",
 			Value: nil,
 		},
-		nil,
 		{
 			Key:   "test_key3",
 			Value: &otlpcommon.AnyValue{Value: nil},
@@ -982,15 +941,15 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 
 func BenchmarkAttributeMap_ForEach(b *testing.B) {
 	const numElements = 20
-	rawOrigWithNil := make([]*otlpcommon.KeyValue, 2*numElements)
+	rawOrig := make([]otlpcommon.KeyValue, numElements)
 	for i := 0; i < numElements; i++ {
-		rawOrigWithNil[i*2] = &otlpcommon.KeyValue{
+		rawOrig[i] = otlpcommon.KeyValue{
 			Key:   "k" + strconv.Itoa(i),
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
 		}
 	}
 	am := AttributeMap{
-		orig: &rawOrigWithNil,
+		orig: &rawOrig,
 	}
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

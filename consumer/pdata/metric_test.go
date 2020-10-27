@@ -814,7 +814,7 @@ func BenchmarkMetrics_ToOtlpProtoBytes_PassThrough(b *testing.B) {
 
 func generateTestProtoResource() *otlpresource.Resource {
 	return &otlpresource.Resource{
-		Attributes: []*otlpcommon.KeyValue{
+		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "string",
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},

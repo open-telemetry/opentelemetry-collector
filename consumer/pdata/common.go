@@ -400,57 +400,57 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 	return false
 }
 
-func newAttributeKeyValueString(k string, v string) *otlpcommon.KeyValue {
-	orig := &otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
+func newAttributeKeyValueString(k string, v string) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
 	akv := AttributeValue{&orig.Value}
 	akv.SetStringVal(v)
 	return orig
 }
 
-func newAttributeKeyValueInt(k string, v int64) *otlpcommon.KeyValue {
-	orig := &otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
+func newAttributeKeyValueInt(k string, v int64) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
 	akv := AttributeValue{&orig.Value}
 	akv.SetIntVal(v)
 	return orig
 }
 
-func newAttributeKeyValueDouble(k string, v float64) *otlpcommon.KeyValue {
-	orig := &otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
+func newAttributeKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
 	akv := AttributeValue{&orig.Value}
 	akv.SetDoubleVal(v)
 	return orig
 }
 
-func newAttributeKeyValueBool(k string, v bool) *otlpcommon.KeyValue {
-	orig := &otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
+func newAttributeKeyValueBool(k string, v bool) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
 	akv := AttributeValue{&orig.Value}
 	akv.SetBoolVal(v)
 	return orig
 }
 
-func newAttributeKeyValueNull(k string) *otlpcommon.KeyValue {
-	orig := &otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
+func newAttributeKeyValueNull(k string) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
 	return orig
 }
 
-func newAttributeKeyValue(k string, av AttributeValue) *otlpcommon.KeyValue {
-	orig := &otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
+func newAttributeKeyValue(k string, av AttributeValue) otlpcommon.KeyValue {
+	orig := otlpcommon.KeyValue{Key: k, Value: &otlpcommon.AnyValue{}}
 	av.copyTo(orig.Value)
 	return orig
 }
 
 // AttributeMap stores a map of attribute keys to values.
 type AttributeMap struct {
-	orig *[]*otlpcommon.KeyValue
+	orig *[]otlpcommon.KeyValue
 }
 
 // NewAttributeMap creates a AttributeMap with 0 elements.
 func NewAttributeMap() AttributeMap {
-	orig := []*otlpcommon.KeyValue(nil)
+	orig := []otlpcommon.KeyValue(nil)
 	return AttributeMap{&orig}
 }
 
-func newAttributeMap(orig *[]*otlpcommon.KeyValue) AttributeMap {
+func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
 }
 
@@ -461,21 +461,19 @@ func newAttributeMap(orig *[]*otlpcommon.KeyValue) AttributeMap {
 // assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
 func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
 	if len(attrMap) == 0 {
-		*am.orig = []*otlpcommon.KeyValue(nil)
+		*am.orig = []otlpcommon.KeyValue(nil)
 		return am
 	}
 	anyVals := make([]otlpcommon.AnyValue, len(attrMap))
 	origs := make([]otlpcommon.KeyValue, len(attrMap))
-	wrappers := make([]*otlpcommon.KeyValue, len(attrMap))
 	ix := 0
 	for k, v := range attrMap {
+		origs[ix].Key = k
 		origs[ix].Value = &anyVals[ix]
-		wrappers[ix] = &origs[ix]
-		wrappers[ix].Key = k
 		v.copyTo(&anyVals[ix])
 		ix++
 	}
-	*am.orig = wrappers
+	*am.orig = origs
 	return am
 }
 
@@ -487,28 +485,26 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 func (am AttributeMap) InitFromAttributeMap(attrMap AttributeMap) AttributeMap {
 	srcLen := attrMap.Len()
 	if srcLen == 0 || attrMap.orig == nil {
-		*am.orig = []*otlpcommon.KeyValue(nil)
+		*am.orig = []otlpcommon.KeyValue(nil)
 		return am
 	}
 	anyVals := make([]otlpcommon.AnyValue, srcLen)
 	origs := make([]otlpcommon.KeyValue, srcLen)
-	wrappers := make([]*otlpcommon.KeyValue, srcLen)
 	for ix, v := range *attrMap.orig {
+		origs[ix].Key = v.Key
 		origs[ix].Value = &anyVals[ix]
-		wrappers[ix] = &origs[ix]
-		wrappers[ix].Key = v.Key
 		AttributeValue{&v.Value}.copyTo(&anyVals[ix])
 	}
-	*am.orig = wrappers
+	*am.orig = origs
 	return am
 }
 
 // InitEmptyWithCapacity constructs an empty AttributeMap with predefined slice capacity.
 func (am AttributeMap) InitEmptyWithCapacity(cap int) {
 	if cap == 0 {
-		*am.orig = []*otlpcommon.KeyValue(nil)
+		*am.orig = []otlpcommon.KeyValue(nil)
 	}
-	*am.orig = make([]*otlpcommon.KeyValue, 0, cap)
+	*am.orig = make([]otlpcommon.KeyValue, 0, cap)
 }
 
 // Get returns the AttributeValue associated with the key and true. Returned
@@ -519,9 +515,10 @@ func (am AttributeMap) InitEmptyWithCapacity(cap int) {
 // If the key does not exist returns an invalid instance of the KeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
 func (am AttributeMap) Get(key string) (AttributeValue, bool) {
-	for _, a := range *am.orig {
-		if a != nil && a.Key == key {
-			return AttributeValue{&a.Value}, true
+	for i := range *am.orig {
+		akv := &(*am.orig)[i]
+		if akv.Key == key {
+			return AttributeValue{&akv.Value}, true
 		}
 	}
 	return AttributeValue{nil}, false
@@ -530,9 +527,10 @@ func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 // Delete deletes the entry associated with the key and returns true if the key
 // was present in the map, otherwise returns false.
 func (am AttributeMap) Delete(key string) bool {
-	for i, a := range *am.orig {
-		if a != nil && a.Key == key {
-			(*am.orig)[i] = (*am.orig)[len(*am.orig)-1]
+	for i := range *am.orig {
+		akv := &(*am.orig)[i]
+		if akv.Key == key {
+			*akv = (*am.orig)[len(*am.orig)-1]
 			*am.orig = (*am.orig)[:len(*am.orig)-1]
 			return true
 		}
@@ -704,7 +702,7 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 func (am AttributeMap) Sort() AttributeMap {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*am.orig, func(i, j int) bool {
-		return ((*am.orig)[j] == nil) || ((*am.orig)[i] != nil && (*am.orig)[i].Key < (*am.orig)[j].Key)
+		return (*am.orig)[i].Key < (*am.orig)[j].Key
 	})
 	return am
 }
@@ -725,11 +723,8 @@ func (am AttributeMap) Len() int {
 //   ...
 // })
 func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
-	for _, kv := range *am.orig {
-		if kv == nil {
-			continue
-		}
-		f(kv.Key, AttributeValue{&kv.Value})
+	for i := range *am.orig {
+		f((*am.orig)[i].Key, AttributeValue{&(*am.orig)[i].Value})
 	}
 }
 
@@ -737,7 +732,7 @@ func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
 func (am AttributeMap) CopyTo(dest AttributeMap) {
 	newLen := len(*am.orig)
 	if newLen == 0 {
-		*dest.orig = []*otlpcommon.KeyValue(nil)
+		*dest.orig = []otlpcommon.KeyValue(nil)
 		return
 	}
 
@@ -745,13 +740,14 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	if newLen <= oldLen {
 		// New slice fits in existing slice, no need to reallocate.
 		*dest.orig = (*dest.orig)[:newLen]
-		for i, srcAkv := range *am.orig {
-			destAkv := (*dest.orig)[i]
-			destAkv.Key = srcAkv.Key
+		for i := range *am.orig {
+			akv := &(*am.orig)[i]
+			destAkv := &(*dest.orig)[i]
+			destAkv.Key = akv.Key
 			if destAkv.Value == nil {
 				destAkv.Value = &otlpcommon.AnyValue{}
 			}
-			AttributeValue{&srcAkv.Value}.copyTo(destAkv.Value)
+			AttributeValue{&akv.Value}.copyTo(destAkv.Value)
 		}
 		return
 	}
@@ -759,14 +755,13 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	// New slice is bigger than exist slice. Allocate new space.
 	anyVals := make([]otlpcommon.AnyValue, len(*am.orig))
 	origs := make([]otlpcommon.KeyValue, len(*am.orig))
-	wrappers := make([]*otlpcommon.KeyValue, len(*am.orig))
-	for i, kv := range *am.orig {
+	for i := range *am.orig {
+		akv := &(*am.orig)[i]
+		origs[i].Key = akv.Key
 		origs[i].Value = &anyVals[i]
-		wrappers[i] = &origs[i]
-		wrappers[i].Key = kv.Key
-		AttributeValue{&kv.Value}.copyTo(&anyVals[i])
+		AttributeValue{&akv.Value}.copyTo(&anyVals[i])
 	}
-	*dest.orig = wrappers
+	*dest.orig = origs
 }
 
 // StringValue stores a string value.
