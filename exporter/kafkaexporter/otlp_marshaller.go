@@ -20,13 +20,11 @@ import (
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
 
+var _ TracesMarshaller = (*otlpTracesPbMarshaller)(nil)
+var _ MetricsMarshaller = (*otlpMetricsPbMarshaller)(nil)
+
 type otlpTracesPbMarshaller struct {
 }
-
-type otlpMetricsPbMarshaller struct {
-}
-
-var _ TracesMarshaller = (*otlpTracesPbMarshaller)(nil)
 
 func (m *otlpTracesPbMarshaller) Encoding() string {
 	return defaultEncoding
@@ -41,6 +39,9 @@ func (m *otlpTracesPbMarshaller) Marshal(traces pdata.Traces) ([]Message, error)
 		return nil, err
 	}
 	return []Message{{Value: bts}}, nil
+}
+
+type otlpMetricsPbMarshaller struct {
 }
 
 func (m *otlpMetricsPbMarshaller) Encoding() string {

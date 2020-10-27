@@ -28,7 +28,7 @@ import (
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
-// kafkaTracesProducer uses sarama to produce messages to Kafka.
+// kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
 	producer   sarama.SyncProducer
 	topic      string
@@ -36,11 +36,44 @@ type kafkaTracesProducer struct {
 	logger     *zap.Logger
 }
 
+func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
+	messages, err := e.marshaller.Marshal(td)
+	if err != nil {
+		return td.SpanCount(), consumererror.Permanent(err)
+	}
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	if err != nil {
+		return td.SpanCount(), err
+	}
+	return 0, nil
+}
+
+func (e *kafkaTracesProducer) Close(context.Context) error {
+	return e.producer.Close()
+}
+
+// kafkaMetricsProducer uses sarama to produce metrics messages to kafka
 type kafkaMetricsProducer struct {
 	producer   sarama.SyncProducer
 	topic      string
 	marshaller MetricsMarshaller
 	logger     *zap.Logger
+}
+
+func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) (int, error) {
+	messages, err := e.marshaller.Marshal(md)
+	if err != nil {
+		return md.MetricCount(), consumererror.Permanent(err)
+	}
+	err = e.producer.SendMessages(producerMessages(messages, e.topic))
+	if err != nil {
+		return md.MetricCount(), err
+	}
+	return 0, nil
+}
+
+func (e *kafkaMetricsProducer) Close(context.Context) error {
+	return e.producer.Close()
 }
 
 func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
@@ -109,26 +142,6 @@ func newTracesExporter(config Config, params component.ExporterCreateParams, mar
 	}, nil
 }
 
-func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
-	messages, err := e.marshaller.Marshal(td)
-	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
-	}
-	err = e.producer.SendMessages(producerMessages(messages, e.topic))
-	if err != nil {
-		return td.SpanCount(), err
-	}
-	return 0, nil
-}
-
-func (e *kafkaTracesProducer) Close(context.Context) error {
-	return e.producer.Close()
-}
-
-func (e *kafkaMetricsProducer) Close(context.Context) error {
-	return e.producer.Close()
-}
-
 func producerMessages(messages []Message, topic string) []*sarama.ProducerMessage {
 	producerMessages := make([]*sarama.ProducerMessage, len(messages))
 	for i := range messages {
@@ -138,16 +151,4 @@ func producerMessages(messages []Message, topic string) []*sarama.ProducerMessag
 		}
 	}
 	return producerMessages
-}
-
-func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) (int, error) {
-	messages, err := e.marshaller.Marshal(md)
-	if err != nil {
-		return md.MetricCount(), consumererror.Permanent(err)
-	}
-	err = e.producer.SendMessages(producerMessages(messages, e.topic))
-	if err != nil {
-		return md.MetricCount(), err
-	}
-	return 0, nil
 }
