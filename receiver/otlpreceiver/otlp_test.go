@@ -96,7 +96,7 @@ var traceJSON = []byte(`
 var resourceSpansOtlp = otlptrace.ResourceSpans{
 
 	Resource: &otlpresource.Resource{
-		Attributes: []*otlpcommon.KeyValue{
+		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   conventions.AttributeHostHostname,
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
@@ -112,7 +112,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 					Name:              "testSpan",
 					StartTimeUnixNano: 1544712660000000000,
 					EndTimeUnixNano:   1544712661000000000,
-					Attributes: []*otlpcommon.KeyValue{
+					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "attr1",
 							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},

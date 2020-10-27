@@ -44,8 +44,8 @@ func initResourceAttributes1(dest pdata.AttributeMap) {
 	dest.InitFromMap(resourceAttributes1)
 }
 
-func generateOtlpResourceAttributes1() []*otlpcommon.KeyValue {
-	return []*otlpcommon.KeyValue{
+func generateOtlpResourceAttributes1() []otlpcommon.KeyValue {
+	return []otlpcommon.KeyValue{
 		{
 			Key:   "resource-attr",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "resource-attr-val-1"}},
@@ -57,8 +57,8 @@ func initResourceAttributes2(dest pdata.AttributeMap) {
 	dest.InitFromMap(resourceAttributes2)
 }
 
-func generateOtlpResourceAttributes2() []*otlpcommon.KeyValue {
-	return []*otlpcommon.KeyValue{
+func generateOtlpResourceAttributes2() []otlpcommon.KeyValue {
+	return []otlpcommon.KeyValue{
 		{
 			Key:   "resource-attr",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "resource-attr-val-2"}},
@@ -70,8 +70,8 @@ func initSpanAttributes(dest pdata.AttributeMap) {
 	dest.InitFromMap(spanAttributes)
 }
 
-func generateOtlpSpanAttributes() []*otlpcommon.KeyValue {
-	return []*otlpcommon.KeyValue{
+func generateOtlpSpanAttributes() []otlpcommon.KeyValue {
+	return []otlpcommon.KeyValue{
 		{
 			Key:   "span-attr",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-attr-val"}},
@@ -83,8 +83,8 @@ func initSpanEventAttributes(dest pdata.AttributeMap) {
 	dest.InitFromMap(spanEventAttributes)
 }
 
-func generateOtlpSpanEventAttributes() []*otlpcommon.KeyValue {
-	return []*otlpcommon.KeyValue{
+func generateOtlpSpanEventAttributes() []otlpcommon.KeyValue {
+	return []otlpcommon.KeyValue{
 		{
 			Key:   "span-event-attr",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-event-attr-val"}},
@@ -96,8 +96,8 @@ func initSpanLinkAttributes(dest pdata.AttributeMap) {
 	dest.InitFromMap(spanLinkAttributes)
 }
 
-func generateOtlpSpanLinkAttributes() []*otlpcommon.KeyValue {
-	return []*otlpcommon.KeyValue{
+func generateOtlpSpanLinkAttributes() []otlpcommon.KeyValue {
+	return []otlpcommon.KeyValue{
 		{
 			Key:   "span-link-attr",
 			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-link-attr-val"}},

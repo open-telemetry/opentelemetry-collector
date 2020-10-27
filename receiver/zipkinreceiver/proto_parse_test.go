@@ -112,7 +112,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
 						Value: &otlpcommon.AnyValue{
@@ -133,7 +133,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 							Name:              "ProtoSpan1",
 							StartTimeUnixNano: uint64(now.UnixNano()),
 							EndTimeUnixNano:   uint64(now.Add(12 * time.Second).UnixNano()),
-							Attributes: []*otlpcommon.KeyValue{
+							Attributes: []otlpcommon.KeyValue{
 								{
 									Key: conventions.AttributeNetHostIP,
 									Value: &otlpcommon.AnyValue{
@@ -190,7 +190,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 		},
 		{
 			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
 						Value: &otlpcommon.AnyValue{
@@ -211,7 +211,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 							Name:              "CacheWarmUp",
 							StartTimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
 							EndTimeUnixNano:   uint64(now.Add(-10 * time.Hour).Add(7 * time.Second).UnixNano()),
-							Attributes: []*otlpcommon.KeyValue{
+							Attributes: []otlpcommon.KeyValue{
 								{
 									Key: conventions.AttributeNetHostIP,
 									Value: &otlpcommon.AnyValue{

@@ -607,8 +607,6 @@ func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
 
-
-
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
 	if ms.IsNil() {

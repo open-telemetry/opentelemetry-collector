@@ -269,18 +269,10 @@ genproto_sub:
 	mkdir -p $(PROTO_INTERMEDIATE_DIR)/opentelemetry
 	cp -R $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/* $(PROTO_INTERMEDIATE_DIR)/opentelemetry
 
-	@echo Modify them in the intermediate directory.
-	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed 's+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/+g' $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
-
 	# Patch proto files. See proto_patch.sed for patching rules.
-	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/trace/v1/trace.proto \
-	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/trace/v1/trace.proto
+	@echo Modify them in the intermediate directory.
+	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/$(file) > $(PROTO_INTERMEDIATE_DIR)/$(file)))
 
-	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/logs/v1/logs.proto \
-	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/logs/v1/logs.proto
-
-	sed -f proto_patch.sed $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/metrics/v1/metrics.proto \
-	   > $(PROTO_INTERMEDIATE_DIR)/opentelemetry/proto/metrics/v1/metrics.proto
 
 	@echo Generate Go code from .proto files in intermediate directory.
 	$(foreach file,$(OPENTELEMETRY_PROTO_FILES),$(call exec-command,$(PROTOC) $(PROTO_INCLUDES) --gogofaster_out=plugins=grpc:./ $(file)))

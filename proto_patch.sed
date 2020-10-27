@@ -17,3 +17,13 @@ s+bytes \(.*span_id\) = \(.*\);+bytes \1 = \2\
   (gogoproto.nullable) = false,\
   (gogoproto.customtype) = "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1.SpanID"\
   ];+g
+
+s+repeated opentelemetry.proto.common.v1.KeyValue \(.*\);+repeated opentelemetry.proto.common.v1.KeyValue \1\
+  [\
+  (gogoproto.nullable) = false\
+  ];+g
+
+s+repeated KeyValue \(.*\);+repeated KeyValue \1\
+  [\
+  (gogoproto.nullable) = false\
+  ];+g

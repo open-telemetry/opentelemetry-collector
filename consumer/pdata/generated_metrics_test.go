@@ -489,8 +489,6 @@ func TestMetric_Unit(t *testing.T) {
 	assert.EqualValues(t, testValUnit, ms.Unit())
 }
 
-
-
 func TestIntGauge_InitEmpty(t *testing.T) {
 	ms := NewIntGauge()
 	assert.True(t, ms.IsNil())
