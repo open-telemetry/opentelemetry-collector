@@ -410,10 +410,10 @@ var (
 
 // OTLP metrics
 // labels must come in pairs
-func getLabels(labels ...string) []*commonpb.StringKeyValue {
-	var set []*commonpb.StringKeyValue
+func getLabels(labels ...string) []commonpb.StringKeyValue {
+	var set []commonpb.StringKeyValue
 	for i := 0; i < len(labels); i += 2 {
-		set = append(set, &commonpb.StringKeyValue{
+		set = append(set, commonpb.StringKeyValue{
 			Key:   labels[i],
 			Value: labels[i+1],
 		})
@@ -421,7 +421,7 @@ func getLabels(labels ...string) []*commonpb.StringKeyValue {
 	return set
 }
 
-func getIntDataPoint(labels []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.IntDataPoint {
+func getIntDataPoint(labels []commonpb.StringKeyValue, value int64, ts uint64) *otlp.IntDataPoint {
 	return &otlp.IntDataPoint{
 		Labels:            labels,
 		StartTimeUnixNano: 0,
@@ -430,7 +430,7 @@ func getIntDataPoint(labels []*commonpb.StringKeyValue, value int64, ts uint64) 
 	}
 }
 
-func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uint64) *otlp.DoubleDataPoint {
+func getDoubleDataPoint(labels []commonpb.StringKeyValue, value float64, ts uint64) *otlp.DoubleDataPoint {
 	return &otlp.DoubleDataPoint{
 		Labels:            labels,
 		StartTimeUnixNano: 0,
@@ -439,7 +439,7 @@ func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uin
 	}
 }
 
-func getIntHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64,
+func getIntHistogramDataPoint(labels []commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64,
 	buckets []uint64) *otlp.IntHistogramDataPoint {
 	return &otlp.IntHistogramDataPoint{
 		Labels:            labels,
@@ -453,7 +453,7 @@ func getIntHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum 
 	}
 }
 
-func getDoubleHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64,
+func getDoubleHistogramDataPoint(labels []commonpb.StringKeyValue, ts uint64, sum float64, count uint64,
 	bounds []float64, buckets []uint64) *otlp.DoubleHistogramDataPoint {
 	return &otlp.DoubleHistogramDataPoint{
 		Labels:         labels,

@@ -229,6 +229,7 @@ func TestMetrics(t *testing.T) {
               "int_histogram": {
                 "data_points": [
                   {
+                    "labels": null,
                     "time_unix_nano": 1597266546570840817
                   }
                 ]
@@ -241,6 +242,7 @@ func TestMetrics(t *testing.T) {
               "double_histogram": {
                 "data_points": [
                   {
+                    "labels": null,
                     "time_unix_nano": 1597266546570840817
                   }
                 ]

@@ -185,7 +185,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name   string
-		orig   []*common.StringKeyValue
+		orig   []common.StringKeyValue
 		extras []string
 		want   []prompb.Label
 	}{

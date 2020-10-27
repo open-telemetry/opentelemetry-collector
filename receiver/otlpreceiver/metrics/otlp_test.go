@@ -68,7 +68,7 @@ func TestExport(t *testing.T) {
 									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 									DataPoints: []*otlpmetrics.IntDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "key1",
 													Value: "value1",
@@ -79,7 +79,7 @@ func TestExport(t *testing.T) {
 											Value:             123,
 										},
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "key2",
 													Value: "value2",

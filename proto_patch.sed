@@ -27,3 +27,8 @@ s+repeated KeyValue \(.*\);+repeated KeyValue \1\
   [\
   (gogoproto.nullable) = false\
   ];+g
+
+s+repeated opentelemetry.proto.common.v1.StringKeyValue \(.*\);+repeated opentelemetry.proto.common.v1.StringKeyValue \1\
+  [\
+  (gogoproto.nullable) = false\
+  ];+g

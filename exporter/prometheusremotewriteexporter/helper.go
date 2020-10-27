@@ -122,7 +122,7 @@ func timeSeriesSignature(metric *otlp.Metric, labels *[]prompb.Label) string {
 // createLabelSet creates a slice of Cortex Label with OTLP labels and paris of string values.
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
-func createLabelSet(labels []*common.StringKeyValue, extras ...string) []prompb.Label {
+func createLabelSet(labels []common.StringKeyValue, extras ...string) []prompb.Label {
 
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
