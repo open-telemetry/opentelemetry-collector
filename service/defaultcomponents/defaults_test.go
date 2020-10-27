@@ -48,7 +48,6 @@ func TestDefaultComponents(t *testing.T) {
 		"queued_retry",
 		"batch",
 		"memory_limiter",
-		"tail_sampling",
 		"probabilistic_sampler",
 		"span",
 		"filter",

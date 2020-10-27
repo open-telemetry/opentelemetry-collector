@@ -39,7 +39,6 @@ import (
 	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
-	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
 	"go.opentelemetry.io/collector/processor/spanprocessor"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
@@ -105,7 +104,6 @@ func Components() (
 		queuedprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiter.NewFactory(),
-		tailsamplingprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
