@@ -18,26 +18,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/testutil"
 )
-
-// TODO: add tests for retryable/permanent errors logic.
-// TODO: add tests for throttling logic.
 
 func TestInvalidConfig(t *testing.T) {
 	config := &Config{
@@ -311,4 +316,99 @@ func startAndCleanup(t *testing.T, cmp component.Component) {
 	t.Cleanup(func() {
 		require.NoError(t, cmp.Shutdown(context.Background()))
 	})
+}
+
+func TestErrorResponses(t *testing.T) {
+	tests := []struct {
+		name           string
+		responseStatus int
+		responseBody   *status.Status
+		err            error
+		isPermErr      bool
+		headers        map[string]string
+	}{
+		{
+			name:           "400",
+			responseStatus: http.StatusBadRequest,
+			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
+			isPermErr:      true,
+		},
+		{
+			name:           "404",
+			responseStatus: http.StatusNotFound,
+			err:            fmt.Errorf("error exporting items, server responded with HTTP Status Code 404"),
+		},
+		{
+			name:           "419",
+			responseStatus: http.StatusTooManyRequests,
+			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
+			err: exporterhelper.NewThrottleRetry(
+				fmt.Errorf("error exporting items, server responded with HTTP Status Code 429, Message=Quota exceeded, Details=[]"),
+				time.Duration(0)*time.Second),
+		},
+		{
+			name:           "503",
+			responseStatus: http.StatusServiceUnavailable,
+			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
+			err: exporterhelper.NewThrottleRetry(
+				fmt.Errorf("error exporting items, server responded with HTTP Status Code 503, Message=Server overloaded, Details=[]"),
+				time.Duration(0)*time.Second),
+		},
+		{
+			name:           "503",
+			responseStatus: http.StatusServiceUnavailable,
+			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
+			headers:        map[string]string{"Retry-After": "30"},
+			err: exporterhelper.NewThrottleRetry(
+				fmt.Errorf("error exporting items, server responded with HTTP Status Code 503, Message=Server overloaded, Details=[]"),
+				time.Duration(30)*time.Second),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			addr := testutil.GetAvailableLocalAddress(t)
+			mux := http.NewServeMux()
+			mux.HandleFunc("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+				for k, v := range test.headers {
+					writer.Header().Add(k, v)
+				}
+				writer.WriteHeader(test.responseStatus)
+				if test.responseBody != nil {
+					msg, err := proto.Marshal(test.responseBody.Proto())
+					require.NoError(t, err)
+					writer.Write(msg)
+				}
+			})
+			srv := http.Server{
+				Addr:    addr,
+				Handler: mux,
+			}
+			ln, err := net.Listen("tcp", addr)
+			require.NoError(t, err)
+			go func() {
+				_ = srv.Serve(ln)
+			}()
+
+			cfg := &Config{
+				TracesEndpoint: fmt.Sprintf("http://%s/v1/traces", addr),
+				// Create without QueueSettings and RetrySettings so that ConsumeTraces
+				// returns the errors that we want to check immediately.
+			}
+			exp, err := createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+			require.NoError(t, err)
+
+			traces := pdata.NewTraces()
+			err = exp.ConsumeTraces(context.Background(), traces)
+			assert.Error(t, err)
+
+			if test.isPermErr {
+				assert.True(t, consumererror.IsPermanent(err))
+			} else {
+				assert.EqualValues(t, test.err, err)
+			}
+
+			srv.Close()
+		})
+	}
 }
