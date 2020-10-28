@@ -54,7 +54,7 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
+func createTraceExporter(_ context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporterLogger, err := createLogger(cfg)

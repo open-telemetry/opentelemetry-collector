@@ -57,7 +57,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
 	if expCfg.Endpoint == "" {

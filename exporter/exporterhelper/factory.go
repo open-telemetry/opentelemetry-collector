@@ -30,8 +30,8 @@ type FactoryOption func(o *factory)
 // CreateDefaultConfig is the equivalent of component.ExporterFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() configmodels.Exporter
 
-// CreateTraceExporter is the equivalent of component.ExporterFactory.CreateTraceExporter()
-type CreateTraceExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.TraceExporter, error)
+// CreateTraceExporter is the equivalent of component.ExporterFactory.CreateTracesExporter()
+type CreateTraceExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.TracesExporter, error)
 
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
 type CreateMetricsExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.MetricsExporter, error)
@@ -107,11 +107,11 @@ func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 	return f.createDefaultConfig()
 }
 
-// CreateTraceExporter creates a component.TraceExporter based on this config.
-func (f *factory) CreateTraceExporter(
+// CreateTraceExporter creates a component.TracesExporter based on this config.
+func (f *factory) CreateTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TraceExporter, error) {
+	cfg configmodels.Exporter) (component.TracesExporter, error) {
 	if f.createTraceExporter != nil {
 		return f.createTraceExporter(ctx, params, cfg)
 	}

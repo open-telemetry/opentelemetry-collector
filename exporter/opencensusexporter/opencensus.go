@@ -107,7 +107,7 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newTraceExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (component.TraceExporter, error) {
+func newTraceExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err

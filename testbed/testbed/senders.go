@@ -143,7 +143,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 		Insecure: true,
 	}
 
-	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func NewOCTraceDataSender(host string, port int) *OCTraceDataSender {
 func (ote *OCTraceDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func NewOTLPHTTPTraceDataSender(host string, port int) *OTLPHTTPTraceDataSender 
 func (ote *OTLPHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -438,7 +438,7 @@ func NewOTLPTraceDataSender(host string, port int) *OTLPTraceDataSender {
 func (ote *OTLPTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}
@@ -544,7 +544,7 @@ func (zs *ZipkinDataSender) Start() error {
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
 
-	exp, err := factory.CreateTraceExporter(context.Background(), defaultExporterParams(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), defaultExporterParams(), cfg)
 	if err != nil {
 		return err
 	}

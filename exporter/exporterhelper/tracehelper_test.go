@@ -177,7 +177,7 @@ func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
 	}
 }
 
-func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExporter, wantError error, droppedSpans int) {
+func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TracesExporter, wantError error, droppedSpans int) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
@@ -196,7 +196,7 @@ func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TraceExport
 	}
 }
 
-func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests int, wantError error) {
+func generateTraceTraffic(t *testing.T, te component.TracesExporter, numRequests int, wantError error) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans()
 	rs.Resize(1)
@@ -209,7 +209,7 @@ func generateTraceTraffic(t *testing.T, te component.TraceExporter, numRequests 
 	}
 }
 
-func checkWrapSpanForTraceExporter(t *testing.T, te component.TraceExporter, wantError error, numSpans int64) {
+func checkWrapSpanForTraceExporter(t *testing.T, te component.TracesExporter, wantError error, numSpans int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
