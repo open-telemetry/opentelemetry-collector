@@ -125,6 +125,8 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		exp.metricsDataPusher,
+		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
+		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),

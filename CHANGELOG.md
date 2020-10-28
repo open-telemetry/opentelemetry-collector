@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `kafka` exporter: Rename default topic to `otlp` from `otlp_spans`
 - Use consumer for sender interface, remove unnecessary receiver address from Runner #1941
 - Enable sending queue by default in all exporters configured to use it #1924
 
@@ -11,6 +12,10 @@
 
 - Fix bug where the service does not correctly start/stop the log exporters (#1943)
 - Fix Queued Retry Unusable without Batch Processor (#1813) - #1930
+
+## 💡 Enhancements 💡
+
+- `kafka` exporter: Supports exporting metrics as otlp Protobuf.
 
 ## v0.12.0 Beta
 
