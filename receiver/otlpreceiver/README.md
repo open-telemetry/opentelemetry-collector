@@ -1,9 +1,13 @@
-# OpenTelemetry Receiver
+# OTLP Receiver
 
-Receives traces and/or metrics via gRPC using
-[OpenTelemetry](https://opentelemetry.io/) format.
+Receives traces and/or metrics via gRPC or HTTP using [OTLP](
+https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+format.
 
-To get started, all that is required to enable the OpenTelemetry receiver is to
+*Important: OTLP metrics format is currently marked as "Alpha" and may change in
+incompatible way any time.*
+
+To get started, all that is required to enable the OTLP receiver is to
 include it in the receiver definitions.
 
 The following settings are required:
@@ -69,7 +73,7 @@ receivers:
 ```
 
 ## Writing with HTTP/JSON
-The OpenTelemetry receiver can receive trace export calls via HTTP/JSON in
+The OTLP receiver can receive trace export calls via HTTP/JSON in
 addition to gRPC. The HTTP/JSON address is the same as gRPC as the protocol is
 recognized and processed accordingly. Note the format needs to be [protobuf JSON
 serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
