@@ -56,7 +56,7 @@ func createTraceProcessor(
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	params.Logger.Warn("QueuedRetry processor is deprecated. Use exporter's queued retry config.")
 	return newQueuedTracesProcessor(params, nextConsumer, cfg.(*Config)), nil
 }

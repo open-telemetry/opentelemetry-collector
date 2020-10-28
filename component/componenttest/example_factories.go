@@ -385,7 +385,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *ExampleProcessorFactory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TraceProcessor, error) {
+func (f *ExampleProcessorFactory) CreateTracesProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
 	return &ExampleProcessor{nextTraces: nextConsumer}, nil
 }
 

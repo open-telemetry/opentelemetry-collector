@@ -53,7 +53,7 @@ func TestFactory_CreateTraceProcessor(t *testing.T) {
 
 	// Name.FromAttributes field needs to be set for the configuration to be valid.
 	oCfg.Rename.FromAttributes = []string{"test-key"}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 
 	require.Nil(t, err)
 	assert.NotNil(t, tp)
@@ -90,7 +90,7 @@ func TestFactory_CreateTraceProcessor_InvalidConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Rename = test.cfg
 
-			tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
+			tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
 			require.Nil(t, tp)
 			assert.EqualValues(t, err, test.err)
 		})

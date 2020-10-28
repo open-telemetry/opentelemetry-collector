@@ -319,6 +319,9 @@ func startAndCleanup(t *testing.T, cmp component.Component) {
 }
 
 func TestErrorResponses(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	errMsgPrefix := fmt.Sprintf("error exporting items, request to http://%s/v1/traces responded with HTTP Status Code ", addr)
+
 	tests := []struct {
 		name           string
 		responseStatus int
@@ -336,14 +339,14 @@ func TestErrorResponses(t *testing.T) {
 		{
 			name:           "404",
 			responseStatus: http.StatusNotFound,
-			err:            fmt.Errorf("error exporting items, server responded with HTTP Status Code 404"),
+			err:            fmt.Errorf(errMsgPrefix + "404"),
 		},
 		{
 			name:           "419",
 			responseStatus: http.StatusTooManyRequests,
 			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
 			err: exporterhelper.NewThrottleRetry(
-				fmt.Errorf("error exporting items, server responded with HTTP Status Code 429, Message=Quota exceeded, Details=[]"),
+				fmt.Errorf(errMsgPrefix+"429, Message=Quota exceeded, Details=[]"),
 				time.Duration(0)*time.Second),
 		},
 		{
@@ -351,23 +354,22 @@ func TestErrorResponses(t *testing.T) {
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			err: exporterhelper.NewThrottleRetry(
-				fmt.Errorf("error exporting items, server responded with HTTP Status Code 503, Message=Server overloaded, Details=[]"),
+				fmt.Errorf(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
 				time.Duration(0)*time.Second),
 		},
 		{
-			name:           "503",
+			name:           "503-Retry-After",
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			headers:        map[string]string{"Retry-After": "30"},
 			err: exporterhelper.NewThrottleRetry(
-				fmt.Errorf("error exporting items, server responded with HTTP Status Code 503, Message=Server overloaded, Details=[]"),
+				fmt.Errorf(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
 				time.Duration(30)*time.Second),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			addr := testutil.GetAvailableLocalAddress(t)
 			mux := http.NewServeMux()
 			mux.HandleFunc("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
 				for k, v := range test.headers {
@@ -395,7 +397,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+			exp, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 			require.NoError(t, err)
 
 			traces := pdata.NewTraces()

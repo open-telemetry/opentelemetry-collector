@@ -58,7 +58,7 @@ func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer) (component.TraceProcessor, error) {
+	nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, err

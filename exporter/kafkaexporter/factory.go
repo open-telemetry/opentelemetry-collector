@@ -100,6 +100,7 @@ func (f *kafkaExporterFactory) createTraceExporter(
 	}
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		exp.traceDataPusher,
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.

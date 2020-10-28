@@ -31,8 +31,8 @@ type FactoryOption func(o *factory)
 // CreateDefaultConfig is the equivalent of component.ProcessorFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() configmodels.Processor
 
-// CreateTraceProcessor is the equivalent of component.ProcessorFactory.CreateTraceProcessor()
-type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.TracesConsumer) (component.TraceProcessor, error)
+// CreateTraceProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
+type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.TracesConsumer) (component.TracesProcessor, error)
 
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
 type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.MetricsConsumer) (component.MetricsProcessor, error)
@@ -108,8 +108,8 @@ func (f *factory) CreateDefaultConfig() configmodels.Processor {
 	return f.createDefaultConfig()
 }
 
-// CreateTraceProcessor creates a component.TraceProcessor based on this config.
-func (f *factory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TraceProcessor, error) {
+// CreateTraceProcessor creates a component.TracesProcessor based on this config.
+func (f *factory) CreateTracesProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
 	if f.createTraceProcessor != nil {
 		return f.createTraceProcessor(ctx, params, cfg, nextConsumer)
 	}

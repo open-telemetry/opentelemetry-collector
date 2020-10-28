@@ -23,6 +23,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -106,7 +107,7 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newTraceExporter(ctx context.Context, cfg *Config) (component.TraceExporter, error) {
+func newTraceExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (component.TraceExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -122,11 +123,12 @@ func newTraceExporter(ctx context.Context, cfg *Config) (component.TraceExporter
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		logger,
 		oce.pushTraceData,
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func newMetricsExporter(ctx context.Context, cfg *Config) (component.MetricsExporter, error) {
+func newMetricsExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (component.MetricsExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -142,6 +144,7 @@ func newMetricsExporter(ctx context.Context, cfg *Config) (component.MetricsExpo
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
+		logger,
 		oce.pushMetricsData,
 		exporterhelper.WithShutdown(oce.shutdown))
 }

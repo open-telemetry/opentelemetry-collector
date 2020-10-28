@@ -65,7 +65,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		},
 		Format: "json",
 	}
-	zexp, err := NewFactory().CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, config)
+	zexp, err := NewFactory().CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	require.NotNil(t, zexp)
 
@@ -313,7 +313,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 		},
 		Format: "proto",
 	}
-	zexp, err := NewFactory().CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, config)
+	zexp, err := NewFactory().CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	require.NoError(t, err)
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use

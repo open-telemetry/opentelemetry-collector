@@ -49,7 +49,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactoryCreateTraceProcessor_EmptyActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
+	ap, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -62,7 +62,7 @@ func TestFactoryCreateTraceProcessor_InvalidActions(t *testing.T) {
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Key: "", Value: 123, Action: processorhelper.UPSERT},
 	}
-	ap, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
+	ap, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -75,18 +75,18 @@ func TestFactoryCreateTraceProcessor(t *testing.T) {
 		{Key: "a key", Action: processorhelper.DELETE},
 	}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
+	tp, err = factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 
 	oCfg.Actions = []processorhelper.ActionKeyValue{
 		{Action: processorhelper.DELETE},
 	}
-	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
+	tp, err = factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }

@@ -54,7 +54,7 @@ func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporter,
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(
-		cfg, s.pushTraceData,
+		cfg, logger, s.pushTraceData,
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),

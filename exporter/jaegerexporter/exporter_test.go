@@ -225,7 +225,7 @@ func TestMutualTLS(t *testing.T) {
 			ServerName: "localhost",
 		},
 	}
-	exporter, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	exporter, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), nil)
 	require.NoError(t, err)
