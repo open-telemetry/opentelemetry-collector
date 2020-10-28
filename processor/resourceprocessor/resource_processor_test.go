@@ -105,7 +105,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := &testTraceConsumer{}
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
+			rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
@@ -151,7 +151,7 @@ func TestResourceProcessorError(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
+	rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
 	require.Error(t, err)
 	require.Nil(t, rtp)
 

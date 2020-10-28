@@ -59,7 +59,7 @@ func createTraceProcessor(
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	// error can be ignored, level is parsed at the service startup
 	level, _ := telemetry.GetLevel()

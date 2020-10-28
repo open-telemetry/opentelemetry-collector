@@ -168,7 +168,7 @@ func (bp *batchProcessor) sendItems(measure *stats.Int64Measure) {
 	bp.batch.reset()
 }
 
-// ConsumeTraces implements TraceProcessor
+// ConsumeTraces implements TracesProcessor
 func (bp *batchProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	bp.newItem <- td
 	return nil

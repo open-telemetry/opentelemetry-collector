@@ -56,7 +56,7 @@ func createTraceProcessor(
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err
