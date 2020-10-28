@@ -1,7 +1,11 @@
 # OTLP/HTTP Exporter
 
-Exports traces and/or metrics via HTTP using
-[OTLP](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md) format.
+Exports traces and/or metrics via HTTP using [OTLP](
+https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+format.
+
+*Important: OTLP metrics format is currently marked as "Alpha" and may change in
+incompatible way any time.*
 
 The following settings are required:
 
