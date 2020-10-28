@@ -85,7 +85,7 @@ func TestAttributeValueToString(t *testing.T) {
 		},
 		{
 			name:     "array",
-			input:    pdata.NewAttributeValue(),
+			input:    pdata.NewAttributeValueNull(),
 			jsonLike: false,
 			expected: "",
 		},
