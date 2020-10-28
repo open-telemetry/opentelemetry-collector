@@ -14,57 +14,91 @@
 
 package v1
 
+import (
+	"encoding/hex"
+	"errors"
+)
+
+const spanIDSize = 8
+
+var errInvalidSpanIDSize = errors.New("invalid length for SpanID")
+
 // SpanID is a custom data type that is used for all span_id fields in OTLP
 // Protobuf messages.
-type SpanID bytesID
+type SpanID struct {
+	id [spanIDSize]byte
+}
 
 // NewSpanID creates a SpanID from a byte slice.
-func NewSpanID(bytes []byte) SpanID {
+func NewSpanID(bytes [8]byte) SpanID {
 	return SpanID{id: bytes}
 }
 
-// Bytes returns the byte slice representation of the ID.
-func (t SpanID) Bytes() []byte {
-	return bytesID(t).Bytes()
-}
-
 // HexString returns hex representation of the ID.
-func (t SpanID) HexString() string {
-	return bytesID(t).HexString()
+func (sid SpanID) HexString() string {
+	if !sid.IsValid() {
+		return ""
+	}
+	return hex.EncodeToString(sid.id[:])
 }
 
 // Size returns the size of the data to serialize.
-func (t *SpanID) Size() int {
-	return (*bytesID)(t).Size()
+func (sid *SpanID) Size() int {
+	if !sid.IsValid() {
+		return 0
+	}
+	return spanIDSize
 }
 
 // Equal returns true if ids are equal.
-func (t SpanID) Equal(that SpanID) bool {
-	return bytesID(t).Equal(bytesID(that))
+func (sid SpanID) Equal(that SpanID) bool {
+	return sid.id == that.id
 }
 
-// Compare the ids. See bytes.Compare for expected return values.
-func (t SpanID) Compare(that SpanID) int {
-	return bytesID(t).Compare(bytesID(that))
+// IsValid returns true if id contains at least one non-zero byte.
+func (sid SpanID) IsValid() bool {
+	return sid.id != [8]byte{}
+}
+
+// Bytes returns the byte array representation of the SpanID.
+func (sid SpanID) Bytes() [8]byte {
+	return sid.id
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
-func (t *SpanID) MarshalTo(data []byte) (n int, err error) {
-	return (*bytesID)(t).MarshalTo(data)
+func (sid *SpanID) MarshalTo(data []byte) (n int, err error) {
+	if !sid.IsValid() {
+		return 0, nil
+	}
+	return marshalBytes(data, sid.id[:])
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
-func (t *SpanID) Unmarshal(data []byte) error {
-	return (*bytesID)(t).Unmarshal(data)
+func (sid *SpanID) Unmarshal(data []byte) error {
+	if len(data) == 0 {
+		sid.id = [8]byte{}
+		return nil
+	}
+
+	if len(data) != spanIDSize {
+		return errInvalidSpanIDSize
+	}
+
+	copy(sid.id[:], data)
+	return nil
 }
 
-// MarshalJSON converts trace id into a hex string enclosed in quotes.
-func (t SpanID) MarshalJSON() ([]byte, error) {
-	return bytesID(t).MarshalJSON()
+// MarshalJSON converts SpanID into a hex string enclosed in quotes.
+func (sid SpanID) MarshalJSON() ([]byte, error) {
+	if !sid.IsValid() {
+		return []byte(`""`), nil
+	}
+	return marshalJSON(sid.id[:])
 }
 
-// UnmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
+// UnmarshalJSON decodes SpanID from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
-func (t *SpanID) UnmarshalJSON(data []byte) error {
-	return (*bytesID)(t).UnmarshalJSON(data)
+func (sid *SpanID) UnmarshalJSON(data []byte) error {
+	sid.id = [8]byte{}
+	return unmarshalJSON(sid.id[:], data)
 }

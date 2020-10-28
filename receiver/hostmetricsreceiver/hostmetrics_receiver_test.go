@@ -27,8 +27,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
@@ -45,9 +45,10 @@ var standardMetrics = []string{
 	"system.cpu.time",
 	"system.memory.usage",
 	"system.disk.io",
+	"system.disk.io_time",
 	"system.disk.ops",
+	"system.disk.operation_time",
 	"system.disk.pending_operations",
-	"system.disk.time",
 	"system.filesystem.usage",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
@@ -92,7 +93,7 @@ var resourceFactories = map[string]internal.ResourceScraperFactory{
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	config := &Config{
 		CollectionInterval: 100 * time.Millisecond,
@@ -236,7 +237,7 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 	var mockFactories = map[string]internal.ScraperFactory{}
 	var mockResourceFactories = map[string]internal.ResourceScraperFactory{}
 
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
 
 	_, err := newHostMetricsReceiver(context.Background(), zap.NewNop(), config, mockFactories, mockResourceFactories, sink)
@@ -249,7 +250,7 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 	var mockFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
 	var mockResourceFactories = map[string]internal.ResourceScraperFactory{}
 
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
 	_, err := newHostMetricsReceiver(context.Background(), zap.NewNop(), config, mockFactories, mockResourceFactories, sink)
 	require.Error(t, err)
@@ -261,7 +262,7 @@ func TestGatherMetrics_CreateMetricsResourceScraperError(t *testing.T) {
 	var mockFactories = map[string]internal.ScraperFactory{}
 	var mockResourceFactories = map[string]internal.ResourceScraperFactory{mockTypeStr: mResourceFactory}
 
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
 	_, err := newHostMetricsReceiver(context.Background(), zap.NewNop(), config, mockFactories, mockResourceFactories, sink)
 	require.Error(t, err)
@@ -276,7 +277,7 @@ func TestGatherMetrics_Error(t *testing.T) {
 	var mockFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
 	var mockResourceFactories = map[string]internal.ResourceScraperFactory{mockResourceTypeStr: mResourceFactory}
 
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	config := &Config{
 		Scrapers: map[string]internal.Config{
@@ -304,7 +305,7 @@ func TestGatherMetrics_Error(t *testing.T) {
 }
 
 func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 
 	receiver, _ := newHostMetricsReceiver(context.Background(), zap.NewNop(), cfg, factories, resourceFactories, sink)
 	receiver.initializeScrapers(context.Background(), componenttest.NewNopHost())

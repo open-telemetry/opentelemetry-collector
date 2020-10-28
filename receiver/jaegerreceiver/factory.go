@@ -143,7 +143,7 @@ func createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 ) (component.TraceReceiver, error) {
 
 	// Convert settings in the source config to configuration struct

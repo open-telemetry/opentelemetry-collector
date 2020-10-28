@@ -39,7 +39,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -48,7 +48,7 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -86,7 +86,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportMetrics request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -198,7 +198,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -270,7 +270,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// This test used to be flaky on Windows. Skip if errors pop up again
 
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()

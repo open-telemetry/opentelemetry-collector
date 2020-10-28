@@ -42,8 +42,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -54,7 +54,7 @@ const zipkinReceiverName = "zipkin_receiver_test"
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
-		nextConsumer consumer.TraceConsumer
+		nextConsumer consumer.TracesConsumer
 	}
 	tests := []struct {
 		name    string
@@ -69,7 +69,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: consumertest.NewTracesNop(),
 			},
 		},
 	}
@@ -108,7 +108,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := New(cfg, exportertest.NewNopTraceExporter())
+	traceReceiver, err := New(cfg, consumertest.NewTracesNop())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -204,7 +204,7 @@ func TestConversionRoundtrip(t *testing.T) {
   }
 }]`)
 
-	zi := &ZipkinReceiver{nextConsumer: exportertest.NewNopTraceExporter()}
+	zi := &ZipkinReceiver{nextConsumer: consumertest.NewTracesNop()}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 
@@ -282,7 +282,7 @@ func TestStartTraceReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(consumertest.TracesSink)
 			cfg := &Config{
 				ReceiverSettings: configmodels.ReceiverSettings{
 					NameVal: zipkinReceiverName,

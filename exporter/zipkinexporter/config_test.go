@@ -18,6 +18,7 @@ import (
 	"context"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -48,9 +52,30 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "json", e0.(*Config).Format)
 
 	e1 := cfg.Exporters["zipkin/2"]
-	assert.Equal(t, "zipkin/2", e1.(*Config).Name())
-	assert.Equal(t, "https://somedest:1234/api/v2/spans", e1.(*Config).Endpoint)
-	assert.Equal(t, "proto", e1.(*Config).Format)
+	assert.Equal(t, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "zipkin/2",
+			TypeVal: "zipkin",
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		},
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint:        "https://somedest:1234/api/v2/spans",
+			WriteBufferSize: 524288,
+			Timeout:         5 * time.Second,
+		},
+		Format:             "proto",
+		DefaultServiceName: "test_name",
+	}, e1)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	_, err = factory.CreateTraceExporter(context.Background(), params, e1)
 	require.NoError(t, err)

@@ -281,8 +281,8 @@ func fillLogOne(log pdata.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
-	log.SetSpanID(pdata.NewSpanID([]byte{0x01, 0x02, 0x04, 0x08}))
-	log.SetTraceID(pdata.NewTraceID([]byte{0x08, 0x04, 0x02, 0x01}))
+	log.SetSpanID(pdata.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
+	log.SetTraceID(pdata.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
 
 	attrs := log.Attributes()
 	attrs.InsertString("app", "server")
@@ -299,9 +299,9 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
-		SpanId:                 otlpcommon.NewSpanID([]byte{0x01, 0x02, 0x04, 0x08}),
-		TraceId:                otlpcommon.NewTraceID([]byte{0x08, 0x04, 0x02, 0x01}),
-		Attributes: []*otlpcommon.KeyValue{
+		SpanId:                 otlpcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}),
+		TraceId:                otlpcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}),
+		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "app",
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "server"}},
@@ -336,7 +336,7 @@ func generateOtlpLogTwo() *otlplogs.LogRecord {
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something happened"}},
-		Attributes: []*otlpcommon.KeyValue{
+		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "customer",
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "acme"}},

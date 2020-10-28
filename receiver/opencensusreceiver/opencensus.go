@@ -52,7 +52,7 @@ type ocReceiver struct {
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
 
-	traceConsumer   consumer.TraceConsumer
+	traceConsumer   consumer.TracesConsumer
 	metricsConsumer consumer.MetricsConsumer
 
 	stopOnce                 sync.Once
@@ -70,7 +70,7 @@ func newOpenCensusReceiver(
 	instanceName string,
 	transport string,
 	addr string,
-	tc consumer.TraceConsumer,
+	tc consumer.TracesConsumer,
 	mc consumer.MetricsConsumer,
 	opts ...ocOption,
 ) (*ocReceiver, error) {

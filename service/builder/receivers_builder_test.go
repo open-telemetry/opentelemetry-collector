@@ -294,12 +294,12 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 		receiver: receiver,
 	}
 
-	assert.Equal(t, false, receiver.Started)
+	assert.False(t, receiver.Started)
 
 	err := receivers.StartAll(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	assert.Equal(t, true, receiver.Started)
+	assert.True(t, receiver.Started)
 }
 
 func TestReceiversBuilder_StopAll(t *testing.T) {
@@ -313,11 +313,11 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 		receiver: receiver,
 	}
 
-	assert.Equal(t, false, receiver.Stopped)
+	assert.False(t, receiver.Stopped)
 
 	assert.NoError(t, receivers.ShutdownAll(context.Background()))
 
-	assert.Equal(t, true, receiver.Stopped)
+	assert.True(t, receiver.Stopped)
 }
 
 func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {

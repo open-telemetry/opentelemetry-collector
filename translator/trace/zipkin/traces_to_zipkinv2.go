@@ -16,6 +16,7 @@ package zipkin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -115,31 +116,21 @@ func spanToZipkinSpan(
 
 	zs := &zipkinmodel.SpanModel{}
 
-	hi, lo, err := tracetranslator.TraceIDToUInt64Pair(span.TraceID())
-	if err != nil {
-		return nil, err
+	if !span.TraceID().IsValid() {
+		return zs, errors.New("TraceID is invalid")
 	}
-	zs.TraceID = zipkinmodel.TraceID{
-		High: hi,
-		Low:  lo,
+	zs.TraceID = convertTraceID(span.TraceID())
+	if !span.SpanID().IsValid() {
+		return zs, errors.New("SpanID is invalid")
 	}
-
-	idVal, err := tracetranslator.BytesToUInt64SpanID(span.SpanID().Bytes())
-	if err != nil {
-		return nil, err
-	}
-	zs.ID = zipkinmodel.ID(idVal)
+	zs.ID = convertSpanID(span.SpanID())
 
 	if len(span.TraceState()) > 0 {
 		tags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
 	}
 
-	if len(span.ParentSpanID().Bytes()) > 0 {
-		idVal, err := tracetranslator.BytesToUInt64SpanID(span.ParentSpanID().Bytes())
-		if err != nil {
-			return nil, err
-		}
-		id := zipkinmodel.ID(idVal)
+	if span.ParentSpanID().IsValid() {
+		id := convertSpanID(span.ParentSpanID())
 		zs.ParentID = &id
 	}
 
@@ -375,4 +366,13 @@ func isIPv6Address(ipStr string) bool {
 		}
 	}
 	return false
+}
+
+func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
+	h, l := tracetranslator.TraceIDToUInt64Pair(t)
+	return zipkinmodel.TraceID{High: h, Low: l}
+}
+
+func convertSpanID(s pdata.SpanID) zipkinmodel.ID {
+	return zipkinmodel.ID(tracetranslator.BytesToUInt64SpanID(s.Bytes()))
 }

@@ -57,7 +57,7 @@ type ZipkinReceiver struct {
 
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TracesConsumer
 	instanceName string
 
 	startOnce sync.Once
@@ -69,7 +69,7 @@ type ZipkinReceiver struct {
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(config *Config, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(config *Config, nextConsumer consumer.TracesConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}

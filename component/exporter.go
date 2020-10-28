@@ -31,7 +31,7 @@ type Exporter interface {
 // TraceExporter is a Exporter that can consume traces.
 type TraceExporter interface {
 	Exporter
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // MetricsExporter is an Exporter that can consume metrics.

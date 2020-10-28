@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -111,7 +111,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := createTraceReceiver(ctx, params, tt.cfg, exportertest.NewNopTraceExporter())
+			tr, err := createTraceReceiver(ctx, params, tt.cfg, consumertest.NewTracesNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTraceReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -187,7 +187,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tc, err := createMetricsReceiver(context.Background(), params, tt.cfg, exportertest.NewNopMetricsExporter())
+			tc, err := createMetricsReceiver(context.Background(), params, tt.cfg, consumertest.NewMetricsNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return

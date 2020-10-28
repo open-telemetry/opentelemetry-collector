@@ -26,15 +26,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestNewTraceProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
-		nextConsumer consumer.TraceConsumer
+		nextConsumer consumer.TracesConsumer
 		cfg          Config
 		want         component.TraceProcessor
 		wantErr      bool
@@ -45,23 +45,23 @@ func TestNewTraceProcessor(t *testing.T) {
 		},
 		{
 			name:         "happy_path",
-			nextConsumer: exportertest.NewNopTraceExporter(),
+			nextConsumer: consumertest.NewTracesNop(),
 			cfg: Config{
 				SamplingPercentage: 15.5,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: consumertest.NewTracesNop(),
 			},
 		},
 		{
 			name:         "happy_path_hash_seed",
-			nextConsumer: exportertest.NewNopTraceExporter(),
+			nextConsumer: consumertest.NewTracesNop(),
 			cfg: Config{
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
 			want: &tracesamplerprocessor{
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: consumertest.NewTracesNop(),
 				hashSeed:     4321,
 			},
 		},
@@ -143,7 +143,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := new(consumertest.TracesSink)
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
@@ -205,7 +205,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := new(consumertest.TracesSink)
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
@@ -322,7 +322,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := &exportertest.SinkTraceExporter{}
+			sink := new(consumertest.TracesSink)
 			tsp, err := newTraceProcessor(sink, tt.cfg)
 			require.NoError(t, err)
 
@@ -480,8 +480,8 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 
 // assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
-func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[string]bool, spanCount int) {
-	traceIDs = make(map[string]bool)
+func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string) (traceIDs map[[16]byte]bool, spanCount int) {
+	traceIDs = make(map[[16]byte]bool)
 	for _, td := range sampled {
 		rspans := td.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
@@ -502,7 +502,7 @@ func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string)
 				for k := 0; k < ils.Spans().Len(); k++ {
 					spanCount++
 					span := ils.Spans().At(k)
-					key := string(span.TraceID().Bytes())
+					key := span.TraceID().Bytes()
 					if traceIDs[key] {
 						t.Errorf("same traceID used more than once %q", key)
 						return

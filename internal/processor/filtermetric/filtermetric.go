@@ -32,7 +32,13 @@ type Matcher struct {
 // The metric Matcher supports matching by the following metric properties:
 // - Metric name
 func NewMatcher(config *MatchProperties) (Matcher, error) {
-	nameFS, err := filterset.CreateFilterSet(config.MetricNames, &config.Config)
+	nameFS, err := filterset.CreateFilterSet(
+		config.MetricNames,
+		&filterset.Config{
+			MatchType:    filterset.MatchType(config.MatchType),
+			RegexpConfig: config.RegexpConfig,
+		},
+	)
 	if err != nil {
 		return Matcher{}, err
 	}

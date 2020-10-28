@@ -161,9 +161,9 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Resource().IsNil())
+	assert.True(t, ms.Resource().IsNil())
 	ms.Resource().InitEmpty()
-	assert.EqualValues(t, false, ms.Resource().IsNil())
+	assert.False(t, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
@@ -313,9 +313,9 @@ func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.InstrumentationLibrary().IsNil())
+	assert.True(t, ms.InstrumentationLibrary().IsNil())
 	ms.InstrumentationLibrary().InitEmpty()
-	assert.EqualValues(t, false, ms.InstrumentationLibrary().IsNil())
+	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -474,8 +474,8 @@ func TestLogRecord_Timestamp(t *testing.T) {
 func TestLogRecord_TraceID(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewTraceID(nil), ms.TraceID())
-	testValTraceID := NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
+	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
 	assert.EqualValues(t, testValTraceID, ms.TraceID())
 }
@@ -483,8 +483,8 @@ func TestLogRecord_TraceID(t *testing.T) {
 func TestLogRecord_SpanID(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, NewSpanID(nil), ms.SpanID())
-	testValSpanID := NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
+	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
 }
@@ -528,9 +528,9 @@ func TestLogRecord_Name(t *testing.T) {
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.EqualValues(t, true, ms.Body().IsNil())
+	assert.True(t, ms.Body().IsNil())
 	ms.Body().InitEmpty()
-	assert.EqualValues(t, false, ms.Body().IsNil())
+	assert.False(t, ms.Body().IsNil())
 	fillTestAttributeValue(ms.Body())
 	assert.EqualValues(t, generateTestAttributeValue(), ms.Body())
 }
@@ -627,8 +627,8 @@ func generateTestLogRecord() LogRecord {
 
 func fillTestLogRecord(tv LogRecord) {
 	tv.SetTimestamp(TimestampUnixNano(1234567890))
-	tv.SetTraceID(NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	tv.SetSpanID(NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetFlags(uint32(0x01))
 	tv.SetSeverityText("INFO")
 	tv.SetSeverityNumber(SeverityNumberINFO)

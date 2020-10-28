@@ -103,13 +103,13 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = otlpcommon.NewSpanID(nil)
+			parentID = otlpcommon.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
-			if traceID.Bytes() == nil {
+			if !traceID.IsValid() {
 				traceID = generateTraceID(random)
 			}
-			if parentID.Bytes() == nil {
+			if !parentID.IsValid() {
 				parentID = generateSpanID(random)
 			}
 		}
@@ -188,7 +188,7 @@ func lookupSpanKind(kind PICTInputKind) otlptrace.Span_SpanKind {
 	}
 }
 
-func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) []*otlpcommon.KeyValue {
+func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) []otlpcommon.KeyValue {
 	includeStatus := SpanStatusNil != statusStr
 	var attrs map[string]interface{}
 	switch spanTypeID {
@@ -511,7 +511,7 @@ func generateSpanEvent(index int) *otlptrace.Span_Event {
 	}
 }
 
-func generateEventAttributes(index int) []*otlpcommon.KeyValue {
+func generateEventAttributes(index int) []otlpcommon.KeyValue {
 	if index%4 == 2 {
 		return nil
 	}
@@ -542,7 +542,7 @@ func generateSpanLink(random io.Reader, index int) *otlptrace.Span_Link {
 	}
 }
 
-func generateLinkAttributes(index int) []*otlpcommon.KeyValue {
+func generateLinkAttributes(index int) []otlpcommon.KeyValue {
 	if index%4 == 2 {
 		return nil
 	}

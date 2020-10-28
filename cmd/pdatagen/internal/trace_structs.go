@@ -206,8 +206,8 @@ var traceIDField = &primitiveTypedField{
 	originFieldName: "TraceId",
 	returnType:      "TraceID",
 	rawType:         "otlpcommon.TraceID",
-	defaultVal:      "NewTraceID(nil)",
-	testVal:         "NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+	defaultVal:      "NewTraceID([16]byte{})",
+	testVal:         "NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var spanIDField = &primitiveTypedField{
@@ -215,8 +215,8 @@ var spanIDField = &primitiveTypedField{
 	originFieldName: "SpanId",
 	returnType:      "SpanID",
 	rawType:         "otlpcommon.SpanID",
-	defaultVal:      "NewSpanID(nil)",
-	testVal:         "NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})",
+	defaultVal:      "NewSpanID([8]byte{})",
+	testVal:         "NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})",
 }
 
 var parentSpanIDField = &primitiveTypedField{
@@ -224,8 +224,8 @@ var parentSpanIDField = &primitiveTypedField{
 	originFieldName: "ParentSpanId",
 	returnType:      "SpanID",
 	rawType:         "otlpcommon.SpanID",
-	defaultVal:      "NewSpanID(nil)",
-	testVal:         "NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})",
+	defaultVal:      "NewSpanID([8]byte{})",
+	testVal:         "NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var traceStateField = &primitiveTypedField{

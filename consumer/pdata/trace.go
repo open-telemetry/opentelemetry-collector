@@ -15,8 +15,6 @@
 package pdata
 
 import (
-	"github.com/gogo/protobuf/proto"
-
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 )
@@ -28,6 +26,12 @@ import (
 // in-memory representation.
 type Traces struct {
 	orig *[]*otlptrace.ResourceSpans
+}
+
+// NewTraces creates a new Traces.
+func NewTraces() Traces {
+	orig := []*otlptrace.ResourceSpans(nil)
+	return Traces{&orig}
 }
 
 // TracesFromOtlp creates the internal Traces representation from the OTLP.
@@ -43,39 +47,30 @@ func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
 // ToOtlpProtoBytes converts the internal Traces to OTLP Collector
 // ExportTraceServiceRequest ProtoBuf bytes.
 func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
-	return proto.Marshal(&otlpcollectortrace.ExportTraceServiceRequest{
+	traces := otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: *td.orig,
-	})
+	}
+	return traces.Marshal()
 }
 
 // FromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
 // ProtoBuf bytes to the internal Traces. Overrides current data.
 // Calling this function on zero-initialized structure causes panic.
-// Use it with NewTraces or on existing initialized Traces
+// Use it with NewTraces or on existing initialized Traces.
 func (td Traces) FromOtlpProtoBytes(data []byte) error {
-	traces := &otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := proto.Unmarshal(data, traces); err != nil {
+	traces := otlpcollectortrace.ExportTraceServiceRequest{}
+	if err := traces.Unmarshal(data); err != nil {
 		return err
 	}
 	*td.orig = traces.ResourceSpans
 	return nil
 }
 
-// NewTraces creates a new Traces.
-func NewTraces() Traces {
-	orig := []*otlptrace.ResourceSpans(nil)
-	return Traces{&orig}
-}
-
 // Clone returns a copy of Traces.
 func (td Traces) Clone() Traces {
-	otlp := TracesToOtlp(td)
-	resourceSpansClones := make([]*otlptrace.ResourceSpans, 0, len(otlp))
-	for _, resourceSpans := range otlp {
-		resourceSpansClones = append(resourceSpansClones,
-			proto.Clone(resourceSpans).(*otlptrace.ResourceSpans))
-	}
-	return TracesFromOtlp(resourceSpansClones)
+	rss := NewResourceSpansSlice()
+	td.ResourceSpans().CopyTo(rss)
+	return Traces(rss)
 }
 
 // SpanCount calculates the total number of spans.

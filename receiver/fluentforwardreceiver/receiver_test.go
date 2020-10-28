@@ -31,16 +31,16 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/testdata"
 	"go.opentelemetry.io/collector/testutil/logstest"
 )
 
-func setupServer(t *testing.T) (func() net.Conn, *exportertest.SinkLogsExporter, *observer.ObservedLogs, context.CancelFunc) {
+func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	next := &exportertest.SinkLogsExporter{}
+	next := new(consumertest.LogsSink)
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
@@ -359,7 +359,7 @@ func TestUnixEndpoint(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	next := &exportertest.SinkLogsExporter{}
+	next := new(consumertest.LogsSink)
 
 	tmpdir, err := ioutil.TempDir("", "fluent-socket")
 	require.NoError(t, err)

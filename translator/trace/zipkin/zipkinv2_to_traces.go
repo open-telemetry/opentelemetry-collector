@@ -15,7 +15,6 @@
 package zipkin
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -26,6 +25,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -213,18 +213,20 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		link.InitEmpty()
 
 		// Convert trace id.
-		rawTrace, errTrace := hex.DecodeString(parts[0])
+		rawTrace := commonpb.TraceID{}
+		errTrace := rawTrace.UnmarshalJSON([]byte(parts[0]))
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.NewTraceID(rawTrace))
+		link.SetTraceID(pdata.TraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan, errSpan := hex.DecodeString(parts[1])
+		rawSpan := commonpb.SpanID{}
+		errSpan := rawSpan.UnmarshalJSON([]byte(parts[1]))
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.NewSpanID(rawSpan))
+		link.SetSpanID(pdata.SpanID(rawSpan))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 

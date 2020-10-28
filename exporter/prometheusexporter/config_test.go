@@ -53,5 +53,6 @@ func TestLoadConfig(t *testing.T) {
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
+			SendTimestamps: true,
 		})
 }

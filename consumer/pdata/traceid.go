@@ -21,14 +21,25 @@ import (
 // TraceID is an alias of OTLP TraceID data type.
 type TraceID otlpcommon.TraceID
 
-func NewTraceID(bytes []byte) TraceID {
+func InvalidTraceID() TraceID {
+	return TraceID(otlpcommon.NewTraceID([16]byte{}))
+}
+
+func NewTraceID(bytes [16]byte) TraceID {
 	return TraceID(otlpcommon.NewTraceID(bytes))
 }
 
-func (t TraceID) Bytes() []byte {
+// Bytes returns the byte array representation of the TraceID.
+func (t TraceID) Bytes() [16]byte {
 	return otlpcommon.TraceID(t).Bytes()
 }
 
+// HexString returns hex representation of the TraceID.
 func (t TraceID) HexString() string {
 	return otlpcommon.TraceID(t).HexString()
+}
+
+// IsValid returns true if id contains at leas one non-zero byte.
+func (t TraceID) IsValid() bool {
+	return otlpcommon.TraceID(t).IsValid()
 }

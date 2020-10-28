@@ -165,8 +165,8 @@ func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDat
 
 		buckets := p.BucketCounts()
 		if len(buckets) != 0 {
-			for _, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", i, bucket)
+			for j, bucket := range buckets {
+				b.logEntry("Buckets #%d, Count: %d", j, bucket)
 			}
 		}
 	}
@@ -196,8 +196,8 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 
 		buckets := p.BucketCounts()
 		if len(buckets) != 0 {
-			for _, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", i, bucket)
+			for j, bucket := range buckets {
+				b.logEntry("Buckets #%d, Count: %d", j, bucket)
 			}
 		}
 	}
@@ -278,9 +278,26 @@ func attributeValueToString(av pdata.AttributeValue) string {
 		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
 	case pdata.AttributeValueINT:
 		return strconv.FormatInt(av.IntVal(), 10)
+	case pdata.AttributeValueARRAY:
+		return attributeValueArrayToString(av.ArrayVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
+}
+
+func attributeValueArrayToString(av pdata.AnyValueArray) string {
+	var b strings.Builder
+	b.WriteByte('[')
+	for i := 0; i < av.Len(); i++ {
+		if i < av.Len()-1 {
+			fmt.Fprintf(&b, "%s, ", attributeValueToString(av.At(i)))
+		} else {
+			b.WriteString(attributeValueToString(av.At(i)))
+		}
+	}
+
+	b.WriteByte(']')
+	return b.String()
 }
 
 type loggingExporter struct {

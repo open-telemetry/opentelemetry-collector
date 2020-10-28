@@ -42,6 +42,15 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
+			name:     "OTLP-HTTP",
+			sender:   testbed.NewOTLPHTTPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			receiver: testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 70,
+			},
+		},
+		{
 			name:     "FluentBitToOTLP",
 			sender:   flw,
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),

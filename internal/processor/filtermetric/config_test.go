@@ -42,7 +42,7 @@ var (
 
 func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *MatchProperties {
 	cfg := createConfig(filters, filterset.Regexp)
-	cfg.Config.RegexpConfig = rCfg
+	cfg.RegexpConfig = rCfg
 	return cfg
 }
 

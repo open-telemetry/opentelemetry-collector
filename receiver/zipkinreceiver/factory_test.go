@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,7 +39,7 @@ func TestCreateReceiver(t *testing.T) {
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		cfg,
-		exportertest.NewNopTraceExporter())
+		consumertest.NewTracesNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
@@ -47,7 +47,7 @@ func TestCreateReceiver(t *testing.T) {
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		cfg,
-		exportertest.NewNopTraceExporter())
+		consumertest.NewTracesNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

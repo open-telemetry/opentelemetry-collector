@@ -21,20 +21,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
-	nop := exportertest.NewNopTraceExporter()
-	tfc := NewTracesCloningFanOutConnector([]consumer.TraceConsumer{nop})
+	nop := consumertest.NewTracesNop()
+	tfc := NewTracesCloningFanOutConnector([]consumer.TracesConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
 
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.TraceConsumer, 3)
+	processors := make([]consumer.TracesConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkTraceExporter)
+		processors[i] = new(consumertest.TracesSink)
 	}
 
 	tfc := NewTracesCloningFanOutConnector(processors)
@@ -51,7 +51,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	for i, p := range processors {
-		m := p.(*exportertest.SinkTraceExporter)
+		m := p.(*consumertest.TracesSink)
 		assert.Equal(t, wantSpansCount, m.SpansCount())
 		spanOrig := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 		allTraces := m.AllTraces()
@@ -69,7 +69,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 }
 
 func TestMetricsProcessorCloningNotMultiplexing(t *testing.T) {
-	nop := exportertest.NewNopMetricsExporter()
+	nop := consumertest.NewMetricsNop()
 	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
 	assert.Same(t, nop, mfc)
 }
@@ -77,7 +77,7 @@ func TestMetricsProcessorCloningNotMultiplexing(t *testing.T) {
 func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.MetricsConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkMetricsExporter)
+		processors[i] = new(consumertest.MetricsSink)
 	}
 
 	mfc := NewMetricsCloningFanOutConnector(processors)
@@ -94,7 +94,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	for i, p := range processors {
-		m := p.(*exportertest.SinkMetricsExporter)
+		m := p.(*consumertest.MetricsSink)
 		assert.Equal(t, wantMetricsCount, m.MetricsCount())
 		metricOrig := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		allMetrics := m.AllMetrics()
@@ -112,7 +112,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 }
 
 func TestLogsProcessorCloningNotMultiplexing(t *testing.T) {
-	nop := exportertest.NewNopLogsExporter()
+	nop := consumertest.NewLogsNop()
 	lfc := NewLogsCloningFanOutConnector([]consumer.LogsConsumer{nop})
 	assert.Same(t, nop, lfc)
 }
@@ -120,7 +120,7 @@ func TestLogsProcessorCloningNotMultiplexing(t *testing.T) {
 func TestLogsProcessorCloningMultiplexing(t *testing.T) {
 	processors := make([]consumer.LogsConsumer, 3)
 	for i := range processors {
-		processors[i] = new(exportertest.SinkLogsExporter)
+		processors[i] = new(consumertest.LogsSink)
 	}
 
 	mfc := NewLogsCloningFanOutConnector(processors)
@@ -137,7 +137,7 @@ func TestLogsProcessorCloningMultiplexing(t *testing.T) {
 	}
 
 	for i, p := range processors {
-		m := p.(*exportertest.SinkLogsExporter)
+		m := p.(*consumertest.LogsSink)
 		assert.Equal(t, wantMetricsCount, m.LogRecordsCount())
 		metricOrig := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
 		allLogs := m.AllLogs()
