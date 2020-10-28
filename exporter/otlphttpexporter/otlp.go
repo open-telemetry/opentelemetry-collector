@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -42,6 +43,7 @@ type exporterImp struct {
 	tracesURL  string
 	metricsURL string
 	logsURL    string
+	logger     *zap.Logger
 }
 
 const (
@@ -50,7 +52,7 @@ const (
 )
 
 // Crete new exporter.
-func newExporter(cfg configmodels.Exporter) (*exporterImp, error) {
+func newExporter(cfg configmodels.Exporter, logger *zap.Logger) (*exporterImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {
@@ -68,6 +70,7 @@ func newExporter(cfg configmodels.Exporter) (*exporterImp, error) {
 	return &exporterImp{
 		config: oCfg,
 		client: client,
+		logger: logger,
 	}, nil
 }
 
@@ -114,6 +117,7 @@ func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, er
 }
 
 func (e *exporterImp) export(ctx context.Context, url string, request []byte) error {
+	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.Permanent(err)
@@ -142,12 +146,12 @@ func (e *exporterImp) export(ctx context.Context, url string, request []byte) er
 	var formattedErr error
 	if respStatus != nil {
 		formattedErr = fmt.Errorf(
-			"error exporting items, server responded with HTTP Status Code %d, Message=%s, Details=%v",
-			resp.StatusCode, respStatus.Message, respStatus.Details)
+			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
+			url, resp.StatusCode, respStatus.Message, respStatus.Details)
 	} else {
 		formattedErr = fmt.Errorf(
-			"error exporting items, server responded with HTTP Status Code %d",
-			resp.StatusCode)
+			"error exporting items, request to %s responded with HTTP Status Code %d",
+			url, resp.StatusCode)
 	}
 
 	// Check if the server is overwhelmed.

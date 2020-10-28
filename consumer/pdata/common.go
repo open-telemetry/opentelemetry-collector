@@ -66,7 +66,7 @@ func (avt AttributeValueType) String() string {
 }
 
 // AttributeValue represents a value of an attribute. Typically used in AttributeMap.
-// Must use one of NewAttributeValue* functions below to create new instances.
+// Must use one of NewAttributeValue+ functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
 // value representation. For the same reason passing by value and calling setters
@@ -101,6 +101,7 @@ func NewAttributeValueNull() AttributeValue {
 	return AttributeValue{orig: &orig}
 }
 
+// Deprecated: Use NewAttributeValueNull()
 func NewAttributeValue() AttributeValue {
 	return NewAttributeValueNull()
 }
@@ -139,21 +140,6 @@ func NewAttributeValueMap() AttributeValue {
 func NewAttributeValueArray() AttributeValue {
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}
 	return AttributeValue{orig: &orig}
-}
-
-// NewAttributeValueSlice creates a slice of attributes values that are correctly initialized.
-func NewAttributeValueSlice(len int) []AttributeValue {
-	// Allocate 3 slices, one for AttributeValues, another for underlying OTLP structs
-	// and another for pointers to OTLP structs.
-	// TODO: make one allocation for both slices.
-	wrappers := make([]AttributeValue, len)
-	origs := make([]otlpcommon.AnyValue, len)
-	origPtrs := make([]*otlpcommon.AnyValue, len)
-	for i := range origs {
-		origPtrs[i] = &origs[i]
-		wrappers[i].orig = &origPtrs[i]
-	}
-	return wrappers
 }
 
 func (a AttributeValue) InitEmpty() {

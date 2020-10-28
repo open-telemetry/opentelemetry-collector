@@ -64,7 +64,7 @@ func createDefaultConfig() configmodels.Exporter {
 
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	zc := cfg.(*Config)
@@ -80,6 +80,7 @@ func createTraceExporter(
 	}
 	return exporterhelper.NewTraceExporter(
 		zc,
+		params.Logger,
 		ze.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

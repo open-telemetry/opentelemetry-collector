@@ -93,7 +93,7 @@ func TestProcessManager(t *testing.T) {
 	pm.Start(ctx, nil)
 	defer pm.Shutdown(ctx)
 
-	require.Eventually(t, findSubproc, 5*time.Second, 100*time.Millisecond)
+	require.Eventually(t, findSubproc, 12*time.Second, 100*time.Millisecond)
 	require.NotNil(t, *mockProc)
 
 	cmdline, err := (*mockProc).Cmdline()
@@ -128,7 +128,7 @@ func TestProcessManagerArgs(t *testing.T) {
 	pm.Start(ctx, nil)
 	defer pm.Shutdown(ctx)
 
-	require.Eventually(t, findSubproc, 5*time.Second, 100*time.Millisecond)
+	require.Eventually(t, findSubproc, 12*time.Second, 100*time.Millisecond)
 	require.NotNil(t, *mockProc)
 
 	cmdline, err := (*mockProc).Cmdline()

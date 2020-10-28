@@ -52,12 +52,12 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(ctx context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
+func createTraceExporter(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
 	oCfg := config.(*Config)
-	return newTraceExporter(ctx, oCfg)
+	return newTraceExporter(ctx, oCfg, params.Logger)
 }
 
-func createMetricsExporter(ctx context.Context, _ component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
 	oCfg := config.(*Config)
-	return newMetricsExporter(ctx, oCfg)
+	return newMetricsExporter(ctx, oCfg, params.Logger)
 }

@@ -44,7 +44,7 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	// This processor can't be created with the default config.
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
 	assert.Nil(t, tp)
 	assert.Error(t, err, "created processor with invalid settings")
 
@@ -63,7 +63,7 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.BallastSizeMiB = 2048
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
+	tp, err = factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.NoError(t, tp.Shutdown(context.Background()))

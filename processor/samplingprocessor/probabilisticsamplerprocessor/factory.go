@@ -45,13 +45,13 @@ func createDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
+// CreateTracesProcessor creates a trace processor based on this config.
 func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	return newTraceProcessor(nextConsumer, *oCfg)
 }

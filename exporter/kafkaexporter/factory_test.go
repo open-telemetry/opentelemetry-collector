@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -88,7 +89,7 @@ func TestWithMarshallers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = cm.Encoding()
-		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})

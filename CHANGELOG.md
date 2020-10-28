@@ -14,6 +14,7 @@
 ## 💡 Enhancements 💡
 
 - `kafka` exporter: Add support for exporting metrics as otlp Protobuf.
+- Rename component.TraceProcessor to component.TracesProcessor #1976
 
 ## v0.13.0 Beta
 

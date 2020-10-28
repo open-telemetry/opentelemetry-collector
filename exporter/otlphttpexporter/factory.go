@@ -76,10 +76,10 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
-	oce, err := newExporter(cfg)
+	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +92,7 @@ func createTraceExporter(
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		oce.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -101,10 +102,10 @@ func createTraceExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	oce, err := newExporter(cfg)
+	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +118,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		oce.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -126,10 +128,10 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	oce, err := newExporter(cfg)
+	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +144,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
+		params.Logger,
 		oce.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

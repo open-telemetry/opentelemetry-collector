@@ -16,7 +16,6 @@ package pdata
 
 import (
 	"encoding/json"
-	"math/rand"
 	"strconv"
 	"testing"
 
@@ -281,18 +280,6 @@ func TestAttributeValueEqual(t *testing.T) {
 
 	av1 = NewAttributeValueBool(false)
 	assert.False(t, av1.Equal(av2))
-}
-
-func TestNewAttributeValueSlice(t *testing.T) {
-	events := NewAttributeValueSlice(0)
-	assert.EqualValues(t, 0, len(events))
-
-	n := rand.Intn(10)
-	events = NewAttributeValueSlice(n)
-	assert.EqualValues(t, n, len(events))
-	for event := range events {
-		assert.NotNil(t, event)
-	}
 }
 
 func TestNilAttributeMap(t *testing.T) {
