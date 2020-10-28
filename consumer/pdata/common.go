@@ -141,21 +141,6 @@ func NewAttributeValueArray() AttributeValue {
 	return AttributeValue{orig: &orig}
 }
 
-// NewAttributeValueSlice creates a slice of attributes values that are correctly initialized.
-func NewAttributeValueSlice(len int) []AttributeValue {
-	// Allocate 3 slices, one for AttributeValues, another for underlying OTLP structs
-	// and another for pointers to OTLP structs.
-	// TODO: make one allocation for both slices.
-	wrappers := make([]AttributeValue, len)
-	origs := make([]otlpcommon.AnyValue, len)
-	origPtrs := make([]*otlpcommon.AnyValue, len)
-	for i := range origs {
-		origPtrs[i] = &origs[i]
-		wrappers[i].orig = &origPtrs[i]
-	}
-	return wrappers
-}
-
 func (a AttributeValue) InitEmpty() {
 	*a.orig = &otlpcommon.AnyValue{}
 }
