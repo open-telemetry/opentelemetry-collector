@@ -171,7 +171,6 @@ func (tc *TestCase) StartAgent(args ...string) {
 	err := tc.agentProc.Start(StartParams{
 		Name:         "Agent",
 		LogFilePath:  logFileName,
-		Cmd:          testBedConfig.Agent,
 		CmdArgs:      args,
 		resourceSpec: &tc.resourceSpec,
 	})

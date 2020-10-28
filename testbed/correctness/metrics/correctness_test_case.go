@@ -58,7 +58,6 @@ func (tc *correctnessTestCase) startCollector() {
 	err = tc.collector.Start(testbed.StartParams{
 		Name:        "Agent",
 		LogFilePath: fname,
-		Cmd:         "foo",
 		CmdArgs:     []string{"--metrics-level=NONE"},
 	})
 	require.NoError(tc.t, err)
