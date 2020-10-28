@@ -59,7 +59,7 @@ func createTraceProcessor(
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.

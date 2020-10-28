@@ -57,7 +57,7 @@ func createTraceProcessor(
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {
 		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %q", cfg.Name())

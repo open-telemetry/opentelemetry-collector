@@ -36,7 +36,7 @@ func TestNewTraceProcessor(t *testing.T) {
 		name         string
 		nextConsumer consumer.TracesConsumer
 		cfg          Config
-		want         component.TraceProcessor
+		want         component.TracesProcessor
 		wantErr      bool
 	}{
 		{
