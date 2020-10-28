@@ -42,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
-	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -54,7 +54,7 @@ func TestCreateMetricsExport(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	mf := kafkaExporterFactory{metricsMarshallers: metricsMarshallers()}
-	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, mr)
 }
@@ -64,7 +64,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
-	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -75,7 +75,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	mf := kafkaExporterFactory{metricsMarshallers: metricsMarshallers()}
-	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
 }
@@ -95,7 +95,7 @@ func TestWithMarshallers(t *testing.T) {
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = new(otlpTracesPbMarshaller).Encoding()
-		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})
