@@ -17,6 +17,8 @@ package exporterhelper
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -67,7 +69,12 @@ func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error 
 }
 
 // NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
-func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, options ...ExporterOption) (component.LogsExporter, error) {
+func NewLogsExporter(
+	cfg configmodels.Exporter,
+	logger *zap.Logger,
+	pushLogsData PushLogsData,
+	options ...ExporterOption,
+) (component.LogsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}
@@ -76,7 +83,7 @@ func NewLogsExporter(cfg configmodels.Exporter, pushLogsData PushLogsData, optio
 		return nil, errNilPushLogsData
 	}
 
-	be := newBaseExporter(cfg, options...)
+	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			exporterName: cfg.Name(),

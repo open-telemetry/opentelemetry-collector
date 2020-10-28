@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -34,7 +35,7 @@ import (
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -60,7 +61,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	rCfg := CreateDefaultRetrySettings()
 	rCfg.Enabled = false
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -87,7 +88,7 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -115,7 +116,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -152,7 +153,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -183,7 +184,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	rCfg := CreateDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -225,7 +226,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	qCfg.NumConsumers = 1
 	rCfg := CreateDefaultRetrySettings()
 	rCfg.InitialInterval = 10 * time.Millisecond
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -258,7 +259,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg.QueueSize = 1
 	rCfg := CreateDefaultRetrySettings()
 	rCfg.InitialInterval = 0
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -286,7 +287,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 	qCfg := CreateDefaultQueueSettings()
 	qCfg.QueueSize = 0
 	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -305,7 +306,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 
 	qCfg := CreateDefaultQueueSettings()
 	rCfg := CreateDefaultRetrySettings()
-	be := newBaseExporter(defaultExporterCfg, WithRetry(rCfg), WithQueue(qCfg))
+	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))

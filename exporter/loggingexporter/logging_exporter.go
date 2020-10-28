@@ -435,6 +435,7 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 	return exporterhelper.NewTraceExporter(
 		config,
+		logger,
 		s.pushTraceData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -454,6 +455,7 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 
 	return exporterhelper.NewMetricsExporter(
 		config,
+		logger,
 		s.pushMetricsData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -473,6 +475,7 @@ func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 
 	return exporterhelper.NewLogsExporter(
 		config,
+		logger,
 		s.pushLogData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

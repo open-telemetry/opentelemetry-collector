@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -41,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
 	f := kafkaExporterFactory{marshallers: defaultMarshallers()}
-	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -51,7 +52,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaExporterFactory{marshallers: defaultMarshallers()}
-	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -66,13 +67,13 @@ func TestWithMarshallers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = cm.Encoding()
-		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = new(otlpProtoMarshaller).Encoding()
-		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, cfg)
+		exporter, err := f.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})

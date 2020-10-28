@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -65,20 +66,20 @@ func (tote *testOCTraceExporter) ExportSpan(sd *trace.SpanData) {
 }
 
 func TestTraceExporter_InvalidName(t *testing.T) {
-	te, err := NewTraceExporter(nil, newTraceDataPusher(0, nil))
+	te, err := NewTraceExporter(nil, zap.NewNop(), newTraceDataPusher(0, nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilConfig, err)
 }
 
 func TestTraceExporter_NilPushTraceData(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, nil)
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, te)
 	require.Equal(t, errNilPushTraceData, err)
 }
 
 func TestTraceExporter_Default(t *testing.T) {
 	td := pdata.NewTraces()
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, nil))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -89,7 +90,7 @@ func TestTraceExporter_Default(t *testing.T) {
 func TestTraceExporter_Default_ReturnError(t *testing.T) {
 	td := pdata.NewTraces()
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -98,7 +99,7 @@ func TestTraceExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestTraceExporter_WithRecordMetrics(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -106,7 +107,7 @@ func TestTraceExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(1, nil))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -115,7 +116,7 @@ func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -123,7 +124,7 @@ func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTraceExporter_WithSpan(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -131,7 +132,7 @@ func TestTraceExporter_WithSpan(t *testing.T) {
 }
 
 func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(1, nil))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -140,7 +141,7 @@ func TestTraceExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestTraceExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, want))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
@@ -151,7 +152,7 @@ func TestTraceExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil), WithShutdown(shutdown))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
@@ -163,7 +164,7 @@ func TestTraceExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	te, err := NewTraceExporter(fakeTraceExporterConfig, newTraceDataPusher(0, nil), WithShutdown(shutdownErr))
+	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), newTraceDataPusher(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
 
