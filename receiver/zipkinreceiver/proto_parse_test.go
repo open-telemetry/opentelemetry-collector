@@ -101,6 +101,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	protoBlob, err := proto.Marshal(payloadFromWild)
 	require.NoError(t, err, "Failed to protobuf serialize payload: %v", err)
 	zi := new(ZipkinReceiver)
+	zi.config = createDefaultConfig().(*Config)
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 

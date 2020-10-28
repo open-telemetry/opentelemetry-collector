@@ -69,7 +69,7 @@ func (b byOTLPTypes) Swap(i, j int) {
 }
 
 // V2SpansToInternalTraces translates Zipkin v2 spans into internal trace data.
-func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
+func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel, parseStringTags bool) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
@@ -114,7 +114,7 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces
 			curSpans = curILSpans.Spans()
 		}
 		curSpans.Resize(spanCount + 1)
-		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount))
+		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount), parseStringTags)
 		if err != nil {
 			return traceData, err
 		}
@@ -124,7 +124,7 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces
 	return traceData, nil
 }
 
-func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span) error {
+func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span, parseStringTags bool) error {
 	dest.InitEmpty()
 
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
@@ -151,7 +151,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 	attrs := dest.Attributes()
 	attrs.InitEmptyWithCapacity(len(tags))
-	if err := zTagsToInternalAttrs(zspan, tags, attrs); err != nil {
+	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
 	}
 
@@ -309,8 +309,8 @@ func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap
 	return nil
 }
 
-func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap) error {
-	parseErr := tagsToAttributeMap(tags, dest)
+func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
+	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
 			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
@@ -339,14 +339,30 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	return parseErr
 }
 
-func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
+func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
 	var parseErr error
 	for key, val := range tags {
 		if _, ok := nonSpanAttributes[key]; ok {
 			continue
 		}
-		dest.UpsertString(key, val)
-		// TODO add translation to native OTLP types if configured to do so
+
+		if parseStringTags {
+			switch tracetranslator.DetermineValueType(val, false) {
+			case pdata.AttributeValueINT:
+				iValue, _ := strconv.ParseInt(val, 10, 64)
+				dest.UpsertInt(key, iValue)
+			case pdata.AttributeValueDOUBLE:
+				fValue, _ := strconv.ParseFloat(val, 64)
+				dest.UpsertDouble(key, fValue)
+			case pdata.AttributeValueBOOL:
+				bValue, _ := strconv.ParseBool(val)
+				dest.UpsertBool(key, bValue)
+			default:
+				dest.UpsertString(key, val)
+			}
+		} else {
+			dest.UpsertString(key, val)
+		}
 	}
 	return parseErr
 }

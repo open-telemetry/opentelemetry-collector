@@ -25,4 +25,6 @@ type Config struct {
 
 	// Configures the receiver server protocol.
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	ParseStringTags bool `mapstructure:"parse_string_tags"`
 }

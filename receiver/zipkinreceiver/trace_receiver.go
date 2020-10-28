@@ -177,7 +177,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 		return pdata.Traces{}, err
 	}
 
-	return zipkin.V2SpansToInternalTraces(zipkinSpans)
+	return zipkin.V2SpansToInternalTraces(zipkinSpans, zr.config.ParseStringTags)
 }
 
 func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {

@@ -119,6 +119,7 @@ func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 	zi := new(ZipkinReceiver)
+	zi.config = createDefaultConfig().(*Config)
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
@@ -205,6 +206,7 @@ func TestConversionRoundtrip(t *testing.T) {
 }]`)
 
 	zi := &ZipkinReceiver{nextConsumer: consumertest.NewTracesNop()}
+	zi.config = &Config{}
 	ereqs, err := zi.v2ToTraceSpans(receiverInputJSON, nil)
 	require.NoError(t, err)
 
@@ -531,6 +533,7 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/sample2.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 	zi := new(ZipkinReceiver)
+	zi.config = createDefaultConfig().(*Config)
 	reqs, err := zi.v2ToTraceSpans(blob, nil)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
 
@@ -538,4 +541,59 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 
 	// Expecting 1 non-nil spans
 	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+}
+
+func TestReceiverConvertsStringsToTypes(t *testing.T) {
+	body, err := ioutil.ReadFile("../../translator/trace/zipkin/testdata/zipkin_v2_single.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+
+	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r.Header.Add("content-type", "application/json")
+
+	next := &zipkinMockTraceConsumer{
+		ch: make(chan pdata.Traces, 10),
+	}
+	cfg := &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			NameVal: zipkinReceiverName,
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "",
+		},
+		ParseStringTags: true,
+	}
+	zr, err := New(cfg, next)
+	require.NoError(t, err)
+
+	req := httptest.NewRecorder()
+	zr.ServeHTTP(req, r)
+
+	select {
+	case td := <-next.ch:
+		require.NotNil(t, td)
+		require.Equal(t, 202, req.Code)
+
+		span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+
+		expected := pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"cache_hit":            pdata.NewAttributeValueBool(true),
+			"ping_count":           pdata.NewAttributeValueInt(25),
+			"timeout":              pdata.NewAttributeValueDouble(12.3),
+			"clnt/finagle.version": pdata.NewAttributeValueString("6.45.0"),
+			"http.path":            pdata.NewAttributeValueString("/api"),
+			"http.status_code":     pdata.NewAttributeValueInt(500),
+			"net.host.ip":          pdata.NewAttributeValueString("7::80:807f"),
+			"peer.service":         pdata.NewAttributeValueString("backend"),
+			"net.peer.ip":          pdata.NewAttributeValueString("192.168.99.101"),
+			"net.peer.port":        pdata.NewAttributeValueInt(9000),
+		}).Sort()
+
+		actual := span.Attributes().Sort()
+
+		assert.EqualValues(t, expected, actual)
+		break
+	case <-time.After(time.Second * 2):
+		t.Error("next consumer did not receive the batch")
+		break
+	}
 }
