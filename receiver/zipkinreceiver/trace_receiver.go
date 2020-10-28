@@ -124,7 +124,7 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 
 		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
 	}
-	return zipkin.V1JSONBatchToInternalTraces(blob)
+	return zipkin.V1JSONBatchToInternalTraces(blob, zr.config.ParseStringTags)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.

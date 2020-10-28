@@ -86,7 +86,7 @@ type binaryAnnotation struct {
 }
 
 // v1JSONBatchToOCProto converts a JSON blob with a list of Zipkin v1 spans to OC Proto.
-func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
+func v1JSONBatchToOCProto(blob []byte, parseStringTags bool) ([]consumerdata.TraceData, error) {
 	var zSpans []*zipkinV1Span
 	if err := json.Unmarshal(blob, &zSpans); err != nil {
 		return nil, fmt.Errorf("%s: %w", msgZipkinV1JSONUnmarshalError, err)
@@ -94,7 +94,7 @@ func v1JSONBatchToOCProto(blob []byte) ([]consumerdata.TraceData, error) {
 
 	ocSpansAndParsedAnnotations := make([]ocSpanAndParsedAnnotations, 0, len(zSpans))
 	for _, zSpan := range zSpans {
-		ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan)
+		ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan, parseStringTags)
 		if err != nil {
 			// error from internal package function, it already wraps the error to give better context.
 			return nil, err
@@ -128,7 +128,7 @@ func zipkinToOCProtoBatch(ocSpansAndParsedAnnotations []ocSpanAndParsedAnnotatio
 	return tds, nil
 }
 
-func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResult, error) {
+func zipkinV1ToOCSpan(zSpan *zipkinV1Span, parseStringTags bool) (*tracepb.Span, *annotationParseResult, error) {
 	traceID, err := hexTraceIDToOCTraceID(zSpan.TraceID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%s: %w", msgZipkinV1TraceIDError, err)
@@ -147,7 +147,7 @@ func zipkinV1ToOCSpan(zSpan *zipkinV1Span) (*tracepb.Span, *annotationParseResul
 	}
 
 	parsedAnnotations := parseZipkinV1Annotations(zSpan.Annotations)
-	attributes, ocStatus, localComponent := zipkinV1BinAnnotationsToOCAttributes(zSpan.BinaryAnnotations)
+	attributes, ocStatus, localComponent := zipkinV1BinAnnotationsToOCAttributes(zSpan.BinaryAnnotations, parseStringTags)
 	if parsedAnnotations.Endpoint.ServiceName == unknownServiceName && localComponent != "" {
 		parsedAnnotations.Endpoint.ServiceName = localComponent
 	}
@@ -202,7 +202,7 @@ func setSpanKind(ocSpan *tracepb.Span, kind tracepb.Span_SpanKind, extendedKind 
 	}
 }
 
-func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (attributes *tracepb.Span_Attributes, status *tracepb.Status, fallbackServiceName string) {
+func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation, parseStringTags bool) (attributes *tracepb.Span_Attributes, status *tracepb.Status, fallbackServiceName string) {
 	if len(binAnnotations) == 0 {
 		return nil, nil, ""
 	}
@@ -216,7 +216,7 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 			fallbackServiceName = binAnnotation.Endpoint.ServiceName
 		}
 
-		pbAttrib := parseAnnotationValue(binAnnotation.Value)
+		pbAttrib := parseAnnotationValue(binAnnotation.Value, parseStringTags)
 
 		key := binAnnotation.Key
 
@@ -250,20 +250,24 @@ func zipkinV1BinAnnotationsToOCAttributes(binAnnotations []*binaryAnnotation) (a
 	return attributes, status, fallbackServiceName
 }
 
-func parseAnnotationValue(value string) *tracepb.AttributeValue {
+func parseAnnotationValue(value string, parseStringTags bool) *tracepb.AttributeValue {
 	pbAttrib := &tracepb.AttributeValue{}
 
-	switch tracetranslator.DetermineValueType(value, false) {
-	case pdata.AttributeValueINT:
-		iValue, _ := strconv.ParseInt(value, 10, 64)
-		pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-	case pdata.AttributeValueDOUBLE:
-		fValue, _ := strconv.ParseFloat(value, 64)
-		pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
-	case pdata.AttributeValueBOOL:
-		bValue, _ := strconv.ParseBool(value)
-		pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
-	default:
+	if parseStringTags {
+		switch tracetranslator.DetermineValueType(value, false) {
+		case pdata.AttributeValueINT:
+			iValue, _ := strconv.ParseInt(value, 10, 64)
+			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
+		case pdata.AttributeValueDOUBLE:
+			fValue, _ := strconv.ParseFloat(value, 64)
+			pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
+		case pdata.AttributeValueBOOL:
+			bValue, _ := strconv.ParseBool(value)
+			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
+		default:
+			pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
+		}
+	} else {
 		pbAttrib.Value = &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: value}}
 	}
 
