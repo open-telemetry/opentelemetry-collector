@@ -66,7 +66,7 @@ func (avt AttributeValueType) String() string {
 }
 
 // AttributeValue represents a value of an attribute. Typically used in AttributeMap.
-// Must use one of NewAttributeValue* functions below to create new instances.
+// Must use one of NewAttributeValue+ functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
 // value representation. For the same reason passing by value and calling setters
@@ -101,6 +101,7 @@ func NewAttributeValueNull() AttributeValue {
 	return AttributeValue{orig: &orig}
 }
 
+// Deprecated: Use NewAttributeValueNull()
 func NewAttributeValue() AttributeValue {
 	return NewAttributeValueNull()
 }
