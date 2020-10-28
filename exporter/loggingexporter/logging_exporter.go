@@ -60,8 +60,8 @@ func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
 	}
 
 	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v pdata.StringValue) {
-		b.logEntry("     -> %s: %s", k, v.Value())
+	sm.ForEach(func(k string, v string) {
+		b.logEntry("     -> %s: %s", k, v)
 	})
 }
 

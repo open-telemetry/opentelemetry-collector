@@ -693,7 +693,7 @@ func TestNilStringMap(t *testing.T) {
 
 	val, exist := NewStringMap().Get("test_key")
 	assert.False(t, exist)
-	assert.EqualValues(t, StringValue{nil}, val)
+	assert.EqualValues(t, "", val)
 
 	insertMap := NewStringMap()
 	insertMap.Insert("k", "v")
@@ -728,27 +728,27 @@ func TestStringMapWithEmpty(t *testing.T) {
 	}
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, "test_value", val.Value())
+	assert.EqualValues(t, "test_value", val)
 
 	sm.Insert("other_key", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, "other_value", val.Value())
+	assert.EqualValues(t, "other_value", val)
 
 	sm.Update("other_key", "yet_another_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, "yet_another_value", val.Value())
+	assert.EqualValues(t, "yet_another_value", val)
 
 	sm.Upsert("other_key", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, "other_value", val.Value())
+	assert.EqualValues(t, "other_value", val)
 
 	sm.Upsert("yet_another_key", "yet_another_value")
 	val, exist = sm.Get("yet_another_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, "yet_another_value", val.Value())
+	assert.EqualValues(t, "yet_another_value", val)
 
 	assert.True(t, sm.Delete("other_key"))
 	assert.True(t, sm.Delete("yet_another_key"))
@@ -758,7 +758,7 @@ func TestStringMapWithEmpty(t *testing.T) {
 	// Test that the initial key is still there.
 	val, exist = sm.Get("test_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, "test_value", val.Value())
+	assert.EqualValues(t, "test_value", val)
 
 	// Test Sort
 	assert.EqualValues(t, StringMap{orig: &origWithNil}, sm.Sort())
@@ -772,11 +772,11 @@ func TestStringMap(t *testing.T) {
 
 	val, exist := sm.Get("k2")
 	assert.True(t, exist)
-	assert.EqualValues(t, "v2", val.Value())
+	assert.EqualValues(t, "v2", val)
 
 	val, exist = sm.Get("k3")
 	assert.False(t, exist)
-	assert.EqualValues(t, StringValue{nil}, val)
+	assert.EqualValues(t, "", val)
 
 	sm.Insert("k1", "v1")
 	assert.EqualValues(t, origMap.Sort(), sm.Sort())
@@ -825,7 +825,7 @@ func TestStringMap(t *testing.T) {
 }
 
 func TestStringMapIterationNil(t *testing.T) {
-	NewStringMap().ForEach(func(k string, v StringValue) {
+	NewStringMap().ForEach(func(k string, v string) {
 		// Fail if any element is returned
 		t.Fail()
 	})
@@ -836,8 +836,8 @@ func TestStringMap_ForEach(t *testing.T) {
 	sm := NewStringMap().InitFromMap(rawMap)
 	assert.EqualValues(t, 3, sm.Len())
 
-	sm.ForEach(func(k string, v StringValue) {
-		assert.EqualValues(t, rawMap[k], v.Value())
+	sm.ForEach(func(k string, v string) {
+		assert.EqualValues(t, rawMap[k], v)
 		delete(rawMap, k)
 	})
 	assert.EqualValues(t, 0, len(rawMap))
@@ -967,7 +967,7 @@ func BenchmarkStringMap_ForEach(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
-		sm.ForEach(func(s string, value StringValue) {
+		sm.ForEach(func(s string, value string) {
 			numEls++
 		})
 		if numEls != numElements {
@@ -978,18 +978,17 @@ func BenchmarkStringMap_ForEach(b *testing.B) {
 
 func BenchmarkStringMap_RangeOverMap(b *testing.B) {
 	const numElements = 20
-	rawOrig := make(map[string]StringValue, numElements)
+	rawOrig := make(map[string]string, numElements)
 	for i := 0; i < numElements; i++ {
 		key := "k" + strconv.Itoa(i)
-		skv := newStringKeyValue(key, "v"+strconv.Itoa(i))
-		rawOrig[key] = StringValue{&skv}
+		rawOrig[key] = "v" + strconv.Itoa(i)
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		numEls := 0
 		for _, v := range rawOrig {
-			if v.orig == nil {
+			if v == "" {
 				continue
 			}
 			numEls++

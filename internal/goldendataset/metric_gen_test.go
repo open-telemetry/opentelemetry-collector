@@ -51,7 +51,7 @@ func TestGenDefault(t *testing.T) {
 
 	require.Equal(t, 1, pt.LabelsMap().Len())
 	ptLabels, _ := pt.LabelsMap().Get("pt-label-key-0")
-	require.Equal(t, "pt-label-val-0", ptLabels.Value())
+	require.Equal(t, "pt-label-val-0", ptLabels)
 
 	require.EqualValues(t, 940000000000000000, pt.StartTime())
 	require.EqualValues(t, 940000000000000042, pt.Timestamp())
