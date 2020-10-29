@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/internal/version"
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
@@ -233,6 +234,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	httpReq.Header.Set("User-Agent", "OpenTelemetry-Collector/"+version.Version)
 
 	httpResp, err := prwe.client.Do(httpReq)
 	if err != nil {
