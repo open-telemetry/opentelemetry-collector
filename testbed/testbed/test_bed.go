@@ -46,6 +46,23 @@ func SaveResults(resultsSummary TestResultsSummary) {
 
 const testBedEnableEnvVarName = "RUN_TESTBED"
 
+var GlobalConfig = struct {
+	// Relative path to default agent executable to test.
+	// Can be set in the contrib repo to use a different executable name.
+	// Set this before calling DoTestMain().
+	//
+	// If used in the path, {{.GOOS}} and {{.GOARCH}} will be expanded to the current
+	// OS and ARCH correspondingly.
+	//
+	// Individual tests can override this by setting the AgentExePath of ChildProcess
+	// that is passed to the TestCase.
+	DefaultAgentExeRelativeFile string
+}{
+	// The default exe that is produced by Makefile "otelcol" target relative
+	// to testbed/tests directory.
+	DefaultAgentExeRelativeFile: "../../bin/otelcol_{{.GOOS}}_{{.GOARCH}}",
+}
+
 // DoTestMain is intended to be run from TestMain somewhere in the test suit.
 // This enables the testbed.
 func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
