@@ -197,7 +197,7 @@ func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.DoubleHistogramDataPoi
 }
 
 func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
-	labels.ForEach(func(k string, v pdata.StringValue) {
+	labels.ForEach(func(k string, v string) {
 		keySet[k] = struct{}{}
 	})
 }
@@ -472,8 +472,8 @@ func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata
 	var labels map[string]string
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
-		filteredLabels.ForEach(func(k string, v pdata.StringValue) {
-			labels[k] = v.Value()
+		filteredLabels.ForEach(func(k string, v string) {
+			labels[k] = v
 		})
 	}
 
@@ -498,13 +498,13 @@ func labelValuesToOC(labels pdata.StringMap, labelKeys *labelKeys) []*ocmetrics.
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	labels.ForEach(func(k string, v pdata.StringValue) {
+	labels.ForEach(func(k string, v string) {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]
 
 		// Update label value
-		labelValue.Value = v.Value()
+		labelValue.Value = v
 		labelValue.HasValue = true
 	})
 

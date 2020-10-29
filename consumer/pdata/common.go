@@ -751,38 +751,6 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	*dest.orig = origs
 }
 
-// StringValue stores a string value.
-//
-// Intended to be passed by value since internally it is just a pointer to actual
-// value representation. For the same reason passing by value and calling setters
-// will modify the original, e.g.:
-//
-//   function f1(val StringValue) { val.SetValue("1234") }
-//   function f2() {
-//   	v := NewStringKeyValue("key", "a string")
-//      f1(v)
-//      _ := v.Value() // this will return "1234"
-//   }
-type StringValue struct {
-	orig *otlpcommon.StringKeyValue
-}
-
-// Value returns the value associated with this StringValue.
-// Calling this function on zero-initialized StringValue will cause a panic.
-func (akv StringValue) Value() string {
-	return akv.orig.Value
-}
-
-// SetValue replaces the value associated with this StringValue.
-// Calling this function on zero-initialized StringValue will cause a panic.
-func (akv StringValue) SetValue(v string) {
-	akv.orig.Value = v
-}
-
-func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
-	return otlpcommon.StringKeyValue{Key: k, Value: v}
-}
-
 // StringMap stores a map of attribute keys to values.
 type StringMap struct {
 	orig *[]otlpcommon.StringKeyValue
@@ -830,14 +798,10 @@ func (sm StringMap) InitEmptyWithCapacity(cap int) {
 // Get returns the StringValue associated with the key and true,
 // otherwise an invalid instance of the StringKeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
-func (sm StringMap) Get(k string) (StringValue, bool) {
-	for i := range *sm.orig {
-		skv := &(*sm.orig)[i]
-		if skv.Key == k {
-			return StringValue{skv}, true
-		}
-	}
-	return StringValue{nil}, false
+func (sm StringMap) Get(k string) (string, bool) {
+	skv, found := sm.get(k)
+	// GetValue handles the case where skv is nil.
+	return skv.GetValue(), found
 }
 
 // Delete deletes the entry associated with the key and returns true if the key
@@ -865,8 +829,8 @@ func (sm StringMap) Insert(k, v string) {
 // Update updates an existing string value with a value.
 // No action is applied to the map where the key does not exist.
 func (sm StringMap) Update(k, v string) {
-	if av, existing := sm.Get(k); existing {
-		av.SetValue(v)
+	if skv, existing := sm.get(k); existing {
+		skv.Value = v
 	}
 }
 
@@ -874,8 +838,8 @@ func (sm StringMap) Update(k, v string) {
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (sm StringMap) Upsert(k, v string) {
-	if av, existing := sm.Get(k); existing {
-		av.SetValue(v)
+	if skv, existing := sm.get(k); existing {
+		skv.Value = v
 	} else {
 		*sm.orig = append(*sm.orig, newStringKeyValue(k, v))
 	}
@@ -896,10 +860,10 @@ func (sm StringMap) Len() int {
 // it := sm.ForEach(func(k string, v StringValue) {
 //   ...
 // })
-func (sm StringMap) ForEach(f func(k string, v StringValue)) {
+func (sm StringMap) ForEach(f func(k string, v string)) {
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
-		f(skv.Key, StringValue{skv})
+		f(skv.Key, skv.Value)
 	}
 }
 
@@ -928,6 +892,16 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	*dest.orig = origs
 }
 
+func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) {
+	for i := range *sm.orig {
+		skv := &(*sm.orig)[i]
+		if skv.Key == k {
+			return skv, true
+		}
+	}
+	return nil, false
+}
+
 // Sort sorts the entries in the StringMap so two instances can be compared.
 // Returns the same instance to allow nicer code like:
 // assert.EqualValues(t, expected.Sort(), actual.Sort())
@@ -937,4 +911,8 @@ func (sm StringMap) Sort() StringMap {
 		return (*sm.orig)[i].Key < (*sm.orig)[j].Key
 	})
 	return sm
+}
+
+func newStringKeyValue(k, v string) otlpcommon.StringKeyValue {
+	return otlpcommon.StringKeyValue{Key: k, Value: v}
 }
