@@ -23,6 +23,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
@@ -194,7 +195,14 @@ func TestFilterMetricProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, next)
+			fmp, err := factory.CreateMetricsProcessor(
+				context.Background(),
+				component.ProcessorCreateParams{
+					Logger: zap.NewNop(),
+				},
+				cfg,
+				next,
+			)
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
@@ -258,15 +266,36 @@ func metricsWithName(names []string) []*metricspb.Metric {
 	return ret
 }
 
-func BenchmarkFilter(b *testing.B) {
+func BenchmarkStrictFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "strict",
+		MetricNames: []string{"p10_metric_0"},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func BenchmarkRegexpFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "regexp",
+		MetricNames: []string{"p10_metric_0"},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func BenchmarkExprFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "expr",
+		Expressions: []string{`MetricName == "p10_metric_0"`},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
 	pcfg.Metrics = MetricFilters{
-		Exclude: &filtermetric.MatchProperties{
-			MatchType:   "strict",
-			MetricNames: []string{"p10_metric_0"},
-		},
+		Exclude: mp,
 	}
 	next := &etest.SinkMetricsExporter{}
 	ctx := context.Background()
@@ -377,7 +406,9 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{},
+		component.ProcessorCreateParams{
+			Logger: zap.NewNop(),
+		},
 		cfg,
 		next,
 	)
