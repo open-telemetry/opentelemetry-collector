@@ -205,7 +205,7 @@ func (cp *ChildProcess) Start(params StartParams) error {
 	cp.resourceSpec = params.resourceSpec
 
 	if cp.AgentExePath == "" {
-		cp.AgentExePath = "../../bin/otelcol_{{.GOOS}}_{{.GOARCH}}"
+		cp.AgentExePath = GlobalConfig.DefaultAgentExeRelativeFile
 	}
 	exePath := expandExeFileName(cp.AgentExePath)
 	exePath, err := filepath.Abs(exePath)
