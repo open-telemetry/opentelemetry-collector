@@ -78,7 +78,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg, params.Logger)
 	if err != nil {
 		return nil, err

@@ -181,6 +181,7 @@ func Scenario10kItemsPerSecond(
 
 	tc.StopLoad()
 
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 		"all data items received")
 
@@ -208,22 +209,38 @@ func genRandByteString(len int) string {
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
-func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts ...testbed.TestCaseOption) {
+func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors map[string]string) {
 	for i := range tests {
 		test := tests[i]
-		options := constructLoadOptions(test)
 
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
+
+			options := constructLoadOptions(test)
+
+			agentProc := &testbed.ChildProcess{}
+
+			// Prepare results dir.
+			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+			require.NoError(t, err)
+
+			// Create sender and receiver on available ports.
+			sender := testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+			receiver := testbed.NewOCDataReceiver(testbed.GetAvailablePort(t))
+
+			// Prepare config.
+			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+			configCleanup, err := agentProc.PrepareConfig(configStr)
+			require.NoError(t, err)
+			defer configCleanup()
 
 			tc := testbed.NewTestCase(
 				t,
 				testbed.NewPerfTestDataProvider(options),
-				testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-				testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-				&testbed.ChildProcess{},
+				sender,
+				receiver,
+				agentProc,
 				&testbed.PerfTestValidator{},
 				test.resultsSummary,
-				opts...,
 			)
 			defer tc.Stop()
 
@@ -239,6 +256,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, opts 
 			tc.Sleep(tc.Duration)
 			tc.StopLoad()
 
+			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 				"all spans received")
 
@@ -303,7 +321,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 }
 
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
-	options := testbed.LoadOptions{DataItemsPerSecond: 1000}
+	options := testbed.LoadOptions{DataItemsPerSecond: 1000, ItemsPerBatch: 10}
 	options.Attributes = make(map[string]string)
 
 	// Generate attributes.

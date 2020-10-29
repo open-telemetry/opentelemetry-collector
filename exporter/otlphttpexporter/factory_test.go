@@ -130,7 +130,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-			consumer, err := factory.CreateTraceExporter(context.Background(), creationParams, &tt.config)
+			consumer, err := factory.CreateTracesExporter(context.Background(), creationParams, &tt.config)
 
 			if tt.mustFail {
 				assert.Error(t, err)

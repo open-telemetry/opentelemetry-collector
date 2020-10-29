@@ -33,7 +33,7 @@ import (
 // newTraceExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporter, error) {
+func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
 
 	opts, err := cfg.GRPCClientSettings.ToDialOptions()
 	if err != nil {

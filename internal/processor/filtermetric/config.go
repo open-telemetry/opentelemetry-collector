@@ -45,4 +45,8 @@ type MatchProperties struct {
 	// MetricNames specifies the list of string patterns to match metric names against.
 	// A match occurs if the metric name matches at least one string pattern in this list.
 	MetricNames []string `mapstructure:"metric_names"`
+
+	// Expressions specifies the list of expr expressions to match metrics against.
+	// A match occurs if any datapoint in a metric matches at least one expression in this list.
+	Expressions []string `mapstructure:"expressions"`
 }

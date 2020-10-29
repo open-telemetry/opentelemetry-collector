@@ -216,3 +216,98 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadingConfigExpr(t *testing.T) {
+	factories, err := componenttest.ExampleComponents()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Processors[configmodels.Type(typeStr)] = factory
+	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_expr.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	tests := []struct {
+		filterName string
+		expCfg     configmodels.Processor
+	}{
+		{
+			filterName: "filter/empty",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "filter/empty",
+					TypeVal: typeStr,
+				},
+				Metrics: MetricFilters{
+					Include: &filtermetric.MatchProperties{
+						MatchType: filtermetric.Expr,
+					},
+				},
+			},
+		},
+		{
+			filterName: "filter/include",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "filter/include",
+					TypeVal: typeStr,
+				},
+				Metrics: MetricFilters{
+					Include: &filtermetric.MatchProperties{
+						MatchType: filtermetric.Expr,
+						Expressions: []string{
+							`Label("foo") == "bar"`,
+							`HasLabel("baz")`,
+						},
+					},
+				},
+			},
+		},
+		{
+			filterName: "filter/exclude",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "filter/exclude",
+					TypeVal: typeStr,
+				},
+				Metrics: MetricFilters{
+					Exclude: &filtermetric.MatchProperties{
+						MatchType: filtermetric.Expr,
+						Expressions: []string{
+							`Label("foo") == "bar"`,
+							`HasLabel("baz")`,
+						},
+					},
+				},
+			},
+		},
+		{
+			filterName: "filter/includeexclude",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "filter/includeexclude",
+					TypeVal: typeStr,
+				},
+				Metrics: MetricFilters{
+					Include: &filtermetric.MatchProperties{
+						MatchType: filtermetric.Expr,
+						Expressions: []string{
+							`HasLabel("foo")`,
+						},
+					},
+					Exclude: &filtermetric.MatchProperties{
+						MatchType: filtermetric.Expr,
+						Expressions: []string{
+							`HasLabel("bar")`,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.filterName, func(t *testing.T) {
+			cfg := config.Processors[test.filterName]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}

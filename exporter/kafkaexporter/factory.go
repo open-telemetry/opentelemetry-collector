@@ -95,7 +95,7 @@ func (f *kafkaExporterFactory) createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 	exp, err := newTracesExporter(*oCfg, params, f.tracesMarshallers)
 	if err != nil {

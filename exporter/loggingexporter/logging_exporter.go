@@ -60,8 +60,8 @@ func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
 	}
 
 	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v pdata.StringValue) {
-		b.logEntry("     -> %s: %s", k, v.Value())
+	sm.ForEach(func(k string, v string) {
+		b.logEntry("     -> %s: %s", k, v)
 	})
 }
 
@@ -310,7 +310,7 @@ func (s *loggingExporter) pushTraceData(
 	td pdata.Traces,
 ) (int, error) {
 
-	s.logger.Info("TraceExporter", zap.Int("#spans", td.SpanCount()))
+	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
 	if !s.debug {
 		return 0, nil
@@ -425,9 +425,9 @@ func (s *loggingExporter) pushMetricsData(
 	return 0, nil
 }
 
-// newTraceExporter creates an exporter.TraceExporter that just drops the
+// newTraceExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TraceExporter, error) {
+func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
 		debug:  level == "debug",
 		logger: logger,

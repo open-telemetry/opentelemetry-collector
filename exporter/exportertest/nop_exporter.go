@@ -44,9 +44,9 @@ func (ne *nopExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-// NewNopTraceExporter creates an TraceExporter that just drops the received data.
+// NewNopTraceExporter creates an TracesExporter that just drops the received data.
 // Deprecated: Use consumertest.NewNopTraces.
-func NewNopTraceExporter() component.TraceExporter {
+func NewNopTraceExporter() component.TracesExporter {
 	return &nopExporter{}
 }
 

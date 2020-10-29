@@ -68,13 +68,13 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	return err
 }
 
-// NewTraceExporter creates a TraceExporter that records observability metrics and wraps every request with a Span.
+// NewTraceExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
 func NewTraceExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
 	dataPusher traceDataPusher,
 	options ...ExporterOption,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 
 	if cfg == nil {
 		return nil, errNilConfig
