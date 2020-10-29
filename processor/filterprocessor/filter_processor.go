@@ -44,24 +44,30 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 
 	includeMatchType := ""
 	var includeExpressions []string
+	var includeMetricNames []string
 	if cfg.Metrics.Include != nil {
 		includeMatchType = string(cfg.Metrics.Include.MatchType)
 		includeExpressions = cfg.Metrics.Include.Expressions
+		includeMetricNames = cfg.Metrics.Include.MetricNames
 	}
 
 	excludeMatchType := ""
 	var excludeExpressions []string
+	var excludeMetricNames []string
 	if cfg.Metrics.Exclude != nil {
 		excludeMatchType = string(cfg.Metrics.Exclude.MatchType)
 		excludeExpressions = cfg.Metrics.Exclude.Expressions
+		excludeMetricNames = cfg.Metrics.Exclude.MetricNames
 	}
 
 	logger.Info(
 		"Metric filter configured",
 		zap.String("include match_type", includeMatchType),
-		zap.Strings("include", includeExpressions),
+		zap.Strings("include expressions", includeExpressions),
+		zap.Strings("include metric names", includeMetricNames),
 		zap.String("exclude match_type", excludeMatchType),
-		zap.Strings("exclude", excludeExpressions),
+		zap.Strings("exclude expressions", excludeExpressions),
+		zap.Strings("exclude metric names", excludeMetricNames),
 	)
 
 	return &filterMetricProcessor{
