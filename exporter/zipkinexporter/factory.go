@@ -66,7 +66,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	zc := cfg.(*Config)
 
 	if zc.Endpoint == "" {

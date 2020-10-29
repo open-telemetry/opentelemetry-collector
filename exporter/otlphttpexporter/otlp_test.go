@@ -52,7 +52,7 @@ func TestInvalidConfig(t *testing.T) {
 	}
 	f := NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := f.CreateTraceExporter(context.Background(), params, config)
+	_, err := f.CreateTracesExporter(context.Background(), params, config)
 	require.Error(t, err)
 	_, err = f.CreateMetricsExporter(context.Background(), params, config)
 	require.Error(t, err)
@@ -242,11 +242,11 @@ func TestLogsRoundTrip(t *testing.T) {
 	}
 }
 
-func startTraceExporter(t *testing.T, baseURL string, overrideURL string) component.TraceExporter {
+func startTraceExporter(t *testing.T, baseURL string, overrideURL string) component.TracesExporter {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp

@@ -288,11 +288,11 @@ func (f *ExampleExporterFactory) CustomUnmarshaler() component.CustomUnmarshaler
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(
+func (f *ExampleExporterFactory) CreateTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 

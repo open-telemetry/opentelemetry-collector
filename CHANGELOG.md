@@ -11,6 +11,7 @@
 - Rename consumer.TraceConsumer to consumer.TracesConsumer #1974
 - Rename component.TraceReceiver to component.TracesReceiver #1975
 - Rename component.TraceProcessor to component.TracesProcessor #1976
+- Rename component.TraceExporter to component.TracesExporter #1975
 
 ## v0.13.0 Beta
 

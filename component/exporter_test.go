@@ -39,7 +39,7 @@ func (f *TestExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTraceExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (TraceExporter, error) {
+func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateParams, configmodels.Exporter) (TracesExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

@@ -28,8 +28,8 @@ type Exporter interface {
 	Component
 }
 
-// TraceExporter is a Exporter that can consume traces.
-type TraceExporter interface {
+// TracesExporter is a Exporter that can consume traces.
+type TracesExporter interface {
 	Exporter
 	consumer.TracesConsumer
 }
@@ -56,7 +56,7 @@ type ExporterCreateParams struct {
 	ApplicationStartInfo ApplicationStartInfo
 }
 
-// ExporterFactory can create TraceExporter and MetricsExporter. This is the
+// ExporterFactory can create TracesExporter and MetricsExporter. This is the
 // new factory type that can create new style exporters.
 type ExporterFactory interface {
 	Factory
@@ -70,14 +70,14 @@ type ExporterFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() configmodels.Exporter
 
-	// CreateTraceExporter creates a trace exporter based on this config.
+	// CreateTracesExporter creates a trace exporter based on this config.
 	// If the exporter type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceExporter(
+	CreateTracesExporter(
 		ctx context.Context,
 		params ExporterCreateParams,
 		cfg configmodels.Exporter,
-	) (TraceExporter, error)
+	) (TracesExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
 	// If the exporter type does not support metrics or if the config is not valid

@@ -209,7 +209,7 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -353,7 +353,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		WaitForReady: true,
 	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -410,7 +410,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -444,7 +444,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	cancel()
 }
 
-func startServerAndMakeRequest(t *testing.T, exp component.TraceExporter, td pdata.Traces, ln net.Listener) {
+func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pdata.Traces, ln net.Listener) {
 	rcv := otlpTraceReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
