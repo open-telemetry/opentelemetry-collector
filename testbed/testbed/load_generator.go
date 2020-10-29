@@ -116,7 +116,7 @@ func (lg *LoadGenerator) Stop() {
 
 // GetStats returns the stats as a printable string.
 func (lg *LoadGenerator) GetStats() string {
-	return printer.Sprintf("Sent:%10d items", lg.DataItemsSent())
+	return fmt.Sprintf("Sent:%10d items", lg.DataItemsSent())
 }
 
 func (lg *LoadGenerator) DataItemsSent() uint64 {

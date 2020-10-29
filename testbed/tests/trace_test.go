@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package tests contains test cases. To run the tests go to tests directory and run:
-// TESTBED_CONFIG=local.yaml go test -v
+// RUN_TESTBED=1 go test -v
 
 package tests
 
@@ -227,7 +227,7 @@ func TestTrace1kSPSWithAttrs(t *testing.T) {
 			expectedMaxRAM: 100,
 			resultsSummary: performanceResultsSummary,
 		},
-	})
+	}, nil)
 }
 
 func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
@@ -262,11 +262,31 @@ func TestTraceBallast1kSPSWithAttrs(t *testing.T) {
 			expectedMaxRAM: 2000,
 			resultsSummary: performanceResultsSummary,
 		},
-	})
+	}, nil)
 }
 
 func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 	args := []string{"--mem-ballast-size-mib", "1000"}
+
+	attrProcCfg := `
+  attributes:
+    actions:
+      - key: attrib.key00
+        value: 123
+        action: insert
+      - key: attrib.key01
+        value: "a small string for this attribute"
+        action: insert
+      - key: attrib.key02
+        value: true
+        action: insert
+      - key: region
+        value: test-region
+        action: insert
+      - key: data-center
+        value: test-datacenter
+        action: insert`
+
 	Scenario1kSPSWithAttrs(
 		t,
 		args,
@@ -300,7 +320,7 @@ func TestTraceBallast1kSPSAddAttrs(t *testing.T) {
 				resultsSummary: performanceResultsSummary,
 			},
 		},
-		testbed.WithConfigFile(path.Join("testdata", "add-attributes-config.yaml")),
+		map[string]string{"attributes": attrProcCfg},
 	)
 }
 
