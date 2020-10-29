@@ -541,7 +541,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	cfg.Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
 	}
-	exp, err := factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
 	require.NoError(t, err)
 	host := &componenttest.ErrorWaitingHost{}
 	err = exp.Start(context.Background(), host)

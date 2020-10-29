@@ -117,7 +117,7 @@ var (
 	}
 )
 
-// newJaegerReceiver creates a TraceReceiver that receives traffic as a Jaeger collector, and
+// newJaegerReceiver creates a TracesReceiver that receives traffic as a Jaeger collector, and
 // also as a Jaeger agent.
 func newJaegerReceiver(
 	instanceName string,

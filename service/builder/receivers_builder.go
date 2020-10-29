@@ -186,7 +186,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	switch dataType {
 	case configmodels.TracesDataType:
 		junction := buildFanoutTraceConsumer(builtPipelines)
-		createdReceiver, err = factory.CreateTraceReceiver(ctx, creationParams, config, junction)
+		createdReceiver, err = factory.CreateTracesReceiver(ctx, creationParams, config, junction)
 
 	case configmodels.MetricsDataType:
 		junction := buildFanoutMetricConsumer(builtPipelines)
@@ -220,11 +220,11 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	if rcv.receiver != nil {
 		// The receiver was previously created for this config. This can happen if the
 		// same receiver type supports more than one data type. In that case we expect
-		// that CreateTraceReceiver and CreateMetricsReceiver return the same value.
+		// that CreateTracesReceiver and CreateMetricsReceiver return the same value.
 		if rcv.receiver != createdReceiver {
 			return fmt.Errorf(
 				"factory for %q is implemented incorrectly: "+
-					"CreateTraceReceiver and CreateMetricsReceiver must return the same "+
+					"CreateTracesReceiver and CreateMetricsReceiver must return the same "+
 					"receiver pointer when creating receivers of different data types",
 				config.Name(),
 			)

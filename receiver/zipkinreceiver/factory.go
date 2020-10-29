@@ -61,7 +61,7 @@ func createTraceReceiver(
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 	rCfg := cfg.(*Config)
 	return New(rCfg, nextConsumer)
 }

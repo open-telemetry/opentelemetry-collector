@@ -41,7 +41,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, nil)
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, nil)
 
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
