@@ -121,6 +121,14 @@ func AllViews() (views []*view.View) {
 	}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
+	// Scraper views.
+	measures = []*stats.Int64Measure{
+		mScraperScrapedMetricPoints,
+		mScraperErroredMetricPoints,
+	}
+	tagKeys = []tag.Key{tagKeyReceiver, tagKeyScraper}
+	views = append(views, genViews(measures, tagKeys, view.Sum())...)
+
 	// Exporter views.
 	measures = []*stats.Int64Measure{
 		mExporterSentSpans,

@@ -34,6 +34,7 @@ var (
 	// that are used to monitor the Collector in production deployments.
 	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
 	receiverTag, _  = tag.NewKey("receiver")
+	scraperTag, _   = tag.NewKey("scraper")
 	transportTag, _ = tag.NewKey("transport")
 	exporterTag, _  = tag.NewKey("exporter")
 	processorTag, _ = tag.NewKey("processor")
@@ -120,6 +121,14 @@ func CheckReceiverMetricsViews(t *testing.T, receiver, protocol string, accepted
 	CheckValueForView(t, receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
 }
 
+// CheckScraperMetricsViews checks that for the current exported values for metrics scraper views match given values.
+// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckScraperMetricsViews(t *testing.T, receiver, scraper string, scrapedMetricPoints, erroredMetricPoints int64) {
+	scraperTags := tagsForScraperView(receiver, scraper)
+	CheckValueForView(t, scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points")
+	CheckValueForView(t, scraperTags, erroredMetricPoints, "scraper/errored_metric_points")
+}
+
 // CheckValueForView checks that for the current exported value in the view with the given name
 // for {LegacyTagKeyReceiver: receiverName} is equal to "value".
 func CheckValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
@@ -144,10 +153,26 @@ func CheckValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName stri
 
 // tagsForReceiverView returns the tags that are needed for the receiver views.
 func tagsForReceiverView(receiver, transport string) []tag.Tag {
-	return []tag.Tag{
-		{Key: receiverTag, Value: receiver},
-		{Key: transportTag, Value: transport},
+	tags := make([]tag.Tag, 0, 2)
+
+	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver})
+	if transport != "" {
+		tags = append(tags, tag.Tag{Key: transportTag, Value: transport})
 	}
+
+	return tags
+}
+
+// tagsForScraperView returns the tags that are needed for the scraper views.
+func tagsForScraperView(receiver, scraper string) []tag.Tag {
+	tags := make([]tag.Tag, 0, 2)
+
+	tags = append(tags, tag.Tag{Key: receiverTag, Value: receiver})
+	if scraper != "" {
+		tags = append(tags, tag.Tag{Key: scraperTag, Value: scraper})
+	}
+
+	return tags
 }
 
 // tagsForProcessorView returns the tags that are needed for the processor views.
