@@ -113,7 +113,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTraceReceiver(ctx, params, tt.cfg, consumertest.NewTracesNop())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("factory.CreateTraceReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("factory.CreateTracesReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tr != nil {

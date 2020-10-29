@@ -83,7 +83,7 @@ func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configm
 // OCDataReceiver implements OpenCensus format receiver.
 type OCDataReceiver struct {
 	DataReceiverBase
-	traceReceiver   component.TraceReceiver
+	traceReceiver   component.TracesReceiver
 	metricsReceiver component.MetricsReceiver
 }
 
@@ -105,7 +105,7 @@ func (or *OCDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsC
 	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
+	if or.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc); err != nil {
 		return err
 	}
 	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
@@ -142,7 +142,7 @@ func (or *OCDataReceiver) ProtocolName() string {
 // JaegerDataReceiver implements Jaeger format receiver.
 type JaegerDataReceiver struct {
 	DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 var _ DataReceiver = (*JaegerDataReceiver)(nil)
@@ -162,7 +162,7 @@ func (jr *JaegerDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.Metri
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr.receiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ type baseOTLPDataReceiver struct {
 	DataReceiverBase
 	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
 	exporterType    string
-	traceReceiver   component.TraceReceiver
+	traceReceiver   component.TracesReceiver
 	metricsReceiver component.MetricsReceiver
 	logReceiver     component.LogsReceiver
 }
@@ -209,7 +209,7 @@ func (bor *baseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.M
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if bor.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
+	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc); err != nil {
 		return err
 	}
 	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
@@ -277,7 +277,7 @@ func NewOTLPHTTPDataReceiver(port int) DataReceiver {
 // ZipkinDataReceiver implements Zipkin format receiver.
 type ZipkinDataReceiver struct {
 	DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 var _ DataReceiver = (*ZipkinDataReceiver)(nil)
@@ -296,7 +296,7 @@ func (zr *ZipkinDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.Metri
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	var err error
-	zr.receiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 
 	if err != nil {
 		return err

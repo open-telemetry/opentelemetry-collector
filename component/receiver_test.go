@@ -40,7 +40,7 @@ func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTraceReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.TracesConsumer) (TraceReceiver, error) {
+func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.TracesConsumer) (TracesReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
