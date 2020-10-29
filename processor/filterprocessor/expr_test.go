@@ -130,8 +130,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType) {
 }
 
 func assertFiltered(t *testing.T, lm pdata.StringMap) {
-	lm.ForEach(func(k string, v pdata.StringValue) {
-		if k == filteredLblKey && v.Value() == filteredLblVal {
+	lm.ForEach(func(k string, v string) {
+		if k == filteredLblKey && v == filteredLblVal {
 			assert.Fail(t, "found metric that should have been filtered out")
 		}
 	})
