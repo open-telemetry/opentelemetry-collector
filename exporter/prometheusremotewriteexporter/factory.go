@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -43,6 +44,10 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	if !ok {
 		return nil, errors.New("invalid configuration")
 	}
+	err := validateLabelConfig(prwCfg)
+	if err != nil {
+		return nil, err
+	}
 
 	client, err := prwCfg.HTTPClientSettings.ToClient()
 
@@ -50,7 +55,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
-	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client)
+	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels)
 
 	if err != nil {
 		return nil, err
@@ -75,8 +80,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Namespace: "",
-
+		Namespace:       "",
+		ExternalLabels:  []ExternalLabel{},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
@@ -89,4 +94,23 @@ func createDefaultConfig() configmodels.Exporter {
 			Headers:         map[string]string{},
 		},
 	}
+}
+
+func validateLabelConfig(cfg *Config) error {
+	for _, elem := range cfg.ExternalLabels {
+		if elem.Key == "" || elem.Value == "" {
+			return fmt.Errorf("Prometheus Remote Write: external labels configuration contains an empty key or value")
+		}
+	}
+
+	keys := make(map[string]bool)
+	for _, elem := range cfg.ExternalLabels {
+		_, value := keys[elem.Key]
+		if value {
+			return fmt.Errorf("Prometheus Remote Write: external labels configuration contains duplicate keys")
+		}
+		keys[elem.Key] = true
+	}
+
+	return nil
 }

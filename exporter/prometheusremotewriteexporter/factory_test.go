@@ -89,3 +89,51 @@ func Test_createMetricsExporter(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateLabelConfig(t *testing.T) {
+	validConfig := createDefaultConfig().(*Config)
+
+	validConfigWithLabels := createDefaultConfig().(*Config)
+	validConfigWithLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
+
+	invalidConfigWithLabels := createDefaultConfig().(*Config)
+	invalidConfigWithLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "", Value: "val1"})
+
+	invalidConfigWithDupeLabels := createDefaultConfig().(*Config)
+	invalidConfigWithDupeLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
+	invalidConfigWithDupeLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val2"})
+
+	tests := []struct {
+		name        string
+		cfg         *Config
+		returnError bool
+	}{
+		{"success_case_no_labels",
+			validConfig,
+			false,
+		},
+		{"success_case_with_labels",
+			validConfigWithLabels,
+			false,
+		},
+		{"fail_case_empty_label",
+			invalidConfigWithLabels,
+			true,
+		},
+		{"fail_case_dupe_label",
+			invalidConfigWithDupeLabels,
+			true,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateLabelConfig(tt.cfg)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
