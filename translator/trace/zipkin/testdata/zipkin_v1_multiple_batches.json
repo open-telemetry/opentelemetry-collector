@@ -132,6 +132,10 @@
                 {
                     "key": "success",
                     "value": "true"
+                },
+                {
+                  "key": "processed",
+                  "value": "1.5"
                 }
             ]
         }

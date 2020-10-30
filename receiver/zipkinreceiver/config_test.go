@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	r0 := cfg.Receivers["zipkin"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -53,5 +53,18 @@ func TestLoadConfig(t *testing.T) {
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:8765",
 			},
+		})
+
+	r2 := cfg.Receivers["zipkin/parse_strings"].(*Config)
+	assert.Equal(t, r2,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "zipkin/parse_strings",
+			},
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: "0.0.0.0:9411",
+			},
+			ParseStringTags: true,
 		})
 }

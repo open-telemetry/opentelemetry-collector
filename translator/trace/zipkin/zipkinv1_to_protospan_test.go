@@ -133,7 +133,7 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_local_component.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	reqs, err := v1JSONBatchToOCProto(blob)
+	reqs, err := v1JSONBatchToOCProto(blob, false)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 	require.Equal(t, 2, len(reqs), "Invalid trace service requests count")
 
@@ -155,7 +155,8 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	got, err := v1JSONBatchToOCProto(blob)
+	parseStringTags := true // This test relies on parsing int/bool to the typed span attributes
+	got, err := v1JSONBatchToOCProto(blob, parseStringTags)
 	require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 	want := ocBatchesFromZipkinV1
@@ -179,7 +180,8 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 		jsonBatch, err := json.Marshal(batch)
 		require.NoError(t, err, "Failed to marshal interface back to blob")
 
-		g, err := v1JSONBatchToOCProto(jsonBatch)
+		parseStringTags := true // This test relies on parsing int/bool to the typed span attributes
+		g, err := v1JSONBatchToOCProto(jsonBatch, parseStringTags)
 		require.NoError(t, err, "Failed to translate zipkinv1 to OC proto")
 
 		// Coalesce the nodes otherwise they will differ due to multiple
@@ -490,7 +492,9 @@ func TestZipkinAnnotationsToOCStatus(t *testing.T) {
 				t.Errorf("#%d: Unexpected error: %v", i, err)
 				return
 			}
-			gb, err := v1JSONBatchToOCProto(zBytes)
+
+			parseStringTags := true // This test relies on parsing int/bool to the typed span attributes
+			gb, err := v1JSONBatchToOCProto(zBytes, parseStringTags)
 			if err != nil {
 				t.Errorf("#%d: Unexpected error: %v", i, err)
 				return
@@ -520,7 +524,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	testStart := time.Now()
 
-	gb, err := v1JSONBatchToOCProto(zBytes)
+	gb, err := v1JSONBatchToOCProto(zBytes, false)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -564,7 +568,7 @@ func TestJSONHTTPToGRPCStatusCode(t *testing.T) {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
 		}
-		gb, err := v1JSONBatchToOCProto(zBytes)
+		gb, err := v1JSONBatchToOCProto(zBytes, false)
 		if err != nil {
 			t.Errorf("#%d: Unexpected error: %v", i, err)
 			continue
@@ -663,6 +667,9 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 						"success": {
 							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
 						},
+						"processed": {
+							Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1.5},
+						},
 					},
 				},
 				TimeEvents: nil,
@@ -740,7 +747,7 @@ func TestSpanKindTranslation(t *testing.T) {
 			}
 
 			// Translate to OC and verify that span kind is correctly translated.
-			ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan)
+			ocSpan, parsedAnnotations, err := zipkinV1ToOCSpan(zSpan, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, test.ocKind, ocSpan.Kind)
 			assert.NotNil(t, parsedAnnotations)
@@ -766,7 +773,7 @@ func TestZipkinV1ToOCSpanInvalidTraceId(t *testing.T) {
 			{Value: "cr"},
 		},
 	}
-	_, _, err := zipkinV1ToOCSpan(zSpan)
+	_, _, err := zipkinV1ToOCSpan(zSpan, false)
 	assert.EqualError(t, err, "zipkinV1 span traceId: hex traceId span has wrong length (expected 16 or 32)")
 }
 
@@ -778,6 +785,6 @@ func TestZipkinV1ToOCSpanInvalidSpanId(t *testing.T) {
 			{Value: "cr"},
 		},
 	}
-	_, _, err := zipkinV1ToOCSpan(zSpan)
+	_, _, err := zipkinV1ToOCSpan(zSpan, false)
 	assert.EqualError(t, err, "zipkinV1 span id: hex Id has wrong length (expected 16)")
 }
