@@ -26,5 +26,7 @@ type Config struct {
 	// Configures the receiver server protocol.
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
+	// If enabled the zipkin receiver will attempt to parse string tags/binary annotations into int/bool/float.
+	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
 }
