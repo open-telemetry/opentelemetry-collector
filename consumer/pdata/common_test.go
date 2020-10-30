@@ -89,13 +89,12 @@ func fromVal(v interface{}) AttributeValue {
 }
 
 func fromMap(v map[string]interface{}) AttributeValue {
-	m := NewAttributeMap()
+	av := NewAttributeValueMap()
+	m := av.MapVal()
 	for k, v := range v {
 		m.Insert(k, fromVal(v))
 	}
 	m.Sort()
-	av := NewAttributeValueMap()
-	av.SetMapVal(m)
 	return av
 }
 
@@ -224,16 +223,6 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 	av = createNilOrigSetAttributeValue()
 	av.SetDoubleVal(1.23)
 	assert.EqualValues(t, 1.23, av.DoubleVal())
-
-	av = createNilOrigSetAttributeValue()
-	av.SetMapVal(NewAttributeMap())
-	assert.EqualValues(t, NewAttributeMap(), av.MapVal())
-
-	// Test nil KvlistValue case for MapVal() func.
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	av = AttributeValue{orig: &orig}
-	av.SetMapVal(NewAttributeMap())
-	assert.EqualValues(t, NewAttributeMap(), av.MapVal())
 }
 
 func TestAttributeValueEqual(t *testing.T) {
@@ -593,6 +582,25 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 	}
 	am = NewAttributeMap().InitFromMap(rawMap)
 	assert.EqualValues(t, AttributeMap{orig: &rawOrig}.Sort(), am.Sort())
+}
+
+func TestAttributeValue_CopyTo(t *testing.T) {
+	// Test nil KvlistValue case for MapVal() func.
+	dest := NewAttributeValueNull()
+	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
+	AttributeValue{orig: &orig}.CopyTo(dest)
+	assert.Nil(t, (*dest.orig).Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
+
+	// Test nil ArrayValue case for ArrayVal() func.
+	dest = NewAttributeValueNull()
+	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
+	AttributeValue{orig: &orig}.CopyTo(dest)
+	assert.Nil(t, (*dest.orig).Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
+
+	// Test copy nil value.
+	var origNil *otlpcommon.AnyValue
+	AttributeValue{orig: &origNil}.CopyTo(dest)
+	assert.Nil(t, *dest.orig)
 }
 
 func TestAttributeMap_CopyTo(t *testing.T) {
@@ -1052,12 +1060,11 @@ func generateTestBoolAttributeMap() AttributeMap {
 }
 
 func fromArray(v []interface{}) AttributeValue {
-	arr := NewAnyValueArray()
+	av := NewAttributeValueArray()
+	arr := av.ArrayVal()
 	for _, v := range v {
 		arr.Append(fromVal(v))
 	}
-	av := NewAttributeValueArray()
-	av.SetArrayVal(arr)
 	return av
 }
 
@@ -1116,35 +1123,6 @@ func TestAttributeValueArray(t *testing.T) {
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
 	a1 = AttributeValue{orig: &orig}
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
-}
-
-func TestAttributeValueSetArrayVal(t *testing.T) {
-	var anyVal *otlpcommon.AnyValue
-	v := newAttributeValue(&anyVal)
-	assert.EqualValues(t, AttributeValueNULL, v.Type())
-
-	v.SetArrayVal(NewAnyValueArray())
-	assert.EqualValues(t, AttributeValueARRAY, v.Type())
-
-	anyVal = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{}}
-	v = newAttributeValue(&anyVal)
-	assert.EqualValues(t, AttributeValueARRAY, v.Type())
-
-	v.SetArrayVal(NewAnyValueArray())
-	assert.EqualValues(t, AttributeValueARRAY, v.Type())
-
-	v.SetIntVal(123)
-	assert.EqualValues(t, AttributeValueINT, v.Type())
-
-	v.SetArrayVal(NewAnyValueArray())
-	assert.EqualValues(t, AttributeValueARRAY, v.Type())
-	assert.EqualValues(t, 0, v.ArrayVal().Len())
-
-	av := NewAnyValueArray()
-	av.Resize(1)
-	v.SetArrayVal(av)
-	assert.EqualValues(t, AttributeValueARRAY, v.Type())
-	assert.EqualValues(t, 1, v.ArrayVal().Len())
 }
 
 func TestAnyValueArrayWithNilValues(t *testing.T) {
