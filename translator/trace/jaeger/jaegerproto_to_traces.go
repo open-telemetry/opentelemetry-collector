@@ -236,13 +236,13 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 
 func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 
-	statusCode := pdata.StatusCodeOk
+	statusCode := pdata.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false
 
 	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
 		if errorVal.BoolVal() {
-			statusCode = pdata.StatusCodeUnknownError
+			statusCode = pdata.StatusCodeError
 			attrs.Delete(tracetranslator.TagError)
 			statusExists = true
 		}
@@ -250,8 +250,8 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 
 	if codeAttr, ok := attrs.Get(tracetranslator.TagStatusCode); ok {
 		statusExists = true
-		if code, err := getStatusCodeFromAttr(codeAttr); err == nil {
-			statusCode = code
+		if code, err := getStatusCodeValFromAttr(codeAttr); err == nil {
+			statusCode = pdata.StatusCode(code)
 			attrs.Delete(tracetranslator.TagStatusCode)
 		}
 		if msgAttr, ok := attrs.Get(tracetranslator.TagStatusMsg); ok {
@@ -262,8 +262,8 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 		statusExists = true
 		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 
-			// Do not set status code to OK in case it was set to Unknown based on "error" tag
-			if code != pdata.StatusCodeOk {
+			// Do not set status code in case it was set to Unset.
+			if code != pdata.StatusCodeUnset {
 				statusCode = code
 			}
 
@@ -280,7 +280,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 	}
 }
 
-func getStatusCodeFromAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
+func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int, error) {
 	var codeVal int64
 	switch attrVal.Type() {
 	case pdata.AttributeValueINT:
@@ -288,26 +288,25 @@ func getStatusCodeFromAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, erro
 	case pdata.AttributeValueSTRING:
 		i, err := strconv.Atoi(attrVal.StringVal())
 		if err != nil {
-			return pdata.StatusCodeOk, err
+			return 0, err
 		}
 		codeVal = int64(i)
 	default:
-		return pdata.StatusCodeOk, fmt.Errorf("invalid status code attribute type: %s", attrVal.Type().String())
+		return 0, fmt.Errorf("invalid status code attribute type: %s", attrVal.Type().String())
 	}
 	if codeVal > math.MaxInt32 || codeVal < math.MinInt32 {
-		return pdata.StatusCodeOk, fmt.Errorf("invalid status code value: %d", codeVal)
+		return 0, fmt.Errorf("invalid status code value: %d", codeVal)
 	}
-	return pdata.StatusCode(codeVal), nil
+	return int(codeVal), nil
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
-	statusCode, err := getStatusCodeFromAttr(attrVal)
+	statusCode, err := getStatusCodeValFromAttr(attrVal)
 	if err != nil {
 		return pdata.StatusCodeOk, err
 	}
 
-	// TODO: Introduce and use new HTTP -> OTLP code translator instead
-	return pdata.StatusCode(tracetranslator.OCStatusCodeFromHTTP(int32(statusCode))), nil
+	return tracetranslator.StatusCodeFromHTTP(statusCode), nil
 }
 
 func jSpanKindToInternal(spanKind string) pdata.SpanKind {

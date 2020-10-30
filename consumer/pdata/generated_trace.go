@@ -1290,11 +1290,18 @@ func (ms SpanStatus) Code() StatusCode {
 	return StatusCode((*ms.orig).Code)
 }
 
-// SetCode replaces the code associated with this SpanStatus.
+// DeprecatedCode returns the deprecatedcode associated with this SpanStatus.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms SpanStatus) SetCode(v StatusCode) {
-	(*ms.orig).Code = otlptrace.Status_StatusCode(v)
+func (ms SpanStatus) DeprecatedCode() DeprecatedStatusCode {
+	return DeprecatedStatusCode((*ms.orig).DeprecatedCode)
+}
+
+// SetDeprecatedCode replaces the deprecatedcode associated with this SpanStatus.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms SpanStatus) SetDeprecatedCode(v DeprecatedStatusCode) {
+	(*ms.orig).DeprecatedCode = otlptrace.Status_DeprecatedStatusCode(v)
 }
 
 // Message returns the message associated with this SpanStatus.
@@ -1321,5 +1328,6 @@ func (ms SpanStatus) CopyTo(dest SpanStatus) {
 		dest.InitEmpty()
 	}
 	dest.SetCode(ms.Code())
+	dest.SetDeprecatedCode(ms.DeprecatedCode())
 	dest.SetMessage(ms.Message())
 }

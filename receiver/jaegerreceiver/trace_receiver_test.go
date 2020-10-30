@@ -36,7 +36,6 @@ import (
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -206,7 +205,6 @@ func TestGRPCReception(t *testing.T) {
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Log("Start")
 
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
 	require.NoError(t, err)
@@ -264,7 +262,6 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Log("Start")
 
 	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
@@ -321,7 +318,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span0.Status().InitEmpty()
-	span0.Status().SetCode(pdata.StatusCodeNotFound)
+	span0.Status().SetCode(pdata.StatusCodeError)
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
@@ -331,7 +328,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
 	span1.Status().InitEmpty()
-	span1.Status().SetCode(pdata.StatusCodeInternalError)
+	span1.Status().SetCode(pdata.StatusCodeError)
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces
@@ -362,7 +359,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 					Duration:      d1,
 					Tags: []model.KeyValue{
 						model.String(tracetranslator.TagStatusMsg, "Stale indices"),
-						model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeNotFound),
+						model.Int64(tracetranslator.TagStatusCode, int64(pdata.StatusCodeError)),
 						model.Bool("error", true),
 					},
 					References: []model.SpanRef{
@@ -381,7 +378,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 					Duration:      d2,
 					Tags: []model.KeyValue{
 						model.String(tracetranslator.TagStatusMsg, "Frontend crash"),
-						model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeInternal),
+						model.Int64(tracetranslator.TagStatusCode, int64(pdata.StatusCodeError)),
 						model.Bool("error", true),
 					},
 				},
