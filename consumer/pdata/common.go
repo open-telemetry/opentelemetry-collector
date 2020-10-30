@@ -292,7 +292,7 @@ func (a AttributeValue) SetMapVal(m AttributeMap) {
 	}
 
 	destMap := newAttributeMap(&dest.Values)
-	destMap.InitFromAttributeMap(m)
+	m.CopyTo(destMap)
 }
 
 // SetArrayVal replaces the value associated with this AttributeValue,
@@ -458,28 +458,6 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 		origs[ix].Value = &anyVals[ix]
 		v.copyTo(&anyVals[ix])
 		ix++
-	}
-	*am.orig = origs
-	return am
-}
-
-// InitFromMap overwrites the entire AttributeMap and reconstructs the AttributeMap
-// with values from the given map[string]string.
-//
-// Returns the same instance to allow nicer code like:
-// assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
-func (am AttributeMap) InitFromAttributeMap(attrMap AttributeMap) AttributeMap {
-	srcLen := attrMap.Len()
-	if srcLen == 0 || attrMap.orig == nil {
-		*am.orig = []otlpcommon.KeyValue(nil)
-		return am
-	}
-	anyVals := make([]otlpcommon.AnyValue, srcLen)
-	origs := make([]otlpcommon.KeyValue, srcLen)
-	for ix, v := range *attrMap.orig {
-		origs[ix].Key = v.Key
-		origs[ix].Value = &anyVals[ix]
-		AttributeValue{&v.Value}.copyTo(&anyVals[ix])
 	}
 	*am.orig = origs
 	return am
