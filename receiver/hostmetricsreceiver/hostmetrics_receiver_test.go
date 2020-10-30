@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -120,7 +119,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		config.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
 	}
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
@@ -242,7 +241,7 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 	require.Error(t, err)
 }
 
@@ -254,7 +253,7 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 	require.Error(t, err)
 }
 
@@ -266,7 +265,7 @@ func TestGatherMetrics_CreateMetricsResourceScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{mockResourceTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 	require.Error(t, err)
 }
 
@@ -297,7 +296,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	options = append(options, receiverhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := receiverhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, sink, options...)
+	receiver, err := receiverhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, zap.NewNop(), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

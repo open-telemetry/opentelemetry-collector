@@ -19,6 +19,8 @@ import (
 	"errors"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -85,6 +87,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
 
 type scraperController struct {
 	name               string
+	logger             *zap.Logger
 	collectionInterval time.Duration
 	nextConsumer       consumer.MetricsConsumer
 
@@ -99,7 +102,12 @@ type scraperController struct {
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
-func NewScraperControllerReceiver(cfg *ScraperControllerSettings, nextConsumer consumer.MetricsConsumer, options ...ScraperControllerOption) (component.Receiver, error) {
+func NewScraperControllerReceiver(
+	cfg *ScraperControllerSettings,
+	logger *zap.Logger,
+	nextConsumer consumer.MetricsConsumer,
+	options ...ScraperControllerOption,
+) (component.Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -110,6 +118,7 @@ func NewScraperControllerReceiver(cfg *ScraperControllerSettings, nextConsumer c
 
 	sc := &scraperController{
 		name:               cfg.Name(),
+		logger:             logger,
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,
 		metricsScrapers:    &multiMetricScraper{},
@@ -201,10 +210,13 @@ func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
 
 	for _, rms := range sc.resourceMetricScrapers {
 		resourceMetrics, err := rms.Scrape(ctx, sc.name)
-		if err != nil && !consumererror.IsPartialScrapeError(err) {
-			continue
-		}
+		if err != nil {
+			sc.logger.Error("Error scraping metrics", zap.Error(err))
 
+			if !consumererror.IsPartialScrapeError(err) {
+				continue
+			}
+		}
 		resourceMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
