@@ -667,6 +667,9 @@ var ocBatchesFromZipkinV1 = []consumerdata.TraceData{
 						"success": {
 							Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
 						},
+						"processed": {
+							Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 1.5},
+						},
 					},
 				},
 				TimeEvents: nil,
