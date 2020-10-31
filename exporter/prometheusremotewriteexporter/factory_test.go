@@ -97,11 +97,11 @@ func Test_validateLabelConfig(t *testing.T) {
 	validConfigWithLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
 
 	invalidConfigWithLabels := createDefaultConfig().(*Config)
-	invalidConfigWithLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "", Value: "val1"})
+	invalidConfigWithLabels.ExternalLabels = append(invalidConfigWithLabels.ExternalLabels, ExternalLabel{Key: "", Value: "val1"})
 
 	invalidConfigWithDupeLabels := createDefaultConfig().(*Config)
-	invalidConfigWithDupeLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
-	invalidConfigWithDupeLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val2"})
+	invalidConfigWithDupeLabels.ExternalLabels = append(invalidConfigWithDupeLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
+	invalidConfigWithDupeLabels.ExternalLabels = append(invalidConfigWithDupeLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val2"})
 
 	tests := []struct {
 		name        string
