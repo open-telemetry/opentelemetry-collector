@@ -99,7 +99,7 @@ func createDefaultConfig() configmodels.Exporter {
 func validateLabelConfig(cfg *Config) error {
 	for _, elem := range cfg.ExternalLabels {
 		if elem.Key == "" || elem.Value == "" {
-			return fmt.Errorf("Prometheus Remote Write: external labels configuration contains an empty key or value")
+			return fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
 	}
 
@@ -107,7 +107,7 @@ func validateLabelConfig(cfg *Config) error {
 	for _, elem := range cfg.ExternalLabels {
 		_, value := keys[elem.Key]
 		if value {
-			return fmt.Errorf("Prometheus Remote Write: external labels configuration contains duplicate keys")
+			return fmt.Errorf("prometheus remote write: external labels configuration contains duplicate keys")
 		}
 		keys[elem.Key] = true
 	}
