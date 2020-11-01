@@ -39,6 +39,7 @@ var metricsFile = &File{
 		doubleSum,
 		intHistogram,
 		doubleHistogram,
+		doubleSummary,
 		intDataPointSlice,
 		intDataPoint,
 		doubleDataPointSlice,
@@ -47,6 +48,10 @@ var metricsFile = &File{
 		intHistogramDataPoint,
 		doubleHistogramDataPointSlice,
 		doubleHistogramDataPoint,
+		doubleSummaryDataPointSlice,
+		doubleSummaryDataPoint,
+		quantileValuesSlice,
+		quantileValues,
 		intExemplarSlice,
 		intExemplar,
 		doubleExemplarSlice,
@@ -206,6 +211,19 @@ var doubleHistogram = &messageStruct{
 	},
 }
 
+var doubleSummary = &messageStruct{
+	structName:     "DoubleSummary",
+	description:    "// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
+	originFullName: "otlpmetrics.DoubleSummary",
+	fields: []baseField{
+		&sliceField{
+			fieldName:       "DataPoints",
+			originFieldName: "DataPoints",
+			returnSlice:     doubleSummaryDataPointSlice,
+		},
+	},
+}
+
 var intDataPointSlice = &sliceStruct{
 	structName: "IntDataPointSlice",
 	element:    intDataPoint,
@@ -281,6 +299,44 @@ var doubleHistogramDataPoint = &messageStruct{
 		bucketCountsField,
 		explicitBoundsField,
 		doubleExemplarsField,
+	},
+}
+
+var doubleSummaryDataPointSlice = &sliceStruct{
+	structName: "DoubleSummaryDataPointSlice",
+	element:    doubleSummaryDataPoint,
+}
+
+var doubleSummaryDataPoint = &messageStruct{
+	structName:     "DoubleSummaryDataPoint",
+	description:    "// DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
+	originFullName: "otlpmetrics.DoubleSummaryDataPoint",
+	fields: []baseField{
+		labelsField,
+		startTimeField,
+		timeField,
+		countField,
+		doubleSumField,
+		&sliceField{
+			fieldName:       "QuantileValues",
+			originFieldName: "QuantileValues",
+			returnSlice:     quantileValuesSlice,
+		},
+	},
+}
+
+var quantileValuesSlice = &sliceStruct{
+	structName: "ValueAtQuantileSlice",
+	element:    quantileValues,
+}
+
+var quantileValues = &messageStruct{
+	structName:     "ValueAtQuantile",
+	description:    "// ValueAtQuantile is a quantile value within a Summary data point",
+	originFullName: "otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile",
+	fields: []baseField{
+		quantileField,
+		valueFloat64Field,
 	},
 }
 
@@ -402,6 +458,14 @@ var explicitBoundsField = &primitiveField{
 	returnType:      "[]float64",
 	defaultVal:      "[]float64(nil)",
 	testVal:         "[]float64{1, 2, 3}",
+}
+
+var quantileField = &primitiveField{
+	fieldName:       "Quantile",
+	originFieldName: "Quantile",
+	returnType:      "float64",
+	defaultVal:      "float64(0.0)",
+	testVal:         "float64(17.13)",
 }
 
 var isMonotonicField = &primitiveField{
