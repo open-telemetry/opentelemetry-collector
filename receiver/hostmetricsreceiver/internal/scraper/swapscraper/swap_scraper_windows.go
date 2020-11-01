@@ -23,13 +23,17 @@ import (
 
 	"github.com/shirou/gopsutil/host"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
+	swapUsageMetricsLen = 1
+	pagingMetricsLen    = 1
+
 	memory = "Memory"
 
 	pageReadsPerSec  = "Page Reads/sec"
@@ -74,13 +78,8 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return s.perfCounterScraper.Initialize(memory)
 }
 
-// Close
-func (s *scraper) Close(context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	var errors []error
@@ -95,18 +94,18 @@ func (s *scraper) ScrapeMetrics(context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	return metrics, componenterror.CombineErrors(errors)
+	return metrics, receiverhelper.CombineScrapeErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, swapUsageMetricsLen)
 	}
 
 	idx := metrics.Len()
-	metrics.Resize(idx + 1)
+	metrics.Resize(idx + swapUsageMetricsLen)
 	s.initializeSwapUsageMetric(metrics.At(idx), now, pageFiles)
 	return nil
 }
@@ -138,22 +137,22 @@ func (s *scraper) scrapeAndAppendPagingMetric(metrics pdata.MetricSlice) error {
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
 	}
 
 	memoryObject, err := counters.GetObject(memory)
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
 	}
 
 	memoryCounterValues, err := memoryObject.GetValues(pageReadsPerSec, pageWritesPerSec)
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
 	}
 
 	if len(memoryCounterValues) > 0 {
 		idx := metrics.Len()
-		metrics.Resize(idx + 1)
+		metrics.Resize(idx + pagingMetricsLen)
 		initializePagingMetric(metrics.At(idx), s.startTime, now, memoryCounterValues[0])
 	}
 

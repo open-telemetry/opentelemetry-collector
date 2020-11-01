@@ -23,12 +23,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                 string
 		config               Config
@@ -40,6 +41,7 @@ func TestScrapeMetrics(t *testing.T) {
 		newErrRegex          string
 		initializationErr    string
 		expectedErr          string
+		expectedErrCount     int
 	}
 
 	testCases := []testCase{
@@ -74,14 +76,16 @@ func TestScrapeMetrics(t *testing.T) {
 			initializationErr: "err1",
 		},
 		{
-			name:           "IOCounters Error",
-			ioCountersFunc: func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
-			expectedErr:    "err2",
+			name:             "IOCounters Error",
+			ioCountersFunc:   func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
+			expectedErr:      "err2",
+			expectedErrCount: networkMetricsLen,
 		},
 		{
-			name:            "Connections Error",
-			connectionsFunc: func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
-			expectedErr:     "err3",
+			name:             "Connections Error",
+			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
+			expectedErr:      "err3",
+			expectedErrCount: connectionsMetricsLen,
 		},
 	}
 
@@ -111,11 +115,17 @@ func TestScrapeMetrics(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "Failed to initialize network scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.Scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
+
+				isPartial := consumererror.IsPartialScrapeError(err)
+				assert.True(t, isPartial)
+				if isPartial {
+					assert.Equal(t, test.expectedErrCount, err.(consumererror.PartialScrapeError).Failed)
+				}
+
 				return
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)

@@ -20,10 +20,13 @@ import (
 
 	"github.com/shirou/gopsutil/mem"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
+
+const metricsLen = 1
 
 // scraper for Memory Metrics
 type scraper struct {
@@ -38,27 +41,17 @@ func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
 	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory}
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
-	return nil
-}
-
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(1)
+	metrics.Resize(metricsLen)
 	initializeMemoryUsageMetric(metrics.At(0), now, memInfo)
 	return metrics, nil
 }

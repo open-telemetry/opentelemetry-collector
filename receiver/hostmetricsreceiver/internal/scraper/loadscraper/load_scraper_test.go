@@ -24,11 +24,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name        string
 		loadFunc    func() (*load.AvgStat, error)
@@ -57,9 +58,16 @@ func TestScrapeMetrics(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize load scraper: %v", err)
 			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.Scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
+
+				isPartial := consumererror.IsPartialScrapeError(err)
+				assert.True(t, isPartial)
+				if isPartial {
+					assert.Equal(t, metricsLen, err.(consumererror.PartialScrapeError).Failed)
+				}
+
 				return
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)

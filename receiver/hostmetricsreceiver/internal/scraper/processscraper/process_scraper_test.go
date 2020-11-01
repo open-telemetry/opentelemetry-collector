@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -28,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -40,7 +40,7 @@ func skipTestOnUnsupportedOS(t *testing.T) {
 	}
 }
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	const bootTime = 100
@@ -51,21 +51,21 @@ func TestScrapeMetrics(t *testing.T) {
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 	err = scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	resourceMetrics, err := scraper.ScrapeMetrics(context.Background())
+	resourceMetrics, err := scraper.Scrape(context.Background())
 
 	// may receive some partial errors as a result of attempting to:
 	// a) read native system processes on Windows (e.g. Registry process)
 	// b) read info on processes that have just terminated
 	//
-	// so validate that we have less errors than resources & some valid data is returned
+	// so validate that we have less processes that were failed to be scraped
+	// than processes that were successfully scraped & some valid data is
+	// returned
 	if err != nil {
-		errs := strings.Split(err.Error(), ";")
-
-		noErrors := len(errs)
-		noResources := resourceMetrics.Len()
-		require.Lessf(t, noErrors, noResources, "Failed to scrape metrics - more errors returned than metrics: %v", err)
+		require.True(t, consumererror.IsPartialScrapeError(err))
+		noProcessesScraped := resourceMetrics.Len()
+		noProcessesErrored := err.(consumererror.PartialScrapeError).Failed
+		require.Lessf(t, noProcessesErrored, noProcessesScraped, "Failed to scrape metrics - more processes failed to be scraped than were successfully scraped: %v", err)
 	}
 
 	require.Greater(t, resourceMetrics.Len(), 1)
@@ -169,11 +169,11 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 
 	err = scraper.Initialize(context.Background())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
-	defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-	metrics, err := scraper.ScrapeMetrics(context.Background())
+	metrics, err := scraper.Scrape(context.Background())
 	assert.EqualError(t, err, "err1")
 	assert.Equal(t, 0, metrics.Len())
+	assert.False(t, consumererror.IsPartialScrapeError(err))
 }
 
 type processHandlesMock struct {
@@ -313,7 +313,6 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.Initialize(context.Background())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
 			handles := make([]*processHandleMock, 0, len(test.names))
 			for _, name := range test.names {
@@ -327,7 +326,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				return &processHandlesMock{handles: handles}, nil
 			}
 
-			resourceMetrics, err := scraper.ScrapeMetrics(context.Background())
+			resourceMetrics, err := scraper.Scrape(context.Background())
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.expectedNames), resourceMetrics.Len())
@@ -418,7 +417,6 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.Initialize(context.Background())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
 			username := "username"
 			if test.usernameError != nil {
@@ -439,31 +437,48 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 
-			resourceMetrics, err := scraper.ScrapeMetrics(context.Background())
-			assert.EqualError(t, err, test.expectedError)
+			resourceMetrics, err := scraper.Scrape(context.Background())
 
-			if test.nameError != nil || test.exeError != nil {
-				assert.Equal(t, 0, resourceMetrics.Len())
-			} else {
-				require.Equal(t, 1, resourceMetrics.Len())
-				metrics := getMetricSlice(t, resourceMetrics.At(0))
-				expectedLen := getExpectedLengthOfReturnedMetrics(test.timesError, test.memoryInfoError, test.ioCountersError)
-				assert.Equal(t, expectedLen, metrics.Len())
+			md := pdata.NewMetrics()
+			resourceMetrics.MoveAndAppendTo(md.ResourceMetrics())
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
+			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
+			assert.Equal(t, expectedMetricsLen, md.MetricCount())
+
+			assert.EqualError(t, err, test.expectedError)
+			isPartial := consumererror.IsPartialScrapeError(err)
+			assert.True(t, isPartial)
+			if isPartial {
+				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
+				assert.Equal(t, expectedFailures, err.(consumererror.PartialScrapeError).Failed)
 			}
 		})
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(timeError, memError, diskError error) int {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error) (int, int) {
+	if nameError != nil || exeError != nil {
+		return 0, 0
+	}
+
 	expectedLen := 0
 	if timeError == nil {
-		expectedLen++
+		expectedLen += cpuMetricsLen
 	}
 	if memError == nil {
-		expectedLen += 2
+		expectedLen += memoryMetricsLen
 	}
 	if diskError == nil {
-		expectedLen++
+		expectedLen += diskMetricsLen
 	}
-	return expectedLen
+	return 1, expectedLen
+}
+
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError error) int {
+	expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
+	if expectedResourceMetricsLen == 0 {
+		return 1
+	}
+
+	return metricsLen - expectedMetricsLen
 }

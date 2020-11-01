@@ -48,6 +48,12 @@ func CombineScrapeErrors(errs []error) error {
 		errMsgs = append(errMsgs, err.Error())
 	}
 
-	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
+	var err error
+	if len(errs) == 1 {
+		err = errs[0]
+	} else {
+		err = fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
+	}
+
 	return consumererror.NewPartialScrapeError(err, failedScrapeCount)
 }

@@ -24,14 +24,17 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-func TestScrapeMetrics_Errors(t *testing.T) {
+func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
 		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
 		swapMemoryFunc    func() (*mem.SwapMemoryStat, error)
 		expectedError     string
+		expectedErrCount  int
 	}
 
 	testCases := []testCase{
@@ -39,17 +42,20 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 			name:              "virtualMemoryError",
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedError:     "err1",
+			expectedErrCount:  swapUsageMetricsLen,
 		},
 		{
-			name:           "swapMemoryError",
-			swapMemoryFunc: func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
-			expectedError:  "err2",
+			name:             "swapMemoryError",
+			swapMemoryFunc:   func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			expectedError:    "err2",
+			expectedErrCount: pagingMetricsLen,
 		},
 		{
 			name:              "multipleErrors",
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:     "[err1; err2]",
+			expectedErrCount:  swapUsageMetricsLen + pagingMetricsLen,
 		},
 	}
 
@@ -65,10 +71,15 @@ func TestScrapeMetrics_Errors(t *testing.T) {
 
 			err := scraper.Initialize(context.Background())
 			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			_, err = scraper.ScrapeMetrics(context.Background())
+			_, err = scraper.Scrape(context.Background())
 			assert.EqualError(t, err, test.expectedError)
+
+			isPartial := consumererror.IsPartialScrapeError(err)
+			assert.True(t, isPartial)
+			if isPartial {
+				assert.Equal(t, test.expectedErrCount, err.(consumererror.PartialScrapeError).Failed)
+			}
 		})
 	}
 }

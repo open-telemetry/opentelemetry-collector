@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		config            Config
@@ -92,9 +92,8 @@ func TestScrapeMetrics(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.Scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {

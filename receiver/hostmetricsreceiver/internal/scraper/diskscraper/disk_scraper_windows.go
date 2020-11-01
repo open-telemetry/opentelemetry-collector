@@ -21,6 +21,7 @@ import (
 
 	"github.com/shirou/gopsutil/host"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -28,6 +29,8 @@ import (
 )
 
 const (
+	metricsLen = 5
+
 	logicalDisk = "LogicalDisk"
 
 	readsPerSec  = "Disk Reads/sec"
@@ -92,25 +95,20 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return s.perfCounterScraper.Initialize(logicalDisk)
 }
 
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(ctx context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	logicalDiskObject, err := counters.GetObject(logicalDisk)
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -118,11 +116,11 @@ func (s *scraper) ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error) 
 
 	logicalDiskCounterValues, err := logicalDiskObject.GetValues(readsPerSec, writesPerSec, readBytesPerSec, writeBytesPerSec, idleTime, avgDiskSecsPerRead, avgDiskSecsPerWrite, queueLength)
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if len(logicalDiskCounterValues) > 0 {
-		metrics.Resize(5)
+		metrics.Resize(metricsLen)
 		initializeDiskIOMetric(metrics.At(0), s.startTime, now, logicalDiskCounterValues)
 		initializeDiskOpsMetric(metrics.At(1), s.startTime, now, logicalDiskCounterValues)
 		initializeDiskIOTimeMetric(metrics.At(2), s.startTime, now, logicalDiskCounterValues)
