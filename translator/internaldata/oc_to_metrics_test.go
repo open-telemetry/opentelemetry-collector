@@ -94,7 +94,7 @@ func TestOCToMetrics(t *testing.T) {
 					generateOCTestMetricSummary(),
 				},
 			},
-			internal: testdata.GenerateMetricsOneMetricOneNil(),
+			internal: testdata.GenerateMetricsOneCounterOneSummaryMetrics(),
 		},
 
 		{

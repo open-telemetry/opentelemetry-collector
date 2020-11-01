@@ -93,6 +93,14 @@ func generateOCTestDataNoPoints() consumerdata.MetricsData {
 					Type:        ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
 				},
 			},
+			{
+				MetricDescriptor: &ocmetrics.MetricDescriptor{
+					Name:        testdata.TestDoubleSummaryMetricName,
+					Description: "",
+					Unit:        "1",
+					Type:        ocmetrics.MetricDescriptor_SUMMARY,
+				},
+			},
 		},
 	}
 }
@@ -393,12 +401,14 @@ func generateOCTestMetricIntHistogram() *ocmetrics.Metric {
 func generateOCTestMetricSummary() *ocmetrics.Metric {
 	return &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
-			Name:        "summary",
+			Name:        testdata.TestDoubleSummaryMetricName,
 			Description: "",
 			Unit:        "1",
 			Type:        ocmetrics.MetricDescriptor_SUMMARY,
 			LabelKeys: []*ocmetrics.LabelKey{
-				{Key: testdata.TestLabelKey},
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+				{Key: testdata.TestLabelKey3},
 			},
 		},
 		Timeseries: []*ocmetrics.TimeSeries{
@@ -408,6 +418,15 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 					{
 						// key1
 						Value:    testdata.TestLabelValue1,
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+					{
+						// key3
+						Value:    testdata.TestLabelValue3,
 						HasValue: true,
 					},
 				},
@@ -432,8 +451,16 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 				LabelValues: []*ocmetrics.LabelValue{
 					{
 						// key1
+						HasValue: false,
+					},
+					{
+						// key2
 						Value:    testdata.TestLabelValue2,
 						HasValue: true,
+					},
+					{
+						// key3
+						HasValue: false,
 					},
 				},
 				Points: []*ocmetrics.Point{
