@@ -30,6 +30,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -241,7 +242,7 @@ http_request_duration_seconds_count 2600
 # HELP rpc_duration_seconds A summary of the RPC duration in seconds.
 # TYPE rpc_duration_seconds summary
 rpc_duration_seconds{quantile="0.01"} 1
-rpc_duration_seconds{quantile="0.9"} 5
+rpc_duration_seconds{quantile="0.9"} 6
 rpc_duration_seconds{quantile="0.99"} 8
 rpc_duration_seconds_sum 5002
 rpc_duration_seconds_count 1001
@@ -359,6 +360,46 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 											{Count: 0},
 										},
 									}},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "rpc_duration_seconds",
+					Type:        metricspb.MetricDescriptor_SUMMARY,
+					Description: "A summary of the RPC duration in seconds.",
+					Unit:        "s",
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: ts1,
+						Points: []*metricspb.Point{
+							{
+								Timestamp: ts2,
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum:   &wrappers.DoubleValue{Value: 2},
+										Count: &wrappers.Int64Value{Value: 1},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 1,
+													Value:      1,
+												},
+												{
+													Percentile: 90,
+													Value:      6,
+												},
+												{
+													Percentile: 99,
+													Value:      8,
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -839,8 +880,77 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 					},
 				},
 			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "rpc_duration_seconds",
+					Type:        metricspb.MetricDescriptor_SUMMARY,
+					LabelKeys:   []*metricspb.LabelKey{{Key: "foo"}},
+					Description: "A summary of the RPC duration in seconds.",
+					Unit:        "s",
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: ts1,
+						LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: ts2,
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum:   &wrappers.DoubleValue{Value: 100},
+										Count: &wrappers.Int64Value{Value: 50},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 1,
+													Value:      32,
+												},
+												{
+													Percentile: 5,
+													Value:      35,
+												},
+												{
+													Percentile: 50,
+													Value:      47,
+												},
+												{
+													Percentile: 90,
+													Value:      70,
+												},
+												{
+													Percentile: 99,
+													Value:      77,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						StartTimestamp: ts1,
+						LabelValues:    []*metricspb.LabelValue{{Value: "no_quantile", HasValue: true}},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: ts2,
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum:   &wrappers.DoubleValue{Value: 1},
+										Count: &wrappers.Int64Value{Value: 5},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											PercentileValues: nil,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
+
 	doCompare("scrape2", t, want2, &m2)
 }
 
@@ -913,8 +1023,7 @@ process_start_time_seconds 400.8
 
 var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nanos: 800000000}
 
-// Summary is not yet supported, so we have only 5 supported metrics as result.
-const numStartTimeMetricPageTimeseries = 5
+const numStartTimeMetricPageTimeseries = 6
 
 func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []consumerdata.MetricsData) {
 	numTimeseries := 0
