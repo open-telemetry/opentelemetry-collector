@@ -398,7 +398,7 @@ func generateOCTestMetricIntHistogram() *ocmetrics.Metric {
 	return m
 }
 
-func generateOCTestMetricSummary() *ocmetrics.Metric {
+func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 	return &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
 			Name:        testdata.TestDoubleSummaryMetricName,
@@ -440,6 +440,9 @@ func generateOCTestMetricSummary() *ocmetrics.Metric {
 								},
 								Sum: &wrapperspb.DoubleValue{
 									Value: 15,
+								},
+								Snapshot: &ocmetrics.SummaryValue_Snapshot{
+									PercentileValues: nil,
 								},
 							},
 						},

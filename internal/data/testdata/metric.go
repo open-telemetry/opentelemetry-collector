@@ -353,7 +353,7 @@ func generateMetricsOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsWithCountersHistograms() pdata.Metrics {
+func GenerateMetricsWithCountersHistogramsAndSummary() pdata.Metrics {
 	metricData := pdata.NewMetrics()
 	metricData.ResourceMetrics().Resize(1)
 
@@ -362,17 +362,18 @@ func GenerateMetricsWithCountersHistograms() pdata.Metrics {
 	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
 
 	ilms := rms.At(0).InstrumentationLibraryMetrics()
-	ilms.At(0).Metrics().Resize(4)
+	ilms.At(0).Metrics().Resize(5)
 	ms := ilms.At(0).Metrics()
 	initCounterIntMetric(ms.At(0))
 	initSumDoubleMetric(ms.At(1))
 	initDoubleHistogramMetric(ms.At(2))
 	initIntHistogramMetric(ms.At(3))
+	initDoubleSummaryMetric(ms.At(4))
 
 	return metricData
 }
 
-func generateMetricsOtlpWithCountersHistograms() []*otlpmetrics.ResourceMetrics {
+func generateMetricsOtlpWithCountersHistogramsAndSummary() []*otlpmetrics.ResourceMetrics {
 	return []*otlpmetrics.ResourceMetrics{
 		{
 			Resource: generateOtlpResource1(),
@@ -383,6 +384,7 @@ func generateMetricsOtlpWithCountersHistograms() []*otlpmetrics.ResourceMetrics 
 						generateOtlpSumDoubleMetric(),
 						generateOtlpDoubleHistogramMetric(),
 						generateOtlpIntHistogramMetric(),
+						generateOtlpDoubleSummaryMetric(),
 					},
 				},
 			},
@@ -638,7 +640,7 @@ func generateOtlpDoubleSummaryMetric() *otlpmetrics.Metric {
 				Sum:               15,
 				QuantileValues: []*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{
 					{
-						Quantile: 1,
+						Quantile: 0.01,
 						Value:    15,
 					},
 				},

@@ -98,8 +98,8 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 		},
 		{
 			name: "counters-histogram",
-			td:   GenerateMetricsWithCountersHistograms(),
-			otlp: generateMetricsOtlpWithCountersHistograms(),
+			td:   GenerateMetricsWithCountersHistogramsAndSummary(),
+			otlp: generateMetricsOtlpWithCountersHistogramsAndSummary(),
 		},
 	}
 }
