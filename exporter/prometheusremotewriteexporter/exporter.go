@@ -102,14 +102,14 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 				// TODO: decide if instrumentation library information should be exported as labels
 				for _, metric := range instrumentationMetrics.Metrics {
 					if metric == nil {
-						errs = append(errs, errors.New("encountered nil metric"))
+						errs = append(errs, consumererror.Permanent(errors.New("encountered nil metric")))
 						dropped++
 						continue
 					}
 					// check for valid type and temporality combination and for matching data field and type
 					if ok := validateMetrics(metric); !ok {
 						dropped++
-						errs = append(errs, errors.New("invalid temporality and type combination"))
+						errs = append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
 						continue
 					}
 					// handle individual metric based on type
@@ -117,7 +117,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case *otlp.Metric_DoubleSum, *otlp.Metric_IntSum, *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:
 						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = append(errs, consumererror.Permanent(err))
 						}
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
@@ -126,7 +126,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 						}
 					default:
 						dropped++
-						errs = append(errs, errors.New("unsupported metric type"))
+						errs = append(errs, consumererror.Permanent(errors.New("unsupported metric type")))
 					}
 				}
 			}
@@ -134,7 +134,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		if err := prwe.export(ctx, tsMap); err != nil {
 			dropped = md.MetricCount()
-			errs = append(errs, err)
+			errs = append(errs, consumererror.Permanent(err))
 		}
 
 		if dropped != 0 {
