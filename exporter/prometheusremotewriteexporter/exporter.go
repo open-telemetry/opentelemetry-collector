@@ -31,6 +31,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/version"
@@ -88,7 +89,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
 		var errs []error
-
 		resourceMetrics := pdata.MetricsToOtlp(md)
 		for _, resourceMetric := range resourceMetrics {
 			if resourceMetric == nil {
@@ -108,7 +108,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					// check for valid type and temporality combination and for matching data field and type
 					if ok := validateMetrics(metric); !ok {
 						dropped++
-						errs = append(errs, errors.New("invalid temporality and type combination"))
+						errs = append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
 						continue
 					}
 					// handle individual metric based on type
@@ -116,7 +116,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case *otlp.Metric_DoubleSum, *otlp.Metric_IntSum, *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:
 						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = append(errs, consumererror.Permanent(err))
 						}
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
@@ -125,7 +125,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 						}
 					default:
 						dropped++
-						errs = append(errs, errors.New("unsupported metric type"))
+						errs = append(errs, consumererror.Permanent(errors.New("unsupported metric type")))
 					}
 				}
 			}
@@ -133,7 +133,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		if err := prwe.export(ctx, tsMap); err != nil {
 			dropped = md.MetricCount()
-			errs = append(errs, err)
+			errs = append(errs, consumererror.Permanent(err))
 		}
 
 		if dropped != 0 {
@@ -212,13 +212,13 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(tsMap)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(req)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 	buf := make([]byte, len(data), cap(data))
 	compressedData := snappy.Encode(buf, data)
@@ -226,7 +226,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// Create the HTTP POST request to send to the endpoint
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 
 	// Add necessary headers specified by:
@@ -238,9 +238,13 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 
 	httpResp, err := prwe.client.Do(httpReq)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 
+	// 2xx status code is considered a success
+	// 5xx errors are recoverable and the exporter should retry
+	// Reference for different behavior according to status code:
+	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 	if httpResp.StatusCode/100 != 2 {
 		scanner := bufio.NewScanner(io.LimitReader(httpResp.Body, 256))
 		line := ""
@@ -248,7 +252,11 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 			line = scanner.Text()
 		}
 		errMsg := "server returned HTTP status " + httpResp.Status + ": " + line
-		return errors.New(errMsg)
+		if httpResp.StatusCode >= 500 && httpResp.StatusCode < 600 {
+			return errors.New(errMsg)
+		}
+		return consumererror.Permanent(errors.New(errMsg))
+
 	}
 	return nil
 }

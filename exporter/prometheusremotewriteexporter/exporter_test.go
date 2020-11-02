@@ -566,6 +566,15 @@ func Test_PushMetrics(t *testing.T) {
 			false,
 		},
 		{
+			"5xx_case",
+			&unmatchedBoundBucketDoubleHistBatch,
+			checkFunc,
+			5,
+			http.StatusServiceUnavailable,
+			1,
+			true,
+		},
+		{
 			"nilDataPointDoubleGauge_case",
 			&nilDataPointDoubleGaugeBatch,
 			checkFunc,
