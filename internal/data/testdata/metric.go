@@ -353,7 +353,7 @@ func generateMetricsOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
 	}
 }
 
-func GenerateMetricsWithCountersHistogramsAndSummary() pdata.Metrics {
+func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	metricData := pdata.NewMetrics()
 	metricData.ResourceMetrics().Resize(1)
 
@@ -373,7 +373,7 @@ func GenerateMetricsWithCountersHistogramsAndSummary() pdata.Metrics {
 	return metricData
 }
 
-func generateMetricsOtlpWithCountersHistogramsAndSummary() []*otlpmetrics.ResourceMetrics {
+func generateMetricsOtlpAllTypesWithSampleDatapoints() []*otlpmetrics.ResourceMetrics {
 	return []*otlpmetrics.ResourceMetrics{
 		{
 			Resource: generateOtlpResource1(),
@@ -384,7 +384,7 @@ func generateMetricsOtlpWithCountersHistogramsAndSummary() []*otlpmetrics.Resour
 						generateOtlpSumDoubleMetric(),
 						generateOtlpDoubleHistogramMetric(),
 						generateOtlpIntHistogramMetric(),
-						generateOtlpDoubleSummaryMetric(),
+						generateOTLPDoubleSummaryMetric(),
 					},
 				},
 			},
@@ -621,7 +621,7 @@ func initDoubleSummaryMetric(sm pdata.Metric) {
 	quantiles.CopyTo(sdp1.QuantileValues())
 }
 
-func generateOtlpDoubleSummaryMetric() *otlpmetrics.Metric {
+func generateOTLPDoubleSummaryMetric() *otlpmetrics.Metric {
 	m := generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary)
 	m.Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary.DataPoints =
 		[]*otlpmetrics.DoubleSummaryDataPoint{

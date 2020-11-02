@@ -35,7 +35,7 @@ func TestOCToMetrics(t *testing.T) {
 	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 	dh.DoubleHistogram().CopyTo(ih.DoubleHistogram())
 
-	sampleMetricData := testdata.GenerateMetricsWithCountersHistogramsAndSummary()
+	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	dh = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2)
 	ih = sampleMetricData.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3)
 	ih.SetDataType(pdata.MetricDataTypeDoubleHistogram)

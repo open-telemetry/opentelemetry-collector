@@ -97,9 +97,9 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			otlp: generateMetricsOtlpAllTypesNoDataPoints(),
 		},
 		{
-			name: "counters-histogram",
-			td:   GenerateMetricsWithCountersHistogramsAndSummary(),
-			otlp: generateMetricsOtlpWithCountersHistogramsAndSummary(),
+			name: "all-metric-types",
+			td:   GeneratMetricsAllTypesWithSampleDatapoints(),
+			otlp: generateMetricsOtlpAllTypesWithSampleDatapoints(),
 		},
 	}
 }

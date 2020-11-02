@@ -306,8 +306,8 @@ func (ms Metric) DoubleHistogram() DoubleHistogram {
 	return newDoubleHistogram(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
 }
 
-// DoubleHistogram returns the data as DoubleHistogram.
-// Calling this function when DataType() != MetricDataTypeDoubleHistogram will cause a panic.
+// DoubleSummary returns the data as DoubleSummary.
+// Calling this function when DataType() != MetricDataTypeDoubleSummary will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleSummary() DoubleSummary {
 	return newDoubleSummary(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary)
