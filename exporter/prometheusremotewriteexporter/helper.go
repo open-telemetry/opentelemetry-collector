@@ -325,13 +325,13 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 	if pt == nil {
 		return
 	}
-	time := convertTimeStamp(pt.TimeUnixNano)
+	timeStamp := convertTimeStamp(pt.TimeUnixNano)
 	// sum, count, and buckets of the histogram should append suffix to baseName
 	baseName := getPromMetricName(metric, namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     float64(pt.GetSum()),
-		Timestamp: time,
+		Timestamp: timeStamp,
 	}
 
 	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
@@ -340,36 +340,12 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
 		Value:     float64(pt.GetCount()),
-		Timestamp: time,
+		Timestamp: timeStamp,
 	}
 	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
-	// cumulative count for conversion to cumulative histogram
-	var cumulativeCount uint64
-
-	// process each bound, ignore extra bucket values
-	for index, bound := range pt.GetExplicitBounds() {
-		if index >= len(pt.GetBucketCounts()) {
-			break
-		}
-		cumulativeCount += pt.GetBucketCounts()[index]
-		bucket := &prompb.Sample{
-			Value:     float64(cumulativeCount),
-			Timestamp: time,
-		}
-		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
-		addSample(tsMap, bucket, labels, metric)
-	}
-	// add le=+Inf bucket
-	cumulativeCount += pt.GetBucketCounts()[len(pt.GetBucketCounts())-1]
-	infBucket := &prompb.Sample{
-		Value:     float64(cumulativeCount),
-		Timestamp: time,
-	}
-	infLabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
-	addSample(tsMap, infBucket, infLabels, metric)
+	toHistogramSamples(timeStamp, baseName, pt.GetLabels(), externalLabels, metric, pt.GetExplicitBounds(), pt.GetBucketCounts(), tsMap)
 }
 
 // addSingleDoubleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
@@ -379,13 +355,13 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 	if pt == nil {
 		return
 	}
-	time := convertTimeStamp(pt.TimeUnixNano)
+	timeStamp := convertTimeStamp(pt.TimeUnixNano)
 	// sum, count, and buckets of the histogram should append suffix to baseName
 	baseName := getPromMetricName(metric, namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.GetSum(),
-		Timestamp: time,
+		Timestamp: timeStamp,
 	}
 
 	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
@@ -394,34 +370,40 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
 		Value:     float64(pt.GetCount()),
-		Timestamp: time,
+		Timestamp: timeStamp,
 	}
 	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
+	toHistogramSamples(timeStamp, baseName, pt.GetLabels(), externalLabels, metric, pt.GetExplicitBounds(), pt.GetBucketCounts(), tsMap)
+}
+
+func toHistogramSamples(timeStamp int64, baseName string, labels []common.StringKeyValue,
+	externalLabels map[string]string, metric *otlp.Metric,
+	explicitBounds []float64, bucketCounts []uint64, tsMap map[string]*prompb.TimeSeries) {
 	// cumulative count for conversion to cumulative histogram
 	var cumulativeCount uint64
 
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
-	for index, bound := range pt.GetExplicitBounds() {
-		if index >= len(pt.GetBucketCounts()) {
+	for index, bound := range explicitBounds {
+		if index >= len(bucketCounts) {
 			break
 		}
-		cumulativeCount += pt.GetBucketCounts()[index]
+		cumulativeCount += bucketCounts[index]
 		bucket := &prompb.Sample{
 			Value:     float64(cumulativeCount),
-			Timestamp: time,
+			Timestamp: timeStamp,
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
+		labels := createLabelSet(labels, externalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
 		addSample(tsMap, bucket, labels, metric)
 	}
 	// add le=+Inf bucket
-	cumulativeCount += pt.GetBucketCounts()[len(pt.GetBucketCounts())-1]
+	cumulativeCount += bucketCounts[len(bucketCounts)-1]
 	infBucket := &prompb.Sample{
 		Value:     float64(cumulativeCount),
-		Timestamp: time,
+		Timestamp: timeStamp,
 	}
-	infLabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
+	infLabels := createLabelSet(labels, externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	addSample(tsMap, infBucket, infLabels, metric)
 }
