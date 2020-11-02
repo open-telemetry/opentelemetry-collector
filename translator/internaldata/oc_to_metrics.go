@@ -418,7 +418,7 @@ func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snaps
 	quantiles.Resize(len(ocPercentiles))
 
 	for i, percentile := range ocPercentiles {
-		quantiles.At(i).SetQuantile(float64(percentile.GetPercentile() / 100))
+		quantiles.At(i).SetQuantile(percentile.GetPercentile() / 100)
 		quantiles.At(i).SetValue(percentile.GetValue())
 	}
 

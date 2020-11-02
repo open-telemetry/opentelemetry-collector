@@ -490,8 +490,8 @@ func summaryPercentilesToOC(qtls pdata.ValueAtQuantileSlice) []*ocmetrics.Summar
 		}
 
 		ocPercentiles = append(ocPercentiles, &ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
-			Percentile: float64(quantile.Quantile() * 100),
-			Value:      float64(quantile.Value()),
+			Percentile: quantile.Quantile() * 100,
+			Value:      quantile.Value(),
 		})
 	}
 	return ocPercentiles
