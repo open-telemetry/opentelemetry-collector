@@ -89,7 +89,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
 		var errs []error
-		permanent := false
 		resourceMetrics := pdata.MetricsToOtlp(md)
 		for _, resourceMetric := range resourceMetrics {
 			if resourceMetric == nil {
@@ -103,7 +102,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 				// TODO: decide if instrumentation library information should be exported as labels
 				for _, metric := range instrumentationMetrics.Metrics {
 					if metric == nil {
-						permanent = true
 						errs = append(errs, errors.New("encountered nil metric"))
 						dropped++
 						continue
@@ -112,7 +110,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					if ok := validateMetrics(metric); !ok {
 						dropped++
 						errs = append(errs, errors.New("invalid temporality and type combination"))
-						permanent = true
 						continue
 					}
 					// handle individual metric based on type
@@ -121,13 +118,11 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
-							permanent = true
 						}
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							dropped++
 							errs = append(errs, err)
-							permanent = true
 						}
 					default:
 						dropped++
@@ -140,13 +135,9 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 		if err := prwe.export(ctx, tsMap); err != nil {
 			dropped = md.MetricCount()
 			errs = append(errs, err)
-			permanent = permanent || consumererror.IsPermanent(err)
 		}
 
 		if dropped != 0 {
-			if permanent {
-				return dropped, consumererror.Permanent(componenterror.CombineErrors(errs))
-			}
 			return dropped, componenterror.CombineErrors(errs)
 		}
 
