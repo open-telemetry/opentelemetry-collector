@@ -102,7 +102,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 				// TODO: decide if instrumentation library information should be exported as labels
 				for _, metric := range instrumentationMetrics.Metrics {
 					if metric == nil {
-						errs = append(errs, consumererror.Permanent(errors.New("encountered nil metric")))
 						dropped++
 						continue
 					}
