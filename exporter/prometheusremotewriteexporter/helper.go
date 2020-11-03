@@ -210,12 +210,12 @@ func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, 
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
-	TsArray := []prompb.TimeSeries{}
+	var tsArray []prompb.TimeSeries
 	for _, v := range tsMap {
-		TsArray = append(TsArray, *v)
+		tsArray = append(tsArray, *v)
 	}
 	wrapped := prompb.WriteRequest{
-		Timeseries: TsArray,
+		Timeseries: tsArray,
 		// Other parameters of the WriteRequest are unnecessary for our Export
 	}
 	return &wrapped, nil
