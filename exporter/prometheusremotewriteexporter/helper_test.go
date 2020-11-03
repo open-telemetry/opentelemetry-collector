@@ -184,31 +184,36 @@ func Test_timeSeriesSignature(t *testing.T) {
 // collision happens. It does not check whether labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
-		name   string
-		orig   []common.StringKeyValue
-		extras []string
-		want   []prompb.Label
+		name           string
+		orig           []common.StringKeyValue
+		externalLabels map[string]string
+		extras         []string
+		want           []prompb.Label
 	}{
 		{
 			"labels_clean",
 			lbs1,
+			map[string]string{},
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
 			"labels_duplicate_in_extras",
 			lbs1,
+			map[string]string{},
 			[]string{label11, value31},
 			getPromLabels(label11, value31, label12, value12),
 		},
 		{
 			"labels_dirty",
 			lbs1Dirty,
+			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
 			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
 			"no_original_case",
+			nil,
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
@@ -216,20 +221,36 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"empty_extra_case",
 			lbs1,
+			map[string]string{},
 			[]string{"", ""},
 			getPromLabels(label11, value11, label12, value12, "", ""),
 		},
 		{
 			"single_left_over_case",
 			lbs1,
+			map[string]string{},
 			[]string{label31, value31, label32},
 			getPromLabels(label11, value11, label12, value12, label31, value31),
+		},
+		{
+			"valid_external_labels",
+			lbs1,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
+		},
+		{
+			"overwritten_external_labels",
+			lbs1,
+			exlbs2,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createLabelSet(tt.orig, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createLabelSet(tt.orig, tt.externalLabels, tt.extras...))
 		})
 	}
 }

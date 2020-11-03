@@ -41,6 +41,8 @@ var (
 	value31 = "test_value31"
 	label32 = "test_label32"
 	value32 = "test_value32"
+	label41 = "__test_label41__"
+	value41 = "test_value41"
 	dirty1  = "%"
 	dirty2  = "?"
 
@@ -52,6 +54,9 @@ var (
 	lbs1      = getLabels(label11, value11, label12, value12)
 	lbs2      = getLabels(label21, value21, label22, value22)
 	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
+
+	exlbs1 = map[string]string{label41: value41}
+	exlbs2 = map[string]string{label11: value41}
 
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
 	promLbs2 = getPromLabels(label21, value21, label22, value22)

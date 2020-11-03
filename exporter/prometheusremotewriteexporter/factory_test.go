@@ -89,3 +89,56 @@ func Test_createMetricsExporter(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateAndSanitizeExternalLabels(t *testing.T) {
+	validConfig := createDefaultConfig().(*Config)
+
+	validConfigWithLabels := createDefaultConfig().(*Config)
+	validConfigWithLabels.ExternalLabels["key1"] = "val1"
+
+	validConfigWithLabelsToSanitize := createDefaultConfig().(*Config)
+	validConfigWithLabelsToSanitize.ExternalLabels["__key1.key__"] = "val1"
+
+	invalidConfigWithLabels := createDefaultConfig().(*Config)
+	invalidConfigWithLabels.ExternalLabels[""] = "val1"
+
+	tests := []struct {
+		name           string
+		cfg            *Config
+		expectedLabels map[string]string
+		returnError    bool
+	}{
+		{"success_case_no_labels",
+			validConfig,
+			map[string]string{},
+			false,
+		},
+		{"success_case_with_labels",
+			validConfigWithLabels,
+			map[string]string{"key1": "val1"},
+			false,
+		},
+		{"success_case_with_sanitized_labels",
+			validConfigWithLabelsToSanitize,
+			map[string]string{"__key1_key__": "val1"},
+			false,
+		},
+		{"fail_case_empty_label",
+			invalidConfigWithLabels,
+			map[string]string{},
+			true,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAndSanitizeExternalLabels(tt.cfg)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			assert.EqualValues(t, tt.expectedLabels, tt.cfg.ExternalLabels)
+			assert.NoError(t, err)
+		})
+	}
+}

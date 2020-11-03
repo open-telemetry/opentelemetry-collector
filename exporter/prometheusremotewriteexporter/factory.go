@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -43,6 +44,10 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	if !ok {
 		return nil, errors.New("invalid configuration")
 	}
+	err := validateAndSanitizeExternalLabels(prwCfg)
+	if err != nil {
+		return nil, err
+	}
 
 	client, err := prwCfg.HTTPClientSettings.ToClient()
 
@@ -50,7 +55,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
-	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client)
+	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels)
 
 	if err != nil {
 		return nil, err
@@ -75,8 +80,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Namespace: "",
-
+		Namespace:       "",
+		ExternalLabels:  map[string]string{},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
@@ -89,4 +94,24 @@ func createDefaultConfig() configmodels.Exporter {
 			Headers:         map[string]string{},
 		},
 	}
+}
+
+func validateAndSanitizeExternalLabels(cfg *Config) error {
+	sanitizedLabels := make(map[string]string)
+	for key, value := range cfg.ExternalLabels {
+		if key == "" || value == "" {
+			return fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+		}
+
+		// Sanitize label keys to meet Prometheus Requirements
+		if len(key) > 2 && key[:2] == "__" {
+			key = "__" + sanitize(key[2:])
+		} else {
+			key = sanitize(key)
+		}
+		sanitizedLabels[key] = value
+	}
+
+	cfg.ExternalLabels = sanitizedLabels
+	return nil
 }

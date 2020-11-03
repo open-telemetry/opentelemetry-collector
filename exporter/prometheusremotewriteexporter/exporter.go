@@ -39,16 +39,17 @@ import (
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
 type PrwExporter struct {
-	namespace   string
-	endpointURL *url.URL
-	client      *http.Client
-	wg          *sync.WaitGroup
-	closeChan   chan struct{}
+	namespace      string
+	externalLabels map[string]string
+	endpointURL    *url.URL
+	client         *http.Client
+	wg             *sync.WaitGroup
+	closeChan      chan struct{}
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string) (*PrwExporter, error) {
 
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
@@ -60,11 +61,12 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*Pr
 	}
 
 	return &PrwExporter{
-		namespace:   namespace,
-		endpointURL: endpointURL,
-		client:      client,
-		wg:          new(sync.WaitGroup),
-		closeChan:   make(chan struct{}),
+		namespace:      namespace,
+		externalLabels: externalLabels,
+		endpointURL:    endpointURL,
+		client:         client,
+		wg:             new(sync.WaitGroup),
+		closeChan:      make(chan struct{}),
 	}, nil
 }
 
@@ -156,28 +158,28 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleGauge().GetDataPoints() {
-			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_IntGauge:
 		if metric.GetIntGauge().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntGauge().GetDataPoints() {
-			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_DoubleSum:
 		if metric.GetDoubleSum().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleSum().GetDataPoints() {
-			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_IntSum:
 		if metric.GetIntSum().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntSum().GetDataPoints() {
-			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil
@@ -194,14 +196,14 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntHistogram().GetDataPoints() {
-			addSingleIntHistogramDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleIntHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_DoubleHistogram:
 		if metric.GetDoubleHistogram().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleHistogram().GetDataPoints() {
-			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil

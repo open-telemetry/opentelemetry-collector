@@ -46,21 +46,24 @@ func Test_NewPrwExporter(t *testing.T) {
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
+		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	tests := []struct {
-		name        string
-		config      *Config
-		namespace   string
-		endpoint    string
-		client      *http.Client
-		returnError bool
+		name           string
+		config         *Config
+		namespace      string
+		endpoint       string
+		externalLabels map[string]string
+		client         *http.Client
+		returnError    bool
 	}{
 		{
 			"invalid_URL",
 			config,
 			"test",
 			"invalid URL",
+			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			true,
 		},
@@ -69,6 +72,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			map[string]string{"Key1": "Val1"},
 			nil,
 			true,
 		},
@@ -77,6 +81,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			false,
 		},
@@ -84,7 +89,7 @@ func Test_NewPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -92,6 +97,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			require.NotNil(t, prwe)
 			assert.NotNil(t, prwe.namespace)
 			assert.NotNil(t, prwe.endpointURL)
+			assert.NotNil(t, prwe.externalLabels)
 			assert.NotNil(t, prwe.client)
 			assert.NotNil(t, prwe.closeChan)
 			assert.NotNil(t, prwe.wg)
@@ -220,7 +226,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 	HTTPClient := http.DefaultClient
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient)
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{})
 	if err != nil {
 		return err
 	}
@@ -661,7 +667,7 @@ func Test_PushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c)
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{})
 			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
