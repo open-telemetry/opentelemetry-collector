@@ -186,28 +186,28 @@ func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
 		orig           []common.StringKeyValue
-		externalLabels []ExternalLabel
+		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
 	}{
 		{
 			"labels_clean",
 			lbs1,
-			[]ExternalLabel{},
+			map[string]string{},
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
 		{
 			"labels_duplicate_in_extras",
 			lbs1,
-			[]ExternalLabel{},
+			map[string]string{},
 			[]string{label11, value31},
 			getPromLabels(label11, value31, label12, value12),
 		},
 		{
 			"labels_dirty",
 			lbs1Dirty,
-			[]ExternalLabel{},
+			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
 			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
@@ -221,14 +221,14 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"empty_extra_case",
 			lbs1,
-			[]ExternalLabel{},
+			map[string]string{},
 			[]string{"", ""},
 			getPromLabels(label11, value11, label12, value12, "", ""),
 		},
 		{
 			"single_left_over_case",
 			lbs1,
-			[]ExternalLabel{},
+			map[string]string{},
 			[]string{label31, value31, label32},
 			getPromLabels(label11, value11, label12, value12, label31, value31),
 		},

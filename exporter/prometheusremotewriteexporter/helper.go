@@ -122,22 +122,16 @@ func timeSeriesSignature(metric *otlp.Metric, labels *[]prompb.Label) string {
 // createLabelSet creates a slice of Cortex Label with OTLP labels and paris of string values.
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
-func createLabelSet(labels []common.StringKeyValue, externalLabels []ExternalLabel, extras ...string) []prompb.Label {
+func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]string, extras ...string) []prompb.Label {
 
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
-	for _, el := range externalLabels {
-		name := el.Key
-		// The reserved prefix "__" is allowed in an external label
-		if name[:2] == "__" {
-			name = "__" + sanitize(name[2:])
-		} else {
-			name = sanitize(name)
-		}
-		l[el.Key] = prompb.Label{
-			Name:  name,
-			Value: el.Value,
+	for key, value := range externalLabels {
+		// External labels have already been sanitized
+		l[key] = prompb.Label{
+			Name:  key,
+			Value: value,
 		}
 	}
 
@@ -291,7 +285,7 @@ func getTypeString(metric *otlp.Metric) string {
 // addSingleDoubleDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
 func addSingleDoubleDataPoint(pt *otlp.DoubleDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries, externalLabels []ExternalLabel) {
+	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}
@@ -309,7 +303,7 @@ func addSingleDoubleDataPoint(pt *otlp.DoubleDataPoint, metric *otlp.Metric, nam
 // addSingleIntDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
 func addSingleIntDataPoint(pt *otlp.IntDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries, externalLabels []ExternalLabel) {
+	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}
@@ -327,7 +321,7 @@ func addSingleIntDataPoint(pt *otlp.IntDataPoint, metric *otlp.Metric, namespace
 // addSingleIntHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
 func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries, externalLabels []ExternalLabel) {
+	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}
@@ -382,7 +376,7 @@ func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp
 // addSingleDoubleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
 func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries, externalLabels []ExternalLabel) {
+	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}

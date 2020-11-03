@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ import (
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
 type PrwExporter struct {
 	namespace      string
-	externalLabels []ExternalLabel
+	externalLabels map[string]string
 	endpointURL    *url.URL
 	client         *http.Client
 	wg             *sync.WaitGroup
@@ -48,7 +49,7 @@ type PrwExporter struct {
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels []ExternalLabel) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string) (*PrwExporter, error) {
 
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
@@ -132,6 +133,9 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 				}
 			}
 		}
+
+		e, _ := json.Marshal(tsMap)
+		fmt.Println(string(e))
 
 		if err := prwe.export(ctx, tsMap); err != nil {
 			dropped = md.MetricCount()

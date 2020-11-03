@@ -94,34 +94,38 @@ func Test_validateLabelConfig(t *testing.T) {
 	validConfig := createDefaultConfig().(*Config)
 
 	validConfigWithLabels := createDefaultConfig().(*Config)
-	validConfigWithLabels.ExternalLabels = append(validConfigWithLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
+	validConfigWithLabels.ExternalLabels["key1"] = "val1"
+
+	validConfigWithLabelsToSanitize := createDefaultConfig().(*Config)
+	validConfigWithLabelsToSanitize.ExternalLabels["__key1.key__"] = "val1"
 
 	invalidConfigWithLabels := createDefaultConfig().(*Config)
-	invalidConfigWithLabels.ExternalLabels = append(invalidConfigWithLabels.ExternalLabels, ExternalLabel{Key: "", Value: "val1"})
-
-	invalidConfigWithDupeLabels := createDefaultConfig().(*Config)
-	invalidConfigWithDupeLabels.ExternalLabels = append(invalidConfigWithDupeLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val1"})
-	invalidConfigWithDupeLabels.ExternalLabels = append(invalidConfigWithDupeLabels.ExternalLabels, ExternalLabel{Key: "key1", Value: "val2"})
+	invalidConfigWithLabels.ExternalLabels[""] = "val1"
 
 	tests := []struct {
-		name        string
-		cfg         *Config
-		returnError bool
+		name           string
+		cfg            *Config
+		expectedLabels map[string]string
+		returnError    bool
 	}{
 		{"success_case_no_labels",
 			validConfig,
+			map[string]string{},
 			false,
 		},
 		{"success_case_with_labels",
 			validConfigWithLabels,
+			map[string]string{"key1": "val1"},
+			false,
+		},
+		{"success_case_with_sanitized_labels",
+			validConfigWithLabelsToSanitize,
+			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
 		{"fail_case_empty_label",
 			invalidConfigWithLabels,
-			true,
-		},
-		{"fail_case_dupe_label",
-			invalidConfigWithDupeLabels,
+			map[string]string{},
 			true,
 		},
 	}
@@ -133,6 +137,7 @@ func Test_validateLabelConfig(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+			assert.EqualValues(t, tt.expectedLabels, tt.cfg.ExternalLabels)
 			assert.NoError(t, err)
 		})
 	}

@@ -81,7 +81,7 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		Namespace:       "",
-		ExternalLabels:  []ExternalLabel{},
+		ExternalLabels:  map[string]string{},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
@@ -97,20 +97,21 @@ func createDefaultConfig() configmodels.Exporter {
 }
 
 func validateLabelConfig(cfg *Config) error {
-	for _, elem := range cfg.ExternalLabels {
-		if elem.Key == "" || elem.Value == "" {
+	sanitizedLabels := make(map[string]string)
+	for key, value := range cfg.ExternalLabels {
+		if key == "" || value == "" {
 			return fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-	}
 
-	keys := make(map[string]bool)
-	for _, elem := range cfg.ExternalLabels {
-		_, value := keys[elem.Key]
-		if value {
-			return fmt.Errorf("prometheus remote write: external labels configuration contains duplicate keys")
+		// Sanitize label keys to meet Prometheus Requirements
+		if len(key) > 2 && key[:2] == "__" {
+			key = "__" + sanitize(key[2:])
+		} else {
+			key = sanitize(key)
 		}
-		keys[elem.Key] = true
+		sanitizedLabels[key] = value
 	}
 
+	cfg.ExternalLabels = sanitizedLabels
 	return nil
 }

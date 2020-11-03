@@ -67,7 +67,7 @@ func Test_loadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			Namespace:      "test-space",
-			ExternalLabels: []ExternalLabel{{Key: "key1", Value: "val1"}},
+			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
 				TLSSetting: configtls.TLSClientSetting{

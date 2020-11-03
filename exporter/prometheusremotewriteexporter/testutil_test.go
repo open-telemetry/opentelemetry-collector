@@ -55,8 +55,8 @@ var (
 	lbs2      = getLabels(label21, value21, label22, value22)
 	lbs1Dirty = getLabels(label11+dirty1, value11, dirty2+label12, value12)
 
-	exlbs1 = []ExternalLabel{{Key: label41, Value: value41}}
-	exlbs2 = []ExternalLabel{{Key: label11, Value: value41}}
+	exlbs1 = map[string]string{label41: value41}
+	exlbs2 = map[string]string{label11: value41}
 
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
 	promLbs2 = getPromLabels(label21, value21, label22, value22)

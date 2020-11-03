@@ -46,7 +46,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
-		ExternalLabels:     []ExternalLabel{},
+		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	tests := []struct {
@@ -54,7 +54,7 @@ func Test_NewPrwExporter(t *testing.T) {
 		config         *Config
 		namespace      string
 		endpoint       string
-		externalLabels []ExternalLabel
+		externalLabels map[string]string
 		client         *http.Client
 		returnError    bool
 	}{
@@ -63,7 +63,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"invalid URL",
-			[]ExternalLabel{{Key: "Key1", Value: "Val1"}},
+			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			true,
 		},
@@ -72,7 +72,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"http://some.url:9411/api/prom/push",
-			[]ExternalLabel{{Key: "Key1", Value: "Val1"}},
+			map[string]string{"Key1": "Val1"},
 			nil,
 			true,
 		},
@@ -81,7 +81,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"http://some.url:9411/api/prom/push",
-			[]ExternalLabel{{Key: "Key1", Value: "Val1"}},
+			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			false,
 		},
@@ -226,7 +226,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 	HTTPClient := http.DefaultClient
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, []ExternalLabel{})
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{})
 	if err != nil {
 		return err
 	}
@@ -658,7 +658,7 @@ func Test_PushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, []ExternalLabel{})
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{})
 			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
