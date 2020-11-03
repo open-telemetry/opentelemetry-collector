@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -133,9 +132,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 				}
 			}
 		}
-
-		e, _ := json.Marshal(tsMap)
-		fmt.Println(string(e))
 
 		if err := prwe.export(ctx, tsMap); err != nil {
 			dropped = md.MetricCount()
