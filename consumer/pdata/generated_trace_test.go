@@ -969,6 +969,15 @@ func TestSpanStatus_Code(t *testing.T) {
 	assert.EqualValues(t, testValCode, ms.Code())
 }
 
+func TestSpanStatus_DeprecatedCode(t *testing.T) {
+	ms := NewSpanStatus()
+	ms.InitEmpty()
+	assert.EqualValues(t, DeprecatedStatusCode(0), ms.DeprecatedCode())
+	testValDeprecatedCode := DeprecatedStatusCode(1)
+	ms.SetDeprecatedCode(testValDeprecatedCode)
+	assert.EqualValues(t, testValDeprecatedCode, ms.DeprecatedCode())
+}
+
 func TestSpanStatus_Message(t *testing.T) {
 	ms := NewSpanStatus()
 	ms.InitEmpty()
@@ -1133,5 +1142,6 @@ func generateTestSpanStatus() SpanStatus {
 
 func fillTestSpanStatus(tv SpanStatus) {
 	tv.SetCode(StatusCode(1))
+	tv.SetDeprecatedCode(DeprecatedStatusCode(1))
 	tv.SetMessage("cancelled")
 }

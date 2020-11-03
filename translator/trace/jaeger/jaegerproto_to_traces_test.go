@@ -41,54 +41,54 @@ var (
 	testSpanEndTimestamp   = pdata.TimestampUnixNano(testSpanEndTime.UnixNano())
 )
 
-func TestGetStatusCodeFromAttr(t *testing.T) {
+func TestGetStatusCodeValFromAttr(t *testing.T) {
 	_, invalidNumErr := strconv.Atoi("inf")
 
 	tests := []struct {
 		name string
 		attr pdata.AttributeValue
-		code pdata.StatusCode
+		code int
 		err  error
 	}{
 		{
 			name: "ok-string",
 			attr: pdata.NewAttributeValueString("0"),
-			code: pdata.StatusCodeOk,
+			code: 0,
 			err:  nil,
 		},
 
 		{
 			name: "ok-int",
 			attr: pdata.NewAttributeValueInt(1),
-			code: pdata.StatusCodeCancelled,
+			code: 1,
 			err:  nil,
 		},
 
 		{
 			name: "wrong-type",
 			attr: pdata.NewAttributeValueBool(true),
-			code: pdata.StatusCodeOk,
+			code: 0,
 			err:  fmt.Errorf("invalid status code attribute type: BOOL"),
 		},
 
 		{
 			name: "invalid-string",
 			attr: pdata.NewAttributeValueString("inf"),
-			code: pdata.StatusCodeOk,
+			code: 0,
 			err:  invalidNumErr,
 		},
 
 		{
 			name: "invalid-int",
 			attr: pdata.NewAttributeValueInt(1844674407370955),
-			code: pdata.StatusCodeOk,
+			code: 0,
 			err:  fmt.Errorf("invalid status code value: 1844674407370955"),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			code, err := getStatusCodeFromAttr(test.attr)
+			code, err := getStatusCodeValFromAttr(test.attr)
 			assert.EqualValues(t, test.err, err)
 			assert.Equal(t, test.code, code)
 		})
@@ -104,30 +104,30 @@ func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 		{
 			name: "string-unknown",
 			attr: pdata.NewAttributeValueString("10"),
-			code: pdata.StatusCodeUnknownError,
+			code: pdata.StatusCodeError,
 		},
 
 		{
 			name: "string-ok",
 			attr: pdata.NewAttributeValueString("101"),
-			code: pdata.StatusCodeOk,
+			code: pdata.StatusCodeUnset,
 		},
 
 		{
 			name: "int-not-found",
 			attr: pdata.NewAttributeValueInt(404),
-			code: pdata.StatusCodeNotFound,
+			code: pdata.StatusCodeError,
 		},
 		{
 			name: "int-invalid-arg",
 			attr: pdata.NewAttributeValueInt(408),
-			code: pdata.StatusCodeInvalidArgument,
+			code: pdata.StatusCodeError,
 		},
 
 		{
 			name: "int-internal",
 			attr: pdata.NewAttributeValueInt(500),
-			code: pdata.StatusCodeInternalError,
+			code: pdata.StatusCodeError,
 		},
 	}
 
@@ -331,27 +331,19 @@ func TestSetInternalSpanStatus(t *testing.T) {
 	okStatus.InitEmpty()
 	okStatus.SetCode(pdata.StatusCodeOk)
 
-	unknownStatus := pdata.NewSpanStatus()
-	unknownStatus.InitEmpty()
-	unknownStatus.SetCode(pdata.StatusCodeUnknownError)
+	errorStatus := pdata.NewSpanStatus()
+	errorStatus.InitEmpty()
+	errorStatus.SetCode(pdata.StatusCodeError)
 
-	canceledStatus := pdata.NewSpanStatus()
-	canceledStatus.InitEmpty()
-	canceledStatus.SetCode(pdata.StatusCodeCancelled)
+	errorStatusWithMessage := pdata.NewSpanStatus()
+	errorStatusWithMessage.InitEmpty()
+	errorStatusWithMessage.SetCode(pdata.StatusCodeError)
+	errorStatusWithMessage.SetMessage("Error: Invalid argument")
 
-	invalidStatusWithMessage := pdata.NewSpanStatus()
-	invalidStatusWithMessage.InitEmpty()
-	invalidStatusWithMessage.SetCode(pdata.StatusCodeInvalidArgument)
-	invalidStatusWithMessage.SetMessage("Error: Invalid argument")
-
-	notFoundStatus := pdata.NewSpanStatus()
-	notFoundStatus.InitEmpty()
-	notFoundStatus.SetCode(pdata.StatusCodeNotFound)
-
-	notFoundStatusWithMessage := pdata.NewSpanStatus()
-	notFoundStatusWithMessage.InitEmpty()
-	notFoundStatusWithMessage.SetCode(pdata.StatusCodeNotFound)
-	notFoundStatusWithMessage.SetMessage("HTTP 404: Not Found")
+	errorStatusWith404Message := pdata.NewSpanStatus()
+	errorStatusWith404Message.InitEmpty()
+	errorStatusWith404Message.SetCode(pdata.StatusCodeError)
+	errorStatusWith404Message.SetMessage("HTTP 404: Not Found")
 
 	tests := []struct {
 		name             string
@@ -366,11 +358,11 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			attrsModifiedLen: 0,
 		},
 		{
-			name: "error tag set -> Unknown status",
+			name: "error tag set -> Error status",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError: pdata.NewAttributeValueBool(true),
 			}),
-			status:           unknownStatus,
+			status:           errorStatus,
 			attrsModifiedLen: 0,
 		},
 		{
@@ -378,17 +370,17 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(1),
 			}),
-			status:           canceledStatus,
+			status:           okStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code, status.message and error tags are set",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError:      pdata.NewAttributeValueBool(true),
-				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(3),
+				tracetranslator.TagStatusCode: pdata.NewAttributeValueInt(int64(pdata.StatusCodeError)),
 				tracetranslator.TagStatusMsg:  pdata.NewAttributeValueString("Error: Invalid argument"),
 			}),
-			status:           invalidStatusWithMessage,
+			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
 		},
 		{
@@ -396,7 +388,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueString("404"),
 			}),
-			status:           notFoundStatus,
+			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
 		{
@@ -406,7 +398,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
 				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("HTTP 404: Not Found"),
 			}),
-			status:           notFoundStatusWithMessage,
+			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
 		},
 		{
@@ -416,7 +408,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(500),
 				tracetranslator.TagHTTPStatusMsg:  pdata.NewAttributeValueString("Server Error"),
 			}),
-			status:           canceledStatus,
+			status:           okStatus,
 			attrsModifiedLen: 2,
 		},
 		{
@@ -425,7 +417,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
 				tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(200),
 			}),
-			status:           unknownStatus,
+			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
 	}
@@ -623,7 +615,7 @@ func generateProtoSpan() *model.Span {
 			{
 				Key:    tracetranslator.TagStatusCode,
 				VType:  model.ValueType_INT64,
-				VInt64: tracetranslator.OCCancelled,
+				VInt64: int64(pdata.StatusCodeError),
 			},
 			{
 				Key:   tracetranslator.TagError,
@@ -701,7 +693,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 			{
 				Key:    tracetranslator.TagStatusCode,
 				VType:  model.ValueType_INT64,
-				VInt64: tracetranslator.OCCancelled,
+				VInt64: int64(pdata.StatusCodeError),
 			},
 			{
 				Key:   tracetranslator.TagError,
@@ -736,7 +728,7 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetStartTime(spans.At(0).StartTime())
 	span.SetEndTime(spans.At(0).EndTime())
 	span.Status().InitEmpty()
-	span.Status().SetCode(pdata.StatusCodeNotFound)
+	span.Status().SetCode(pdata.StatusCodeError)
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
 	})
@@ -818,7 +810,7 @@ func generateProtoFollowerSpan() *model.Span {
 			{
 				Key:    tracetranslator.TagStatusCode,
 				VType:  model.ValueType_INT64,
-				VInt64: tracetranslator.OCOK,
+				VInt64: int64(pdata.StatusCodeOk),
 			},
 			{
 				Key:   tracetranslator.TagStatusMsg,

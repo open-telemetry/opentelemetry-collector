@@ -48,21 +48,11 @@ func TestGetTagFromStatusCode(t *testing.T) {
 		},
 
 		{
-			name: "unknown",
-			code: pdata.StatusCodeUnknownError,
+			name: "error",
+			code: pdata.StatusCodeError,
 			tag: model.KeyValue{
 				Key:    tracetranslator.TagStatusCode,
-				VInt64: int64(pdata.StatusCodeUnknownError),
-				VType:  model.ValueType_INT64,
-			},
-		},
-
-		{
-			name: "not-found",
-			code: pdata.StatusCodeNotFound,
-			tag: model.KeyValue{
-				Key:    tracetranslator.TagStatusCode,
-				VInt64: int64(pdata.StatusCodeNotFound),
+				VInt64: int64(pdata.StatusCodeError),
 				VType:  model.ValueType_INT64,
 			},
 		},
@@ -87,11 +77,7 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 	_, ok := getErrorTagFromStatusCode(pdata.StatusCodeOk)
 	assert.False(t, ok)
 
-	got, ok := getErrorTagFromStatusCode(pdata.StatusCodeUnknownError)
-	assert.True(t, ok)
-	assert.EqualValues(t, errTag, got)
-
-	got, ok = getErrorTagFromStatusCode(pdata.StatusCodeNotFound)
+	got, ok := getErrorTagFromStatusCode(pdata.StatusCodeError)
 	assert.True(t, ok)
 	assert.EqualValues(t, errTag, got)
 }
@@ -365,7 +351,7 @@ func generateProtoChildSpanWithErrorTags() *model.Span {
 	span.Tags = append(span.Tags, model.KeyValue{
 		Key:    tracetranslator.TagStatusCode,
 		VType:  model.ValueType_INT64,
-		VInt64: tracetranslator.OCNotFound,
+		VInt64: int64(pdata.StatusCodeError),
 	})
 	span.Tags = append(span.Tags, model.KeyValue{
 		Key:   tracetranslator.TagError,

@@ -92,6 +92,13 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = ${rawType}(v)
 }`
 
+const accessorsPrimitiveWithoutSetterTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return ${returnType}((*ms.orig).${originFieldName})
+}`
+
 type baseField interface {
 	generateAccessors(ms *messageStruct, sb *strings.Builder)
 
@@ -265,10 +272,17 @@ type primitiveTypedField struct {
 	defaultVal      string
 	testVal         string
 	rawType         string
+	manualSetter    bool
 }
 
 func (ptf *primitiveTypedField) generateAccessors(ms *messageStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTypedTemplate, func(name string) string {
+	template := accessorsPrimitiveTypedTemplate
+	if ptf.manualSetter {
+		// Generate code without setter. Setter will be manually coded.
+		template = accessorsPrimitiveWithoutSetterTypedTemplate
+	}
+
+	sb.WriteString(os.Expand(template, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName

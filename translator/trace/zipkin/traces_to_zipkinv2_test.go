@@ -154,7 +154,7 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 		},
 		Tags: map[string]string{
 			"resource-attr":  "resource-attr-val-1",
-			"status.code":    "STATUS_CODE_CANCELLED",
+			"status.code":    "STATUS_CODE_ERROR",
 			"status.message": "status-cancelled",
 		},
 		Name:      "operationA",
