@@ -90,7 +90,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	}
 }
 
-func Test_validateLabelConfig(t *testing.T) {
+func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	validConfig := createDefaultConfig().(*Config)
 
 	validConfigWithLabels := createDefaultConfig().(*Config)
@@ -132,7 +132,7 @@ func Test_validateLabelConfig(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateLabelConfig(tt.cfg)
+			err := validateAndSanitizeExternalLabels(tt.cfg)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
