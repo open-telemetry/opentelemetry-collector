@@ -178,9 +178,6 @@ func (ms ResourceLogs) IsNil() bool {
 }
 
 // Resource returns the resource associated with this ResourceLogs.
-// If no resource available, it creates an empty message and associates it with this ResourceLogs.
-//
-//  Empty initialized ResourceLogs will return "nil" Resource.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceLogs) Resource() Resource {

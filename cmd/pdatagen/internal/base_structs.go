@@ -368,11 +368,6 @@ func New${structName}() ${structName} {
 // Deprecated: This function will be removed soon.
 func (ms ${structName}) InitEmpty() {
 	*ms.orig = ${originName}{}
-}
-
-// Deprecated: This function will be removed soon.
-func (ms ${structName}) IsNil() bool {
-	return false
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.

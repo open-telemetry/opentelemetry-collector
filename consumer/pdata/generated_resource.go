@@ -49,11 +49,6 @@ func (ms Resource) InitEmpty() {
 	*ms.orig = otlpresource.Resource{}
 }
 
-// Deprecated: This function will be removed soon.
-func (ms Resource) IsNil() bool {
-	return false
-}
-
 // Attributes returns the Attributes associated with this Resource.
 //
 // Important: This causes a runtime error if IsNil() returns "true".

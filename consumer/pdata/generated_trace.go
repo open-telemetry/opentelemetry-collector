@@ -178,9 +178,6 @@ func (ms ResourceSpans) IsNil() bool {
 }
 
 // Resource returns the resource associated with this ResourceSpans.
-// If no resource available, it creates an empty message and associates it with this ResourceSpans.
-//
-//  Empty initialized ResourceSpans will return "nil" Resource.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceSpans) Resource() Resource {

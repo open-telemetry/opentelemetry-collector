@@ -177,9 +177,6 @@ func (ms ResourceMetrics) IsNil() bool {
 }
 
 // Resource returns the resource associated with this ResourceMetrics.
-// If no resource available, it creates an empty message and associates it with this ResourceMetrics.
-//
-//  Empty initialized ResourceMetrics will return "nil" Resource.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceMetrics) Resource() Resource {
