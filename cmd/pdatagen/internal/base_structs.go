@@ -75,32 +75,27 @@ func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es ${structName}) CopyTo(dest ${structName}) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*${originName}(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			new${elementName}(&el).CopyTo(new${elementName}(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]${originName}, newLen)
-	wrappers := make([]*${originName}, newLen)
-	for i, el := range *es.orig {
+	origs := make([]${originName}, srcLen)
+	wrappers := make([]*${originName}, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		new${elementName}(&el).CopyTo(new${elementName}(&wrappers[i]))
+		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ${structName} can be initialized:
 // es := New${structName}()
@@ -110,22 +105,24 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 //     // Here should set all the values for e.
 // }
 func (es ${structName}) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*${originName}(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]${originName}, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*${originName}, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]${originName}, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the ${structName} by one and set the
@@ -204,9 +201,9 @@ func Test${structName}_Resize(t *testing.T) {
 	for i := 0; i < resizeSmallLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
+	assert.Equal(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
-	assert.EqualValues(t, resizeSmallLen, es.Len())
+	assert.Equal(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*${originName}]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
 		foundEs[*(es.At(i).orig)] = true
@@ -220,9 +217,9 @@ func Test${structName}_Resize(t *testing.T) {
 	for i := 0; i < oldLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, oldLen, len(expectedEs))
+	assert.Equal(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
-	assert.EqualValues(t, resizeLargeLen, es.Len())
+	assert.Equal(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*${originName}]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[*(es.At(i).orig)] = true
@@ -234,7 +231,7 @@ func Test${structName}_Resize(t *testing.T) {
 
 	// Test Resize 0 elements.
 	es.Resize(0)
-	assert.EqualValues(t, New${structName}(), es)
+	assert.Equal(t, 0, es.Len())
 }
 
 func Test${structName}_Append(t *testing.T) {

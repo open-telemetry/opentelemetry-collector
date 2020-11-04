@@ -803,13 +803,9 @@ func (sm StringMap) ForEach(f func(k string, v string)) {
 // CopyTo copies all elements from the current map to the dest.
 func (sm StringMap) CopyTo(dest StringMap) {
 	newLen := len(*sm.orig)
-	if newLen == 0 {
-		*dest.orig = []otlpcommon.StringKeyValue(nil)
-		return
-	}
-	oldLen := len(*dest.orig)
-	if newLen <= oldLen {
-		*dest.orig = (*dest.orig)[:newLen]
+	oldCap := cap(*dest.orig)
+	if newLen <= oldCap {
+		*dest.orig = (*dest.orig)[:newLen:oldCap]
 		for i := range *sm.orig {
 			skv := &(*sm.orig)[i]
 			(*dest.orig)[i].Key = skv.Key
@@ -817,10 +813,11 @@ func (sm StringMap) CopyTo(dest StringMap) {
 		}
 		return
 	}
-	origs := make([]otlpcommon.StringKeyValue, len(*sm.orig))
-	for i, kv := range *sm.orig {
-		origs[i].Key = kv.Key
-		origs[i].Value = kv.Value
+	origs := make([]otlpcommon.StringKeyValue, newLen)
+	for i := range *sm.orig {
+		skv := &(*sm.orig)[i]
+		origs[i].Key = skv.Key
+		origs[i].Value = skv.Value
 	}
 	*dest.orig = origs
 }
