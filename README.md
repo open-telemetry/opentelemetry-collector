@@ -65,6 +65,7 @@ Objectives:
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triager)):
+- [Andrew Hsu](https://github.com/andrewhsu), Lightstep
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
