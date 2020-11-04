@@ -354,8 +354,6 @@ type ${structName} struct {
 	orig *${originName}
 }
 
-var emptyValue${structName} = ${originName}{}
-
 func new${structName}(orig *${originName}) ${structName} {
 	return ${structName}{orig: orig}
 }

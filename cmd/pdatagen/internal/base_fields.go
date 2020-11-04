@@ -124,18 +124,12 @@ type baseField interface {
 	generateSetWithTestValue(sb *strings.Builder)
 
 	generateCopyToValue(sb *strings.Builder)
-
-	generateIsEmpty(sb *strings.Builder)
 }
 
 type sliceField struct {
 	fieldName       string
 	originFieldName string
 	returnSlice     *sliceStruct
-}
-
-func (sf *sliceField) generateIsEmpty(sb *strings.Builder) {
-	sb.WriteString("\tms." + sf.fieldName + "().IsEmpty()")
 }
 
 func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
@@ -231,10 +225,6 @@ func (mf *messagePtrField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
 }
 
-func (mf *messagePtrField) generateIsEmpty(sb *strings.Builder) {
-	sb.WriteString("\tms." + mf.fieldName + "().IsEmpty())")
-}
-
 var _ baseField = (*messagePtrField)(nil)
 
 type messageValueField struct {
@@ -285,10 +275,6 @@ func (mf *messageValueField) generateSetWithTestValue(sb *strings.Builder) {
 
 func (mf *messageValueField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
-}
-
-func (mf *messageValueField) generateIsEmpty(sb *strings.Builder) {
-	sb.WriteString("\tms." + mf.fieldName + "().IsEmpty())")
 }
 
 var _ baseField = (*messageValueField)(nil)
@@ -343,10 +329,6 @@ func (pf *primitiveField) generateSetWithTestValue(sb *strings.Builder) {
 
 func (pf *primitiveField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
-}
-
-func (pf *primitiveField) generateIsEmpty(sb *strings.Builder) {
-	sb.WriteString("\tms." + pf.fieldName + "() == " + pf.defaultVal)
 }
 
 var _ baseField = (*primitiveField)(nil)
@@ -414,10 +396,6 @@ func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
 }
 
-func (ptf *primitiveTypedField) generateIsEmpty(sb *strings.Builder) {
-	sb.WriteString("\tms." + ptf.fieldName + "() == " + ptf.defaultVal)
-}
-
 var _ baseField = (*primitiveTypedField)(nil)
 
 // oneofField is used in case where the proto defines an "oneof".
@@ -440,10 +418,6 @@ func (one oneofField) generateSetWithTestValue(sb *strings.Builder) {
 
 func (one oneofField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\t" + one.copyFuncName + "((*ms.orig), (*dest.orig))")
-}
-
-func (one oneofField) generateIsEmpty(sb *strings.Builder) {
-	sb.WriteString("\t true /* oneof */")
 }
 
 var _ baseField = (*oneofField)(nil)

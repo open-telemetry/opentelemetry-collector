@@ -615,11 +615,6 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 	}
 }
 
-// IsEmpty returns true if the underlying data are equivalent with an empty message.
-func (am AttributeMap) IsEmpty() bool {
-	return len(*am.orig) == 0
-}
-
 // Sort sorts the entries in the AttributeMap so two instances can be compared.
 // Returns the same instance to allow nicer code like:
 // assert.EqualValues(t, expected.Sort(), actual.Sort())

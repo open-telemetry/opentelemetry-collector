@@ -33,8 +33,6 @@ type Resource struct {
 	orig *otlpresource.Resource
 }
 
-var emptyValueResource = otlpresource.Resource{}
-
 func newResource(orig *otlpresource.Resource) Resource {
 	return Resource{orig: orig}
 }
