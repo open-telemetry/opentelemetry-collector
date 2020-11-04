@@ -9,6 +9,8 @@
 ## 💡 Enhancements 💡
 
 - Add --log-format command line option (default to "console") #2177.
+- Change default OTLP/gRPC port number to 4317, also continue receiving on legacy port
+  55680 during transition period (#2104).
 
 ## v0.14.0 Beta
 
