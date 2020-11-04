@@ -147,16 +147,34 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 				}
 				switch m.DataType() {
 				case MetricDataTypeIntGauge:
+					if m.IntGauge().IsNil() {
+						continue
+					}
 					dataPointCount += m.IntGauge().DataPoints().Len()
 				case MetricDataTypeDoubleGauge:
+					if m.DoubleGauge().IsNil() {
+						continue
+					}
 					dataPointCount += m.DoubleGauge().DataPoints().Len()
 				case MetricDataTypeIntSum:
+					if m.IntSum().IsNil() {
+						continue
+					}
 					dataPointCount += m.IntSum().DataPoints().Len()
 				case MetricDataTypeDoubleSum:
+					if m.DoubleSum().IsNil() {
+						continue
+					}
 					dataPointCount += m.DoubleSum().DataPoints().Len()
 				case MetricDataTypeIntHistogram:
+					if m.IntHistogram().IsNil() {
+						continue
+					}
 					dataPointCount += m.IntHistogram().DataPoints().Len()
 				case MetricDataTypeDoubleHistogram:
+					if m.DoubleHistogram().IsNil() {
+						continue
+					}
 					dataPointCount += m.DoubleHistogram().DataPoints().Len()
 				}
 			}
