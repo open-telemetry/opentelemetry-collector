@@ -46,10 +46,14 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	mr := newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil)
+	mr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
 
-	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
-	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
+	partialErr := consumererror.PartialLogsError(errors.New("some error"), testdata.GenerateLogDataEmpty())
+	assert.EqualValues(
+		t,
+		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
+		mr.onPartialError(partialErr.(consumererror.PartialError)),
+	)
 }
 
 func TestLogsExporter_InvalidName(t *testing.T) {

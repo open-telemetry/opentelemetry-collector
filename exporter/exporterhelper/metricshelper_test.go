@@ -46,11 +46,14 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsEmpty(), nil)
+	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsOneMetric(), nil)
 
-	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
-	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
-	assert.Equal(t, 0, mr.count())
+	partialErr := consumererror.PartialMetricsError(errors.New("some error"), testdata.GenerateMetricsEmpty())
+	assert.EqualValues(
+		t,
+		newMetricsRequest(context.Background(), testdata.GenerateMetricsEmpty(), nil),
+		mr.onPartialError(partialErr.(consumererror.PartialError)),
+	)
 }
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
