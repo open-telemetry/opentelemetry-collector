@@ -38,3 +38,11 @@ func TestPartialErrorLogs(t *testing.T) {
 	assert.Equal(t, err.Error(), partialErr.Error())
 	assert.Equal(t, td, partialErr.(PartialError).failedLogs)
 }
+
+func TestPartialErrorMetrics(t *testing.T) {
+	td := testdata.GenerateMetricsOneMetric()
+	err := fmt.Errorf("some error")
+	partialErr := PartialMetricsError(err, td)
+	assert.Equal(t, err.Error(), partialErr.Error())
+	assert.Equal(t, td, partialErr.(PartialError).failedMetrics)
+}
