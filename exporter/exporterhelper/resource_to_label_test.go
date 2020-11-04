@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -31,5 +32,44 @@ func TestConvertResourceToLabels(t *testing.T) {
 	ConvertResourceToLabels(md)
 
 	// After converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 2, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntSum().DataPoints().At(0).LabelsMap().Len())
+}
+
+func TestConvertResourceToLabelsAllDataTypes(t *testing.T) {
+	md := testdata.GenerateMetricsAllTypesEmptyDataPoint()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleGauge().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).IntGauge().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).DoubleSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).IntSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).DoubleHistogram().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5).IntHistogram().DataPoints().At(0).LabelsMap().Len())
+
+	ConvertResourceToLabels(md)
+
+	// After converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleGauge().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).IntGauge().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).DoubleSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).IntSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).DoubleHistogram().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5).IntHistogram().DataPoints().At(0).LabelsMap().Len())
+}
+
+func TestConvertResourceToLabelsAllDataTypesNilDataPoint(t *testing.T) {
+	md := testdata.GenerateMetricsAllTypesNilDataPoint()
+	assert.NotNil(t, md)
+
+	// Before converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+
+	ConvertResourceToLabels(md)
+
+	// After converting resource to labels
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 }
