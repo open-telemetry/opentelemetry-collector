@@ -3,30 +3,35 @@
 An exporter is how data gets sent to different systems/back-ends. Generally, an
 exporter translates the internal format into another defined format.
 
-Supported trace exporters (sorted alphabetically):
+Available trace exporters (sorted alphabetically):
 
 - [Jaeger](jaegerexporter/README.md)
 - [Kafka](kafkaexporter/README.md)
 - [OpenCensus](opencensusexporter/README.md)
-- [OTLP](otlpexporter/README.md)
+- [OTLP gRPC](otlpexporter/README.md)
+- [OTLP HTTP](otlphttpexporter/README.md)
 - [Zipkin](zipkinexporter/README.md)
 
-Supported metric exporters (sorted alphabetically):
+Available metric exporters (sorted alphabetically):
 
 - [OpenCensus](opencensusexporter/README.md)
+- [OTLP gRPC](otlpexporter/README.md)
+- [OTLP HTTP](otlphttpexporter/README.md)
 - [Prometheus](prometheusexporter/README.md)
+- [Prometheus Remote Write](prometheusremotewriteexporter/README.md)
 
 Supported local exporters (sorted alphabetically):
 
 - [File](fileexporter/README.md)
 - [Logging](loggingexporter/README.md)
 
-The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
- has more exporters that can be added to custom builds of the Collector.
+The [contrib
+repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+has more exporters that can be added to custom builds of the Collector.
 
 ## Proxy Support
 
-Beyond standard YAML configuration as outlined in the sections that follow,
+Beyond standard YAML configuration as outlined in the individual READMEs above,
 exporters that leverage the net/http package (all do today) also respect the
 following proxy environment variables:
 
