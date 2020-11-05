@@ -21,5 +21,6 @@ The following configuration options can be modified:
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
+- `timeout` (defult = 5s): Time to wait per individual attempt to send data to a backend.
 
 The full list of settings exposed for this helper exporter are documented [here](factory.go).
