@@ -30,6 +30,12 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
+var defaultServerConfig = ServerConfigUDP{
+	QueueSize:     defaultAgentQueueSize,
+	MaxPacketSize: defaultAgentMaxPacketSize,
+	Workers:       defaultAgentServerWorkers,
+}
+
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
@@ -60,11 +66,21 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: ":3456",
 				},
-				ThriftCompact: &confignet.TCPAddr{
+				ThriftCompact: &ProtocolUDP{
 					Endpoint: "0.0.0.0:456",
+					ServerConfigUDP: ServerConfigUDP{
+						QueueSize:     100_000,
+						MaxPacketSize: 131_072,
+						Workers:       100,
+					},
 				},
-				ThriftBinary: &confignet.TCPAddr{
+				ThriftBinary: &ProtocolUDP{
 					Endpoint: "0.0.0.0:789",
+					ServerConfigUDP: ServerConfigUDP{
+						QueueSize:     1_000,
+						MaxPacketSize: 65_536,
+						Workers:       5,
+					},
 				},
 			},
 			RemoteSampling: &RemoteSamplingConfig{
@@ -93,11 +109,13 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPBindEndpoint,
 				},
-				ThriftCompact: &confignet.TCPAddr{
-					Endpoint: defaultThriftCompactBindEndpoint,
+				ThriftCompact: &ProtocolUDP{
+					Endpoint:        defaultThriftCompactBindEndpoint,
+					ServerConfigUDP: defaultServerConfig,
 				},
-				ThriftBinary: &confignet.TCPAddr{
-					Endpoint: defaultThriftBinaryBindEndpoint,
+				ThriftBinary: &ProtocolUDP{
+					Endpoint:        defaultThriftBinaryBindEndpoint,
+					ServerConfigUDP: defaultServerConfig,
 				},
 			},
 		})
@@ -116,8 +134,9 @@ func TestLoadConfig(t *testing.T) {
 						Transport: "tcp",
 					},
 				},
-				ThriftCompact: &confignet.TCPAddr{
-					Endpoint: defaultThriftCompactBindEndpoint,
+				ThriftCompact: &ProtocolUDP{
+					Endpoint:        defaultThriftCompactBindEndpoint,
+					ServerConfigUDP: defaultServerConfig,
 				},
 			},
 		})

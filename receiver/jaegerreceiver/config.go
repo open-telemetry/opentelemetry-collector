@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // The config field name to load the protocol map from
@@ -34,8 +33,19 @@ type RemoteSamplingConfig struct {
 type Protocols struct {
 	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 	ThriftHTTP    *confighttp.HTTPServerSettings `mapstructure:"thrift_http"`
-	ThriftBinary  *confignet.TCPAddr             `mapstructure:"thrift_binary"`
-	ThriftCompact *confignet.TCPAddr             `mapstructure:"thrift_compact"`
+	ThriftBinary  *ProtocolUDP                   `mapstructure:"thrift_binary"`
+	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
+}
+
+type ProtocolUDP struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	ServerConfigUDP `mapstructure:",squash"`
+}
+
+type ServerConfigUDP struct {
+	QueueSize     int `mapstructure:"queue_size"`
+	MaxPacketSize int `mapstructure:"max_packet_size"`
+	Workers       int `mapstructure:"workers"`
 }
 
 // Config defines configuration for Jaeger receiver.
