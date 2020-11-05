@@ -44,7 +44,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	if !ok {
 		return nil, errors.New("invalid configuration")
 	}
-	err := validateAndSanitizeExternalLabels(prwCfg)
+	err := ValidateAndSanitizeExternalLabels(prwCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func validateAndSanitizeExternalLabels(cfg *Config) error {
+func ValidateAndSanitizeExternalLabels(cfg *Config) error {
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
