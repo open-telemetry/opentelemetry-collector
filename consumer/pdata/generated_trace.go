@@ -67,19 +67,13 @@ func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -258,19 +252,13 @@ func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpan
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationLibrarySpansSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -449,19 +437,13 @@ func (es SpanSlice) At(ix int) Span {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -822,19 +804,13 @@ func (es SpanEventSlice) At(ix int) SpanEvent {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -1048,19 +1024,13 @@ func (es SpanLinkSlice) At(ix int) SpanLink {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.

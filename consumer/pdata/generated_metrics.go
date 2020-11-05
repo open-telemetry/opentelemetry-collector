@@ -66,19 +66,13 @@ func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -257,19 +251,13 @@ func (es InstrumentationLibraryMetricsSlice) At(ix int) InstrumentationLibraryMe
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es InstrumentationLibraryMetricsSlice) MoveAndAppendTo(dest InstrumentationLibraryMetricsSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -448,19 +436,13 @@ func (es MetricSlice) At(ix int) Metric {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -1099,19 +1081,13 @@ func (es IntDataPointSlice) At(ix int) IntDataPoint {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntDataPointSlice) MoveAndAppendTo(dest IntDataPointSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -1332,19 +1308,13 @@ func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es DoubleDataPointSlice) MoveAndAppendTo(dest DoubleDataPointSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -1565,19 +1535,13 @@ func (es IntHistogramDataPointSlice) At(ix int) IntHistogramDataPoint {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntHistogramDataPointSlice) MoveAndAppendTo(dest IntHistogramDataPointSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -1843,19 +1807,13 @@ func (es DoubleHistogramDataPointSlice) At(ix int) DoubleHistogramDataPoint {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es DoubleHistogramDataPointSlice) MoveAndAppendTo(dest DoubleHistogramDataPointSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -2121,19 +2079,13 @@ func (es IntExemplarSlice) At(ix int) IntExemplar {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es IntExemplarSlice) MoveAndAppendTo(dest IntExemplarSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -2334,19 +2286,13 @@ func (es DoubleExemplarSlice) At(ix int) DoubleExemplar {
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es DoubleExemplarSlice) MoveAndAppendTo(dest DoubleExemplarSlice) {
-	if es.Len() == 0 {
-		// Just to ensure that we always return a Slice with nil elements.
-		*es.orig = nil
-		return
-	}
-	if dest.Len() == 0 {
+	if *dest.orig == nil {
+		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
-		*es.orig = nil
-		return
+	} else {
+		*dest.orig = append(*dest.orig, *es.orig...)
 	}
-	*dest.orig = append(*dest.orig, *es.orig...)
 	*es.orig = nil
-	return
 }
 
 // CopyTo copies all elements from the current slice to the dest.
