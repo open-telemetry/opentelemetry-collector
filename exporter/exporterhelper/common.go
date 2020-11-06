@@ -101,7 +101,7 @@ func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call CreateDefaultRetrySettings)
 		RetrySettings:           RetrySettings{Enabled: false},
-		ResourceToLabelSettings: CreateDefaultResourceToLabelSettings(),
+		ResourceToLabelSettings: createDefaultResourceToLabelSettings(),
 		Start:                   func(ctx context.Context, host component.Host) error { return nil },
 		Shutdown:                func(ctx context.Context) error { return nil },
 	}
@@ -166,21 +166,23 @@ func WithResourceToLabelConversion(resourceToLabelSettings ResourceToLabelSettin
 
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
-	cfg          configmodels.Exporter
-	sender       requestSender
-	qrSender     *queuedRetrySender
-	start        Start
-	shutdown     Shutdown
-	startOnce    sync.Once
-	shutdownOnce sync.Once
+	cfg                     configmodels.Exporter
+	sender                  requestSender
+	qrSender                *queuedRetrySender
+	start                   Start
+	shutdown                Shutdown
+	startOnce               sync.Once
+	shutdownOnce            sync.Once
+	convertResourceToLabels bool
 }
 
 func newBaseExporter(cfg configmodels.Exporter, logger *zap.Logger, options ...ExporterOption) *baseExporter {
 	opts := fromConfiguredOptions(options...)
 	be := &baseExporter{
-		cfg:      cfg,
-		start:    opts.Start,
-		shutdown: opts.Shutdown,
+		cfg:                     cfg,
+		start:                   opts.Start,
+		shutdown:                opts.Shutdown,
+		convertResourceToLabels: opts.ResourceToLabelSettings.Enabled,
 	}
 
 	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings}, logger)

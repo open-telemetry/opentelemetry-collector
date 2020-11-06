@@ -15,15 +15,9 @@
 package exporterhelper
 
 import (
-	"context"
 	"strconv"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-)
-
-var (
-	resourceToLabels = &ResourceToLabels{}
 )
 
 // ResourceToLabelSettings defines configuration for converting resource attributes to labels
@@ -33,30 +27,14 @@ type ResourceToLabelSettings struct {
 }
 
 // CreateDefaultResourceToLabelSettings returns the default settings for ResourceToLabelSettings.
-func CreateDefaultResourceToLabelSettings() ResourceToLabelSettings {
+func createDefaultResourceToLabelSettings() ResourceToLabelSettings {
 	return ResourceToLabelSettings{
 		Enabled: false,
 	}
 }
 
-// ResourceToLabels defines the consumer for converting resource attributes to labels
-type ResourceToLabels struct {
-	nextMetricsConsumer consumer.MetricsConsumer
-}
-
-// NewResourceToLabels creates a MetricsConsumer that converts the resource attributes to metric labels
-func NewResourceToLabels() consumer.MetricsConsumer {
-	return resourceToLabels
-}
-
-// ConsumeMetrics implements the consumer.ConsumeMetrics
-func (rtl *ResourceToLabels) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	convertedMd := ConvertResourceToLabels(md)
-	return rtl.nextMetricsConsumer.ConsumeMetrics(ctx, convertedMd)
-}
-
-// ConvertResourceToLabels converts all resource attributes to metric labels
-func ConvertResourceToLabels(md pdata.Metrics) pdata.Metrics {
+// convertResourceToLabels converts all resource attributes to metric labels
+func convertResourceToLabels(md pdata.Metrics) pdata.Metrics {
 	cloneMd := md.Clone()
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
