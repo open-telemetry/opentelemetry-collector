@@ -20,14 +20,19 @@ Available metric exporters (sorted alphabetically):
 - [Prometheus](prometheusexporter/README.md)
 - [Prometheus Remote Write](prometheusremotewriteexporter/README.md)
 
-Supported local exporters (sorted alphabetically):
+Available log exporters (sorted alphabetically):
+
+- [OTLP gRPC](otlpexporter/README.md)
+- [OTLP HTTP](otlphttpexporter/README.md)
+
+Available local exporters (sorted alphabetically):
 
 - [File](fileexporter/README.md)
 - [Logging](loggingexporter/README.md)
 
 The [contrib
 repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
-has more exporters that can be added to custom builds of the Collector.
+has more exporters available in its builds.
 
 ## Proxy Support
 
