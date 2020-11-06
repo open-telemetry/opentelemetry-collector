@@ -431,7 +431,7 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 
 // addSingleDoubleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
 func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries) {
+	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
 	if pt == nil {
 		return
 	}
@@ -444,7 +444,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		Timestamp: time,
 	}
 
-	sumlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+sumStr)
+	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric)
 
 	// treat count as a sample in an individual TimeSeries
@@ -452,7 +452,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		Value:     float64(pt.GetCount()),
 		Timestamp: time,
 	}
-	countlabels := createLabelSet(pt.GetLabels(), nameStr, baseName+countStr)
+	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric)
 
 	// process each percentile/quantile
@@ -462,7 +462,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 			Timestamp: time,
 		}
 		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
-		qtlabels := createLabelSet(pt.GetLabels(), nameStr, baseName, quantileStr, percentileStr)
+		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric)
 	}
 }

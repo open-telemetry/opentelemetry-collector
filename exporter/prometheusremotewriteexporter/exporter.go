@@ -222,7 +222,7 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 		return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 	}
 	for _, pt := range metric.GetDoubleSummary().GetDataPoints() {
-		addSingleDoubleSummaryDataPoint(pt, metric, prwe.namespace, tsMap)
+		addSingleDoubleSummaryDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }
