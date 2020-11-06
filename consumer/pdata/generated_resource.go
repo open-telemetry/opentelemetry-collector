@@ -30,33 +30,23 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type Resource struct {
 	// orig points to the pointer otlpresource.Resource field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpresource.Resource
+	orig *otlpresource.Resource
 }
 
-func newResource(orig **otlpresource.Resource) Resource {
-	return Resource{orig}
+func newResource(orig *otlpresource.Resource) Resource {
+	return Resource{orig: orig}
 }
 
-// NewResource creates a new "nil" Resource.
-// To initialize the struct call "InitEmpty".
+// NewResource creates a new empty Resource.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewResource() Resource {
-	orig := (*otlpresource.Resource)(nil)
-	return newResource(&orig)
+	return newResource(&otlpresource.Resource{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms Resource) InitEmpty() {
-	*ms.orig = &otlpresource.Resource{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms Resource) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpresource.Resource{}
 }
 
 // Attributes returns the Attributes associated with this Resource.
@@ -68,12 +58,5 @@ func (ms Resource) Attributes() AttributeMap {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Resource) CopyTo(dest Resource) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.Attributes().CopyTo(dest.Attributes())
 }

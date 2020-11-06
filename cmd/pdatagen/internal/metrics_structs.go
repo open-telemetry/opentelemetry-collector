@@ -64,7 +64,7 @@ var resourceMetricsSlice = &sliceStruct{
 	element:    resourceMetrics,
 }
 
-var resourceMetrics = &messageStruct{
+var resourceMetrics = &messagePtrStruct{
 	structName:     "ResourceMetrics",
 	description:    "// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.ResourceMetrics",
@@ -83,7 +83,7 @@ var instrumentationLibraryMetricsSlice = &sliceStruct{
 	element:    instrumentationLibraryMetrics,
 }
 
-var instrumentationLibraryMetrics = &messageStruct{
+var instrumentationLibraryMetrics = &messagePtrStruct{
 	structName:     "InstrumentationLibraryMetrics",
 	description:    "// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.InstrumentationLibraryMetrics",
@@ -102,7 +102,7 @@ var metricSlice = &sliceStruct{
 	element:    metric,
 }
 
-var metric = &messageStruct{
+var metric = &messagePtrStruct{
 	structName: "Metric",
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
 		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto",
@@ -127,7 +127,7 @@ var metric = &messageStruct{
 	},
 }
 
-var intGauge = &messageStruct{
+var intGauge = &messagePtrStruct{
 	structName:     "IntGauge",
 	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.IntGauge",
@@ -140,7 +140,7 @@ var intGauge = &messageStruct{
 	},
 }
 
-var doubleGauge = &messageStruct{
+var doubleGauge = &messagePtrStruct{
 	structName:     "DoubleGauge",
 	description:    "// DoubleGauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.DoubleGauge",
@@ -153,7 +153,7 @@ var doubleGauge = &messageStruct{
 	},
 }
 
-var intSum = &messageStruct{
+var intSum = &messagePtrStruct{
 	structName:     "IntSum",
 	description:    "// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.IntSum",
@@ -168,7 +168,7 @@ var intSum = &messageStruct{
 	},
 }
 
-var doubleSum = &messageStruct{
+var doubleSum = &messagePtrStruct{
 	structName:     "DoubleSum",
 	description:    "// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleSum",
@@ -183,7 +183,7 @@ var doubleSum = &messageStruct{
 	},
 }
 
-var intHistogram = &messageStruct{
+var intHistogram = &messagePtrStruct{
 	structName:     "IntHistogram",
 	description:    "// IntHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.IntHistogram",
@@ -197,7 +197,7 @@ var intHistogram = &messageStruct{
 	},
 }
 
-var doubleHistogram = &messageStruct{
+var doubleHistogram = &messagePtrStruct{
 	structName:     "DoubleHistogram",
 	description:    "// DoubleHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleHistogram",
@@ -211,7 +211,7 @@ var doubleHistogram = &messageStruct{
 	},
 }
 
-var doubleSummary = &messageStruct{
+var doubleSummary = &messagePtrStruct{
 	structName:     "DoubleSummary",
 	description:    "// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleSummary",
@@ -229,7 +229,7 @@ var intDataPointSlice = &sliceStruct{
 	element:    intDataPoint,
 }
 
-var intDataPoint = &messageStruct{
+var intDataPoint = &messagePtrStruct{
 	structName:     "IntDataPoint",
 	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
 	originFullName: "otlpmetrics.IntDataPoint",
@@ -247,7 +247,7 @@ var doubleDataPointSlice = &sliceStruct{
 	element:    doubleDataPoint,
 }
 
-var doubleDataPoint = &messageStruct{
+var doubleDataPoint = &messagePtrStruct{
 	structName:     "DoubleDataPoint",
 	description:    "// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
 	originFullName: "otlpmetrics.DoubleDataPoint",
@@ -265,7 +265,7 @@ var intHistogramDataPointSlice = &sliceStruct{
 	element:    intHistogramDataPoint,
 }
 
-var intHistogramDataPoint = &messageStruct{
+var intHistogramDataPoint = &messagePtrStruct{
 	structName:     "IntHistogramDataPoint",
 	description:    "// IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.",
 	originFullName: "otlpmetrics.IntHistogramDataPoint",
@@ -286,7 +286,7 @@ var doubleHistogramDataPointSlice = &sliceStruct{
 	element:    doubleHistogramDataPoint,
 }
 
-var doubleHistogramDataPoint = &messageStruct{
+var doubleHistogramDataPoint = &messagePtrStruct{
 	structName:     "DoubleHistogramDataPoint",
 	description:    "// DoubleHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of double values.",
 	originFullName: "otlpmetrics.DoubleHistogramDataPoint",
@@ -307,7 +307,7 @@ var doubleSummaryDataPointSlice = &sliceStruct{
 	element:    doubleSummaryDataPoint,
 }
 
-var doubleSummaryDataPoint = &messageStruct{
+var doubleSummaryDataPoint = &messagePtrStruct{
 	structName:     "DoubleSummaryDataPoint",
 	description:    "// DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint",
@@ -330,7 +330,7 @@ var quantileValuesSlice = &sliceStruct{
 	element:    quantileValues,
 }
 
-var quantileValues = &messageStruct{
+var quantileValues = &messagePtrStruct{
 	structName:     "ValueAtQuantile",
 	description:    "// ValueAtQuantile is a quantile value within a Summary data point",
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile",
@@ -345,7 +345,7 @@ var intExemplarSlice = &sliceStruct{
 	element:    intExemplar,
 }
 
-var intExemplar = &messageStruct{
+var intExemplar = &messagePtrStruct{
 	structName: "IntExemplar",
 	description: "// IntExemplar is a sample input int measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
@@ -368,7 +368,7 @@ var doubleExemplarSlice = &sliceStruct{
 	element:    doubleExemplar,
 }
 
-var doubleExemplar = &messageStruct{
+var doubleExemplar = &messagePtrStruct{
 	structName: "DoubleExemplar",
 	description: "// DoubleExemplar is a sample input double measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +

@@ -58,7 +58,7 @@ func TestOCToMetrics(t *testing.T) {
 				Node:     &occommon.Node{},
 				Resource: &ocresource.Resource{},
 			},
-			internal: wrapMetricsWithEmptyResource(testdata.GenerateMetricsOneEmptyResourceMetrics()),
+			internal: testdata.GenerateMetricsOneEmptyResourceMetrics(),
 		},
 
 		{
@@ -156,12 +156,6 @@ func TestOCToMetrics(t *testing.T) {
 			assert.EqualValues(t, wantSlice, gotSlice)
 		})
 	}
-}
-
-// TODO: Try to avoid unnecessary Resource object allocation.
-func wrapMetricsWithEmptyResource(md pdata.Metrics) pdata.Metrics {
-	md.ResourceMetrics().At(0).Resource().InitEmpty()
-	return md
 }
 
 func TestOCToMetrics_ResourceInMetric(t *testing.T) {

@@ -95,7 +95,7 @@ var traceJSON = []byte(`
 
 var resourceSpansOtlp = otlptrace.ResourceSpans{
 
-	Resource: &otlpresource.Resource{
+	Resource: otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   conventions.AttributeHostHostname,

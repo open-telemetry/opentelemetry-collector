@@ -57,7 +57,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil, nil
 	}
 
@@ -102,17 +102,11 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) (*model.Batch, error) {
 }
 
 func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
-
-	process := model.Process{}
-	if resource.IsNil() {
-		process.ServiceName = tracetranslator.ResourceNotSet
-		return &process
-	}
-
+	process := &model.Process{}
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
-		process.ServiceName = tracetranslator.ResourceNoAttrs
-		return &process
+		process.ServiceName = tracetranslator.ResourceNoServiceName
+		return process
 	}
 	attrsCount := attrs.Len()
 	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
@@ -120,12 +114,12 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 		attrsCount--
 	}
 	if attrsCount == 0 {
-		return &process
+		return process
 	}
 
 	tags := make([]model.KeyValue, 0, attrsCount)
 	process.Tags = appendTagsFromResourceAttributes(tags, attrs)
-	return &process
+	return process
 
 }
 

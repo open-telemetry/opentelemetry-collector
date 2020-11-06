@@ -231,7 +231,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		traces := pdata.NewTraces()
 		traces.ResourceSpans().Resize(1)
 		rs := traces.ResourceSpans().At(0)
-		rs.Resource().InitEmpty()
 		rs.InstrumentationLibrarySpans().Resize(1)
 		instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
 		instrLibrarySpans.Spans().Append(getSpanWithAttributes(key, attribValue))
@@ -453,7 +452,6 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 		traces.ResourceSpans().Resize(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().At(j)
-			rs.Resource().InitEmpty()
 			rs.Resource().Attributes().InsertString("service.name", serviceName)
 			rs.Resource().Attributes().InsertBool("bool", true)
 			rs.Resource().Attributes().InsertString("string", "yes")

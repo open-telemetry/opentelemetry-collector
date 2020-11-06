@@ -476,7 +476,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		rm.InitEmpty()
 
 		res := rm.Resource()
-		res.InitEmpty()
 		resAttrs := res.Attributes()
 		resAttrs.Insert("host", pdata.NewAttributeValueString("my-host"))
 		resAttrs.Insert("serviceName", pdata.NewAttributeValueString("app"))

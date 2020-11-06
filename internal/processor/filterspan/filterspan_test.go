@@ -234,7 +234,6 @@ func TestSpan_Matching_True(t *testing.T) {
 	assert.NotNil(t, span)
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
 	})
@@ -254,7 +253,7 @@ func TestSpan_Matching_True(t *testing.T) {
 
 func TestServiceNameForResource(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpanNoResource()
-	require.Equal(t, serviceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-resource>")
+	require.Equal(t, serviceNameForResource(td.ResourceSpans().At(0).Resource()), "<nil-service-name>")
 
 	td = testdata.GenerateTraceDataOneSpan()
 	resource := td.ResourceSpans().At(0).Resource()
