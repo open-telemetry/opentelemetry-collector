@@ -16,9 +16,9 @@ receivers:
 
 The following settings are configurable:
 
-- `endpoint` (default = 0.0.0.0:9411): host:port to which the receiver is
-  going to receive traces or metrics, using the gRPC protocol. The valid syntax
-  is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
+- `endpoint` (default = 0.0.0.0:9411): host:port to which the receiver is going
+  to receive data. The valid syntax is described at
+  https://github.com/grpc/grpc/blob/master/doc/naming.md.
 
 ## Advanced Configuration
 
