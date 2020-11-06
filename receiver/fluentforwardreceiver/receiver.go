@@ -29,6 +29,8 @@ import (
 // FluentBit and increase throughput.
 const eventChannelLength = 100
 
+const defaultBindEndpoint = "0.0.0.0:8006"
+
 type fluentReceiver struct {
 	collector *Collector
 	listener  net.Listener
@@ -59,7 +61,11 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	r.collector.Start(receiverCtx)
 
-	listenAddr := r.conf.ListenAddress
+	if r.conf.ListenAddress != nil {
+		listenAddr := r.conf.ListenAddress
+	} else {
+		listenAddr := defaultBindAddress
+	}
 
 	var listener net.Listener
 	var udpListener net.PacketConn

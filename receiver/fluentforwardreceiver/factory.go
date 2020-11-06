@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-// This file implements factory for SignalFx receiver.
-
 const (
 	// The value of "type" key in configuration.
 	typeStr = "fluentforward"

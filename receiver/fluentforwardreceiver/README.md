@@ -14,15 +14,23 @@ This receiver:
  - If using TCP, it will start a UDP server on the same port to deliver
    heartbeat echos, as per the spec.
 
-Here is a basic example config that makes the receiver listen on all interfaces
-on port 8006:
+Supported pipeline types: logs
+
+## Getting Started
+
+All that is required to enable the Fluent Forward receiver is to include it in the
+receiver definitions.
 
 ```yaml
 receivers:
   fluentforward:
-    listenAddress: 0.0.0.0:8006
 ```
 
+The following settings are configurable:
+
+- `endpoint` (default = 0.0.0.0:8006): host:port to which the receiver is going
+  to receive data. The valid syntax is described at
+  https://github.com/grpc/grpc/blob/master/doc/naming.md.
 
 ## Development
 

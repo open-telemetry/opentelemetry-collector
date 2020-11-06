@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// Config defines configuration for the SignalFx receiver.
+// Config defines configuration for the receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
