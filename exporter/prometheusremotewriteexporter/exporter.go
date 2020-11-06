@@ -55,6 +55,11 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("http client cannot be nil")
 	}
 
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
+	if err != nil {
+		return nil, err
+	}
+
 	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
@@ -62,7 +67,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 
 	return &PrwExporter{
 		namespace:      namespace,
-		externalLabels: externalLabels,
+		externalLabels: sanitizedLabels,
 		endpointURL:    endpointURL,
 		client:         client,
 		wg:             new(sync.WaitGroup),
@@ -144,6 +149,25 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		return 0, nil
 	}
+}
+
+func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[string]string, error) {
+	sanitizedLabels := make(map[string]string)
+	for key, value := range externalLabels {
+		if key == "" || value == "" {
+			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+		}
+
+		// Sanitize label keys to meet Prometheus Requirements
+		if len(key) > 2 && key[:2] == "__" {
+			key = "__" + sanitize(key[2:])
+		} else {
+			key = sanitize(key)
+		}
+		sanitizedLabels[key] = value
+	}
+
+	return sanitizedLabels, nil
 }
 
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
