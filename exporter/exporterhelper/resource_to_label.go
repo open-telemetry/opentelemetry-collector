@@ -15,9 +15,8 @@
 package exporterhelper
 
 import (
-	"strconv"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // ResourceToLabelSettings defines configuration for converting resource attributes to labels
@@ -39,9 +38,7 @@ func convertResourceToLabels(md pdata.Metrics) pdata.Metrics {
 	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
-		if resource.IsNil() {
-			continue
-		}
+
 		labelMap := extractLabelsFromResource(&resource)
 
 		ilms := rms.At(i).InstrumentationLibraryMetrics()
@@ -65,21 +62,13 @@ func convertResourceToLabels(md pdata.Metrics) pdata.Metrics {
 
 // extractAttributesFromResource extracts the attributes from a given resource and
 // returns them as a StringMap.
-// Attribute values can be of multiple types. Only string, int, and boolean values are converted
-// to string data type and others are skipped.
 func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
 	labelMap := pdata.NewStringMap()
 
 	attrMap := resource.Attributes()
 	attrMap.ForEach(func(k string, av pdata.AttributeValue) {
-		switch av.Type() {
-		case pdata.AttributeValueSTRING:
-			labelMap.Insert(k, av.StringVal())
-		case pdata.AttributeValueBOOL:
-			labelMap.Insert(k, strconv.FormatBool(av.BoolVal()))
-		case pdata.AttributeValueINT:
-			labelMap.Insert(k, strconv.FormatInt(av.IntVal(), 10))
-		}
+		stringLabel := tracetranslator.AttributeValueToString(av, false)
+		labelMap.Insert(k, stringLabel)
 	})
 	return labelMap
 }

@@ -73,17 +73,11 @@ type metricsExporter struct {
 }
 
 func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	var req request
-
-	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
-
 	if mexp.baseExporter.convertResourceToLabels {
-		newMd := convertResourceToLabels(md)
-		req = newMetricsRequest(exporterCtx, newMd, mexp.pusher)
-	} else {
-		req = newMetricsRequest(exporterCtx, md, mexp.pusher)
+		md = convertResourceToLabels(md)
 	}
-
+	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
+	req := newMetricsRequest(exporterCtx, md, mexp.pusher)
 	_, err := mexp.sender.send(req)
 	return err
 }
