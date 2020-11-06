@@ -38,36 +38,14 @@ func NewResourceToLabels() consumer.MetricsConsumer {
 
 // ConsumeMetrics implements the consumer.ConsumeMetrics
 func (rtl *ResourceToLabels) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		resource := rms.At(i).Resource()
-		if resource.IsNil() {
-			continue
-		}
-		labelMap := extractLabelsFromResource(&resource)
-
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				continue
-			}
-			metricSlice := ilm.Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
-				metric := metricSlice.At(k)
-				if metric.IsNil() {
-					continue
-				}
-				addLabelsToMetric(&metric, labelMap)
-			}
-		}
-	}
-	return rtl.nextMetricsConsumer.ConsumeMetrics(ctx, md)
+	convertedMd := ConvertResourceToLabels(md)
+	return rtl.nextMetricsConsumer.ConsumeMetrics(ctx, convertedMd)
 }
 
 // ConvertResourceToLabels converts all resource attributes to metric labels
-func ConvertResourceToLabels(md pdata.Metrics) {
-	rms := md.ResourceMetrics()
+func ConvertResourceToLabels(md pdata.Metrics) pdata.Metrics {
+	cloneMd := md.Clone()
+	rms := cloneMd.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
 		if resource.IsNil() {
@@ -91,6 +69,7 @@ func ConvertResourceToLabels(md pdata.Metrics) {
 			}
 		}
 	}
+	return cloneMd
 }
 
 // extractAttributesFromResource extracts the attributes from a given resource and
