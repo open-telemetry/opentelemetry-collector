@@ -34,6 +34,10 @@ func TestConvertResourceToLabels(t *testing.T) {
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 2, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntSum().DataPoints().At(0).LabelsMap().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntSum().DataPoints().At(0).LabelsMap().Len())
+
 }
 
 func TestConvertResourceToLabelsAllDataTypes(t *testing.T) {
@@ -59,6 +63,15 @@ func TestConvertResourceToLabelsAllDataTypes(t *testing.T) {
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).IntSum().DataPoints().At(0).LabelsMap().Len())
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).DoubleHistogram().DataPoints().At(0).LabelsMap().Len())
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5).IntHistogram().DataPoints().At(0).LabelsMap().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleGauge().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1).IntGauge().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).DoubleSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).IntSum().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).DoubleHistogram().DataPoints().At(0).LabelsMap().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5).IntHistogram().DataPoints().At(0).LabelsMap().Len())
+
 }
 
 func TestConvertResourceToLabelsAllDataTypesNilDataPoint(t *testing.T) {
@@ -72,4 +85,6 @@ func TestConvertResourceToLabelsAllDataTypesNilDataPoint(t *testing.T) {
 
 	// After converting resource to labels
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
+
+	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 }
