@@ -97,6 +97,8 @@ func createDefaultConfig() configmodels.Exporter {
 }
 
 // ValidateAndSanitizeExternalLabels is exported so that wrappers for this exporter can use it to validate their configurations
+// A wrapper for this exporter still requires its own config, and it should be able to use this exporter's function for validating
+// and sanitizing its own config which mimics this exporter's config
 func ValidateAndSanitizeExternalLabels(cfg *Config) error {
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
