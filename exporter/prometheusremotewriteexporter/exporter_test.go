@@ -679,3 +679,50 @@ func Test_PushMetrics(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateAndSanitizeExternalLabels(t *testing.T) {
+	tests := []struct {
+		name           string
+		inputLabels    map[string]string
+		expectedLabels map[string]string
+		returnError    bool
+	}{
+		{"success_case_no_labels",
+			map[string]string{},
+			map[string]string{},
+			false,
+		},
+		{"success_case_with_labels",
+			map[string]string{"key1": "val1"},
+			map[string]string{"key1": "val1"},
+			false,
+		},
+		{"success_case_2_with_labels",
+			map[string]string{"__key1__": "val1"},
+			map[string]string{"__key1__": "val1"},
+			false,
+		},
+		{"success_case_with_sanitized_labels",
+			map[string]string{"__key1.key__": "val1"},
+			map[string]string{"__key1_key__": "val1"},
+			false,
+		},
+		{"fail_case_empty_label",
+			map[string]string{"": "val1"},
+			map[string]string{},
+			true,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newLabels, err := validateAndSanitizeExternalLabels(tt.inputLabels)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.NoError(t, err)
+		})
+	}
+}
