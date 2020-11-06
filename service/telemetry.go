@@ -100,8 +100,11 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	if err != nil {
 		return err
 	}
-
 	view.RegisterExporter(pe)
+
+	// Also export our own metrics to our logs.
+	me := newMetricsToLogExporter(logger)
+	view.RegisterExporter(me)
 
 	logger.Info(
 		"Serving Prometheus metrics",
