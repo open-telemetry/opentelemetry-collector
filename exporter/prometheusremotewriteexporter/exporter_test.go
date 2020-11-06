@@ -82,7 +82,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			"test",
 			"http://some.url:9411/api/prom/push",
 			map[string]string{"Key1": ""},
-			nil,
+			http.DefaultClient,
 			true,
 		},
 		{
