@@ -329,6 +329,20 @@ func Test_PushMetrics(t *testing.T) {
 	}
 	doubleHistogramBatch := pdata.MetricsFromOtlp(doubleHistogramMetric)
 
+	doubleSummaryMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validDoubleSummary],
+						validMetrics2[validDoubleSummary],
+					},
+				},
+			},
+		},
+	}
+	doubleSummaryBatch := pdata.MetricsFromOtlp(doubleSummaryMetric)
+
 	// len(BucketCount) > len(ExplicitBounds)
 	unmatchedBoundBucketIntHistMetric := []*otlp.ResourceMetrics{
 		{
@@ -434,6 +448,19 @@ func Test_PushMetrics(t *testing.T) {
 		},
 	}
 	nilDataPointDoubleHistogramBatch := pdata.MetricsFromOtlp(nilDataPointDoubleHistogramMetric)
+
+	nilDataPointDoubleSummaryMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointDoubleSummary],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointDoubleSummaryBatch := pdata.MetricsFromOtlp(nilDataPointDoubleSummaryMetric)
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -554,6 +581,15 @@ func Test_PushMetrics(t *testing.T) {
 			false,
 		},
 		{
+			"doubleSummary_case",
+			&doubleSummaryBatch,
+			checkFunc,
+			10,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
 			"unmatchedBoundBucketIntHist_case",
 			&unmatchedBoundBucketIntHistBatch,
 			checkFunc,
@@ -632,6 +668,15 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			nilDataPointIntHistogramBatch.MetricCount(),
+			true,
+		},
+		{
+			"nilDataPointDoubleSummary_case",
+			&nilDataPointDoubleSummaryBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			nilDataPointDoubleSummaryBatch.MetricCount(),
 			true,
 		},
 	}
