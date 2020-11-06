@@ -1036,6 +1036,63 @@ func (ms DoubleHistogram) CopyTo(dest DoubleHistogram) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
+// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewDoubleSummary function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type DoubleSummary struct {
+	// orig points to the pointer otlpmetrics.DoubleSummary field contained somewhere else.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	orig **otlpmetrics.DoubleSummary
+}
+
+func newDoubleSummary(orig **otlpmetrics.DoubleSummary) DoubleSummary {
+	return DoubleSummary{orig}
+}
+
+// NewDoubleSummary creates a new "nil" DoubleSummary.
+// To initialize the struct call "InitEmpty".
+//
+// This must be used only in testing code since no "Set" method available.
+func NewDoubleSummary() DoubleSummary {
+	orig := (*otlpmetrics.DoubleSummary)(nil)
+	return newDoubleSummary(&orig)
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleSummary) InitEmpty() {
+	*ms.orig = &otlpmetrics.DoubleSummary{}
+}
+
+// IsNil returns true if the underlying data are nil.
+//
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms DoubleSummary) IsNil() bool {
+	return *ms.orig == nil
+}
+
+// DataPoints returns the DataPoints associated with this DoubleSummary.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummary) DataPoints() DoubleSummaryDataPointSlice {
+	return newDoubleSummaryDataPointSlice(&(*ms.orig).DataPoints)
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms DoubleSummary) CopyTo(dest DoubleSummary) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
 // IntDataPointSlice logically represents a slice of IntDataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -2032,6 +2089,456 @@ func (ms DoubleHistogramDataPoint) CopyTo(dest DoubleHistogramDataPoint) {
 	dest.SetBucketCounts(ms.BucketCounts())
 	dest.SetExplicitBounds(ms.ExplicitBounds())
 	ms.Exemplars().CopyTo(dest.Exemplars())
+}
+
+// DoubleSummaryDataPointSlice logically represents a slice of DoubleSummaryDataPoint.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewDoubleSummaryDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type DoubleSummaryDataPointSlice struct {
+	// orig points to the slice otlpmetrics.DoubleSummaryDataPoint field contained somewhere else.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	orig *[]*otlpmetrics.DoubleSummaryDataPoint
+}
+
+func newDoubleSummaryDataPointSlice(orig *[]*otlpmetrics.DoubleSummaryDataPoint) DoubleSummaryDataPointSlice {
+	return DoubleSummaryDataPointSlice{orig}
+}
+
+// NewDoubleSummaryDataPointSlice creates a DoubleSummaryDataPointSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewDoubleSummaryDataPointSlice() DoubleSummaryDataPointSlice {
+	orig := []*otlpmetrics.DoubleSummaryDataPoint(nil)
+	return DoubleSummaryDataPointSlice{&orig}
+}
+
+// Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewDoubleSummaryDataPointSlice()".
+func (es DoubleSummaryDataPointSlice) Len() int {
+	return len(*es.orig)
+}
+
+// At returns the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     ... // Do something with the element
+// }
+func (es DoubleSummaryDataPointSlice) At(ix int) DoubleSummaryDataPoint {
+	return newDoubleSummaryDataPoint(&(*es.orig)[ix])
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es DoubleSummaryDataPointSlice) MoveAndAppendTo(dest DoubleSummaryDataPointSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
+// CopyTo copies all elements from the current slice to the dest.
+func (es DoubleSummaryDataPointSlice) CopyTo(dest DoubleSummaryDataPointSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.DoubleSummaryDataPoint(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newDoubleSummaryDataPoint(&el).CopyTo(newDoubleSummaryDataPoint(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.DoubleSummaryDataPoint, newLen)
+	wrappers := make([]*otlpmetrics.DoubleSummaryDataPoint, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newDoubleSummaryDataPoint(&el).CopyTo(newDoubleSummaryDataPoint(&wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new DoubleSummaryDataPointSlice can be initialized:
+// es := NewDoubleSummaryDataPointSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es DoubleSummaryDataPointSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlpmetrics.DoubleSummaryDataPoint(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlpmetrics.DoubleSummaryDataPoint, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the DoubleSummaryDataPointSlice by one and set the
+// given DoubleSummaryDataPoint at that new position.  The original DoubleSummaryDataPoint
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es DoubleSummaryDataPointSlice) Append(e DoubleSummaryDataPoint) {
+	*es.orig = append(*es.orig, *e.orig)
+}
+
+// DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewDoubleSummaryDataPoint function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type DoubleSummaryDataPoint struct {
+	// orig points to the pointer otlpmetrics.DoubleSummaryDataPoint field contained somewhere else.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	orig **otlpmetrics.DoubleSummaryDataPoint
+}
+
+func newDoubleSummaryDataPoint(orig **otlpmetrics.DoubleSummaryDataPoint) DoubleSummaryDataPoint {
+	return DoubleSummaryDataPoint{orig}
+}
+
+// NewDoubleSummaryDataPoint creates a new "nil" DoubleSummaryDataPoint.
+// To initialize the struct call "InitEmpty".
+//
+// This must be used only in testing code since no "Set" method available.
+func NewDoubleSummaryDataPoint() DoubleSummaryDataPoint {
+	orig := (*otlpmetrics.DoubleSummaryDataPoint)(nil)
+	return newDoubleSummaryDataPoint(&orig)
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms DoubleSummaryDataPoint) InitEmpty() {
+	*ms.orig = &otlpmetrics.DoubleSummaryDataPoint{}
+}
+
+// IsNil returns true if the underlying data are nil.
+//
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms DoubleSummaryDataPoint) IsNil() bool {
+	return *ms.orig == nil
+}
+
+// LabelsMap returns the Labels associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) LabelsMap() StringMap {
+	return newStringMap(&(*ms.orig).Labels)
+}
+
+// StartTime returns the starttime associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) StartTime() TimestampUnixNano {
+	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+}
+
+// SetStartTime replaces the starttime associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) SetStartTime(v TimestampUnixNano) {
+	(*ms.orig).StartTimeUnixNano = uint64(v)
+}
+
+// Timestamp returns the timestamp associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) Timestamp() TimestampUnixNano {
+	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+}
+
+// SetTimestamp replaces the timestamp associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
+	(*ms.orig).TimeUnixNano = uint64(v)
+}
+
+// Count returns the count associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) Count() uint64 {
+	return (*ms.orig).Count
+}
+
+// SetCount replaces the count associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) SetCount(v uint64) {
+	(*ms.orig).Count = v
+}
+
+// Sum returns the sum associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) Sum() float64 {
+	return (*ms.orig).Sum
+}
+
+// SetSum replaces the sum associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) SetSum(v float64) {
+	(*ms.orig).Sum = v
+}
+
+// QuantileValues returns the QuantileValues associated with this DoubleSummaryDataPoint.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms DoubleSummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
+	return newValueAtQuantileSlice(&(*ms.orig).QuantileValues)
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms DoubleSummaryDataPoint) CopyTo(dest DoubleSummaryDataPoint) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	ms.LabelsMap().CopyTo(dest.LabelsMap())
+	dest.SetStartTime(ms.StartTime())
+	dest.SetTimestamp(ms.Timestamp())
+	dest.SetCount(ms.Count())
+	dest.SetSum(ms.Sum())
+	ms.QuantileValues().CopyTo(dest.QuantileValues())
+}
+
+// ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewValueAtQuantileSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ValueAtQuantileSlice struct {
+	// orig points to the slice otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile field contained somewhere else.
+	// We use pointer-to-slice to be able to modify it in functions like Resize.
+	orig *[]*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile
+}
+
+func newValueAtQuantileSlice(orig *[]*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile) ValueAtQuantileSlice {
+	return ValueAtQuantileSlice{orig}
+}
+
+// NewValueAtQuantileSlice creates a ValueAtQuantileSlice with 0 elements.
+// Can use "Resize" to initialize with a given length.
+func NewValueAtQuantileSlice() ValueAtQuantileSlice {
+	orig := []*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile(nil)
+	return ValueAtQuantileSlice{&orig}
+}
+
+// Len returns the number of elements in the slice.
+//
+// Returns "0" for a newly instance created with "NewValueAtQuantileSlice()".
+func (es ValueAtQuantileSlice) Len() int {
+	return len(*es.orig)
+}
+
+// At returns the element at the given index.
+//
+// This function is used mostly for iterating over all the values in the slice:
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     ... // Do something with the element
+// }
+func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
+	return newValueAtQuantile(&(*es.orig)[ix])
+}
+
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
+	if es.Len() == 0 {
+		// Just to ensure that we always return a Slice with nil elements.
+		*es.orig = nil
+		return
+	}
+	if dest.Len() == 0 {
+		*dest.orig = *es.orig
+		*es.orig = nil
+		return
+	}
+	*dest.orig = append(*dest.orig, *es.orig...)
+	*es.orig = nil
+	return
+}
+
+// CopyTo copies all elements from the current slice to the dest.
+func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
+	newLen := es.Len()
+	if newLen == 0 {
+		*dest.orig = []*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile(nil)
+		return
+	}
+	oldLen := dest.Len()
+	if newLen <= oldLen {
+		(*dest.orig) = (*dest.orig)[:newLen]
+		for i, el := range *es.orig {
+			newValueAtQuantile(&el).CopyTo(newValueAtQuantile(&(*dest.orig)[i]))
+		}
+		return
+	}
+	origs := make([]otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile, newLen)
+	wrappers := make([]*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile, newLen)
+	for i, el := range *es.orig {
+		wrappers[i] = &origs[i]
+		newValueAtQuantile(&el).CopyTo(newValueAtQuantile(&wrappers[i]))
+	}
+	*dest.orig = wrappers
+}
+
+// Resize is an operation that resizes the slice:
+// 1. If newLen is 0 then the slice is replaced with a nil slice.
+// 2. If the newLen <= len then equivalent with slice[0:newLen].
+// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+//
+// Here is how a new ValueAtQuantileSlice can be initialized:
+// es := NewValueAtQuantileSlice()
+// es.Resize(4)
+// for i := 0; i < es.Len(); i++ {
+//     e := es.At(i)
+//     // Here should set all the values for e.
+// }
+func (es ValueAtQuantileSlice) Resize(newLen int) {
+	if newLen == 0 {
+		(*es.orig) = []*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile(nil)
+		return
+	}
+	oldLen := len(*es.orig)
+	if newLen <= oldLen {
+		(*es.orig) = (*es.orig)[:newLen]
+		return
+	}
+	// TODO: Benchmark and optimize this logic.
+	extraOrigs := make([]otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile, newLen-oldLen)
+	oldOrig := (*es.orig)
+	for i := range extraOrigs {
+		oldOrig = append(oldOrig, &extraOrigs[i])
+	}
+	(*es.orig) = oldOrig
+}
+
+// Append will increase the length of the ValueAtQuantileSlice by one and set the
+// given ValueAtQuantile at that new position.  The original ValueAtQuantile
+// could still be referenced so do not reuse it after passing it to this
+// method.
+func (es ValueAtQuantileSlice) Append(e ValueAtQuantile) {
+	*es.orig = append(*es.orig, *e.orig)
+}
+
+// ValueAtQuantile is a quantile value within a Summary data point
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewValueAtQuantile function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ValueAtQuantile struct {
+	// orig points to the pointer otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile field contained somewhere else.
+	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
+	orig **otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile
+}
+
+func newValueAtQuantile(orig **otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
+	return ValueAtQuantile{orig}
+}
+
+// NewValueAtQuantile creates a new "nil" ValueAtQuantile.
+// To initialize the struct call "InitEmpty".
+//
+// This must be used only in testing code since no "Set" method available.
+func NewValueAtQuantile() ValueAtQuantile {
+	orig := (*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile)(nil)
+	return newValueAtQuantile(&orig)
+}
+
+// InitEmpty overwrites the current value with empty.
+func (ms ValueAtQuantile) InitEmpty() {
+	*ms.orig = &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{}
+}
+
+// IsNil returns true if the underlying data are nil.
+//
+// Important: All other functions will cause a runtime error if this returns "true".
+func (ms ValueAtQuantile) IsNil() bool {
+	return *ms.orig == nil
+}
+
+// Quantile returns the quantile associated with this ValueAtQuantile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms ValueAtQuantile) Quantile() float64 {
+	return (*ms.orig).Quantile
+}
+
+// SetQuantile replaces the quantile associated with this ValueAtQuantile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms ValueAtQuantile) SetQuantile(v float64) {
+	(*ms.orig).Quantile = v
+}
+
+// Value returns the value associated with this ValueAtQuantile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms ValueAtQuantile) Value() float64 {
+	return (*ms.orig).Value
+}
+
+// SetValue replaces the value associated with this ValueAtQuantile.
+//
+// Important: This causes a runtime error if IsNil() returns "true".
+func (ms ValueAtQuantile) SetValue(v float64) {
+	(*ms.orig).Value = v
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
+	if ms.IsNil() {
+		*dest.orig = nil
+		return
+	}
+	if dest.IsNil() {
+		dest.InitEmpty()
+	}
+	dest.SetQuantile(ms.Quantile())
+	dest.SetValue(ms.Value())
 }
 
 // IntExemplarSlice logically represents a slice of IntExemplar.

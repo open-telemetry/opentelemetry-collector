@@ -18,6 +18,7 @@ import (
 	"sort"
 
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -122,6 +123,8 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeDoubleHistogram:
 		collectLabelKeysDoubleHistogramDataPoints(metric.DoubleHistogram().DataPoints(), keySet)
+	case pdata.MetricDataTypeDoubleSummary:
+		collectLabelKeysDoubleSummaryDataPoints(metric.DoubleSummary().DataPoints(), keySet)
 	}
 
 	if len(keySet) == 0 {
@@ -196,6 +199,16 @@ func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.DoubleHistogramDataPoi
 	}
 }
 
+func collectLabelKeysDoubleSummaryDataPoints(dhdp pdata.DoubleSummaryDataPointSlice, keySet map[string]struct{}) {
+	for i := 0; i < dhdp.Len(); i++ {
+		hp := dhdp.At(i)
+		if hp.IsNil() {
+			continue
+		}
+		addLabelKeys(keySet, hp.LabelsMap())
+	}
+}
+
 func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
 	labels.ForEach(func(k string, v string) {
 		keySet[k] = struct{}{}
@@ -245,6 +258,8 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
+	case pdata.MetricDataTypeDoubleSummary:
+		return ocmetrics.MetricDescriptor_SUMMARY
 	}
 	return ocmetrics.MetricDescriptor_UNSPECIFIED
 }
@@ -263,6 +278,8 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeDoubleHistogram:
 		return doubleHistogramPointToOC(metric.DoubleHistogram().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeDoubleSummary:
+		return doubleSummaryPointToOC(metric.DoubleSummary().DataPoints(), labelKeys)
 	}
 
 	return nil
@@ -422,6 +439,62 @@ func histogramBucketsToOC(bcts []uint64) []*ocmetrics.DistributionValue_Bucket {
 		})
 	}
 	return ocBuckets
+}
+
+func doubleSummaryPointToOC(dps pdata.DoubleSummaryDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+	if dps.Len() == 0 {
+		return nil
+	}
+	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if dp.IsNil() {
+			continue
+		}
+
+		percentileValues := summaryPercentilesToOC(dp.QuantileValues())
+
+		ts := &ocmetrics.TimeSeries{
+			StartTimestamp: pdata.UnixNanoToTimestamp(dp.StartTime()),
+			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
+			Points: []*ocmetrics.Point{
+				{
+					Timestamp: pdata.UnixNanoToTimestamp(dp.Timestamp()),
+					Value: &ocmetrics.Point_SummaryValue{
+						SummaryValue: &ocmetrics.SummaryValue{
+							Sum:   &wrappers.DoubleValue{Value: dp.Sum()},
+							Count: &wrappers.Int64Value{Value: int64(dp.Count())},
+							Snapshot: &ocmetrics.SummaryValue_Snapshot{
+								PercentileValues: percentileValues,
+							},
+						},
+					},
+				},
+			},
+		}
+		timeseries = append(timeseries, ts)
+	}
+	return timeseries
+}
+
+func summaryPercentilesToOC(qtls pdata.ValueAtQuantileSlice) []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile {
+	if qtls.Len() == 0 {
+		return nil
+	}
+
+	ocPercentiles := make([]*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, 0, qtls.Len())
+	for i := 0; i < qtls.Len(); i++ {
+		quantile := qtls.At(i)
+		if quantile.IsNil() {
+			continue
+		}
+
+		ocPercentiles = append(ocPercentiles, &ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
+			Percentile: quantile.Quantile() * 100,
+			Value:      quantile.Value(),
+		})
+	}
+	return ocPercentiles
 }
 
 func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.DoubleExemplarSlice) {

@@ -223,8 +223,14 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		histo.InitEmpty()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleHistogram
+	case ocmetrics.MetricDescriptor_SUMMARY:
+		metric.InitEmpty()
+		metric.SetDataType(pdata.MetricDataTypeDoubleSummary)
+		summary := metric.DoubleSummary()
+		summary.InitEmpty()
+		// no temporality specified for summary metric
+		return pdata.MetricDataTypeDoubleSummary
 	}
-	// For the moment MetricDescriptor_SUMMARY is not supported
 	return pdata.MetricDataTypeNone
 }
 
@@ -241,6 +247,8 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 		fillDoubleDataPoint(ocMetric, metric.DoubleSum().DataPoints())
 	case pdata.MetricDataTypeDoubleHistogram:
 		fillDoubleHistogramDataPoint(ocMetric, metric.DoubleHistogram().DataPoints())
+	case pdata.MetricDataTypeDoubleSummary:
+		fillDoubleSummaryDataPoint(ocMetric, metric.DoubleSummary().DataPoints())
 	}
 }
 
@@ -353,6 +361,37 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleHi
 	dps.Resize(pos)
 }
 
+func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleSummaryDataPointSlice) {
+	ocPointsCount := getPointsCount(ocMetric)
+	dps.Resize(ocPointsCount)
+	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
+	pos := 0
+	for _, timeseries := range ocMetric.GetTimeseries() {
+		if timeseries == nil {
+			continue
+		}
+		startTimestamp := pdata.TimestampToUnixNano(timeseries.GetStartTimestamp())
+
+		for _, point := range timeseries.GetPoints() {
+			if point == nil {
+				continue
+			}
+
+			dp := dps.At(pos)
+			pos++
+
+			dp.SetStartTime(startTimestamp)
+			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
+			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
+			summaryValue := point.GetSummaryValue()
+			dp.SetSum(summaryValue.GetSum().GetValue())
+			dp.SetCount(uint64(summaryValue.GetCount().GetValue()))
+			ocSummaryPercentilesToMetrics(summaryValue.GetSnapshot().GetPercentileValues(), dp)
+		}
+	}
+	dps.Resize(pos)
+}
+
 func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket, dp pdata.DoubleHistogramDataPoint) {
 	if len(ocBuckets) == 0 {
 		return
@@ -368,6 +407,22 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 		}
 	}
 	dp.SetBucketCounts(buckets)
+}
+
+func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, dp pdata.DoubleSummaryDataPoint) {
+	if len(ocPercentiles) == 0 {
+		return
+	}
+
+	quantiles := pdata.NewValueAtQuantileSlice()
+	quantiles.Resize(len(ocPercentiles))
+
+	for i, percentile := range ocPercentiles {
+		quantiles.At(i).SetQuantile(percentile.GetPercentile() / 100)
+		quantiles.At(i).SetValue(percentile.GetValue())
+	}
+
+	quantiles.CopyTo(dp.QuantileValues())
 }
 
 func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar pdata.DoubleExemplar) {
