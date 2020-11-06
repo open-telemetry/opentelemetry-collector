@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type filterMetricProcessor struct {
@@ -45,19 +46,23 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	includeMatchType := ""
 	var includeExpressions []string
 	var includeMetricNames []string
+	var includeResourceAttributes map[string][]string
 	if cfg.Metrics.Include != nil {
 		includeMatchType = string(cfg.Metrics.Include.MatchType)
 		includeExpressions = cfg.Metrics.Include.Expressions
 		includeMetricNames = cfg.Metrics.Include.MetricNames
+		includeResourceAttributes = cfg.Metrics.Include.ResourceAttributes
 	}
 
 	excludeMatchType := ""
 	var excludeExpressions []string
 	var excludeMetricNames []string
+	var excludeResourceAttributes map[string][]string
 	if cfg.Metrics.Exclude != nil {
 		excludeMatchType = string(cfg.Metrics.Exclude.MatchType)
 		excludeExpressions = cfg.Metrics.Exclude.Expressions
 		excludeMetricNames = cfg.Metrics.Exclude.MetricNames
+		excludeResourceAttributes = cfg.Metrics.Exclude.ResourceAttributes
 	}
 
 	logger.Info(
@@ -65,9 +70,11 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.String("include match_type", includeMatchType),
 		zap.Strings("include expressions", includeExpressions),
 		zap.Strings("include metric names", includeMetricNames),
+		zap.Any("include metrics with resource attributes", includeResourceAttributes),
 		zap.String("exclude match_type", excludeMatchType),
 		zap.Strings("exclude expressions", excludeExpressions),
 		zap.Strings("exclude metric names", excludeMetricNames),
+		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
 	)
 
 	return &filterMetricProcessor{
@@ -91,7 +98,14 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Me
 	rms := pdm.ResourceMetrics()
 	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		rm := rms.At(i)
+
+		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
+		if !keepMetricsForResource {
+			continue
+		}
+
+		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
@@ -135,4 +149,45 @@ func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) (bool, e
 	}
 
 	return true, nil
+}
+
+func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pdata.Resource) bool {
+	resourceAttributes := resource.Attributes()
+
+	if fmp.include != nil {
+		for key, filterList := range fmp.cfg.Metrics.Include.ResourceAttributes {
+			attributeValue, ok := resourceAttributes.Get(key)
+			if ok {
+				attributeMatched := attributeMatch(filterList, attributeValue)
+				if !attributeMatched {
+					return false
+				}
+			}
+		}
+	}
+
+	if fmp.exclude != nil {
+		for key, filterList := range fmp.cfg.Metrics.Exclude.ResourceAttributes {
+			attributeValue, ok := resourceAttributes.Get(key)
+			if ok {
+				attributeMatched := attributeMatch(filterList, attributeValue)
+				if attributeMatched {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
+}
+
+func attributeMatch(filterList []string, attributeValue pdata.AttributeValue) bool {
+	attribute := tracetranslator.AttributeValueToString(attributeValue, false)
+
+	for _, item := range filterList {
+		if item == attribute {
+			return true
+		}
+	}
+	return false
 }

@@ -16,6 +16,7 @@ For the actions the following parameters are required:
  - `match_type`: strict|regexp|expr
  - `metric_names`: (only for a `match_type` of 'strict' or 'regexp') list of strings or re2 regex patterns
  - `expressions`: (only for a `match_type` of 'expr') list of expr expressions (see "Using an 'expr' match_type" below)
+ - `resource_attributes`: A map of resource attribute key to a list of possible values to filter metrics against. For a given key, a match occurs if any resource attribute matches at least one value from the list.
 
 More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
 
@@ -30,6 +31,8 @@ processors:
         metric_names:
         - prefix/.*
         - prefix_.*
+        resource_attributes:
+          - container.name: [app_container_1, app_container_2]
       exclude:
         match_type: strict
         metric_names:
@@ -105,3 +108,37 @@ parent Metric's name is "system.cpu.time" or "system.disk.io" then there's a mat
 all the datapoints in a Metric until there's a match, in which case the entire Metric is considered a match, and in
 the above example the Metric will be excluded. If after testing all the datapoints in a Metric against all the
 expressions there isn't a match, the entire Metric is considered to be not matching.
+
+
+##### Filter metrics using resource attributes
+In addition to the names, metrics can be filtered using resource attributes. `resource_attributes` takes a map of resource attribute key to a list of possible values to filter metrics against. 
+
+Following example will include only the metrics coming from `app_container_1` or `app_container_2` (the value for `container.name` resource attribute is either `app_container_1` or `app_container_2`). 
+
+```yaml
+processors:
+  filter:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+          - hello_world
+          - hello/world
+        resource_attributes:
+          - container.name: [app_container_1, app_container_2]
+```
+
+Following example will exclude all the metrics coming from `app_container_1` (the value for `container.name` resource attribute is `app_container_1`).
+
+```yaml
+processors:
+  filter:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+          - hello_world
+          - hello/world
+        resource_attributes:
+          - container.name: [app_container_1]
+```

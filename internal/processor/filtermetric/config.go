@@ -49,4 +49,8 @@ type MatchProperties struct {
 	// Expressions specifies the list of expr expressions to match metrics against.
 	// A match occurs if any datapoint in a metric matches at least one expression in this list.
 	Expressions []string `mapstructure:"expressions"`
+
+	// ResourceAttributes defines a map of resource attribute key to a list of possible values to match metrics against.
+	// A match occurs if any resource attribute matches at least one value in this given list.
+	ResourceAttributes map[string][]string `mapstructure:"resource_attributes"`
 }
