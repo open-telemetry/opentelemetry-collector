@@ -87,6 +87,7 @@ type internalOptions struct {
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
+	ResourceToLabelSettings
 	Start
 	Shutdown
 }
@@ -99,9 +100,10 @@ func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
 		// TODO: Enable queuing by default (call CreateDefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call CreateDefaultRetrySettings)
-		RetrySettings: RetrySettings{Enabled: false},
-		Start:         func(ctx context.Context, host component.Host) error { return nil },
-		Shutdown:      func(ctx context.Context) error { return nil },
+		RetrySettings:           RetrySettings{Enabled: false},
+		ResourceToLabelSettings: CreateDefaultResourceToLabelSettings(),
+		Start:                   func(ctx context.Context, host component.Host) error { return nil },
+		Shutdown:                func(ctx context.Context) error { return nil },
 	}
 
 	for _, op := range options {
@@ -151,6 +153,14 @@ func WithRetry(retrySettings RetrySettings) ExporterOption {
 func WithQueue(queueSettings QueueSettings) ExporterOption {
 	return func(o *internalOptions) {
 		o.QueueSettings = queueSettings
+	}
+}
+
+// WithResourceToLabelConversion overrides the default ResourceToLabelSettings for an exporter.
+// The default ResourceToLabelSettings is to disable resource attributes to labels conversion.
+func WithResourceToLabelConversion(resourceToLabelSettings ResourceToLabelSettings) ExporterOption {
+	return func(o *internalOptions) {
+		o.ResourceToLabelSettings = resourceToLabelSettings
 	}
 }
 

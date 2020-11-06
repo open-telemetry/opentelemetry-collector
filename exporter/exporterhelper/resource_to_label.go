@@ -26,6 +26,19 @@ var (
 	resourceToLabels = &ResourceToLabels{}
 )
 
+// ResourceToLabelSettings defines configuration for converting resource attributes to labels
+type ResourceToLabelSettings struct {
+	// Enabled indicates whether to not convert resource attributes to labels
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// CreateDefaultResourceToLabelSettings returns the default settings for ResourceToLabelSettings.
+func CreateDefaultResourceToLabelSettings() ResourceToLabelSettings {
+	return ResourceToLabelSettings{
+		Enabled: false,
+	}
+}
+
 // ResourceToLabels defines the consumer for converting resource attributes to labels
 type ResourceToLabels struct {
 	nextMetricsConsumer consumer.MetricsConsumer
