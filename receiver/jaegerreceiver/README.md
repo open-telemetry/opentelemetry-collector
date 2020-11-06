@@ -2,6 +2,10 @@
 
 Receives trace data in [Jaeger](https://www.jaegertracing.io/) format.
 
+Supported pipeline types: traces
+
+## Getting Started
+
 By default, the Jaeger receiver will not serve any protocol. A protocol must be
 named under the `protocols` object for the jaeger receiver to start. The
 below protocols are supported and each supports an optional `endpoint`
@@ -25,24 +29,16 @@ receivers:
         endpoint: 0.0.0.0:14260
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+## Advanced Configuration
 
-## Communicating over TLS
-The Jaeger receiver supports communication using Transport Layer Security (TLS), but
-only using the `grpc` protocol. It can be configured by specifying a
-`tls_credentials` object in the `grpc` object receiver configuration.
-```yaml
-receivers:
-  jaeger:
-    protocols:
-      grpc:
-        tls_credentials:
-          key_file: /key.pem # path to private key
-          cert_file: /cert.pem # path to certificate
-```
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configgrpc/README.md) including CORS
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md)
 
 ## Remote Sampling
+
 The Jaeger receiver also supports fetching sampling configuration from a remote
 collector. It works by proxying client requests for remote sampling
 configuration to the configured collector.

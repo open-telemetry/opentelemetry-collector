@@ -2,10 +2,16 @@
 
 Kafka receiver receives traces from Kafka. Message payload encoding is configurable.
 
+Supported pipeline types: traces
+
+## Getting Started
+
 The following settings are required:
+
 - `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
 
 The following settings can be optionally configured:
+
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `topic` (default = otlp_spans): The name of the kafka topic to export to
 - `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
@@ -28,8 +34,8 @@ The following settings can be optionally configured:
       only be used if `insecure` is set to true.
     - `key_file`: path to the TLS key to use for TLS required connections. Should
       only be used if `insecure` is set to true.
-    - `insecure` (default = false): Disable verifying the server's certificate chain and host 
-      name (`InsecureSkipVerify` in the tls config)
+    - `insecure` (default = false): Disable verifying the server's certificate
+      chain and host name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client
       in order to support virtual hosting.
   - `kerberos`
@@ -41,18 +47,17 @@ The following settings can be optionally configured:
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. 
-           When disabled the client does not make the initial request to broker at the startup.
+  - `full` (default = true): Whether to maintain a full set of metadata. When
+    disabled the client does not make the initial request to broker at the
+    startup.
   - `retry`
     - `max` (default = 3): The number of retries to get metadata
     - `backoff` (default = 250ms): How long to wait between metadata retries
 
-Example configuration:
+Example:
 
 ```yaml
 receivers:
   kafka:
-    brokers:
-      - localhost:9092
     protocol_version: 2.0.0
 ```
