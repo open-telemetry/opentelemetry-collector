@@ -15,7 +15,7 @@ configuration. For more information, see [configtls
 README](../configtls/README.md).
 
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
-- `headers`: name/value pairs added to the request
+- `headers`: name/value pairs added to the HTTP request headers
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
