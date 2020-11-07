@@ -59,7 +59,7 @@ must be unique.
 
 For the example above:
 
-- Receiver 1 has full name `exampleexporter`.
+- Receiver 1 has full name `examplereceiver`.
 - Receiver 2 has full name `exampleexporter/settings`.
 
 Exporters are enabled upon being added to a pipeline. For example:
