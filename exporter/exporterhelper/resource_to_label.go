@@ -97,9 +97,7 @@ func addLabelsToIntDataPoints(ps pdata.IntDataPointSlice, newLabelMap pdata.Stri
 		if dataPoint.IsNil() {
 			continue
 		}
-		newLabelMap.ForEach(func(k, v string) {
-			dataPoint.LabelsMap().Upsert(k, v)
-		})
+		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
 	}
 }
 
@@ -109,9 +107,7 @@ func addLabelsToDoubleDataPoints(ps pdata.DoubleDataPointSlice, newLabelMap pdat
 		if dataPoint.IsNil() {
 			continue
 		}
-		newLabelMap.ForEach(func(k, v string) {
-			dataPoint.LabelsMap().Upsert(k, v)
-		})
+		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
 	}
 }
 
@@ -121,9 +117,7 @@ func addLabelsToIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice, newL
 		if dataPoint.IsNil() {
 			continue
 		}
-		newLabelMap.ForEach(func(k, v string) {
-			dataPoint.LabelsMap().Upsert(k, v)
-		})
+		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
 	}
 }
 
@@ -133,8 +127,12 @@ func addLabelsToDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice
 		if dataPoint.IsNil() {
 			continue
 		}
-		newLabelMap.ForEach(func(k, v string) {
-			dataPoint.LabelsMap().Upsert(k, v)
-		})
+		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
 	}
+}
+
+func joinStringMaps(from, to pdata.StringMap) {
+	from.ForEach(func(k, v string) {
+		to.Upsert(k, v)
+	})
 }
