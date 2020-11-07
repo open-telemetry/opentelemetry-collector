@@ -62,7 +62,7 @@ For the example above:
 - Receiver 1 has full name `examplereceiver`.
 - Receiver 2 has full name `examplereceiver/settings`.
 
-Exporters are enabled upon being added to a pipeline. For example:
+Receivers are enabled upon being added to a pipeline. For example:
 
 ```yaml
 service:
