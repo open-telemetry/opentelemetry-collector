@@ -34,7 +34,7 @@ exporter:
     endpoint: otelcol2:55690
     headers:
       test1: "value1"
-      test 2": "value 2"
+      "test 2": "value 2"
 ```
 
 ## Server Configuration
