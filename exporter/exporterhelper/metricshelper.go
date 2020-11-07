@@ -73,7 +73,7 @@ type metricsExporter struct {
 }
 
 func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	if mexp.baseExporter.convertResourceToLabels {
+	if mexp.baseExporter.convertResourceToTelemetry {
 		md = convertResourceToLabels(md)
 	}
 	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())

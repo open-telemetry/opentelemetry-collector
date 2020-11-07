@@ -146,9 +146,9 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	assert.True(t, shutdownCalled)
 }
 
-func TestMetricsExporter_WithResourceToLabelConversionDisabled(t *testing.T) {
+func TestMetricsExporter_WithResourceToTelemetryConversionDisabled(t *testing.T) {
 	md := testdata.GenerateMetricsTwoMetrics()
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToLabelConversion(createDefaultResourceToLabelSettings()))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -156,9 +156,9 @@ func TestMetricsExporter_WithResourceToLabelConversionDisabled(t *testing.T) {
 	assert.Nil(t, me.Shutdown(context.Background()))
 }
 
-func TestMetricsExporter_WithResourceToLabelConversionEbabled(t *testing.T) {
+func TestMetricsExporter_WithResourceToTelemetryConversionEbabled(t *testing.T) {
 	md := testdata.GenerateMetricsTwoMetrics()
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToLabelConversion(ResourceToLabelSettings{Enabled: true}))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(ResourceToTelemetrySettings{Enabled: true}))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 

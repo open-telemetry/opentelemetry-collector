@@ -19,15 +19,15 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-// ResourceToLabelSettings defines configuration for converting resource attributes to labels
-type ResourceToLabelSettings struct {
-	// Enabled indicates whether to not convert resource attributes to labels
+// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+type ResourceToTelemetrySettings struct {
+	// Enabled indicates whether to not convert resource attributes to metric labels
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// CreateDefaultResourceToLabelSettings returns the default settings for ResourceToLabelSettings.
-func createDefaultResourceToLabelSettings() ResourceToLabelSettings {
-	return ResourceToLabelSettings{
+// createDefaultResourceToTelemetrySettings returns the default settings for ResourceToTelemetrySettings.
+func createDefaultResourceToTelemetrySettings() ResourceToTelemetrySettings {
+	return ResourceToTelemetrySettings{
 		Enabled: false,
 	}
 }
@@ -68,7 +68,7 @@ func extractLabelsFromResource(resource *pdata.Resource) pdata.StringMap {
 	attrMap := resource.Attributes()
 	attrMap.ForEach(func(k string, av pdata.AttributeValue) {
 		stringLabel := tracetranslator.AttributeValueToString(av, false)
-		labelMap.Insert(k, stringLabel)
+		labelMap.Upsert(k, stringLabel)
 	})
 	return labelMap
 }

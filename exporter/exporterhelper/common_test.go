@@ -49,7 +49,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 		zap.NewNop(),
 		WithStart(func(ctx context.Context, host component.Host) error { return errors.New("my error") }),
 		WithShutdown(func(ctx context.Context) error { return errors.New("my error") }),
-		WithResourceToLabelConversion(createDefaultResourceToLabelSettings()),
+		WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()),
 		WithTimeout(CreateDefaultTimeoutSettings()),
 	)
 	require.Error(t, be.Start(context.Background(), componenttest.NewNopHost()))
