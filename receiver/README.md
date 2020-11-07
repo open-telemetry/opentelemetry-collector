@@ -62,6 +62,7 @@ For the example above:
 - Receiver 1 has full name `examplereceiver`.
 - Receiver 2 has full name `examplereceiver/settings`.
 
+> At least one receiver must be enabled per pipeline to be a valid configuration.
 Receivers are enabled upon being added to a pipeline. For example:
 
 ```yaml
