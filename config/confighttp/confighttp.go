@@ -46,7 +46,7 @@ type HTTPClientSettings struct {
 	// Existing header values are overwritten if collision happens.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 
-	// Custom Round Tripper to allow for individual components to intercepting HTTP requests
+	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) http.RoundTripper
 }
 
