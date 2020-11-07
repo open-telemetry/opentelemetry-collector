@@ -36,8 +36,9 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: false,
 		},
-		ReadBufferSize:  1024,
-		WriteBufferSize: 512,
+		ReadBufferSize:     1024,
+		WriteBufferSize:    512,
+		CustomRoundTripper: func(next http.RoundTripper) http.RoundTripper { return next },
 	}
 	client, err := hcs.ToClient()
 	assert.NoError(t, err)
