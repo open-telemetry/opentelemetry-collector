@@ -67,6 +67,7 @@ func Configure(level configtelemetry.Level) (views []*view.View) {
 	gLevel = level
 
 	if gLevel != configtelemetry.LevelNone {
+		gProcessorObsReport.level = level
 		views = append(views, AllViews()...)
 	}
 
