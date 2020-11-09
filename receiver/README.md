@@ -3,7 +3,7 @@ A receiver is how data gets into the OpenTelemetry Collector. Generally, a recei
 accepts data in a specified format, translates it into the internal format and
 passes it to [processors](../processor/README.md)
 and [exporters](../exporter/README.md)
-defined in the applicable [pipelines](../docs/pipelines.md).
+defined in the applicable pipelines.
 The format of the traces and metrics supported are receiver specific.
 
 Supported trace receivers (sorted alphabetically):
@@ -51,5 +51,4 @@ must be unique. For the example above:
 - Receiver 2 has full name `examplereceiver/settings`.
 
 All receivers expose a setting to disable it, by default receivers are enabled.
-At least one receiver must be enabled per [pipeline](../docs/pipelines.md) to be a
-valid configuration.
+At least one receiver must be enabled per pipeline to be a valid configuration.

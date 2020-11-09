@@ -23,5 +23,6 @@ The following configuration options can be modified:
     - `requests_per_second` is the average number of requests per seconds.
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `timeout` (defult = 5s): Time to wait per individual attempt to send data to a backend.
 
 The full list of settings exposed for this helper exporter are documented [here](factory.go).
