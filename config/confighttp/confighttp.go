@@ -47,7 +47,7 @@ type HTTPClientSettings struct {
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
-	CustomRoundTripper func(next http.RoundTripper) http.RoundTripper
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 }
 
 func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
@@ -75,7 +75,10 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	}
 
 	if hcs.CustomRoundTripper != nil {
-		clientTransport = hcs.CustomRoundTripper(clientTransport)
+		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &http.Client{
