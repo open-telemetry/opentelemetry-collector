@@ -211,7 +211,7 @@ func generateOCTestData() consumerdata.MetricsData {
 			generateOCTestMetricDoubleHistogram(),
 			generateOCTestMetricIntHistogram(),
 			generateOCTestMetricDoubleSummary(),
-			generateOCTestMetricDoubleGaugeHistogram(),
+			generateOCTestMetricGaugeDoubleHistogram(),
 		},
 	}
 }
