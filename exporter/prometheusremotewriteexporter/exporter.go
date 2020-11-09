@@ -128,7 +128,12 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = append(errs, consumererror.Permanent(err))
+						}
+					case *otlp.Metric_DoubleSummary:
+						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
+							dropped++
+							errs = append(errs, consumererror.Permanent(err))
 						}
 					default:
 						dropped++
@@ -229,6 +234,19 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 		for _, pt := range metric.GetDoubleHistogram().GetDataPoints() {
 			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
+	}
+	return nil
+}
+
+// handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
+// quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
+// tsMap and metric cannot be nil.
+func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	if metric.GetDoubleSummary().GetDataPoints() == nil {
+		return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
+	}
+	for _, pt := range metric.GetDoubleSummary().GetDataPoints() {
+		addSingleDoubleSummaryDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }
