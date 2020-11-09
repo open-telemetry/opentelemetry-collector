@@ -15,6 +15,7 @@
 package confighttp
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -31,19 +32,52 @@ import (
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
-	hcs := &HTTPClientSettings{
-		Endpoint: "localhost:1234",
-		TLSSetting: configtls.TLSClientSetting{
-			Insecure: false,
+	tests := []struct {
+		name        string
+		settings    HTTPClientSettings
+		shouldError bool
+	}{
+		{
+			name: "all_valid_settings",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+			shouldError: false,
 		},
-		ReadBufferSize:  1024,
-		WriteBufferSize: 512,
+		{
+			name: "error_round_tripper_returned",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return nil, errors.New("error") },
+			},
+			shouldError: true,
+		},
 	}
-	client, err := hcs.ToClient()
-	assert.NoError(t, err)
-	transport := client.Transport.(*http.Transport)
-	assert.EqualValues(t, 1024, transport.ReadBufferSize)
-	assert.EqualValues(t, 512, transport.WriteBufferSize)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := test.settings.ToClient()
+			if test.shouldError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			transport := client.Transport.(*http.Transport)
+			assert.EqualValues(t, 1024, transport.ReadBufferSize)
+			assert.EqualValues(t, 512, transport.WriteBufferSize)
+		})
+	}
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
