@@ -3,15 +3,21 @@
 Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 [Design](DESIGN.md) for additional information on this receiver.
 
+Supported pipeline types: metrics
+
+## Getting Started
+
 This receiver is a drop-in replacement for getting Prometheus to scrape your
-services. It supports the full set of Prometheus configuration, including 
-service discovery. Just like you would write in a YAML configuration file before
-starting Prometheus, such as with:
+services. It supports the full set of Prometheus configuration, including
+service discovery. Just like you would write in a YAML configuration file
+before starting Prometheus, such as with:
+
 ```shell
 prometheus --config.file=prom.yaml
 ```
 
-You can copy and paste that same configuration under section
+You can copy and paste that same configuration under:
+
 ```yaml
 receivers:
   prometheus:
@@ -19,6 +25,7 @@ receivers:
 ```
 
 For example:
+
 ```yaml
 receivers:
     prometheus:
@@ -40,6 +47,3 @@ receivers:
               regex: "(request_duration_seconds.*|response_duration_seconds.*)"
               action: keep
 ```
-
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
