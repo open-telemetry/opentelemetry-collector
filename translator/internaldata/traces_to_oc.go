@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -99,6 +100,17 @@ func spanToOC(span pdata.Span) *octrace.Span {
 		attributes.AttributeMap[tracetranslator.TagSpanKind] = kindAttr
 	}
 
+	ocStatus, statusAttr := statusToOC(span.Status())
+	if statusAttr != nil {
+		if attributes == nil {
+			attributes = &octrace.Span_Attributes{
+				AttributeMap:           make(map[string]*octrace.AttributeValue, 1),
+				DroppedAttributesCount: 0,
+			}
+		}
+		attributes.AttributeMap[tracetranslator.TagStatusCode] = statusAttr
+	}
+
 	return &octrace.Span{
 		TraceId:                 traceIDToOC(span.TraceID()),
 		SpanId:                  spanIDToOC(span.SpanID()),
@@ -111,7 +123,7 @@ func spanToOC(span pdata.Span) *octrace.Span {
 		Attributes:              attributes,
 		TimeEvents:              eventsToOC(span.Events(), span.DroppedEventsCount()),
 		Links:                   linksToOC(span.Links(), span.DroppedLinksCount()),
-		Status:                  statusToOC(span.Status()),
+		Status:                  ocStatus,
 		ChildSpanCount:          nil, // TODO(dmitryax): Handle once OTLP supports it
 		SameProcessAsParentSpan: spaps,
 	}
@@ -384,14 +396,27 @@ func spanIDToOC(sid pdata.SpanID) []byte {
 	return sidBytes[:]
 }
 
-func statusToOC(status pdata.SpanStatus) *octrace.Status {
+func statusToOC(status pdata.SpanStatus) (*octrace.Status, *octrace.AttributeValue) {
 	if status.IsNil() {
-		return nil
+		return nil, nil
 	}
-	return &octrace.Status{
-		Code:    int32(status.Code()),
-		Message: status.Message(),
+
+	var attr *octrace.AttributeValue
+	var oc int32
+	switch status.Code() {
+	case pdata.StatusCodeUnset:
+		// Unset in OTLP corresponds to OK in OpenCensus.
+		oc = trace.StatusCodeOK
+	case pdata.StatusCodeOk:
+		// OK in OpenCensus is the closest to OK in OTLP.
+		oc = trace.StatusCodeOK
+		// We will also add an attribute to indicate that it is OTLP OK, different from OTLP Unset.
+		attr = &octrace.AttributeValue{Value: &octrace.AttributeValue_IntValue{IntValue: int64(status.Code())}}
+	case pdata.StatusCodeError:
+		oc = trace.StatusCodeUnknown
 	}
+
+	return &octrace.Status{Code: oc, Message: status.Message()}, attr
 }
 
 func stringToTruncatableString(str string) *octrace.TruncatableString {

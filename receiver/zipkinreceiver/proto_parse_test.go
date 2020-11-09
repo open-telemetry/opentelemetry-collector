@@ -101,6 +101,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	protoBlob, err := proto.Marshal(payloadFromWild)
 	require.NoError(t, err, "Failed to protobuf serialize payload: %v", err)
 	zi := new(ZipkinReceiver)
+	zi.config = createDefaultConfig().(*Config)
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 
@@ -111,7 +112,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
-			Resource: &otlpresource.Resource{
+			Resource: otlpresource.Resource{
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
@@ -189,7 +190,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 			},
 		},
 		{
-			Resource: &otlpresource.Resource{
+			Resource: otlpresource.Resource{
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,

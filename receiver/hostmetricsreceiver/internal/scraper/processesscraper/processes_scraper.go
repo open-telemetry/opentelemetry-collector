@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+const metricsLen = systemSpecificMetricsLen
+
 // scraper for Processes Metrics
 type scraper struct {
 	config    *Config
@@ -50,13 +52,8 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 	err := appendSystemSpecificProcessesMetrics(metrics, 0, s.misc)
 	return metrics, err

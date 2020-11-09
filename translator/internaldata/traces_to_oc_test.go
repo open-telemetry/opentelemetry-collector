@@ -260,7 +260,7 @@ func TestInternalToOC(t *testing.T) {
 		Attributes: &octrace.Span_Attributes{
 			DroppedAttributesCount: 1,
 		},
-		Status: &octrace.Status{Message: "status-cancelled", Code: 1},
+		Status: &octrace.Status{Message: "status-cancelled", Code: 2},
 	}
 
 	ocSpan2 := &octrace.Span{

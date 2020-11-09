@@ -23,6 +23,9 @@ exporters:
         headers:
             Prometheus-Remote-Write-Version: "0.1.0"
             X-Scope-OrgID: 234
+        external_labels:
+            key1: value1
+            key2: value2
 
 service:
     pipelines:

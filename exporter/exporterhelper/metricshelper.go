@@ -54,9 +54,8 @@ func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetrics
 	}
 }
 
-func (req *metricsRequest) onPartialError(consumererror.PartialError) request {
-	// TODO: implement this.
-	return req
+func (req *metricsRequest) onPartialError(partialErr consumererror.PartialError) request {
+	return newMetricsRequest(req.ctx, partialErr.GetMetrics(), req.pusher)
 }
 
 func (req *metricsRequest) export(ctx context.Context) (int, error) {
@@ -74,6 +73,9 @@ type metricsExporter struct {
 }
 
 func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	if mexp.baseExporter.convertResourceToTelemetry {
+		md = convertResourceToLabels(md)
+	}
 	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
 	req := newMetricsRequest(exporterCtx, md, mexp.pusher)
 	_, err := mexp.sender.send(req)

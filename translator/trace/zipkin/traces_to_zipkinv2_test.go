@@ -111,7 +111,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		zipkinSpans, err := InternalTracesToZipkinSpans(td)
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
-		tdFromZS, zErr := V2SpansToInternalTraces(zipkinSpans)
+		tdFromZS, zErr := V2SpansToInternalTraces(zipkinSpans, false)
 		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
@@ -154,7 +154,7 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 		},
 		Tags: map[string]string{
 			"resource-attr":  "resource-attr-val-1",
-			"status.code":    "STATUS_CODE_CANCELLED",
+			"status.code":    "STATUS_CODE_ERROR",
 			"status.message": "status-cancelled",
 		},
 		Name:      "operationA",

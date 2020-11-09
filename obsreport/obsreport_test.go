@@ -29,6 +29,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -37,13 +38,15 @@ const (
 	exporter   = "fakeExporter"
 	processor  = "fakeProcessor"
 	receiver   = "fakeReicever"
+	scraper    = "fakeScraper"
 	transport  = "fakeTransport"
 	format     = "fakeFormat"
 	legacyName = "fakeLegacyName"
 )
 
 var (
-	errFake = errors.New("errFake")
+	errFake        = errors.New("errFake")
+	partialErrFake = consumererror.NewPartialScrapeError(errFake, 1)
 )
 
 type receiveTestParams struct {
@@ -233,6 +236,64 @@ func TestReceiveMetricsOp(t *testing.T) {
 
 	// Check new metrics.
 	obsreporttest.CheckReceiverMetricsViews(t, receiver, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints))
+}
+
+func TestScrapeMetricsDataOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	ss := &spanStore{}
+	trace.RegisterExporter(ss)
+	defer trace.UnregisterExporter(ss)
+
+	parentCtx, parentSpan := trace.StartSpan(context.Background(),
+		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	defer parentSpan.End()
+
+	receiverCtx := obsreport.ScraperContext(parentCtx, receiver, scraper)
+	errParams := []error{partialErrFake, errFake, nil}
+	scrapedMetricPts := []int{23, 29, 15}
+	for i, err := range errParams {
+		ctx := obsreport.StartMetricsScrapeOp(receiverCtx, receiver, scraper)
+		assert.NotNil(t, ctx)
+
+		obsreport.EndMetricsScrapeOp(
+			ctx,
+			scrapedMetricPts[i],
+			err)
+	}
+
+	spans := ss.PullAllSpans()
+	require.Equal(t, len(errParams), len(spans))
+
+	var scrapedMetricPoints, erroredMetricPoints int
+	for i, span := range spans {
+		assert.Equal(t, "scraper/"+receiver+"/"+scraper+"/MetricsScraped", span.Name)
+		switch errParams[i] {
+		case nil:
+			scrapedMetricPoints += scrapedMetricPts[i]
+			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.ScrapedMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.ErroredMetricPointsKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+		case errFake:
+			erroredMetricPoints += scrapedMetricPts[i]
+			assert.Equal(t, int64(0), span.Attributes[obsreport.ScrapedMetricPointsKey])
+			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.ErroredMetricPointsKey])
+			assert.Equal(t, errParams[i].Error(), span.Status.Message)
+		case partialErrFake:
+			scrapedMetricPoints += scrapedMetricPts[i]
+			erroredMetricPoints++
+			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.ScrapedMetricPointsKey])
+			assert.Equal(t, int64(1), span.Attributes[obsreport.ErroredMetricPointsKey])
+			assert.Equal(t, errParams[i].Error(), span.Status.Message)
+		default:
+			t.Fatalf("unexpected err param: %v", errParams[i])
+		}
+	}
+
+	// Check new metrics.
+	obsreporttest.CheckScraperMetricsViews(t, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints))
 }
 
 func TestExportTraceDataOp(t *testing.T) {

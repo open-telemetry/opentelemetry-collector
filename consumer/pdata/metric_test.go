@@ -208,8 +208,8 @@ func TestMetricSize(t *testing.T) {
 	assert.Equal(t, sizeBytes, md.Size())
 }
 
-func TestMetricsSizeWithNils(t *testing.T) {
-	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).Size())
+func TestMetricsSizeWithNil(t *testing.T) {
+	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil}).Size())
 }
 
 func TestMetricCountWithNils(t *testing.T) {
@@ -330,6 +330,45 @@ func TestMetricAndDataPointCountWithNil(t *testing.T) {
 	assert.EqualValues(t, 1, ms)
 	assert.EqualValues(t, 2, dps)
 
+}
+
+func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
+	metrics := NewMetrics()
+	rm := NewResourceMetrics()
+	rm.InitEmpty()
+	metrics.ResourceMetrics().Append(rm)
+	ilm := NewInstrumentationLibraryMetrics()
+	ilm.InitEmpty()
+	rm.InstrumentationLibraryMetrics().Append(ilm)
+	intGauge := NewMetric()
+	intGauge.InitEmpty()
+	ilm.Metrics().Append(intGauge)
+	intGauge.SetDataType(MetricDataTypeIntGauge)
+	doubleGauge := NewMetric()
+	doubleGauge.InitEmpty()
+	ilm.Metrics().Append(doubleGauge)
+	doubleGauge.SetDataType(MetricDataTypeDoubleGauge)
+	intHistogram := NewMetric()
+	intHistogram.InitEmpty()
+	ilm.Metrics().Append(intHistogram)
+	intHistogram.SetDataType(MetricDataTypeIntHistogram)
+	doubleHistogram := NewMetric()
+	doubleHistogram.InitEmpty()
+	ilm.Metrics().Append(doubleHistogram)
+	doubleHistogram.SetDataType(MetricDataTypeDoubleHistogram)
+	intSum := NewMetric()
+	intSum.InitEmpty()
+	ilm.Metrics().Append(intSum)
+	intSum.SetDataType(MetricDataTypeIntSum)
+	doubleSum := NewMetric()
+	doubleSum.InitEmpty()
+	ilm.Metrics().Append(doubleSum)
+	doubleSum.SetDataType(MetricDataTypeDoubleSum)
+
+	ms, dps := metrics.MetricAndDataPointCount()
+
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 0, dps)
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
@@ -838,8 +877,8 @@ func BenchmarkMetricsFromOtlp(b *testing.B) {
 	}
 }
 
-func generateTestProtoResource() *otlpresource.Resource {
-	return &otlpresource.Resource{
+func generateTestProtoResource() otlpresource.Resource {
+	return otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "string",

@@ -161,9 +161,6 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	ms.InitEmpty()
-	assert.True(t, ms.Resource().IsNil())
-	ms.Resource().InitEmpty()
-	assert.False(t, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
@@ -969,6 +966,15 @@ func TestSpanStatus_Code(t *testing.T) {
 	assert.EqualValues(t, testValCode, ms.Code())
 }
 
+func TestSpanStatus_DeprecatedCode(t *testing.T) {
+	ms := NewSpanStatus()
+	ms.InitEmpty()
+	assert.EqualValues(t, DeprecatedStatusCode(0), ms.DeprecatedCode())
+	testValDeprecatedCode := DeprecatedStatusCode(1)
+	ms.SetDeprecatedCode(testValDeprecatedCode)
+	assert.EqualValues(t, testValDeprecatedCode, ms.DeprecatedCode())
+}
+
 func TestSpanStatus_Message(t *testing.T) {
 	ms := NewSpanStatus()
 	ms.InitEmpty()
@@ -999,7 +1005,6 @@ func generateTestResourceSpans() ResourceSpans {
 }
 
 func fillTestResourceSpans(tv ResourceSpans) {
-	tv.Resource().InitEmpty()
 	fillTestResource(tv.Resource())
 	fillTestInstrumentationLibrarySpansSlice(tv.InstrumentationLibrarySpans())
 }
@@ -1133,5 +1138,6 @@ func generateTestSpanStatus() SpanStatus {
 
 func fillTestSpanStatus(tv SpanStatus) {
 	tv.SetCode(StatusCode(1))
+	tv.SetDeprecatedCode(DeprecatedStatusCode(1))
 	tv.SetMessage("cancelled")
 }

@@ -19,6 +19,7 @@ import (
 
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -147,11 +148,12 @@ func ocSpanToInternal(src *octrace.Span, dest pdata.Span) {
 	dest.SetStartTime(pdata.TimestampToUnixNano(src.StartTime))
 	dest.SetEndTime(pdata.TimestampToUnixNano(src.EndTime))
 
+	ocStatusToInternal(src.Status, src.Attributes, dest.Status())
+
 	initAttributeMapFromOC(src.Attributes, dest.Attributes())
 	dest.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(src.Attributes))
 	ocEventsToInternal(src.TimeEvents, dest)
 	ocLinksToInternal(src.Links, dest)
-	ocStatusToInternal(src.Status, dest.Status())
 	ocSameProcessAsParentSpanToInternal(src.SameProcessAsParentSpan, dest)
 }
 
@@ -171,12 +173,36 @@ func spanIDToInternal(spanID []byte) pdata.SpanID {
 	return pdata.NewSpanID(sid)
 }
 
-func ocStatusToInternal(ocStatus *octrace.Status, dest pdata.SpanStatus) {
+func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attributes, dest pdata.SpanStatus) {
 	if ocStatus == nil {
 		return
 	}
 	dest.InitEmpty()
-	dest.SetCode(pdata.StatusCode(ocStatus.Code))
+
+	var code pdata.StatusCode
+	switch ocStatus.Code {
+	case trace.StatusCodeOK:
+		code = pdata.StatusCodeUnset
+
+	case trace.StatusCodeUnknown:
+		// It is an error.
+		fallthrough
+
+	default:
+		// all other OC status codes are also errors.
+		code = pdata.StatusCodeError
+	}
+
+	if ocAttrs != nil {
+		// tracetranslator.TagStatusCode is set it must override the status code value.
+		// See the reverse translation in traces_to_oc.go:statusToOC().
+		if attr, ok := ocAttrs.AttributeMap[tracetranslator.TagStatusCode]; ok {
+			code = pdata.StatusCode(attr.GetIntValue())
+			delete(ocAttrs.AttributeMap, tracetranslator.TagStatusCode)
+		}
+	}
+
+	dest.SetCode(code)
 	dest.SetMessage(ocStatus.Message)
 }
 

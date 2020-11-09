@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		config            Config
@@ -92,9 +92,8 @@ func TestScrapeMetrics(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.Scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if !test.expectMetrics {
@@ -124,7 +123,13 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
+
+	minExpectedPoints := 1
+	if expectDirectionLabels {
+		minExpectedPoints = 2
+	}
+	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), minExpectedPoints)
+
 	internal.AssertIntSumMetricLabelExists(t, metric, 0, deviceLabelName)
 	if expectDirectionLabels {
 		internal.AssertIntSumMetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
@@ -137,7 +142,13 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 	if startTime != 0 {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.GreaterOrEqual(t, metric.DoubleSum().DataPoints().Len(), 2)
+
+	minExpectedPoints := 1
+	if expectDirectionLabels {
+		minExpectedPoints = 2
+	}
+	assert.GreaterOrEqual(t, metric.DoubleSum().DataPoints().Len(), minExpectedPoints)
+
 	internal.AssertDoubleSumMetricLabelExists(t, metric, 0, deviceLabelName)
 	if expectDirectionLabels {
 		internal.AssertDoubleSumMetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)

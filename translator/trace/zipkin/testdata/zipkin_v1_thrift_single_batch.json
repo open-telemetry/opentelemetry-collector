@@ -128,6 +128,11 @@
                 "key": "success",
                 "annotation_type": "BOOL",
                 "value": "AQ=="
+            },
+            {
+              "key": "processed",
+              "annotation_type": "DOUBLE",
+              "value": "P/gAAAAAAAA="
             }
         ]
     },

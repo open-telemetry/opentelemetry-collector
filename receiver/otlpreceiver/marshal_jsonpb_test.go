@@ -68,8 +68,9 @@ const expectedJSON = `{
           ],
           "droppedEventsCount": 1,
           "status": {
-            "code": "STATUS_CODE_CANCELLED",
-            "message": "status-cancelled"
+            "deprecatedCode": "DEPRECATED_STATUS_CODE_UNKNOWN_ERROR",
+            "message": "status-cancelled",
+            "code": "STATUS_CODE_ERROR"
           }
         }
       ]

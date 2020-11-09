@@ -22,10 +22,16 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/net"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+)
+
+const (
+	networkMetricsLen     = 4
+	connectionsMetricsLen = 1
 )
 
 // scraper for Network Metrics
@@ -75,13 +81,8 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	var errors []error
@@ -96,7 +97,7 @@ func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	return metrics, componenterror.CombineErrors(errors)
+	return metrics, receiverhelper.CombineScrapeErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
@@ -105,7 +106,7 @@ func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, networkMetricsLen)
 	}
 
 	// filter network interfaces by name
@@ -113,7 +114,7 @@ func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice
 
 	if len(ioCounters) > 0 {
 		startIdx := metrics.Len()
-		metrics.Resize(startIdx + 4)
+		metrics.Resize(startIdx + networkMetricsLen)
 		initializeNetworkPacketsMetric(metrics.At(startIdx+0), networkPacketsDescriptor, startTime, now, ioCounters)
 		initializeNetworkDroppedPacketsMetric(metrics.At(startIdx+1), networkDroppedPacketsDescriptor, startTime, now, ioCounters)
 		initializeNetworkErrorsMetric(metrics.At(startIdx+2), networkErrorsDescriptor, startTime, now, ioCounters)
@@ -181,13 +182,13 @@ func (s *scraper) scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.Metri
 
 	connections, err := s.connections("tcp")
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, connectionsMetricsLen)
 	}
 
 	connectionStatusCounts := getTCPConnectionStatusCounts(connections)
 
 	startIdx := metrics.Len()
-	metrics.Resize(startIdx + 1)
+	metrics.Resize(startIdx + connectionsMetricsLen)
 	initializeNetworkTCPConnectionsMetric(metrics.At(startIdx), now, connectionStatusCounts)
 	return nil
 }

@@ -52,6 +52,7 @@ func createDefaultConfig() configmodels.Receiver {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},
+		ParseStringTags: false,
 	}
 }
 

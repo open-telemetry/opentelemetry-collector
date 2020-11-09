@@ -161,9 +161,6 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	ms.InitEmpty()
-	assert.True(t, ms.Resource().IsNil())
-	ms.Resource().InitEmpty()
-	assert.False(t, ms.Resource().IsNil())
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
@@ -574,7 +571,6 @@ func generateTestResourceLogs() ResourceLogs {
 }
 
 func fillTestResourceLogs(tv ResourceLogs) {
-	tv.Resource().InitEmpty()
 	fillTestResource(tv.Resource())
 	fillTestInstrumentationLibraryLogsSlice(tv.InstrumentationLibraryLogs())
 }

@@ -49,7 +49,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilResourceMetrics()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetricOneNil()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsWithCountersHistograms()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesNilDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
@@ -72,18 +72,16 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 }
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
-	av := pdata.NewAnyValueArray()
 	ava := pdata.NewAttributeValueArray()
+	av := ava.ArrayVal()
 	av.Append(pdata.NewAttributeValueString("foo"))
 	av.Append(pdata.NewAttributeValueInt(42))
 
-	av2 := pdata.NewAnyValueArray()
-	av2.Append(pdata.NewAttributeValueString("bar"))
 	ava2 := pdata.NewAttributeValueArray()
-	ava2.SetArrayVal(av2)
+	av2 := ava2.ArrayVal()
+	av2.Append(pdata.NewAttributeValueString("bar"))
 
 	av.Append(ava2)
-	ava.SetArrayVal(av)
 
 	assert.Equal(t, 3, ava.ArrayVal().Len())
 	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))

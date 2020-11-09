@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-func TestScrapeMetrics(t *testing.T) {
+func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		bootTimeFunc      func() (uint64, error)
@@ -64,9 +64,8 @@ func TestScrapeMetrics(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
 
-			metrics, err := scraper.ScrapeMetrics(context.Background())
+			metrics, err := scraper.Scrape(context.Background())
 			require.NoError(t, err)
 
 			// expect 3 metrics (windows does not currently support page_faults metric)

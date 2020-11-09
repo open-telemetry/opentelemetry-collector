@@ -24,9 +24,15 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+)
+
+const (
+	standardMetricsLen = 5
+	metricsLen         = standardMetricsLen + systemSpecificMetricsLen
 )
 
 // scraper for Disk Metrics
@@ -75,26 +81,21 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Close
-func (s *scraper) Close(_ context.Context) error {
-	return nil
-}
-
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
 	ioCounters, err := s.ioCounters()
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
 	ioCounters = s.filterByDevice(ioCounters)
 
 	if len(ioCounters) > 0 {
-		metrics.Resize(5 + systemSpecificMetricsLen)
+		metrics.Resize(metricsLen)
 		initializeDiskIOMetric(metrics.At(0), s.startTime, now, ioCounters)
 		initializeDiskOpsMetric(metrics.At(1), s.startTime, now, ioCounters)
 		initializeDiskIOTimeMetric(metrics.At(2), s.startTime, now, ioCounters)

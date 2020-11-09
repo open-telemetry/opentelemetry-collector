@@ -19,33 +19,13 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
-
-// BaseScraper gathers metrics from the host machine.
-type BaseScraper interface {
-	// Initialize performs any timely initialization tasks such as
-	// setting up performance counters for initial collection.
-	Initialize(ctx context.Context) error
-	// Close should clean up any unmanaged resources such as
-	// performance counter handles.
-	Close(ctx context.Context) error
-}
 
 // BaseFactory for creating Scrapers.
 type BaseFactory interface {
 	// CreateDefaultConfig creates the default configuration for the Scraper.
 	CreateDefaultConfig() Config
-}
-
-// Scraper gathers metrics from the host machine.
-type Scraper interface {
-	BaseScraper
-
-	// ScrapeMetrics returns relevant scraped metrics. If errors occur
-	// scraping some metrics, an error should be returned, but any
-	// metrics that were successfully scraped should still be returned.
-	ScrapeMetrics(ctx context.Context) (pdata.MetricSlice, error)
 }
 
 // ScraperFactory can create a MetricScraper.
@@ -54,28 +34,16 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (Scraper, error)
-}
-
-// ResourceScraper gathers metrics from a low-level resource such as
-// a process.
-type ResourceScraper interface {
-	BaseScraper
-
-	// ScrapeMetrics returns relevant scraped metrics per resource.
-	// If errors occur scraping some metrics, an error should be
-	// returned, but any metrics that were successfully scraped
-	// should still be returned.
-	ScrapeMetrics(ctx context.Context) (pdata.ResourceMetricsSlice, error)
+	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (receiverhelper.MetricsScraper, error)
 }
 
 // ResourceScraperFactory can create a ResourceScraper.
 type ResourceScraperFactory interface {
 	BaseFactory
 
-	// CreateMetricsScraper creates a resource scraper based on this
+	// CreateResourceMetricsScraper creates a resource scraper based on this
 	// config. If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (ResourceScraper, error)
+	CreateResourceMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (receiverhelper.ResourceMetricsScraper, error)
 }
 
 // Config is the configuration of a scraper.

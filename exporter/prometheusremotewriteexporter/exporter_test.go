@@ -46,21 +46,24 @@ func Test_NewPrwExporter(t *testing.T) {
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
+		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 	}
 	tests := []struct {
-		name        string
-		config      *Config
-		namespace   string
-		endpoint    string
-		client      *http.Client
-		returnError bool
+		name           string
+		config         *Config
+		namespace      string
+		endpoint       string
+		externalLabels map[string]string
+		client         *http.Client
+		returnError    bool
 	}{
 		{
 			"invalid_URL",
 			config,
 			"test",
 			"invalid URL",
+			map[string]string{"Key1": "Val1"},
 			http.DefaultClient,
 			true,
 		},
@@ -69,7 +72,17 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			map[string]string{"Key1": "Val1"},
 			nil,
+			true,
+		},
+		{
+			"invalid_labels_case",
+			config,
+			"test",
+			"http://some.url:9411/api/prom/push",
+			map[string]string{"Key1": ""},
+			http.DefaultClient,
 			true,
 		},
 		{
@@ -77,6 +90,16 @@ func Test_NewPrwExporter(t *testing.T) {
 			config,
 			"test",
 			"http://some.url:9411/api/prom/push",
+			map[string]string{"Key1": "Val1"},
+			http.DefaultClient,
+			false,
+		},
+		{
+			"success_case_no_labels",
+			config,
+			"test",
+			"http://some.url:9411/api/prom/push",
+			map[string]string{},
 			http.DefaultClient,
 			false,
 		},
@@ -84,7 +107,7 @@ func Test_NewPrwExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client)
+			prwe, err := NewPrwExporter(tt.namespace, tt.endpoint, tt.client, tt.externalLabels)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -92,6 +115,7 @@ func Test_NewPrwExporter(t *testing.T) {
 			require.NotNil(t, prwe)
 			assert.NotNil(t, prwe.namespace)
 			assert.NotNil(t, prwe.endpointURL)
+			assert.NotNil(t, prwe.externalLabels)
 			assert.NotNil(t, prwe.client)
 			assert.NotNil(t, prwe.closeChan)
 			assert.NotNil(t, prwe.wg)
@@ -220,7 +244,7 @@ func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) e
 
 	HTTPClient := http.DefaultClient
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient)
+	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{})
 	if err != nil {
 		return err
 	}
@@ -322,6 +346,20 @@ func Test_PushMetrics(t *testing.T) {
 		},
 	}
 	doubleHistogramBatch := pdata.MetricsFromOtlp(doubleHistogramMetric)
+
+	doubleSummaryMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						validMetrics1[validDoubleSummary],
+						validMetrics2[validDoubleSummary],
+					},
+				},
+			},
+		},
+	}
+	doubleSummaryBatch := pdata.MetricsFromOtlp(doubleSummaryMetric)
 
 	// len(BucketCount) > len(ExplicitBounds)
 	unmatchedBoundBucketIntHistMetric := []*otlp.ResourceMetrics{
@@ -428,6 +466,19 @@ func Test_PushMetrics(t *testing.T) {
 		},
 	}
 	nilDataPointDoubleHistogramBatch := pdata.MetricsFromOtlp(nilDataPointDoubleHistogramMetric)
+
+	nilDataPointDoubleSummaryMetric := []*otlp.ResourceMetrics{
+		{
+			InstrumentationLibraryMetrics: []*otlp.InstrumentationLibraryMetrics{
+				{
+					Metrics: []*otlp.Metric{
+						errorMetrics[nilDataPointDoubleSummary],
+					},
+				},
+			},
+		},
+	}
+	nilDataPointDoubleSummaryBatch := pdata.MetricsFromOtlp(nilDataPointDoubleSummaryMetric)
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int) {
 		body, err := ioutil.ReadAll(r.Body)
@@ -548,6 +599,15 @@ func Test_PushMetrics(t *testing.T) {
 			false,
 		},
 		{
+			"doubleSummary_case",
+			&doubleSummaryBatch,
+			checkFunc,
+			10,
+			http.StatusAccepted,
+			0,
+			false,
+		},
+		{
 			"unmatchedBoundBucketIntHist_case",
 			&unmatchedBoundBucketIntHistBatch,
 			checkFunc,
@@ -564,6 +624,15 @@ func Test_PushMetrics(t *testing.T) {
 			http.StatusAccepted,
 			0,
 			false,
+		},
+		{
+			"5xx_case",
+			&unmatchedBoundBucketDoubleHistBatch,
+			checkFunc,
+			5,
+			http.StatusServiceUnavailable,
+			1,
+			true,
 		},
 		{
 			"nilDataPointDoubleGauge_case",
@@ -619,6 +688,15 @@ func Test_PushMetrics(t *testing.T) {
 			nilDataPointIntHistogramBatch.MetricCount(),
 			true,
 		},
+		{
+			"nilDataPointDoubleSummary_case",
+			&nilDataPointDoubleSummaryBatch,
+			checkFunc,
+			0,
+			http.StatusAccepted,
+			nilDataPointDoubleSummaryBatch.MetricCount(),
+			true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -652,7 +730,7 @@ func Test_PushMetrics(t *testing.T) {
 			// c, err := config.HTTPClientSettings.ToClient()
 			// assert.Nil(t, err)
 			c := http.DefaultClient
-			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c)
+			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{})
 			require.NoError(t, nErr)
 			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
@@ -660,6 +738,53 @@ func Test_PushMetrics(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func Test_validateAndSanitizeExternalLabels(t *testing.T) {
+	tests := []struct {
+		name           string
+		inputLabels    map[string]string
+		expectedLabels map[string]string
+		returnError    bool
+	}{
+		{"success_case_no_labels",
+			map[string]string{},
+			map[string]string{},
+			false,
+		},
+		{"success_case_with_labels",
+			map[string]string{"key1": "val1"},
+			map[string]string{"key1": "val1"},
+			false,
+		},
+		{"success_case_2_with_labels",
+			map[string]string{"__key1__": "val1"},
+			map[string]string{"__key1__": "val1"},
+			false,
+		},
+		{"success_case_with_sanitized_labels",
+			map[string]string{"__key1.key__": "val1"},
+			map[string]string{"__key1_key__": "val1"},
+			false,
+		},
+		{"fail_case_empty_label",
+			map[string]string{"": "val1"},
+			map[string]string{},
+			true,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newLabels, err := validateAndSanitizeExternalLabels(tt.inputLabels)
+			if tt.returnError {
+				assert.Error(t, err)
+				return
+			}
+			assert.EqualValues(t, tt.expectedLabels, newLabels)
 			assert.NoError(t, err)
 		})
 	}

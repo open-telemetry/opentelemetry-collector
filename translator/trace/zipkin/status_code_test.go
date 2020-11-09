@@ -270,7 +270,7 @@ func attributesFromMap(mapValues map[string]string) map[string]*tracepb.Attribut
 	res := map[string]*tracepb.AttributeValue{}
 
 	for k, v := range mapValues {
-		pbAttrib := parseAnnotationValue(v)
+		pbAttrib := parseAnnotationValue(v, false)
 		res[k] = pbAttrib
 	}
 	return res

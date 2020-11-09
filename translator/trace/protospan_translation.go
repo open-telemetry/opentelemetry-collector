@@ -55,8 +55,6 @@ const (
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required
 // by other protocols.
 const (
-	ResourceNotSet        = "OTLPResourceNotSet"
-	ResourceNoAttrs       = "OTLPResourceNoAttributes"
 	ResourceNoServiceName = "OTLPResourceNoServiceName"
 )
 
@@ -303,4 +301,13 @@ func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 			dest.Append(av)
 		}
 	}
+}
+
+// StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#status
+func StatusCodeFromHTTP(httpStatusCode int) pdata.StatusCode {
+	if httpStatusCode >= 100 && httpStatusCode < 399 {
+		return pdata.StatusCodeUnset
+	}
+	return pdata.StatusCodeError
 }

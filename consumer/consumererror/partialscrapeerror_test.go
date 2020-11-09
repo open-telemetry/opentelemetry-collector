@@ -12,8 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreportscraper
+package consumererror
 
-func scrapeMetricsSpanName(typeStr string) string {
-	return typeStr + "scraper.ScrapeMetrics"
+import (
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPartialScrapeError(t *testing.T) {
+	failed := 2
+	err := fmt.Errorf("some error")
+	partialErr := NewPartialScrapeError(err, failed)
+	assert.Equal(t, err.Error(), partialErr.Error())
+	assert.Equal(t, failed, partialErr.(PartialScrapeError).Failed)
+}
+
+func TestIsPartialScrapeError(t *testing.T) {
+	err := errors.New("testError")
+	require.False(t, IsPartialScrapeError(err))
+
+	err = NewPartialScrapeError(err, 2)
+	require.True(t, IsPartialScrapeError(err))
 }

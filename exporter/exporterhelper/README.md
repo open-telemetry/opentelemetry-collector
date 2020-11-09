@@ -1,7 +1,7 @@
 # Exporter Helper
 
 This is a helper exporter that other exporters can depend on. Today, it
-primarily offers queued retries capabilities.
+primarily offers queued retries  and resource attributes to metric labels conversion.
 
 > :warning: This exporter should not be added to a service pipeline.
 
@@ -21,5 +21,7 @@ The following configuration options can be modified:
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
+- `resource_to_telemetry_conversion`
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 
 The full list of settings exposed for this helper exporter are documented [here](factory.go).

@@ -19,18 +19,21 @@ package processesscraper
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
+
+const systemSpecificMetricsLen = 2
 
 func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
 	now := internal.TimeToUnixNano(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
-		return err
+		return consumererror.NewPartialScrapeError(err, systemSpecificMetricsLen)
 	}
 
-	metrics.Resize(startIndex + 2)
+	metrics.Resize(startIndex + systemSpecificMetricsLen)
 	initializeProcessesMetric(metrics.At(startIndex+0), processesRunningDescriptor, now, int64(misc.ProcsRunning))
 	initializeProcessesMetric(metrics.At(startIndex+1), processesBlockedDescriptor, now, int64(misc.ProcsBlocked))
 	return nil

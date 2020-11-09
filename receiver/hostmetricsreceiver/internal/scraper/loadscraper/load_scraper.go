@@ -21,9 +21,12 @@ import (
 	"github.com/shirou/gopsutil/load"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
+
+const metricsLen = 3
 
 // scraper for Load Metrics
 type scraper struct {
@@ -49,17 +52,17 @@ func (s *scraper) Close(ctx context.Context) error {
 	return stopSampling(ctx)
 }
 
-// ScrapeMetrics
-func (s *scraper) ScrapeMetrics(_ context.Context) (pdata.MetricSlice, error) {
+// Scrape
+func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())
 	avgLoadValues, err := s.load()
 	if err != nil {
-		return metrics, err
+		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.Resize(3)
+	metrics.Resize(metricsLen)
 	initializeLoadMetric(metrics.At(0), loadAvg1MDescriptor, now, avgLoadValues.Load1)
 	initializeLoadMetric(metrics.At(1), loadAvg5mDescriptor, now, avgLoadValues.Load5)
 	initializeLoadMetric(metrics.At(2), loadAvg15mDescriptor, now, avgLoadValues.Load15)

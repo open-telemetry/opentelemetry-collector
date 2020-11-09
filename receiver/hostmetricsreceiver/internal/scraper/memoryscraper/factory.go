@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/obsreportscraper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements Factory for Memory scraper.
@@ -44,7 +44,11 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	_ *zap.Logger,
 	config internal.Config,
-) (internal.Scraper, error) {
+) (receiverhelper.MetricsScraper, error) {
 	cfg := config.(*Config)
-	return obsreportscraper.WrapScraper(newMemoryScraper(ctx, cfg), TypeStr), nil
+	s := newMemoryScraper(ctx, cfg)
+
+	ms := receiverhelper.NewMetricsScraper(TypeStr, s.Scrape)
+
+	return ms, nil
 }
