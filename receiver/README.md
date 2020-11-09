@@ -3,7 +3,7 @@ A receiver is how data gets into the OpenTelemetry Collector. Generally, a recei
 accepts data in a specified format, translates it into the internal format and
 passes it to [processors](../processor/README.md)
 and [exporters](../exporter/README.md)
-defined in the applicable [pipelines](../docs/pipelines.md).
+defined in the applicable pipelines.
 The format of the traces and metrics supported are receiver specific.
 
 Supported trace receivers (sorted alphabetically):
