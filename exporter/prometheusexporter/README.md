@@ -1,6 +1,10 @@
 # Prometheus Exporter
 
-Exports metric data to a [Prometheus](https://prometheus.io/) back-end.
+Exports data to a [Prometheus](https://prometheus.io/) back-end.
+
+Supported pipeline types: metrics
+
+## Getting Started
 
 The following settings are required:
 
@@ -10,7 +14,7 @@ The following settings can be optionally configured:
 
 - `constlabels` (no default): key/values that are applied for every exported metric.
 - `namespace` (no default): if set, exports metrics under the provided value.
-- `send_timestamps` (default false): if true, sends the timestamp of the underlying
+- `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying
   metric sample in the response.
 
 Example:
@@ -25,6 +29,3 @@ exporters:
       "another label": spaced value
     send_timestamps: true
 ```
-
-The full list of settings exposed for this exporter are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).

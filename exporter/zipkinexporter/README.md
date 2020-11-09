@@ -1,26 +1,33 @@
 # Zipkin Exporter
 
-Exports trace data to a [Zipkin](https://zipkin.io/) back-end.
+Exports data to a [Zipkin](https://zipkin.io/) back-end.
+By default, this exporter requires TLS and offers queued retry capabilities.
+
+Supported pipeline types: traces, metrics
+
+## Getting Started
 
 The following settings are required:
 
 - `endpoint` (no default): URL to which the exporter is going to send Zipkin trace data.
-- `format` (default = JSON): The format to sent events in. Can be set to JSON or proto.
+- `format` (default = `JSON`): The format to sent events in. Can be set to `JSON` or `proto`.
 
-The following settings can be optionally configured:
+By default, TLS is enabled:
 
-- `insecure` (default = false): whether to enable client transport security for
+- `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
-- `ca_file` path to the CA cert. For a client this verifies the server certificate. Should
+
+As a result, the following parameters are also required:
+
+- `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
-- `cert_file` path to the TLS cert to use for TLS required connections. Should
+- `key_file` (no default): path to the TLS key to use for TLS required connections. Should
   only be used if `insecure` is set to false.
-- `key_file` path to the TLS key to use for TLS required connections. Should
-  only be used if `insecure` is set to false.
-- `defaultservicename` (default = <missing service name>): What to name services missing this information.
-- `timeout` (default = 5s): How long to wait until the connection is close.
-- `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
-- `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
+
+The following settings are optional:
+
+- `defaultservicename` (default = `<missing service name>`): What to name
+  services missing this information.
 
 Example:
 
@@ -28,7 +35,17 @@ Example:
 exporters:
   zipkin:
     endpoint: "http://some.url:9411/api/v2/spans"
+    cert_file: file.cert
+    key_file: file.key
+  zipkin/2:
+    endpoint: "http://some.url:9411/api/v2/spans"
+    insecure: true
 ```
 
-The full list of settings exposed for this exporter are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/confighttp/README.md)
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md)
