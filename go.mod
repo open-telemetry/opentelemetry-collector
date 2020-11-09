@@ -6,7 +6,7 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
-	github.com/Shopify/sarama v1.27.0
+	github.com/Shopify/sarama v1.27.2
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
