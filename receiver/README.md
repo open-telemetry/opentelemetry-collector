@@ -8,10 +8,10 @@ The format of the traces and metrics supported are receiver specific.
 
 Supported trace receivers (sorted alphabetically):
 - [Jaeger Receiver](jaegerreceiver/README.md)
+- [Kafka Receiver](kafkareceiver/README.md)
 - [OpenCensus Receiver](opencensusreceiver/README.md)
 - [OpenTelemetry Receiver](otlpreceiver/README.md)
 - [Zipkin Receiver](zipkinreceiver/README.md)
-- [Kafka Receiver](kafkareceiver/README.md)
 
 Supported metric receivers (sorted alphabetically):
 - [Host Metrics Receiver](hostmetricsreceiver/README.md)

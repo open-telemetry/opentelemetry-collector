@@ -61,7 +61,6 @@ func (idx metricIndex) extract(pdm pdata.Metrics) pdata.Metrics {
 		rmOut.InitEmpty()
 		rmSliceOut.Append(rmOut)
 		resourceOut := rmOut.Resource()
-		resourceOut.InitEmpty()
 		rmIn.Resource().CopyTo(resourceOut)
 		ilmSliceOut := rmOut.InstrumentationLibraryMetrics()
 		ilmIndexes := idx.m[rmIdx]

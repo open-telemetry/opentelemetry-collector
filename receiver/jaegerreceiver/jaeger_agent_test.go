@@ -37,8 +37,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
@@ -188,7 +188,7 @@ func TestJaegerHTTP(t *testing.T) {
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
 	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
@@ -236,13 +236,12 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
 	td.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test")
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-	span.SetSpanID(pdata.NewSpanID([]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-	span.SetTraceID(pdata.NewTraceID([]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0}))
 	span.SetStartTime(1581452772000000000)
 	span.SetEndTime(1581452773000000000)
 	return td

@@ -46,7 +46,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		ConstLabels: map[string]string{},
+		ConstLabels:    map[string]string{},
+		SendTimestamps: false,
 	}
 }
 
@@ -63,8 +64,9 @@ func createMetricsExporter(
 	}
 
 	opts := prometheus.Options{
-		Namespace:   pcfg.Namespace,
-		ConstLabels: pcfg.ConstLabels,
+		Namespace:      pcfg.Namespace,
+		ConstLabels:    pcfg.ConstLabels,
+		SendTimestamps: pcfg.SendTimestamps,
 	}
 	pe, err := prometheus.New(opts)
 	if err != nil {

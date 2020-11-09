@@ -159,7 +159,7 @@ func (obj perfDataObject) GetValues(counterNames ...string) ([]*CounterValues, e
 		// "Base" values give the value of a related counter that pdh.dll uses to compute the derived
 		// value for this counter. We only care about raw values so ignore base values. See
 		// https://docs.microsoft.com/en-us/windows/win32/perfctrs/retrieving-counter-data.
-		if counter.IsBaseValue {
+		if counter.IsBaseValue && !counter.IsNanosecondCounter {
 			continue
 		}
 

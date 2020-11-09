@@ -39,10 +39,10 @@ type ExampleReceiver struct {
 	ExtraMapSetting  map[string]string `mapstructure:"extra_map"`
 	ExtraListSetting []string          `mapstructure:"extra_list"`
 
-	// FailTraceCreation causes CreateTraceReceiver to fail. Useful for testing.
+	// FailTraceCreation causes CreateTracesReceiver to fail. Useful for testing.
 	FailTraceCreation bool `mapstructure:"-"`
 
-	// FailMetricsCreation causes CreateTraceReceiver to fail. Useful for testing.
+	// FailMetricsCreation causes CreateMetricsReceiver to fail. Useful for testing.
 	FailMetricsCreation bool `mapstructure:"-"`
 }
 
@@ -79,12 +79,12 @@ func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *ExampleReceiverFactory) CreateTraceReceiver(
+func (f *ExampleReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
+	nextConsumer consumer.TracesConsumer,
+) (component.TracesReceiver, error) {
 	if cfg.(*ExampleReceiver).FailTraceCreation {
 		return nil, configerror.ErrDataTypeIsNotSupported
 	}
@@ -143,7 +143,7 @@ func (f *ExampleReceiverFactory) CreateLogsReceiver(
 type ExampleReceiverProducer struct {
 	Started         bool
 	Stopped         bool
-	TraceConsumer   consumer.TraceConsumer
+	TraceConsumer   consumer.TracesConsumer
 	MetricsConsumer consumer.MetricsConsumer
 	LogConsumer     consumer.LogsConsumer
 }
@@ -162,7 +162,7 @@ func (erp *ExampleReceiverProducer) Shutdown(context.Context) error {
 
 // This is the map of already created example receivers for particular configurations.
 // We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
-// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
 var exampleReceivers = map[configmodels.Receiver]*ExampleReceiverProducer{}
 
@@ -216,12 +216,12 @@ func (f *MultiProtoReceiverFactory) CreateDefaultConfig() configmodels.Receiver 
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *MultiProtoReceiverFactory) CreateTraceReceiver(
+func (f *MultiProtoReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	_ consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
+	_ consumer.TracesConsumer,
+) (component.TracesReceiver, error) {
 	// Not used for this test, just return nil
 	return nil, nil
 }
@@ -288,11 +288,11 @@ func (f *ExampleExporterFactory) CustomUnmarshaler() component.CustomUnmarshaler
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTraceExporter(
+func (f *ExampleExporterFactory) CreateTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
@@ -330,7 +330,7 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 	return nil
 }
 
-// ConsumeTraceData receives consumerdata.TraceData for processing by the TraceConsumer.
+// ConsumeTraceData receives consumerdata.TraceData for processing by the TracesConsumer.
 func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
@@ -385,7 +385,7 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *ExampleProcessorFactory) CreateTraceProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
+func (f *ExampleProcessorFactory) CreateTracesProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
 	return &ExampleProcessor{nextTraces: nextConsumer}, nil
 }
 
@@ -404,7 +404,7 @@ func (f *ExampleProcessorFactory) CreateLogsProcessor(
 }
 
 type ExampleProcessor struct {
-	nextTraces  consumer.TraceConsumer
+	nextTraces  consumer.TracesConsumer
 	nextMetrics consumer.MetricsConsumer
 	nextLogs    consumer.LogsConsumer
 }

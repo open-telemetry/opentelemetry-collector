@@ -24,8 +24,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
@@ -37,11 +37,11 @@ func TestNewTraceProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"foo"}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	require.Error(t, componenterror.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	tp, err = factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 }
@@ -56,7 +56,7 @@ type testCase struct {
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
-func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcessor) {
+func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcessor) {
 	t.Run(tt.inputName, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.inputName, tt.inputAttributes)
 
@@ -68,9 +68,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TraceProcesso
 			if rs.IsNil() {
 				continue
 			}
-			if !rs.Resource().IsNil() {
-				rs.Resource().Attributes().Sort()
-			}
+			rs.Resource().Attributes().Sort()
 			ilss := rss.At(i).InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
@@ -95,7 +93,6 @@ func generateTraceData(serviceName, inputName string, attrs map[string]pdata.Att
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
-		rs.Resource().InitEmpty()
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
 	rs.InstrumentationLibrarySpans().Resize(1)
@@ -156,7 +153,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	}
 	oCfg.Rename.FromAttributes = []string{"key"}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
@@ -260,7 +257,7 @@ func TestSpanProcessor_Values(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"key1"}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -336,7 +333,7 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -354,7 +351,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -383,7 +380,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2"}
 	oCfg.Rename.Separator = ""
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -413,7 +410,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -448,7 +445,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -545,7 +542,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 	for _, tc := range testCases {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
-		tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+		tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 		require.Nil(t, err)
 		require.NotNil(t, tp)
 
@@ -612,7 +609,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	oCfg.Rename.ToAttributes = &ToAttributes{
 		Rules: []string{`(?P<operation_website>.*?)$`},
 	}
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 

@@ -63,9 +63,6 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings by default.
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -73,7 +70,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
 		Topic:           defaultTopic,
 		Encoding:        defaultEncoding,
@@ -95,7 +92,7 @@ func (f *kafkaExporterFactory) createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 	exp, err := newExporter(*oCfg, params, f.marshallers)
 	if err != nil {
@@ -103,6 +100,7 @@ func (f *kafkaExporterFactory) createTraceExporter(
 	}
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		exp.traceDataPusher,
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.

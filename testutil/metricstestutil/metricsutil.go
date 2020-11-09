@@ -18,8 +18,10 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	timestamppb "github.com/golang/protobuf/ptypes/timestamp"
+	wrapperspb "github.com/golang/protobuf/ptypes/wrappers"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Gauge creates a gauge metric.
@@ -156,4 +158,47 @@ func toVals(vals []string) []*metricspb.LabelValue {
 		res = append(res, &metricspb.LabelValue{Value: val, HasValue: true})
 	}
 	return res
+}
+
+// SortedMetrics is mainly useful for tests.  It gets all of the attributes and
+// labels in sorted order so they can be consistently tested.
+func SortedMetrics(metrics pdata.Metrics) pdata.Metrics {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		rm.Resource().Attributes().Sort()
+
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				m := ilm.Metrics().At(k)
+				switch m.DataType() {
+				case pdata.MetricDataTypeIntGauge:
+					for l := 0; l < m.IntGauge().DataPoints().Len(); l++ {
+						m.IntGauge().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeIntSum:
+					for l := 0; l < m.IntSum().DataPoints().Len(); l++ {
+						m.IntSum().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeDoubleGauge:
+					for l := 0; l < m.DoubleGauge().DataPoints().Len(); l++ {
+						m.DoubleGauge().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeDoubleSum:
+					for l := 0; l < m.DoubleSum().DataPoints().Len(); l++ {
+						m.DoubleSum().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeIntHistogram:
+					for l := 0; l < m.IntHistogram().DataPoints().Len(); l++ {
+						m.IntHistogram().DataPoints().At(l).LabelsMap().Sort()
+					}
+				case pdata.MetricDataTypeDoubleHistogram:
+					for l := 0; l < m.DoubleHistogram().DataPoints().Len(); l++ {
+						m.DoubleHistogram().DataPoints().At(l).LabelsMap().Sort()
+					}
+				}
+			}
+		}
+	}
+	return metrics
 }

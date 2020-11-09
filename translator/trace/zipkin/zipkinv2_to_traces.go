@@ -15,7 +15,6 @@
 package zipkin
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -26,6 +25,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -69,7 +69,7 @@ func (b byOTLPTypes) Swap(i, j int) {
 }
 
 // V2SpansToInternalTraces translates Zipkin v2 spans into internal trace data.
-func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces, error) {
+func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel, parseStringTags bool) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(zipkinSpans) == 0 {
 		return traceData, nil
@@ -114,7 +114,7 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces
 			curSpans = curILSpans.Spans()
 		}
 		curSpans.Resize(spanCount + 1)
-		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount))
+		err := zSpanToInternal(zspan, tags, curSpans.At(spanCount), parseStringTags)
 		if err != nil {
 			return traceData, err
 		}
@@ -124,7 +124,7 @@ func V2SpansToInternalTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Traces
 	return traceData, nil
 }
 
-func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span) error {
+func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Span, parseStringTags bool) error {
 	dest.InitEmpty()
 
 	dest.SetTraceID(tracetranslator.UInt64ToTraceID(zspan.TraceID.High, zspan.TraceID.Low))
@@ -151,7 +151,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 	attrs := dest.Attributes()
 	attrs.InitEmptyWithCapacity(len(tags))
-	if err := zTagsToInternalAttrs(zspan, tags, attrs); err != nil {
+	if err := zTagsToInternalAttrs(zspan, tags, attrs, parseStringTags); err != nil {
 		return err
 	}
 
@@ -213,18 +213,20 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		link.InitEmpty()
 
 		// Convert trace id.
-		rawTrace, errTrace := hex.DecodeString(parts[0])
+		rawTrace := commonpb.TraceID{}
+		errTrace := rawTrace.UnmarshalJSON([]byte(parts[0]))
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(pdata.NewTraceID(rawTrace))
+		link.SetTraceID(pdata.TraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan, errSpan := hex.DecodeString(parts[1])
+		rawSpan := commonpb.SpanID{}
+		errSpan := rawSpan.UnmarshalJSON([]byte(parts[1]))
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(pdata.NewSpanID(rawSpan))
+		link.SetSpanID(pdata.SpanID(rawSpan))
 
 		link.SetTraceState(pdata.TraceState(parts[2]))
 
@@ -307,8 +309,8 @@ func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap
 	return nil
 }
 
-func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap) error {
-	parseErr := tagsToAttributeMap(tags, dest)
+func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
+	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
 			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
@@ -337,25 +339,36 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	return parseErr
 }
 
-func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap) error {
+func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
 	var parseErr error
 	for key, val := range tags {
 		if _, ok := nonSpanAttributes[key]; ok {
 			continue
 		}
-		dest.UpsertString(key, val)
-		// TODO add translation to native OTLP types if configured to do so
+
+		if parseStringTags {
+			switch tracetranslator.DetermineValueType(val, false) {
+			case pdata.AttributeValueINT:
+				iValue, _ := strconv.ParseInt(val, 10, 64)
+				dest.UpsertInt(key, iValue)
+			case pdata.AttributeValueDOUBLE:
+				fValue, _ := strconv.ParseFloat(val, 64)
+				dest.UpsertDouble(key, fValue)
+			case pdata.AttributeValueBOOL:
+				bValue, _ := strconv.ParseBool(val)
+				dest.UpsertBool(key, bValue)
+			default:
+				dest.UpsertString(key, val)
+			}
+		} else {
+			dest.UpsertString(key, val)
+		}
 	}
 	return parseErr
 }
 
 func populateResourceFromZipkinSpan(tags map[string]string, localServiceName string, resource pdata.Resource) {
-	if tracetranslator.ResourceNotSet == localServiceName {
-		return
-	}
-
-	resource.InitEmpty()
-	if tracetranslator.ResourceNoAttrs == localServiceName {
+	if localServiceName == tracetranslator.ResourceNoServiceName {
 		return
 	}
 
@@ -408,7 +421,7 @@ func copySpanTags(tags map[string]string) map[string]string {
 
 func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || zspan.LocalEndpoint == nil || zspan.LocalEndpoint.ServiceName == "" {
-		return tracetranslator.ResourceNotSet
+		return tracetranslator.ResourceNoServiceName
 	}
 	return zspan.LocalEndpoint.ServiceName
 }

@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -46,7 +46,7 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -57,7 +57,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	expCfg.GRPCClientSettings.TLSSetting.Insecure = true
 	expCfg.Endpoint = address
 	expCfg.WaitForReady = true
-	oce, err := expFactory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
+	oce, err := expFactory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg)
 	require.NoError(t, err)
 	err = oce.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -84,7 +84,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportTrace request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -106,7 +106,7 @@ func TestExportMultiplexing(t *testing.T) {
 	require.NoError(t, err, "Failed to send the initiating message: %v", err)
 
 	// Step 1a) Send some spans without a node, they should be registered as coming from the initiating node.
-	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcde")}}
+	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcdef")}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLi})
 	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
@@ -115,13 +115,13 @@ func TestExportMultiplexing(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 9489, HostName: "nodejs-host"},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_NODE_JS},
 	}
-	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmno"), Name: &tracepb.TruncatableString{Value: "test"}}}
+	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), Name: &tracepb.TruncatableString{Value: "test"}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node1, Spans: sL1})
 	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
 	// Step 3) Send a trace message without a node but with spans: this
 	// should be registered as belonging to the last used node i.e. "node1".
-	sLn1 := []*tracepb.Span{{TraceId: []byte("ABCDEFGHIJKLMNO")}, {TraceId: []byte("1234567890abcde")}}
+	sLn1 := []*tracepb.Span{{TraceId: []byte("ABCDEFGHIJKLMNOP")}, {TraceId: []byte("1234567890abcdef")}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn1})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
@@ -130,18 +130,18 @@ func TestExportMultiplexing(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 7752, HostName: "golang-host"},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_GO_LANG},
 	}
-	sL2 := []*tracepb.Span{{TraceId: []byte("_B_D_F_H_J_L_N_")}}
+	sL2 := []*tracepb.Span{{TraceId: []byte("_B_D_F_H_J_L_N_O")}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node2, Spans: sL2})
 	require.NoError(t, err, "Failed to send the proxied message from app2: %v", err)
 
 	// Step 5a) Send a trace message without a node but with spans: this
 	// should be registered as belonging to the last used node i.e. "node2".
-	sLn2a := []*tracepb.Span{{TraceId: []byte("_BCDEFGHIJKLMN_")}, {TraceId: []byte("_234567890abcd_")}}
+	sLn2a := []*tracepb.Span{{TraceId: []byte("_BCDEFGHIJKLMNO_")}, {TraceId: []byte("_234567890abcde_")}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2a})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
 	// Step 5b)
-	sLn2b := []*tracepb.Span{{TraceId: []byte("_xxxxxxxxxxxxx_")}, {TraceId: []byte("B234567890abcdA")}}
+	sLn2b := []*tracepb.Span{{TraceId: []byte("_xxxxxxxxxxxxxx_")}, {TraceId: []byte("B234567890abcdAB")}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2b})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 	// Give the process sometime to send data over the wire and perform batching
@@ -213,7 +213,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -281,7 +281,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // spans should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
-	spanSink := new(exportertest.SinkTraceExporter)
+	spanSink := new(consumertest.TracesSink)
 
 	port, doneFn := ocReceiverOnGRPCServer(t, spanSink)
 	defer doneFn()
@@ -290,7 +290,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
 
-	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcde")}, {TraceId: []byte("XXXXXXXXXXabcde")}}
+	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcdef")}, {TraceId: []byte("XXXXXXXXXXabcdef")}}
 	ni := &commonpb.Node{
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 1},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_JAVA},
@@ -361,7 +361,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TraceConsumer) (int, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.TracesConsumer) (int, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

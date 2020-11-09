@@ -57,7 +57,7 @@ type ZipkinReceiver struct {
 
 	// addr is the address onto which the HTTP server will be bound
 	host         component.Host
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TracesConsumer
 	instanceName string
 
 	startOnce sync.Once
@@ -69,7 +69,7 @@ type ZipkinReceiver struct {
 var _ http.Handler = (*ZipkinReceiver)(nil)
 
 // New creates a new zipkinreceiver.ZipkinReceiver reference.
-func New(config *Config, nextConsumer consumer.TraceConsumer) (*ZipkinReceiver, error) {
+func New(config *Config, nextConsumer consumer.TracesConsumer) (*ZipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -124,7 +124,7 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 
 		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
 	}
-	return zipkin.V1JSONBatchToInternalTraces(blob)
+	return zipkin.V1JSONBatchToInternalTraces(blob, zr.config.ParseStringTags)
 }
 
 // deserializeThrift decodes Thrift bytes to a list of spans.
@@ -177,7 +177,7 @@ func (zr *ZipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 		return pdata.Traces{}, err
 	}
 
-	return zipkin.V2SpansToInternalTraces(zipkinSpans)
+	return zipkin.V2SpansToInternalTraces(zipkinSpans, zr.config.ParseStringTags)
 }
 
 func (zr *ZipkinReceiver) deserializeFromJSON(jsonBlob []byte, debugWasSet bool) (zs []*zipkinmodel.SpanModel, err error) {

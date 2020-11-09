@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -45,28 +46,31 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsEmpty(), nil)
+	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsOneMetric(), nil)
 
-	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
-	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
-	assert.Equal(t, 0, mr.count())
+	partialErr := consumererror.PartialMetricsError(errors.New("some error"), testdata.GenerateMetricsEmpty())
+	assert.EqualValues(
+		t,
+		newMetricsRequest(context.Background(), testdata.GenerateMetricsEmpty(), nil),
+		mr.onPartialError(partialErr.(consumererror.PartialError)),
+	)
 }
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
-	me, err := NewMetricsExporter(nil, newPushMetricsData(0, nil))
+	me, err := NewMetricsExporter(nil, zap.NewNop(), newPushMetricsData(0, nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilConfig, err)
 }
 
 func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, nil)
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, me)
 	require.Equal(t, errNilPushMetricsData, err)
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
 	md := testdata.GenerateMetricsEmpty()
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -77,14 +81,14 @@ func TestMetricsExporter_Default(t *testing.T) {
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	md := testdata.GenerateMetricsEmpty()
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
 }
 
 func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -92,7 +96,7 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -101,7 +105,7 @@ func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -109,14 +113,14 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, nil, 1)
 }
 
 func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(1, nil))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, nil, 1)
@@ -124,7 +128,7 @@ func TestMetricsExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, want))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetricsExporter(t, me, want, 1)
@@ -134,7 +138,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdown))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -142,11 +146,31 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	assert.True(t, shutdownCalled)
 }
 
+func TestMetricsExporter_WithResourceToTelemetryConversionDisabled(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()))
+	assert.NotNil(t, me)
+	assert.NoError(t, err)
+
+	assert.Nil(t, me.ConsumeMetrics(context.Background(), md))
+	assert.Nil(t, me.Shutdown(context.Background()))
+}
+
+func TestMetricsExporter_WithResourceToTelemetryConversionEbabled(t *testing.T) {
+	md := testdata.GenerateMetricsTwoMetrics()
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(ResourceToTelemetrySettings{Enabled: true}))
+	assert.NotNil(t, me)
+	assert.NoError(t, err)
+
+	assert.Nil(t, me.ConsumeMetrics(context.Background(), md))
+	assert.Nil(t, me.Shutdown(context.Background()))
+}
+
 func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, newPushMetricsData(0, nil), WithShutdown(shutdownErr))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 

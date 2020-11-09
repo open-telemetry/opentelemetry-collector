@@ -90,7 +90,9 @@ func TestMatcherMatches(t *testing.T) {
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
 
-			assert.Equal(t, test.shouldMatch, matcher.MatchMetric(test.metric))
+			matches, err := matcher.MatchMetric(test.metric)
+			assert.NoError(t, err)
+			assert.Equal(t, test.shouldMatch, matches)
 		})
 	}
 }

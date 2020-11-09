@@ -32,5 +32,8 @@ type Config struct {
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
 	Namespace string `mapstructure:"namespace"`
 
+	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
+	ExternalLabels map[string]string `mapstructure:"external_labels"`
+
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
 }

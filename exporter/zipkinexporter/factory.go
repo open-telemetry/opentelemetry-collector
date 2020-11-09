@@ -50,6 +50,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		RetrySettings: exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings: exporterhelper.CreateDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: defaultTimeout,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -62,9 +64,9 @@ func createDefaultConfig() configmodels.Exporter {
 
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	zc := cfg.(*Config)
 
 	if zc.Endpoint == "" {
@@ -72,5 +74,16 @@ func createTraceExporter(
 		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
 	}
 
-	return newTraceExporter(zc)
+	ze, err := createZipkinExporter(zc)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewTraceExporter(
+		zc,
+		params.Logger,
+		ze.pushTraceData,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithQueue(zc.QueueSettings),
+		exporterhelper.WithRetry(zc.RetrySettings))
 }

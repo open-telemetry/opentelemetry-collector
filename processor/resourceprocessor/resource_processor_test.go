@@ -105,9 +105,9 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := &testTraceConsumer{}
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
+			rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, ttn)
 			require.NoError(t, err)
-			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceTraceData := generateTraceData(tt.sourceAttributes)
 			wantTraceData := generateTraceData(tt.wantAttributes)
@@ -119,7 +119,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			tmn := &testMetricsConsumer{}
 			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tmn)
 			require.NoError(t, err)
-			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceMetricData := generateMetricData(tt.sourceAttributes)
 			wantMetricData := generateMetricData(tt.wantAttributes)
@@ -131,7 +131,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			tln := &testLogsConsumer{}
 			rlp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, tt.config, tln)
 			require.NoError(t, err)
-			assert.Equal(t, true, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 			sourceLogData := generateLogData(tt.sourceAttributes)
 			wantLogData := generateLogData(tt.wantAttributes)
@@ -151,7 +151,7 @@ func TestResourceProcessorError(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
+	rtp, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{}, badCfg, ttn)
 	require.Error(t, err)
 	require.Nil(t, rtp)
 
@@ -174,7 +174,6 @@ func generateTraceData(attributes map[string]string) pdata.Traces {
 		return td
 	}
 	resource := td.ResourceSpans().At(0).Resource()
-	resource.InitEmpty()
 	for k, v := range attributes {
 		resource.Attributes().InsertString(k, v)
 	}
@@ -188,7 +187,6 @@ func generateMetricData(attributes map[string]string) pdata.Metrics {
 		return md
 	}
 	resource := md.ResourceMetrics().At(0).Resource()
-	resource.InitEmpty()
 	for k, v := range attributes {
 		resource.Attributes().InsertString(k, v)
 	}
@@ -202,7 +200,6 @@ func generateLogData(attributes map[string]string) pdata.Logs {
 		return ld
 	}
 	resource := ld.ResourceLogs().At(0).Resource()
-	resource.InitEmpty()
 	for k, v := range attributes {
 		resource.Attributes().InsertString(k, v)
 	}
@@ -217,7 +214,7 @@ type testTraceConsumer struct {
 func (ttn *testTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		sortResourceAttributes(td.ResourceSpans().At(i).Resource())
+		td.ResourceSpans().At(i).Resource().Attributes().Sort()
 	}
 	ttn.td = td
 	return nil
@@ -230,7 +227,7 @@ type testMetricsConsumer struct {
 func (tmn *testMetricsConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		sortResourceAttributes(md.ResourceMetrics().At(i).Resource())
+		md.ResourceMetrics().At(i).Resource().Attributes().Sort()
 	}
 	tmn.md = md
 	return nil
@@ -243,15 +240,8 @@ type testLogsConsumer struct {
 func (tln *testLogsConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 	// sort attributes to be able to compare traces
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		sortResourceAttributes(ld.ResourceLogs().At(i).Resource())
+		ld.ResourceLogs().At(i).Resource().Attributes().Sort()
 	}
 	tln.ld = ld
 	return nil
-}
-
-func sortResourceAttributes(resource pdata.Resource) {
-	if resource.IsNil() {
-		return
-	}
-	resource.Attributes().Sort()
 }

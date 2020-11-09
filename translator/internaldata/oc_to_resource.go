@@ -46,8 +46,6 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		return
 	}
 
-	dest.InitEmpty()
-
 	// Number of special fields in OC that will be translated to Attributes
 	const serviceInfoAttrCount = 1     // Number of Node.ServiceInfo fields.
 	const nodeIdentifierAttrCount = 3  // Number of Node.Identifier fields.

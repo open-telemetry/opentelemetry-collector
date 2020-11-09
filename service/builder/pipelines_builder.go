@@ -32,7 +32,7 @@ import (
 // processor in the pipeline or the exporter if pipeline has no processors).
 type builtPipeline struct {
 	logger  *zap.Logger
-	firstTC consumer.TraceConsumer
+	firstTC consumer.TracesConsumer
 	firstMC consumer.MetricsConsumer
 	firstLC consumer.LogsConsumer
 
@@ -122,7 +122,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	// BuildProcessors the pipeline backwards.
 
 	// First create a consumer junction point that fans out the data to all exporters.
-	var tc consumer.TraceConsumer
+	var tc consumer.TracesConsumer
 	var mc consumer.MetricsConsumer
 	var lc consumer.LogsConsumer
 
@@ -161,8 +161,8 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		switch pipelineCfg.InputType {
 		case configmodels.TracesDataType:
-			var proc component.TraceProcessor
-			proc, err = factory.CreateTraceProcessor(ctx, creationParams, procCfg, tc)
+			var proc component.TracesProcessor
+			proc, err = factory.CreateTracesProcessor(ctx, creationParams, procCfg, tc)
 			if proc != nil {
 				mutatesConsumedData = mutatesConsumedData || proc.GetCapabilities().MutatesConsumedData
 			}
@@ -229,17 +229,12 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TraceConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TracesConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].te
-	}
-
-	var exporters []consumer.TraceConsumer
+	var exporters []consumer.TracesConsumer
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.te)
+		exporters = append(exporters, builtExp.getTraceExporter())
 	}
 
 	// Create a junction point that fans out to all exporters.
@@ -249,33 +244,21 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].me
-	}
-
 	var exporters []consumer.MetricsConsumer
 	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.me)
+		exporters = append(exporters, builtExp.getMetricExporter())
 	}
 
 	// Create a junction point that fans out to all exporters.
 	return processor.NewMetricsFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(
-	exporterNames []string,
-) consumer.LogsConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
-
-	// Optimize for the case when there is only one exporter, no need to create junction point.
-	if len(builtExporters) == 1 {
-		return builtExporters[0].le
-	}
 
 	exporters := make([]consumer.LogsConsumer, len(builtExporters))
 	for i, builtExp := range builtExporters {
-		exporters[i] = builtExp.le
+		exporters[i] = builtExp.getLogExporter()
 	}
 
 	// Create a junction point that fans out to all exporters.

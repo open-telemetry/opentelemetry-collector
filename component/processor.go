@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Processor defines the common functions that must be implemented by TraceProcessor
+// Processor defines the common functions that must be implemented by TracesProcessor
 // and MetricsProcessor.
 type Processor interface {
 	Component
@@ -32,10 +32,10 @@ type Processor interface {
 	GetCapabilities() ProcessorCapabilities
 }
 
-// TraceProcessor is a processor that can consume traces.
-type TraceProcessor interface {
+// TracesProcessor is a processor that can consume traces.
+type TracesProcessor interface {
 	Processor
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // MetricsProcessor is a processor that can consume metrics.
@@ -87,12 +87,12 @@ type ProcessorFactory interface {
 	// CreateTraceProcessor creates a trace processor based on this config.
 	// If the processor type does not support tracing or if the config is not valid
 	// error will be returned instead.
-	CreateTraceProcessor(
+	CreateTracesProcessor(
 		ctx context.Context,
 		params ProcessorCreateParams,
 		cfg configmodels.Processor,
-		nextConsumer consumer.TraceConsumer,
-	) (TraceProcessor, error)
+		nextConsumer consumer.TracesConsumer,
+	) (TracesProcessor, error)
 
 	// CreateMetricsProcessor creates a metrics processor based on this config.
 	// If the processor type does not support metrics or if the config is not valid

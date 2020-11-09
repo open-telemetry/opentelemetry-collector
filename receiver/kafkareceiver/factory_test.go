@@ -68,13 +68,13 @@ func TestWithUnmarshallers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = cum.Encoding()
-		exporter, err := f.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = new(otlpProtoUnmarshaller).Encoding()
-		exporter, err := f.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})

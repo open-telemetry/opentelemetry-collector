@@ -31,25 +31,33 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/internal/version"
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
 type PrwExporter struct {
-	namespace   string
-	endpointURL *url.URL
-	client      *http.Client
-	wg          *sync.WaitGroup
-	closeChan   chan struct{}
+	namespace      string
+	externalLabels map[string]string
+	endpointURL    *url.URL
+	client         *http.Client
+	wg             *sync.WaitGroup
+	closeChan      chan struct{}
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
-func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*PrwExporter, error) {
+func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string) (*PrwExporter, error) {
 
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
+	}
+
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
+	if err != nil {
+		return nil, err
 	}
 
 	endpointURL, err := url.ParseRequestURI(endpoint)
@@ -58,11 +66,12 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client) (*Pr
 	}
 
 	return &PrwExporter{
-		namespace:   namespace,
-		endpointURL: endpointURL,
-		client:      client,
-		wg:          new(sync.WaitGroup),
-		closeChan:   make(chan struct{}),
+		namespace:      namespace,
+		externalLabels: sanitizedLabels,
+		endpointURL:    endpointURL,
+		client:         client,
+		wg:             new(sync.WaitGroup),
+		closeChan:      make(chan struct{}),
 	}, nil
 }
 
@@ -87,7 +96,6 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
 		var errs []error
-
 		resourceMetrics := pdata.MetricsToOtlp(md)
 		for _, resourceMetric := range resourceMetrics {
 			if resourceMetric == nil {
@@ -107,7 +115,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					// check for valid type and temporality combination and for matching data field and type
 					if ok := validateMetrics(metric); !ok {
 						dropped++
-						errs = append(errs, errors.New("invalid temporality and type combination"))
+						errs = append(errs, consumererror.Permanent(errors.New("invalid temporality and type combination")))
 						continue
 					}
 					// handle individual metric based on type
@@ -115,16 +123,21 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case *otlp.Metric_DoubleSum, *otlp.Metric_IntSum, *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:
 						if err := prwe.handleScalarMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = append(errs, consumererror.Permanent(err))
 						}
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = append(errs, consumererror.Permanent(err))
+						}
+					case *otlp.Metric_DoubleSummary:
+						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
+							dropped++
+							errs = append(errs, consumererror.Permanent(err))
 						}
 					default:
 						dropped++
-						errs = append(errs, errors.New("unsupported metric type"))
+						errs = append(errs, consumererror.Permanent(errors.New("unsupported metric type")))
 					}
 				}
 			}
@@ -132,7 +145,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		if err := prwe.export(ctx, tsMap); err != nil {
 			dropped = md.MetricCount()
-			errs = append(errs, err)
+			errs = append(errs, consumererror.Permanent(err))
 		}
 
 		if dropped != 0 {
@@ -141,6 +154,25 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		return 0, nil
 	}
+}
+
+func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[string]string, error) {
+	sanitizedLabels := make(map[string]string)
+	for key, value := range externalLabels {
+		if key == "" || value == "" {
+			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+		}
+
+		// Sanitize label keys to meet Prometheus Requirements
+		if len(key) > 2 && key[:2] == "__" {
+			key = "__" + sanitize(key[2:])
+		} else {
+			key = sanitize(key)
+		}
+		sanitizedLabels[key] = value
+	}
+
+	return sanitizedLabels, nil
 }
 
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
@@ -155,28 +187,28 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleGauge().GetDataPoints() {
-			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_IntGauge:
 		if metric.GetIntGauge().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntGauge().GetDataPoints() {
-			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_DoubleSum:
 		if metric.GetDoubleSum().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleSum().GetDataPoints() {
-			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_IntSum:
 		if metric.GetIntSum().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntSum().GetDataPoints() {
-			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	}
 	return nil
@@ -193,15 +225,28 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetIntHistogram().GetDataPoints() {
-			addSingleIntHistogramDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleIntHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
 	case *otlp.Metric_DoubleHistogram:
 		if metric.GetDoubleHistogram().GetDataPoints() == nil {
 			return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
 		}
 		for _, pt := range metric.GetDoubleHistogram().GetDataPoints() {
-			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap)
+			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
+	}
+	return nil
+}
+
+// handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
+// quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
+// tsMap and metric cannot be nil.
+func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	if metric.GetDoubleSummary().GetDataPoints() == nil {
+		return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
+	}
+	for _, pt := range metric.GetDoubleSummary().GetDataPoints() {
+		addSingleDoubleSummaryDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }
@@ -211,21 +256,21 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// Calls the helper function to convert the TsMap to the desired format
 	req, err := wrapTimeSeries(tsMap)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(req)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 	buf := make([]byte, len(data), cap(data))
 	compressedData := snappy.Encode(buf, data)
 
 	// Create the HTTP POST request to send to the endpoint
-	httpReq, err := http.NewRequest("POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 
 	// Add necessary headers specified by:
@@ -233,17 +278,17 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	httpReq.Header.Add("Content-Encoding", "snappy")
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-
-	httpReq = httpReq.WithContext(ctx)
-
-	_, cancel := context.WithTimeout(context.Background(), prwe.client.Timeout)
-	defer cancel()
+	httpReq.Header.Set("User-Agent", "OpenTelemetry-Collector/"+version.Version)
 
 	httpResp, err := prwe.client.Do(httpReq)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 
+	// 2xx status code is considered a success
+	// 5xx errors are recoverable and the exporter should retry
+	// Reference for different behavior according to status code:
+	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 	if httpResp.StatusCode/100 != 2 {
 		scanner := bufio.NewScanner(io.LimitReader(httpResp.Body, 256))
 		line := ""
@@ -251,7 +296,11 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 			line = scanner.Text()
 		}
 		errMsg := "server returned HTTP status " + httpResp.Status + ": " + line
-		return errors.New(errMsg)
+		if httpResp.StatusCode >= 500 && httpResp.StatusCode < 600 {
+			return errors.New(errMsg)
+		}
+		return consumererror.Permanent(errors.New(errMsg))
+
 	}
 	return nil
 }

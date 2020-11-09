@@ -36,9 +36,9 @@ func TestGenerateParentSpan(t *testing.T) {
 		Links:      SpanChildCountOne,
 		Status:     SpanStatusOk,
 	}
-	span := GenerateSpan(traceID, otlpcommon.NewSpanID(nil), "/gotest-parent", spanInputs, random)
+	span := GenerateSpan(traceID, otlpcommon.NewSpanID([8]byte{}), "/gotest-parent", spanInputs, random)
 	assert.Equal(t, traceID, span.TraceId)
-	assert.Nil(t, span.ParentSpanId.Bytes())
+	assert.False(t, span.ParentSpanId.IsValid())
 	assert.Equal(t, 11, len(span.Attributes))
 	assert.Equal(t, otlptrace.Status_STATUS_CODE_OK, span.Status.Code)
 }

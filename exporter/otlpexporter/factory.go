@@ -39,9 +39,6 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings.
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -49,7 +46,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -60,9 +57,9 @@ func createDefaultConfig() configmodels.Exporter {
 
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg)
 	if err != nil {
 		return nil, err
@@ -70,6 +67,7 @@ func createTraceExporter(
 	oCfg := cfg.(*Config)
 	oexp, err := exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		oce.pushTraceData,
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -84,7 +82,7 @@ func createTraceExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg)
@@ -94,6 +92,7 @@ func createMetricsExporter(
 	oCfg := cfg.(*Config)
 	oexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		oce.pushMetricsData,
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -109,7 +108,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg)
@@ -119,6 +118,7 @@ func createLogsExporter(
 	oCfg := cfg.(*Config)
 	oexp, err := exporterhelper.NewLogsExporter(
 		cfg,
+		params.Logger,
 		oce.pushLogData,
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

@@ -23,6 +23,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +33,6 @@ import (
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
-	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -75,9 +75,7 @@ var (
 	}
 
 	regexpMetricsFilterProperties = &filtermetric.MatchProperties{
-		Config: filterset.Config{
-			MatchType: filterset.Regexp,
-		},
+		MatchType:   filtermetric.Regexp,
 		MetricNames: validFilters,
 	}
 
@@ -114,9 +112,7 @@ var (
 			name: "includeAndExclude",
 			inc:  regexpMetricsFilterProperties,
 			exc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 				MetricNames: []string{
 					"prefix_test_match",
 					"test_contains_match",
@@ -141,9 +137,7 @@ var (
 			name: "includeAndExcludeWithEmptyAndNil",
 			inc:  regexpMetricsFilterProperties,
 			exc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 				MetricNames: []string{
 					"prefix_test_match",
 					"test_contains_match",
@@ -169,9 +163,7 @@ var (
 		{
 			name: "emptyFilterInclude",
 			inc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 			},
 			inMN:               [][]*metricspb.Metric{metricsWithName(inMetricNames)},
 			allMetricsFiltered: true,
@@ -179,9 +171,7 @@ var (
 		{
 			name: "emptyFilterExclude",
 			exc: &filtermetric.MatchProperties{
-				Config: filterset.Config{
-					MatchType: filterset.Strict,
-				},
+				MatchType: filtermetric.Strict,
 			},
 			inMN:  [][]*metricspb.Metric{metricsWithName(inMetricNames)},
 			outMN: [][]string{inMetricNames},
@@ -205,12 +195,19 @@ func TestFilterMetricProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, next)
+			fmp, err := factory.CreateMetricsProcessor(
+				context.Background(),
+				component.ProcessorCreateParams{
+					Logger: zap.NewNop(),
+				},
+				cfg,
+				next,
+			)
 			assert.NotNil(t, fmp)
 			assert.Nil(t, err)
 
 			caps := fmp.GetCapabilities()
-			assert.Equal(t, false, caps.MutatesConsumedData)
+			assert.False(t, caps.MutatesConsumedData)
 			ctx := context.Background()
 			assert.NoError(t, fmp.Start(ctx, nil))
 
@@ -269,17 +266,36 @@ func metricsWithName(names []string) []*metricspb.Metric {
 	return ret
 }
 
-func BenchmarkFilter(b *testing.B) {
+func BenchmarkStrictFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "strict",
+		MetricNames: []string{"p10_metric_0"},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func BenchmarkRegexpFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "regexp",
+		MetricNames: []string{"p10_metric_0"},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func BenchmarkExprFilter(b *testing.B) {
+	mp := &filtermetric.MatchProperties{
+		MatchType:   "expr",
+		Expressions: []string{`MetricName == "p10_metric_0"`},
+	}
+	benchmarkFilter(b, mp)
+}
+
+func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
 	pcfg.Metrics = MetricFilters{
-		Exclude: &filtermetric.MatchProperties{
-			Config: filterset.Config{
-				MatchType: "strict",
-			},
-			MetricNames: []string{"p10_metric_0"},
-		},
+		Exclude: mp,
 	}
 	next := &etest.SinkMetricsExporter{}
 	ctx := context.Background()
@@ -382,9 +398,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	pcfg := cfg.(*Config)
 	pcfg.Metrics = MetricFilters{
 		Exclude: &filtermetric.MatchProperties{
-			Config: filterset.Config{
-				MatchType: "strict",
-			},
+			MatchType:   "strict",
 			MetricNames: []string{"foo"},
 		},
 	}
@@ -392,7 +406,9 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		component.ProcessorCreateParams{},
+		component.ProcessorCreateParams{
+			Logger: zap.NewNop(),
+		},
 		cfg,
 		next,
 	)

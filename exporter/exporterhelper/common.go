@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -86,6 +87,7 @@ type internalOptions struct {
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
+	ResourceToTelemetrySettings
 	Start
 	Shutdown
 }
@@ -98,9 +100,10 @@ func fromConfiguredOptions(options ...ExporterOption) *internalOptions {
 		// TODO: Enable queuing by default (call CreateDefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call CreateDefaultRetrySettings)
-		RetrySettings: RetrySettings{Enabled: false},
-		Start:         func(ctx context.Context, host component.Host) error { return nil },
-		Shutdown:      func(ctx context.Context) error { return nil },
+		RetrySettings:               RetrySettings{Enabled: false},
+		ResourceToTelemetrySettings: createDefaultResourceToTelemetrySettings(),
+		Start:                       func(ctx context.Context, host component.Host) error { return nil },
+		Shutdown:                    func(ctx context.Context) error { return nil },
 	}
 
 	for _, op := range options {
@@ -153,26 +156,36 @@ func WithQueue(queueSettings QueueSettings) ExporterOption {
 	}
 }
 
-// baseExporter contains common fields between different exporter types.
-type baseExporter struct {
-	cfg          configmodels.Exporter
-	sender       requestSender
-	qrSender     *queuedRetrySender
-	start        Start
-	shutdown     Shutdown
-	startOnce    sync.Once
-	shutdownOnce sync.Once
+// WithResourceToTelemetryConversion overrides the default ResourceToTelemetrySettings for an exporter.
+// The default ResourceToTelemetrySettings is to disable resource attributes to metric labels conversion.
+func WithResourceToTelemetryConversion(resourceToTelemetrySettings ResourceToTelemetrySettings) ExporterOption {
+	return func(o *internalOptions) {
+		o.ResourceToTelemetrySettings = resourceToTelemetrySettings
+	}
 }
 
-func newBaseExporter(cfg configmodels.Exporter, options ...ExporterOption) *baseExporter {
+// baseExporter contains common fields between different exporter types.
+type baseExporter struct {
+	cfg                        configmodels.Exporter
+	sender                     requestSender
+	qrSender                   *queuedRetrySender
+	start                      Start
+	shutdown                   Shutdown
+	startOnce                  sync.Once
+	shutdownOnce               sync.Once
+	convertResourceToTelemetry bool
+}
+
+func newBaseExporter(cfg configmodels.Exporter, logger *zap.Logger, options ...ExporterOption) *baseExporter {
 	opts := fromConfiguredOptions(options...)
 	be := &baseExporter{
-		cfg:      cfg,
-		start:    opts.Start,
-		shutdown: opts.Shutdown,
+		cfg:                        cfg,
+		start:                      opts.Start,
+		shutdown:                   opts.Shutdown,
+		convertResourceToTelemetry: opts.ResourceToTelemetrySettings.Enabled,
 	}
 
-	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings})
+	be.qrSender = newQueuedRetrySender(opts.QueueSettings, opts.RetrySettings, &timeoutSender{cfg: opts.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be

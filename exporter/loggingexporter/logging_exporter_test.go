@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
 
@@ -48,7 +49,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilResourceMetrics()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetricOneNil()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsWithCountersHistograms()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesNilDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
@@ -68,4 +69,20 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneEmptyLogs()))
 
 	assert.NoError(t, lle.Shutdown(context.Background()))
+}
+
+func TestNestedArraySerializesCorrectly(t *testing.T) {
+	ava := pdata.NewAttributeValueArray()
+	av := ava.ArrayVal()
+	av.Append(pdata.NewAttributeValueString("foo"))
+	av.Append(pdata.NewAttributeValueInt(42))
+
+	ava2 := pdata.NewAttributeValueArray()
+	av2 := ava2.ArrayVal()
+	av2.Append(pdata.NewAttributeValueString("bar"))
+
+	av.Append(ava2)
+
+	assert.Equal(t, 3, ava.ArrayVal().Len())
+	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))
 }

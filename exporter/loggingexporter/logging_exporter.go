@@ -60,8 +60,8 @@ func (b *logDataBuffer) logStringMap(description string, sm pdata.StringMap) {
 	}
 
 	b.logEntry("%s:", description)
-	sm.ForEach(func(k string, v pdata.StringValue) {
-		b.logEntry("     -> %s: %s", k, v.Value())
+	sm.ForEach(func(k string, v string) {
+		b.logEntry("     -> %s: %s", k, v)
 	})
 }
 
@@ -106,6 +106,9 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 		data := m.DoubleHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeDoubleSummary:
+		data := m.DoubleSummary()
+		b.logDoubleSummaryDataPoints(data.DataPoints())
 	}
 }
 
@@ -165,8 +168,8 @@ func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDat
 
 		buckets := p.BucketCounts()
 		if len(buckets) != 0 {
-			for _, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", i, bucket)
+			for j, bucket := range buckets {
+				b.logEntry("Buckets #%d, Count: %d", j, bucket)
 			}
 		}
 	}
@@ -196,9 +199,32 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 
 		buckets := p.BucketCounts()
 		if len(buckets) != 0 {
-			for _, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", i, bucket)
+			for j, bucket := range buckets {
+				b.logEntry("Buckets #%d, Count: %d", j, bucket)
 			}
+		}
+	}
+}
+
+func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.DoubleSummaryDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("SummaryDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Count: %d", p.Count())
+		b.logEntry("Sum: %f", p.Sum())
+
+		quantiles := p.QuantileValues()
+		for i := 0; i < quantiles.Len(); i++ {
+			quantile := quantiles.At(i)
+			b.logEntry("QuantileValue #%d: Quantile %f, Value %f", i, quantile.Quantile(), quantile.Value())
 		}
 	}
 }
@@ -278,9 +304,26 @@ func attributeValueToString(av pdata.AttributeValue) string {
 		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
 	case pdata.AttributeValueINT:
 		return strconv.FormatInt(av.IntVal(), 10)
+	case pdata.AttributeValueARRAY:
+		return attributeValueArrayToString(av.ArrayVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
+}
+
+func attributeValueArrayToString(av pdata.AnyValueArray) string {
+	var b strings.Builder
+	b.WriteByte('[')
+	for i := 0; i < av.Len(); i++ {
+		if i < av.Len()-1 {
+			fmt.Fprintf(&b, "%s, ", attributeValueToString(av.At(i)))
+		} else {
+			b.WriteString(attributeValueToString(av.At(i)))
+		}
+	}
+
+	b.WriteByte(']')
+	return b.String()
 }
 
 type loggingExporter struct {
@@ -293,7 +336,7 @@ func (s *loggingExporter) pushTraceData(
 	td pdata.Traces,
 ) (int, error) {
 
-	s.logger.Info("TraceExporter", zap.Int("#spans", td.SpanCount()))
+	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
 	if !s.debug {
 		return 0, nil
@@ -308,9 +351,7 @@ func (s *loggingExporter) pushTraceData(
 			buf.logEntry("* Nil ResourceSpans")
 			continue
 		}
-		if !rs.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
-		}
+		buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("InstrumentationLibrarySpans #%d", j)
@@ -374,9 +415,7 @@ func (s *loggingExporter) pushMetricsData(
 			buf.logEntry("* Nil ResourceMetrics")
 			continue
 		}
-		if !rm.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
-		}
+		buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
@@ -408,9 +447,9 @@ func (s *loggingExporter) pushMetricsData(
 	return 0, nil
 }
 
-// newTraceExporter creates an exporter.TraceExporter that just drops the
+// newTraceExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TraceExporter, error) {
+func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
 		debug:  level == "debug",
 		logger: logger,
@@ -418,6 +457,7 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 
 	return exporterhelper.NewTraceExporter(
 		config,
+		logger,
 		s.pushTraceData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -437,6 +477,7 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 
 	return exporterhelper.NewMetricsExporter(
 		config,
+		logger,
 		s.pushMetricsData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -456,6 +497,7 @@ func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 
 	return exporterhelper.NewLogsExporter(
 		config,
+		logger,
 		s.pushLogData,
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -484,10 +526,7 @@ func (s *loggingExporter) pushLogData(
 			buf.logEntry("* Nil ResourceLog")
 			continue
 		}
-		if !rl.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
-		}
-
+		buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryLogs #%d", j)

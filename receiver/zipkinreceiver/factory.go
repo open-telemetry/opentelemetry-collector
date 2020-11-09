@@ -52,6 +52,7 @@ func createDefaultConfig() configmodels.Receiver {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},
+		ParseStringTags: false,
 	}
 }
 
@@ -60,8 +61,8 @@ func createTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
+	nextConsumer consumer.TracesConsumer,
+) (component.TracesReceiver, error) {
 	rCfg := cfg.(*Config)
 	return New(rCfg, nextConsumer)
 }

@@ -16,9 +16,9 @@ package receiverhelper
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // Scrape metrics.
@@ -38,33 +38,55 @@ type Close func(ctx context.Context) error
 // ScraperOption apply changes to internal options.
 type ScraperOption func(*baseScraper)
 
-// ScraperConfig is the configuration of a scraper. Specific scrapers must implement this
-// interface and will typically embed ScraperSettings struct or a struct that extends it.
-type ScraperConfig interface {
-	CollectionInterval() time.Duration
-	SetCollectionInterval(collectionInterval time.Duration)
+type BaseScraper interface {
+	// Name returns the scraper name
+	Name() string
+
+	// Initialize performs any timely initialization tasks such as
+	// setting up performance counters for initial collection.
+	Initialize(ctx context.Context) error
+
+	// Close should clean up any unmanaged resources such as
+	// performance counter handles.
+	Close(ctx context.Context) error
 }
 
-// ScraperSettings defines common settings for a scraper configuration.
-// Specific scrapers can embed this struct and extend it with more fields if needed.
-type ScraperSettings struct {
-	CollectionIntervalVal time.Duration `mapstructure:"collection_interval"`
+// MetricsScraper is an interface for scrapers that scrape metrics.
+type MetricsScraper interface {
+	BaseScraper
+	Scrape(context.Context, string) (pdata.MetricSlice, error)
 }
 
-// CollectionInterval gets the scraper collection interval.
-func (ss *ScraperSettings) CollectionInterval() time.Duration {
-	return ss.CollectionIntervalVal
+// ResourceMetricsScraper is an interface for scrapers that scrape resource metrics.
+type ResourceMetricsScraper interface {
+	BaseScraper
+	Scrape(context.Context, string) (pdata.ResourceMetricsSlice, error)
 }
 
-// SetCollectionInterval sets the scraper collection interval.
-func (ss *ScraperSettings) SetCollectionInterval(collectionInterval time.Duration) {
-	ss.CollectionIntervalVal = collectionInterval
-}
+var _ BaseScraper = (*baseScraper)(nil)
 
 type baseScraper struct {
-	cfg        ScraperConfig
+	name       string
 	initialize Initialize
 	close      Close
+}
+
+func (b baseScraper) Name() string {
+	return b.name
+}
+
+func (b baseScraper) Initialize(ctx context.Context) error {
+	if b.initialize == nil {
+		return nil
+	}
+	return b.initialize(ctx)
+}
+
+func (b baseScraper) Close(ctx context.Context) error {
+	if b.close == nil {
+		return nil
+	}
+	return b.close(ctx)
 }
 
 // WithInitialize sets the function that will be called on startup.
@@ -83,20 +105,22 @@ func WithClose(close Close) ScraperOption {
 
 type metricsScraper struct {
 	baseScraper
-	scrape ScrapeMetrics
+	ScrapeMetrics
 }
 
-// newMetricsScraper creates a Scraper that calls Scrape at the specified
+var _ MetricsScraper = (*metricsScraper)(nil)
+
+// NewMetricsScraper creates a Scraper that calls Scrape at the specified
 // collection interval, reports observability information, and passes the
 // scraped metrics to the next consumer.
-func newMetricsScraper(
-	cfg ScraperConfig,
+func NewMetricsScraper(
+	name string,
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
-) *metricsScraper {
+) MetricsScraper {
 	ms := &metricsScraper{
-		baseScraper: baseScraper{cfg: cfg},
-		scrape:      scrape,
+		baseScraper:   baseScraper{name: name},
+		ScrapeMetrics: scrape,
 	}
 
 	for _, op := range options {
@@ -106,22 +130,32 @@ func newMetricsScraper(
 	return ms
 }
 
-type resourceMetricsScraper struct {
-	baseScraper
-	scrape ScrapeResourceMetrics
+func (ms metricsScraper) Scrape(ctx context.Context, receiverName string) (pdata.MetricSlice, error) {
+	ctx = obsreport.ScraperContext(ctx, receiverName, ms.Name())
+	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, ms.Name())
+	metrics, err := ms.ScrapeMetrics(ctx)
+	obsreport.EndMetricsScrapeOp(ctx, metrics.Len(), err)
+	return metrics, err
 }
 
-// newResourceMetricsScraper creates a Scraper that calls Scrape at the
+type resourceMetricsScraper struct {
+	baseScraper
+	ScrapeResourceMetrics
+}
+
+var _ ResourceMetricsScraper = (*resourceMetricsScraper)(nil)
+
+// NewResourceMetricsScraper creates a Scraper that calls Scrape at the
 // specified collection interval, reports observability information, and
 // passes the scraped resource metrics to the next consumer.
-func newResourceMetricsScraper(
-	cfg ScraperConfig,
+func NewResourceMetricsScraper(
+	name string,
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
-) *resourceMetricsScraper {
+) ResourceMetricsScraper {
 	rms := &resourceMetricsScraper{
-		baseScraper: baseScraper{cfg: cfg},
-		scrape:      scrape,
+		baseScraper:           baseScraper{name: name},
+		ScrapeResourceMetrics: scrape,
 	}
 
 	for _, op := range options {
@@ -129,4 +163,25 @@ func newResourceMetricsScraper(
 	}
 
 	return rms
+}
+
+func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {
+	ctx = obsreport.ScraperContext(ctx, receiverName, rms.Name())
+	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, rms.Name())
+	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
+	obsreport.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
+	return resourceMetrics, err
+}
+
+func metricCount(resourceMetrics pdata.ResourceMetricsSlice) int {
+	count := 0
+
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		ilm := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilm.Len(); j++ {
+			count += ilm.At(j).Metrics().Len()
+		}
+	}
+
+	return count
 }

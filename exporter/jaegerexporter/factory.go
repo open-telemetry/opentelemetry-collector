@@ -38,9 +38,6 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings.
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -48,7 +45,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
@@ -58,9 +55,9 @@ func createDefaultConfig() configmodels.Exporter {
 
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
 	if expCfg.Endpoint == "" {
@@ -71,7 +68,7 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	exp, err := newTraceExporter(expCfg)
+	exp, err := newTraceExporter(expCfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}

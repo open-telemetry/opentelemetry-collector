@@ -43,14 +43,14 @@ import (
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
-	Start(tc consumer.TraceConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error
+	Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error
 	Stop() error
 
 	// Generate a config string to place in exporter part of collector config
 	// so that it can send data to this receiver.
 	GenConfigYAMLStr() string
 
-	// Return protocol name to use in collector config pipeline.
+	// Return exporterType name to use in collector config pipeline.
 	ProtocolName() string
 }
 
@@ -83,7 +83,7 @@ func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configm
 // OCDataReceiver implements OpenCensus format receiver.
 type OCDataReceiver struct {
 	DataReceiverBase
-	traceReceiver   component.TraceReceiver
+	traceReceiver   component.TracesReceiver
 	metricsReceiver component.MetricsReceiver
 }
 
@@ -98,14 +98,14 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc consumer.TraceConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (or *OCDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	factory := opencensusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.SetName(or.ProtocolName())
 	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
+	if or.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc); err != nil {
 		return err
 	}
 	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
@@ -142,7 +142,7 @@ func (or *OCDataReceiver) ProtocolName() string {
 // JaegerDataReceiver implements Jaeger format receiver.
 type JaegerDataReceiver struct {
 	DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 var _ DataReceiver = (*JaegerDataReceiver)(nil)
@@ -153,7 +153,7 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (jr *JaegerDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
@@ -162,7 +162,7 @@ func (jr *JaegerDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.Metric
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr.receiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 	if err != nil {
 		return err
 	}
@@ -186,78 +186,98 @@ func (jr *JaegerDataReceiver) ProtocolName() string {
 	return "jaeger"
 }
 
-// OTLPDataReceiver implements OTLP format receiver.
-type OTLPDataReceiver struct {
+// baseOTLPDataReceiver implements the OTLP format receiver.
+type baseOTLPDataReceiver struct {
 	DataReceiverBase
-	traceReceiver   component.TraceReceiver
+	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
+	exporterType    string
+	traceReceiver   component.TracesReceiver
 	metricsReceiver component.MetricsReceiver
 	logReceiver     component.LogsReceiver
 }
 
-// Ensure OTLPDataReceiver implements DataReceiver.
-var _ DataReceiver = (*OTLPDataReceiver)(nil)
+func (bor *baseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
+	factory := otlpreceiver.NewFactory()
+	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
+	cfg.SetName(bor.exporterType)
+	if bor.exporterType == "otlp" {
+		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", bor.Port), Transport: "tcp"}
+		cfg.HTTP = nil
+	} else {
+		cfg.HTTP.Endpoint = fmt.Sprintf("localhost:%d", bor.Port)
+		cfg.GRPC = nil
+	}
+	var err error
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc); err != nil {
+		return err
+	}
+	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
+		return err
+	}
+	if bor.logReceiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, lc); err != nil {
+		return err
+	}
+
+	if err = bor.traceReceiver.Start(context.Background(), bor); err != nil {
+		return err
+	}
+	if err = bor.metricsReceiver.Start(context.Background(), bor); err != nil {
+		return err
+	}
+	return bor.logReceiver.Start(context.Background(), bor)
+}
+
+func (bor *baseOTLPDataReceiver) Stop() error {
+	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
+		return err
+	}
+	if err := bor.metricsReceiver.Shutdown(context.Background()); err != nil {
+		return err
+	}
+	return bor.logReceiver.Shutdown(context.Background())
+}
+
+func (bor *baseOTLPDataReceiver) ProtocolName() string {
+	return bor.exporterType
+}
+
+func (bor *baseOTLPDataReceiver) GenConfigYAMLStr() string {
+	addr := fmt.Sprintf("localhost:%d", bor.Port)
+	if bor.exporterType == "otlphttp" {
+		addr = "http://" + addr
+	}
+	// Note that this generates an exporter config for agent.
+	return fmt.Sprintf(`
+  %s:
+    endpoint: "%s"
+    insecure: true`, bor.exporterType, addr)
+}
 
 const DefaultOTLPPort = 55680
 
-// NewOTLPDataReceiver creates a new OTLPDataReceiver that will listen on the specified port after Start
+// NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPDataReceiver(port int) *OTLPDataReceiver {
-	return &OTLPDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
+func NewOTLPDataReceiver(port int) DataReceiver {
+	return &baseOTLPDataReceiver{
+		DataReceiverBase: DataReceiverBase{Port: port},
+		exporterType:     "otlp",
+	}
 }
 
-func (or *OTLPDataReceiver) Start(tc consumer.TraceConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
-	factory := otlpreceiver.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.SetName(or.ProtocolName())
-	cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
-	cfg.HTTP = nil
-	var err error
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	if or.traceReceiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc); err != nil {
-		return err
+// NewOTLPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
+// is called.
+func NewOTLPHTTPDataReceiver(port int) DataReceiver {
+	return &baseOTLPDataReceiver{
+		DataReceiverBase: DataReceiverBase{Port: port},
+		exporterType:     "otlphttp",
 	}
-	if or.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, mc); err != nil {
-		return err
-	}
-	if or.logReceiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, lc); err != nil {
-		return err
-	}
-
-	if err = or.traceReceiver.Start(context.Background(), or); err != nil {
-		return err
-	}
-	if err = or.metricsReceiver.Start(context.Background(), or); err != nil {
-		return err
-	}
-	return or.logReceiver.Start(context.Background(), or)
-}
-
-func (or *OTLPDataReceiver) Stop() error {
-	if err := or.traceReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	if err := or.metricsReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (or *OTLPDataReceiver) GenConfigYAMLStr() string {
-	// Note that this generates an exporter config for agent.
-	return fmt.Sprintf(`
-  otlp:
-    endpoint: "localhost:%d"
-    insecure: true`, or.Port)
-}
-
-func (or *OTLPDataReceiver) ProtocolName() string {
-	return "otlp"
 }
 
 // ZipkinDataReceiver implements Zipkin format receiver.
 type ZipkinDataReceiver struct {
 	DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 var _ DataReceiver = (*ZipkinDataReceiver)(nil)
@@ -268,7 +288,7 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (zr *ZipkinDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (zr *ZipkinDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.SetName(zr.ProtocolName())
@@ -276,7 +296,7 @@ func (zr *ZipkinDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.Metric
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	var err error
-	zr.receiver, err = factory.CreateTraceReceiver(context.Background(), params, cfg, tc)
+	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), params, cfg, tc)
 
 	if err != nil {
 		return err
@@ -314,7 +334,7 @@ func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
 	return &PrometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (dr *PrometheusDataReceiver) Start(_ consumer.TraceConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (dr *PrometheusDataReceiver) Start(_ consumer.TracesConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)

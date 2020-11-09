@@ -36,7 +36,7 @@ func (z zipkinProtoSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, erro
 	if err != nil {
 		return pdata.NewTraces(), err
 	}
-	return zipkintranslator.V2SpansToInternalTraces(parseSpans)
+	return zipkintranslator.V2SpansToInternalTraces(parseSpans, false)
 }
 
 func (z zipkinProtoSpanUnmarshaller) Encoding() string {
@@ -53,7 +53,7 @@ func (z zipkinJSONSpanUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error
 	if err := json.Unmarshal(bytes, &spans); err != nil {
 		return pdata.NewTraces(), err
 	}
-	return zipkintranslator.V2SpansToInternalTraces(spans)
+	return zipkintranslator.V2SpansToInternalTraces(spans, false)
 }
 
 func (z zipkinJSONSpanUnmarshaller) Encoding() string {

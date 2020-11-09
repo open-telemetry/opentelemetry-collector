@@ -62,10 +62,24 @@ var diskOpsDescriptor = func() pdata.Metric {
 	return metric
 }()
 
-var diskTimeDescriptor = func() pdata.Metric {
+var diskIOTimeDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.InitEmpty()
-	metric.SetName("system.disk.time")
+	metric.SetName("system.disk.io_time")
+	metric.SetDescription("Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.")
+	metric.SetUnit("s")
+	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	sum := metric.DoubleSum()
+	sum.InitEmpty()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
+}()
+
+var diskOperationTimeDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("system.disk.operation_time")
 	metric.SetDescription("Time spent in disk operations.")
 	metric.SetUnit("s")
 	metric.SetDataType(pdata.MetricDataTypeDoubleSum)

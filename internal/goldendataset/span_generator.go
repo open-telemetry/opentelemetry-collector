@@ -25,43 +25,15 @@ import (
 )
 
 var statusCodeMap = map[PICTInputStatus]otlptrace.Status_StatusCode{
-	SpanStatusOk:                 otlptrace.Status_STATUS_CODE_OK,
-	SpanStatusCancelled:          otlptrace.Status_STATUS_CODE_CANCELLED,
-	SpanStatusUnknownError:       otlptrace.Status_STATUS_CODE_UNKNOWN_ERROR,
-	SpanStatusInvalidArgument:    otlptrace.Status_STATUS_CODE_INVALID_ARGUMENT,
-	SpanStatusDeadlineExceeded:   otlptrace.Status_STATUS_CODE_DEADLINE_EXCEEDED,
-	SpanStatusNotFound:           otlptrace.Status_STATUS_CODE_NOT_FOUND,
-	SpanStatusAlreadyExists:      otlptrace.Status_STATUS_CODE_ALREADY_EXISTS,
-	SpanStatusPermissionDenied:   otlptrace.Status_STATUS_CODE_PERMISSION_DENIED,
-	SpanStatusResourceExhausted:  otlptrace.Status_STATUS_CODE_RESOURCE_EXHAUSTED,
-	SpanStatusFailedPrecondition: otlptrace.Status_STATUS_CODE_FAILED_PRECONDITION,
-	SpanStatusAborted:            otlptrace.Status_STATUS_CODE_ABORTED,
-	SpanStatusOutOfRange:         otlptrace.Status_STATUS_CODE_OUT_OF_RANGE,
-	SpanStatusUnimplemented:      otlptrace.Status_STATUS_CODE_UNIMPLEMENTED,
-	SpanStatusInternalError:      otlptrace.Status_STATUS_CODE_INTERNAL_ERROR,
-	SpanStatusUnavailable:        otlptrace.Status_STATUS_CODE_UNAVAILABLE,
-	SpanStatusDataLoss:           otlptrace.Status_STATUS_CODE_DATA_LOSS,
-	SpanStatusUnauthenticated:    otlptrace.Status_STATUS_CODE_UNAUTHENTICATED,
+	SpanStatusUnset: otlptrace.Status_STATUS_CODE_UNSET,
+	SpanStatusOk:    otlptrace.Status_STATUS_CODE_OK,
+	SpanStatusError: otlptrace.Status_STATUS_CODE_ERROR,
 }
 
 var statusMsgMap = map[PICTInputStatus]string{
-	SpanStatusOk:                 "",
-	SpanStatusCancelled:          "Cancellation received",
-	SpanStatusUnknownError:       "",
-	SpanStatusInvalidArgument:    "parameter is required",
-	SpanStatusDeadlineExceeded:   "timed out after 30002 ms",
-	SpanStatusNotFound:           "/dragons/RomanianLonghorn not found",
-	SpanStatusAlreadyExists:      "/dragons/Drogon already exists",
-	SpanStatusPermissionDenied:   "tlannister does not have write permission",
-	SpanStatusResourceExhausted:  "ResourceExhausted",
-	SpanStatusFailedPrecondition: "33a64df551425fcc55e4d42a148795d9f25f89d4 has been edited",
-	SpanStatusAborted:            "",
-	SpanStatusOutOfRange:         "Range Not Satisfiable",
-	SpanStatusUnimplemented:      "Unimplemented",
-	SpanStatusInternalError:      "java.lang.NullPointerException",
-	SpanStatusUnavailable:        "RecommendationService is currently unavailable",
-	SpanStatusDataLoss:           "",
-	SpanStatusUnauthenticated:    "nstark is unknown user",
+	SpanStatusUnset: "Unset",
+	SpanStatusOk:    "Ok",
+	SpanStatusError: "Error",
 }
 
 // GenerateSpans generates a slice of OTLP Span objects with the number of spans specified by the count input
@@ -103,13 +75,13 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = otlpcommon.NewSpanID(nil)
+			parentID = otlpcommon.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
-			if traceID.Bytes() == nil {
+			if !traceID.IsValid() {
 				traceID = generateTraceID(random)
 			}
-			if parentID.Bytes() == nil {
+			if !parentID.IsValid() {
 				parentID = generateSpanID(random)
 			}
 		}
@@ -188,8 +160,8 @@ func lookupSpanKind(kind PICTInputKind) otlptrace.Span_SpanKind {
 	}
 }
 
-func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) []*otlpcommon.KeyValue {
-	includeStatus := SpanStatusNil != statusStr
+func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputStatus) []otlpcommon.KeyValue {
+	includeStatus := SpanStatusUnset != statusStr
 	var attrs map[string]interface{}
 	switch spanTypeID {
 	case SpanAttrNil:
@@ -233,7 +205,7 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputS
 }
 
 func generateStatus(statusStr PICTInputStatus) *otlptrace.Status {
-	if SpanStatusNil == statusStr {
+	if SpanStatusUnset == statusStr {
 		return nil
 	}
 	return &otlptrace.Status{
@@ -511,7 +483,7 @@ func generateSpanEvent(index int) *otlptrace.Span_Event {
 	}
 }
 
-func generateEventAttributes(index int) []*otlpcommon.KeyValue {
+func generateEventAttributes(index int) []otlpcommon.KeyValue {
 	if index%4 == 2 {
 		return nil
 	}
@@ -542,7 +514,7 @@ func generateSpanLink(random io.Reader, index int) *otlptrace.Span_Link {
 	}
 }
 
-func generateLinkAttributes(index int) []*otlpcommon.KeyValue {
+func generateLinkAttributes(index int) []otlpcommon.KeyValue {
 	if index%4 == 2 {
 		return nil
 	}

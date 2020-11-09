@@ -142,7 +142,7 @@ func (r *otlpReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TraceConsumer) error {
+func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TracesConsumer) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -151,7 +151,12 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 		collectortrace.RegisterTraceServiceServer(r.serverGRPC, r.traceReceiver)
 	}
 	if r.gatewayMux != nil {
-		return collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
+		err := collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
+		if err != nil {
+			return err
+		}
+		// Also register an alias handler. This fixes bug https://github.com/open-telemetry/opentelemetry-collector/issues/1968
+		return collectortrace.RegisterTraceServiceHandlerServerAlias(ctx, r.gatewayMux, r.traceReceiver)
 	}
 	return nil
 }

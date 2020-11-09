@@ -59,8 +59,8 @@ func createTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
+	nextConsumer consumer.TracesConsumer,
+) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg)
 	if err != nil {
 		return nil, err
@@ -116,6 +116,6 @@ func createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
 
 // This is the map of already created OpenCensus receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTraceReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one ocReceiver object per configuration.
 var receivers = map[*Config]*ocReceiver{}

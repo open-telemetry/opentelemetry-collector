@@ -23,7 +23,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -209,8 +208,8 @@ func TestMetricSize(t *testing.T) {
 	assert.Equal(t, sizeBytes, md.Size())
 }
 
-func TestMetricsSizeWithNils(t *testing.T) {
-	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).Size())
+func TestMetricsSizeWithNil(t *testing.T) {
+	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil}).Size())
 }
 
 func TestMetricCountWithNils(t *testing.T) {
@@ -331,6 +330,45 @@ func TestMetricAndDataPointCountWithNil(t *testing.T) {
 	assert.EqualValues(t, 1, ms)
 	assert.EqualValues(t, 2, dps)
 
+}
+
+func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
+	metrics := NewMetrics()
+	rm := NewResourceMetrics()
+	rm.InitEmpty()
+	metrics.ResourceMetrics().Append(rm)
+	ilm := NewInstrumentationLibraryMetrics()
+	ilm.InitEmpty()
+	rm.InstrumentationLibraryMetrics().Append(ilm)
+	intGauge := NewMetric()
+	intGauge.InitEmpty()
+	ilm.Metrics().Append(intGauge)
+	intGauge.SetDataType(MetricDataTypeIntGauge)
+	doubleGauge := NewMetric()
+	doubleGauge.InitEmpty()
+	ilm.Metrics().Append(doubleGauge)
+	doubleGauge.SetDataType(MetricDataTypeDoubleGauge)
+	intHistogram := NewMetric()
+	intHistogram.InitEmpty()
+	ilm.Metrics().Append(intHistogram)
+	intHistogram.SetDataType(MetricDataTypeIntHistogram)
+	doubleHistogram := NewMetric()
+	doubleHistogram.InitEmpty()
+	ilm.Metrics().Append(doubleHistogram)
+	doubleHistogram.SetDataType(MetricDataTypeDoubleHistogram)
+	intSum := NewMetric()
+	intSum.InitEmpty()
+	ilm.Metrics().Append(intSum)
+	intSum.SetDataType(MetricDataTypeIntSum)
+	doubleSum := NewMetric()
+	doubleSum.InitEmpty()
+	ilm.Metrics().Append(doubleSum)
+	doubleSum.SetDataType(MetricDataTypeDoubleSum)
+
+	ms, dps := metrics.MetricAndDataPointCount()
+
+	assert.EqualValues(t, 6, ms)
+	assert.EqualValues(t, 0, dps)
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
@@ -500,7 +538,7 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 								IntGauge: &otlpmetrics.IntGauge{
 									DataPoints: []*otlpmetrics.IntDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "k",
 													Value: "v",
@@ -577,7 +615,7 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 									DataPoints: []*otlpmetrics.DoubleDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "k",
 													Value: "v",
@@ -654,7 +692,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 									DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "k",
 													Value: "v",
@@ -676,25 +714,39 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	}, MetricsToOtlp(metricData))
 }
 
-func TestMetrics_ToOtlpProtoBytes(t *testing.T) {
-	md := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateTestProtoResource(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-					Metrics:                []*otlpmetrics.Metric{generateTestProtoIntGaugeMetric(), generateTestProtoDoubleSumMetric(), generateTestProtoDoubleHistogramMetric()},
-				},
-			},
-		},
-	})
-	bytes, err := md.ToOtlpProtoBytes()
-	assert.Nil(t, err)
+func TestMetricsToFromOtlpProtoBytes(t *testing.T) {
+	send := NewMetrics()
+	fillTestResourceMetricsSlice(send.ResourceMetrics())
+	bytes, err := send.ToOtlpProtoBytes()
+	assert.NoError(t, err)
 
-	emsr := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	err = gogoproto.Unmarshal(bytes, &emsr)
-	assert.Nil(t, err)
-	assert.EqualValues(t, emsr.GetResourceMetrics(), MetricsToOtlp(md))
+	recv := NewMetrics()
+	err = recv.FromOtlpProtoBytes(bytes)
+	assert.NoError(t, err)
+	assert.EqualValues(t, send, recv)
+}
+
+func TestMetricsFromInvalidOtlpProtoBytes(t *testing.T) {
+	err := NewMetrics().FromOtlpProtoBytes([]byte{0xFF})
+	assert.EqualError(t, err, "unexpected EOF")
+}
+
+func TestMetricsClone(t *testing.T) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	assert.EqualValues(t, metrics, metrics.Clone())
+}
+
+func BenchmarkMetricsClone(b *testing.B) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		clone := metrics.Clone()
+		if clone.ResourceMetrics().Len() != metrics.ResourceMetrics().Len() {
+			b.Fail()
+		}
+	}
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
@@ -799,9 +851,35 @@ func BenchmarkMetrics_ToOtlpProtoBytes_PassThrough(b *testing.B) {
 	}
 }
 
-func generateTestProtoResource() *otlpresource.Resource {
-	return &otlpresource.Resource{
-		Attributes: []*otlpcommon.KeyValue{
+func BenchmarkMetricsToOtlp(b *testing.B) {
+	traces := NewMetrics()
+	fillTestResourceMetricsSlice(traces.ResourceMetrics())
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := traces.ToOtlpProtoBytes()
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkMetricsFromOtlp(b *testing.B) {
+	baseMetrics := NewMetrics()
+	fillTestResourceMetricsSlice(baseMetrics.ResourceMetrics())
+	buf, err := baseMetrics.ToOtlpProtoBytes()
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		traces := NewMetrics()
+		require.NoError(b, traces.FromOtlpProtoBytes(buf))
+		assert.Equal(b, baseMetrics.ResourceMetrics().Len(), traces.ResourceMetrics().Len())
+	}
+}
+
+func generateTestProtoResource() otlpresource.Resource {
+	return otlpresource.Resource{
+		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "string",
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
@@ -826,7 +904,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 			IntGauge: &otlpmetrics.IntGauge{
 				DataPoints: []*otlpmetrics.IntDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -837,7 +915,7 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 						Value:             123,
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -862,7 +940,7 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.DoubleDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -873,7 +951,7 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 						Value:             123.1,
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",
@@ -899,7 +977,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.DoubleHistogramDataPoint{
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key0",
 								Value: "value0",
@@ -911,7 +989,7 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Labels: []*otlpcommon.StringKeyValue{
+						Labels: []otlpcommon.StringKeyValue{
 							{
 								Key:   "key1",
 								Value: "value1",

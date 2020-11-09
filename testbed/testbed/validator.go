@@ -412,8 +412,8 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan *otlptrace.Span, recd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttrs []*otlpcommon.KeyValue,
-	sentAttrs []*otlpcommon.KeyValue, fmtStr string) {
+func (v *CorrectnessTestValidator) diffAttributesSlice(spanName string, recdAttrs []otlpcommon.KeyValue,
+	sentAttrs []otlpcommon.KeyValue, fmtStr string) {
 	recdAttrsMap := convertAttributesSliceToMap(recdAttrs)
 	for _, sentAttr := range sentAttrs {
 		recdAttr, ok := recdAttrsMap[sentAttr.Key]
@@ -500,15 +500,15 @@ func (v *CorrectnessTestValidator) compareArrayList(spanName string, sentArray *
 	}
 }
 
-func convertAttributesSliceToMap(attributes []*otlpcommon.KeyValue) map[string]*otlpcommon.KeyValue {
-	attrMap := make(map[string]*otlpcommon.KeyValue)
+func convertAttributesSliceToMap(attributes []otlpcommon.KeyValue) map[string]otlpcommon.KeyValue {
+	attrMap := make(map[string]otlpcommon.KeyValue)
 	for _, attr := range attributes {
 		attrMap[attr.Key] = attr
 	}
 	return attrMap
 }
 
-func retrieveAttributeValue(attribute *otlpcommon.KeyValue) interface{} {
+func retrieveAttributeValue(attribute otlpcommon.KeyValue) interface{} {
 	if attribute.Value == nil || attribute.Value.Value == nil {
 		return nil
 	}
@@ -571,7 +571,7 @@ func notWithinOneMillisecond(sentNs uint64, recdNs uint64) bool {
 	return diff > uint64(1100000)
 }
 
-func convertKVListToJSONString(values []*otlpcommon.KeyValue) string {
+func convertKVListToJSONString(values []otlpcommon.KeyValue) string {
 	jsonStr, err := json.Marshal(convertKVListToRawMap(values))
 	if err == nil {
 		return string(jsonStr)
@@ -587,7 +587,7 @@ func convertArrayValuesToJSONString(values []*otlpcommon.AnyValue) string {
 	return ""
 }
 
-func convertKVListToRawMap(values []*otlpcommon.KeyValue) map[string]interface{} {
+func convertKVListToRawMap(values []otlpcommon.KeyValue) map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	for _, kv := range values {
 		var value *otlpcommon.AnyValue = kv.GetValue()

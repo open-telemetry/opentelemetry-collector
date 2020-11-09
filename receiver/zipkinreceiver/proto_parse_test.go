@@ -101,6 +101,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	protoBlob, err := proto.Marshal(payloadFromWild)
 	require.NoError(t, err, "Failed to protobuf serialize payload: %v", err)
 	zi := new(ZipkinReceiver)
+	zi.config = createDefaultConfig().(*Config)
 	hdr := make(http.Header)
 	hdr.Set("Content-Type", "application/x-protobuf")
 
@@ -111,8 +112,8 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+			Resource: otlpresource.Resource{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
 						Value: &otlpcommon.AnyValue{
@@ -127,13 +128,13 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				{
 					Spans: []*otlptrace.Span{
 						{
-							TraceId:           otlpcommon.NewTraceID([]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
-							SpanId:            otlpcommon.NewSpanID([]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
-							ParentSpanId:      otlpcommon.NewSpanID([]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
+							TraceId:           otlpcommon.NewTraceID([16]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
+							SpanId:            otlpcommon.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
+							ParentSpanId:      otlpcommon.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
 							Name:              "ProtoSpan1",
 							StartTimeUnixNano: uint64(now.UnixNano()),
 							EndTimeUnixNano:   uint64(now.Add(12 * time.Second).UnixNano()),
-							Attributes: []*otlpcommon.KeyValue{
+							Attributes: []otlpcommon.KeyValue{
 								{
 									Key: conventions.AttributeNetHostIP,
 									Value: &otlpcommon.AnyValue{
@@ -189,8 +190,8 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 			},
 		},
 		{
-			Resource: &otlpresource.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+			Resource: otlpresource.Resource{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
 						Value: &otlpcommon.AnyValue{
@@ -205,13 +206,13 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				{
 					Spans: []*otlptrace.Span{
 						{
-							TraceId:           otlpcommon.NewTraceID([]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0}),
-							SpanId:            otlpcommon.NewSpanID([]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60}),
-							ParentSpanId:      otlpcommon.NewSpanID([]byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10}),
+							TraceId:           otlpcommon.NewTraceID([16]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0}),
+							SpanId:            otlpcommon.NewSpanID([8]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60}),
+							ParentSpanId:      otlpcommon.NewSpanID([8]byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10}),
 							Name:              "CacheWarmUp",
 							StartTimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
 							EndTimeUnixNano:   uint64(now.Add(-10 * time.Hour).Add(7 * time.Second).UnixNano()),
-							Attributes: []*otlpcommon.KeyValue{
+							Attributes: []otlpcommon.KeyValue{
 								{
 									Key: conventions.AttributeNetHostIP,
 									Value: &otlpcommon.AnyValue{

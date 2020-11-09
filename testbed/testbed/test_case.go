@@ -15,7 +15,6 @@
 package testbed
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -169,10 +168,9 @@ func (tc *TestCase) StartAgent(args ...string) {
 	}
 	logFileName := tc.composeTestResultFileName("agent.log")
 
-	_, err := tc.agentProc.Start(StartParams{
+	err := tc.agentProc.Start(StartParams{
 		Name:         "Agent",
 		LogFilePath:  logFileName,
-		Cmd:          testBedConfig.Agent,
 		CmdArgs:      args,
 		resourceSpec: &tc.resourceSpec,
 	})
@@ -190,13 +188,17 @@ func (tc *TestCase) StartAgent(args ...string) {
 		}
 	}()
 
-	// Wait for agent to start. We consider the agent started when we can
-	// connect to the port to which we intend to send load.
-	tc.WaitFor(func() bool {
-		_, err := net.Dial("tcp",
-			fmt.Sprintf("localhost:%d", tc.LoadGenerator.sender.GetCollectorPort()))
-		return err == nil
-	})
+	endpoint := tc.LoadGenerator.sender.GetEndpoint()
+	if endpoint != "" {
+		// Wait for agent to start. We consider the agent started when we can
+		// connect to the port to which we intend to send load. We only do this
+		// if the endpoint is not-empty, i.e. the sender does use network (some senders
+		// like text log writers don't).
+		tc.WaitFor(func() bool {
+			_, err := net.Dial("tcp", tc.LoadGenerator.sender.GetEndpoint())
+			return err == nil
+		})
+	}
 }
 
 // StopAgent stops agent process.

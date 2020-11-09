@@ -17,6 +17,8 @@ package filterprocessor
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -24,11 +26,12 @@ import (
 
 type filterMetricProcessor struct {
 	cfg     *Config
-	include *filtermetric.Matcher
-	exclude *filtermetric.Matcher
+	include filtermetric.Matcher
+	exclude filtermetric.Matcher
+	logger  *zap.Logger
 }
 
-func newFilterMetricProcessor(cfg *Config) (*filterMetricProcessor, error) {
+func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
 	inc, err := createMatcher(cfg.Metrics.Include)
 	if err != nil {
 		return nil, err
@@ -39,25 +42,48 @@ func newFilterMetricProcessor(cfg *Config) (*filterMetricProcessor, error) {
 		return nil, err
 	}
 
+	includeMatchType := ""
+	var includeExpressions []string
+	var includeMetricNames []string
+	if cfg.Metrics.Include != nil {
+		includeMatchType = string(cfg.Metrics.Include.MatchType)
+		includeExpressions = cfg.Metrics.Include.Expressions
+		includeMetricNames = cfg.Metrics.Include.MetricNames
+	}
+
+	excludeMatchType := ""
+	var excludeExpressions []string
+	var excludeMetricNames []string
+	if cfg.Metrics.Exclude != nil {
+		excludeMatchType = string(cfg.Metrics.Exclude.MatchType)
+		excludeExpressions = cfg.Metrics.Exclude.Expressions
+		excludeMetricNames = cfg.Metrics.Exclude.MetricNames
+	}
+
+	logger.Info(
+		"Metric filter configured",
+		zap.String("include match_type", includeMatchType),
+		zap.Strings("include expressions", includeExpressions),
+		zap.Strings("include metric names", includeMetricNames),
+		zap.String("exclude match_type", excludeMatchType),
+		zap.Strings("exclude expressions", excludeExpressions),
+		zap.Strings("exclude metric names", excludeMetricNames),
+	)
+
 	return &filterMetricProcessor{
 		cfg:     cfg,
 		include: inc,
 		exclude: exc,
+		logger:  logger,
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (*filtermetric.Matcher, error) {
+func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
 		return nil, nil
 	}
-
-	matcher, err := filtermetric.NewMatcher(mp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &matcher, nil
+	return filtermetric.NewMatcher(mp)
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
@@ -81,7 +107,12 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Me
 				if metric.IsNil() {
 					continue
 				}
-				if fmp.shouldKeepMetric(metric) {
+				keep, err := fmp.shouldKeepMetric(metric)
+				if err != nil {
+					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
+					// don't `continue`, keep the metric if there's an error
+				}
+				if keep {
 					idx.add(i, j, k)
 				}
 			}
@@ -93,18 +124,27 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Me
 	return idx.extract(pdm), nil
 }
 
-func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) bool {
+func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) (bool, error) {
 	if fmp.include != nil {
-		if !fmp.include.MatchMetric(metric) {
-			return false
+		matches, err := fmp.include.MatchMetric(metric)
+		if err != nil {
+			// default to keep if there's an error
+			return true, err
+		}
+		if !matches {
+			return false, nil
 		}
 	}
 
 	if fmp.exclude != nil {
-		if fmp.exclude.MatchMetric(metric) {
-			return false
+		matches, err := fmp.exclude.MatchMetric(metric)
+		if err != nil {
+			return true, err
+		}
+		if matches {
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }

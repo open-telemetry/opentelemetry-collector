@@ -1,7 +1,11 @@
 # OTLP Exporter
 
-Exports traces and/or metrics via gRPC using
-[OpenTelemetry](https://opentelemetry.io/) format.
+Exports traces and/or metrics via gRPC using [OTLP](
+https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+format.
+
+*Important: OTLP metrics format is currently marked as "Alpha" and may change in
+incompatible way any time.*
 
 The following settings are required:
 
@@ -36,7 +40,7 @@ See [grpc loadbalancing example](https://github.com/grpc/grpc-go/blob/master/exa
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue`
-  - `enabled` (default = false)
+  - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
   User should calculate this as `num_seconds * requests_per_second` where:

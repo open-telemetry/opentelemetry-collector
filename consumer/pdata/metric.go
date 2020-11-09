@@ -15,8 +15,6 @@
 package pdata
 
 import (
-	"github.com/gogo/protobuf/proto"
-
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
@@ -42,6 +40,12 @@ type Metrics struct {
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
+// NewMetricData creates a new MetricData.
+func NewMetrics() Metrics {
+	orig := []*otlpmetrics.ResourceMetrics(nil)
+	return Metrics{&orig}
+}
+
 // MetricDataFromOtlp creates the internal MetricData representation from the OTLP.
 func MetricsFromOtlp(orig []*otlpmetrics.ResourceMetrics) Metrics {
 	return Metrics{&orig}
@@ -56,26 +60,30 @@ func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
 // ExportMetricsServiceRequest ProtoBuf bytes. This is intended to export
 // OTLP Protobuf bytes for OTLP/HTTP transports.
 func (md Metrics) ToOtlpProtoBytes() ([]byte, error) {
-	return proto.Marshal(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	metrics := otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: *md.orig,
-	})
+	}
+	return metrics.Marshal()
 }
 
-// NewMetricData creates a new MetricData.
-func NewMetrics() Metrics {
-	orig := []*otlpmetrics.ResourceMetrics(nil)
-	return Metrics{&orig}
+// FromOtlpProtoBytes converts OTLP Collector ExportMetricsServiceRequest
+// ProtoBuf bytes to the internal Metrics. Overrides current data.
+// Calling this function on zero-initialized structure causes panic.
+// Use it with NewMetrics or on existing initialized Metrics.
+func (md Metrics) FromOtlpProtoBytes(data []byte) error {
+	metrics := otlpcollectormetrics.ExportMetricsServiceRequest{}
+	if err := metrics.Unmarshal(data); err != nil {
+		return err
+	}
+	*md.orig = metrics.ResourceMetrics
+	return nil
 }
 
 // Clone returns a copy of MetricData.
 func (md Metrics) Clone() Metrics {
-	otlp := MetricsToOtlp(md)
-	resourceMetricsClones := make([]*otlpmetrics.ResourceMetrics, 0, len(otlp))
-	for _, resourceMetrics := range otlp {
-		resourceMetricsClones = append(resourceMetricsClones,
-			proto.Clone(resourceMetrics).(*otlpmetrics.ResourceMetrics))
-	}
-	return MetricsFromOtlp(resourceMetricsClones)
+	rms := NewResourceMetricsSlice()
+	md.ResourceMetrics().CopyTo(rms)
+	return Metrics(rms)
 }
 
 func (md Metrics) ResourceMetrics() ResourceMetricsSlice {
@@ -139,17 +147,37 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 				}
 				switch m.DataType() {
 				case MetricDataTypeIntGauge:
+					if m.IntGauge().IsNil() {
+						continue
+					}
 					dataPointCount += m.IntGauge().DataPoints().Len()
 				case MetricDataTypeDoubleGauge:
+					if m.DoubleGauge().IsNil() {
+						continue
+					}
 					dataPointCount += m.DoubleGauge().DataPoints().Len()
 				case MetricDataTypeIntSum:
+					if m.IntSum().IsNil() {
+						continue
+					}
 					dataPointCount += m.IntSum().DataPoints().Len()
 				case MetricDataTypeDoubleSum:
+					if m.DoubleSum().IsNil() {
+						continue
+					}
 					dataPointCount += m.DoubleSum().DataPoints().Len()
 				case MetricDataTypeIntHistogram:
+					if m.IntHistogram().IsNil() {
+						continue
+					}
 					dataPointCount += m.IntHistogram().DataPoints().Len()
 				case MetricDataTypeDoubleHistogram:
+					if m.DoubleHistogram().IsNil() {
+						continue
+					}
 					dataPointCount += m.DoubleHistogram().DataPoints().Len()
+				case MetricDataTypeDoubleSummary:
+					dataPointCount += m.DoubleSummary().DataPoints().Len()
 				}
 			}
 		}
@@ -168,6 +196,7 @@ const (
 	MetricDataTypeDoubleSum
 	MetricDataTypeIntHistogram
 	MetricDataTypeDoubleHistogram
+	MetricDataTypeDoubleSummary
 )
 
 func (mdt MetricDataType) String() string {
@@ -186,6 +215,8 @@ func (mdt MetricDataType) String() string {
 		return "IntHistogram"
 	case MetricDataTypeDoubleHistogram:
 		return "DoubleHistogram"
+	case MetricDataTypeDoubleSummary:
+		return "DoubleSummary"
 	}
 	return ""
 }
@@ -206,6 +237,8 @@ func (ms Metric) DataType() MetricDataType {
 		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_DoubleHistogram:
 		return MetricDataTypeDoubleHistogram
+	case *otlpmetrics.Metric_DoubleSummary:
+		return MetricDataTypeDoubleSummary
 	}
 	return MetricDataTypeNone
 }
@@ -226,6 +259,8 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 		(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{}
 	case MetricDataTypeDoubleHistogram:
 		(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{}
+	case MetricDataTypeDoubleSummary:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSummary{}
 	}
 }
 
@@ -271,6 +306,13 @@ func (ms Metric) DoubleHistogram() DoubleHistogram {
 	return newDoubleHistogram(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
 }
 
+// DoubleSummary returns the data as DoubleSummary.
+// Calling this function when DataType() != MetricDataTypeDoubleSummary will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DoubleSummary() DoubleSummary {
+	return newDoubleSummary(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary)
+}
+
 func copyData(src, dest *otlpmetrics.Metric) {
 	switch srcData := (src).Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
@@ -297,10 +339,9 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		data := &otlpmetrics.Metric_DoubleHistogram{}
 		newDoubleHistogram(&srcData.DoubleHistogram).CopyTo(newDoubleHistogram(&data.DoubleHistogram))
 		dest.Data = data
+	case *otlpmetrics.Metric_DoubleSummary:
+		data := &otlpmetrics.Metric_DoubleSummary{}
+		newDoubleSummary(&srcData.DoubleSummary).CopyTo(newDoubleSummary(&data.DoubleSummary))
+		dest.Data = data
 	}
-}
-
-// DeprecatedNewMetricsResourceSlice temporary public function.
-func DeprecatedNewMetricsResourceSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
-	return newResourceMetricsSlice(orig)
 }

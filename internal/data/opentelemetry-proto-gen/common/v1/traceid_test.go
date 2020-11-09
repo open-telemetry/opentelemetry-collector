@@ -21,70 +21,48 @@ import (
 )
 
 func TestNewTraceID(t *testing.T) {
-	tid := NewTraceID(nil)
-	assert.EqualValues(t, []byte(nil), tid.id)
+	tid := NewTraceID([16]byte{})
+	assert.EqualValues(t, [16]byte{}, tid.id)
 	assert.EqualValues(t, 0, tid.Size())
 
-	b := []byte{1, 2, 3}
+	b := [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
 	tid = NewTraceID(b)
 	assert.EqualValues(t, b, tid.id)
-	assert.EqualValues(t, b, tid.Bytes())
-	assert.EqualValues(t, 3, tid.Size())
+	assert.EqualValues(t, 16, tid.Size())
 }
 
 func TestTraceIDHexString(t *testing.T) {
-	tid := NewTraceID(nil)
+	tid := NewTraceID([16]byte{})
 	assert.EqualValues(t, "", tid.HexString())
 
-	tid = NewTraceID([]byte{})
-	assert.EqualValues(t, "", tid.HexString())
-
-	tid = NewTraceID([]byte{0x12, 0x23, 0xAD})
-	assert.EqualValues(t, "1223ad", tid.HexString())
+	tid = NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
+	assert.EqualValues(t, "12345678123456781234567812345678", tid.HexString())
 }
 
 func TestTraceIDEqual(t *testing.T) {
-	tid := NewTraceID(nil)
+	tid := NewTraceID([16]byte{})
 	assert.True(t, tid.Equal(tid))
-	assert.True(t, tid.Equal(NewTraceID(nil)))
-	assert.True(t, tid.Equal(NewTraceID([]byte{})))
-	assert.False(t, tid.Equal(NewTraceID([]byte{1})))
+	assert.True(t, tid.Equal(NewTraceID([16]byte{})))
+	assert.False(t, tid.Equal(NewTraceID([16]byte{1})))
 
-	tid = NewTraceID([]byte{0x12, 0x23, 0xAD})
-	assert.False(t, tid.Equal(NewTraceID(nil)))
+	tid = NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
 	assert.True(t, tid.Equal(tid))
-	assert.True(t, tid.Equal(NewTraceID([]byte{0x12, 0x23, 0xAD})))
-}
-
-func TestTraceIDCompare(t *testing.T) {
-	tid := NewTraceID(nil)
-	assert.EqualValues(t, 0, tid.Compare(tid))
-	assert.EqualValues(t, 0, tid.Compare(NewTraceID(nil)))
-	assert.EqualValues(t, 0, tid.Compare(NewTraceID([]byte{})))
-	assert.EqualValues(t, -1, tid.Compare(NewTraceID([]byte{1})))
-
-	tid = NewTraceID([]byte{0x12, 0x23, 0xAD})
-	assert.EqualValues(t, 1, tid.Compare(NewTraceID(nil)))
-	assert.EqualValues(t, 0, tid.Compare(tid))
-	assert.EqualValues(t, 0, tid.Compare(NewTraceID([]byte{0x12, 0x23, 0xAD})))
-	assert.EqualValues(t, 1, tid.Compare(NewTraceID([]byte{0x12, 0x23, 0xAC})))
-	assert.EqualValues(t, -1, tid.Compare(NewTraceID([]byte{0x12, 0x23, 0xAE})))
-	assert.EqualValues(t, 1, tid.Compare(NewTraceID([]byte{0x12, 0x23})))
-	assert.EqualValues(t, -1, tid.Compare(NewTraceID([]byte{0x12, 0x24})))
+	assert.False(t, tid.Equal(NewTraceID([16]byte{})))
+	assert.True(t, tid.Equal(NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})))
 }
 
 func TestTraceIDMarshal(t *testing.T) {
-	buf := make([]byte, 10)
+	buf := make([]byte, 20)
 
-	tid := NewTraceID(nil)
+	tid := NewTraceID([16]byte{})
 	n, err := tid.MarshalTo(buf)
 	assert.EqualValues(t, 0, n)
 	assert.NoError(t, err)
 
-	tid = NewTraceID([]byte{0x12, 0x23, 0xAD})
+	tid = NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
 	n, err = tid.MarshalTo(buf)
-	assert.EqualValues(t, 3, n)
-	assert.EqualValues(t, []byte{0x12, 0x23, 0xAD}, buf[0:3])
+	assert.EqualValues(t, 16, n)
+	assert.EqualValues(t, []byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, buf[0:16])
 	assert.NoError(t, err)
 
 	_, err = tid.MarshalTo(buf[0:1])
@@ -92,47 +70,51 @@ func TestTraceIDMarshal(t *testing.T) {
 }
 
 func TestTraceIDMarshalJSON(t *testing.T) {
-	tid := NewTraceID(nil)
+	tid := NewTraceID([16]byte{})
 	json, err := tid.MarshalJSON()
 	assert.EqualValues(t, []byte(`""`), json)
 	assert.NoError(t, err)
 
-	tid = NewTraceID([]byte{0x12, 0x23, 0xAD})
+	tid = NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
 	json, err = tid.MarshalJSON()
-	assert.EqualValues(t, []byte(`"1223ad"`), json)
+	assert.EqualValues(t, []byte(`"12345678123456781234567812345678"`), json)
 	assert.NoError(t, err)
 }
 
 func TestTraceIDUnmarshal(t *testing.T) {
-	buf := []byte{0x12, 0x23, 0xAD}
+	buf := [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
 
 	tid := TraceID{}
-	err := tid.Unmarshal(buf[0:3])
+	err := tid.Unmarshal(buf[0:16])
 	assert.NoError(t, err)
-	assert.EqualValues(t, []byte{0x12, 0x23, 0xAD}, tid.id)
+	assert.EqualValues(t, buf, tid.id)
 
 	err = tid.Unmarshal(buf[0:0])
 	assert.NoError(t, err)
-	assert.EqualValues(t, []byte{}, tid.id)
+	assert.EqualValues(t, [16]byte{}, tid.id)
 
-	tid = TraceID{}
 	err = tid.Unmarshal(nil)
 	assert.NoError(t, err)
-	assert.EqualValues(t, []byte(nil), tid.id)
+	assert.EqualValues(t, [16]byte{}, tid.id)
 }
 
 func TestTraceIDUnmarshalJSON(t *testing.T) {
-	tid := TraceID{}
+	tid := NewTraceID([16]byte{})
 	err := tid.UnmarshalJSON([]byte(`""`))
 	assert.NoError(t, err)
-	assert.EqualValues(t, []byte(nil), tid.id)
+	assert.EqualValues(t, [16]byte{}, tid.id)
 
-	err = tid.UnmarshalJSON([]byte(`"1234"`))
-	assert.NoError(t, err)
-	assert.EqualValues(t, []byte{0x12, 0x34}, tid.id)
-
-	err = tid.UnmarshalJSON([]byte(`1234`))
+	err = tid.UnmarshalJSON([]byte(`""""`))
 	assert.Error(t, err)
+
+	tidBytes := [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
+	err = tid.UnmarshalJSON([]byte(`"12345678123456781234567812345678"`))
+	assert.NoError(t, err)
+	assert.EqualValues(t, tidBytes, tid.id)
+
+	err = tid.UnmarshalJSON([]byte(`12345678123456781234567812345678`))
+	assert.NoError(t, err)
+	assert.EqualValues(t, tidBytes, tid.id)
 
 	err = tid.UnmarshalJSON([]byte(`"nothex"`))
 	assert.Error(t, err)

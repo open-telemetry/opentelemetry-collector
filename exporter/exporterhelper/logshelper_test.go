@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -45,27 +46,31 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	mr := newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil)
+	mr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
 
-	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
-	assert.Same(t, mr, mr.onPartialError(partialErr.(consumererror.PartialError)))
+	partialErr := consumererror.PartialLogsError(errors.New("some error"), testdata.GenerateLogDataEmpty())
+	assert.EqualValues(
+		t,
+		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
+		mr.onPartialError(partialErr.(consumererror.PartialError)),
+	)
 }
 
 func TestLogsExporter_InvalidName(t *testing.T) {
-	me, err := NewLogsExporter(nil, newPushLogsData(0, nil))
+	me, err := NewLogsExporter(nil, zap.NewNop(), newPushLogsData(0, nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilConfig, err)
 }
 
 func TestLogsExporter_NilPushLogsData(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, nil)
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, me)
 	require.Equal(t, errNilPushLogsData, err)
 }
 
 func TestLogsExporter_Default(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, nil))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -76,14 +81,14 @@ func TestLogsExporter_Default(t *testing.T) {
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
 	want := errors.New("my_error")
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, want))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, nil))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -91,7 +96,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordLogs_NonZeroDropped(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(1, nil))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -100,7 +105,7 @@ func TestLogsExporter_WithRecordLogs_NonZeroDropped(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, want))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
@@ -108,14 +113,14 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, nil))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForLogsExporter(t, me, nil, 1)
 }
 
 func TestLogsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(1, nil))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(1, nil))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForLogsExporter(t, me, nil, 1)
@@ -123,7 +128,7 @@ func TestLogsExporter_WithSpan_NonZeroDropped(t *testing.T) {
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, want))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
 	require.Nil(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForLogsExporter(t, me, want, 1)
@@ -133,7 +138,7 @@ func TestLogsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, nil), WithShutdown(shutdown))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -145,7 +150,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	me, err := NewLogsExporter(fakeLogsExporterConfig, newPushLogsData(0, nil), WithShutdown(shutdownErr))
+	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 

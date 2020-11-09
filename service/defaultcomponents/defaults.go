@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 	"go.opentelemetry.io/collector/exporter/zipkinexporter"
@@ -34,12 +35,10 @@ import (
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/filterprocessor"
-	"go.opentelemetry.io/collector/processor/groupbytraceprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
 	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
-	"go.opentelemetry.io/collector/processor/samplingprocessor/tailsamplingprocessor"
 	"go.opentelemetry.io/collector/processor/spanprocessor"
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
@@ -92,6 +91,7 @@ func Components() (
 		jaegerexporter.NewFactory(),
 		fileexporter.NewFactory(),
 		otlpexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 	)
 	if err != nil {
@@ -104,11 +104,9 @@ func Components() (
 		queuedprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiter.NewFactory(),
-		tailsamplingprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
-		groupbytraceprocessor.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

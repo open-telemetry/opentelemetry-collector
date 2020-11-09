@@ -143,8 +143,8 @@ func createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
+	nextConsumer consumer.TracesConsumer,
+) (component.TracesReceiver, error) {
 
 	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.

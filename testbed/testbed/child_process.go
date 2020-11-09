@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -24,8 +25,10 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"syscall"
+	"text/template"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -61,6 +64,11 @@ func (rs *ResourceSpec) isSpecified() bool {
 // ChildProcess implements the OtelcolRunner interface as a child process on the same machine executing
 // the test. The process can be monitored and the output of which will be written to a log file.
 type ChildProcess struct {
+	// Path to agent executable. If unset the default executable in
+	// bin/otelcol_{{.GOOS}}_{{.GOARCH}} will be used.
+	// Can be set for example to use the unstable executable for a specific test.
+	AgentExePath string
+
 	// Descriptive name of the process
 	name string
 
@@ -116,7 +124,6 @@ type ChildProcess struct {
 type StartParams struct {
 	Name         string
 	LogFilePath  string
-	Cmd          string
 	CmdArgs      []string
 	resourceSpec *ResourceSpec
 }
@@ -157,27 +164,61 @@ func (cp *ChildProcess) PrepareConfig(configStr string) (configCleanup func(), e
 	return configCleanup, err
 }
 
+func expandExeFileName(exeName string) string {
+	cfgTemplate, err := template.New("").Parse(exeName)
+	if err != nil {
+		log.Fatalf("Template failed to parse exe name %q: %s",
+			exeName, err.Error())
+	}
+
+	templateVars := struct {
+		GOOS   string
+		GOARCH string
+	}{
+		GOOS:   runtime.GOOS,
+		GOARCH: runtime.GOARCH,
+	}
+	var buf bytes.Buffer
+	if err = cfgTemplate.Execute(&buf, templateVars); err != nil {
+		log.Fatalf("Configuration template failed to run on exe name %q: %s",
+			exeName, err.Error())
+	}
+
+	return buf.String()
+}
+
 // start a child process.
+//
+// cp.AgentExePath defines the executable to run. If unspecified
+// "../../bin/otelcol_{{.GOOS}}_{{.GOARCH}}" will be used.
+// {{.GOOS}} and {{.GOARCH}} will be expanded to the current OS and ARCH correspondingly.
 //
 // Parameters:
 // name is the human readable name of the process (e.g. "Agent"), used for logging.
 // logFilePath is the file path to write the standard output and standard error of
 // the process to.
-// cmd is the executable to run.
 // cmdArgs is the command line arguments to pass to the process.
-func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err error) {
+func (cp *ChildProcess) Start(params StartParams) error {
 
 	cp.name = params.Name
 	cp.doneSignal = make(chan struct{})
 	cp.resourceSpec = params.resourceSpec
 
-	log.Printf("Starting %s (%s)", cp.name, params.Cmd)
+	if cp.AgentExePath == "" {
+		cp.AgentExePath = GlobalConfig.DefaultAgentExeRelativeFile
+	}
+	exePath := expandExeFileName(cp.AgentExePath)
+	exePath, err := filepath.Abs(exePath)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Starting %s (%s)", cp.name, exePath)
 
 	// Prepare log file
-	var logFile *os.File
-	logFile, err = os.Create(params.LogFilePath)
+	logFile, err := os.Create(params.LogFilePath)
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot create %s: %s", params.LogFilePath, err.Error())
+		return fmt.Errorf("cannot create %s: %s", params.LogFilePath, err.Error())
 	}
 	log.Printf("Writing %s log to %s", cp.name, params.LogFilePath)
 
@@ -189,27 +230,27 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 			configFile := path.Join("testdata", "agent-config.yaml")
 			cp.configFileName, err = filepath.Abs(configFile)
 			if err != nil {
-				return receiverAddr, err
+				return err
 			}
 		}
 		args = append(args, "--config")
 		args = append(args, cp.configFileName)
 	}
-	cp.cmd = exec.Command(params.Cmd, args...)
+	cp.cmd = exec.Command(exePath, args...)
 
 	// Capture standard output and standard error.
 	stdoutIn, err := cp.cmd.StdoutPipe()
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot capture stdout of %s: %s", params.Cmd, err.Error())
+		return fmt.Errorf("cannot capture stdout of %s: %s", exePath, err.Error())
 	}
 	stderrIn, err := cp.cmd.StderrPipe()
 	if err != nil {
-		return receiverAddr, fmt.Errorf("cannot capture stderr of %s: %s", params.Cmd, err.Error())
+		return fmt.Errorf("cannot capture stderr of %s: %s", exePath, err.Error())
 	}
 
 	// Start the process.
 	if err = cp.cmd.Start(); err != nil {
-		return receiverAddr, fmt.Errorf("cannot start executable at %s: %s", params.Cmd, err.Error())
+		return fmt.Errorf("cannot start executable at %s: %s", exePath, err.Error())
 	}
 
 	cp.startTime = time.Now()
@@ -230,8 +271,7 @@ func (cp *ChildProcess) Start(params StartParams) (receiverAddr string, err erro
 		cp.outputWG.Done()
 	}()
 
-	receiverAddr = fmt.Sprintf("%s:%d", DefaultHost, 0)
-	return receiverAddr, err
+	return err
 }
 
 func (cp *ChildProcess) Stop() (stopped bool, err error) {

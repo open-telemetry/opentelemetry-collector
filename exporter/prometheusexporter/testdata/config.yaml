@@ -12,6 +12,7 @@ exporters:
     const_labels:
       label1: value1
       "another label": spaced value
+    send_timestamps: true
 
 service:
   pipelines:

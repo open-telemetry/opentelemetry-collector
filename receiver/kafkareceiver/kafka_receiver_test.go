@@ -31,8 +31,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 )
@@ -42,7 +42,7 @@ func TestNewReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -51,7 +51,7 @@ func TestNewReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewTracesNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -72,7 +72,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), exportertest.NewNopTraceExporter())
+	r, err := newReceiver(c, component.ReceiverCreateParams{}, defaultUnmarshallers(), consumertest.NewTracesNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -81,7 +81,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 func TestReceiverStart(t *testing.T) {
 	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaConsumer{
-		nextConsumer:  exportertest.NewNopTraceExporter(),
+		nextConsumer:  consumertest.NewTracesNop(),
 		logger:        zap.NewNop(),
 		consumerGroup: testClient,
 	}
@@ -94,7 +94,7 @@ func TestReceiverStart(t *testing.T) {
 func TestReceiverStartConsume(t *testing.T) {
 	testClient := testConsumerGroup{once: &sync.Once{}}
 	c := kafkaConsumer{
-		nextConsumer:  exportertest.NewNopTraceExporter(),
+		nextConsumer:  consumertest.NewTracesNop(),
 		logger:        zap.NewNop(),
 		consumerGroup: testClient,
 	}
@@ -114,7 +114,7 @@ func TestReceiver_error(t *testing.T) {
 	expectedErr := fmt.Errorf("handler error")
 	testClient := testConsumerGroup{once: &sync.Once{}, err: expectedErr}
 	c := kafkaConsumer{
-		nextConsumer:  exportertest.NewNopTraceExporter(),
+		nextConsumer:  consumertest.NewTracesNop(),
 		logger:        logger,
 		consumerGroup: testClient,
 	}
@@ -137,14 +137,14 @@ func TestConsumerGroupHandler(t *testing.T) {
 		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
-		nextConsumer: exportertest.NewNopTraceExporter(),
+		nextConsumer: consumertest.NewTracesNop(),
 	}
 
 	testSession := testConsumerGroupSession{}
 	err := c.Setup(testSession)
 	require.NoError(t, err)
 	_, ok := <-c.ready
-	assert.Equal(t, false, ok)
+	assert.False(t, ok)
 	viewData, err := view.RetrieveData(statPartitionStart.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
@@ -181,7 +181,7 @@ func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
-		nextConsumer: exportertest.NewNopTraceExporter(),
+		nextConsumer: consumertest.NewTracesNop(),
 	}
 
 	wg := sync.WaitGroup{}
@@ -200,9 +200,9 @@ func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 }
 
 func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
-	nextConsumer := &exportertest.SinkTraceExporter{}
+	nextConsumer := new(consumertest.TracesSink)
 	consumerError := fmt.Errorf("failed to consumer")
-	nextConsumer.SetConsumeTraceError(consumerError)
+	nextConsumer.SetConsumeError(consumerError)
 	c := consumerGroupHandler{
 		unmarshaller: &otlpProtoUnmarshaller{},
 		logger:       zap.NewNop(),

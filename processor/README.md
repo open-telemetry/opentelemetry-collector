@@ -16,13 +16,10 @@ Supported processors (sorted alphabetically):
 - [Attributes Processor](attributesprocessor/README.md)
 - [Batch Processor](batchprocessor/README.md)
 - [Filter Processor](filterprocessor/README.md)
-- [Group by Trace Processor](groupbytraceprocessor/README.md)
 - [Memory Limiter Processor](memorylimiter/README.md)
 - [Queued Retry Processor](queuedprocessor/README.md)
 - [Resource Processor](resourceprocessor/README.md)
-- Sampling Processors
-  - [Probabilistic Sampling Processor](samplingprocessor/probabilisticsamplerprocessor/README.md)
-  - [Tail Sampling Processor](samplingprocessor/tailsamplingprocessor/README.md)
+- [Probabilistic Sampling Processor](samplingprocessor/probabilisticsamplerprocessor/README.md)
 - [Span Processor](spanprocessor/README.md)
 
 The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)

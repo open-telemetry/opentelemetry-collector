@@ -25,8 +25,8 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
@@ -39,7 +39,7 @@ var _ collectormetrics.MetricsServiceServer = (*Receiver)(nil)
 func TestExport(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -68,7 +68,7 @@ func TestExport(t *testing.T) {
 									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 									DataPoints: []*otlpmetrics.IntDataPoint{
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "key1",
 													Value: "value1",
@@ -79,7 +79,7 @@ func TestExport(t *testing.T) {
 											Value:             123,
 										},
 										{
-											Labels: []*otlpcommon.StringKeyValue{
+											Labels: []otlpcommon.StringKeyValue{
 												{
 													Key:   "key2",
 													Value: "value2",
@@ -122,7 +122,7 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
+	metricSink := new(consumertest.MetricsSink)
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()
@@ -139,8 +139,8 @@ func TestExport_EmptyRequest(t *testing.T) {
 func TestExport_ErrorConsumer(t *testing.T) {
 	// given
 
-	metricSink := new(exportertest.SinkMetricsExporter)
-	metricSink.SetConsumeMetricsError(fmt.Errorf("error"))
+	metricSink := new(consumertest.MetricsSink)
+	metricSink.SetConsumeError(fmt.Errorf("error"))
 
 	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
 	defer doneFn()

@@ -16,6 +16,7 @@ package zipkin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -63,7 +64,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil, nil
 	}
 
@@ -78,11 +79,15 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
+			span := spans.At(j)
+			if span.IsNil() {
+				continue
+			}
+			zSpan, err := spanToZipkinSpan(span, localServiceName, zTags)
 			if err != nil {
 				return zSpans, err
 			}
-			zSpans = append(zSpans, span)
+			zSpans = append(zSpans, zSpan)
 		}
 	}
 
@@ -111,31 +116,21 @@ func spanToZipkinSpan(
 
 	zs := &zipkinmodel.SpanModel{}
 
-	hi, lo, err := tracetranslator.TraceIDToUInt64Pair(span.TraceID())
-	if err != nil {
-		return nil, err
+	if !span.TraceID().IsValid() {
+		return zs, errors.New("TraceID is invalid")
 	}
-	zs.TraceID = zipkinmodel.TraceID{
-		High: hi,
-		Low:  lo,
+	zs.TraceID = convertTraceID(span.TraceID())
+	if !span.SpanID().IsValid() {
+		return zs, errors.New("SpanID is invalid")
 	}
-
-	idVal, err := tracetranslator.BytesToUInt64SpanID(span.SpanID().Bytes())
-	if err != nil {
-		return nil, err
-	}
-	zs.ID = zipkinmodel.ID(idVal)
+	zs.ID = convertSpanID(span.SpanID())
 
 	if len(span.TraceState()) > 0 {
 		tags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
 	}
 
-	if len(span.ParentSpanID().Bytes()) > 0 {
-		idVal, err := tracetranslator.BytesToUInt64SpanID(span.ParentSpanID().Bytes())
-		if err != nil {
-			return nil, err
-		}
-		id := zipkinmodel.ID(idVal)
+	if span.ParentSpanID().IsValid() {
+		id := convertSpanID(span.ParentSpanID())
 		zs.ParentID = &id
 	}
 
@@ -256,15 +251,10 @@ func removeRedundentTags(redundantKeys map[string]bool, zTags map[string]string)
 func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	resource pdata.Resource,
 ) (serviceName string, zTags map[string]string) {
-
 	zTags = make(map[string]string)
-	if resource.IsNil() {
-		return tracetranslator.ResourceNotSet, zTags
-	}
-
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
-		return tracetranslator.ResourceNoAttrs, zTags
+		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
@@ -371,4 +361,13 @@ func isIPv6Address(ipStr string) bool {
 		}
 	}
 	return false
+}
+
+func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
+	h, l := tracetranslator.TraceIDToUInt64Pair(t)
+	return zipkinmodel.TraceID{High: h, Low: l}
+}
+
+func convertSpanID(s pdata.SpanID) zipkinmodel.ID {
+	return zipkinmodel.ID(tracetranslator.BytesToUInt64SpanID(s.Bytes()))
 }

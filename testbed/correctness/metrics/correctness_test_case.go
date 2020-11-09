@@ -17,6 +17,7 @@ package metrics
 import (
 	"log"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -44,7 +45,7 @@ func newCorrectnessTestCase(
 }
 
 func (tc *correctnessTestCase) startCollector() {
-	tc.collector = testbed.NewInProcessCollector(componentFactories(tc.t), tc.sender.GetCollectorPort())
+	tc.collector = testbed.NewInProcessCollector(componentFactories(tc.t))
 	_, err := tc.collector.PrepareConfig(correctness.CreateConfigYaml(tc.sender, tc.receiver, nil, "metrics"))
 	require.NoError(tc.t, err)
 	rd, err := newResultsDir(tc.t.Name())
@@ -54,10 +55,9 @@ func (tc *correctnessTestCase) startCollector() {
 	fname, err := rd.fullPath("agent.log")
 	require.NoError(tc.t, err)
 	log.Println("starting collector")
-	_, err = tc.collector.Start(testbed.StartParams{
+	err = tc.collector.Start(testbed.StartParams{
 		Name:        "Agent",
 		LogFilePath: fname,
-		Cmd:         "foo",
 		CmdArgs:     []string{"--metrics-level=NONE"},
 	})
 	require.NoError(tc.t, err)
@@ -92,8 +92,16 @@ func (tc *correctnessTestCase) sendFirstMetric() {
 
 func (tc *correctnessTestCase) waitForAllMetrics() {
 	log.Println("waiting for allMetricsReceived")
-	<-tc.harness.allMetricsReceived
-	log.Println("all metrics received")
+	for {
+		select {
+		case <-time.After(10 * time.Second):
+			tc.t.Fatal("Deadline exceeded while waiting to receive metrics")
+			return
+		case <-tc.harness.allMetricsReceived:
+			log.Println("all metrics received")
+			return
+		}
+	}
 }
 
 func componentFactories(t *testing.T) component.Factories {

@@ -75,8 +75,8 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	now := time.Now()
 	ld := []*logspb.ResourceLogs{
 		{
-			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+			Resource: otresourcepb.Resource{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr1",
 						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
@@ -99,8 +99,8 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 		},
 		{
-			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+			Resource: otresourcepb.Resource{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr2",
 						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
@@ -134,8 +134,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	now := time.Now()
 	ld := []*logspb.ResourceLogs{
 		{
-			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+			Resource: otresourcepb.Resource{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr1",
 						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
@@ -158,8 +158,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			},
 		},
 		{
-			Resource: &otresourcepb.Resource{
-				Attributes: []*otlpcommon.KeyValue{
+			Resource: otresourcepb.Resource{
+				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr2",
 						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
