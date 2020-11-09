@@ -200,6 +200,11 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		metric.DoubleGauge().InitEmpty()
 		return pdata.MetricDataTypeDoubleGauge
+	case ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION:
+		metric.InitEmpty()
+		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+		metric.DoubleHistogram().InitEmpty()
+		return pdata.MetricDataTypeDoubleHistogram
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeIntSum)

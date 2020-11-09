@@ -362,13 +362,14 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
 
 	ilms := rms.At(0).InstrumentationLibraryMetrics()
-	ilms.At(0).Metrics().Resize(5)
+	ilms.At(0).Metrics().Resize(6)
 	ms := ilms.At(0).Metrics()
 	initCounterIntMetric(ms.At(0))
 	initSumDoubleMetric(ms.At(1))
 	initDoubleHistogramMetric(ms.At(2))
 	initIntHistogramMetric(ms.At(3))
 	initDoubleSummaryMetric(ms.At(4))
+	initDoubleGaugeHistogramMetric(ms.At(5))
 
 	return metricData
 }
@@ -504,6 +505,38 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	exemplar.SetValue(15)
 	initMetricAttachment(exemplar.FilteredLabels())
 	hdp1.SetExplicitBounds([]float64{1})
+}
+
+func initDoubleGaugeHistogramMetric(hm pdata.Metric) {
+	hm.InitEmpty()
+        hm.SetName(TestDoubleHistogramMetricName)
+        hm.SetDescription("")
+        hm.SetUnit("1")
+        hm.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+        hm.DoubleHistogram().InitEmpty()
+
+        hdps := hm.DoubleHistogram().DataPoints()
+        hdps.Resize(2)
+        hdp0 := hdps.At(0)
+        initMetricLabels13(hdp0.LabelsMap())
+        hdp0.SetStartTime(TestMetricStartTimestamp)
+        hdp0.SetTimestamp(TestMetricTimestamp)
+        hdp0.SetCount(1)
+        hdp0.SetSum(15)
+        hdp1 := hdps.At(1)
+        initMetricLabels2(hdp1.LabelsMap())
+        hdp1.SetStartTime(TestMetricStartTimestamp)
+        hdp1.SetTimestamp(TestMetricTimestamp)
+        hdp1.SetCount(1)
+        hdp1.SetSum(15)
+        hdp1.SetBucketCounts([]uint64{0, 1})
+        exemplars := hdp1.Exemplars()
+        exemplars.Resize(1)
+        exemplar := exemplars.At(0)
+        exemplar.SetTimestamp(TestMetricExemplarTimestamp)
+        exemplar.SetValue(15)
+        initMetricAttachment(exemplar.FilteredLabels())
+        hdp1.SetExplicitBounds([]float64{1})
 }
 
 func generateOtlpDoubleHistogramMetric() *otlpmetrics.Metric {

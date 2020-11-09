@@ -295,6 +295,103 @@ func generateOCTestMetricDouble() *ocmetrics.Metric {
 	}
 }
 
+func generateOCTestMetricGaugeDoubleHistogram() *ocmetrics.Metric {
+	return &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestDoubleHistogramMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+				{Key: testdata.TestLabelKey3},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    testdata.TestLabelValue1,
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+					{
+						// key3
+						Value:    testdata.TestLabelValue3,
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DistributionValue{
+							DistributionValue: &ocmetrics.DistributionValue{
+								Count: 1,
+								Sum:   15,
+							},
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						HasValue: false,
+					},
+					{
+						// key2
+						Value:    testdata.TestLabelValue2,
+						HasValue: true,
+					},
+					{
+						// key3
+						HasValue: false,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DistributionValue{
+							DistributionValue: &ocmetrics.DistributionValue{
+								Count: 1,
+								Sum:   15,
+								BucketOptions: &ocmetrics.DistributionValue_BucketOptions{
+									Type: &ocmetrics.DistributionValue_BucketOptions_Explicit_{
+										Explicit: &ocmetrics.DistributionValue_BucketOptions_Explicit{
+											Bounds: []float64{1},
+										},
+									},
+								},
+								Buckets: []*ocmetrics.DistributionValue_Bucket{
+									{
+										Count: 0,
+									},
+									{
+										Count: 1,
+										Exemplar: &ocmetrics.DistributionValue_Exemplar{
+											Timestamp:   timestamppb.New(testdata.TestMetricExemplarTime),
+											Value:       15,
+											Attachments: map[string]string{testdata.TestAttachmentKey: testdata.TestAttachmentValue},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func generateOCTestMetricDoubleHistogram() *ocmetrics.Metric {
 	return &ocmetrics.Metric{
 		MetricDescriptor: &ocmetrics.MetricDescriptor{
@@ -392,6 +489,102 @@ func generateOCTestMetricDoubleHistogram() *ocmetrics.Metric {
 	}
 }
 
+func generateOCTestMetricDoubleGaugeHistogram() *ocmetrics.Metric {
+	return &ocmetrics.Metric{
+		MetricDescriptor: &ocmetrics.MetricDescriptor{
+			Name:        testdata.TestDoubleHistogramMetricName,
+			Description: "",
+			Unit:        "1",
+			Type:        ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION,
+			LabelKeys: []*ocmetrics.LabelKey{
+				{Key: testdata.TestLabelKey1},
+				{Key: testdata.TestLabelKey2},
+				{Key: testdata.TestLabelKey3},
+			},
+		},
+		Timeseries: []*ocmetrics.TimeSeries{
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						Value:    testdata.TestLabelValue1,
+						HasValue: true,
+					},
+					{
+						// key2
+						HasValue: false,
+					},
+					{
+						// key3
+						Value:    testdata.TestLabelValue3,
+						HasValue: true,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DistributionValue{
+							DistributionValue: &ocmetrics.DistributionValue{
+								Count: 1,
+								Sum:   15,
+							},
+						},
+					},
+				},
+			},
+			{
+				StartTimestamp: timestamppb.New(testdata.TestMetricStartTime),
+				LabelValues: []*ocmetrics.LabelValue{
+					{
+						// key1
+						HasValue: false,
+					},
+					{
+						// key2
+						Value:    testdata.TestLabelValue2,
+						HasValue: true,
+					},
+					{
+						// key3
+						HasValue: false,
+					},
+				},
+				Points: []*ocmetrics.Point{
+					{
+						Timestamp: timestamppb.New(testdata.TestMetricTime),
+						Value: &ocmetrics.Point_DistributionValue{
+							DistributionValue: &ocmetrics.DistributionValue{
+								Count: 1,
+								Sum:   15,
+								BucketOptions: &ocmetrics.DistributionValue_BucketOptions{
+									Type: &ocmetrics.DistributionValue_BucketOptions_Explicit_{
+										Explicit: &ocmetrics.DistributionValue_BucketOptions_Explicit{
+											Bounds: []float64{1},
+										},
+									},
+								},
+								Buckets: []*ocmetrics.DistributionValue_Bucket{
+									{
+										Count: 0,
+									},
+									{
+										Count: 1,
+										Exemplar: &ocmetrics.DistributionValue_Exemplar{
+											Timestamp:   timestamppb.New(testdata.TestMetricExemplarTime),
+											Value:       15,
+											Attachments: map[string]string{testdata.TestAttachmentKey: testdata.TestAttachmentValue},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
 func generateOCTestMetricIntHistogram() *ocmetrics.Metric {
 	m := generateOCTestMetricDoubleHistogram()
 	m.MetricDescriptor.Name = testdata.TestIntHistogramMetricName

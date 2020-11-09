@@ -131,6 +131,7 @@ func TestOCToMetrics(t *testing.T) {
 					generateOCTestMetricDoubleHistogram(),
 					generateOCTestMetricIntHistogram(),
 					generateOCTestMetricDoubleSummary(),
+					generateOCTestMetricGaugeDoubleHistogram(),
 				},
 			},
 			internal: sampleMetricData,
