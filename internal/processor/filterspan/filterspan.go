@@ -125,10 +125,6 @@ func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource,
 
 // serviceNameForResource gets the service name for a specified Resource.
 func serviceNameForResource(resource pdata.Resource) string {
-	if resource.IsNil() {
-		return "<nil-resource>"
-	}
-
 	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
 	if !found {
 		return "<nil-service-name>"

@@ -344,7 +344,6 @@ func verifySingleSpan(
 	// Send one span.
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
 	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName: pdata.NewAttributeValueString(serviceName),
 	})

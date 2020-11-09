@@ -176,6 +176,8 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 						continue
 					}
 					dataPointCount += m.DoubleHistogram().DataPoints().Len()
+				case MetricDataTypeDoubleSummary:
+					dataPointCount += m.DoubleSummary().DataPoints().Len()
 				}
 			}
 		}
@@ -194,6 +196,7 @@ const (
 	MetricDataTypeDoubleSum
 	MetricDataTypeIntHistogram
 	MetricDataTypeDoubleHistogram
+	MetricDataTypeDoubleSummary
 )
 
 func (mdt MetricDataType) String() string {
@@ -212,6 +215,8 @@ func (mdt MetricDataType) String() string {
 		return "IntHistogram"
 	case MetricDataTypeDoubleHistogram:
 		return "DoubleHistogram"
+	case MetricDataTypeDoubleSummary:
+		return "DoubleSummary"
 	}
 	return ""
 }
@@ -232,6 +237,8 @@ func (ms Metric) DataType() MetricDataType {
 		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_DoubleHistogram:
 		return MetricDataTypeDoubleHistogram
+	case *otlpmetrics.Metric_DoubleSummary:
+		return MetricDataTypeDoubleSummary
 	}
 	return MetricDataTypeNone
 }
@@ -252,6 +259,8 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 		(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{}
 	case MetricDataTypeDoubleHistogram:
 		(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{}
+	case MetricDataTypeDoubleSummary:
+		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSummary{}
 	}
 }
 
@@ -297,6 +306,13 @@ func (ms Metric) DoubleHistogram() DoubleHistogram {
 	return newDoubleHistogram(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
 }
 
+// DoubleSummary returns the data as DoubleSummary.
+// Calling this function when DataType() != MetricDataTypeDoubleSummary will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DoubleSummary() DoubleSummary {
+	return newDoubleSummary(&(*ms.orig).Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary)
+}
+
 func copyData(src, dest *otlpmetrics.Metric) {
 	switch srcData := (src).Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
@@ -322,6 +338,10 @@ func copyData(src, dest *otlpmetrics.Metric) {
 	case *otlpmetrics.Metric_DoubleHistogram:
 		data := &otlpmetrics.Metric_DoubleHistogram{}
 		newDoubleHistogram(&srcData.DoubleHistogram).CopyTo(newDoubleHistogram(&data.DoubleHistogram))
+		dest.Data = data
+	case *otlpmetrics.Metric_DoubleSummary:
+		data := &otlpmetrics.Metric_DoubleSummary{}
+		newDoubleSummary(&srcData.DoubleSummary).CopyTo(newDoubleSummary(&data.DoubleSummary))
 		dest.Data = data
 	}
 }

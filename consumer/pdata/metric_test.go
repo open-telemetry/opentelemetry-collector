@@ -208,8 +208,8 @@ func TestMetricSize(t *testing.T) {
 	assert.Equal(t, sizeBytes, md.Size())
 }
 
-func TestMetricsSizeWithNils(t *testing.T) {
-	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).Size())
+func TestMetricsSizeWithNil(t *testing.T) {
+	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil}).Size())
 }
 
 func TestMetricCountWithNils(t *testing.T) {
@@ -877,8 +877,8 @@ func BenchmarkMetricsFromOtlp(b *testing.B) {
 	}
 }
 
-func generateTestProtoResource() *otlpresource.Resource {
-	return &otlpresource.Resource{
+func generateTestProtoResource() otlpresource.Resource {
+	return otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "string",

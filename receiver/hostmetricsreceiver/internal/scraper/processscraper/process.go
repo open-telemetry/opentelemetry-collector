@@ -48,7 +48,6 @@ type commandMetadata struct {
 }
 
 func (m *processMetadata) initializeResource(resource pdata.Resource) {
-	resource.InitEmpty()
 	attr := resource.Attributes()
 	attr.InitEmptyWithCapacity(6)
 	m.insertPid(attr)

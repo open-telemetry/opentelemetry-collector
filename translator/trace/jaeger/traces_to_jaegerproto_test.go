@@ -224,7 +224,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 	tests := []struct {
 		name string
 		td   pdata.Traces
-		jb   model.Batch
+		jb   *model.Batch
 		err  error
 	}{
 		{
@@ -236,7 +236,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		{
 			name: "no-spans",
 			td:   generateTraceDataResourceOnly(),
-			jb: model.Batch{
+			jb: &model.Batch{
 				Process: generateProtoProcess(),
 			},
 			err: nil,
@@ -245,20 +245,15 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		{
 			name: "no-resource-attrs",
 			td:   generateTraceDataResourceOnlyWithNoAttrs(),
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoAttrs,
-				},
-			},
-			err: nil,
+			err:  nil,
 		},
 
 		{
 			name: "one-span-no-resources",
 			td:   generateTraceDataOneSpanNoResourceWithTraceState(),
-			jb: model.Batch{
+			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpanWithTraceState(),
@@ -269,9 +264,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		{
 			name: "library-info",
 			td:   generateTraceDataWithLibraryInfo(),
-			jb: model.Batch{
+			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpanWithLibraryInfo("io.opentelemetry.test"),
@@ -282,9 +277,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		{
 			name: "two-spans-child-parent",
 			td:   generateTraceDataTwoSpansChildParent(),
-			jb: model.Batch{
+			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
@@ -297,9 +292,9 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		{
 			name: "two-spans-with-follower",
 			td:   generateTraceDataTwoSpansWithFollower(),
-			jb: model.Batch{
+			jb: &model.Batch{
 				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNotSet,
+					ServiceName: tracetranslator.ResourceNoServiceName,
 				},
 				Spans: []*model.Span{
 					generateProtoSpan(),
@@ -314,11 +309,11 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			jbs, err := InternalTracesToJaegerProto(test.td)
 			assert.EqualValues(t, test.err, err)
-			if test.name == "empty" {
-				assert.Nil(t, jbs)
+			if test.jb == nil {
+				assert.Len(t, jbs, 0)
 			} else {
-				assert.Equal(t, 1, len(jbs))
-				assert.EqualValues(t, test.jb, *jbs[0])
+				require.Equal(t, 1, len(jbs))
+				assert.EqualValues(t, test.jb, jbs[0])
 			}
 		})
 	}

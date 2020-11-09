@@ -64,7 +64,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil, nil
 	}
 
@@ -251,15 +251,10 @@ func removeRedundentTags(redundantKeys map[string]bool, zTags map[string]string)
 func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	resource pdata.Resource,
 ) (serviceName string, zTags map[string]string) {
-
 	zTags = make(map[string]string)
-	if resource.IsNil() {
-		return tracetranslator.ResourceNotSet, zTags
-	}
-
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
-		return tracetranslator.ResourceNoAttrs, zTags
+		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {

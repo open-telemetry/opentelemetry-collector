@@ -31,7 +31,7 @@ import (
 )
 
 func TestMetricsToOC(t *testing.T) {
-	sampleMetricData := testdata.GenerateMetricsWithCountersHistograms()
+	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(conventions.AttributeHostHostname, pdata.NewAttributeValueString("host1"))
 	attrs.Upsert(conventions.OCAttributeProcessID, pdata.NewAttributeValueInt(123))
@@ -210,6 +210,7 @@ func generateOCTestData() consumerdata.MetricsData {
 			generateOCTestMetricDouble(),
 			generateOCTestMetricDoubleHistogram(),
 			generateOCTestMetricIntHistogram(),
+			generateOCTestMetricDoubleSummary(),
 		},
 	}
 }

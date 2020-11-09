@@ -47,7 +47,7 @@ var resourceSpansSlice = &sliceStruct{
 	element:    resourceSpans,
 }
 
-var resourceSpans = &messageStruct{
+var resourceSpans = &messagePtrStruct{
 	structName:     "ResourceSpans",
 	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.ResourceSpans",
@@ -66,7 +66,7 @@ var instrumentationLibrarySpansSlice = &sliceStruct{
 	element:    instrumentationLibrarySpans,
 }
 
-var instrumentationLibrarySpans = &messageStruct{
+var instrumentationLibrarySpans = &messagePtrStruct{
 	structName:     "InstrumentationLibrarySpans",
 	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.InstrumentationLibrarySpans",
@@ -85,7 +85,7 @@ var spanSlice = &sliceStruct{
 	element:    span,
 }
 
-var span = &messageStruct{
+var span = &messagePtrStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
 		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37",
@@ -132,7 +132,7 @@ var span = &messageStruct{
 			defaultVal:      "uint32(0)",
 			testVal:         "uint32(17)",
 		},
-		&messageField{
+		&messagePtrField{
 			fieldName:       "Status",
 			originFieldName: "Status",
 			returnMessage:   spanStatus,
@@ -145,7 +145,7 @@ var spanEventSlice = &sliceStruct{
 	element:    spanEvent,
 }
 
-var spanEvent = &messageStruct{
+var spanEvent = &messagePtrStruct{
 	structName: "SpanEvent",
 	description: "// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied\n" +
 		"// text description and key-value pairs. See OTLP for event definition.",
@@ -163,7 +163,7 @@ var spanLinkSlice = &sliceStruct{
 	element:    spanLink,
 }
 
-var spanLink = &messageStruct{
+var spanLink = &messagePtrStruct{
 	structName: "SpanLink",
 	description: "// SpanLink is a pointer from the current span to another span in the same trace or in a\n" +
 		"// different trace. See OTLP for link definition.",
@@ -177,7 +177,7 @@ var spanLink = &messageStruct{
 	},
 }
 
-var spanStatus = &messageStruct{
+var spanStatus = &messagePtrStruct{
 	structName: "SpanStatus",
 	description: "// SpanStatus is an optional final status for this span. Semantically when Status wasn't set\n" +
 		"// it is means span ended without errors and assume Status.Ok (code = 0).",

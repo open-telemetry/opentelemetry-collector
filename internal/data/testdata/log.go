@@ -18,6 +18,7 @@ import (
 	"time"
 
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
@@ -74,7 +75,7 @@ func GenerateLogDataOneEmptyOneNilInstrumentationLibrary() pdata.Logs {
 func generateLogOtlpOneEmptyOneNilInstrumentationLibrary() []*otlplogs.ResourceLogs {
 	return []*otlplogs.ResourceLogs{
 		{},
-		{nil, []*otlplogs.InstrumentationLibraryLogs{nil}},
+		{otlpresource.Resource{}, []*otlplogs.InstrumentationLibraryLogs{nil}},
 	}
 }
 

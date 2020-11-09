@@ -470,7 +470,7 @@ func (am AttributeMap) Insert(k string, v AttributeValue) {
 	}
 }
 
-// Insert adds a null Value to the map when the key does not exist.
+// InsertNull adds a null Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (am AttributeMap) InsertNull(k string) {
 	if _, existing := am.Get(k); !existing {
@@ -478,7 +478,7 @@ func (am AttributeMap) InsertNull(k string) {
 	}
 }
 
-// Insert adds the string Value to the map when the key does not exist.
+// InsertString adds the string Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (am AttributeMap) InsertString(k string, v string) {
 	if _, existing := am.Get(k); !existing {
@@ -486,7 +486,7 @@ func (am AttributeMap) InsertString(k string, v string) {
 	}
 }
 
-// Insert adds the int Value to the map when the key does not exist.
+// InsertInt adds the int Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (am AttributeMap) InsertInt(k string, v int64) {
 	if _, existing := am.Get(k); !existing {
@@ -494,7 +494,7 @@ func (am AttributeMap) InsertInt(k string, v int64) {
 	}
 }
 
-// Insert adds the double Value to the map when the key does not exist.
+// InsertDouble adds the double Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (am AttributeMap) InsertDouble(k string, v float64) {
 	if _, existing := am.Get(k); !existing {
@@ -502,7 +502,7 @@ func (am AttributeMap) InsertDouble(k string, v float64) {
 	}
 }
 
-// Insert adds the bool Value to the map when the key does not exist.
+// InsertBool adds the bool Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (am AttributeMap) InsertBool(k string, v bool) {
 	if _, existing := am.Get(k); !existing {
@@ -523,7 +523,7 @@ func (am AttributeMap) Update(k string, v AttributeValue) {
 	}
 }
 
-// Update updates an existing string Value with a value.
+// UpdateString updates an existing string Value with a value.
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateString(k string, v string) {
 	if av, existing := am.Get(k); existing {
@@ -531,7 +531,7 @@ func (am AttributeMap) UpdateString(k string, v string) {
 	}
 }
 
-// Update updates an existing int Value with a value.
+// UpdateInt updates an existing int Value with a value.
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateInt(k string, v int64) {
 	if av, existing := am.Get(k); existing {
@@ -539,7 +539,7 @@ func (am AttributeMap) UpdateInt(k string, v int64) {
 	}
 }
 
-// Update updates an existing double Value with a value.
+// UpdateDouble updates an existing double Value with a value.
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateDouble(k string, v float64) {
 	if av, existing := am.Get(k); existing {
@@ -547,7 +547,7 @@ func (am AttributeMap) UpdateDouble(k string, v float64) {
 	}
 }
 
-// Update updates an existing bool Value with a value.
+// UpdateBool updates an existing bool Value with a value.
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateBool(k string, v bool) {
 	if av, existing := am.Get(k); existing {
@@ -571,7 +571,7 @@ func (am AttributeMap) Upsert(k string, v AttributeValue) {
 	}
 }
 
-// Upsert performs the Insert or Update action. The AttributeValue is
+// UpsertString performs the Insert or Update action. The AttributeValue is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertString(k string, v string) {
@@ -582,7 +582,7 @@ func (am AttributeMap) UpsertString(k string, v string) {
 	}
 }
 
-// Upsert performs the Insert or Update action. The int Value is
+// UpsertInt performs the Insert or Update action. The int Value is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertInt(k string, v int64) {
@@ -593,7 +593,7 @@ func (am AttributeMap) UpsertInt(k string, v int64) {
 	}
 }
 
-// Upsert performs the Insert or Update action. The double Value is
+// UpsertDouble performs the Insert or Update action. The double Value is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertDouble(k string, v float64) {
@@ -604,7 +604,7 @@ func (am AttributeMap) UpsertDouble(k string, v float64) {
 	}
 }
 
-// Upsert performs the Insert or Update action. The bool Value is
+// UpsertBool performs the Insert or Update action. The bool Value is
 // insert to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertBool(k string, v bool) {

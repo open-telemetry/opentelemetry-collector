@@ -368,7 +368,6 @@ func Test_Matching_True(t *testing.T) {
 	})
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName: pdata.NewAttributeValueString("svcA"),
 		"resString":                      pdata.NewAttributeValueString("arithmetic"),
@@ -392,7 +391,6 @@ func Test_Matching_True(t *testing.T) {
 
 func resource(service string) pdata.Resource {
 	r := pdata.NewResource()
-	r.InitEmpty()
 	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString(service)})
 	return r
 }
