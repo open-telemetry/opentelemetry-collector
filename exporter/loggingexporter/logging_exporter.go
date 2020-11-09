@@ -106,6 +106,9 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 		data := m.DoubleHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeDoubleSummary:
+		data := m.DoubleSummary()
+		b.logDoubleSummaryDataPoints(data.DataPoints())
 	}
 }
 
@@ -199,6 +202,29 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 			for j, bucket := range buckets {
 				b.logEntry("Buckets #%d, Count: %d", j, bucket)
 			}
+		}
+	}
+}
+
+func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.DoubleSummaryDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("SummaryDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Count: %d", p.Count())
+		b.logEntry("Sum: %f", p.Sum())
+
+		quantiles := p.QuantileValues()
+		for i := 0; i < quantiles.Len(); i++ {
+			quantile := quantiles.At(i)
+			b.logEntry("QuantileValue #%d: Quantile %f, Value %f", i, quantile.Quantile(), quantile.Value())
 		}
 	}
 }
