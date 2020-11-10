@@ -149,11 +149,10 @@ func (tr *transaction) Commit() error {
 	}
 
 	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
-	metrics, numTimeseries, _, err := tr.metricBuilder.Build()
+	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
-		// Only error by Build() is errNoDataToBuild, with numTimeseries and
-		// droppedTimeseries set to zero.
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.
+		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, err)
 		return err
 	}
 
@@ -164,7 +163,7 @@ func (tr *transaction) Commit() error {
 			// Since we are unable to adjust metrics properly, we will drop them
 			// and return an error.
 			err = errNoStartTimeMetrics
-			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, err)
 			return err
 		}
 
@@ -177,16 +176,15 @@ func (tr *transaction) Commit() error {
 
 	numPoints := 0
 	if len(metrics) > 0 {
-		md := consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{
 			Node:     tr.node,
 			Resource: tr.resource,
 			Metrics:  metrics,
-		}
-		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
-		err = tr.sink.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+		})
+		_, numPoints = md.MetricAndDataPointCount()
+		err = tr.sink.ConsumeMetrics(ctx, md)
 	}
-	obsreport.EndMetricsReceiveOp(
-		ctx, dataformat, numPoints, numTimeseries, err)
+	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, err)
 	return err
 }
 

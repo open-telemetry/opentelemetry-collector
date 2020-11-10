@@ -22,6 +22,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 const (
@@ -101,13 +102,8 @@ func StartTraceDataExportOp(
 func EndTraceDataExportOp(
 	exporterCtx context.Context,
 	numExportedSpans int,
-	numDroppedSpans int, // TODO: For legacy measurements, to be removed in the future.
 	err error,
 ) {
-	if useLegacy {
-		stats.Record(exporterCtx, mExporterReceivedSpans.M(int64(numExportedSpans)), mExporterDroppedSpans.M(int64(numDroppedSpans)))
-	}
-
 	endExportOp(
 		exporterCtx,
 		numExportedSpans,
@@ -134,14 +130,8 @@ func StartMetricsExportOp(
 func EndMetricsExportOp(
 	exporterCtx context.Context,
 	numExportedPoints int,
-	numExportedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
-	numDroppedTimeSeries int, // TODO: For legacy measurements, to be removed in the future.
 	err error,
 ) {
-	if useLegacy {
-		stats.Record(exporterCtx, mExporterReceivedTimeSeries.M(int64(numExportedTimeSeries)), mExporterDroppedTimeSeries.M(int64(numDroppedTimeSeries)))
-	}
-
 	endExportOp(
 		exporterCtx,
 		numExportedPoints,
@@ -168,13 +158,8 @@ func StartLogsExportOp(
 func EndLogsExportOp(
 	exporterCtx context.Context,
 	numExportedLogs int,
-	numDroppedLogs int, // TODO: For legacy measurements, to be removed in the future.
 	err error,
 ) {
-	if useLegacy {
-		stats.Record(exporterCtx, mExporterReceivedLogRecords.M(int64(numExportedLogs)), mExporterDroppedLogRecords.M(int64(numDroppedLogs)))
-	}
-
 	endExportOp(
 		exporterCtx,
 		numExportedLogs,
@@ -191,12 +176,7 @@ func ExporterContext(
 	ctx context.Context,
 	exporter string,
 ) context.Context {
-	if useLegacy {
-		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
-	}
-
 	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporter, exporter, tag.WithTTL(tag.TTLNoPropagation)))
-
 	return ctx
 }
 
@@ -226,7 +206,7 @@ func endExportOp(
 		numFailedToSend = numExportedItems
 	}
 
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		var sentMeasure, failedToSendMeasure *stats.Int64Measure
 		switch dataType {
 		case configmodels.TracesDataType:

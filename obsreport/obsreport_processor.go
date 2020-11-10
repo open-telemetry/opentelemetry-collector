@@ -20,6 +20,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 const (
@@ -91,10 +93,7 @@ func BuildProcessorCustomMetricName(configType, metric string) string {
 // ProcessorMetricViews builds the metric views for custom metrics of processors.
 func ProcessorMetricViews(configType string, legacyViews []*view.View) []*view.View {
 	var allViews []*view.View
-	if useLegacy {
-		allViews = legacyViews
-	}
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		for _, legacyView := range legacyViews {
 			// Ignore any nil entry and views without measure or aggregation.
 			// These can't be registered but some code registering legacy views may
@@ -127,7 +126,7 @@ func ProcessorContext(ctx context.Context, processor string) context.Context {
 
 // ProcessorTraceDataAccepted reports that the trace data was accepted.
 func ProcessorTraceDataAccepted(processorCtx context.Context, numSpans int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedSpans.M(int64(numSpans)),
@@ -139,7 +138,7 @@ func ProcessorTraceDataAccepted(processorCtx context.Context, numSpans int) {
 
 // ProcessorTraceDataRefused reports that the trace data was refused.
 func ProcessorTraceDataRefused(processorCtx context.Context, numSpans int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedSpans.M(0),
@@ -151,7 +150,7 @@ func ProcessorTraceDataRefused(processorCtx context.Context, numSpans int) {
 
 // ProcessorTraceDataDropped reports that the trace data was dropped.
 func ProcessorTraceDataDropped(processorCtx context.Context, numSpans int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedSpans.M(0),
@@ -163,7 +162,7 @@ func ProcessorTraceDataDropped(processorCtx context.Context, numSpans int) {
 
 // ProcessorMetricsDataAccepted reports that the metrics were accepted.
 func ProcessorMetricsDataAccepted(processorCtx context.Context, numPoints int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(int64(numPoints)),
@@ -175,7 +174,7 @@ func ProcessorMetricsDataAccepted(processorCtx context.Context, numPoints int) {
 
 // ProcessorMetricsDataRefused reports that the metrics were refused.
 func ProcessorMetricsDataRefused(processorCtx context.Context, numPoints int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(0),
@@ -187,7 +186,7 @@ func ProcessorMetricsDataRefused(processorCtx context.Context, numPoints int) {
 
 // ProcessorMetricsDataDropped reports that the metrics were dropped.
 func ProcessorMetricsDataDropped(processorCtx context.Context, numPoints int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedMetricPoints.M(0),
@@ -199,7 +198,7 @@ func ProcessorMetricsDataDropped(processorCtx context.Context, numPoints int) {
 
 // ProcessorLogRecordsAccepted reports that the metrics were accepted.
 func ProcessorLogRecordsAccepted(processorCtx context.Context, numRecords int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedLogRecords.M(int64(numRecords)),
@@ -211,7 +210,7 @@ func ProcessorLogRecordsAccepted(processorCtx context.Context, numRecords int) {
 
 // ProcessorLogRecordsRefused reports that the metrics were refused.
 func ProcessorLogRecordsRefused(processorCtx context.Context, numRecords int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedLogRecords.M(0),
@@ -223,7 +222,7 @@ func ProcessorLogRecordsRefused(processorCtx context.Context, numRecords int) {
 
 // ProcessorLogRecordsDropped reports that the metrics were dropped.
 func ProcessorLogRecordsDropped(processorCtx context.Context, numRecords int) {
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			processorCtx,
 			mProcessorAcceptedLogRecords.M(0),

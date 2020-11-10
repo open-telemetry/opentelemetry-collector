@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove legacy metrics, they were marked as legacy for ~12 months #2105
+
 ## v0.14.0 Beta
 
 ## 🚀 New components 🚀

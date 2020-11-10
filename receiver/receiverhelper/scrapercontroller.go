@@ -195,7 +195,7 @@ func (sc *scraperController) startScraping() {
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
 func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
-	ctx = obsreport.ReceiverContext(ctx, sc.name, "", "")
+	ctx = obsreport.ReceiverContext(ctx, sc.name, "")
 
 	metrics := pdata.NewMetrics()
 
@@ -208,11 +208,11 @@ func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
 		resourceMetrics.MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
-	metricCount, dataPointCount := metrics.MetricAndDataPointCount()
+	_, dataPointCount := metrics.MetricAndDataPointCount()
 
 	ctx = obsreport.StartMetricsReceiveOp(ctx, sc.name, "")
 	err := sc.nextConsumer.ConsumeMetrics(ctx, metrics)
-	obsreport.EndMetricsReceiveOp(ctx, "", metricCount, dataPointCount, err)
+	obsreport.EndMetricsReceiveOp(ctx, "", dataPointCount, err)
 }
 
 // stopScraping stops the ticker

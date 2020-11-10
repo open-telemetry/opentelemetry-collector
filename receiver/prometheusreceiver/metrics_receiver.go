@@ -56,7 +56,7 @@ func (pr *pReceiver) Start(_ context.Context, host component.Host) error {
 		ctx := context.Background()
 		c, cancel := context.WithCancel(ctx)
 		pr.cancel = cancel
-		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http", pr.cfg.Name())
+		c = obsreport.ReceiverContext(c, pr.cfg.Name(), "http")
 		var jobsMap *internal.JobsMap
 		if !pr.cfg.UseStartTimeMetric {
 			jobsMap = internal.NewJobsMap(2 * time.Minute)

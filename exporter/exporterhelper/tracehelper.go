@@ -111,6 +111,6 @@ func (tewo *tracesExporterWithObservability) send(req request) (int, error) {
 	// TODO: this is not ideal: it should come from the next function itself.
 	// 	temporarily loading it from internal format. Once full switch is done
 	// 	to new metrics will remove this.
-	obsreport.EndTraceDataExportOp(req.context(), req.count(), droppedSpans, err)
+	obsreport.EndTraceDataExportOp(req.context(), req.count(), err)
 	return droppedSpans, err
 }
