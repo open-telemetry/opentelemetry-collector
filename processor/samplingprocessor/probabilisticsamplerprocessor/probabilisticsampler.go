@@ -77,12 +77,12 @@ func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Tr
 		if rspan.IsNil() {
 			continue
 		}
-		tsp.processTraces(ctx, rspan, sampledTraceData)
+		tsp.processTraces(rspan, sampledTraceData)
 	}
 	return tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData)
 }
 
-func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, resourceSpans pdata.ResourceSpans, sampledTraceData pdata.Traces) {
+func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpans, sampledTraceData pdata.Traces) {
 	scaledSamplingRate := tsp.scaledSamplingRate
 
 	sampledTraceData.ResourceSpans().Resize(sampledTraceData.ResourceSpans().Len() + 1)
