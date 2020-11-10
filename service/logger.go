@@ -61,6 +61,10 @@ func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
 		}
 	}
 
+	// Use more human-friendly mode of logging (tab delimited, formatted timestamps).
+	conf.Encoding = "console"
+	conf.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
 	conf.Level.SetLevel(level)
 	return conf.Build(zap.Hooks(hooks...))
 }
