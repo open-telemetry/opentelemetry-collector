@@ -71,11 +71,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
 	assert.NotNil(t, ctx)
 
-	obsreport.EndTraceDataExportOp(
-		ctx,
-		7,
-		5,
-		nil)
+	obsreport.EndTraceDataExportOp(ctx, 7, nil)
 
 	obsreporttest.CheckExporterTracesViews(t, exporter, 7, 0)
 }

@@ -284,13 +284,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	for i, err := range errs {
 		ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
 		assert.NotNil(t, ctx)
-
-		var numDroppedSpans int
-		if err != nil {
-			numDroppedSpans = numExportedSpans[i]
-		}
-
-		obsreport.EndTraceDataExportOp(ctx, numExportedSpans[i], numDroppedSpans, err)
+		obsreport.EndTraceDataExportOp(ctx, numExportedSpans[i], err)
 	}
 
 	spans := ss.PullAllSpans()

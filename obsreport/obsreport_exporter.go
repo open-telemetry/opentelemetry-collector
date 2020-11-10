@@ -102,7 +102,6 @@ func StartTraceDataExportOp(
 func EndTraceDataExportOp(
 	exporterCtx context.Context,
 	numExportedSpans int,
-	numDroppedSpans int,
 	err error,
 ) {
 	endExportOp(
