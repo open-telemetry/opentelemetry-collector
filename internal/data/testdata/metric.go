@@ -387,6 +387,7 @@ func generateMetricsOtlpAllTypesWithSampleDatapoints() []*otlpmetrics.ResourceMe
 						generateOtlpDoubleHistogramMetric(),
 						generateOtlpIntHistogramMetric(),
 						generateOTLPDoubleSummaryMetric(),
+						generateOtlpGaugeDoubleHistogramMetric(),
 					},
 				},
 			},
@@ -509,12 +510,7 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 }
 
 func initGaugeDoubleHistogramMetric(hm pdata.Metric) {
-	hm.InitEmpty()
-	hm.SetName(TestGaugeDoubleHistogramMetricName)
-	hm.SetDescription("")
-	hm.SetUnit("1")
-	hm.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	hm.DoubleHistogram().InitEmpty()
+	initMetric(hm, TestGaugeDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram)
 
 	hdps := hm.DoubleHistogram().DataPoints()
 	hdps.Resize(2)
@@ -542,6 +538,37 @@ func initGaugeDoubleHistogramMetric(hm pdata.Metric) {
 
 func generateOtlpDoubleHistogramMetric() *otlpmetrics.Metric {
 	m := generateOtlpMetric(TestDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram)
+	m.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram.DataPoints =
+		[]*otlpmetrics.DoubleHistogramDataPoint{
+			{
+				Labels:            generateOtlpMetricLabels13(),
+				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
+				TimeUnixNano:      uint64(TestMetricTimestamp),
+				Count:             1,
+				Sum:               15,
+			},
+			{
+				Labels:            generateOtlpMetricLabels2(),
+				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
+				TimeUnixNano:      uint64(TestMetricTimestamp),
+				Count:             1,
+				Sum:               15,
+				BucketCounts:      []uint64{0, 1},
+				ExplicitBounds:    []float64{1},
+				Exemplars: []*otlpmetrics.DoubleExemplar{
+					{
+						FilteredLabels: generateOtlpMetricAttachment(),
+						TimeUnixNano:   uint64(TestMetricExemplarTimestamp),
+						Value:          15,
+					},
+				},
+			},
+		}
+	return m
+}
+
+func generateOtlpGaugeDoubleHistogramMetric() *otlpmetrics.Metric {
+	m := generateOtlpMetric(TestGaugeDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram)
 	m.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram.DataPoints =
 		[]*otlpmetrics.DoubleHistogramDataPoint{
 			{
@@ -711,7 +738,9 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 	case pdata.MetricDataTypeDoubleHistogram:
 		histo := m.DoubleHistogram()
 		histo.InitEmpty()
-		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		if name == TestDoubleHistogramMetricName {
+			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		}
 	case pdata.MetricDataTypeDoubleSummary:
 		summary := m.DoubleSummary()
 		summary.InitEmpty()
@@ -744,9 +773,13 @@ func generateOtlpMetric(name string, ty pdata.MetricDataType) *otlpmetrics.Metri
 			AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 		}}
 	case pdata.MetricDataTypeDoubleHistogram:
-		m.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{
-			AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-		}}
+		if name == TestDoubleHistogramMetricName {
+			m.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{
+				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+			}}
+		} else {
+			m.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
+		}
 	case pdata.MetricDataTypeDoubleSummary:
 		m.Data = &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
 	}
