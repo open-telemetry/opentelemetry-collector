@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -201,7 +200,7 @@ func TestScrapeController(t *testing.T) {
 			options = append(options, WithTickerChannel(tickerCh))
 
 			var nextConsumer consumer.MetricsConsumer
-			sink := &exportertest.SinkMetricsExporter{}
+			sink := new(consumertest.MetricsSink)
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
@@ -354,7 +353,7 @@ func assertReceiverSpan(t *testing.T, spans []*trace.SpanData) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverViews(t *testing.T, sink *exportertest.SinkMetricsExporter) {
+func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
 		_, dpc := md.MetricAndDataPointCount()
@@ -383,7 +382,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData)
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperViews(t *testing.T, expectedErr error, sink *exportertest.SinkMetricsExporter) {
+func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.MetricsSink) {
 	expectedScraped := int64(sink.MetricsCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
