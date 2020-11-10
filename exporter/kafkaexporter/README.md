@@ -9,7 +9,7 @@ The following settings are required:
 
 The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers
-- `topic` (default = otlp): The name of the kafka topic to export to
+- `topic` (default = otlp_spans): The name of the kafka topic to export to. This will change to 'otlp' in a later release.
 - `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
   - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics.
   - The following encodings are valid *only* for **traces**.

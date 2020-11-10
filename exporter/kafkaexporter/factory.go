@@ -25,7 +25,7 @@ import (
 
 const (
 	typeStr         = "kafka"
-	defaultTopic    = "otlp"
+	defaultTopic    = "otlp_spans"
 	defaultEncoding = "otlp_proto"
 	defaultBroker   = "localhost:9092"
 	// default from sarama.NewConfig()
@@ -74,8 +74,10 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
-		Topic:           defaultTopic,
-		Encoding:        defaultEncoding,
+		// 'otlp_spans' is being deprecated as the default topic.
+		// using an empty topic to track when it has not been set to log a warning.
+		Topic:    "",
+		Encoding: defaultEncoding,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
@@ -97,6 +99,11 @@ func (f *kafkaExporterFactory) createTraceExporter(
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
+	if oCfg.Topic == "" {
+		params.Logger.Info(
+			"DEPRECATION: default topic will change to 'otlp' in a later release. Set topic in configuration to '" + defaultTopic + "'.")
+		oCfg.Topic = defaultTopic
+	}
 	exp, err := newTracesExporter(*oCfg, params, f.tracesMarshallers)
 	if err != nil {
 		return nil, err
@@ -119,6 +126,11 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
+	if oCfg.Topic == "" {
+		params.Logger.Info(
+			"DEPRECATION: default topic will change to 'otlp' in a later release. Set topic in configuration to '" + defaultTopic + "'.")
+		oCfg.Topic = defaultTopic
+	}
 	exp, err := newMetricsExporter(*oCfg, params, f.metricsMarshallers)
 	if err != nil {
 		return nil, err

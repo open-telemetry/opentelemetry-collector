@@ -32,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
-	assert.Equal(t, defaultTopic, cfg.Topic)
+	assert.Equal(t, "", cfg.Topic)
 }
 
 func TestCreateTracesExporter(t *testing.T) {

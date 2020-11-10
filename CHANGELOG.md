@@ -14,7 +14,6 @@
 - Rename component.TraceReceiver to component.TracesReceiver #1975
 - Rename component.TraceProcessor to component.TracesProcessor #1976
 - Rename component.TraceExporter to component.TracesExporter #1975
-- `kafka` exporter: Rename default topic to `otlp` from `otlp_spans`
 
 ## 💡 Enhancements 💡
 
