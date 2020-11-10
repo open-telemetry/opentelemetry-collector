@@ -22,6 +22,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 const (
@@ -166,16 +167,6 @@ func EndTraceDataReceiveOp(
 	numReceivedSpans int,
 	err error,
 ) {
-	if useLegacy {
-		numReceivedLegacy := numReceivedSpans
-		numDroppedSpans := 0
-		if err != nil {
-			numDroppedSpans = numReceivedSpans
-			numReceivedLegacy = 0
-		}
-		stats.Record(receiverCtx, mReceiverReceivedSpans.M(int64(numReceivedLegacy)), mReceiverDroppedSpans.M(int64(numDroppedSpans)))
-	}
-
 	endReceiveOp(
 		receiverCtx,
 		format,
@@ -208,18 +199,8 @@ func EndMetricsReceiveOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedPoints int,
-	numReceivedTimeSeries int, // For legacy measurements.
 	err error,
 ) {
-	if useLegacy {
-		numDroppedTimeSeries := 0
-		if err != nil {
-			numDroppedTimeSeries = numReceivedTimeSeries
-			numReceivedTimeSeries = 0
-		}
-		stats.Record(receiverCtx, mReceiverReceivedTimeSeries.M(int64(numReceivedTimeSeries)), mReceiverDroppedTimeSeries.M(int64(numDroppedTimeSeries)))
-	}
-
 	endReceiveOp(
 		receiverCtx,
 		format,
@@ -237,16 +218,7 @@ func ReceiverContext(
 	ctx context.Context,
 	receiver string,
 	transport string,
-	legacyName string,
 ) context.Context {
-	if useLegacy {
-		name := receiver
-		if legacyName != "" {
-			name = legacyName
-		}
-		ctx, _ = tag.New(ctx, tag.Upsert(LegacyTagKeyReceiver, name, tag.WithTTL(tag.TTLNoPropagation)))
-	}
-
 	ctx, _ = tag.New(ctx,
 		tag.Upsert(tagKeyReceiver, receiver, tag.WithTTL(tag.TTLNoPropagation)),
 		tag.Upsert(tagKeyTransport, transport, tag.WithTTL(tag.TTLNoPropagation)))
@@ -308,7 +280,7 @@ func endReceiveOp(
 
 	span := trace.FromContext(receiverCtx)
 
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
 		switch dataType {
 		case configmodels.TracesDataType:

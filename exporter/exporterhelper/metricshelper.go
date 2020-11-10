@@ -118,7 +118,7 @@ type metricsSenderWithObservability struct {
 
 func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
 	req.setContext(obsreport.StartMetricsExportOp(req.context(), mewo.exporterName))
-	numDroppedMetrics, err := mewo.nextSender.send(req)
+	_, err := mewo.nextSender.send(req)
 
 	// TODO: this is not ideal: it should come from the next function itself.
 	// 	temporarily loading it from internal format. Once full switch is done
@@ -126,6 +126,6 @@ func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
 	mReq := req.(*metricsRequest)
 	numReceivedMetrics, numPoints := mReq.md.MetricAndDataPointCount()
 
-	obsreport.EndMetricsExportOp(req.context(), numPoints, numReceivedMetrics, numDroppedMetrics, err)
+	obsreport.EndMetricsExportOp(req.context(), numPoints, err)
 	return numReceivedMetrics, err
 }

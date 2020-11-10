@@ -23,6 +23,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -43,7 +44,7 @@ var (
 // SetupRecordedMetricsTest does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The returned function should be deferred.
 func SetupRecordedMetricsTest() (func(), error) {
-	views := obsreport.Configure(true, true)
+	views := obsreport.Configure(configtelemetry.LevelNormal)
 	err := view.Register(views...)
 	if err != nil {
 		return nil, err

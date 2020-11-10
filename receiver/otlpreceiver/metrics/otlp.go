@@ -49,7 +49,7 @@ const (
 )
 
 func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
-	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
+	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 
 	md := pdata.MetricsFromOtlp(req.ResourceMetrics)
 
@@ -73,7 +73,7 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, md pdata.Metrics) err
 
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.instanceName, receiverTransport)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
-	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, metricCount, err)
+	obsreport.EndMetricsReceiveOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
 	return err
 }

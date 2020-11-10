@@ -52,7 +52,7 @@ const (
 
 func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
+	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 
 	// Perform backward compatibility conversion of Span Status code according to
 	// OTLP specification.

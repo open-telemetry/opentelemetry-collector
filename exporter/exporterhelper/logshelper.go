@@ -104,6 +104,6 @@ type logsExporterWithObservability struct {
 func (lewo *logsExporterWithObservability) send(req request) (int, error) {
 	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName))
 	numDroppedLogs, err := lewo.nextSender.send(req)
-	obsreport.EndLogsExportOp(req.context(), req.count(), numDroppedLogs, err)
+	obsreport.EndLogsExportOp(req.context(), req.count(), err)
 	return numDroppedLogs, err
 }
