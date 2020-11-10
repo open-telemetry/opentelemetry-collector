@@ -131,17 +131,19 @@ func createDefaultConfig() configmodels.Receiver {
 			ThriftBinary: &ProtocolUDP{
 				Endpoint: defaultThriftBinaryBindEndpoint,
 				ServerConfigUDP: ServerConfigUDP{
-					QueueSize:     defaultAgentQueueSize,
-					MaxPacketSize: defaultAgentMaxPacketSize,
-					Workers:       defaultAgentServerWorkers,
+					QueueSize:        defaultAgentQueueSize,
+					MaxPacketSize:    defaultAgentMaxPacketSize,
+					Workers:          defaultAgentServerWorkers,
+					SocketBufferSize: 0,
 				},
 			},
 			ThriftCompact: &ProtocolUDP{
 				Endpoint: defaultThriftCompactBindEndpoint,
 				ServerConfigUDP: ServerConfigUDP{
-					QueueSize:     defaultAgentQueueSize,
-					MaxPacketSize: defaultAgentMaxPacketSize,
-					Workers:       defaultAgentServerWorkers,
+					QueueSize:        defaultAgentQueueSize,
+					MaxPacketSize:    defaultAgentMaxPacketSize,
+					Workers:          defaultAgentServerWorkers,
+					SocketBufferSize: 0,
 				},
 			},
 		},

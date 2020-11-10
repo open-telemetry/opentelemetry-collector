@@ -43,9 +43,10 @@ type ProtocolUDP struct {
 }
 
 type ServerConfigUDP struct {
-	QueueSize     int `mapstructure:"queue_size"`
-	MaxPacketSize int `mapstructure:"max_packet_size"`
-	Workers       int `mapstructure:"workers"`
+	QueueSize        int `mapstructure:"queue_size"`
+	MaxPacketSize    int `mapstructure:"max_packet_size"`
+	Workers          int `mapstructure:"workers"`
+	SocketBufferSize int `mapstructure:"socket_buffer_size"`
 }
 
 // Config defines configuration for Jaeger receiver.

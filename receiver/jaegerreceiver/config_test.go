@@ -69,17 +69,19 @@ func TestLoadConfig(t *testing.T) {
 				ThriftCompact: &ProtocolUDP{
 					Endpoint: "0.0.0.0:456",
 					ServerConfigUDP: ServerConfigUDP{
-						QueueSize:     100_000,
-						MaxPacketSize: 131_072,
-						Workers:       100,
+						QueueSize:        100_000,
+						MaxPacketSize:    131_072,
+						Workers:          100,
+						SocketBufferSize: 65_536,
 					},
 				},
 				ThriftBinary: &ProtocolUDP{
 					Endpoint: "0.0.0.0:789",
 					ServerConfigUDP: ServerConfigUDP{
-						QueueSize:     1_000,
-						MaxPacketSize: 65_536,
-						Workers:       5,
+						QueueSize:        1_000,
+						MaxPacketSize:    65_536,
+						Workers:          5,
+						SocketBufferSize: 0,
 					},
 				},
 			},

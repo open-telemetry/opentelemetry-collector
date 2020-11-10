@@ -386,6 +386,11 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 	if err != nil {
 		return nil, err
 	}
+	if cfg.SocketBufferSize > 0 {
+		if err = transport.SetSocketBufferSize(cfg.SocketBufferSize); err != nil {
+			return nil, err
+		}
+	}
 	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, metrics.NullFactory)
 	if err != nil {
 		return nil, err
