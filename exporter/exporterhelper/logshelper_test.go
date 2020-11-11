@@ -92,7 +92,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForLogsExporter(t, me, nil, 0)
+	checkRecordedMetricsForLogsExporter(t, me, nil)
 }
 
 func TestLogsExporter_WithRecordLogs_NonZeroDropped(t *testing.T) {
@@ -100,7 +100,7 @@ func TestLogsExporter_WithRecordLogs_NonZeroDropped(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForLogsExporter(t, me, nil, 1)
+	checkRecordedMetricsForLogsExporter(t, me, nil)
 }
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
@@ -109,7 +109,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForLogsExporter(t, me, want, 0)
+	checkRecordedMetricsForLogsExporter(t, me, want)
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
@@ -163,7 +163,7 @@ func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter, wantError error, droppedLogRecords int) {
+func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter, wantError error) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()

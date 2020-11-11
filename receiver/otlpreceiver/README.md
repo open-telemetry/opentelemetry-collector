@@ -1,81 +1,47 @@
 # OTLP Receiver
 
-Receives traces and/or metrics via gRPC or HTTP using [OTLP](
+Receives data via gRPC or HTTP using [OTLP](
 https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
 format.
 
-*Important: OTLP metrics format is currently marked as "Alpha" and may change in
-incompatible way any time.*
+Supported pipeline types: traces, metrics, logs
 
-To get started, all that is required to enable the OTLP receiver is to
-include it in the receiver definitions.
+:warning: OTLP metrics format is currently marked as "Alpha" and may change in
+incompatible way any time.
 
-The following settings are required:
+## Getting Started
+
+All that is required to enable the OTLP receiver is to include it in the
+receiver definitions. A protocol can be disabled by simply not specifying it in
+the list of protocols.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+```
+
+The following settings are configurable:
 
 - `endpoint` (default = 0.0.0.0:55680): host:port to which the receiver is
-  going to receive traces or metrics, using the gRPC protocol. The valid syntax
-  is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
-- `transport` (default = tcp): which transport to use between `tcp` and `unix`.
+  going to receive data. The valid syntax is described at
+  https://github.com/grpc/grpc/blob/master/doc/naming.md.
 
-The following settings are optional:
+## Advanced Configuration
 
-- `cors_allowed_origins` (default = unset): allowed CORS origins for HTTP/JSON
-  requests. See the HTTP/JSON section below.
-- `keepalive`: see
-  https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for more
-  information
-  - `MaxConnectionIdle` (default = infinity)
-  - `MaxConnectionAge` (default = infinity)
-  - `MaxConnectionAgeGrace` (default = infinity)
-  - `Time` (default = 2h)
-  - `Timeout` (default = 20s)
-- `max_recv_msg_size_mib` (default = 4MB): sets the maximum size of messages accepted
-- `max_concurrent_streams`: sets the limit on the number of concurrent streams
-- `tls_credentials` (default = unset): configures the receiver to use TLS. See
-  TLS section below.
+Several helper files are leveraged to provide additional capabilities automatically:
 
-Examples:
-
-```yaml
-receivers:
-  otlp:
-    protocols:
-        grpc:
-  otlp/withendpoint:
-    protocols:
-        grpc:
-            endpoint: 127.0.0.1:55680
-```
-
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
-
-A protocol can be disabled by simply not specifying it in the list of protocols:
-```yaml
-receivers:
-  otlp/only_grpc:
-    protocols:
-      grpc:
-```
-
-## Communicating over TLS
-This receiver supports communication using Transport Layer Security (TLS). TLS
-can be configured by specifying a `tls_settings` object in the receiver
-configuration for receivers that support it.
-```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        tls_settings:
-          key_file: /key.pem # path to private key
-          cert_file: /cert.pem # path to certificate
-```
+- [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configgrpc/README.md) including CORS
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md)
 
 ## Writing with HTTP/JSON
-The OTLP receiver can receive trace export calls via HTTP/JSON in
-addition to gRPC. The HTTP/JSON address is the same as gRPC as the protocol is
-recognized and processed accordingly. Note the format needs to be [protobuf JSON
+
+The OTLP receiver can receive trace export calls via HTTP/JSON in addition to
+gRPC. The HTTP/JSON address is the same as gRPC as the protocol is recognized
+and processed accordingly. Note the format needs to be [protobuf JSON
 serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 IMPORTANT: bytes fields are encoded as base64 strings.

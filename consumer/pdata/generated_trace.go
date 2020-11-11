@@ -78,32 +78,27 @@ func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlptrace.ResourceSpans(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newResourceSpans(&el).CopyTo(newResourceSpans(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceSpans(&(*es.orig)[i]).CopyTo(newResourceSpans(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlptrace.ResourceSpans, newLen)
-	wrappers := make([]*otlptrace.ResourceSpans, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlptrace.ResourceSpans, srcLen)
+	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceSpans(&el).CopyTo(newResourceSpans(&wrappers[i]))
+		newResourceSpans(&(*es.orig)[i]).CopyTo(newResourceSpans(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceSpansSlice can be initialized:
 // es := NewResourceSpansSlice()
@@ -113,22 +108,24 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 //     // Here should set all the values for e.
 // }
 func (es ResourceSpansSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlptrace.ResourceSpans(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlptrace.ResourceSpans, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlptrace.ResourceSpans, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlptrace.ResourceSpans, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the ResourceSpansSlice by one and set the
@@ -260,32 +257,27 @@ func (es InstrumentationLibrarySpansSlice) MoveAndAppendTo(dest InstrumentationL
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpansSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlptrace.InstrumentationLibrarySpans(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newInstrumentationLibrarySpans(&(*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlptrace.InstrumentationLibrarySpans, newLen)
-	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlptrace.InstrumentationLibrarySpans, srcLen)
+	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newInstrumentationLibrarySpans(&el).CopyTo(newInstrumentationLibrarySpans(&wrappers[i]))
+		newInstrumentationLibrarySpans(&(*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new InstrumentationLibrarySpansSlice can be initialized:
 // es := NewInstrumentationLibrarySpansSlice()
@@ -295,22 +287,24 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 //     // Here should set all the values for e.
 // }
 func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlptrace.InstrumentationLibrarySpans(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlptrace.InstrumentationLibrarySpans, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlptrace.InstrumentationLibrarySpans, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the InstrumentationLibrarySpansSlice by one and set the
@@ -445,32 +439,27 @@ func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es SpanSlice) CopyTo(dest SpanSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlptrace.Span(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newSpan(&el).CopyTo(newSpan(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSpan(&(*es.orig)[i]).CopyTo(newSpan(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlptrace.Span, newLen)
-	wrappers := make([]*otlptrace.Span, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlptrace.Span, srcLen)
+	wrappers := make([]*otlptrace.Span, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpan(&el).CopyTo(newSpan(&wrappers[i]))
+		newSpan(&(*es.orig)[i]).CopyTo(newSpan(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new SpanSlice can be initialized:
 // es := NewSpanSlice()
@@ -480,22 +469,24 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 //     // Here should set all the values for e.
 // }
 func (es SpanSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlptrace.Span(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlptrace.Span, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlptrace.Span, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlptrace.Span, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the SpanSlice by one and set the
@@ -812,32 +803,27 @@ func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlptrace.Span_Event(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newSpanEvent(&el).CopyTo(newSpanEvent(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSpanEvent(&(*es.orig)[i]).CopyTo(newSpanEvent(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlptrace.Span_Event, newLen)
-	wrappers := make([]*otlptrace.Span_Event, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlptrace.Span_Event, srcLen)
+	wrappers := make([]*otlptrace.Span_Event, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpanEvent(&el).CopyTo(newSpanEvent(&wrappers[i]))
+		newSpanEvent(&(*es.orig)[i]).CopyTo(newSpanEvent(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new SpanEventSlice can be initialized:
 // es := NewSpanEventSlice()
@@ -847,22 +833,24 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 //     // Here should set all the values for e.
 // }
 func (es SpanEventSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlptrace.Span_Event(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlptrace.Span_Event, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlptrace.Span_Event, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlptrace.Span_Event, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the SpanEventSlice by one and set the
@@ -1032,32 +1020,27 @@ func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlptrace.Span_Link(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newSpanLink(&el).CopyTo(newSpanLink(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newSpanLink(&(*es.orig)[i]).CopyTo(newSpanLink(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlptrace.Span_Link, newLen)
-	wrappers := make([]*otlptrace.Span_Link, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlptrace.Span_Link, srcLen)
+	wrappers := make([]*otlptrace.Span_Link, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpanLink(&el).CopyTo(newSpanLink(&wrappers[i]))
+		newSpanLink(&(*es.orig)[i]).CopyTo(newSpanLink(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new SpanLinkSlice can be initialized:
 // es := NewSpanLinkSlice()
@@ -1067,22 +1050,24 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 //     // Here should set all the values for e.
 // }
 func (es SpanLinkSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlptrace.Span_Link(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlptrace.Span_Link, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlptrace.Span_Link, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlptrace.Span_Link, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the SpanLinkSlice by one and set the

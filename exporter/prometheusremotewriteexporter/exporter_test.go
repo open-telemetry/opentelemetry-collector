@@ -227,7 +227,7 @@ func Test_export(t *testing.T) {
 			if !tt.serverUp {
 				server.Close()
 			}
-			err := runExportPipeline(t, ts1, serverURL)
+			err := runExportPipeline(ts1, serverURL)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -237,7 +237,7 @@ func Test_export(t *testing.T) {
 	}
 }
 
-func runExportPipeline(t *testing.T, ts *prompb.TimeSeries, endpoint *url.URL) error {
+func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts

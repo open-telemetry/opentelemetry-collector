@@ -58,8 +58,7 @@ const jaegerReceiver = "jaeger_receiver_test"
 
 func TestTraceSource(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, params)
-	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
+	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, params)
 	require.NotNil(t, jr)
 }
 
@@ -136,9 +135,8 @@ func TestReception(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
-	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
 	t.Log("Starting")
 
@@ -170,8 +168,7 @@ func TestPortsNotOpen(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -200,8 +197,7 @@ func TestGRPCReception(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -257,8 +253,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -395,8 +390,7 @@ func TestSampling(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -448,8 +442,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -478,8 +471,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 }

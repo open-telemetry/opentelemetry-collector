@@ -61,11 +61,9 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 		AgentCompactThriftPort: port,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
-	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
 
-	err = jr.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err, "should not have been able to startTraceReception")
+	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
 	jr.Shutdown(context.Background())
 }
@@ -86,11 +84,9 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 		AgentBinaryThriftPort: int(port),
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
-	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
 
-	err = jr.startAgent(componenttest.NewNopHost())
-	assert.NoError(t, err, "Start failed")
+	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	defer jr.Shutdown(context.Background())
 
 	l, err := net.Listen("udp", fmt.Sprintf("localhost:%d", port))
@@ -108,11 +104,9 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 		AgentBinaryThriftPort: port,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
-	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
 
-	err = jr.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err, "should not have been able to startTraceReception")
+	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
 	jr.Shutdown(context.Background())
 }
@@ -153,16 +147,13 @@ func TestJaegerHTTP(t *testing.T) {
 		},
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerAgent, config, nil, params)
-	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
 	defer jr.Shutdown(context.Background())
 
-	err = jr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "Start failed")
+	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
 	// allow http server to start
-	err = testutil.WaitForPort(t, port)
-	assert.NoError(t, err, "WaitForPort failed")
+	assert.NoError(t, testutil.WaitForPort(t, port), "WaitForPort failed")
 
 	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
 	resp, err := http.Get(testURL)
@@ -190,12 +181,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
-	assert.NoError(t, err, "Failed to create new Jaeger Receiver")
+	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, params)
 	defer jr.Shutdown(context.Background())
 
-	err = jr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "Start failed")
+	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
 
 	// 2. Then send spans to the Jaeger receiver.
 	jexp, err := newClientUDP(agentEndpoint, jr.agentBinaryThriftEnabled())

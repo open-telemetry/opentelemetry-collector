@@ -43,7 +43,7 @@ func TestBatchProcessorMetrics(t *testing.T) {
 			continue
 		}
 		for i, viewName := range test.viewNames {
-			assert.Equal(t, viewName, views[i].Name)
+			assert.Equal(t, "processor/batch/"+viewName, views[i].Name)
 		}
 	}
 }

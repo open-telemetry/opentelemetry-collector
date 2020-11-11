@@ -52,7 +52,7 @@ const (
 
 func (r *Receiver) Export(ctx context.Context, req *collectorlog.ExportLogsServiceRequest) (*collectorlog.ExportLogsServiceResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
-	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport, receiverTagValue)
+	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 
 	ld := pdata.LogsFromInternalRep(internal.LogsFromOtlp(req.ResourceLogs))
 	err := r.sendToNextConsumer(ctxWithReceiverName, ld)
@@ -73,9 +73,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, ld pdata.Logs) error 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, r.instanceName, receiverTransport)
+	ctx = obsreport.StartLogsReceiveOp(ctx, r.instanceName, receiverTransport)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	obsreport.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
+	obsreport.EndLogsReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return err
 }

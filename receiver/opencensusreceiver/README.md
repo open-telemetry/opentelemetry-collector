@@ -1,60 +1,36 @@
 # OpenCensus Receiver
 
-Receives traces and/or metrics via gRPC using
-[OpenCensus](https://opencensus.io/) format.
+Receives data via gRPC or HTTP using [OpenCensus]( https://opencensus.io/)
+format.
 
-To get started, all that is required to enable the OpenCensus receiver is to
-include it in the receiver definitions.
+Supported pipeline types: traces, metrics
 
-The following settings are required:
+## Getting Started
 
-- `endpoint` (default = 0.0.0.0:55678): host:port to which the exporter is
-  going to receive traces or metrics, using the gRPC protocol. The valid syntax
-  is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
-- `transport` (default = tcp): which transport to use between `tcp` and `unix`.
-
-The following settings are optional:
-
-- `cors_allowed_origins` (default = unset): allowed CORS origins for HTTP/JSON
-  requests. See the HTTP/JSON section below.
-- `keepalive`: see
-  https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for more
-  information
-  - `MaxConnectionIdle` (default = infinity)
-  - `MaxConnectionAge` (default = infinity)
-  - `MaxConnectionAgeGrace` (default = infinity)
-  - `Time` (default = 2h)
-  - `Timeout` (default = 20s)
-- `max_recv_msg_size_mib` (default = 4MB): sets the maximum size of messages accepted
-- `max_concurrent_streams`: sets the limit on the number of concurrent streams
-- `tls_credentials` (default = unset): configures the receiver to use TLS. See
-  TLS section below.
-
-Examples:
+All that is required to enable the OpenCensus receiver is to include it in the
+receiver definitions.
 
 ```yaml
 receivers:
   opencensus:
-  opencensus/withendpoint:
-    endpoint: 127.0.0.1:55678
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The following settings are configurable:
 
-## Communicating over TLS
-This receiver supports communication using Transport Layer Security (TLS). TLS
-can be configured by specifying a `tls_settings` object in the receiver
-configuration for receivers that support it.
-```yaml
-receivers:
-  opencensus:
-    tls_settings:
-      key_file: /key.pem # path to private key
-      cert_file: /cert.pem # path to certificate
-```
+- `endpoint` (default = 0.0.0.0:55678): host:port to which the receiver is
+  going to receive data. The valid syntax is described at
+  https://github.com/grpc/grpc/blob/master/doc/naming.md.
+
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configgrpc/README.md) including CORS
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md)
 
 ## Writing with HTTP/JSON
+
 The OpenCensus receiver can receive trace export calls via HTTP/JSON in
 addition to gRPC. The HTTP/JSON address is the same as gRPC as the protocol is
 recognized and processed accordingly.

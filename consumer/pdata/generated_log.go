@@ -78,32 +78,27 @@ func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlplogs.ResourceLogs(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newResourceLogs(&el).CopyTo(newResourceLogs(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newResourceLogs(&(*es.orig)[i]).CopyTo(newResourceLogs(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlplogs.ResourceLogs, newLen)
-	wrappers := make([]*otlplogs.ResourceLogs, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlplogs.ResourceLogs, srcLen)
+	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceLogs(&el).CopyTo(newResourceLogs(&wrappers[i]))
+		newResourceLogs(&(*es.orig)[i]).CopyTo(newResourceLogs(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ResourceLogsSlice can be initialized:
 // es := NewResourceLogsSlice()
@@ -113,22 +108,24 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 //     // Here should set all the values for e.
 // }
 func (es ResourceLogsSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlplogs.ResourceLogs(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlplogs.ResourceLogs, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlplogs.ResourceLogs, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlplogs.ResourceLogs, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the ResourceLogsSlice by one and set the
@@ -260,32 +257,27 @@ func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLi
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogsSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlplogs.InstrumentationLibraryLogs(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newInstrumentationLibraryLogs(&el).CopyTo(newInstrumentationLibraryLogs(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newInstrumentationLibraryLogs(&(*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlplogs.InstrumentationLibraryLogs, newLen)
-	wrappers := make([]*otlplogs.InstrumentationLibraryLogs, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlplogs.InstrumentationLibraryLogs, srcLen)
+	wrappers := make([]*otlplogs.InstrumentationLibraryLogs, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newInstrumentationLibraryLogs(&el).CopyTo(newInstrumentationLibraryLogs(&wrappers[i]))
+		newInstrumentationLibraryLogs(&(*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new InstrumentationLibraryLogsSlice can be initialized:
 // es := NewInstrumentationLibraryLogsSlice()
@@ -295,22 +287,24 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 //     // Here should set all the values for e.
 // }
 func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlplogs.InstrumentationLibraryLogs(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlplogs.InstrumentationLibraryLogs, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlplogs.InstrumentationLibraryLogs, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlplogs.InstrumentationLibraryLogs, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the InstrumentationLibraryLogsSlice by one and set the
@@ -445,32 +439,27 @@ func (es LogSlice) MoveAndAppendTo(dest LogSlice) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es LogSlice) CopyTo(dest LogSlice) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlplogs.LogRecord(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newLogRecord(&el).CopyTo(newLogRecord(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newLogRecord(&(*es.orig)[i]).CopyTo(newLogRecord(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlplogs.LogRecord, newLen)
-	wrappers := make([]*otlplogs.LogRecord, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlplogs.LogRecord, srcLen)
+	wrappers := make([]*otlplogs.LogRecord, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newLogRecord(&el).CopyTo(newLogRecord(&wrappers[i]))
+		newLogRecord(&(*es.orig)[i]).CopyTo(newLogRecord(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new LogSlice can be initialized:
 // es := NewLogSlice()
@@ -480,22 +469,24 @@ func (es LogSlice) CopyTo(dest LogSlice) {
 //     // Here should set all the values for e.
 // }
 func (es LogSlice) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlplogs.LogRecord(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlplogs.LogRecord, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlplogs.LogRecord, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlplogs.LogRecord, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the LogSlice by one and set the

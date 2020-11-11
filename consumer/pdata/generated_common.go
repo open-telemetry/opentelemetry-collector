@@ -156,32 +156,27 @@ func (es AnyValueArray) MoveAndAppendTo(dest AnyValueArray) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es AnyValueArray) CopyTo(dest AnyValueArray) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*otlpcommon.AnyValue(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			newAttributeValue(&el).CopyTo(newAttributeValue(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]otlpcommon.AnyValue, newLen)
-	wrappers := make([]*otlpcommon.AnyValue, newLen)
-	for i, el := range *es.orig {
+	origs := make([]otlpcommon.AnyValue, srcLen)
+	wrappers := make([]*otlpcommon.AnyValue, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newAttributeValue(&el).CopyTo(newAttributeValue(&wrappers[i]))
+		newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new AnyValueArray can be initialized:
 // es := NewAnyValueArray()
@@ -191,22 +186,24 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 //     // Here should set all the values for e.
 // }
 func (es AnyValueArray) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*otlpcommon.AnyValue(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]otlpcommon.AnyValue, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*otlpcommon.AnyValue, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]otlpcommon.AnyValue, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the AnyValueArray by one and set the
