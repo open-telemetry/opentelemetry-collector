@@ -16,23 +16,27 @@ package prometheusexporter
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
-	"github.com/orijtech/prometheus-go-metrics-exporter"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
+
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus"
 )
 
-// NewFactory creates a factory for OTLP exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -46,14 +50,15 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		ConstLabels:    map[string]string{},
-		SendTimestamps: false,
+		ConstLabels:      map[string]string{},
+		SendTimestamps:   false,
+		MetricExpiration: time.Minute * 120,
 	}
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
@@ -63,15 +68,13 @@ func createMetricsExporter(
 		return nil, errBlankPrometheusAddress
 	}
 
-	opts := prometheus.Options{
-		Namespace:      pcfg.Namespace,
-		ConstLabels:    pcfg.ConstLabels,
-		SendTimestamps: pcfg.SendTimestamps,
-	}
-	pe, err := prometheus.New(opts)
-	if err != nil {
-		return nil, err
-	}
+	reg := prometheus.NewRegistry()
+	ph := promhttp.HandlerFor(
+		reg,
+		promhttp.HandlerOpts{
+			ErrorHandling: promhttp.ContinueOnError,
+		},
+	)
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -81,7 +84,7 @@ func createMetricsExporter(
 	// The Prometheus metrics exporter has to run on the provided address
 	// as a server that'll be scraped by Prometheus.
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", pe)
+	mux.Handle("/metrics", ph)
 
 	srv := &http.Server{Handler: mux}
 	go func() {
@@ -90,8 +93,14 @@ func createMetricsExporter(
 
 	pexp := &prometheusExporter{
 		name:         cfg.Name(),
-		exporter:     pe,
 		shutdownFunc: ln.Close,
+		collector: &collector{
+			registry:          reg,
+			config:            pcfg,
+			registeredMetrics: make(map[string]*prometheus.Desc),
+			metricsValues:     make(map[string]*metricValue),
+			logger:            params.Logger,
+		},
 	}
 
 	return pexp, nil
