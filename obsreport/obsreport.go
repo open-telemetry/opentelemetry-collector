@@ -24,7 +24,6 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 const (
@@ -72,19 +71,6 @@ func Configure(level configtelemetry.Level) (views []*view.View) {
 	}
 
 	return views
-}
-
-// CountMetricPoints is a helper to count the "amount" of metrics data. For code using the
-// internal data structure, pdata.Metrics.MetricAndDataPointCount should be used instead
-func CountMetricPoints(md consumerdata.MetricsData) (numTimeSeries int, numPoints int) {
-	for _, metric := range md.Metrics {
-		tss := metric.GetTimeseries()
-		numTimeSeries += len(tss)
-		for _, ts := range tss {
-			numPoints += len(ts.GetPoints())
-		}
-	}
-	return numTimeSeries, numPoints
 }
 
 func buildComponentPrefix(componentPrefix, configType string) string {
