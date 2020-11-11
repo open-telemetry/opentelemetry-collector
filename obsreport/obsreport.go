@@ -23,6 +23,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
@@ -31,9 +32,7 @@ const (
 )
 
 var (
-	// Variables to control the usage of legacy and new metrics.
-	useLegacy = true
-	useNew    = true
+	gLevel = configtelemetry.LevelBasic
 
 	okStatus = trace.Status{Code: trace.StatusCodeOK}
 )
@@ -64,18 +63,10 @@ func setParentLink(parentCtx context.Context, childSpan *trace.Span) bool {
 
 // Configure is used to control the settings that will be used by the obsreport
 // package.
-func Configure(generateLegacy, generateNew bool) (views []*view.View) {
+func Configure(level configtelemetry.Level) (views []*view.View) {
+	gLevel = level
 
-	// TODO: expose some level control, similar to telemetry.Level
-
-	useLegacy = generateLegacy
-	useNew = generateNew
-
-	if useLegacy {
-		views = append(views, LegacyAllViews...)
-	}
-
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		views = append(views, AllViews()...)
 	}
 

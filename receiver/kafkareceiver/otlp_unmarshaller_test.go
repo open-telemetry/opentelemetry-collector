@@ -27,7 +27,6 @@ import (
 func TestUnmarshallOTLP(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).Resource().InitEmpty()
 	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
 	request := &otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(td),

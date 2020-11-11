@@ -29,7 +29,7 @@ var resourceFile = &File{
 	},
 }
 
-var resource = &messageStruct{
+var resource = &messageValueStruct{
 	structName:     "Resource",
 	description:    "// Resource information.",
 	originFullName: "otlpresource.Resource",
@@ -38,7 +38,7 @@ var resource = &messageStruct{
 	},
 }
 
-var resourceField = &messageField{
+var resourceField = &messageValueField{
 	fieldName:       "Resource",
 	originFieldName: "Resource",
 	returnMessage:   resource,

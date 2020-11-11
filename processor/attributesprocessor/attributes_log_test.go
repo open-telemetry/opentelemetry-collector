@@ -53,7 +53,6 @@ func generateLogData(logName string, attrs map[string]pdata.AttributeValue) pdat
 	td := pdata.NewLogs()
 	td.ResourceLogs().Resize(1)
 	rs := td.ResourceLogs().At(0)
-	rs.Resource().InitEmpty()
 	rs.InstrumentationLibraryLogs().Resize(1)
 	ils := rs.InstrumentationLibraryLogs().At(0)
 	lrs := ils.Logs()
@@ -70,9 +69,7 @@ func sortLogAttributes(ld pdata.Logs) {
 		if rs.IsNil() {
 			continue
 		}
-		if !rs.Resource().IsNil() {
-			rs.Resource().Attributes().Sort()
-		}
+		rs.Resource().Attributes().Sort()
 		ilss := rss.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)

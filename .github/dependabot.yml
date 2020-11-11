@@ -8,8 +8,14 @@ updates:
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    # Add assignees
+    assignees:
+      - "bogdandrutu"
   - package-ecosystem: "gomod"
     directory: "/examples/demo/app"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    # Add assignees
+    assignees:
+      - "bogdandrutu"

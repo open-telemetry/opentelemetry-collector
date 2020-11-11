@@ -55,6 +55,11 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 		return nil, errors.New("http client cannot be nil")
 	}
 
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(externalLabels)
+	if err != nil {
+		return nil, err
+	}
+
 	endpointURL, err := url.ParseRequestURI(endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
@@ -62,7 +67,7 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 
 	return &PrwExporter{
 		namespace:      namespace,
-		externalLabels: externalLabels,
+		externalLabels: sanitizedLabels,
 		endpointURL:    endpointURL,
 		client:         client,
 		wg:             new(sync.WaitGroup),
@@ -123,7 +128,12 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					case *otlp.Metric_DoubleHistogram, *otlp.Metric_IntHistogram:
 						if err := prwe.handleHistogramMetric(tsMap, metric); err != nil {
 							dropped++
-							errs = append(errs, err)
+							errs = append(errs, consumererror.Permanent(err))
+						}
+					case *otlp.Metric_DoubleSummary:
+						if err := prwe.handleSummaryMetric(tsMap, metric); err != nil {
+							dropped++
+							errs = append(errs, consumererror.Permanent(err))
 						}
 					default:
 						dropped++
@@ -144,6 +154,25 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 
 		return 0, nil
 	}
+}
+
+func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[string]string, error) {
+	sanitizedLabels := make(map[string]string)
+	for key, value := range externalLabels {
+		if key == "" || value == "" {
+			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+		}
+
+		// Sanitize label keys to meet Prometheus Requirements
+		if len(key) > 2 && key[:2] == "__" {
+			key = "__" + sanitize(key[2:])
+		} else {
+			key = sanitize(key)
+		}
+		sanitizedLabels[key] = value
+	}
+
+	return sanitizedLabels, nil
 }
 
 // handleScalarMetric processes data points in a single OTLP scalar metric by adding the each point as a Sample into
@@ -205,6 +234,19 @@ func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeri
 		for _, pt := range metric.GetDoubleHistogram().GetDataPoints() {
 			addSingleDoubleHistogramDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 		}
+	}
+	return nil
+}
+
+// handleSummaryMetric processes data points in a single OTLP summary metric by mapping the sum, count and each
+// quantile of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
+// tsMap and metric cannot be nil.
+func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
+	if metric.GetDoubleSummary().GetDataPoints() == nil {
+		return fmt.Errorf("nil data point. %s is dropped", metric.GetName())
+	}
+	for _, pt := range metric.GetDoubleSummary().GetDataPoints() {
+		addSingleDoubleSummaryDataPoint(pt, metric, prwe.namespace, tsMap, prwe.externalLabels)
 	}
 	return nil
 }

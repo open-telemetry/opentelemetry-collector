@@ -95,10 +95,6 @@ type jReceiver struct {
 }
 
 const (
-	// Legacy metrics receiver name tag values
-	collectorReceiverTagValue = "jaeger-collector"
-	agentReceiverTagValue     = "jaeger-agent"
-
 	agentTransportBinary   = "udp_thrift_binary"
 	agentTransportCompact  = "udp_thrift_compact"
 	collectorHTTPTransport = "collector_http"
@@ -269,7 +265,7 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // EmitBatch implements thrift-gen/agent/Agent and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
-	ctx = obsreport.ReceiverContext(ctx, h.name, h.transport, agentReceiverTagValue)
+	ctx = obsreport.ReceiverContext(ctx, h.name, h.transport)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, h.name, h.transport)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
@@ -297,8 +293,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.ReceiverContext(
-		ctx, jr.instanceName, grpcTransport, collectorReceiverTagValue)
+	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, grpcTransport)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, grpcTransport)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
@@ -440,10 +435,8 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.ReceiverContext(
-		ctx, jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
-	ctx = obsreport.StartTraceDataReceiveOp(
-		ctx, jr.instanceName, collectorHTTPTransport)
+	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, collectorHTTPTransport)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, collectorHTTPTransport)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {

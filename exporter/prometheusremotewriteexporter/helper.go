@@ -31,15 +31,16 @@ import (
 )
 
 const (
-	nameStr   = "__name__"
-	sumStr    = "_sum"
-	countStr  = "_count"
-	bucketStr = "_bucket"
-	leStr     = "le"
-	pInfStr   = "+Inf"
-	totalStr  = "total"
-	delimeter = "_"
-	keyStr    = "key"
+	nameStr     = "__name__"
+	sumStr      = "_sum"
+	countStr    = "_count"
+	bucketStr   = "_bucket"
+	leStr       = "le"
+	quantileStr = "quantile"
+	pInfStr     = "+Inf"
+	totalStr    = "total"
+	delimeter   = "_"
+	keyStr      = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -72,6 +73,8 @@ func validateMetrics(metric *otlp.Metric) bool {
 	case *otlp.Metric_IntHistogram:
 		return metric.GetIntHistogram() != nil && metric.GetIntHistogram().GetAggregationTemporality() ==
 			otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE
+	case *otlp.Metric_DoubleSummary:
+		return metric.GetDoubleSummary() != nil
 	}
 	return false
 }
@@ -424,4 +427,42 @@ func addSingleDoubleHistogramDataPoint(pt *otlp.DoubleHistogramDataPoint, metric
 	}
 	infLabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	addSample(tsMap, infBucket, infLabels, metric)
+}
+
+// addSingleDoubleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
+func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *otlp.Metric, namespace string,
+	tsMap map[string]*prompb.TimeSeries, externalLabels map[string]string) {
+	if pt == nil {
+		return
+	}
+	time := convertTimeStamp(pt.TimeUnixNano)
+	// sum and count of the summary should append suffix to baseName
+	baseName := getPromMetricName(metric, namespace)
+	// treat sum as a sample in an individual TimeSeries
+	sum := &prompb.Sample{
+		Value:     pt.GetSum(),
+		Timestamp: time,
+	}
+
+	sumlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+sumStr)
+	addSample(tsMap, sum, sumlabels, metric)
+
+	// treat count as a sample in an individual TimeSeries
+	count := &prompb.Sample{
+		Value:     float64(pt.GetCount()),
+		Timestamp: time,
+	}
+	countlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName+countStr)
+	addSample(tsMap, count, countlabels, metric)
+
+	// process each percentile/quantile
+	for _, qt := range pt.GetQuantileValues() {
+		quantile := &prompb.Sample{
+			Value:     qt.Value,
+			Timestamp: time,
+		}
+		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
+		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
+		addSample(tsMap, quantile, qtlabels, metric)
+	}
 }

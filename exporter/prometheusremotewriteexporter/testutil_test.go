@@ -79,12 +79,17 @@ var (
 	bounds  = []float64{0.1, 0.5, 0.99}
 	buckets = []uint64{1, 2, 3}
 
+	quantileBounds = []float64{0.15, 0.9, 0.99}
+	quantileValues = []float64{7, 8, 9}
+	quantiles      = getQuantiles(quantileBounds, quantileValues)
+
 	validIntGauge        = "valid_IntGauge"
 	validDoubleGauge     = "valid_DoubleGauge"
 	validIntSum          = "valid_IntSum"
 	validDoubleSum       = "valid_DoubleSum"
 	validIntHistogram    = "valid_IntHistogram"
 	validDoubleHistogram = "valid_DoubleHistogram"
+	validDoubleSummary   = "valid_DoubleSummary"
 
 	validIntGaugeDirty = "*valid_IntGauge$"
 
@@ -163,6 +168,17 @@ var (
 				},
 			},
 		},
+		validDoubleSummary: {
+			Name: validDoubleSummary,
+			Data: &otlp.Metric_DoubleSummary{
+				DoubleSummary: &otlp.DoubleSummary{
+					DataPoints: []*otlp.DoubleSummaryDataPoint{
+						getDoubleSummaryDataPoint(lbs1, time1, floatVal1, uint64(intVal1), quantiles),
+						nil,
+					},
+				},
+			},
+		},
 	}
 	validMetrics2 = map[string]*otlp.Metric{
 		validIntGauge: {
@@ -229,6 +245,17 @@ var (
 				},
 			},
 		},
+		validDoubleSummary: {
+			Name: validDoubleSummary,
+			Data: &otlp.Metric_DoubleSummary{
+				DoubleSummary: &otlp.DoubleSummary{
+					DataPoints: []*otlp.DoubleSummaryDataPoint{
+						getDoubleSummaryDataPoint(lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+						nil,
+					},
+				},
+			},
+		},
 		validIntGaugeDirty: {
 			Name: validIntGaugeDirty,
 			Data: &otlp.Metric_IntGauge{
@@ -280,6 +307,7 @@ var (
 	notMatchDoubleSum       = "notMatchDoubleSum"
 	notMatchIntHistogram    = "notMatchIntHistogram"
 	notMatchDoubleHistogram = "notMatchDoubleHistogram"
+	notMatchDoubleSummary   = "notMatchDoubleSummary"
 
 	// Category 2: invalid type and temporality combination
 	invalidIntSum          = "invalidIntSum"
@@ -294,6 +322,7 @@ var (
 	nilDataPointDoubleSum       = "nilDataPointDoubleSum"
 	nilDataPointIntHistogram    = "nilDataPointIntHistogram"
 	nilDataPointDoubleHistogram = "nilDataPointDoubleHistogram"
+	nilDataPointDoubleSummary   = "nilDataPointDoubleSummary"
 
 	// different metrics that will not pass validate metrics
 	invalidMetrics = map[string]*otlp.Metric{
@@ -324,6 +353,10 @@ var (
 		notMatchDoubleHistogram: {
 			Name: notMatchDoubleHistogram,
 			Data: &otlp.Metric_DoubleHistogram{},
+		},
+		notMatchDoubleSummary: {
+			Name: notMatchDoubleSummary,
+			Data: &otlp.Metric_DoubleSummary{},
 		},
 		invalidIntSum: {
 			Name: invalidIntSum,
@@ -410,6 +443,14 @@ var (
 				},
 			},
 		},
+		nilDataPointDoubleSummary: {
+			Name: nilDataPointDoubleSummary,
+			Data: &otlp.Metric_DoubleSummary{
+				DoubleSummary: &otlp.DoubleSummary{
+					DataPoints: nil,
+				},
+			},
+		},
 	}
 )
 
@@ -470,6 +511,17 @@ func getDoubleHistogramDataPoint(labels []commonpb.StringKeyValue, ts uint64, su
 	}
 }
 
+func getDoubleSummaryDataPoint(labels []commonpb.StringKeyValue, ts uint64, sum float64, count uint64,
+	quantiles []*otlp.DoubleSummaryDataPoint_ValueAtQuantile) *otlp.DoubleSummaryDataPoint {
+	return &otlp.DoubleSummaryDataPoint{
+		Labels:         labels,
+		TimeUnixNano:   ts,
+		Count:          count,
+		Sum:            sum,
+		QuantileValues: quantiles,
+	}
+}
+
 // Prometheus TimeSeries
 func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
@@ -500,4 +552,15 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 		Labels:  labels,
 		Samples: samples,
 	}
+}
+
+func getQuantiles(bounds []float64, values []float64) []*otlp.DoubleSummaryDataPoint_ValueAtQuantile {
+	quantiles := make([]*otlp.DoubleSummaryDataPoint_ValueAtQuantile, len(bounds))
+	for i := 0; i < len(bounds); i++ {
+		quantiles[i] = &otlp.DoubleSummaryDataPoint_ValueAtQuantile{
+			Quantile: bounds[i],
+			Value:    values[i],
+		}
+	}
+	return quantiles
 }

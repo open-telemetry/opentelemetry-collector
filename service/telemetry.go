@@ -68,7 +68,7 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	}
 
 	var views []*view.View
-	views = append(views, obsreport.Configure(telemetry.UseLegacyMetrics(), telemetry.UseNewMetrics())...)
+	views = append(views, obsreport.Configure(level)...)
 	views = append(views, processor.MetricViews(level)...)
 	views = append(views, queuedprocessor.MetricViews(level)...)
 	views = append(views, batchprocessor.MetricViews(level)...)
@@ -106,8 +106,6 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	logger.Info(
 		"Serving Prometheus metrics",
 		zap.String("address", metricsAddr),
-		zap.Bool("legacy_metrics", telemetry.UseLegacyMetrics()),
-		zap.Bool("new_metrics", telemetry.UseNewMetrics()),
 		zap.Int8("level", int8(level)), // TODO: make it human friendly
 		zap.String(conventions.AttributeServiceInstance, instanceID),
 	)

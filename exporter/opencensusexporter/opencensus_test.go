@@ -83,8 +83,6 @@ func TestSendTraces(t *testing.T) {
 	})
 	traces = sink.AllTraces()
 	require.Len(t, traces, 1)
-	// The conversion will initialize the Resource
-	td.ResourceSpans().At(0).Resource().InitEmpty()
 	assert.Equal(t, td, traces[0])
 }
 
@@ -182,8 +180,6 @@ func TestSendMetrics(t *testing.T) {
 	})
 	metrics = sink.AllMetrics()
 	require.Len(t, metrics, 1)
-	// The conversion will initialize the Resource
-	md.ResourceMetrics().At(0).Resource().InitEmpty()
 	assert.Equal(t, md, metrics[0])
 }
 

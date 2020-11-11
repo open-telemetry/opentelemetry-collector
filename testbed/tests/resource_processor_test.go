@@ -31,7 +31,7 @@ import (
 
 var (
 	mockedConsumedResourceWithType = &otlpmetrics.ResourceMetrics{
-		Resource: &otlpresource.Resource{
+		Resource: otlpresource.Resource{
 			Attributes: []otlpcommon.KeyValue{
 				{
 					Key: "opencensus.resourcetype",
@@ -97,7 +97,7 @@ var (
 	}
 
 	mockedConsumedResourceWithoutAttributes = &otlpmetrics.ResourceMetrics{
-		Resource: &otlpresource.Resource{
+		Resource: otlpresource.Resource{
 			Attributes: []otlpcommon.KeyValue{},
 		},
 		InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -149,7 +149,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 `,
 			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithType),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-				Resource: &otlpresource.Resource{
+				Resource: otlpresource.Resource{
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "resource-type",
@@ -175,8 +175,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 `,
 			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceNil),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-
-				Resource: &otlpresource.Resource{
+				Resource: otlpresource.Resource{
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
@@ -197,8 +196,7 @@ func getResourceProcessorTestCases(t *testing.T) []resourceProcessorTestCase {
 `,
 			mockedConsumedMetricData: getMetricDataFrom(t, mockedConsumedResourceWithoutAttributes),
 			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
-
-				Resource: &otlpresource.Resource{
+				Resource: otlpresource.Resource{
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",

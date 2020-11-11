@@ -106,6 +106,9 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 		data := m.DoubleHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeDoubleSummary:
+		data := m.DoubleSummary()
+		b.logDoubleSummaryDataPoints(data.DataPoints())
 	}
 }
 
@@ -199,6 +202,29 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 			for j, bucket := range buckets {
 				b.logEntry("Buckets #%d, Count: %d", j, bucket)
 			}
+		}
+	}
+}
+
+func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.DoubleSummaryDataPointSlice) {
+	for i := 0; i < ps.Len(); i++ {
+		p := ps.At(i)
+		if p.IsNil() {
+			continue
+		}
+
+		b.logEntry("SummaryDataPoints #%d", i)
+		b.logDataPointLabels(p.LabelsMap())
+
+		b.logEntry("StartTime: %d", p.StartTime())
+		b.logEntry("Timestamp: %d", p.Timestamp())
+		b.logEntry("Count: %d", p.Count())
+		b.logEntry("Sum: %f", p.Sum())
+
+		quantiles := p.QuantileValues()
+		for i := 0; i < quantiles.Len(); i++ {
+			quantile := quantiles.At(i)
+			b.logEntry("QuantileValue #%d: Quantile %f, Value %f", i, quantile.Quantile(), quantile.Value())
 		}
 	}
 }
@@ -325,9 +351,7 @@ func (s *loggingExporter) pushTraceData(
 			buf.logEntry("* Nil ResourceSpans")
 			continue
 		}
-		if !rs.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
-		}
+		buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("InstrumentationLibrarySpans #%d", j)
@@ -391,9 +415,7 @@ func (s *loggingExporter) pushMetricsData(
 			buf.logEntry("* Nil ResourceMetrics")
 			continue
 		}
-		if !rm.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
-		}
+		buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
@@ -504,10 +526,7 @@ func (s *loggingExporter) pushLogData(
 			buf.logEntry("* Nil ResourceLog")
 			continue
 		}
-		if !rl.Resource().IsNil() {
-			buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
-		}
-
+		buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryLogs #%d", j)

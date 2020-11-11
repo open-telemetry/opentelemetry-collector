@@ -22,6 +22,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -109,7 +110,7 @@ func EndMetricsScrapeOp(
 
 	span := trace.FromContext(scraperCtx)
 
-	if useNew {
+	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
 			scraperCtx,
 			mScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),

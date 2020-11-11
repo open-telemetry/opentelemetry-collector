@@ -56,8 +56,6 @@ func jThriftProcessToInternalResource(process *jaeger.Process, dest pdata.Resour
 		return
 	}
 
-	dest.InitEmpty()
-
 	serviceName := process.GetServiceName()
 	tags := process.GetTags()
 	if serviceName == "" && tags == nil {
