@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `kafka` exporter: Add support for exporting metrics as otlp Protobuf.
+
 ## v0.14.0 Beta
 
 ## 🚀 New components 🚀
@@ -17,7 +21,6 @@
 
 ## 💡 Enhancements 💡
 
-- `kafka` exporter: Add support for exporting metrics as otlp Protobuf.
 - Deprecate NopExporter, add NopConsumer (#1972)
 - Deprecate SinkExporter, add SinkConsumer (#1973)
 - Move `tailsampling` processor to contrib (#2012)
