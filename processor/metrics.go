@@ -17,7 +17,6 @@ package processor
 import (
 	"context"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -132,20 +131,6 @@ func MetricViews(level configtelemetry.Level) []*view.View {
 	}
 
 	return obsreport.ProcessorMetricViews("", legacyViews)
-}
-
-// ServiceNameForNode gets the service name for a specified node.
-func ServiceNameForNode(node *commonpb.Node) string {
-	switch {
-	case node == nil:
-		return "<nil-batch-node>"
-	case node.ServiceInfo == nil:
-		return "<nil-service-info>"
-	case node.ServiceInfo.Name == "":
-		return "<empty-service-info-name>"
-	default:
-		return node.ServiceInfo.Name
-	}
 }
 
 // RecordsSpanCountMetrics reports span count metrics for specified measure.
