@@ -73,9 +73,9 @@ func (r *Receiver) sendToNextConsumer(ctx context.Context, ld pdata.Logs) error 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, r.instanceName, receiverTransport)
+	ctx = obsreport.StartLogsReceiveOp(ctx, r.instanceName, receiverTransport)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	obsreport.EndTraceDataReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
+	obsreport.EndLogsReceiveOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return err
 }

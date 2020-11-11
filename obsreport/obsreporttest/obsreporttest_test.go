@@ -62,6 +62,19 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	obsreporttest.CheckReceiverMetricsViews(t, receiver, transport, 7, 0)
 }
 
+func TestCheckReceiverLogsViews(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	receiverCtx := obsreport.ReceiverContext(context.Background(), receiver, transport)
+	ctx := obsreport.StartLogsReceiveOp(receiverCtx, receiver, transport)
+	assert.NotNil(t, ctx)
+	obsreport.EndLogsReceiveOp(ctx, format, 7, nil)
+
+	obsreporttest.CheckReceiverLogsViews(t, receiver, transport, 7, 0)
+}
+
 func TestCheckExporterTracesViews(t *testing.T) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)

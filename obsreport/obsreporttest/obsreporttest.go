@@ -114,6 +114,14 @@ func CheckReceiverTracesViews(t *testing.T, receiver, protocol string, acceptedS
 	CheckValueForView(t, receiverTags, droppedSpans, "receiver/refused_spans")
 }
 
+// CheckReceiverLogsViews checks that for the current exported values for logs receiver views match given values.
+// When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
+func CheckReceiverLogsViews(t *testing.T, receiver, protocol string, acceptedLogRecords, droppedLogRecords int64) {
+	receiverTags := tagsForReceiverView(receiver, protocol)
+	CheckValueForView(t, receiverTags, acceptedLogRecords, "receiver/accepted_log_records")
+	CheckValueForView(t, receiverTags, droppedLogRecords, "receiver/refused_log_records")
+}
+
 // CheckReceiverMetricsViews checks that for the current exported values for metrics receiver views match given values.
 // When this function is called it is required to also call SetupRecordedMetricsTest as first thing.
 func CheckReceiverMetricsViews(t *testing.T, receiver, protocol string, acceptedMetricPoints, droppedMetricPoints int64) {
