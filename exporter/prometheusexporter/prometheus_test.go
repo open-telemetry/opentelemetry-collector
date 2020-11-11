@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
@@ -45,8 +46,9 @@ func TestPrometheusExporter(t *testing.T) {
 					"foo0":  "bar0",
 					"code0": "one0",
 				},
-				Endpoint:       ":8999",
-				SendTimestamps: false,
+				Endpoint:         ":8999",
+				SendTimestamps:   false,
+				MetricExpiration: 60 * time.Second,
 			},
 		},
 		{
@@ -84,7 +86,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		Endpoint: ":7777",
+		Endpoint:         ":7777",
+		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
@@ -100,12 +103,16 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	assert.NotNil(t, exp)
 
+	// Should accumulate multiple metrics
+	md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-		res, err := http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err, "Failed to perform a scrape")
+		res, err1 := http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err1, "Failed to perform a scrape")
 
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
@@ -113,10 +120,14 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		blob, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_this_one_there_where_ Extra ones`,
-			`# TYPE test_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where_ Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_ counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where_ Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_ counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -125,6 +136,23 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			}
 		}
 	}
+
+	// Expired metrics should be removed during first scrape
+	config.MetricExpiration = 1 * time.Millisecond
+	time.Sleep(10 * time.Millisecond)
+
+	_, err = http.Get("http://localhost:7777/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	res, err := http.Get("http://localhost:7777/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	if g, w := res.StatusCode, 200; g != w {
+		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
+	}
+	blob, _ := ioutil.ReadAll(res.Body)
+	_ = res.Body.Close()
+	require.Emptyf(t, string(blob), "Metrics did not expire")
 }
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
@@ -134,8 +162,9 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		Endpoint:       ":7777",
-		SendTimestamps: true,
+		Endpoint:         ":7777",
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
 	}
 
 	factory := NewFactory()
@@ -151,12 +180,17 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	assert.NotNil(t, exp)
 
+	// Should accumulate multiple metrics
+
+	md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
 	for delta := 0; delta <= 20; delta += 10 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta))})
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(int64(delta), "metric_2_")})
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-		res, err := http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err, "Failed to perform a scrape")
+		res, err1 := http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err1, "Failed to perform a scrape")
 
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
@@ -164,10 +198,14 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		blob, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_this_one_there_where_ Extra ones`,
-			`# TYPE test_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100),
-			fmt.Sprintf(`test_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
+			`# HELP test_metric_1_this_one_there_where_ Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_ counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+128, 1543160298100+128000),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+128, 1543160298100),
+			`# HELP test_metric_2_this_one_there_where_ Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_ counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {
@@ -176,13 +214,30 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			}
 		}
 	}
+
+	// Expired metrics should be removed during first scrape
+	config.MetricExpiration = 1 * time.Millisecond
+	time.Sleep(10 * time.Millisecond)
+
+	_, err = http.Get("http://localhost:7777/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	res, err := http.Get("http://localhost:7777/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	if g, w := res.StatusCode, 200; g != w {
+		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
+	}
+	blob, _ := ioutil.ReadAll(res.Body)
+	_ = res.Body.Close()
+	require.Emptyf(t, string(blob), "Metrics did not expire")
 }
 
-func metricBuilder(delta int64) []*metricspb.Metric {
+func metricBuilder(delta int64, prefix string) []*metricspb.Metric {
 	return []*metricspb.Metric{
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "this/one/there(where)",
+				Name:        prefix + "this/one/there(where)",
 				Description: "Extra ones",
 				Unit:        "1",
 				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
@@ -191,7 +246,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 			Timeseries: []*metricspb.TimeSeries{
 				{
 					StartTimestamp: &timestamppb.Timestamp{
-						Seconds: 1543160298,
+						Seconds: 1543160298 + delta,
 						Nanos:   100000090,
 					},
 					LabelValues: []*metricspb.LabelValue{
@@ -201,7 +256,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 					Points: []*metricspb.Point{
 						{
 							Timestamp: &timestamppb.Timestamp{
-								Seconds: 1543160298,
+								Seconds: 1543160298 + delta,
 								Nanos:   100000997,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -214,7 +269,7 @@ func metricBuilder(delta int64) []*metricspb.Metric {
 		},
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "this/one/there(where)",
+				Name:        prefix + "this/one/there(where)",
 				Description: "Extra ones",
 				Unit:        "1",
 				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,

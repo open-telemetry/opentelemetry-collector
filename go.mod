@@ -33,7 +33,6 @@ require (
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
-	github.com/orijtech/prometheus-go-metrics-exporter v0.0.6
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect
 	github.com/prometheus/client_golang v1.9.0
