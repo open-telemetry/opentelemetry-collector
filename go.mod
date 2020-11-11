@@ -14,7 +14,6 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
-	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
@@ -44,10 +43,10 @@ require (
 	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.14.0
-	github.com/prometheus/prometheus v1.8.2-0.20200827201422-1195cc24e3c8
+	github.com/prometheus/prometheus v1.8.2-0.20201105135750-00f16d1ac3a4
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec/v2 v2.4.0
-	github.com/shirou/gopsutil v2.20.9+incompatible
+	github.com/shirou/gopsutil v3.20.10+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1
@@ -60,11 +59,11 @@ require (
 	go.opencensus.io v0.22.5
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200821140526-fda516888d29
+	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	golang.org/x/sys v0.0.0-20201008064518-c1f3e3309c71
 	golang.org/x/text v0.3.3
-	golang.org/x/tools v0.0.0-20200822203824-307de81be3f4
-	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70
+	golang.org/x/tools v0.0.0-20201008025239-9df69603baec
+	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.33.1
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
 	google.golang.org/protobuf v1.25.0
