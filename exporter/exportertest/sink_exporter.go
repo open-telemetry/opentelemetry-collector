@@ -24,7 +24,7 @@ import (
 )
 
 // SinkTraceExporter acts as a trace receiver for use in tests.
-// Deprecated: Use consumertest.SinkTraces
+// Deprecated: Use consumertest.TracesSink
 type SinkTraceExporter struct {
 	mu                sync.Mutex
 	consumeTraceError error // to be returned by ConsumeTraces, if set
@@ -93,7 +93,7 @@ func (ste *SinkTraceExporter) Shutdown(context.Context) error {
 }
 
 // SinkMetricsExporter acts as a metrics receiver for use in tests.
-// Deprecated: Use consumertest.SinkMetrics
+// Deprecated: Use consumertest.MetricsSink
 type SinkMetricsExporter struct {
 	mu                  sync.Mutex
 	consumeMetricsError error // to be returned by ConsumeMetrics, if set
@@ -161,7 +161,7 @@ func (sme *SinkMetricsExporter) Shutdown(context.Context) error {
 }
 
 // SinkLogsExporter acts as a metrics receiver for use in tests.
-// Deprecated: Use consumertest.SinkLogs
+// Deprecated: Use consumertest.LogsSink
 type SinkLogsExporter struct {
 	consumeLogError error // to be returned by ConsumeLog, if set
 	mu              sync.Mutex

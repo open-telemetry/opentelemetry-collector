@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -183,7 +183,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
-			next := &etest.SinkMetricsExporter{}
+			next := new(consumertest.MetricsSink)
 			cfg := &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
 					TypeVal: typeStr,
@@ -297,13 +297,12 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	pcfg.Metrics = MetricFilters{
 		Exclude: mp,
 	}
-	next := &etest.SinkMetricsExporter{}
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
 		component.ProcessorCreateParams{},
 		cfg,
-		next,
+		consumertest.NewMetricsNop(),
 	)
 	pdms := metricSlice(128)
 	for i := 0; i < b.N; i++ {
@@ -402,7 +401,6 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 			MetricNames: []string{"foo"},
 		},
 	}
-	next := &etest.SinkMetricsExporter{}
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
@@ -410,7 +408,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 			Logger: zap.NewNop(),
 		},
 		cfg,
-		next,
+		consumertest.NewMetricsNop(),
 	)
 	require.NotPanics(t, func() {
 		_ = proc.ConsumeMetrics(ctx, metrics)
