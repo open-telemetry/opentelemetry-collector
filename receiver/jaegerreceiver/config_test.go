@@ -30,12 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-var defaultServerConfig = ServerConfigUDP{
-	QueueSize:     defaultAgentQueueSize,
-	MaxPacketSize: defaultAgentMaxPacketSize,
-	Workers:       defaultAgentServerWorkers,
-}
-
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
@@ -113,11 +107,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				ThriftCompact: &ProtocolUDP{
 					Endpoint:        defaultThriftCompactBindEndpoint,
-					ServerConfigUDP: defaultServerConfig,
+					ServerConfigUDP: DefaultServerConfigUDP(),
 				},
 				ThriftBinary: &ProtocolUDP{
 					Endpoint:        defaultThriftBinaryBindEndpoint,
-					ServerConfigUDP: defaultServerConfig,
+					ServerConfigUDP: DefaultServerConfigUDP(),
 				},
 			},
 		})
@@ -138,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				ThriftCompact: &ProtocolUDP{
 					Endpoint:        defaultThriftCompactBindEndpoint,
-					ServerConfigUDP: defaultServerConfig,
+					ServerConfigUDP: DefaultServerConfigUDP(),
 				},
 			},
 		})

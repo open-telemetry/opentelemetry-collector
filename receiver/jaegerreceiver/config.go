@@ -20,8 +20,16 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// The config field name to load the protocol map from
-const protocolsFieldName = "protocols"
+const (
+	// The config field name to load the protocol map from
+	protocolsFieldName = "protocols"
+
+	// Default UDP server options
+	defaultQueueSize        = 1000
+	defaultMaxPacketSize    = 65000
+	defaultServerWorkers    = 10
+	defaultSocketBufferSize = 0
+)
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
@@ -47,6 +55,15 @@ type ServerConfigUDP struct {
 	MaxPacketSize    int `mapstructure:"max_packet_size"`
 	Workers          int `mapstructure:"workers"`
 	SocketBufferSize int `mapstructure:"socket_buffer_size"`
+}
+
+func DefaultServerConfigUDP() ServerConfigUDP {
+	return ServerConfigUDP{
+		QueueSize:        defaultQueueSize,
+		MaxPacketSize:    defaultMaxPacketSize,
+		Workers:          defaultServerWorkers,
+		SocketBufferSize: defaultSocketBufferSize,
+	}
 }
 
 // Config defines configuration for Jaeger receiver.

@@ -95,10 +95,6 @@ type jReceiver struct {
 }
 
 const (
-	defaultAgentQueueSize     = 1000
-	defaultAgentMaxPacketSize = 65000
-	defaultAgentServerWorkers = 10
-
 	// Legacy metrics receiver name tag values
 	collectorReceiverTagValue = "jaeger-collector"
 	agentReceiverTagValue     = "jaeger-agent"
