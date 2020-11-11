@@ -115,9 +115,6 @@ issues:
       linters:
         # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
         - structcheck
-    - path: opencensus_test.go
-      linters:
-        - unused
     - path: receiver/otlpreceiver/marshal_jsonpb\.go
       linters:
         - gocritic
