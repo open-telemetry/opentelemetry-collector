@@ -114,21 +114,26 @@ func ProcessorMetricViews(configType string, legacyViews []*view.View) []*view.V
 	return allViews
 }
 
-// ProcessorContext adds the keys used when recording observability metrics to
+var gProcessorObsReport = &ProcessorObsReport{level: configtelemetry.LevelNone}
+
+type ProcessorObsReport struct {
+	level configtelemetry.Level
+}
+
+// WrapContext adds the keys used when recording observability metrics to
 // the given context returning the newly created context. This context should
 // be used in related calls to the obsreport functions so metrics are properly
 // recorded.
-func ProcessorContext(ctx context.Context, processor string) context.Context {
+func (*ProcessorObsReport) WrapContext(ctx context.Context, processor string) context.Context {
 	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyProcessor, processor, tag.WithTTL(tag.TTLNoPropagation)))
-
 	return ctx
 }
 
-// ProcessorTraceDataAccepted reports that the trace data was accepted.
-func ProcessorTraceDataAccepted(processorCtx context.Context, numSpans int) {
-	if gLevel != configtelemetry.LevelNone {
+// TracesAccepted reports that the trace data was accepted.
+func (por *ProcessorObsReport) TracesAccepted(ctx context.Context, numSpans int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedSpans.M(int64(numSpans)),
 			mProcessorRefusedSpans.M(0),
 			mProcessorDroppedSpans.M(0),
@@ -136,11 +141,11 @@ func ProcessorTraceDataAccepted(processorCtx context.Context, numSpans int) {
 	}
 }
 
-// ProcessorTraceDataRefused reports that the trace data was refused.
-func ProcessorTraceDataRefused(processorCtx context.Context, numSpans int) {
-	if gLevel != configtelemetry.LevelNone {
+// TracesRefused reports that the trace data was refused.
+func (por *ProcessorObsReport) TracesRefused(ctx context.Context, numSpans int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedSpans.M(0),
 			mProcessorRefusedSpans.M(int64(numSpans)),
 			mProcessorDroppedSpans.M(0),
@@ -148,11 +153,11 @@ func ProcessorTraceDataRefused(processorCtx context.Context, numSpans int) {
 	}
 }
 
-// ProcessorTraceDataDropped reports that the trace data was dropped.
-func ProcessorTraceDataDropped(processorCtx context.Context, numSpans int) {
-	if gLevel != configtelemetry.LevelNone {
+// TracesDropped reports that the trace data was dropped.
+func (por *ProcessorObsReport) TracesDropped(ctx context.Context, numSpans int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedSpans.M(0),
 			mProcessorRefusedSpans.M(0),
 			mProcessorDroppedSpans.M(int64(numSpans)),
@@ -160,11 +165,11 @@ func ProcessorTraceDataDropped(processorCtx context.Context, numSpans int) {
 	}
 }
 
-// ProcessorMetricsDataAccepted reports that the metrics were accepted.
-func ProcessorMetricsDataAccepted(processorCtx context.Context, numPoints int) {
-	if gLevel != configtelemetry.LevelNone {
+// MetricsAccepted reports that the metrics were accepted.
+func (por *ProcessorObsReport) MetricsAccepted(ctx context.Context, numPoints int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedMetricPoints.M(int64(numPoints)),
 			mProcessorRefusedMetricPoints.M(0),
 			mProcessorDroppedMetricPoints.M(0),
@@ -172,11 +177,11 @@ func ProcessorMetricsDataAccepted(processorCtx context.Context, numPoints int) {
 	}
 }
 
-// ProcessorMetricsDataRefused reports that the metrics were refused.
-func ProcessorMetricsDataRefused(processorCtx context.Context, numPoints int) {
-	if gLevel != configtelemetry.LevelNone {
+// MetricsRefused reports that the metrics were refused.
+func (por *ProcessorObsReport) MetricsRefused(ctx context.Context, numPoints int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedMetricPoints.M(0),
 			mProcessorRefusedMetricPoints.M(int64(numPoints)),
 			mProcessorDroppedMetricPoints.M(0),
@@ -184,11 +189,11 @@ func ProcessorMetricsDataRefused(processorCtx context.Context, numPoints int) {
 	}
 }
 
-// ProcessorMetricsDataDropped reports that the metrics were dropped.
-func ProcessorMetricsDataDropped(processorCtx context.Context, numPoints int) {
-	if gLevel != configtelemetry.LevelNone {
+// MetricsDropped reports that the metrics were dropped.
+func (por *ProcessorObsReport) MetricsDropped(ctx context.Context, numPoints int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedMetricPoints.M(0),
 			mProcessorRefusedMetricPoints.M(0),
 			mProcessorDroppedMetricPoints.M(int64(numPoints)),
@@ -196,11 +201,11 @@ func ProcessorMetricsDataDropped(processorCtx context.Context, numPoints int) {
 	}
 }
 
-// ProcessorLogRecordsAccepted reports that the metrics were accepted.
-func ProcessorLogRecordsAccepted(processorCtx context.Context, numRecords int) {
-	if gLevel != configtelemetry.LevelNone {
+// LogsAccepted reports that the logs were accepted.
+func (por *ProcessorObsReport) LogsAccepted(ctx context.Context, numRecords int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedLogRecords.M(int64(numRecords)),
 			mProcessorRefusedLogRecords.M(0),
 			mProcessorDroppedLogRecords.M(0),
@@ -208,11 +213,11 @@ func ProcessorLogRecordsAccepted(processorCtx context.Context, numRecords int) {
 	}
 }
 
-// ProcessorLogRecordsRefused reports that the metrics were refused.
-func ProcessorLogRecordsRefused(processorCtx context.Context, numRecords int) {
-	if gLevel != configtelemetry.LevelNone {
+// LogsRefused reports that the logs were refused.
+func (por *ProcessorObsReport) LogsRefused(ctx context.Context, numRecords int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedLogRecords.M(0),
 			mProcessorRefusedLogRecords.M(int64(numRecords)),
 			mProcessorDroppedMetricPoints.M(0),
@@ -220,14 +225,67 @@ func ProcessorLogRecordsRefused(processorCtx context.Context, numRecords int) {
 	}
 }
 
-// ProcessorLogRecordsDropped reports that the metrics were dropped.
-func ProcessorLogRecordsDropped(processorCtx context.Context, numRecords int) {
-	if gLevel != configtelemetry.LevelNone {
+// LogsDropped reports that the logs were dropped.
+func (por *ProcessorObsReport) LogsDropped(ctx context.Context, numRecords int) {
+	if por.level != configtelemetry.LevelNone {
 		stats.Record(
-			processorCtx,
+			ctx,
 			mProcessorAcceptedLogRecords.M(0),
 			mProcessorRefusedLogRecords.M(0),
 			mProcessorDroppedLogRecords.M(int64(numRecords)),
 		)
 	}
+}
+
+// ProcessorContext adds the keys used when recording observability metrics to
+// the given context returning the newly created context. This context should
+// be used in related calls to the obsreport functions so metrics are properly
+// recorded.
+func ProcessorContext(ctx context.Context, processor string) context.Context {
+	return gProcessorObsReport.WrapContext(ctx, processor)
+}
+
+// ProcessorTraceDataAccepted reports that the trace data was accepted.
+func ProcessorTraceDataAccepted(ctx context.Context, numSpans int) {
+	gProcessorObsReport.TracesAccepted(ctx, numSpans)
+}
+
+// ProcessorTraceDataRefused reports that the trace data was refused.
+func ProcessorTraceDataRefused(ctx context.Context, numSpans int) {
+	gProcessorObsReport.TracesRefused(ctx, numSpans)
+}
+
+// ProcessorTraceDataDropped reports that the trace data was dropped.
+func ProcessorTraceDataDropped(ctx context.Context, numSpans int) {
+	gProcessorObsReport.TracesDropped(ctx, numSpans)
+}
+
+// ProcessorMetricsDataAccepted reports that the metrics were accepted.
+func ProcessorMetricsDataAccepted(ctx context.Context, numPoints int) {
+	gProcessorObsReport.MetricsAccepted(ctx, numPoints)
+}
+
+// ProcessorMetricsDataRefused reports that the metrics were refused.
+func ProcessorMetricsDataRefused(ctx context.Context, numPoints int) {
+	gProcessorObsReport.MetricsRefused(ctx, numPoints)
+}
+
+// ProcessorMetricsDataDropped reports that the metrics were dropped.
+func ProcessorMetricsDataDropped(ctx context.Context, numPoints int) {
+	gProcessorObsReport.MetricsDropped(ctx, numPoints)
+}
+
+// ProcessorLogRecordsAccepted reports that the metrics were accepted.
+func ProcessorLogRecordsAccepted(ctx context.Context, numRecords int) {
+	gProcessorObsReport.LogsAccepted(ctx, numRecords)
+}
+
+// ProcessorLogRecordsRefused reports that the metrics were refused.
+func ProcessorLogRecordsRefused(ctx context.Context, numRecords int) {
+	gProcessorObsReport.LogsRefused(ctx, numRecords)
+}
+
+// ProcessorLogRecordsDropped reports that the metrics were dropped.
+func ProcessorLogRecordsDropped(ctx context.Context, numRecords int) {
+	gProcessorObsReport.LogsDropped(ctx, numRecords)
 }
