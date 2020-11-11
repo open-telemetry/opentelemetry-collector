@@ -147,6 +147,66 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	obsreporttest.CheckReceiverTracesViews(t, receiver, transport, int64(acceptedSpans), int64(refusedSpans))
 }
 
+func TestReceiveLogsOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	ss := &spanStore{}
+	trace.RegisterExporter(ss)
+	defer trace.UnregisterExporter(ss)
+
+	parentCtx, parentSpan := trace.StartSpan(context.Background(),
+		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	defer parentSpan.End()
+
+	receiverCtx := obsreport.ReceiverContext(parentCtx, receiver, transport)
+	params := []receiveTestParams{
+		{transport, errFake},
+		{"", nil},
+	}
+	rcvdLogRecords := []int{13, 42}
+	for i, param := range params {
+		ctx := obsreport.StartLogsReceiveOp(receiverCtx, receiver, param.transport)
+		assert.NotNil(t, ctx)
+
+		obsreport.EndLogsReceiveOp(
+			ctx,
+			format,
+			rcvdLogRecords[i],
+			param.err)
+	}
+
+	spans := ss.PullAllSpans()
+	require.Equal(t, len(params), len(spans))
+
+	var acceptedLogRecords, refusedLogRecords int
+	for i, span := range spans {
+		assert.Equal(t, "receiver/"+receiver+"/LogsReceived", span.Name)
+		switch params[i].err {
+		case nil:
+			acceptedLogRecords += rcvdLogRecords[i]
+			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsreport.AcceptedLogRecordsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedLogRecordsKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+		case errFake:
+			refusedLogRecords += rcvdLogRecords[i]
+			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedLogRecordsKey])
+			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsreport.RefusedLogRecordsKey])
+			assert.Equal(t, params[i].err.Error(), span.Status.Message)
+		default:
+			t.Fatalf("unexpected param: %v", params[i])
+		}
+		switch params[i].transport {
+		case "":
+			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
+		default:
+			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
+		}
+	}
+	obsreporttest.CheckReceiverLogsViews(t, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords))
+}
+
 func TestReceiveMetricsOp(t *testing.T) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)

@@ -58,6 +58,7 @@ var (
 	receiverPrefix                  = ReceiverKey + nameSep
 	receiveTraceDataOperationSuffix = nameSep + "TraceDataReceived"
 	receiverMetricsOperationSuffix  = nameSep + "MetricsReceived"
+	receiverLogsOperationSuffix     = nameSep + "LogsReceived"
 
 	// Receiver metrics. Any count of data items below is in the original format
 	// that they were received, reasoning: reconciliation is easier if measurements
@@ -82,11 +83,11 @@ var (
 		stats.UnitDimensionless)
 	mReceiverAcceptedLogRecords = stats.Int64(
 		receiverPrefix+AcceptedLogRecordsKey,
-		"Number of  log records successfully pushed into the pipeline.",
+		"Number of log records successfully pushed into the pipeline.",
 		stats.UnitDimensionless)
 	mReceiverRefusedLogRecords = stats.Int64(
 		receiverPrefix+RefusedLogRecordsKey,
-		"Number of  log records that could not be pushed into the pipeline.",
+		"Number of log records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
 )
 
@@ -173,6 +174,40 @@ func EndTraceDataReceiveOp(
 		numReceivedSpans,
 		err,
 		configmodels.TracesDataType,
+	)
+}
+
+// StartLogsReceiveOp is called when a request is received from a client.
+// The returned context should be used in other calls to the obsreport functions
+// dealing with the same receive operation.
+func StartLogsReceiveOp(
+	operationCtx context.Context,
+	receiver string,
+	transport string,
+	opt ...StartReceiveOption,
+) context.Context {
+	return traceReceiveOp(
+		operationCtx,
+		receiver,
+		transport,
+		receiverLogsOperationSuffix,
+		opt...)
+}
+
+// EndLogsReceiveOp completes the receive operation that was started with
+// StartLogsReceiveOp.
+func EndLogsReceiveOp(
+	receiverCtx context.Context,
+	format string,
+	numReceivedLogRecords int,
+	err error,
+) {
+	endReceiveOp(
+		receiverCtx,
+		format,
+		numReceivedLogRecords,
+		err,
+		configmodels.LogsDataType,
 	)
 }
 
@@ -289,6 +324,9 @@ func endReceiveOp(
 		case configmodels.MetricsDataType:
 			acceptedMeasure = mReceiverAcceptedMetricPoints
 			refusedMeasure = mReceiverRefusedMetricPoints
+		case configmodels.LogsDataType:
+			acceptedMeasure = mReceiverAcceptedLogRecords
+			refusedMeasure = mReceiverRefusedLogRecords
 		}
 
 		stats.Record(
@@ -307,6 +345,9 @@ func endReceiveOp(
 		case configmodels.MetricsDataType:
 			acceptedItemsKey = AcceptedMetricPointsKey
 			refusedItemsKey = RefusedMetricPointsKey
+		case configmodels.LogsDataType:
+			acceptedItemsKey = AcceptedLogRecordsKey
+			refusedItemsKey = RefusedLogRecordsKey
 		}
 
 		span.AddAttributes(
