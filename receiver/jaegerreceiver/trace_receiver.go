@@ -120,13 +120,13 @@ func newJaegerReceiver(
 	config *configuration,
 	nextConsumer consumer.TracesConsumer,
 	params component.ReceiverCreateParams,
-) (*jReceiver, error) {
+) *jReceiver {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
 		logger:       params.Logger,
-	}, nil
+	}
 }
 
 func (jr *jReceiver) agentCompactThriftAddr() string {

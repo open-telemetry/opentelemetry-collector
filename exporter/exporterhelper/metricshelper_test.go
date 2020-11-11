@@ -92,7 +92,7 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetricsExporter(t, me, nil, 0)
+	checkRecordedMetricsForMetricsExporter(t, me, nil)
 }
 
 func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
@@ -100,7 +100,7 @@ func TestMetricsExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetricsExporter(t, me, nil, 1)
+	checkRecordedMetricsForMetricsExporter(t, me, nil)
 }
 
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
@@ -109,7 +109,7 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetricsExporter(t, me, want, 0)
+	checkRecordedMetricsForMetricsExporter(t, me, want)
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
@@ -183,7 +183,7 @@ func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
 	}
 }
 
-func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error, droppedTimeSeries int) {
+func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
