@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>
-    <a href="https://opentelemetry.io/docs/collector/about/">Getting Started<a/>
+    <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/community#special-interest-groups">Getting Involved<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
