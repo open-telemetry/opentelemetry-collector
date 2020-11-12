@@ -208,7 +208,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 }
 
 func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
-	clientTransport, err := thriftudp.NewTUDPClientTransport(hostPort, "")
+	// use a fixed local port for the client, to avoid trying to bind to a reserved port on some platforms
+	// see: https://github.com/open-telemetry/opentelemetry-collector/issues/2111
+	clientTransport, err := thriftudp.NewTUDPClientTransport(hostPort, "localhost:50200")
 	if err != nil {
 		return nil, err
 	}
