@@ -25,8 +25,8 @@ const (
 	protocolsFieldName = "protocols"
 
 	// Default UDP server options
-	defaultQueueSize        = 1000
-	defaultMaxPacketSize    = 65000
+	defaultQueueSize        = 1_000
+	defaultMaxPacketSize    = 65_000
 	defaultServerWorkers    = 10
 	defaultSocketBufferSize = 0
 )
