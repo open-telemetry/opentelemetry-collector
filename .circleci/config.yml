@@ -154,12 +154,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - gosec:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - coverage:
           requires:
             - setup-environment
@@ -179,7 +173,6 @@ workflows:
             - lint
             - loadtest
             - test
-            - gosec
             - coverage
             - windows-test
             - windows-msi
@@ -192,7 +185,6 @@ workflows:
             - lint
             - loadtest
             - test
-            - gosec
             - coverage
             - windows-test
             - windows-msi
@@ -210,7 +202,6 @@ workflows:
             - lint
             - loadtest
             - test
-            - gosec
             - coverage
             - windows-test
             - windows-msi
@@ -355,14 +346,6 @@ jobs:
             make CONTRIB_PATH=$contrib_path check-contrib
 
       - save_module_cache
-
-  gosec:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Golang Security Checker
-          command: make lint-gosec
 
   coverage:
     executor: golang

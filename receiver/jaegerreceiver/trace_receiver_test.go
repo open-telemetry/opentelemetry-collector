@@ -503,7 +503,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	defer server.GracefulStop()
 
 	// Create sampling strategies receiver
-	port, err := randomAvailablePort()
+	port := testutil.GetAvailablePort(t)
 	require.NoError(t, err)
 	hostEndpoint := fmt.Sprintf("localhost:%d", port)
 	factory := NewFactory()
@@ -524,7 +524,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 		HostEndpoint: hostEndpoint,
 	}
 	// at least one protocol has to be enabled
-	thriftHTTPPort, err := randomAvailablePort()
+	thriftHTTPPort := testutil.GetAvailablePort(t)
 	require.NoError(t, err)
 	cfg.Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
@@ -543,15 +543,6 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.Contains(t, "{\"strategyType\":1,\"rateLimitingSampling\":{\"maxTracesPerSecond\":5}}", string(bodyBytes))
-}
-
-func randomAvailablePort() (int, error) {
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer listener.Close()
-	return listener.Addr().(*net.TCPAddr).Port, nil
 }
 
 func TestConsumeThriftTrace(t *testing.T) {

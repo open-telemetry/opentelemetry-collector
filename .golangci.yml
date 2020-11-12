@@ -69,13 +69,16 @@ linters-settings:
   golint:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
+
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
+
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
     local-prefixes: go.opentelemetry.io/collector
+
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
@@ -96,6 +99,7 @@ linters:
     - gofmt
     - goimports
     - golint
+    - gosec
     - govet
     - staticcheck
     - misspell
@@ -119,3 +123,14 @@ issues:
       linters:
         - gocritic
         - gosimple
+
+    - path: cmd/issuegenerator
+      text: "G101:"
+      linters:
+        - gosec
+    - text: "G404:"
+      linters:
+        - gosec
+    - text: "G402:"
+      linters:
+        - gosec
