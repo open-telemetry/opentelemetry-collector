@@ -124,7 +124,7 @@ issues:
         - gocritic
         - gosimple
 
-    - path: cmd/issuegenerator
+    - path: main.go
       text: "G101:"
       linters:
         - gosec
