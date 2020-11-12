@@ -9,13 +9,23 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-    # Add assignees
     assignees:
       - "bogdandrutu"
   - package-ecosystem: "gomod"
     directory: "/examples/demo/app"
     schedule:
       interval: "daily"
-    # Add assignees
+    assignees:
+      - "bogdandrutu"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/issuegenerator"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "bogdandrutu"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/mdatagen"
+    schedule:
+      interval: "daily"
     assignees:
       - "bogdandrutu"
