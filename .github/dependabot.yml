@@ -29,3 +29,10 @@ updates:
       interval: "daily"
     assignees:
       - "bogdandrutu"
+  - package-ecosystem: "gomod"
+    directory: "/internal/tools"
+    schedule:
+      interval: "daily"
+    # Add assignees
+    assignees:
+      - "bogdandrutu"
