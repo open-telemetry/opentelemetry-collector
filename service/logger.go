@@ -39,7 +39,7 @@ func loggerFlags(flags *flag.FlagSet) {
 	loggerProfilePtr = flags.String(logProfileCfg, "", "Logging profile to use (dev, prod)")
 }
 
-func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
+func newLogger(options []zap.Option) (*zap.Logger, error) {
 	var level zapcore.Level
 	err := (&level).UnmarshalText([]byte(*loggerLevelPtr))
 	if err != nil {
@@ -66,5 +66,5 @@ func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
 	conf.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
 	conf.Level.SetLevel(level)
-	return conf.Build(zap.Hooks(hooks...))
+	return conf.Build(options...)
 }
