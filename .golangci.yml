@@ -36,7 +36,9 @@ run:
   # If invoked with -mod=vendor, the go command assumes that the vendor
   # directory holds the correct copies of dependencies and ignores
   # the dependency descriptions in go.mod.
-  modules-download-mode: readonly
+  # TODO: re-enable after understanding the issue:
+  # ERRO Running error: context loading failed: failed to load packages: failed to load with go/packages: err: exit status 1: stderr: build flag -mod=readonly only valid when using modules
+  # modules-download-mode: readonly
 
 # output configuration options
 output:
