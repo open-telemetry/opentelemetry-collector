@@ -97,7 +97,7 @@ var viewCPUSeconds = &view.View{
 var mRSSMemory = stats.Int64(
 	"process/memory/rss",
 	"Total physical memory (resident set size)",
-	stats.UnitDimensionless)
+	stats.UnitBytes)
 var viewRSSMemory = &view.View{
 	Name:        mRSSMemory.Name(),
 	Description: mRSSMemory.Description(),
