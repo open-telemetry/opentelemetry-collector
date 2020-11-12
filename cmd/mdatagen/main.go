@@ -90,7 +90,7 @@ func run(ymlPath string) error {
 	metadir := path.Dir(ymlPath)
 	outputDir := path.Join(metadir, "internal", "metadata")
 	outputFile := path.Join(outputDir, "generated_metrics.go")
-	if err := os.MkdirAll(outputDir, 0600); err != nil {
+	if err := os.MkdirAll(outputDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
 	}
 	if err := ioutil.WriteFile(outputFile, formatted, 0600); err != nil {

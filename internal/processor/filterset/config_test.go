@@ -36,7 +36,7 @@ func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
 
 func TestConfig(t *testing.T) {
 	actualConfigs := readTestdataConfigYamls(t, "config.yaml")
-	expectedConfigs := map[string]Config{
+	expectedConfigs := map[string]*Config{
 		"regexp/default": {
 			MatchType: Regexp,
 		},
@@ -70,7 +70,7 @@ func TestConfig(t *testing.T) {
 
 func TestConfigInvalid(t *testing.T) {
 	actualConfigs := readTestdataConfigYamls(t, "config_invalid.yaml")
-	expectedConfigs := map[string]Config{
+	expectedConfigs := map[string]*Config{
 		"invalid/matchtype": {
 			MatchType: "invalid",
 		},
