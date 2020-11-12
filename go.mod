@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
-	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/Shopify/sarama v1.27.2
 	github.com/antonmedv/expr v1.8.9
@@ -64,7 +63,7 @@ require (
 	golang.org/x/text v0.3.3
 	golang.org/x/tools v0.0.0-20201008025239-9df69603baec
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
-	google.golang.org/grpc v1.33.1
+	google.golang.org/grpc v1.33.2
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
