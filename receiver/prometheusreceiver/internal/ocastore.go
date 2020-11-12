@@ -47,16 +47,19 @@ type OcaStore interface {
 
 // OpenCensus Store for prometheus
 type ocaStore struct {
-	running              int32
-	logger               *zap.Logger
+	ctx context.Context
+
+	running              int32 // access atomically
 	sink                 consumer.MetricsConsumer
 	mc                   *mService
-	once                 *sync.Once
-	ctx                  context.Context
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverName         string
+
+	logger *zap.Logger
+
+	once sync.Once
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
@@ -66,7 +69,6 @@ func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap
 		ctx:                  ctx,
 		sink:                 sink,
 		logger:               logger,
-		once:                 &sync.Once{},
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
