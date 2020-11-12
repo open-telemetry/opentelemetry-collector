@@ -25,18 +25,18 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset/regexp"
 )
 
-func readTestdataConfigYamls(t *testing.T, filename string) map[string]Config {
+func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
 	testFile := path.Join(".", "testdata", filename)
 	v := configtest.NewViperFromYamlFile(t, testFile)
 
-	cfgs := map[string]Config{}
+	cfgs := map[string]*Config{}
 	require.NoErrorf(t, v.UnmarshalExact(&cfgs), "unable to unmarshal yaml from file %v", testFile)
 	return cfgs
 }
 
 func TestConfig(t *testing.T) {
 	actualConfigs := readTestdataConfigYamls(t, "config.yaml")
-	expectedConfigs := map[string]Config{
+	expectedConfigs := map[string]*Config{
 		"regexp/default": {
 			MatchType: Regexp,
 		},
@@ -61,7 +61,7 @@ func TestConfig(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, expCfg, actualCfg)
 
-			fs, err := CreateFilterSet([]string{}, &actualCfg)
+			fs, err := CreateFilterSet([]string{}, actualCfg)
 			assert.NoError(t, err)
 			assert.NotNil(t, fs)
 		})
@@ -70,7 +70,7 @@ func TestConfig(t *testing.T) {
 
 func TestConfigInvalid(t *testing.T) {
 	actualConfigs := readTestdataConfigYamls(t, "config_invalid.yaml")
-	expectedConfigs := map[string]Config{
+	expectedConfigs := map[string]*Config{
 		"invalid/matchtype": {
 			MatchType: "invalid",
 		},
@@ -82,7 +82,7 @@ func TestConfigInvalid(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, expCfg, actualCfg)
 
-			fs, err := CreateFilterSet([]string{}, &actualCfg)
+			fs, err := CreateFilterSet([]string{}, actualCfg)
 			assert.NotNil(t, err)
 			assert.Nil(t, fs)
 		})

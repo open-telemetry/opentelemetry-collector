@@ -186,12 +186,12 @@ func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
 
 		// Coalesce the nodes otherwise they will differ due to multiple
 		// nodes representing same logical service
-		for _, tsr := range g {
-			key := tsr.Node.String()
+		for i := range g {
+			key := g[i].Node.String()
 			if pTsr, ok := nodeToTraceReqs[key]; ok {
-				pTsr.Spans = append(pTsr.Spans, tsr.Spans...)
+				pTsr.Spans = append(pTsr.Spans, g[i].Spans...)
 			} else {
-				nodeToTraceReqs[key] = &tsr
+				nodeToTraceReqs[key] = &g[i]
 			}
 		}
 	}

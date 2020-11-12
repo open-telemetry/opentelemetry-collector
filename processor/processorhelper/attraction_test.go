@@ -15,7 +15,7 @@
 package processorhelper
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // #nosec
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -874,6 +874,7 @@ func TestValidConfiguration(t *testing.T) {
 }
 
 func sha1Hash(b []byte) string {
+	// #nosec
 	h := sha1.New()
 	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))

@@ -158,22 +158,19 @@ func TestJaegerHTTP(t *testing.T) {
 	// allow http server to start
 	assert.NoError(t, testutil.WaitForPort(t, port), "WaitForPort failed")
 
-	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
-	resp, err := http.Get(testURL)
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	testURL = fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
-	resp, err = http.Get(testURL)
+	resp, err = http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	testURL = fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port)
-	resp, err = http.Get(testURL)
+	resp, err = http.Get(fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")

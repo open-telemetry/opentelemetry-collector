@@ -28,10 +28,10 @@ func TestConfig(t *testing.T) {
 	testFile := path.Join(".", "testdata", "config.yaml")
 	v := configtest.NewViperFromYamlFile(t, testFile)
 
-	actualConfigs := map[string]Config{}
+	actualConfigs := map[string]*Config{}
 	require.NoErrorf(t, v.UnmarshalExact(&actualConfigs), "unable to unmarshal yaml from file %v", testFile)
 
-	expectedConfigs := map[string]Config{
+	expectedConfigs := map[string]*Config{
 		"regexp/default": {},
 		"regexp/cachedisabledwithsize": {
 			CacheEnabled:       false,
@@ -48,7 +48,7 @@ func TestConfig(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, expCfg, actualCfg)
 
-			fs, err := NewFilterSet([]string{}, &actualCfg)
+			fs, err := NewFilterSet([]string{}, actualCfg)
 			assert.NoError(t, err)
 			assert.NotNil(t, fs)
 		})
