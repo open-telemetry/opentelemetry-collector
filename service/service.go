@@ -32,7 +32,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -106,8 +105,8 @@ type Parameters struct {
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
 	ConfigFactory ConfigFactory
-	// LoggingHooks provides a way to supply a hook into logging events
-	LoggingHooks []func(zapcore.Entry) error
+	// LoggingOptions provides a way to change behavior of zap logging.
+	LoggingOptions []zap.Option
 }
 
 // ConfigFactory creates config.
@@ -146,7 +145,7 @@ func New(params Parameters) (*Application, error) {
 		Use:  params.ApplicationStartInfo.ExeName,
 		Long: params.ApplicationStartInfo.LongName,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := app.init(params.LoggingHooks...)
+			err := app.init(params.LoggingOptions)
 			if err != nil {
 				return err
 			}
@@ -227,8 +226,8 @@ func (app *Application) SignalTestComplete() {
 	close(app.stopTestChan)
 }
 
-func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
-	l, err := newLogger(hooks...)
+func (app *Application) init(options []zap.Option) error {
+	l, err := newLogger(options)
 	if err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
