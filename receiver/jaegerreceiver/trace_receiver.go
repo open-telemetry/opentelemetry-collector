@@ -62,7 +62,9 @@ type configuration struct {
 	CollectorGRPCOptions []grpc.ServerOption
 
 	AgentCompactThriftPort       int
+	AgentCompactThriftConfig     ServerConfigUDP
 	AgentBinaryThriftPort        int
+	AgentBinaryThriftConfig      ServerConfigUDP
 	AgentHTTPPort                int
 	RemoteSamplingClientSettings configgrpc.GRPCClientSettings
 	RemoteSamplingStrategyFile   string
@@ -93,10 +95,6 @@ type jReceiver struct {
 }
 
 const (
-	defaultAgentQueueSize     = 1000
-	defaultAgentMaxPacketSize = 65000
-	defaultAgentServerWorkers = 10
-
 	agentTransportBinary   = "udp_thrift_binary"
 	agentTransportCompact  = "udp_thrift_compact"
 	collectorHTTPTransport = "collector_http"
@@ -320,7 +318,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
 		}
-		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
+		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), jr.config.AgentBinaryThriftConfig, apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
 		if err != nil {
 			return err
 		}
@@ -333,7 +331,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
 		}
-		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory(), h)
+		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), jr.config.AgentCompactThriftConfig, apacheThrift.NewTCompactProtocolFactory(), h)
 		if err != nil {
 			return err
 		}
@@ -373,17 +371,22 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	return nil
 }
 
-func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
+func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
 	handler := agent.NewAgentProcessor(a)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
 		return nil, err
 	}
-	server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
+	if cfg.SocketBufferSize > 0 {
+		if err = transport.SetSocketBufferSize(cfg.SocketBufferSize); err != nil {
+			return nil, err
+		}
+	}
+	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, metrics.NullFactory)
 	if err != nil {
 		return nil, err
 	}
-	processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, factory, handler, jr.logger)
+	processor, err := processors.NewThriftProcessor(server, cfg.Workers, metrics.NullFactory, factory, handler, jr.logger)
 	if err != nil {
 		return nil, err
 	}

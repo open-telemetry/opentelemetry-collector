@@ -50,7 +50,8 @@ func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
-		AgentCompactThriftPort: int(port),
+		AgentCompactThriftPort:   int(port),
+		AgentCompactThriftConfig: DefaultServerConfigUDP(),
 	})
 }
 
@@ -72,7 +73,8 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
-		AgentBinaryThriftPort: int(port),
+		AgentBinaryThriftPort:   int(port),
+		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
 	})
 }
 
@@ -81,7 +83,8 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 
 	config := &configuration{
-		AgentBinaryThriftPort: int(port),
+		AgentBinaryThriftPort:   int(port),
+		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerAgent, config, nil, params)

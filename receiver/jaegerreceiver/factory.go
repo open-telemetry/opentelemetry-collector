@@ -128,11 +128,13 @@ func createDefaultConfig() configmodels.Receiver {
 			ThriftHTTP: &confighttp.HTTPServerSettings{
 				Endpoint: defaultHTTPBindEndpoint,
 			},
-			ThriftBinary: &confignet.TCPAddr{
-				Endpoint: defaultThriftBinaryBindEndpoint,
+			ThriftBinary: &ProtocolUDP{
+				Endpoint:        defaultThriftBinaryBindEndpoint,
+				ServerConfigUDP: DefaultServerConfigUDP(),
 			},
-			ThriftCompact: &confignet.TCPAddr{
-				Endpoint: defaultThriftCompactBindEndpoint,
+			ThriftCompact: &ProtocolUDP{
+				Endpoint:        defaultThriftCompactBindEndpoint,
+				ServerConfigUDP: DefaultServerConfigUDP(),
 			},
 		},
 	}
@@ -152,8 +154,7 @@ func createTraceReceiver(
 	rCfg := cfg.(*Config)
 	remoteSamplingConfig := rCfg.RemoteSampling
 
-	config := configuration{}
-
+	var config configuration
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
 		var err error
@@ -177,6 +178,7 @@ func createTraceReceiver(
 	}
 
 	if rCfg.Protocols.ThriftBinary != nil {
+		config.AgentBinaryThriftConfig = rCfg.ThriftBinary.ServerConfigUDP
 		var err error
 		config.AgentBinaryThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftBinary.Endpoint)
 		if err != nil {
@@ -185,6 +187,7 @@ func createTraceReceiver(
 	}
 
 	if rCfg.Protocols.ThriftCompact != nil {
+		config.AgentCompactThriftConfig = rCfg.ThriftCompact.ServerConfigUDP
 		var err error
 		config.AgentCompactThriftPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftCompact.Endpoint)
 		if err != nil {

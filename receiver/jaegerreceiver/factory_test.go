@@ -17,18 +17,22 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -61,6 +65,30 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, nil)
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.Nil(t, mReceiver)
+}
+
+func TestCreateReceiverGeneralConfig(t *testing.T) {
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	rCfg, ok := cfg.Receivers["jaeger/customname"]
+	require.True(t, ok)
+
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, rCfg, nil)
+	assert.NoError(t, err, "receiver creation failed")
+	assert.NotNil(t, tReceiver, "receiver creation failed")
+
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, rCfg, nil)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
@@ -123,7 +151,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftBinary = &confignet.TCPAddr{
+	cfg.(*Config).Protocols.ThriftBinary = &ProtocolUDP{
 		Endpoint: defaultThriftBinaryBindEndpoint,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -137,7 +165,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftCompact = &confignet.TCPAddr{
+	cfg.(*Config).Protocols.ThriftCompact = &ProtocolUDP{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -152,7 +180,7 @@ func TestDefaultAgentRemoteSamplingEndpointAndPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols.ThriftCompact = &confignet.TCPAddr{
+	rCfg.Protocols.ThriftCompact = &ProtocolUDP{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{}
@@ -170,7 +198,7 @@ func TestAgentRemoteSamplingEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	endpoint := "localhost:1234"
-	rCfg.Protocols.ThriftCompact = &confignet.TCPAddr{
+	rCfg.Protocols.ThriftCompact = &ProtocolUDP{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
@@ -240,7 +268,7 @@ func TestThriftBinaryBadPort(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftBinary = &confignet.TCPAddr{
+	cfg.(*Config).Protocols.ThriftBinary = &ProtocolUDP{
 		Endpoint: "localhost:65536",
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -252,7 +280,7 @@ func TestThriftCompactBadPort(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftCompact = &confignet.TCPAddr{
+	cfg.(*Config).Protocols.ThriftCompact = &ProtocolUDP{
 		Endpoint: "localhost:65536",
 	}
 
@@ -298,7 +326,7 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 
 	// Remove all default protocols
 	rCfg.Protocols = Protocols{}
-	rCfg.Protocols.ThriftCompact = &confignet.TCPAddr{
+	rCfg.Protocols.ThriftCompact = &ProtocolUDP{
 		Endpoint: defaultThriftCompactBindEndpoint,
 	}
 	rCfg.RemoteSampling = &RemoteSamplingConfig{
