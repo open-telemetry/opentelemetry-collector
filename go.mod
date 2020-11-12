@@ -53,7 +53,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	github.com/tinylib/msgp v1.1.2
+	github.com/tinylib/msgp v1.1.4
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	go.opencensus.io v0.22.5
 	go.uber.org/atomic v1.7.0
@@ -61,7 +61,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sys v0.0.0-20201008064518-c1f3e3309c71
 	golang.org/x/text v0.3.4
-	golang.org/x/tools v0.0.0-20201008025239-9df69603baec
+	golang.org/x/tools v0.0.0-20201022035929-9cf592e881e9
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.33.2
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
