@@ -248,7 +248,14 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *p
 			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
 			c.metricsValues[signature] = v
 		}
-		if m.IsMonotonic() || m.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+
+		if m.IsMonotonic() {
+			v.metricType = prometheus.CounterValue
+		} else {
+			v.metricType = prometheus.GaugeValue
+		}
+
+		if m.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			v.value = float64(ip.Value())
 			v.timestamp = ts
 		} else {
@@ -282,7 +289,14 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc
 			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
 			c.metricsValues[signature] = v
 		}
-		if m.IsMonotonic() || m.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+
+		if m.IsMonotonic() {
+			v.metricType = prometheus.CounterValue
+		} else {
+			v.metricType = prometheus.GaugeValue
+		}
+
+		if m.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			v.value = ip.Value()
 			v.timestamp = ts
 		} else {
