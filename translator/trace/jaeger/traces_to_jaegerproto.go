@@ -412,14 +412,15 @@ func getTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
 }
 
 func getErrorTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
-	if statusCode == pdata.StatusCodeOk {
-		return model.KeyValue{}, false
+	if statusCode == pdata.StatusCodeError {
+		return model.KeyValue{
+			Key:   tracetranslator.TagError,
+			VBool: true,
+			VType: model.ValueType_BOOL,
+		}, true
 	}
-	return model.KeyValue{
-		Key:   tracetranslator.TagError,
-		VBool: true,
-		VType: model.ValueType_BOOL,
-	}, true
+	return model.KeyValue{}, false
+
 }
 
 func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
