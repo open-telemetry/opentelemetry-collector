@@ -40,7 +40,7 @@ require (
 	github.com/ory/go-acc v0.2.6
 	github.com/pavius/impi v0.0.3
 	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect
-	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/common v0.14.0
 	github.com/prometheus/prometheus v1.8.2-0.20201105135750-00f16d1ac3a4
 	github.com/rs/cors v1.7.0
@@ -59,7 +59,7 @@ require (
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	golang.org/x/sys v0.0.0-20201008064518-c1f3e3309c71
+	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
 	golang.org/x/text v0.3.4
 	golang.org/x/tools v0.0.0-20201022035929-9cf592e881e9
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
