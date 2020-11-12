@@ -24,4 +24,4 @@ Support more application-specific metric collection (e.g. Kafka, Hadoop, etc)
 | |
 **Other Features**|
 Graceful shutdown (pipeline draining)| |[#483](https://github.com/open-telemetry/opentelemetry-collector/issues/483)
-Deprecate queue retry processor and enable queueing per exporter by default||[#1721](https://github.com/open-telemetry/opentelemetry-collector/issues/1721)
+Deprecate queue retry processor and enable queuing per exporter by default||[#1721](https://github.com/open-telemetry/opentelemetry-collector/issues/1721)

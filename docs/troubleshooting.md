@@ -27,7 +27,7 @@ by passing the `--metrics-addr` flag to the `otelcol` process. See `--help` for
 more details.
 
 ```bash
-# otelcol --metrics-addr 0.0.0.0:8888
+$ otelcol --metrics-addr 0.0.0.0:8888
 ```
 
 A grafana dashboard for these metrics can be found

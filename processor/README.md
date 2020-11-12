@@ -40,12 +40,12 @@ processor documentation for more information.
 2. *any sampling processors*
 3. [batch](batchprocessor/README.md)
 4. *any other processors*
-5. [queued_retry](queuedprocessor/README.md)
 
 ### Metrics
 
 1. [memory_limiter](memorylimiter/README.md)
 2. [batch](batchprocessor/README.md)
+3. *any other processors*
 
 ## <a name="data-ownership"></a>Data Ownership
 
