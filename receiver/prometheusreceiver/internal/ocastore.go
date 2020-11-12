@@ -17,7 +17,6 @@ package internal
 import (
 	"context"
 	"io"
-	"sync"
 	"sync/atomic"
 
 	"github.com/prometheus/prometheus/pkg/labels"
@@ -58,8 +57,6 @@ type ocaStore struct {
 	receiverName         string
 
 	logger *zap.Logger
-
-	once sync.Once
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
