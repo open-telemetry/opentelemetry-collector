@@ -92,9 +92,8 @@ func generateCloudVMAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeTelemetrySDKLanguage] = conventions.AttributeSDKLangValueJava
 	attrMap[conventions.AttributeTelemetrySDKName] = "opentelemetry"
 	attrMap[conventions.AttributeTelemetrySDKVersion] = "0.3.0"
-	attrMap[conventions.AttributeHostHostname] = "env-check"
 	attrMap[conventions.AttributeHostID] = "57e8add1f79a454bae9fb1f7756a009a"
-	attrMap[conventions.AttributeHostName] = "10.0.0.4"
+	attrMap[conventions.AttributeHostName] = "env-check"
 	attrMap[conventions.AttributeHostImageID] = "5.3.0-1020-azure"
 	attrMap[conventions.AttributeHostType] = "B1ms"
 	attrMap[conventions.AttributeCloudProvider] = "azure"
@@ -111,8 +110,7 @@ func generateOnpremK8sAttributes() map[string]interface{} {
 	attrMap[conventions.AttributeK8sNamespace] = "cert-manager"
 	attrMap[conventions.AttributeK8sDeployment] = "cm-1-cert-manager"
 	attrMap[conventions.AttributeK8sPod] = "cm-1-cert-manager-6448b4949b-t2jtd"
-	attrMap[conventions.AttributeHostHostname] = "docker-desktop"
-	attrMap[conventions.AttributeHostName] = "192.168.65.3"
+	attrMap[conventions.AttributeHostName] = "docker-desktop"
 	return attrMap
 }
 

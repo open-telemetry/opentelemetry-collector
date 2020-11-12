@@ -65,7 +65,7 @@ var traceJSON = []byte(`
 		  "resource": {
 			"attributes": [
 			  {
-				"key": "host.hostname",
+				"key": "host.name",
 				"value": { "stringValue": "testHost" }
 			  }
 			]
@@ -98,7 +98,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 	Resource: otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
 			{
-				Key:   conventions.AttributeHostHostname,
+				Key:   conventions.AttributeHostName,
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
 			},
 		},

@@ -30,7 +30,6 @@ const (
 	AttributeFaasInstance          = "faas.instance"
 	AttributeFaasName              = "faas.name"
 	AttributeFaasVersion           = "faas.version"
-	AttributeHostHostname          = "host.hostname"
 	AttributeHostID                = "host.id"
 	AttributeHostImageID           = "host.image.id"
 	AttributeHostImageName         = "host.image.name"
@@ -111,7 +110,6 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeFaasInstance,
 		AttributeFaasName,
 		AttributeFaasVersion,
-		AttributeHostHostname,
 		AttributeHostID,
 		AttributeHostImageID,
 		AttributeHostImageName,
