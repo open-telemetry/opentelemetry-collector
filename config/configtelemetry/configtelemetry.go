@@ -14,6 +14,11 @@
 
 package configtelemetry
 
+import (
+	"fmt"
+	"strings"
+)
+
 const (
 	// LevelNone indicates that no telemetry data should be collected.
 	LevelNone Level = iota - 1
@@ -28,3 +33,21 @@ const (
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
 // that every component should generate.
 type Level int8
+
+// ParseLevel returns the Level represented by the string. The parsing is case-insensitive
+// and it returns error if the string value is unknown.
+func ParseLevel(str string) (Level, error) {
+	str = strings.ToLower(str)
+
+	switch str {
+	case "none":
+		return LevelNone, nil
+	case "basic":
+		return LevelBasic, nil
+	case "normal":
+		return LevelNormal, nil
+	case "detailed":
+		return LevelDetailed, nil
+	}
+	return LevelNone, fmt.Errorf("unknown metrics level %q", str)
+}
