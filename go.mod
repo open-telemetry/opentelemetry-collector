@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/common v0.14.0
 	github.com/prometheus/prometheus v1.8.2-0.20201105135750-00f16d1ac3a4
 	github.com/rs/cors v1.7.0
-	github.com/securego/gosec/v2 v2.4.0
+	github.com/securego/gosec/v2 v2.5.0
 	github.com/shirou/gopsutil v3.20.10+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
