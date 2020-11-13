@@ -12,24 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package prometheusreceiver has the logic for scraping Prometheus metrics from
+// already instrumented applications and then passing them onto a metricsink instance.
 package prometheusreceiver
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
-	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	"github.com/prometheus/prometheus/config"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-)
+	"gopkg.in/yaml.v2"
 
-// This file implements config for Prometheus receiver.
+	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers various Prometheus service discovery mechanism.
+)
 
 const (
 	// The value of "type" key in configuration.
@@ -39,9 +41,22 @@ const (
 	prometheusConfigKey = "config"
 )
 
-var (
-	errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
-)
+var errNilScrapeConfig = errors.New("expecting a non-nil ScrapeConfig")
+
+// Config defines configuration for Prometheus receiver.
+type Config struct {
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	PrometheusConfig              *config.Config `mapstructure:"-"`
+	BufferPeriod                  time.Duration  `mapstructure:"buffer_period"`
+	BufferCount                   int            `mapstructure:"buffer_count"`
+	UseStartTimeMetric            bool           `mapstructure:"use_start_time_metric"`
+	StartTimeMetricRegex          string         `mapstructure:"start_time_metric_regex"`
+
+	// ConfigPlaceholder is just an entry to make the configuration pass a check
+	// that requires that all keys present in the config actually exist on the
+	// structure, ie.: it will error if an unknown key is present.
+	ConfigPlaceholder interface{} `mapstructure:"config"`
+}
 
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
