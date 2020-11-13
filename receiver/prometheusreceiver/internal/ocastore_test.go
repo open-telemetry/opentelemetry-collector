@@ -25,7 +25,6 @@ import (
 )
 
 func TestOcaStore(t *testing.T) {
-
 	o := NewOcaStore(context.Background(), nil, nil, nil, false, "", "prometheus")
 	o.SetScrapeManager(&scrape.Manager{})
 
@@ -57,5 +56,4 @@ func TestNoopAppender(t *testing.T) {
 	if err := noop.Rollback(); err != nil {
 		t.Error("expecting no error from Rollback method of noopApender")
 	}
-
 }
