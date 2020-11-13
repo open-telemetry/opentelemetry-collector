@@ -227,7 +227,7 @@ var _escData = map[string]*_escFile{
 		name:    "component_header.html",
 		local:   "templates/component_header.html",
 		size:    156,
-		modtime: 1594178791,
+		modtime: 1605208512,
 		compressed: `
 H4sIAAAAAAAC/1SMsQqDMBRFd7/iIq7q5lBiltKt9B8CPklQX6R1e9x/L6ZQ2vXcc65ZE3AZ0V3ztmcV
 PW467TnpQVZmzZp0Kfs96VJQizTjw1uyAgAXB+8C4lPmsT4fydqbdY+wCen64F0fB19iWV/yF/54X0en
@@ -239,7 +239,7 @@ U3kHAAD//zT+SdCcAAAA
 		name:    "extensions_table.html",
 		local:   "templates/extensions_table.html",
 		size:    353,
-		modtime: 1594178791,
+		modtime: 1605208512,
 		compressed: `
 H4sIAAAAAAAC/2SQwU7DMBBE7/2KlemRNJwjxxwQHDnwB248DRbOOnK2tGD531HTQIvqk1fzZjU7Wuw2
 gCb5CmjVNiaHVE2j7Tz3DT0osyIiynltqWlp8xSHMTJYntmN0bOUsgDJcg9ap3jw7HC8n7+z5y0epgU7
@@ -252,7 +252,7 @@ oxX5HeETfMGv9NPTkv4i2e6jT3HPrqE7AEui8yaECbdWkzPYUXWlaHFkg++5VR1YkJTRlt4Tdq06HVfK
 		name:    "footer.html",
 		local:   "templates/footer.html",
 		size:    15,
-		modtime: 1594178791,
+		modtime: 1605208512,
 		compressed: `
 H4sIAAAAAAAC/7LRT8pPqbTjstHPKMnNsQMEAAD//wEFevAPAAAA
 `,
@@ -262,7 +262,7 @@ H4sIAAAAAAAC/7LRT8pPqbTjstHPKMnNsQMEAAD//wEFevAPAAAA
 		name:    "header.html",
 		local:   "templates/header.html",
 		size:    467,
-		modtime: 1594178791,
+		modtime: 1605208512,
 		compressed: `
 H4sIAAAAAAAC/5TRMU8sIRAH8P4+BY/25eC9szGGxUItLIwW11giO7uMB8wG5rxsLvfdDdnTxNhoBeFP
 fpnM3/y5fbzZPj/dicAp2pVph4guj52ELK0J4Hq7EkIIk4Cd8MGVCtzJPQ/rS3mOGDmCPR7Vtl1OJ6OX
@@ -276,7 +276,7 @@ vuDEoocBiqjF/5RszGuV1uhFsCujl0bMC/Vz62vzZe1hY98DAAD//7qRGmLTAQAA
 		name:    "pipelines_table.html",
 		local:   "templates/pipelines_table.html",
 		size:    1946,
-		modtime: 1594178791,
+		modtime: 1605208512,
 		compressed: `
 H4sIAAAAAAAC/7SVwXLTMBCG7zyFxnRyIjVcU1scSpnhAMN0eAFZ2gRNlZVmJbdujd+dsWyrTp0LtL5k
 rOjX/tlv/8hFEJUB5sOjgTKrLCmgrXdCajzs2MeMv2OMsSLQ8DAsFJPWeCew/MSE0QcsDewDLyr+tTbm
@@ -293,7 +293,7 @@ QeMmXNC4hCvdNKvQgsYtacFoGWFFxSvCNl+lu3HQFXl8JfO/AQAA//9We3KLmgcAAA==
 		name:    "properties_table.html",
 		local:   "templates/properties_table.html",
 		size:    420,
-		modtime: 1594178791,
+		modtime: 1605208512,
 		compressed: `
 H4sIAAAAAAAC/2SRwW7DIBBE7/6KVRr1VMc5u5gfqFT11Ds2U8sqWVuwqRoR/r1yTCpb4YAEO48ZDarV
 MR7ezQkp1apqdaHEtA4U5OLQ7NrRW/gyTKYbuK/puNMFEVGMtB/Y4pfqho6UUr71hnvk0Qvt4XACyyw6
