@@ -21,6 +21,8 @@ import (
 var (
 	// errNilConfig is returned when an empty name is given.
 	errNilConfig = errors.New("nil config")
+	// errNilLogger is returned when a logger is nil
+	errNilLogger = errors.New("nil logger")
 	// errNilPushTraceData is returned when a nil traceDataPusher is given.
 	errNilPushTraceData = errors.New("nil traceDataPusher")
 	// errNilPushMetricsData is returned when a nil pushMetricsData is given.

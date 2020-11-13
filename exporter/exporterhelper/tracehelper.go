@@ -80,6 +80,10 @@ func NewTraceExporter(
 		return nil, errNilConfig
 	}
 
+	if logger == nil {
+		return nil, errNilLogger
+	}
+
 	if dataPusher == nil {
 		return nil, errNilPushTraceData
 	}

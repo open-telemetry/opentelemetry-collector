@@ -78,6 +78,10 @@ func NewLogsExporter(
 		return nil, errNilConfig
 	}
 
+	if logger == nil {
+		return nil, errNilLogger
+	}
+
 	if pushLogsData == nil {
 		return nil, errNilPushLogsData
 	}

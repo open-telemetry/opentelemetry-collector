@@ -71,6 +71,12 @@ func TestTraceExporter_InvalidName(t *testing.T) {
 	require.Equal(t, errNilConfig, err)
 }
 
+func TestTraceExporter_NilLogger(t *testing.T) {
+	te, err := NewTraceExporter(fakeTraceExporterConfig, nil, newTraceDataPusher(0, nil))
+	require.Nil(t, te)
+	require.Equal(t, errNilLogger, err)
+}
+
 func TestTraceExporter_NilPushTraceData(t *testing.T) {
 	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, te)
