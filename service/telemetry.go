@@ -15,7 +15,6 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"unicode"
@@ -51,11 +50,7 @@ type appTelemetry struct {
 }
 
 func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
-	level, err := telemetry.GetLevel()
-	if err != nil {
-		return fmt.Errorf("failed to parse metrics level: %w", err)
-	}
-
+	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := telemetry.GetMetricsAddr()
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
