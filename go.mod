@@ -24,7 +24,7 @@ require (
 	github.com/golang/snappy v0.0.2
 	github.com/golangci/golangci-lint v1.31.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.5.3
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
