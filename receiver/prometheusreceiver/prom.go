@@ -24,11 +24,12 @@ import (
 
 	"github.com/prometheus/prometheus/config"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"gopkg.in/yaml.v2"
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers various Prometheus service discovery mechanism.
 )
