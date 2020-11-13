@@ -11,8 +11,16 @@ receivers:
         endpoint: ":3456"
       thrift_compact:
         endpoint: "0.0.0.0:456"
+        queue_size: 100_000
+        max_packet_size: 131_072
+        workers: 100
+        socket_buffer_size: 65_536
       thrift_binary:
         endpoint: "0.0.0.0:789"
+        queue_size: 1_000
+        max_packet_size: 65_536
+        workers: 5
+        socket_buffer_size: 0
     remote_sampling:
       host_endpoint: "0.0.0.0:5778"
       endpoint: "jaeger-collector:1234"

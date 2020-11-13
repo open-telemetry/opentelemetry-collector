@@ -74,7 +74,10 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 		VType: model.ValueType_BOOL,
 	}
 
-	_, ok := getErrorTagFromStatusCode(pdata.StatusCodeOk)
+	_, ok := getErrorTagFromStatusCode(pdata.StatusCodeUnset)
+	assert.False(t, ok)
+
+	_, ok = getErrorTagFromStatusCode(pdata.StatusCodeOk)
 	assert.False(t, ok)
 
 	got, ok := getErrorTagFromStatusCode(pdata.StatusCodeError)

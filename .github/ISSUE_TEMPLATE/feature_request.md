@@ -26,4 +26,4 @@ A clear and concise description of any alternative solutions or features you've 
 **Additional context**
 Add any other context or screenshots about the feature request here.
 
-_Plesae delete paragraphs that you did not use before submitting._
+_Please delete paragraphs that you did not use before submitting._

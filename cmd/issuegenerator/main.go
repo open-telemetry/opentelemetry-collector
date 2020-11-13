@@ -29,7 +29,6 @@ import (
 )
 
 const (
-
 	// Keys of required environment variables
 	projectUsernameKey = "CIRCLE_PROJECT_USERNAME"
 	projectRepoNameKey = "CIRCLE_PROJECT_REPONAME"

@@ -14,7 +14,7 @@ The following diagram shows an example of Prometheus remote write API usage, wit
 
 ![Cortex Archietecture](./img/cortex.png)
 
-Our project is focused on developing an exporter for the OpenTelemetry Collector to any Prometheus remote storage backend. 
+Our project is focused on developing an exporter for the OpenTelemetry Collector to any Prometheus remote storage backend.
 
 ### **1.1 Remote Write API**
 
@@ -29,7 +29,7 @@ More details of Prometheus remote write API can be found in Prometheus [document
 
 ### **1.2 Gaps and Assumptions**
 
-**Gap 1:** 
+**Gap 1:**
 Currently, metrics from the OpenTelemetry SDKs cannot be exported to Prometheus from the collector correctly ([#1255](https://github.com/open-telemetry/opentelemetry-collector/issues/1255)). This is because the SDKs send metrics to the collector via their OTLP exporter, which exports the delta value of cumulative counters. The same issue will arise for exporting to any Prometheus remote storage backend.
 
 To overcome this gap in the Collector pipeline, we had proposed 2 different solutions:
@@ -38,19 +38,19 @@ To overcome this gap in the Collector pipeline, we had proposed 2 different solu
 2. Require the OTLP exporters in SDKs to [send cumulative values for cumulative metric types to the Collector by default](https://github.com/open-telemetry/opentelemetry-specification/issues/731). Therefore, no aggregation of delta metric values is required in the Collector pipeline for Prometheus/storage backends to properly process the data. 
 
 **Gap 2:**
-Another gap is that OTLP metric definition is still in development. This exporter will require refactoring as OTLP changes in the future. 
+Another gap is that OTLP metric definition is still in development. This exporter will require refactoring as OTLP changes in the future.
 
 **Assumptions:**
 Because of the gaps mentioned above, this project will convert from the current OTLP metrics and work under the assumption one of the above solutions will be implemented, and all incoming monotonic scalars/histogram/summary metrics should be cumulative or otherwise dropped. More details on the behavior of the exporter is in section 2.2.
 
 ## **2. Prometheus Remote Write/Cortex Exporter**
 
-The Prometheus remote write/Cortex exporter should receive  OTLP metrics, group data points by metric name and label set, convert each group to a TimeSeries, and send all TimeSeries to a storage backend via HTTP. 
+The Prometheus remote write/Cortex exporter should receive  OTLP metrics, group data points by metric name and label set, convert each group to a TimeSeries, and send all TimeSeries to a storage backend via HTTP.
 
 ### **2.1 Receiving Metrics**
-The  Prometheus remote write/Cortex exporter receives a MetricsData instance in its PushMetrics() function. MetricsData contains a collection of Metric instances. Each Metric instance contains a series of data points, and each data point has a set of labels associated with it. Since Prometheus remote write TimeSeries are identified by unique sets of labels, the exporter needs to group data points within each Metric instance by their label set, and convert each group to a TimeSeries. 
+The  Prometheus remote write/Cortex exporter receives a MetricsData instance in its PushMetrics() function. MetricsData contains a collection of Metric instances. Each Metric instance contains a series of data points, and each data point has a set of labels associated with it. Since Prometheus remote write TimeSeries are identified by unique sets of labels, the exporter needs to group data points within each Metric instance by their label set, and convert each group to a TimeSeries.
 
-To group data points by label set, the exporter should create a map with each PushMetrics() call. The key of the map should represent a combination of the following information: 
+To group data points by label set, the exporter should create a map with each PushMetrics() call. The key of the map should represent a combination of the following information:
 
 * the metric type
 * the metric name
@@ -67,20 +67,20 @@ The value of the map should be Prometheus TimeSeries, and each data point’s va
 
 Pseudocode:
 
-        func  PushMetrics(metricsData) {  
-        
-         // Create a map that stores distinct TimeSeries  
-         map := make(map[String][]TimeSeries)  
-          
-         for metric in metricsData:  
-	         for point in metric:  
-	           // Generate signature string  
-	           sig := pointSignature(metric, point)  
-           
-	           // Find corresponding TimeSeries in map  
-	           // Add to TimeSeries  
-          
-	      // Sends TimeSeries to backend  
+        func  PushMetrics(metricsData) {
+
+         // Create a map that stores distinct TimeSeries
+         map := make(map[String][]TimeSeries)
+
+         for metric in metricsData:
+	         for point in metric:
+	           // Generate signature string
+	           sig := pointSignature(metric, point)
+
+	           // Find corresponding TimeSeries in map
+	           // Add to TimeSeries
+
+	      // Sends TimeSeries to backend
           export(map)  
        }
 
@@ -125,19 +125,19 @@ Authentication credentials should be added to each request before sending to the
 
 
 Pseudocode:
-  
 
-      func export(*map) error {  
-        	// Stores timeseries  
-        	arr := make([]TimeSeries)  
-          
-        	for timeseries in map:  
-        		arr = append(arr, timeseries)  
-          
-        		// Converts arr to WriteRequest  
-        		request := proto.Marshal(arr)  
-          
-        	// Sends HTTP request to endpoint  
+
+      func export(*map) error {
+        	// Stores timeseries
+        	arr := make([]TimeSeries)
+
+        	for timeseries in map:
+        		arr = append(arr, timeseries)
+
+        		// Converts arr to WriteRequest
+        		request := proto.Marshal(arr)
+
+        	// Sends HTTP request to endpoint
         }
 
 ## **3. Other Components**
@@ -147,13 +147,13 @@ Pseudocode:
 This struct is based on an inputted YAML file at the beginning of the pipeline and defines the configurations for an Exporter build. Examples of configuration parameters are HTTP endpoint, compression type, backend program, etc.
 
 
-Converting YAML to a Go struct is done by the Collector, using [_the Viper package_](https://github.com/spf13/viper), which is an open-source library that seamlessly converts inputted YAML files into a usable, appropriate Config struct. 
+Converting YAML to a Go struct is done by the Collector, using [_the Viper package_](https://github.com/spf13/viper), which is an open-source library that seamlessly converts inputted YAML files into a usable, appropriate Config struct.
 
 
 An example of the exporter section of the Collector config.yml YAML file can be seen below:
 
     ...
-    
+
     exporters:
       prometheus_remote_write:
         http_endpoint: <string>
@@ -167,7 +167,7 @@ An example of the exporter section of the Collector config.yml YAML file can be 
             [X-Prometheus-Remote-Write-Version:<string>]
             [Tenant-id:<int>]
         request_timeout: <int>
-            
+
         # ************************************************************************
         # below are configurations copied from Prometheus remote write config   
         # ************************************************************************
@@ -178,31 +178,31 @@ An example of the exporter section of the Collector config.yml YAML file can be 
         [ username: <string> ]
         [ password: <string> ]
         [ password_file: <string> ]
-        
+
         # Sets the `Authorization` header on every remote write request with
         # the configured bearer token. It is mutually exclusive with `bearer_token_file`.
         [ bearer_token: <string> ]
-        
+
         # Sets the `Authorization` header on every remote write request with the bearer token
         # read from the configured file. It is mutually exclusive with `bearer_token`.
         [ bearer_token_file: /path/to/bearer/token/file ]
-        
+
         # Configures the remote write request's TLS settings.
         tls_config:
             # CA certificate to validate API server certificate with.
             [ ca_file: <filename> ]
-            
+
             # Certificate and key files for client cert authentication to the server.
             [ cert_file: <filename> ]
             [ key_file: <filename> ]
-            
+
             # ServerName extension to indicate the name of the server.
             # https://tools.ietf.org/html/rfc4366#section-3.1
             [ server_name: <string> ]
-            
+
             # Disable validation of the server certificate.
             [ insecure_skip_verify: <boolean> ]
-                     
+
     ...
 
 ### **3.2 Factory Struct**
@@ -241,9 +241,9 @@ Once the shutdown() function is called, the exporter should stop accepting incom
 
     func Shutdown () {
         close(stopChan)
-        waitGroup.Wait()    
+        waitGroup.Wait()
     }
-    
+
     func PushMetrics() {
 	    select:
 	        case <- stopCh
@@ -280,7 +280,7 @@ We will follow test-driven development practices while completing this project. 
 
 
 ## **Request for Feedback**
-We'd like to get some feedback on whether we made the appropriate assumptions in [this](#1.2-gaps-and-ssumptions) section, and appreciate more comments, updates , and suggestions on the topic.  
+We'd like to get some feedback on whether we made the appropriate assumptions in [this](#1.2-gaps-and-ssumptions) section, and appreciate more comments, updates , and suggestions on the topic.
 
 Please let us know if there are any revisions, technical or informational, necessary for this document. Thank you!
 

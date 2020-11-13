@@ -25,7 +25,6 @@ MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
 IMPI=impi
-GOSEC=gosec
 STATIC_CHECK=staticcheck
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -88,8 +87,6 @@ benchmark:
 
 .PHONY: test-with-cover
 test-with-cover:
-	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector,.,$(ALL_PKGS))
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GO_ACC) $(ALL_PKGS)
@@ -118,11 +115,6 @@ misspell:
 .PHONY: misspell-correction
 misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_DOC)
-
-.PHONY: lint-gosec
-lint-gosec:
-	# TODO: Consider to use gosec from golangci-lint
-	$(GOSEC) -quiet -exclude=G104 $(ALL_PKGS)
 
 .PHONY: lint-static-check
 lint-static-check:
@@ -157,7 +149,6 @@ install-tools:
 	go install github.com/mjibson/esc
 	go install github.com/ory/go-acc
 	go install github.com/pavius/impi/cmd/impi
-	go install github.com/securego/gosec/cmd/gosec
 	go install github.com/tcnksm/ghr
 	go install golang.org/x/tools/cmd/goimports
 	go install honnef.co/go/tools/cmd/staticcheck

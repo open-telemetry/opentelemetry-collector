@@ -19,7 +19,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -73,6 +73,7 @@ func newOIDCServer() (*oidcServer, error) {
 	binary.BigEndian.PutUint64(eBytes, uint64(privateKey.E))
 	eBytes = bytes.TrimLeft(eBytes, "\x00")
 
+	// #nosec
 	sum := sha1.Sum(x509Cert)
 	jwks["keys"] = []map[string]interface{}{{
 		"alg": "RS256",

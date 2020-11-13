@@ -60,11 +60,23 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: ":3456",
 				},
-				ThriftCompact: &confignet.TCPAddr{
+				ThriftCompact: &ProtocolUDP{
 					Endpoint: "0.0.0.0:456",
+					ServerConfigUDP: ServerConfigUDP{
+						QueueSize:        100_000,
+						MaxPacketSize:    131_072,
+						Workers:          100,
+						SocketBufferSize: 65_536,
+					},
 				},
-				ThriftBinary: &confignet.TCPAddr{
+				ThriftBinary: &ProtocolUDP{
 					Endpoint: "0.0.0.0:789",
+					ServerConfigUDP: ServerConfigUDP{
+						QueueSize:        1_000,
+						MaxPacketSize:    65_536,
+						Workers:          5,
+						SocketBufferSize: 0,
+					},
 				},
 			},
 			RemoteSampling: &RemoteSamplingConfig{
@@ -93,11 +105,13 @@ func TestLoadConfig(t *testing.T) {
 				ThriftHTTP: &confighttp.HTTPServerSettings{
 					Endpoint: defaultHTTPBindEndpoint,
 				},
-				ThriftCompact: &confignet.TCPAddr{
-					Endpoint: defaultThriftCompactBindEndpoint,
+				ThriftCompact: &ProtocolUDP{
+					Endpoint:        defaultThriftCompactBindEndpoint,
+					ServerConfigUDP: DefaultServerConfigUDP(),
 				},
-				ThriftBinary: &confignet.TCPAddr{
-					Endpoint: defaultThriftBinaryBindEndpoint,
+				ThriftBinary: &ProtocolUDP{
+					Endpoint:        defaultThriftBinaryBindEndpoint,
+					ServerConfigUDP: DefaultServerConfigUDP(),
 				},
 			},
 		})
@@ -116,8 +130,9 @@ func TestLoadConfig(t *testing.T) {
 						Transport: "tcp",
 					},
 				},
-				ThriftCompact: &confignet.TCPAddr{
-					Endpoint: defaultThriftCompactBindEndpoint,
+				ThriftCompact: &ProtocolUDP{
+					Endpoint:        defaultThriftCompactBindEndpoint,
+					ServerConfigUDP: DefaultServerConfigUDP(),
 				},
 			},
 		})

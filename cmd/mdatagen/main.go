@@ -90,16 +90,16 @@ func run(ymlPath string) error {
 	metadir := path.Dir(ymlPath)
 	outputDir := path.Join(metadir, "internal", "metadata")
 	outputFile := path.Join(outputDir, "generated_metrics.go")
-	if err := os.MkdirAll(outputDir, 0777); err != nil {
+	if err := os.MkdirAll(outputDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
 	}
-	if err := ioutil.WriteFile(outputFile, formatted, 0666); err != nil {
+	if err := ioutil.WriteFile(outputFile, formatted, 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %v", outputFile, err)
 	}
 	// Exclude generated code from coverage and testing requirements.
 	nocoverFile := path.Join(outputDir, ".nocover")
 	if err := ioutil.WriteFile(nocoverFile, []byte("We test the generated code in the package it is used."),
-		0666); err != nil {
+		0600); err != nil {
 		return fmt.Errorf("failed writing %v: %v", nocoverFile, err)
 	}
 

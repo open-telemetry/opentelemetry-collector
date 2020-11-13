@@ -50,7 +50,8 @@ func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
-		AgentCompactThriftPort: int(port),
+		AgentCompactThriftPort:   int(port),
+		AgentCompactThriftConfig: DefaultServerConfigUDP(),
 	})
 }
 
@@ -72,7 +73,8 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	addrForClient := fmt.Sprintf(":%d", port)
 	testJaegerAgent(t, addrForClient, &configuration{
-		AgentBinaryThriftPort: int(port),
+		AgentBinaryThriftPort:   int(port),
+		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
 	})
 }
 
@@ -81,7 +83,8 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 
 	config := &configuration{
-		AgentBinaryThriftPort: int(port),
+		AgentBinaryThriftPort:   int(port),
+		AgentBinaryThriftConfig: DefaultServerConfigUDP(),
 	}
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	jr := newJaegerReceiver(jaegerAgent, config, nil, params)
@@ -155,22 +158,19 @@ func TestJaegerHTTP(t *testing.T) {
 	// allow http server to start
 	assert.NoError(t, testutil.WaitForPort(t, port), "WaitForPort failed")
 
-	testURL := fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
-	resp, err := http.Get(testURL)
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	testURL = fmt.Sprintf("http://localhost:%d/sampling?service=test", port)
-	resp, err = http.Get(testURL)
+	resp, err = http.Get(fmt.Sprintf("http://localhost:%d/sampling?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")
 	}
 
-	testURL = fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port)
-	resp, err = http.Get(testURL)
+	resp, err = http.Get(fmt.Sprintf("http://localhost:%d/baggageRestrictions?service=test", port))
 	assert.NoError(t, err, "should not have failed to make request")
 	if resp != nil {
 		assert.Equal(t, 200, resp.StatusCode, "should have returned 200")

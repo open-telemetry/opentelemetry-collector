@@ -21,20 +21,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
-
-// NumTimeSeries returns the number of timeseries in a MetricsData.
-func NumTimeSeries(md consumerdata.MetricsData) int {
-	receivedTimeSeries := 0
-	for _, metric := range md.Metrics {
-		receivedTimeSeries += len(metric.GetTimeseries())
-	}
-	return receivedTimeSeries
-}
 
 // PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
 // the number of dropped metrics.
@@ -91,6 +81,10 @@ func NewMetricsExporter(
 ) (component.MetricsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
+	}
+
+	if logger == nil {
+		return nil, errNilLogger
 	}
 
 	if pushMetricsData == nil {

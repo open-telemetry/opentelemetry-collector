@@ -1,16 +1,25 @@
 # General Information
-Extensions provide capabilities on top of the primary functionality of the collector.
-Generally, extensions are used for implementing components that can be added to the Collector, but which do not require direct access to telemetry data and are not part of the pipelines (like receivers, processors or exporters). Example extensions are: Health Check extension that responds to health check requests or PProf extension that allows fetching Collector's performance profile.
+
+Extensions provide capabilities on top of the primary functionality of the
+collector. Generally, extensions are used for implementing components that can
+be added to the Collector, but which do not require direct access to telemetry
+data and are not part of the pipelines (like receivers, processors or
+exporters). Example extensions are: Health Check extension that responds to
+health check requests or PProf extension that allows fetching Collector's
+performance profile.
 
 Supported service extensions (sorted alphabetically):
+
 - [Health Check](healthcheckextension/README.md)
 - [Performance Profiler](pprofextension/README.md)
 - [zPages](zpagesextension/README.md)
 
-The [contributors repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
- may have more extensions that can be added to custom builds of the Collector.
+The [contributors
+repository](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+may have more extensions that can be added to custom builds of the Collector.
 
 ## Ordering Extensions
+
 The order extensions are specified for the service is important as this is the
 order in which each extension will be started and the reverse order in which they
 will be shutdown. The ordering is determined in the `extensions` tag under the
@@ -45,6 +54,7 @@ The full list of settings exposed for this exporter is documented [here](healthc
 with detailed sample configurations [here](healthcheckextension/testdata/config.yaml).
 
 ## <a name="pprof"></a>Performance Profiler
+
 Performance Profiler extension enables the golang `net/http/pprof` endpoint.
 This is typically used by developers to collect performance profiles and
 investigate issues with the service.
@@ -66,8 +76,8 @@ The following settings can be optionally configured:
 Collector starts and is saved to the file when the Collector is terminated.
 
 Example:
-```yaml
 
+```yaml
 extensions:
   pprof:
 ```
@@ -76,9 +86,10 @@ The full list of settings exposed for this exporter are documented [here](pprofe
 with detailed sample configurations [here](pprofextension/testdata/config.yaml).
 
 ## <a name="zpages"></a>zPages
+
 Enables an extension that serves zPages, an HTTP endpoint that provides live
 data for debugging different components that were properly instrumented for such.
-All core exporters and receivers provide some zPage instrumentation.
+All core exporters and receivers provide some zPages instrumentation.
 
 The following settings are required:
 
@@ -86,6 +97,7 @@ The following settings are required:
 zPages.
 
 Example:
+
 ```yaml
 extensions:
   zpages:
