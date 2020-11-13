@@ -19,7 +19,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -32,11 +31,7 @@ var (
 )
 
 // MetricViews returns the metrics views related to batching
-func MetricViews(level configtelemetry.Level) []*view.View {
-	if level == configtelemetry.LevelNone {
-		return nil
-	}
-
+func MetricViews() []*view.View {
 	processorTagKeys := []tag.Key{processor.TagProcessorNameKey}
 
 	countBatchSizeTriggerSendView := &view.View{

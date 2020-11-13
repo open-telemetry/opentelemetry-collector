@@ -30,7 +30,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -289,7 +288,7 @@ func TestTraceQueueProcessorHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	views := processor.MetricViews(configtelemetry.LevelDetailed)
+	views := processor.MetricViews()
 	assert.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
