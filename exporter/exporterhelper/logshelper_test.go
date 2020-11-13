@@ -46,103 +46,109 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	mr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
+	lr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
 
 	partialErr := consumererror.PartialLogsError(errors.New("some error"), testdata.GenerateLogDataEmpty())
 	assert.EqualValues(
 		t,
 		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
-		mr.onPartialError(partialErr.(consumererror.PartialError)),
+		lr.onPartialError(partialErr.(consumererror.PartialError)),
 	)
 }
 
 func TestLogsExporter_InvalidName(t *testing.T) {
-	me, err := NewLogsExporter(nil, zap.NewNop(), newPushLogsData(0, nil))
-	require.Nil(t, me)
+	le, err := NewLogsExporter(nil, zap.NewNop(), newPushLogsData(0, nil))
+	require.Nil(t, le)
 	require.Equal(t, errNilConfig, err)
 }
 
+func TestLogsExporter_NilLogger(t *testing.T) {
+	le, err := NewLogsExporter(fakeLogsExporterConfig, nil, newPushLogsData(0, nil))
+	require.Nil(t, le)
+	require.Equal(t, errNilLogger, err)
+}
+
 func TestLogsExporter_NilPushLogsData(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), nil)
-	require.Nil(t, me)
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), nil)
+	require.Nil(t, le)
 	require.Equal(t, errNilPushLogsData, err)
 }
 
 func TestLogsExporter_Default(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
-	assert.NotNil(t, me)
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
+	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, me.ConsumeLogs(context.Background(), ld))
-	assert.Nil(t, me.Shutdown(context.Background()))
+	assert.Nil(t, le.ConsumeLogs(context.Background(), ld))
+	assert.Nil(t, le.Shutdown(context.Background()))
 }
 
 func TestLogsExporter_Default_ReturnError(t *testing.T) {
 	ld := testdata.GenerateLogDataEmpty()
 	want := errors.New("my_error")
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
 	require.Nil(t, err)
-	require.NotNil(t, me)
-	require.Equal(t, want, me.ConsumeLogs(context.Background(), ld))
+	require.NotNil(t, le)
+	require.Equal(t, want, le.ConsumeLogs(context.Background(), ld))
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
 	require.Nil(t, err)
-	require.NotNil(t, me)
+	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogsExporter(t, me, nil)
+	checkRecordedMetricsForLogsExporter(t, le, nil)
 }
 
 func TestLogsExporter_WithRecordLogs_NonZeroDropped(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(1, nil))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(1, nil))
 	require.Nil(t, err)
-	require.NotNil(t, me)
+	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogsExporter(t, me, nil)
+	checkRecordedMetricsForLogsExporter(t, le, nil)
 }
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
 	require.Nil(t, err)
-	require.NotNil(t, me)
+	require.NotNil(t, le)
 
-	checkRecordedMetricsForLogsExporter(t, me, want)
+	checkRecordedMetricsForLogsExporter(t, le, want)
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil))
 	require.Nil(t, err)
-	require.NotNil(t, me)
-	checkWrapSpanForLogsExporter(t, me, nil, 1)
+	require.NotNil(t, le)
+	checkWrapSpanForLogsExporter(t, le, nil, 1)
 }
 
 func TestLogsExporter_WithSpan_NonZeroDropped(t *testing.T) {
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(1, nil))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(1, nil))
 	require.Nil(t, err)
-	require.NotNil(t, me)
-	checkWrapSpanForLogsExporter(t, me, nil, 1)
+	require.NotNil(t, le)
+	checkWrapSpanForLogsExporter(t, le, nil, 1)
 }
 
 func TestLogsExporter_WithSpan_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, want))
 	require.Nil(t, err)
-	require.NotNil(t, me)
-	checkWrapSpanForLogsExporter(t, me, want, 1)
+	require.NotNil(t, le)
+	checkWrapSpanForLogsExporter(t, le, want, 1)
 }
 
 func TestLogsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil), WithShutdown(shutdown))
-	assert.NotNil(t, me)
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil), WithShutdown(shutdown))
+	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, me.Shutdown(context.Background()))
+	assert.Nil(t, le.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -150,11 +156,11 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	me, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil), WithShutdown(shutdownErr))
-	assert.NotNil(t, me)
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(0, nil), WithShutdown(shutdownErr))
+	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, me.Shutdown(context.Background()), want)
+	assert.Equal(t, le.Shutdown(context.Background()), want)
 }
 
 func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
@@ -163,7 +169,7 @@ func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter, wantError error) {
+func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()
@@ -171,7 +177,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter
 	ld := testdata.GenerateLogDataTwoLogsSameResource()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		require.Equal(t, wantError, me.ConsumeLogs(context.Background(), ld))
+		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
 	}
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
@@ -182,22 +188,22 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, me component.LogsExporter
 	}
 }
 
-func generateLogsTraffic(t *testing.T, me component.LogsExporter, numRequests int, wantError error) {
+func generateLogsTraffic(t *testing.T, le component.LogsExporter, numRequests int, wantError error) {
 	ld := testdata.GenerateLogDataOneLog()
 	ctx, span := trace.StartSpan(context.Background(), fakeLogsParentSpanName, trace.WithSampler(trace.AlwaysSample()))
 	defer span.End()
 	for i := 0; i < numRequests; i++ {
-		require.Equal(t, wantError, me.ConsumeLogs(ctx, ld))
+		require.Equal(t, wantError, le.ConsumeLogs(ctx, ld))
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, me component.LogsExporter, wantError error, numLogRecords int64) {
+func checkWrapSpanForLogsExporter(t *testing.T, le component.LogsExporter, wantError error, numLogRecords int64) {
 	ocSpansSaver := new(testOCTraceExporter)
 	trace.RegisterExporter(ocSpansSaver)
 	defer trace.UnregisterExporter(ocSpansSaver)
 
 	const numRequests = 5
-	generateLogsTraffic(t, me, numRequests, wantError)
+	generateLogsTraffic(t, le, numRequests, wantError)
 
 	// Inspection time!
 	ocSpansSaver.mu.Lock()
