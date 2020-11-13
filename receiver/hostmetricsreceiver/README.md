@@ -25,7 +25,7 @@ The available scrapers are:
 | Scraper    | Supported OSs                | Description                                            |
 |------------|------------------------------|--------------------------------------------------------|
 | cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| disk       | All                          | Disk I/O metrics                                       |
+| disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
 | load       | All                          | CPU load metrics                                       |
 | filesystem | All                          | File System utilization metrics                        |
 | memory     | All                          | Memory utilization metrics                             |
@@ -36,7 +36,7 @@ The available scrapers are:
 
 ### Notes
 
-<sup>[1]</sup> CPU metrics are not supported on Mac when compiled without cgo which is the default.
+<sup>[1]</sup> Not supported on Mac when compiled without cgo which is the default.
 
 Several scrapers support additional configuration:
 
