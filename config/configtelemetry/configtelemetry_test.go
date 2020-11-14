@@ -18,9 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestParseLevel(t *testing.T) {
+func TestParseFrom(t *testing.T) {
 	tests := []struct {
 		str   string
 		level Level
@@ -37,26 +38,26 @@ func TestParseLevel(t *testing.T) {
 			err:   true,
 		},
 		{
-			str:   "none",
+			str:   levelNoneStr,
 			level: LevelNone,
 		},
 		{
-			str:   "basic",
+			str:   levelBasicStr,
 			level: LevelBasic,
 		},
 		{
-			str:   "normal",
+			str:   levelNormalStr,
 			level: LevelNormal,
 		},
 		{
-			str:   "detailed",
+			str:   levelDetailedStr,
 			level: LevelDetailed,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.str, func(t *testing.T) {
-			lvl, err := ParseLevel(test.str)
+			lvl, err := parseLevel(test.str)
 			if test.err {
 				assert.Error(t, err)
 			} else {
@@ -65,4 +66,102 @@ func TestParseLevel(t *testing.T) {
 			assert.Equal(t, test.level, lvl)
 		})
 	}
+}
+
+func TestLevelSet(t *testing.T) {
+	tests := []struct {
+		str   string
+		level Level
+		err   bool
+	}{
+		{
+			str:   "",
+			level: LevelNone,
+			err:   true,
+		},
+		{
+			str:   "other_string",
+			level: LevelNone,
+			err:   true,
+		},
+		{
+			str:   levelNoneStr,
+			level: LevelNone,
+		},
+		{
+			str:   levelBasicStr,
+			level: LevelBasic,
+		},
+		{
+			str:   levelNormalStr,
+			level: LevelNormal,
+		},
+		{
+			str:   levelDetailedStr,
+			level: LevelDetailed,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.str, func(t *testing.T) {
+			lvl := new(Level)
+			err := lvl.Set(test.str)
+			if test.err {
+				assert.Error(t, err)
+				assert.Equal(t, LevelBasic, *lvl)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.level, *lvl)
+			}
+		})
+	}
+}
+
+func TestLevelString(t *testing.T) {
+	tests := []struct {
+		str   string
+		level Level
+		err   bool
+	}{
+		{
+			str:   "unknown",
+			level: Level(-10),
+		},
+		{
+			str:   levelNoneStr,
+			level: LevelNone,
+		},
+		{
+			str:   levelBasicStr,
+			level: LevelBasic,
+		},
+		{
+			str:   levelNormalStr,
+			level: LevelNormal,
+		},
+		{
+			str:   levelDetailedStr,
+			level: LevelDetailed,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.str, func(t *testing.T) {
+			assert.Equal(t, test.str, test.level.String())
+		})
+	}
+}
+
+func TestTelemetrySettings(t *testing.T) {
+	ts := &TelemetrySetting{
+		MetricsLevelStr: "unknown",
+	}
+	_, err := ts.GetMetricsLevel()
+	assert.Error(t, err)
+}
+
+func TestDefaultTelemetrySettings(t *testing.T) {
+	ts := DefaultTelemetrySetting()
+	assert.Equal(t, levelBasicStr, ts.MetricsLevelStr)
+	lvl, err := ts.GetMetricsLevel()
+	require.NoError(t, err)
+	assert.Equal(t, LevelBasic, lvl)
 }
