@@ -53,7 +53,7 @@ func Test_transaction(t *testing.T) {
 		},
 	)
 
-	ms := &mService{
+	ms := &metadataService{
 		sm: &mockScrapeManager{targets: map[string][]*scrape.Target{
 			"test": {scrape.NewTarget(processedLabels, discoveredLabels, nil)},
 		}},
