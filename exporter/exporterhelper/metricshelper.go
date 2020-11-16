@@ -83,6 +83,10 @@ func NewMetricsExporter(
 		return nil, errNilConfig
 	}
 
+	if logger == nil {
+		return nil, errNilLogger
+	}
+
 	if pushMetricsData == nil {
 		return nil, errNilPushMetricsData
 	}

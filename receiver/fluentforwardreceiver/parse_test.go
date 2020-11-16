@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testdata
+package fluentforwardreceiver
 
 import (
 	"encoding/hex"
@@ -22,7 +22,7 @@ import (
 	"strings"
 )
 
-func ParseHexDump(name string) []byte {
+func parseHexDump(name string) []byte {
 	_, file, _, _ := runtime.Caller(0)
 	dir, err := filepath.Abs(filepath.Dir(file))
 	if err != nil {

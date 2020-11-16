@@ -62,6 +62,12 @@ func TestMetricsExporter_InvalidName(t *testing.T) {
 	require.Equal(t, errNilConfig, err)
 }
 
+func TestMetricsExporter_NilLogger(t *testing.T) {
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, nil, newPushMetricsData(0, nil))
+	require.Nil(t, me)
+	require.Equal(t, errNilLogger, err)
+}
+
 func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
 	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, me)

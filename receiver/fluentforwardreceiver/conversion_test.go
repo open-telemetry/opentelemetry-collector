@@ -23,12 +23,11 @@ import (
 	"github.com/tinylib/msgp/msgp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/testdata"
 	"go.opentelemetry.io/collector/testutil/logstest"
 )
 
 func TestMessageEventConversion(t *testing.T) {
-	eventBytes := testdata.ParseHexDump("message-event")
+	eventBytes := parseHexDump("testdata/message-event")
 	reader := msgp.NewReader(bytes.NewReader(eventBytes))
 
 	var event MessageEventLogRecord
@@ -173,7 +172,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 }
 
 func TestForwardEventConversionWithErrors(t *testing.T) {
-	b := testdata.ParseHexDump("forward-event")
+	b := parseHexDump("testdata/forward-event")
 
 	for i := 0; i < len(b)-1; i++ {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
@@ -187,7 +186,7 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 }
 
 func TestPackedForwardEventConversionWithErrors(t *testing.T) {
-	b := testdata.ParseHexDump("forward-packed-compressed")
+	b := parseHexDump("testdata/forward-packed-compressed")
 
 	for i := 0; i < len(b)-1; i++ {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {

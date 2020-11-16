@@ -17,22 +17,17 @@ package telemetry
 
 import (
 	"flag"
-	"fmt"
-	"strings"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/version"
 )
 
 const (
 	metricsAddrCfg   = "metrics-addr"
-	metricsLevelCfg  = "metrics-level"
 	metricsPrefixCfg = "metrics-prefix"
 )
 
 var (
 	// Command-line flags that control publication of telemetry data.
-	metricsLevelPtr  *string
 	metricsAddrPtr   *string
 	metricsPrefixPtr *string
 
@@ -40,11 +35,6 @@ var (
 )
 
 func Flags(flags *flag.FlagSet) {
-	metricsLevelPtr = flags.String(
-		metricsLevelCfg,
-		"BASIC",
-		"Output level of telemetry metrics (NONE, BASIC, NORMAL, DETAILED)")
-
 	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter
 	// we default to Prometheus at port 8888, if not otherwise specified.
 	metricsAddrPtr = flags.String(
@@ -75,32 +65,6 @@ func GetMetricsAddrDefault() string {
 
 func GetAddInstanceID() bool {
 	return *addInstanceIDPtr
-}
-
-// GetLevel returns the Level represented by the string. The parsing is case-insensitive
-// and it returns error if the string value is unknown.
-func GetLevel() (configtelemetry.Level, error) {
-	var level configtelemetry.Level
-	var str string
-
-	if metricsLevelPtr != nil {
-		str = strings.ToLower(*metricsLevelPtr)
-	}
-
-	switch str {
-	case "none":
-		level = configtelemetry.LevelNone
-	case "", "basic":
-		level = configtelemetry.LevelBasic
-	case "normal":
-		level = configtelemetry.LevelNormal
-	case "detailed":
-		level = configtelemetry.LevelDetailed
-	default:
-		return level, fmt.Errorf("unknown metrics level %q", str)
-	}
-
-	return level, nil
 }
 
 func GetMetricsAddr() string {

@@ -20,7 +20,7 @@ on port 8006:
 ```yaml
 receivers:
   fluentforward:
-    listenAddress: 0.0.0.0:8006
+    endpoint: 0.0.0.0:8006
 ```
 
 
