@@ -75,8 +75,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
-		// 'otlp_spans' is being deprecated as the default topic.
-		// using an empty topic to track when it has not been set to log a warning.
+		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
 		Encoding: defaultEncoding,
 		Metadata: Metadata{

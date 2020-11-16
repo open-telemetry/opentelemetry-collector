@@ -22,9 +22,6 @@
 - Rename component.TraceReceiver to component.TracesReceiver #1975
 - Rename component.TraceProcessor to component.TracesProcessor #1976
 - Rename component.TraceExporter to component.TracesExporter #1975
-
-## 💡 Enhancements 💡
-
 - Deprecate NopExporter, add NopConsumer (#1972)
 - Deprecate SinkExporter, add SinkConsumer (#1973)
 - Move `tailsampling` processor to contrib (#2012)
@@ -89,7 +86,6 @@
 - Fix trace jaeger conversion to internal traces zero time bug (#1957)
 - Fix panic in otlp traces to zipkin (#1963)
 - Fix OTLP/HTTP receiver's path to be /v1/traces (#1979)
-
 
 ## v0.12.0 Beta
 
