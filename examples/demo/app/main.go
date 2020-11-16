@@ -23,81 +23,132 @@ import (
 	"os"
 	"time"
 
-	"contrib.go.opencensus.io/exporter/ocagent"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/baggage"
+	"go.opentelemetry.io/otel/exporters/otlp"
+	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/metric/controller/push"
+	"go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
+	"google.golang.org/grpc"
 )
 
-func main() {
-	ocAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
+// Initializes an OTLP exporter, and configures the corresponding trace and
+// metric providers.
+func initProvider() func() {
+	ctx := context.Background()
+
+	otelAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
 	if !ok {
-		ocAgentAddr = "0.0.0.0:55678"
+		otelAgentAddr = "0.0.0.0:55680"
 	}
-	oce, err := ocagent.NewExporter(
-		ocagent.WithAddress(ocAgentAddr),
-		ocagent.WithInsecure(),
-		ocagent.WithServiceName(fmt.Sprintf("example-go-%d", os.Getpid())))
+
+	exp, err := otlp.NewExporter(
+		otlp.WithInsecure(),
+		otlp.WithAddress(otelAgentAddr),
+		otlp.WithGRPCDialOption(grpc.WithBlock()), // useful for testing
+	)
+	handleErr(err, "failed to create exporter")
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			// the service name used to display traces in backends
+			semconv.ServiceNameKey.String("test-service"),
+		),
+	)
+	handleErr(err, "failed to create resource")
+
+	bsp := sdktrace.NewBatchSpanProcessor(exp)
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(bsp),
+	)
+
+	pusher := push.New(
+		basic.New(
+			simple.NewWithExactDistribution(),
+			exp,
+		),
+		exp,
+		push.WithPeriod(7*time.Second),
+	)
+
+	// set global propagator to tracecontext (the default is no-op).
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTracerProvider(tracerProvider)
+	otel.SetMeterProvider(pusher.MeterProvider())
+	pusher.Start()
+
+	return func() {
+		handleErr(tracerProvider.Shutdown(ctx), "failed to shutdown provider")
+		handleErr(exp.Shutdown(ctx), "failed to stop exporter")
+		pusher.Stop() // pushes any last exports to the receiver
+	}
+}
+
+func handleErr(err error, message string) {
 	if err != nil {
-		log.Fatalf("Failed to create ocagent-exporter: %v", err)
+		log.Fatalf("%s: %v", message, err)
 	}
-	trace.RegisterExporter(oce)
-	view.RegisterExporter(oce)
+}
 
-	// Some configurations to get observability signals out.
-	view.SetReportingPeriod(7 * time.Second)
-	trace.ApplyConfig(trace.Config{
-		DefaultSampler: trace.AlwaysSample(),
-	})
+func main() {
+	shutdown := initProvider()
+	defer shutdown()
 
-	// Some stats
-	keyClient, _ := tag.NewKey("client")
-	keyMethod, _ := tag.NewKey("method")
+	tracer := otel.Tracer("test-tracer")
+	meter := otel.Meter("test-meter")
 
-	mLatencyMs := stats.Float64("latency", "The latency in milliseconds", "ms")
-	mLineLengths := stats.Int64("line_lengths", "The length of each line", "By")
-
-	views := []*view.View{
-		{
-			Name:        "opdemo/latency",
-			Description: "The various latencies of the methods",
-			Measure:     mLatencyMs,
-			Aggregation: view.Distribution(0, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10000, 15000),
-			TagKeys:     []tag.Key{keyClient, keyMethod},
-		},
-		{
-			Name:        "opdemo/process_counts",
-			Description: "The various counts",
-			Measure:     mLatencyMs,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{keyClient, keyMethod},
-		},
-		{
-			Name:        "opdemo/line_lengths",
-			Description: "The lengths of the various lines in",
-			Measure:     mLineLengths,
-			Aggregation: view.Distribution(0, 10, 20, 50, 100, 150, 200, 500, 800),
-			TagKeys:     []tag.Key{keyClient, keyMethod},
-		},
-		{
-			Name:        "opdemo/line_counts",
-			Description: "The counts of the lines in",
-			Measure:     mLineLengths,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{keyClient, keyMethod},
-		},
+	// labels represent additional key-value descriptors that can be bound to a
+	// metric observer or recorder.
+	// TODO: Use baggage when supported to extact labels from baggage.
+	commonLabels := []label.KeyValue{
+		label.String("method", "repl"),
+		label.String("client", "cli"),
 	}
 
-	if err := view.Register(views...); err != nil {
-		log.Fatalf("Failed to register views for metrics: %v", err)
-	}
+	// Recorder metric example
+	requestLatency := metric.Must(meter).
+		NewFloat64ValueRecorder(
+			"appdemo/request_latency",
+			metric.WithDescription("The latency of requests processed"),
+		).Bind(commonLabels...)
+	defer requestLatency.Unbind()
 
-	ctx, _ := tag.New(context.Background(), tag.Insert(keyMethod, "repl"), tag.Insert(keyClient, "cli"))
+	// TODO: Use a view to just count number of measurements for requestLatency when available.
+	requestCount := metric.Must(meter).
+		NewInt64Counter(
+			"appdemo/request_counts",
+			metric.WithDescription("The number of requests processed"),
+		).Bind(commonLabels...)
+	defer requestCount.Unbind()
+
+	lineLengths := metric.Must(meter).
+		NewInt64ValueRecorder(
+			"appdemo/line_lengths",
+			metric.WithDescription("The lengths of the various lines in"),
+		).Bind(commonLabels...)
+	defer lineLengths.Unbind()
+
+	// TODO: Use a view to just count number of measurements for lineLengths when available.
+	lineCounts := metric.Must(meter).
+		NewInt64Counter(
+			"appdemo/line_counts",
+			metric.WithDescription("The counts of the lines in"),
+		).Bind(commonLabels...)
+	defer lineCounts.Unbind()
+
+	ctx := baggage.ContextWithValues(context.Background(), commonLabels...)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		startTime := time.Now()
-		_, span := trace.StartSpan(context.Background(), "Foo")
+		ctx, span := tracer.Start(ctx, "ExecuteRequest")
 		var sleep int64
 		switch modulus := time.Now().Unix() % 5; modulus {
 		case 0:
@@ -119,10 +170,13 @@ func main() {
 		nr := int(rng.Int31n(7))
 		for i := 0; i < nr; i++ {
 			randLineLength := rng.Int63n(999)
-			stats.Record(ctx, mLineLengths.M(randLineLength))
+			lineLengths.Record(ctx, randLineLength)
+			lineCounts.Add(ctx, 1)
 			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
 		}
-		stats.Record(ctx, mLatencyMs.M(latencyMs))
+
+		requestLatency.Record(ctx, latencyMs)
+		requestCount.Add(ctx, 1)
 		fmt.Printf("Latency: %.3fms\n", latencyMs)
 	}
 }
