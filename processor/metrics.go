@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -147,8 +146,8 @@ func RecordsSpanCountMetrics(ctx context.Context, scm *SpanCountStats, measure *
 }
 
 func serviceTagsEnabled() bool {
-	level, err := telemetry.GetLevel()
-	return err == nil && level == configtelemetry.LevelDetailed
+	level := configtelemetry.GetMetricsLevelFlagValue()
+	return level == configtelemetry.LevelDetailed
 }
 
 // spanCountByResourceStringAttribute calculates the number of spans by resource specified by

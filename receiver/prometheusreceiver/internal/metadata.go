@@ -22,11 +22,6 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 )
 
-// MetadataService is an adapter to ScrapeManager and provide only the functionality which is needed
-type MetadataService interface {
-	Get(job, instance string) (MetadataCache, error)
-}
-
 // MetadataCache is an adapter to prometheus' scrape.Target  and provide only the functionality which is needed
 type MetadataCache interface {
 	Metadata(metricName string) (scrape.MetricMetadata, bool)
@@ -37,12 +32,12 @@ type ScrapeManager interface {
 	TargetsAll() map[string][]*scrape.Target
 }
 
-type mService struct {
+type metadataService struct {
 	sm ScrapeManager
 }
 
-func (t *mService) Get(job, instance string) (MetadataCache, error) {
-	targetGroup, ok := t.sm.TargetsAll()[job]
+func (s *metadataService) Get(job, instance string) (MetadataCache, error) {
+	targetGroup, ok := s.sm.TargetsAll()[job]
 	if !ok {
 		return nil, errors.New("unable to find a target group with job=" + job)
 	}

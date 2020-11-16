@@ -50,7 +50,7 @@ type ocaStore struct {
 
 	running              int32 // access atomically
 	sink                 consumer.MetricsConsumer
-	mc                   *mService
+	mc                   *metadataService
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
@@ -77,7 +77,7 @@ func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap
 // cannot accept any Appender() request
 func (o *ocaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 	if scrapeManager != nil && atomic.CompareAndSwapInt32(&o.running, runningStateInit, runningStateReady) {
-		o.mc = &mService{sm: scrapeManager}
+		o.mc = &metadataService{sm: scrapeManager}
 	}
 }
 

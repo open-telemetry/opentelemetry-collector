@@ -66,14 +66,14 @@ type transaction struct {
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverName         string
-	ms                   MetadataService
+	ms                   *metadataService
 	node                 *commonpb.Node
 	resource             *resourcepb.Resource
 	metricBuilder        *metricBuilder
 	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms *metadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,

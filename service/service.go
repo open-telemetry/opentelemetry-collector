@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/builder"
@@ -162,6 +163,7 @@ func New(params Parameters) (*Application, error) {
 	// TODO: coalesce this code and expose this information to other components.
 	flagSet := new(flag.FlagSet)
 	addFlagsFns := []func(*flag.FlagSet){
+		configtelemetry.Flags,
 		telemetry.Flags,
 		builder.Flags,
 		loggerFlags,
