@@ -28,6 +28,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -46,6 +47,7 @@ type queuedProcessor struct {
 	backoffDelay             time.Duration
 	stopCh                   chan struct{}
 	stopOnce                 sync.Once
+	obsrep                   *obsreport.ProcessorObsReport
 }
 
 var _ consumer.TracesConsumer = (*queuedProcessor)(nil)
@@ -63,8 +65,9 @@ type queueItem interface {
 }
 
 type baseQueueItem struct {
-	ctx context.Context
-	qt  time.Time
+	ctx    context.Context
+	qt     time.Time
+	obsrep *obsreport.ProcessorObsReport
 }
 
 func (item *baseQueueItem) context() context.Context {
@@ -81,9 +84,9 @@ type traceQueueItem struct {
 	spanCountStats *processor.SpanCountStats
 }
 
-func newTraceQueueItem(ctx context.Context, td pdata.Traces) queueItem {
+func newTraceQueueItem(ctx context.Context, td pdata.Traces, obsrep *obsreport.ProcessorObsReport) queueItem {
 	return &traceQueueItem{
-		baseQueueItem:  baseQueueItem{ctx: ctx, qt: time.Now()},
+		baseQueueItem:  baseQueueItem{ctx: ctx, qt: time.Now(), obsrep: obsrep},
 		td:             td,
 		spanCountStats: processor.NewSpanCountStats(td),
 	}
@@ -91,18 +94,18 @@ func newTraceQueueItem(ctx context.Context, td pdata.Traces) queueItem {
 
 func (item *traceQueueItem) onAccepted() {
 	processor.RecordsSpanCountMetrics(item.ctx, item.spanCountStats, processor.StatReceivedSpanCount)
-	obsreport.ProcessorTraceDataAccepted(item.ctx, item.spanCountStats.GetAllSpansCount())
+	item.obsrep.TracesAccepted(item.ctx, item.spanCountStats.GetAllSpansCount())
 }
 
 func (item *traceQueueItem) onPartialError(partialErr consumererror.PartialError) queueItem {
-	return newTraceQueueItem(item.ctx, partialErr.GetTraces())
+	return newTraceQueueItem(item.ctx, partialErr.GetTraces(), item.obsrep)
 }
 
 func (item *traceQueueItem) onRefused(logger *zap.Logger, err error) {
 	// Count the StatReceivedSpanCount even if items were refused.
 	processor.RecordsSpanCountMetrics(item.ctx, item.spanCountStats, processor.StatReceivedSpanCount)
 
-	obsreport.ProcessorTraceDataRefused(item.ctx, item.spanCountStats.GetAllSpansCount())
+	item.obsrep.TracesRefused(item.ctx, item.spanCountStats.GetAllSpansCount())
 
 	// TODO: in principle this may not end in data loss because this can be
 	// in the same call stack as the receiver, ie.: the call from the receiver
@@ -115,7 +118,7 @@ func (item *traceQueueItem) onRefused(logger *zap.Logger, err error) {
 }
 
 func (item *traceQueueItem) onDropped(logger *zap.Logger, err error) {
-	obsreport.ProcessorTraceDataDropped(item.ctx, item.spanCountStats.GetAllSpansCount())
+	item.obsrep.TracesDropped(item.ctx, item.spanCountStats.GetAllSpansCount())
 
 	stats.Record(item.ctx, processor.StatTraceBatchesDroppedCount.M(int64(1)))
 	processor.RecordsSpanCountMetrics(item.ctx, item.spanCountStats, processor.StatDroppedSpanCount)
@@ -132,17 +135,17 @@ type metricsQueueItem struct {
 	numPoints int
 }
 
-func newMetricsQueueItem(ctx context.Context, md pdata.Metrics) queueItem {
+func newMetricsQueueItem(ctx context.Context, md pdata.Metrics, obsrep *obsreport.ProcessorObsReport) queueItem {
 	_, numPoints := md.MetricAndDataPointCount()
 	return &metricsQueueItem{
-		baseQueueItem: baseQueueItem{ctx: ctx, qt: time.Now()},
+		baseQueueItem: baseQueueItem{ctx: ctx, qt: time.Now(), obsrep: obsrep},
 		md:            md,
 		numPoints:     numPoints,
 	}
 }
 
 func (item *metricsQueueItem) onAccepted() {
-	obsreport.ProcessorMetricsDataAccepted(item.ctx, item.numPoints)
+	item.obsrep.MetricsAccepted(item.ctx, item.numPoints)
 }
 
 func (item *metricsQueueItem) onPartialError(consumererror.PartialError) queueItem {
@@ -151,14 +154,14 @@ func (item *metricsQueueItem) onPartialError(consumererror.PartialError) queueIt
 }
 
 func (item *metricsQueueItem) onRefused(logger *zap.Logger, err error) {
-	obsreport.ProcessorMetricsDataRefused(item.ctx, item.numPoints)
+	item.obsrep.MetricsRefused(item.ctx, item.numPoints)
 
 	logger.Error("Failed to process batch, refused", zap.Int("#points", item.numPoints), zap.Error(err))
 }
 
 func (item *metricsQueueItem) onDropped(logger *zap.Logger, err error) {
 	stats.Record(item.ctx, processor.StatTraceBatchesDroppedCount.M(int64(1)))
-	obsreport.ProcessorMetricsDataDropped(item.ctx, item.numPoints)
+	item.obsrep.MetricsDropped(item.ctx, item.numPoints)
 
 	logger.Error("Failed to process batch, discarding", zap.Int("#points", item.numPoints), zap.Error(err))
 }
@@ -182,6 +185,7 @@ func newQueuedTracesProcessor(
 		retryOnProcessingFailure: cfg.RetryOnFailure,
 		backoffDelay:             cfg.BackoffDelay,
 		stopCh:                   make(chan struct{}),
+		obsrep:                   obsreport.NewProcessorObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
 	}
 }
 
@@ -200,6 +204,7 @@ func newQueuedMetricsProcessor(
 		retryOnProcessingFailure: cfg.RetryOnFailure,
 		backoffDelay:             cfg.BackoffDelay,
 		stopCh:                   make(chan struct{}),
+		obsrep:                   obsreport.NewProcessorObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
 	}
 }
 
@@ -240,8 +245,7 @@ func (sp *queuedProcessor) Start(ctx context.Context, _ component.Host) error {
 
 // ConsumeTraces implements the TracesProcessor interface
 func (sp *queuedProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	ctx = obsreport.ProcessorContext(ctx, sp.name)
-	item := newTraceQueueItem(ctx, td)
+	item := newTraceQueueItem(ctx, td, sp.obsrep)
 
 	addedToQueue := sp.queue.Produce(item)
 	if !addedToQueue {
@@ -255,8 +259,7 @@ func (sp *queuedProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 
 // ConsumeMetrics implements the MetricsProcessor interface
 func (sp *queuedProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	ctx = obsreport.ProcessorContext(ctx, sp.name)
-	item := newMetricsQueueItem(ctx, md)
+	item := newMetricsQueueItem(ctx, md, sp.obsrep)
 
 	addedToQueue := sp.queue.Produce(item)
 	if !addedToQueue {

@@ -501,11 +501,10 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
-
-	obsreport.ProcessorTraceDataAccepted(processorCtx, acceptedSpans)
-	obsreport.ProcessorTraceDataRefused(processorCtx, refusedSpans)
-	obsreport.ProcessorTraceDataDropped(processorCtx, droppedSpans)
+	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep.TracesAccepted(context.Background(), acceptedSpans)
+	obsrep.TracesRefused(context.Background(), refusedSpans)
+	obsrep.TracesDropped(context.Background(), droppedSpans)
 
 	obsreporttest.CheckProcessorTracesViews(t, processor, acceptedSpans, refusedSpans, droppedSpans)
 }
@@ -519,10 +518,10 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
-	obsreport.ProcessorMetricsDataAccepted(processorCtx, acceptedPoints)
-	obsreport.ProcessorMetricsDataRefused(processorCtx, refusedPoints)
-	obsreport.ProcessorMetricsDataDropped(processorCtx, droppedPoints)
+	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
+	obsrep.MetricsRefused(context.Background(), refusedPoints)
+	obsrep.MetricsDropped(context.Background(), droppedPoints)
 
 	obsreporttest.CheckProcessorMetricsViews(t, processor, acceptedPoints, refusedPoints, droppedPoints)
 }
@@ -590,10 +589,10 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
-	obsreport.ProcessorLogRecordsAccepted(processorCtx, acceptedRecords)
-	obsreport.ProcessorLogRecordsRefused(processorCtx, refusedRecords)
-	obsreport.ProcessorLogRecordsDropped(processorCtx, droppedRecords)
+	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep.LogsAccepted(context.Background(), acceptedRecords)
+	obsrep.LogsRefused(context.Background(), refusedRecords)
+	obsrep.LogsDropped(context.Background(), droppedRecords)
 
 	obsreporttest.CheckProcessorLogsViews(t, processor, acceptedRecords, refusedRecords, droppedRecords)
 }
