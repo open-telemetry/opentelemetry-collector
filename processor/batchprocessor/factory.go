@@ -49,8 +49,9 @@ func createDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		SendBatchSize: defaultSendBatchSize,
-		Timeout:       defaultTimeout,
+		TelemetrySetting: configtelemetry.DefaultTelemetrySetting(),
+		SendBatchSize:    defaultSendBatchSize,
+		Timeout:          defaultTimeout,
 	}
 }
 
@@ -61,7 +62,10 @@ func createTraceProcessor(
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
-	level := configtelemetry.GetMetricsLevelFlagValue()
+	level, err := oCfg.TelemetrySetting.GetMetricsLevel()
+	if err != nil {
+		return nil, err
+	}
 	return newBatchTracesProcessor(params, nextConsumer, oCfg, level), nil
 }
 
@@ -72,7 +76,10 @@ func createMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
-	level := configtelemetry.GetMetricsLevelFlagValue()
+	level, err := oCfg.TelemetrySetting.GetMetricsLevel()
+	if err != nil {
+		return nil, err
+	}
 	return newBatchMetricsProcessor(params, nextConsumer, oCfg, level), nil
 }
 
@@ -83,6 +90,9 @@ func createLogsProcessor(
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
-	level := configtelemetry.GetMetricsLevelFlagValue()
+	level, err := oCfg.TelemetrySetting.GetMetricsLevel()
+	if err != nil {
+		return nil, err
+	}
 	return newBatchLogsProcessor(params, nextConsumer, oCfg, level), nil
 }

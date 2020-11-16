@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -52,6 +53,9 @@ func TestLoadConfig(t *testing.T) {
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "batch",
 				NameVal: "batch/2",
+			},
+			TelemetrySetting: configtelemetry.TelemetrySetting{
+				MetricsLevelStr: "detailed",
 			},
 			SendBatchSize:    sendBatchSize,
 			SendBatchMaxSize: sendBatchMaxSize,

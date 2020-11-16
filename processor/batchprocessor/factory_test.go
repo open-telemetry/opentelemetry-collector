@@ -50,3 +50,19 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.NoError(t, err, "cannot create logs processor")
 }
+
+func TestCreateProcessorInvalidLevel(t *testing.T) {
+	factory := NewFactory()
+
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MetricsLevelStr = "unknown"
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.CreateLogsProcessor(context.Background(), creationParams, cfg, nil)
+	assert.Error(t, err)
+}
