@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 // ErrSkipProcessingData is a sentinel value to indicate when traces or metrics should intentionally be dropped
@@ -134,9 +133,8 @@ type tracesProcessor struct {
 }
 
 func (mp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	processorCtx := obsreport.ProcessorContext(ctx, mp.fullName)
 	var err error
-	td, err = mp.processor.ProcessTraces(processorCtx, td)
+	td, err = mp.processor.ProcessTraces(ctx, td)
 	if err != nil {
 		return err
 	}
@@ -173,9 +171,8 @@ type metricsProcessor struct {
 }
 
 func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	processorCtx := obsreport.ProcessorContext(ctx, mp.fullName)
 	var err error
-	md, err = mp.processor.ProcessMetrics(processorCtx, md)
+	md, err = mp.processor.ProcessMetrics(ctx, md)
 	if err != nil {
 		if err == ErrSkipProcessingData {
 			return nil
@@ -215,9 +212,8 @@ type logProcessor struct {
 }
 
 func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	processorCtx := obsreport.ProcessorContext(ctx, lp.fullName)
 	var err error
-	ld, err = lp.processor.ProcessLogs(processorCtx, ld)
+	ld, err = lp.processor.ProcessLogs(ctx, ld)
 	if err != nil {
 		return err
 	}
