@@ -59,10 +59,29 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 		return fmt.Errorf("failed to read set flag config: %v", err)
 	}
 
-	// flagProperties cannot be applied to v directly because
-	// v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface) does not work properly.
+	// Viper implementation of v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface)
+	// does not work properly.  This is b/c if it attempts to merge into a nil object it will fail here
+	// https://github.com/spf13/viper/blob/3826be313591f83193f048520482a7b3cf17d506/viper.go#L1709
+
+	// The workaround is to call v.Set(string, interface) on all root properties from the config file
+	// this will correctly preserve the original config and set them up for viper to overlay them
+	rootKeys := map[string]struct{}{}
+	for _, k := range viperFlags.AllKeys() {
+		keys := strings.Split(k, config.ViperDelimiter)
+		if len(keys) > 0 {
+			rootKeys[keys[0]] = struct{}{}
+		}
+	}
+
+	for k := range rootKeys {
+		v.Set(k, v.Get(k))
+	}
+
+	// now that we've copied the config into the viper "overrides" copy the --set flags
+	// as well
 	for _, k := range viperFlags.AllKeys() {
 		v.Set(k, viperFlags.Get(k))
 	}
+
 	return nil
 }

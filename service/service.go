@@ -124,23 +124,14 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 	if file == "" {
 		return nil, errors.New("config file not specified")
 	}
+	// first load the config file
 	v.SetConfigFile(file)
 	err := v.ReadInConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
 	}
-	// The configuration is being loaded from two places: the config file and --set command line flag.
-	// The --set flag implementation (AddSetFlagProperties) creates a properties file from the --set flag
-	// that is loaded by a different viper instance.
-	// Viper implementation of v.MergeConfig(io.Reader) or v.MergeConfigMap(map[string]interface)
-	// does not work properly.
-	// The workaround is to call v.Set(string, interface) on all loaded properties from the config file
-	// and then do the same for --set flag in AddSetFlagProperties.
-	for _, k := range v.AllKeys() {
-		v.Set(k, v.Get(k))
-	}
 
-	// handle --set flag and override properties from the configuration file
+	// next overlay the config file with --set flags
 	if err := AddSetFlagProperties(v, cmd); err != nil {
 		return nil, fmt.Errorf("failed to process set flag: %v", err)
 	}
