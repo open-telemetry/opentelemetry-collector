@@ -10,7 +10,8 @@ Supported pipeline types: metrics
 Note: This component is currently work in progress. It has several limitations
 and please don't use it if the following limitations is a concern:
 
-* Collector cannot auto-scale the scraping yet. 
+* Collector cannot auto-scale the scraping yet when multiple replicas of the
+  collector is run. 
 * When running multiple replicas of the collector with the same config, it will
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
