@@ -19,8 +19,6 @@ package observ
 import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 var (
@@ -80,11 +78,7 @@ var (
 	}
 )
 
-func Views(level configtelemetry.Level) []*view.View {
-	if level == configtelemetry.LevelNone {
-		return nil
-	}
-
+func MetricViews() []*view.View {
 	return []*view.View{
 		connectionsOpenedView,
 		connectionsClosedView,

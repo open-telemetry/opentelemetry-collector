@@ -64,12 +64,12 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 
 	var views []*view.View
 	views = append(views, obsreport.Configure(level)...)
-	views = append(views, processor.MetricViews(level)...)
-	views = append(views, queuedprocessor.MetricViews(level)...)
-	views = append(views, batchprocessor.MetricViews(level)...)
+	views = append(views, processor.MetricViews()...)
+	views = append(views, queuedprocessor.MetricViews()...)
+	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, processMetricsViews.Views()...)
-	views = append(views, fluentobserv.Views(level)...)
+	views = append(views, fluentobserv.MetricViews()...)
 	tel.views = views
 	if err = view.Register(views...); err != nil {
 		return err
