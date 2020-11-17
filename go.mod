@@ -30,7 +30,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/jaegertracing/jaeger v1.20.0
+	github.com/jaegertracing/jaeger v1.21.0
 	github.com/joshdk/go-junit v0.0.0-20200702055522-6efcf4050909
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/leoluk/perflib_exporter v0.1.0
@@ -47,7 +47,6 @@ require (
 	github.com/securego/gosec/v2 v2.5.0
 	github.com/shirou/gopsutil v3.20.10+incompatible
 	github.com/soheilhy/cmux v0.1.4
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
