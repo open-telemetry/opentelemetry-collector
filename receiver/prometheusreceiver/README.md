@@ -5,6 +5,19 @@ Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 
 Supported pipeline types: metrics
 
+## ⚠️ Warning
+
+Note: This component is currently work in progress. It has several limitations
+and please don't use it if the following limitations is a concern:
+
+* Collector cannot auto-scale the scraping yet when multiple replicas of the
+  collector is run. 
+* When running multiple replicas of the collector with the same config, it will
+  scrape the targets multiple times.
+* Users need to configure each replica with different scraping configuration
+  if they want to manually shard the scraping.
+* The Prometheus receiver is a stateful component.
+
 ## Getting Started
 
 This receiver is a drop-in replacement for getting Prometheus to scrape your
