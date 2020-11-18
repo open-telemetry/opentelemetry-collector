@@ -24,14 +24,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type fieldMap map[string]*field
+
 type field struct {
-	Name    string      `yaml:",omitempty"`
 	Type    string      `yaml:",omitempty"`
 	Kind    string      `yaml:",omitempty"`
 	Default interface{} `yaml:",omitempty"`
 	Doc     string      `yaml:",omitempty"`
 	Meta    string      `yaml:",omitempty"`
-	Fields  []*field    `yaml:",omitempty"`
+	Fields  fieldMap    `yaml:",omitempty"`
 }
 
 // genMeta creates a `cfgMeta.yaml` file in the directory of the passed-in
@@ -41,7 +42,8 @@ func genMeta(cfg interface{}) {
 	cfgVal := reflect.ValueOf(cfg)
 	cfgType := cfgVal.Type()
 	field := &field{
-		Type: cfgType.String(),
+		Type:   cfgType.String(),
+		Fields: fieldMap{},
 	}
 	buildField(cfgVal, field)
 	marshaled, err := yaml.Marshal(field)
@@ -83,13 +85,13 @@ func buildField(v reflect.Value, f *field) {
 				typeStr = "" // omit if redundant
 			}
 			next = &field{
-				Name: name,
-				Type: typeStr,
-				Kind: kindStr,
-				Doc:  doc,
-				Meta: meta,
+				Type:   typeStr,
+				Kind:   kindStr,
+				Doc:    doc,
+				Meta:   meta,
+				Fields: fieldMap{},
 			}
-			f.Fields = append(f.Fields, next)
+			f.Fields[name] = next
 		}
 		handleKinds(fv, next)
 	}
