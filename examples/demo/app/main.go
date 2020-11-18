@@ -144,11 +144,11 @@ func main() {
 		).Bind(commonLabels...)
 	defer lineCounts.Unbind()
 
-	ctx := baggage.ContextWithValues(context.Background(), commonLabels...)
+	defaultCtx := baggage.ContextWithValues(context.Background(), commonLabels...)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		startTime := time.Now()
-		ctx, span := tracer.Start(ctx, "ExecuteRequest")
+		ctx, span := tracer.Start(defaultCtx, "ExecuteRequest")
 		var sleep int64
 		switch modulus := time.Now().Unix() % 5; modulus {
 		case 0:
