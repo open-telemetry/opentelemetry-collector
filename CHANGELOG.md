@@ -6,6 +6,10 @@
 
 - Remove legacy metrics, they were marked as legacy for ~12 months #2105
 
+## 💡 Enhancements 💡
+
+- Add --log-format command line option (default to "console") #2177.
+
 ## v0.14.0 Beta
 
 ## 🚀 New components 🚀
