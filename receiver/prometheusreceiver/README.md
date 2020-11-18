@@ -16,7 +16,7 @@ and please don't use it if the following limitations is a concern:
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
   if they want to manually shard the scraping.
-* The Prometheus reciever is a stateful component.
+* The Prometheus receiver is a stateful component.
 
 ## Getting Started
 
