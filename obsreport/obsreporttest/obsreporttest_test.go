@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -80,11 +81,12 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.LevelNormal, exporter)
 	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
-	ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
+	ctx := obsrep.StartTracesExportOp(exporterCtx)
 	assert.NotNil(t, ctx)
 
-	obsreport.EndTraceDataExportOp(ctx, 7, nil)
+	obsrep.EndTracesExportOp(ctx, 7, nil)
 
 	obsreporttest.CheckExporterTracesViews(t, exporter, 7, 0)
 }
@@ -94,11 +96,26 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.LevelNormal, exporter)
 	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
-	ctx := obsreport.StartMetricsExportOp(exporterCtx, exporter)
+	ctx := obsrep.StartMetricsExportOp(exporterCtx)
 	assert.NotNil(t, ctx)
 
-	obsreport.EndMetricsExportOp(ctx, 7, nil)
+	obsrep.EndMetricsExportOp(ctx, 7, nil)
 
 	obsreporttest.CheckExporterMetricsViews(t, exporter, 7, 0)
+}
+
+func TestCheckExporterLogsViews(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.LevelNormal, exporter)
+	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
+	ctx := obsrep.StartLogsExportOp(exporterCtx)
+	assert.NotNil(t, ctx)
+	obsrep.EndLogsExportOp(ctx, 7, nil)
+
+	obsreporttest.CheckExporterLogsViews(t, exporter, 7, 0)
 }
