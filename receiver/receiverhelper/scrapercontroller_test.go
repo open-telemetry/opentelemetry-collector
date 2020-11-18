@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -211,7 +212,7 @@ func TestScrapeController(t *testing.T) {
 				cfg.NameVal = "receiver"
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, zap.NewNop(), nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -431,6 +432,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
+		zap.NewNop(),
 		new(consumertest.MetricsSink),
 		AddMetricsScraper(NewMetricsScraper("", tsm.scrape)),
 		AddResourceMetricsScraper(NewResourceMetricsScraper("", tsrm.scrape)),
