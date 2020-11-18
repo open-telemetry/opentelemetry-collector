@@ -118,9 +118,9 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 // translateHostnameAttr translates "hostname" atttribute
 func translateHostnameAttr(attrs pdata.AttributeMap) {
 	hostname, hostnameFound := attrs.Get("hostname")
-	_, convHostnameFound := attrs.Get(conventions.AttributeHostHostname)
-	if hostnameFound && !convHostnameFound {
-		attrs.Insert(conventions.AttributeHostHostname, hostname)
+	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
+	if hostnameFound && !convHostNameFound {
+		attrs.Insert(conventions.AttributeHostName, hostname)
 		attrs.Delete("hostname")
 	}
 }

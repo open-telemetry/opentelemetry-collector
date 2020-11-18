@@ -98,7 +98,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.UpsertString(conventions.OCAttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
 			}
 			if ocNode.Identifier.HostName != "" {
-				attrs.UpsertString(conventions.AttributeHostHostname, ocNode.Identifier.HostName)
+				attrs.UpsertString(conventions.AttributeHostName, ocNode.Identifier.HostName)
 			}
 			if ocNode.Identifier.Pid != 0 {
 				attrs.UpsertInt(conventions.OCAttributeProcessID, int64(ocNode.Identifier.Pid))

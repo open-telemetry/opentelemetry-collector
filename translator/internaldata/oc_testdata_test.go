@@ -498,7 +498,7 @@ func generateResourceWithOcNodeAndResource() pdata.Resource {
 	resource := pdata.NewResource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.OCAttributeProcessStartTime:   pdata.NewAttributeValueString("2020-02-11T20:26:00Z"),
-		conventions.AttributeHostHostname:         pdata.NewAttributeValueString("host1"),
+		conventions.AttributeHostName:             pdata.NewAttributeValueString("host1"),
 		conventions.OCAttributeProcessID:          pdata.NewAttributeValueInt(123),
 		conventions.AttributeTelemetrySDKVersion:  pdata.NewAttributeValueString("v2.0.1"),
 		conventions.OCAttributeExporterVersion:    pdata.NewAttributeValueString("v1.2.0"),
