@@ -71,28 +71,16 @@ func (scm *SpanCountStats) GetAllSpansCount() int {
 }
 
 // MetricTagKeys returns the metric tag keys according to the given telemetry level.
-func MetricTagKeys(level configtelemetry.Level) []tag.Key {
-	var tagKeys []tag.Key
-	switch level {
-	case configtelemetry.LevelDetailed:
-		tagKeys = append(tagKeys, TagServiceNameKey)
-		fallthrough
-	case configtelemetry.LevelNormal, configtelemetry.LevelBasic:
-		tagKeys = append(tagKeys, TagProcessorNameKey)
-	default:
-		return nil
+func MetricTagKeys() []tag.Key {
+	return []tag.Key{
+		TagProcessorNameKey,
+		TagServiceNameKey,
 	}
-
-	return tagKeys
 }
 
 // MetricViews return the metrics views according to given telemetry level.
-func MetricViews(level configtelemetry.Level) []*view.View {
-	tagKeys := MetricTagKeys(level)
-	if tagKeys == nil {
-		return nil
-	}
-
+func MetricViews() []*view.View {
+	tagKeys := MetricTagKeys()
 	// There are some metrics enabled, return the views.
 	receivedBatchesView := &view.View{
 		Name:        "batches_received",

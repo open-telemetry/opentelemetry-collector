@@ -270,7 +270,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Lint
-          command: make -j4 checklicense impi lint misspell
+          command: make -j4 gochecklicense goimpi golint gomisspell
 
   cross-compile:
     executor: golang
@@ -326,7 +326,7 @@ jobs:
           command: |
             mkdir -p unit-test-results/junit
             trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
-            make test | tee unit-test-results/go-unit-tests.out
+            make gotest | tee unit-test-results/go-unit-tests.out
       - store_artifacts:
           path: unit-test-results
       - store_test_results:
@@ -356,7 +356,7 @@ jobs:
           command: sudo apt update && sudo apt-get install bzr time
       - run:
           name: Coverage tests
-          command: make test-with-cover
+          command: make gotest-with-cover
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)

@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
@@ -78,6 +79,8 @@ type memoryLimiter struct {
 	procName               string
 	logger                 *zap.Logger
 	configMismatchedLogged bool
+
+	obsrep *obsreport.ProcessorObsReport
 }
 
 // newMemoryLimiter returns a new memorylimiter processor.
@@ -109,6 +112,7 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		readMemStatsFn: runtime.ReadMemStats,
 		procName:       cfg.Name(),
 		logger:         logger,
+		obsrep:         obsreport.NewProcessorObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
 	}
 
 	ml.startMonitoring()
@@ -152,14 +156,14 @@ func (ml *memoryLimiter) ProcessTraces(ctx context.Context, td pdata.Traces) (pd
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorTraceDataRefused(ctx, numSpans)
+		ml.obsrep.TracesRefused(ctx, numSpans)
 
 		return td, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorTraceDataAccepted(ctx, numSpans)
+	ml.obsrep.TracesAccepted(ctx, numSpans)
 	return td, nil
 }
 
@@ -172,14 +176,14 @@ func (ml *memoryLimiter) ProcessMetrics(ctx context.Context, md pdata.Metrics) (
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorMetricsDataRefused(ctx, numDataPoints)
+		ml.obsrep.MetricsRefused(ctx, numDataPoints)
 
 		return md, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorMetricsDataAccepted(ctx, numDataPoints)
+	ml.obsrep.MetricsAccepted(ctx, numDataPoints)
 	return md, nil
 }
 
@@ -192,14 +196,14 @@ func (ml *memoryLimiter) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
 		// 	assumes that the pipeline is properly configured and a receiver is on the
 		// 	callstack.
-		obsreport.ProcessorLogRecordsRefused(ctx, numRecords)
+		ml.obsrep.LogsRefused(ctx, numRecords)
 
 		return ld, errForcedDrop
 	}
 
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
-	obsreport.ProcessorLogRecordsAccepted(ctx, numRecords)
+	ml.obsrep.LogsAccepted(ctx, numRecords)
 	return ld, nil
 }
 

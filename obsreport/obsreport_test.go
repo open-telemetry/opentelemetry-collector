@@ -339,12 +339,13 @@ func TestExportTraceDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.LevelNormal, exporter)
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := obsreport.StartTraceDataExportOp(exporterCtx, exporter)
+		ctx := obsrep.StartTracesExportOp(exporterCtx)
 		assert.NotNil(t, ctx)
-		obsreport.EndTraceDataExportOp(ctx, numExportedSpans[i], err)
+		obsrep.EndTracesExportOp(ctx, numExportedSpans[i], err)
 	}
 
 	spans := ss.PullAllSpans()
@@ -352,7 +353,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/TraceDataExported", span.Name)
+		assert.Equal(t, "exporter/"+exporter+"/traces", span.Name)
 		switch errs[i] {
 		case nil:
 			sentSpans += numExportedSpans[i]
@@ -386,41 +387,90 @@ func TestExportMetricsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.LevelNormal, exporter)
+
 	errs := []error{nil, errFake}
-	toSendMetricPts := []int{17, 23}
+	toSendMetricPoints := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsreport.StartMetricsExportOp(exporterCtx, exporter)
+		ctx := obsrep.StartMetricsExportOp(exporterCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndMetricsExportOp(
-			ctx,
-			toSendMetricPts[i],
-			err)
+		obsrep.EndMetricsExportOp(ctx, toSendMetricPoints[i], err)
 	}
 
 	spans := ss.PullAllSpans()
 	require.Equal(t, len(errs), len(spans))
 
-	var sentPoints, failedToSendPoints int
+	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "exporter/"+exporter+"/MetricsExported", span.Name)
+		assert.Equal(t, "exporter/"+exporter+"/metrics", span.Name)
 		switch errs[i] {
 		case nil:
-			sentPoints += toSendMetricPts[i]
-			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[obsreport.SentMetricPointsKey])
+			sentMetricPoints += toSendMetricPoints[i]
+			assert.Equal(t, int64(toSendMetricPoints[i]), span.Attributes[obsreport.SentMetricPointsKey])
 			assert.Equal(t, int64(0), span.Attributes[obsreport.FailedToSendMetricPointsKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
-			failedToSendPoints += toSendMetricPts[i]
+			failedToSendMetricPoints += toSendMetricPoints[i]
 			assert.Equal(t, int64(0), span.Attributes[obsreport.SentMetricPointsKey])
-			assert.Equal(t, int64(toSendMetricPts[i]), span.Attributes[obsreport.FailedToSendMetricPointsKey])
+			assert.Equal(t, int64(toSendMetricPoints[i]), span.Attributes[obsreport.FailedToSendMetricPointsKey])
 			assert.Equal(t, errs[i].Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected error: %v", errs[i])
 		}
 	}
 
-	obsreporttest.CheckExporterMetricsViews(t, exporter, int64(sentPoints), int64(failedToSendPoints))
+	obsreporttest.CheckExporterMetricsViews(t, exporter, int64(sentMetricPoints), int64(failedToSendMetricPoints))
+}
+
+func TestExportLogsOp(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	require.NoError(t, err)
+	defer doneFn()
+
+	ss := &spanStore{}
+	trace.RegisterExporter(ss)
+	defer trace.UnregisterExporter(ss)
+
+	parentCtx, parentSpan := trace.StartSpan(context.Background(),
+		t.Name(), trace.WithSampler(trace.AlwaysSample()))
+	defer parentSpan.End()
+
+	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.LevelNormal, exporter)
+
+	errs := []error{nil, errFake}
+	toSendLogRecords := []int{17, 23}
+	for i, err := range errs {
+		ctx := obsrep.StartLogsExportOp(exporterCtx)
+		assert.NotNil(t, ctx)
+
+		obsrep.EndLogsExportOp(ctx, toSendLogRecords[i], err)
+	}
+
+	spans := ss.PullAllSpans()
+	require.Equal(t, len(errs), len(spans))
+
+	var sentLogRecords, failedToSendLogRecords int
+	for i, span := range spans {
+		assert.Equal(t, "exporter/"+exporter+"/logs", span.Name)
+		switch errs[i] {
+		case nil:
+			sentLogRecords += toSendLogRecords[i]
+			assert.Equal(t, int64(toSendLogRecords[i]), span.Attributes[obsreport.SentLogRecordsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.FailedToSendLogRecordsKey])
+			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
+		case errFake:
+			failedToSendLogRecords += toSendLogRecords[i]
+			assert.Equal(t, int64(0), span.Attributes[obsreport.SentLogRecordsKey])
+			assert.Equal(t, int64(toSendLogRecords[i]), span.Attributes[obsreport.FailedToSendLogRecordsKey])
+			assert.Equal(t, errs[i].Error(), span.Status.Message)
+		default:
+			t.Fatalf("unexpected error: %v", errs[i])
+		}
+	}
+
+	obsreporttest.CheckExporterLogsViews(t, exporter, int64(sentLogRecords), int64(failedToSendLogRecords))
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
@@ -501,11 +551,10 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
-
-	obsreport.ProcessorTraceDataAccepted(processorCtx, acceptedSpans)
-	obsreport.ProcessorTraceDataRefused(processorCtx, refusedSpans)
-	obsreport.ProcessorTraceDataDropped(processorCtx, droppedSpans)
+	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep.TracesAccepted(context.Background(), acceptedSpans)
+	obsrep.TracesRefused(context.Background(), refusedSpans)
+	obsrep.TracesDropped(context.Background(), droppedSpans)
 
 	obsreporttest.CheckProcessorTracesViews(t, processor, acceptedSpans, refusedSpans, droppedSpans)
 }
@@ -519,10 +568,10 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
-	obsreport.ProcessorMetricsDataAccepted(processorCtx, acceptedPoints)
-	obsreport.ProcessorMetricsDataRefused(processorCtx, refusedPoints)
-	obsreport.ProcessorMetricsDataDropped(processorCtx, droppedPoints)
+	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
+	obsrep.MetricsRefused(context.Background(), refusedPoints)
+	obsrep.MetricsDropped(context.Background(), droppedPoints)
 
 	obsreporttest.CheckProcessorMetricsViews(t, processor, acceptedPoints, refusedPoints, droppedPoints)
 }
@@ -590,10 +639,10 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	processorCtx := obsreport.ProcessorContext(context.Background(), processor)
-	obsreport.ProcessorLogRecordsAccepted(processorCtx, acceptedRecords)
-	obsreport.ProcessorLogRecordsRefused(processorCtx, refusedRecords)
-	obsreport.ProcessorLogRecordsDropped(processorCtx, droppedRecords)
+	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep.LogsAccepted(context.Background(), acceptedRecords)
+	obsrep.LogsRefused(context.Background(), refusedRecords)
+	obsrep.LogsDropped(context.Background(), droppedRecords)
 
 	obsreporttest.CheckProcessorLogsViews(t, processor, acceptedRecords, refusedRecords, droppedRecords)
 }

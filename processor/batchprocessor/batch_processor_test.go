@@ -116,8 +116,8 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	views := MetricViews(configtelemetry.LevelDetailed)
-	view.Register(views...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	sink := new(consumertest.TracesSink)
@@ -297,8 +297,8 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-	views := MetricViews(configtelemetry.LevelDetailed)
-	view.Register(views...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data
@@ -553,8 +553,8 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	views := MetricViews(configtelemetry.LevelDetailed)
-	view.Register(views...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data

@@ -12,7 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
-
-// This file is needed to please `go list` which otherwise complains that tools.go is
-// only file in this package and that build constraints exclude it.
+package tools

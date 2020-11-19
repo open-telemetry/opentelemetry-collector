@@ -108,7 +108,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}
 			ocNode.Identifier.StartTimestamp = ts
-		case conventions.AttributeHostHostname:
+		case conventions.AttributeHostName:
 			if ocNode.Identifier == nil {
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}

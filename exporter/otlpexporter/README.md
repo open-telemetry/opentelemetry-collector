@@ -13,7 +13,7 @@ Supported pipeline types: traces, metrics
 
 The following settings are required:
 
-- `endpoint` (no default): host:port to which the exporter is going to send Jaeger trace data,
+- `endpoint` (no default): host:port to which the exporter is going to send OTLP trace data,
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 

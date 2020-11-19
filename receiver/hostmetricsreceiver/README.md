@@ -22,17 +22,21 @@ hostmetrics:
 
 The available scrapers are:
 
-Scraper    | Supported OSs      | Description 
------------|--------------------|-------------
-cpu        | All                | CPU utilization metrics
-disk       | All                | Disk I/O metrics
-load       | All                | CPU load metrics
-filesystem | All                | File System utilization metrics
-memory     | All                | Memory utilization metrics
-network    | All                | Network interface I/O metrics & TCP connection metrics
-processes  | Linux              | Process count metrics
-swap       | All                | Swap space utilization and I/O metrics
-process    | Linux & Windows    | Per process CPU, Memory, and Disk I/O metrics
+| Scraper    | Supported OSs                | Description                                            |
+|------------|------------------------------|--------------------------------------------------------|
+| cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
+| disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
+| load       | All                          | CPU load metrics                                       |
+| filesystem | All                          | File System utilization metrics                        |
+| memory     | All                          | Memory utilization metrics                             |
+| network    | All                          | Network interface I/O metrics & TCP connection metrics |
+| processes  | Linux                        | Process count metrics                                  |
+| swap       | All                          | Swap space utilization and I/O metrics                 |
+| process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+
+### Notes
+
+<sup>[1]</sup> Not supported on Mac when compiled without cgo which is the default.
 
 Several scrapers support additional configuration:
 

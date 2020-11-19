@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"math"
-	"strings"
+	"net"
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -216,10 +216,9 @@ func timestampFromFloat64(ts float64) *timestamppb.Timestamp {
 }
 
 func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resourcepb.Resource) {
-	splitted := strings.Split(instance, ":")
-	host, port := splitted[0], "80"
-	if len(splitted) >= 2 {
-		port = splitted[1]
+	host, port, err := net.SplitHostPort(instance)
+	if err != nil {
+		host = instance
 	}
 	node := &commonpb.Node{
 		ServiceInfo: &commonpb.ServiceInfo{Name: job},

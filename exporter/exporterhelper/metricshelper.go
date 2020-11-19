@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -94,8 +95,8 @@ func NewMetricsExporter(
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
-			exporterName: cfg.Name(),
-			nextSender:   nextSender,
+			obsrep:     obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			nextSender: nextSender,
 		}
 	})
 
@@ -106,12 +107,12 @@ func NewMetricsExporter(
 }
 
 type metricsSenderWithObservability struct {
-	exporterName string
-	nextSender   requestSender
+	obsrep     *obsreport.ExporterObsReport
+	nextSender requestSender
 }
 
 func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartMetricsExportOp(req.context(), mewo.exporterName))
+	req.setContext(mewo.obsrep.StartMetricsExportOp(req.context()))
 	_, err := mewo.nextSender.send(req)
 
 	// TODO: this is not ideal: it should come from the next function itself.
@@ -120,6 +121,6 @@ func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
 	mReq := req.(*metricsRequest)
 	numReceivedMetrics, numPoints := mReq.md.MetricAndDataPointCount()
 
-	obsreport.EndMetricsExportOp(req.context(), numPoints, err)
+	mewo.obsrep.EndMetricsExportOp(req.context(), numPoints, err)
 	return numReceivedMetrics, err
 }

@@ -155,6 +155,7 @@ func createMetricsReceiver(
 
 	return receiverhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
+		params.Logger,
 		consumer,
 		addScraperOptions...,
 	)

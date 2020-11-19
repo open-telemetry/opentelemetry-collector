@@ -30,6 +30,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -65,7 +66,7 @@ var traceJSON = []byte(`
 		  "resource": {
 			"attributes": [
 			  {
-				"key": "host.hostname",
+				"key": "host.name",
 				"value": { "stringValue": "testHost" }
 			  }
 			]
@@ -98,7 +99,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 	Resource: otlpresource.Resource{
 		Attributes: []otlpcommon.KeyValue{
 			{
-				Key:   conventions.AttributeHostHostname,
+				Key:   conventions.AttributeHostName,
 				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
 			},
 		},
@@ -698,7 +699,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	}
 
 	// TLS is resolved during Creation of the receiver for GRPC.
-	_, err := createReceiver(cfg)
+	_, err := createReceiver(cfg, zap.NewNop())
 	assert.EqualError(t, err,
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
 }
@@ -745,7 +746,7 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.TracesConsumer, 
 }
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.TracesConsumer, mc consumer.MetricsConsumer) *otlpReceiver {
-	r, err := createReceiver(cfg)
+	r, err := createReceiver(cfg, zap.NewNop())
 	require.NoError(t, err)
 	if tc != nil {
 		params := component.ReceiverCreateParams{}
