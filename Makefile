@@ -4,8 +4,9 @@ include ./Makefile.Common
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
+							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
-							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
+							-not -path './internal/data/opentelemetry-proto-gen/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -19,6 +20,8 @@ ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 CMD?=
+TOOLS_MOD_DIR := ./internal/tools
+
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
 # BUILD_TYPE should be one of (dev, release).
@@ -78,6 +81,7 @@ gobenchmark:
 	@$(MAKE) for-all CMD="make benchmark"
 
 .PHONY: gotest-with-cover
+gotest-with-cover:
 	@echo pre-compiling tests
 	@time $(GOTEST) -i ./...
 	$(GO_ACC) ./...
@@ -113,16 +117,17 @@ gofmt:
 
 .PHONY: install-tools
 install-tools:
-	go install github.com/client9/misspell/cmd/misspell
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	go install github.com/google/addlicense
-	go install github.com/jstemmer/go-junit-report
-	go install github.com/mjibson/esc
-	go install github.com/ory/go-acc
-	go install github.com/pavius/impi/cmd/impi
-	go install github.com/tcnksm/ghr
-	go install golang.org/x/tools/cmd/goimports
-	go install honnef.co/go/tools/cmd/staticcheck
+	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
+	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
+	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
+	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
+	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
+	cd $(TOOLS_MOD_DIR) && go install github.com/securego/gosec/v2/cmd/gosec
+	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
 	cd cmd/mdatagen && go install ./
 
 .PHONY: otelcol
