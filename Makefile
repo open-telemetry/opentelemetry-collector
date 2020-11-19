@@ -81,6 +81,7 @@ gobenchmark:
 	@$(MAKE) for-all CMD="make benchmark"
 
 .PHONY: gotest-with-cover
+gotest-with-cover:
 	@echo pre-compiling tests
 	@time $(GOTEST) -i ./...
 	$(GO_ACC) ./...
