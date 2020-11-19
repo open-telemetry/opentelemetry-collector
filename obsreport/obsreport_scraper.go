@@ -40,7 +40,7 @@ const (
 
 const (
 	scraperPrefix                 = ScraperKey + nameSep
-	scraperMetricsOperationSuffix = nameSep + "MetricsScraped"
+	scraperMetricsOperationSuffix = nameSep + "metrics"
 )
 
 var (
@@ -73,31 +73,34 @@ func ScraperContext(
 	return ctx
 }
 
-// StartMetricsScrapeOp is called when a scrape operation is started. The
-// returned context should be used in other calls to the obsreport functions
-// dealing with the same scrape operation.
-func StartMetricsScrapeOp(
-	scraperCtx context.Context,
-	receiver string,
-	scraper string,
-) context.Context {
-	scraperName := receiver
-	if scraper != "" {
-		scraperName += "/" + scraper
-	}
+type ScraperObsReport struct {
+	level           configtelemetry.Level
+	scraperFullName string
+}
 
-	spanName := scraperPrefix + scraperName + scraperMetricsOperationSuffix
-	ctx, _ := trace.StartSpan(scraperCtx, spanName)
+// NewScraperObsReport returns a new ScraperObsReport.
+func NewScraperObsReport(level configtelemetry.Level, receiverName string, scraperName string) *ScraperObsReport {
+	scraperFullName := receiverName
+	if scraperName != "" {
+		scraperFullName += "/" + scraperName
+	}
+	return &ScraperObsReport{
+		level:           level,
+		scraperFullName: scraperFullName,
+	}
+}
+
+// StartMetricsScrapeOp is called when a scrape operation is started. The
+// returned context should be used in other calls to the ScraperObsReport functions
+// dealing with the same scrape operation.
+func (sor *ScraperObsReport) StartMetricsScrapeOp(ctx context.Context) context.Context {
+	spanName := scraperPrefix + sor.scraperFullName + scraperMetricsOperationSuffix
+	ctx, _ = trace.StartSpan(ctx, spanName)
 	return ctx
 }
 
-// EndMetricsScrapeOp completes the scrape operation that was started with
-// StartMetricsScrapeOp.
-func EndMetricsScrapeOp(
-	scraperCtx context.Context,
-	numScrapedMetrics int,
-	err error,
-) {
+// EndMetricsScrapeOp completes the scrape operation that was started with StartMetricsScrapeOp.
+func (sor *ScraperObsReport) EndMetricsScrapeOp(ctx context.Context, numScrapedMetrics int, err error) {
 	numErroredMetrics := 0
 	if err != nil {
 		if partialErr, isPartial := err.(consumererror.PartialScrapeError); isPartial {
@@ -108,11 +111,11 @@ func EndMetricsScrapeOp(
 		}
 	}
 
-	span := trace.FromContext(scraperCtx)
+	span := trace.FromContext(ctx)
 
 	if gLevel != configtelemetry.LevelNone {
 		stats.Record(
-			scraperCtx,
+			ctx,
 			mScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),
 			mScraperErroredMetricPoints.M(int64(numErroredMetrics)))
 	}

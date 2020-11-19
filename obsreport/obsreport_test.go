@@ -282,13 +282,14 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	receiverCtx := obsreport.ScraperContext(parentCtx, receiver, scraper)
+	obsrep := obsreport.NewScraperObsReport(configtelemetry.LevelNormal, receiver, scraper)
 	errParams := []error{partialErrFake, errFake, nil}
 	scrapedMetricPts := []int{23, 29, 15}
 	for i, err := range errParams {
-		ctx := obsreport.StartMetricsScrapeOp(receiverCtx, receiver, scraper)
+		ctx := obsrep.StartMetricsScrapeOp(receiverCtx)
 		assert.NotNil(t, ctx)
 
-		obsreport.EndMetricsScrapeOp(
+		obsrep.EndMetricsScrapeOp(
 			ctx,
 			scrapedMetricPts[i],
 			err)
@@ -299,7 +300,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 
 	var scrapedMetricPoints, erroredMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "scraper/"+receiver+"/"+scraper+"/MetricsScraped", span.Name)
+		assert.Equal(t, "scraper/"+receiver+"/"+scraper+"/metrics", span.Name)
 		switch errParams[i] {
 		case nil:
 			scrapedMetricPoints += scrapedMetricPts[i]

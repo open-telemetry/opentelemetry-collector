@@ -17,6 +17,7 @@ package receiverhelper
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -39,9 +40,6 @@ type Close func(ctx context.Context) error
 type ScraperOption func(*baseScraper)
 
 type BaseScraper interface {
-	// Name returns the scraper name
-	Name() string
-
 	// Initialize performs any timely initialization tasks such as
 	// setting up performance counters for initial collection.
 	Initialize(ctx context.Context) error
@@ -67,12 +65,9 @@ var _ BaseScraper = (*baseScraper)(nil)
 
 type baseScraper struct {
 	name       string
+	obsrep     *obsreport.ScraperObsReport
 	initialize Initialize
 	close      Close
-}
-
-func (b baseScraper) Name() string {
-	return b.name
 }
 
 func (b baseScraper) Initialize(ctx context.Context) error {
@@ -119,7 +114,10 @@ func NewMetricsScraper(
 	options ...ScraperOption,
 ) MetricsScraper {
 	ms := &metricsScraper{
-		baseScraper:   baseScraper{name: name},
+		baseScraper: baseScraper{
+			name:   name,
+			obsrep: obsreport.NewScraperObsReport(configtelemetry.GetMetricsLevelFlagValue(), "", name),
+		},
 		ScrapeMetrics: scrape,
 	}
 
@@ -131,10 +129,10 @@ func NewMetricsScraper(
 }
 
 func (ms metricsScraper) Scrape(ctx context.Context, receiverName string) (pdata.MetricSlice, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverName, ms.Name())
-	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, ms.Name())
+	ctx = obsreport.ScraperContext(ctx, receiverName, ms.name)
+	ctx = ms.obsrep.StartMetricsScrapeOp(ctx)
 	metrics, err := ms.ScrapeMetrics(ctx)
-	obsreport.EndMetricsScrapeOp(ctx, metrics.Len(), err)
+	ms.obsrep.EndMetricsScrapeOp(ctx, metrics.Len(), err)
 	return metrics, err
 }
 
@@ -154,7 +152,10 @@ func NewResourceMetricsScraper(
 	options ...ScraperOption,
 ) ResourceMetricsScraper {
 	rms := &resourceMetricsScraper{
-		baseScraper:           baseScraper{name: name},
+		baseScraper: baseScraper{
+			name:   name,
+			obsrep: obsreport.NewScraperObsReport(configtelemetry.GetMetricsLevelFlagValue(), "", name),
+		},
 		ScrapeResourceMetrics: scrape,
 	}
 
@@ -166,10 +167,10 @@ func NewResourceMetricsScraper(
 }
 
 func (rms resourceMetricsScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {
-	ctx = obsreport.ScraperContext(ctx, receiverName, rms.Name())
-	ctx = obsreport.StartMetricsScrapeOp(ctx, receiverName, rms.Name())
+	ctx = obsreport.ScraperContext(ctx, receiverName, rms.name)
+	ctx = rms.obsrep.StartMetricsScrapeOp(ctx)
 	resourceMetrics, err := rms.ScrapeResourceMetrics(ctx)
-	obsreport.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
+	rms.obsrep.EndMetricsScrapeOp(ctx, metricCount(resourceMetrics), err)
 	return resourceMetrics, err
 }
 
