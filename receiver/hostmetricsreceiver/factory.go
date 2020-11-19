@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -136,7 +137,7 @@ func getScraperFactory(key string) (internal.BaseFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() configmodels.Receiver {
-	return &Config{ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(typeStr)}
+	return &Config{ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr)}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -153,7 +154,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return receiverhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
 		params.Logger,
 		consumer,
@@ -167,8 +168,8 @@ func createAddScraperOptions(
 	config *Config,
 	factories map[string]internal.ScraperFactory,
 	resourceFactories map[string]internal.ResourceScraperFactory,
-) ([]receiverhelper.ScraperControllerOption, error) {
-	scraperControllerOptions := make([]receiverhelper.ScraperControllerOption, 0, len(config.Scrapers))
+) ([]scraperhelper.ScraperControllerOption, error) {
+	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
 	for key, cfg := range config.Scrapers {
 		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, logger, key, cfg, factories)
@@ -177,7 +178,7 @@ func createAddScraperOptions(
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, receiverhelper.AddMetricsScraper(hostMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(hostMetricsScraper))
 			continue
 		}
 
@@ -187,7 +188,7 @@ func createAddScraperOptions(
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, receiverhelper.AddResourceMetricsScraper(resourceMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddResourceMetricsScraper(resourceMetricsScraper))
 			continue
 		}
 
@@ -197,7 +198,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper receiverhelper.MetricsScraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.MetricsScraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -209,7 +210,7 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 	return
 }
 
-func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper receiverhelper.ResourceMetricsScraper, ok bool, err error) {
+func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper scraperhelper.ResourceMetricsScraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false

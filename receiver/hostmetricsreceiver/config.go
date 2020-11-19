@@ -16,11 +16,11 @@ package hostmetricsreceiver
 
 import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
-	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Scrapers                                 map[string]internal.Config `mapstructure:"-"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	Scrapers                                map[string]internal.Config `mapstructure:"-"`
 }

@@ -36,7 +36,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Receivers["hostmetrics/customname"].(*Config)
 	expectedConfig := &Config{
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "hostmetrics/customname",
