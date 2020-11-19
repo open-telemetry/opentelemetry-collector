@@ -22,6 +22,8 @@
 - Add config settings for component telemetry (#2148)
 - Use net.SplitHostPort for IPv6 support in `prometheus` receiver (#2154)
 - Add --log-format command line option (default to "console") #2177.
+- Change default OTLP/gRPC port number to 4317, also continue receiving on legacy port
+  55680 during transition period (#2104).
 
 ## 🧰 Bug fixes 🧰
 
