@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receiverhelper
+package scraperhelper
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func DefaultScraperControllerSettings(cfgType configmodels.Type) ScraperControll
 }
 
 // ScraperControllerOption apply changes to internal options.
-type ScraperControllerOption func(*scraperController)
+type ScraperControllerOption func(*controller)
 
 // AddMetricsScraper configures the provided scrape function to be called
 // with the specified options, and at the specified collection interval.
@@ -59,7 +59,7 @@ type ScraperControllerOption func(*scraperController)
 // Observability information will be reported, and the scraped metrics
 // will be passed to the next consumer.
 func AddMetricsScraper(scraper MetricsScraper) ScraperControllerOption {
-	return func(o *scraperController) {
+	return func(o *controller) {
 		o.metricsScrapers.scrapers = append(o.metricsScrapers.scrapers, scraper)
 	}
 }
@@ -71,7 +71,7 @@ func AddMetricsScraper(scraper MetricsScraper) ScraperControllerOption {
 // Observability information will be reported, and the scraped resource
 // metrics will be passed to the next consumer.
 func AddResourceMetricsScraper(scraper ResourceMetricsScraper) ScraperControllerOption {
-	return func(o *scraperController) {
+	return func(o *controller) {
 		o.resourceMetricScrapers = append(o.resourceMetricScrapers, scraper)
 	}
 }
@@ -80,12 +80,12 @@ func AddResourceMetricsScraper(scraper ResourceMetricsScraper) ScraperController
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
 func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
-	return func(o *scraperController) {
+	return func(o *controller) {
 		o.tickerCh = tickerCh
 	}
 }
 
-type scraperController struct {
+type controller struct {
 	name               string
 	logger             *zap.Logger
 	collectionInterval time.Duration
@@ -116,7 +116,7 @@ func NewScraperControllerReceiver(
 		return nil, errors.New("collection_interval must be a positive duration")
 	}
 
-	sc := &scraperController{
+	sc := &controller{
 		name:               cfg.Name(),
 		logger:             logger,
 		collectionInterval: cfg.CollectionInterval,
@@ -138,7 +138,7 @@ func NewScraperControllerReceiver(
 }
 
 // Start the receiver, invoked during service start.
-func (sc *scraperController) Start(ctx context.Context, host component.Host) error {
+func (sc *controller) Start(ctx context.Context, host component.Host) error {
 	for _, scraper := range sc.resourceMetricScrapers {
 		if err := scraper.Start(ctx, host); err != nil {
 			return err
@@ -151,7 +151,7 @@ func (sc *scraperController) Start(ctx context.Context, host component.Host) err
 }
 
 // Shutdown the receiver, invoked during service shutdown.
-func (sc *scraperController) Shutdown(ctx context.Context) error {
+func (sc *controller) Shutdown(ctx context.Context) error {
 	sc.stopScraping()
 
 	// wait until scraping ticker has terminated
@@ -170,7 +170,7 @@ func (sc *scraperController) Shutdown(ctx context.Context) error {
 
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
-func (sc *scraperController) startScraping() {
+func (sc *controller) startScraping() {
 	go func() {
 		if sc.tickerCh == nil {
 			ticker := time.NewTicker(sc.collectionInterval)
@@ -194,7 +194,7 @@ func (sc *scraperController) startScraping() {
 // scrapeMetricsAndReport calls the Scrape function for each of the configured
 // Scrapers, records observability information, and passes the scraped metrics
 // to the next component.
-func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
+func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	ctx = obsreport.ReceiverContext(ctx, sc.name, "")
 
 	metrics := pdata.NewMetrics()
@@ -219,7 +219,7 @@ func (sc *scraperController) scrapeMetricsAndReport(ctx context.Context) {
 }
 
 // stopScraping stops the ticker
-func (sc *scraperController) stopScraping() {
+func (sc *controller) stopScraping() {
 	close(sc.done)
 }
 

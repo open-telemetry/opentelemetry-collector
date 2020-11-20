@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -123,7 +123,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		}
 	}
 
-	return rms, receiverhelper.CombineScrapeErrors(errs)
+	return rms, scraperhelper.CombineScrapeErrors(errs)
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -175,7 +175,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	return metadata, receiverhelper.CombineScrapeErrors(errs)
+	return metadata, scraperhelper.CombineScrapeErrors(errs)
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {

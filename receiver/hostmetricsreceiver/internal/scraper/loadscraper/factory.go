@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements Factory for Load scraper.
@@ -44,15 +44,15 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	logger *zap.Logger,
 	config internal.Config,
-) (receiverhelper.MetricsScraper, error) {
+) (scraperhelper.MetricsScraper, error) {
 	cfg := config.(*Config)
 	s := newLoadScraper(ctx, logger, cfg)
 
-	ms := receiverhelper.NewMetricsScraper(
+	ms := scraperhelper.NewMetricsScraper(
 		TypeStr,
 		s.Scrape,
-		receiverhelper.WithInitialize(s.Initialize),
-		receiverhelper.WithClose(s.Close),
+		scraperhelper.WithInitialize(s.Initialize),
+		scraperhelper.WithClose(s.Close),
 	)
 
 	return ms, nil

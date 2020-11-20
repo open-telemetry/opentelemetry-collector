@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // BaseFactory for creating Scrapers.
@@ -34,7 +34,7 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (receiverhelper.MetricsScraper, error)
+	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.MetricsScraper, error)
 }
 
 // ResourceScraperFactory can create a ResourceScraper.
@@ -43,7 +43,7 @@ type ResourceScraperFactory interface {
 
 	// CreateResourceMetricsScraper creates a resource scraper based on this
 	// config. If the config is not valid, error will be returned instead.
-	CreateResourceMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (receiverhelper.ResourceMetricsScraper, error)
+	CreateResourceMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.ResourceMetricsScraper, error)
 }
 
 // Config is the configuration of a scraper.
