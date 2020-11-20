@@ -24,6 +24,7 @@ import (
 func TestDefaultUnMarshaller(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
+		"otlp_json",
 		"jaeger_proto",
 		"jaeger_json",
 		"zipkin_proto",

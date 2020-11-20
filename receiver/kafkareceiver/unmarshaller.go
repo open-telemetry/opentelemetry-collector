@@ -29,14 +29,16 @@ type Unmarshaller interface {
 
 // defaultUnmarshallers returns map of supported encodings with Unmarshaller.
 func defaultUnmarshallers() map[string]Unmarshaller {
-	otlp := &otlpProtoUnmarshaller{}
+	otlpProto := &otlpProtoUnmarshaller{}
+	otlpJSON := newOTLPJSONUnmarshaller()
 	jaegerProto := jaegerProtoSpanUnmarshaller{}
 	jaegerJSON := jaegerJSONSpanUnmarshaller{}
 	zipkinProto := zipkinProtoSpanUnmarshaller{}
 	zipkinJSON := zipkinJSONSpanUnmarshaller{}
 	zipkinThrift := zipkinThriftSpanUnmarshaller{}
 	return map[string]Unmarshaller{
-		otlp.Encoding():         otlp,
+		otlpProto.Encoding():    otlpProto,
+		otlpJSON.Encoding():     otlpJSON,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
 		zipkinProto.Encoding():  zipkinProto,

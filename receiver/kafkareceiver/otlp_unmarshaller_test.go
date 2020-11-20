@@ -17,6 +17,8 @@ package kafkareceiver
 import (
 	"testing"
 
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -43,6 +45,35 @@ func TestUnmarshallOTLP(t *testing.T) {
 
 func TestUnmarshallOTLP_error(t *testing.T) {
 	p := otlpProtoUnmarshaller{}
+	got, err := p.Unmarshal([]byte("+$%"))
+	assert.Equal(t, pdata.NewTraces(), got)
+	assert.Error(t, err)
+}
+
+func TestUnmarshallJSON(t *testing.T) {
+	jsonMarshaller := otlpreceiver.JSONPb{
+		EmitDefaults: false,
+		Indent:       "  ",
+		OrigName:     true,
+	}
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
+	request := &otlptrace.ExportTraceServiceRequest{
+		ResourceSpans: pdata.TracesToOtlp(td),
+	}
+	data, err := jsonMarshaller.Marshal(request)
+	require.NoError(t, err)
+
+	p := newOTLPJSONUnmarshaller()
+	got, err := p.Unmarshal(data)
+	require.NoError(t, err)
+	assert.Equal(t, td, got)
+	assert.Equal(t, "otlp_json", p.Encoding())
+}
+
+func TestUnmarshallJSON_error(t *testing.T) {
+	p := newOTLPJSONUnmarshaller()
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)

@@ -17,6 +17,7 @@ package kafkareceiver
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 type otlpProtoUnmarshaller struct {
@@ -35,4 +36,33 @@ func (p *otlpProtoUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 
 func (*otlpProtoUnmarshaller) Encoding() string {
 	return defaultEncoding
+}
+
+type otlpJSONUnmarshaller struct {
+	unmarshaller *otlpreceiver.JSONPb
+}
+
+var _ Unmarshaller = (*otlpJSONUnmarshaller)(nil)
+
+func (p *otlpJSONUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+	request := &otlptrace.ExportTraceServiceRequest{}
+	err := p.unmarshaller.Unmarshal(bytes, request)
+	if err != nil {
+		return pdata.NewTraces(), err
+	}
+	return pdata.TracesFromOtlp(request.GetResourceSpans()), nil
+}
+
+func (*otlpJSONUnmarshaller) Encoding() string {
+	return "otlp_json"
+}
+
+func newOTLPJSONUnmarshaller() Unmarshaller {
+	return &otlpJSONUnmarshaller{
+		unmarshaller: &otlpreceiver.JSONPb{
+			EmitDefaults: true,
+			Indent:       "  ",
+			OrigName:     true,
+		},
+	}
 }
