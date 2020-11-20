@@ -42,8 +42,6 @@ var (
 	errNoDataToBuild      = errors.New("there's no data to build")
 	errNoBoundaryLabel    = errors.New("given metricType has no BucketLabel or QuantileLabel")
 	errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
-
-	dummyMetrics = make([]*metricspb.Metric, 0)
 )
 
 type metricBuilder struct {
@@ -140,7 +138,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 	if !b.hasData {
 		if b.hasInternalMetric {
-			return dummyMetrics, 0, 0, nil
+			return make([]*metricspb.Metric, 0), 0, 0, nil
 		}
 		return nil, 0, 0, errNoDataToBuild
 	}
