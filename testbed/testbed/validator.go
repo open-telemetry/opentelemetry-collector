@@ -509,7 +509,7 @@ func convertAttributesSliceToMap(attributes []otlpcommon.KeyValue) map[string]ot
 }
 
 func retrieveAttributeValue(attribute otlpcommon.KeyValue) interface{} {
-	if attribute.Value == nil || attribute.Value.Value == nil {
+	if attribute.Value.Value == nil {
 		return nil
 	}
 
@@ -579,7 +579,7 @@ func convertKVListToJSONString(values []otlpcommon.KeyValue) string {
 	return ""
 }
 
-func convertArrayValuesToJSONString(values []*otlpcommon.AnyValue) string {
+func convertArrayValuesToJSONString(values []otlpcommon.AnyValue) string {
 	jsonStr, err := json.Marshal(convertArrayValuesToRawSlice(values))
 	if err == nil {
 		return string(jsonStr)
@@ -589,9 +589,9 @@ func convertArrayValuesToJSONString(values []*otlpcommon.AnyValue) string {
 
 func convertKVListToRawMap(values []otlpcommon.KeyValue) map[string]interface{} {
 	rawMap := make(map[string]interface{})
-	for _, kv := range values {
-		var value *otlpcommon.AnyValue = kv.GetValue()
-		switch val := value.GetValue().(type) {
+	for i := range values {
+		kv := &values[i]
+		switch val := kv.Value.GetValue().(type) {
 		case *otlpcommon.AnyValue_StringValue:
 			rawMap[kv.Key] = val.StringValue
 		case *otlpcommon.AnyValue_IntValue:
@@ -611,7 +611,7 @@ func convertKVListToRawMap(values []otlpcommon.KeyValue) map[string]interface{} 
 	return rawMap
 }
 
-func convertArrayValuesToRawSlice(values []*otlpcommon.AnyValue) []interface{} {
+func convertArrayValuesToRawSlice(values []otlpcommon.AnyValue) []interface{} {
 	rawSlice := make([]interface{}, 0, len(values))
 	for _, v := range values {
 		switch val := v.GetValue().(type) {

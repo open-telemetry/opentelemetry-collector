@@ -101,7 +101,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   conventions.AttributeHostName,
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "testHost"}},
 			},
 		},
 	},
@@ -117,7 +117,7 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "attr1",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 55}},
 						},
 					},
 				},

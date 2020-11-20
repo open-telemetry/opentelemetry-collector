@@ -123,13 +123,13 @@ type baseField interface {
 	generateCopyToValue(sb *strings.Builder)
 }
 
-type sliceField struct {
+type slicePtrField struct {
 	fieldName       string
 	originFieldName string
-	returnSlice     *sliceStruct
+	returnSlice     baseSlice
 }
 
-func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (sf *slicePtrField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -137,7 +137,7 @@ func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 		case "fieldName":
 			return sf.fieldName
 		case "returnType":
-			return sf.returnSlice.structName
+			return sf.returnSlice.getName()
 		case "originFieldName":
 			return sf.originFieldName
 		default:
@@ -146,7 +146,7 @@ func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	}))
 }
 
-func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (sf *slicePtrField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -154,22 +154,22 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 		case "fieldName":
 			return sf.fieldName
 		case "returnType":
-			return sf.returnSlice.structName
+			return sf.returnSlice.getName()
 		default:
 			panic(name)
 		}
 	}))
 }
 
-func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\tfillTest" + sf.returnSlice.structName + "(tv." + sf.fieldName + "())")
+func (sf *slicePtrField) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\tfillTest" + sf.returnSlice.getName() + "(tv." + sf.fieldName + "())")
 }
 
-func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
+func (sf *slicePtrField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())")
 }
 
-var _ baseField = (*sliceField)(nil)
+var _ baseField = (*slicePtrField)(nil)
 
 type messagePtrField struct {
 	fieldName       string

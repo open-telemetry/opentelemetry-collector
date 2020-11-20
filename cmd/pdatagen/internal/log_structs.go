@@ -37,7 +37,7 @@ var logFile = &File{
 	},
 }
 
-var resourceLogsSlice = &sliceStruct{
+var resourceLogsSlice = &slicePtrStruct{
 	structName: "ResourceLogsSlice",
 	element:    resourceLogs,
 }
@@ -48,7 +48,7 @@ var resourceLogs = &messagePtrStruct{
 	originFullName: "otlplogs.ResourceLogs",
 	fields: []baseField{
 		resourceField,
-		&sliceField{
+		&slicePtrField{
 			fieldName:       "InstrumentationLibraryLogs",
 			originFieldName: "InstrumentationLibraryLogs",
 			returnSlice:     instrumentationLibraryLogsSlice,
@@ -56,7 +56,7 @@ var resourceLogs = &messagePtrStruct{
 	},
 }
 
-var instrumentationLibraryLogsSlice = &sliceStruct{
+var instrumentationLibraryLogsSlice = &slicePtrStruct{
 	structName: "InstrumentationLibraryLogsSlice",
 	element:    instrumentationLibraryLogs,
 }
@@ -67,7 +67,7 @@ var instrumentationLibraryLogs = &messagePtrStruct{
 	originFullName: "otlplogs.InstrumentationLibraryLogs",
 	fields: []baseField{
 		instrumentationLibraryField,
-		&sliceField{
+		&slicePtrField{
 			fieldName:       "Logs",
 			originFieldName: "Logs",
 			returnSlice:     logSlice,
@@ -75,7 +75,7 @@ var instrumentationLibraryLogs = &messagePtrStruct{
 	},
 }
 
-var logSlice = &sliceStruct{
+var logSlice = &slicePtrStruct{
 	structName: "LogSlice",
 	element:    logRecord,
 }
@@ -131,7 +131,7 @@ var logRecord = &messagePtrStruct{
 	},
 }
 
-var bodyField = &messagePtrField{
+var bodyField = &messageValueField{
 	fieldName:       "Body",
 	originFieldName: "Body",
 	returnMessage:   anyValue,

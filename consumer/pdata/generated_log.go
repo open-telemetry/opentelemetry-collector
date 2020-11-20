@@ -632,9 +632,6 @@ func (ms LogRecord) SetName(v string) {
 }
 
 // Body returns the body associated with this LogRecord.
-// If no body available, it creates an empty message and associates it with this LogRecord.
-//
-//  Empty initialized LogRecord will return "nil" AttributeValue.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Body() AttributeValue {
