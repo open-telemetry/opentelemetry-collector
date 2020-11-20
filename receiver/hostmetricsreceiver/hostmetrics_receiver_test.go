@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -212,9 +213,9 @@ func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, interna
 	return args.Get(0).(receiverhelper.MetricsScraper), args.Error(1)
 }
 
-func (m *mockScraper) Name() string                     { return "" }
-func (m *mockScraper) Initialize(context.Context) error { return nil }
-func (m *mockScraper) Close(context.Context) error      { return nil }
+func (m *mockScraper) Name() string                                { return "" }
+func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
+func (m *mockScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockScraper) Scrape(context.Context, string) (pdata.MetricSlice, error) {
 	return pdata.NewMetricSlice(), errors.New("err1")
 }
@@ -228,9 +229,9 @@ func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap
 	return args.Get(0).(receiverhelper.ResourceMetricsScraper), args.Error(1)
 }
 
-func (m *mockResourceScraper) Name() string                     { return "" }
-func (m *mockResourceScraper) Initialize(context.Context) error { return nil }
-func (m *mockResourceScraper) Close(context.Context) error      { return nil }
+func (m *mockResourceScraper) Name() string                                { return "" }
+func (m *mockResourceScraper) Start(context.Context, component.Host) error { return nil }
+func (m *mockResourceScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockResourceScraper) Scrape(context.Context, string) (pdata.ResourceMetricsSlice, error) {
 	return pdata.NewResourceMetricsSlice(), errors.New("err2")
 }
