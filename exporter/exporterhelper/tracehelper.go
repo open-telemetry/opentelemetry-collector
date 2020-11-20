@@ -74,7 +74,7 @@ func NewTraceExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
 	dataPusher traceDataPusher,
-	options ...ExporterOption,
+	options ...Option,
 ) (component.TracesExporter, error) {
 
 	if cfg == nil {

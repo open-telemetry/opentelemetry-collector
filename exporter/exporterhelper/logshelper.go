@@ -73,7 +73,7 @@ func NewLogsExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
 	pushLogsData PushLogsData,
-	options ...ExporterOption,
+	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
