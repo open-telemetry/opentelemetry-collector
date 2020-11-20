@@ -400,7 +400,6 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 	if instrLibName == "" {
 		return
 	}
-	library.InitEmpty()
 	if value, ok := tags[tracetranslator.TagInstrumentationName]; ok {
 		library.SetName(value)
 		delete(tags, tracetranslator.TagInstrumentationName)

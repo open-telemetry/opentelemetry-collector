@@ -353,9 +353,6 @@ func (ms InstrumentationLibraryMetrics) IsNil() bool {
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
-// If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibraryMetrics.
-//
-//  Empty initialized InstrumentationLibraryMetrics will return "nil" InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {

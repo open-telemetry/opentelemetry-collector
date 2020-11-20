@@ -25,17 +25,8 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
-func TestInstrumentationLibrary_InitEmpty(t *testing.T) {
-	ms := NewInstrumentationLibrary()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestInstrumentationLibrary_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrary()
-	NewInstrumentationLibrary().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestInstrumentationLibrary().CopyTo(ms)
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms)
 }
@@ -178,7 +169,6 @@ func TestAnyValueArray_Append(t *testing.T) {
 
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
 	tv := NewInstrumentationLibrary()
-	tv.InitEmpty()
 	fillTestInstrumentationLibrary(tv)
 	return tv
 }

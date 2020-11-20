@@ -121,10 +121,9 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs,
-	index int) *otlpcommon.InstrumentationLibrary {
+func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int) otlpcommon.InstrumentationLibrary {
 	if LibraryNone == tracingInputs.InstrumentationLibrary {
-		return nil
+		return otlpcommon.InstrumentationLibrary{}
 	}
 	nameStr := fmt.Sprintf("%s-%s-%s-%d", tracingInputs.Resource, tracingInputs.InstrumentationLibrary,
 		tracingInputs.Spans, index)
@@ -132,7 +131,7 @@ func generateInstrumentationLibrary(tracingInputs *PICTTracingInputs,
 	if index > 0 {
 		verStr = ""
 	}
-	return &otlpcommon.InstrumentationLibrary{
+	return otlpcommon.InstrumentationLibrary{
 		Name:    nameStr,
 		Version: verStr,
 	}

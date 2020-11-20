@@ -189,7 +189,6 @@ func (mb *Metrics) getMetricsSlice() pdata.MetricSlice {
 	ilm.InitEmpty()
 
 	il := ilm.InstrumentationLibrary()
-	il.InitEmpty()
 	il.SetName(mb.InstrumentationLibraryName)
 	il.SetVersion(mb.InstrumentationLibraryVersion)
 

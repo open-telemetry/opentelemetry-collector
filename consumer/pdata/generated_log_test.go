@@ -310,9 +310,6 @@ func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	ms.InitEmpty()
-	assert.True(t, ms.InstrumentationLibrary().IsNil())
-	ms.InstrumentationLibrary().InitEmpty()
-	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -596,7 +593,6 @@ func generateTestInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 }
 
 func fillTestInstrumentationLibraryLogs(tv InstrumentationLibraryLogs) {
-	tv.InstrumentationLibrary().InitEmpty()
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	fillTestLogSlice(tv.Logs())
 }

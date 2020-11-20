@@ -150,7 +150,6 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.Inst
 			spansByLibrary[library] = ils
 
 			if library.name != "" {
-				ils.InstrumentationLibrary().InitEmpty()
 				ils.InstrumentationLibrary().SetName(library.name)
 				ils.InstrumentationLibrary().SetVersion(library.version)
 			}

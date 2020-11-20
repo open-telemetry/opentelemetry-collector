@@ -888,8 +888,8 @@ func generateTestProtoResource() otlpresource.Resource {
 	}
 }
 
-func generateTestProtoInstrumentationLibrary() *otlpcommon.InstrumentationLibrary {
-	return &otlpcommon.InstrumentationLibrary{
+func generateTestProtoInstrumentationLibrary() otlpcommon.InstrumentationLibrary {
+	return otlpcommon.InstrumentationLibrary{
 		Name:    "test",
 		Version: "",
 	}

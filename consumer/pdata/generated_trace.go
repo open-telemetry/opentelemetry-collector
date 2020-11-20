@@ -354,9 +354,6 @@ func (ms InstrumentationLibrarySpans) IsNil() bool {
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
-// If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibrarySpans.
-//
-//  Empty initialized InstrumentationLibrarySpans will return "nil" InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
