@@ -17,6 +17,7 @@ package receiverhelper
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -39,16 +40,10 @@ type Close func(ctx context.Context) error
 type ScraperOption func(*baseScraper)
 
 type BaseScraper interface {
+	component.Component
+
 	// Name returns the scraper name
 	Name() string
-
-	// Initialize performs any timely initialization tasks such as
-	// setting up performance counters for initial collection.
-	Initialize(ctx context.Context) error
-
-	// Close should clean up any unmanaged resources such as
-	// performance counter handles.
-	Close(ctx context.Context) error
 }
 
 // MetricsScraper is an interface for scrapers that scrape metrics.
@@ -75,14 +70,14 @@ func (b baseScraper) Name() string {
 	return b.name
 }
 
-func (b baseScraper) Initialize(ctx context.Context) error {
+func (b baseScraper) Start(ctx context.Context, _ component.Host) error {
 	if b.initialize == nil {
 		return nil
 	}
 	return b.initialize(ctx)
 }
 
-func (b baseScraper) Close(ctx context.Context) error {
+func (b baseScraper) Shutdown(ctx context.Context) error {
 	if b.close == nil {
 		return nil
 	}

@@ -138,9 +138,11 @@ func NewScraperControllerReceiver(
 }
 
 // Start the receiver, invoked during service start.
-func (sc *scraperController) Start(ctx context.Context, _ component.Host) error {
-	if err := sc.initializeScrapers(ctx); err != nil {
-		return err
+func (sc *scraperController) Start(ctx context.Context, host component.Host) error {
+	for _, scraper := range sc.resourceMetricScrapers {
+		if err := scraper.Start(ctx, host); err != nil {
+			return err
+		}
 	}
 
 	sc.initialized = true
@@ -157,24 +159,13 @@ func (sc *scraperController) Shutdown(ctx context.Context) error {
 		<-sc.terminated
 	}
 
-	var errors []error
-
-	if err := sc.closeScrapers(ctx); err != nil {
-		errors = append(errors, err)
-	}
-
-	return componenterror.CombineErrors(errors)
-}
-
-// initializeScrapers initializes all the scrapers
-func (sc *scraperController) initializeScrapers(ctx context.Context) error {
+	var errs []error
 	for _, scraper := range sc.resourceMetricScrapers {
-		if err := scraper.Initialize(ctx); err != nil {
-			return err
+		if err := scraper.Shutdown(ctx); err != nil {
+			errs = append(errs, err)
 		}
 	}
-
-	return nil
+	return componenterror.CombineErrors(errs)
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured
@@ -232,19 +223,6 @@ func (sc *scraperController) stopScraping() {
 	close(sc.done)
 }
 
-// closeScrapers closes all the scrapers
-func (sc *scraperController) closeScrapers(ctx context.Context) error {
-	var errs []error
-
-	for _, scraper := range sc.resourceMetricScrapers {
-		if err := scraper.Close(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return componenterror.CombineErrors(errs)
-}
-
 var _ ResourceMetricsScraper = (*multiMetricScraper)(nil)
 
 type multiMetricScraper struct {
@@ -255,19 +233,19 @@ func (mms *multiMetricScraper) Name() string {
 	return ""
 }
 
-func (mms *multiMetricScraper) Initialize(ctx context.Context) error {
+func (mms *multiMetricScraper) Start(ctx context.Context, host component.Host) error {
 	for _, scraper := range mms.scrapers {
-		if err := scraper.Initialize(ctx); err != nil {
+		if err := scraper.Start(ctx, host); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (mms *multiMetricScraper) Close(ctx context.Context) error {
+func (mms *multiMetricScraper) Shutdown(ctx context.Context) error {
 	var errs []error
 	for _, scraper := range mms.scrapers {
-		if err := scraper.Close(ctx); err != nil {
+		if err := scraper.Shutdown(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}
