@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/data"
 	collectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
@@ -108,8 +109,8 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 		{
 			Spans: []*otlptrace.Span{
 				{
-					TraceId:           otlpcommon.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
-					SpanId:            otlpcommon.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
+					TraceId:           data.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}),
+					SpanId:            data.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}),
 					Name:              "testSpan",
 					StartTimeUnixNano: 1544712660000000000,
 					EndTimeUnixNano:   1544712661000000000,
@@ -264,7 +265,7 @@ func TestJsonUnmarshaling(t *testing.T) {
 		  ]
 		}`, &resourceSpansOtlp2)
 	assert.NoError(t, err)
-	assert.EqualValues(t, otlpcommon.TraceID{}, resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
+	assert.EqualValues(t, data.TraceID{}, resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
 
 	tests := []struct {
 		name  string
@@ -300,7 +301,7 @@ func TestJsonUnmarshaling(t *testing.T) {
 			}`, test.json)
 			err := jsonpb.UnmarshalString(jsonStr, &resourceSpansOtlp2)
 			assert.NoError(t, err)
-			assert.EqualValues(t, otlpcommon.NewTraceID(test.bytes), resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
+			assert.EqualValues(t, data.NewTraceID(test.bytes), resourceSpansOtlp2.InstrumentationLibrarySpans[0].Spans[0].TraceId)
 		})
 	}
 }
@@ -601,7 +602,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 					{
 						Spans: []*otlptrace.Span{
 							{
-								TraceId: otlpcommon.NewTraceID(
+								TraceId: data.NewTraceID(
 									[16]byte{
 										0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 										0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,

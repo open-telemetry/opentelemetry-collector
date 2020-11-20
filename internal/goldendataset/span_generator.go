@@ -19,6 +19,7 @@ import (
 	"io"
 	"time"
 
+	"go.opentelemetry.io/collector/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -56,8 +57,8 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 	index := startPos + 1
 	var inputs []string
 	var spanInputs *PICTSpanInputs
-	var traceID otlpcommon.TraceID
-	var parentID otlpcommon.SpanID
+	var traceID data.TraceID
+	var parentID data.SpanID
 	for i := 0; i < count; i++ {
 		if index >= pairsTotal {
 			index = 1
@@ -75,7 +76,7 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = otlpcommon.NewSpanID([8]byte{})
+			parentID = data.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
 			if !traceID.IsValid() {
@@ -106,7 +107,7 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 //   random - the random number generator to use in generating ID values
 //
 // The generated span is returned.
-func GenerateSpan(traceID otlpcommon.TraceID, parentID otlpcommon.SpanID, spanName string, spanInputs *PICTSpanInputs,
+func GenerateSpan(traceID data.TraceID, parentID data.SpanID, spanName string, spanInputs *PICTSpanInputs,
 	random io.Reader) *otlptrace.Span {
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	return &otlptrace.Span{

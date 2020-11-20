@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	"go.opentelemetry.io/collector/internal/data"
 	tracev1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 )
@@ -231,8 +231,8 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	defer exporter.Shutdown(context.Background())
 
-	traceID := otlpcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := otlpcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	traceID := data.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := data.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	traces := pdata.TracesFromOtlp([]*tracev1.ResourceSpans{
 		{InstrumentationLibrarySpans: []*tracev1.InstrumentationLibrarySpans{{Spans: []*tracev1.Span{{TraceId: traceID, SpanId: spanID}}}}},
 	})
