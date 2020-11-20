@@ -17,13 +17,12 @@ package kafkareceiver
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 func TestUnmarshallOTLP(t *testing.T) {
