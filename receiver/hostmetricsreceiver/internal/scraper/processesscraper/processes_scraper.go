@@ -20,6 +20,7 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -41,8 +42,7 @@ func newProcessesScraper(_ context.Context, cfg *Config) *scraper {
 	return &scraper{config: cfg, misc: load.Misc}
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
+func (s *scraper) start(context.Context, component.Host) error {
 	bootTime, err := host.BootTime()
 	if err != nil {
 		return err
@@ -52,8 +52,7 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Scrape
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
+func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 	err := appendSystemSpecificProcessesMetrics(metrics, 0, s.misc)
 	return metrics, err

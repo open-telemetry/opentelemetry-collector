@@ -50,9 +50,9 @@ func (f *Factory) CreateMetricsScraper(
 
 	ms := scraperhelper.NewMetricsScraper(
 		TypeStr,
-		s.Scrape,
-		scraperhelper.WithInitialize(s.Initialize),
-		scraperhelper.WithClose(s.Close),
+		s.scrape,
+		scraperhelper.WithStart(s.start),
+		scraperhelper.WithShutdown(s.shutdown),
 	)
 
 	return ms, nil

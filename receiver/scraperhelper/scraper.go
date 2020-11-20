@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -28,16 +29,8 @@ type ScrapeMetrics func(context.Context) (pdata.MetricSlice, error)
 // Scrape resource metrics.
 type ScrapeResourceMetrics func(context.Context) (pdata.ResourceMetricsSlice, error)
 
-// Initialize performs any timely initialization tasks such as
-// setting up performance counters for initial collection.
-type Initialize func(ctx context.Context) error
-
-// Close should clean up any unmanaged resources such as
-// performance counter handles.
-type Close func(ctx context.Context) error
-
 // ScraperOption apply changes to internal options.
-type ScraperOption func(*baseScraper)
+type ScraperOption func(*componenthelper.ComponentSettings)
 
 type BaseScraper interface {
 	component.Component
@@ -61,40 +54,25 @@ type ResourceMetricsScraper interface {
 var _ BaseScraper = (*baseScraper)(nil)
 
 type baseScraper struct {
-	name       string
-	initialize Initialize
-	close      Close
+	component.Component
+	name string
 }
 
 func (b baseScraper) Name() string {
 	return b.name
 }
 
-func (b baseScraper) Start(ctx context.Context, _ component.Host) error {
-	if b.initialize == nil {
-		return nil
-	}
-	return b.initialize(ctx)
-}
-
-func (b baseScraper) Shutdown(ctx context.Context) error {
-	if b.close == nil {
-		return nil
-	}
-	return b.close(ctx)
-}
-
-// WithInitialize sets the function that will be called on startup.
-func WithInitialize(initialize Initialize) ScraperOption {
-	return func(o *baseScraper) {
-		o.initialize = initialize
+// WithStart sets the function that will be called on startup.
+func WithStart(start componenthelper.Start) ScraperOption {
+	return func(s *componenthelper.ComponentSettings) {
+		s.Start = start
 	}
 }
 
-// WithClose sets the function that will be called on shutdown.
-func WithClose(close Close) ScraperOption {
-	return func(o *baseScraper) {
-		o.close = close
+// WithShutdown sets the function that will be called on shutdown.
+func WithShutdown(shutdown componenthelper.Shutdown) ScraperOption {
+	return func(s *componenthelper.ComponentSettings) {
+		s.Shutdown = shutdown
 	}
 }
 
@@ -113,13 +91,17 @@ func NewMetricsScraper(
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
 ) MetricsScraper {
-	ms := &metricsScraper{
-		baseScraper:   baseScraper{name: name},
-		ScrapeMetrics: scrape,
+	set := componenthelper.DefaultComponentSettings()
+	for _, op := range options {
+		op(set)
 	}
 
-	for _, op := range options {
-		op(&ms.baseScraper)
+	ms := &metricsScraper{
+		baseScraper: baseScraper{
+			Component: componenthelper.NewComponent(set),
+			name:      name,
+		},
+		ScrapeMetrics: scrape,
 	}
 
 	return ms
@@ -148,13 +130,17 @@ func NewResourceMetricsScraper(
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
 ) ResourceMetricsScraper {
-	rms := &resourceMetricsScraper{
-		baseScraper:           baseScraper{name: name},
-		ScrapeResourceMetrics: scrape,
+	set := componenthelper.DefaultComponentSettings()
+	for _, op := range options {
+		op(set)
 	}
 
-	for _, op := range options {
-		op(&rms.baseScraper)
+	rms := &resourceMetricsScraper{
+		baseScraper: baseScraper{
+			Component: componenthelper.NewComponent(set),
+			name:      name,
+		},
+		ScrapeResourceMetrics: scrape,
 	}
 
 	return rms

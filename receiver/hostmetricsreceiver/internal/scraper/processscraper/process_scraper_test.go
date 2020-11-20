@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
@@ -49,10 +50,10 @@ func TestScrape(t *testing.T) {
 	scraper, err := newProcessScraper(&Config{})
 	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
-	err = scraper.Initialize(context.Background())
+	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	resourceMetrics, err := scraper.Scrape(context.Background())
+	resourceMetrics, err := scraper.scrape(context.Background())
 
 	// may receive some partial errors as a result of attempting to:
 	// a) read native system processes on Windows (e.g. Registry process)
@@ -167,10 +168,10 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 
 	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
 
-	err = scraper.Initialize(context.Background())
+	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	metrics, err := scraper.Scrape(context.Background())
+	metrics, err := scraper.scrape(context.Background())
 	assert.EqualError(t, err, "err1")
 	assert.Equal(t, 0, metrics.Len())
 	assert.False(t, consumererror.IsPartialScrapeError(err))
@@ -311,7 +312,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 
 			scraper, err := newProcessScraper(config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.Initialize(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handles := make([]*processHandleMock, 0, len(test.names))
@@ -326,7 +327,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				return &processHandlesMock{handles: handles}, nil
 			}
 
-			resourceMetrics, err := scraper.Scrape(context.Background())
+			resourceMetrics, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.expectedNames), resourceMetrics.Len())
@@ -415,7 +416,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			scraper, err := newProcessScraper(&Config{})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.Initialize(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			username := "username"
@@ -437,7 +438,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 
-			resourceMetrics, err := scraper.Scrape(context.Background())
+			resourceMetrics, err := scraper.scrape(context.Background())
 
 			md := pdata.NewMetrics()
 			resourceMetrics.MoveAndAppendTo(md.ResourceMetrics())

@@ -23,6 +23,7 @@ import (
 
 	"github.com/shirou/gopsutil/host"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -66,8 +67,7 @@ func newSwapScraper(_ context.Context, cfg *Config) *scraper {
 	return &scraper{config: cfg, pageSize: pageSize, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
+func (s *scraper) start(context.Context, component.Host) error {
 	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
@@ -78,8 +78,7 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return s.perfCounterScraper.Initialize(memory)
 }
 
-// Scrape
-func (s *scraper) Scrape(context.Context) (pdata.MetricSlice, error) {
+func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	var errors []error
