@@ -683,6 +683,13 @@ func TestAttributeMap_Update(t *testing.T) {
 	assert.True(t, av2.BoolVal())
 }
 
+func TestAttributeMap_InitEmptyWithCapacity(t *testing.T) {
+	am := NewAttributeMap()
+	am.InitEmptyWithCapacity(0)
+	assert.Equal(t, NewAttributeMap(), am)
+	assert.Equal(t, 0, am.Len())
+}
+
 func TestNilStringMap(t *testing.T) {
 	assert.EqualValues(t, 0, NewStringMap().Len())
 
@@ -851,6 +858,13 @@ func TestStringMap_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	generateTestStringMap().CopyTo(dest)
 	assert.EqualValues(t, generateTestStringMap(), dest)
+}
+
+func TestStringMap_InitEmptyWithCapacity(t *testing.T) {
+	sm := NewStringMap()
+	sm.InitEmptyWithCapacity(0)
+	assert.Equal(t, NewStringMap(), sm)
+	assert.Equal(t, 0, sm.Len())
 }
 
 func TestStringMap_InitFromMap(t *testing.T) {

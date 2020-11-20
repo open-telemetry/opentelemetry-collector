@@ -120,7 +120,7 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 			input: testdata.GenerateLogDataOneEmptyOneNilLogRecord(),
 			output: func() pdata.Logs {
 				lr := testdata.GenerateLogDataOneEmptyOneNilLogRecord()
-				lr.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InitEmptyWithCapacity(0)
+				lr.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InitEmptyWithCapacity(1)
 				return lr
 			}(),
 		},
