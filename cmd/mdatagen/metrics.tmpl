@@ -86,7 +86,6 @@ var Metrics = &metricStruct{
 		"{{ $name }}",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("{{ $name }}")
 			metric.SetDescription("{{ $metric.Description }}")
 			metric.SetUnit("{{ $metric.Unit }}")

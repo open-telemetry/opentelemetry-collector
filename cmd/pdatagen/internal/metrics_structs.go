@@ -64,7 +64,7 @@ var resourceMetricsSlice = &sliceOfPtrs{
 	element:    resourceMetrics,
 }
 
-var resourceMetrics = &messagePtrStruct{
+var resourceMetrics = &messageValueStruct{
 	structName:     "ResourceMetrics",
 	description:    "// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.ResourceMetrics",
@@ -83,7 +83,7 @@ var instrumentationLibraryMetricsSlice = &sliceOfPtrs{
 	element:    instrumentationLibraryMetrics,
 }
 
-var instrumentationLibraryMetrics = &messagePtrStruct{
+var instrumentationLibraryMetrics = &messageValueStruct{
 	structName:     "InstrumentationLibraryMetrics",
 	description:    "// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.InstrumentationLibraryMetrics",
@@ -102,7 +102,7 @@ var metricSlice = &sliceOfPtrs{
 	element:    metric,
 }
 
-var metric = &messagePtrStruct{
+var metric = &messageValueStruct{
 	structName: "Metric",
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
 		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto",
@@ -229,7 +229,7 @@ var intDataPointSlice = &sliceOfPtrs{
 	element:    intDataPoint,
 }
 
-var intDataPoint = &messagePtrStruct{
+var intDataPoint = &messageValueStruct{
 	structName:     "IntDataPoint",
 	description:    "// IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.",
 	originFullName: "otlpmetrics.IntDataPoint",
@@ -247,7 +247,7 @@ var doubleDataPointSlice = &sliceOfPtrs{
 	element:    doubleDataPoint,
 }
 
-var doubleDataPoint = &messagePtrStruct{
+var doubleDataPoint = &messageValueStruct{
 	structName:     "DoubleDataPoint",
 	description:    "// DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.",
 	originFullName: "otlpmetrics.DoubleDataPoint",
@@ -265,7 +265,7 @@ var intHistogramDataPointSlice = &sliceOfPtrs{
 	element:    intHistogramDataPoint,
 }
 
-var intHistogramDataPoint = &messagePtrStruct{
+var intHistogramDataPoint = &messageValueStruct{
 	structName:     "IntHistogramDataPoint",
 	description:    "// IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.",
 	originFullName: "otlpmetrics.IntHistogramDataPoint",
@@ -286,7 +286,7 @@ var doubleHistogramDataPointSlice = &sliceOfPtrs{
 	element:    doubleHistogramDataPoint,
 }
 
-var doubleHistogramDataPoint = &messagePtrStruct{
+var doubleHistogramDataPoint = &messageValueStruct{
 	structName:     "DoubleHistogramDataPoint",
 	description:    "// DoubleHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of double values.",
 	originFullName: "otlpmetrics.DoubleHistogramDataPoint",
@@ -307,7 +307,7 @@ var doubleSummaryDataPointSlice = &sliceOfPtrs{
 	element:    doubleSummaryDataPoint,
 }
 
-var doubleSummaryDataPoint = &messagePtrStruct{
+var doubleSummaryDataPoint = &messageValueStruct{
 	structName:     "DoubleSummaryDataPoint",
 	description:    "// DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint",
@@ -330,7 +330,7 @@ var quantileValuesSlice = &sliceOfPtrs{
 	element:    quantileValues,
 }
 
-var quantileValues = &messagePtrStruct{
+var quantileValues = &messageValueStruct{
 	structName:     "ValueAtQuantile",
 	description:    "// ValueAtQuantile is a quantile value within a Summary data point",
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile",
@@ -345,7 +345,7 @@ var intExemplarSlice = &sliceOfPtrs{
 	element:    intExemplar,
 }
 
-var intExemplar = &messagePtrStruct{
+var intExemplar = &messageValueStruct{
 	structName: "IntExemplar",
 	description: "// IntExemplar is a sample input int measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
@@ -368,7 +368,7 @@ var doubleExemplarSlice = &sliceOfPtrs{
 	element:    doubleExemplar,
 }
 
-var doubleExemplar = &messagePtrStruct{
+var doubleExemplar = &messageValueStruct{
 	structName: "DoubleExemplar",
 	description: "// DoubleExemplar is a sample input double measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +

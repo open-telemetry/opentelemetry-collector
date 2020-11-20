@@ -51,7 +51,6 @@ const (
 
 var swapUsageDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.swap.usage")
 	metric.SetDescription("Swap (unix) or pagefile (windows) usage.")
 	metric.SetUnit("bytes")
@@ -64,7 +63,6 @@ var swapUsageDescriptor = func() pdata.Metric {
 
 var swapPagingDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.swap.paging_ops")
 	metric.SetDescription("The number of paging operations.")
 	metric.SetUnit("1")
@@ -77,7 +75,6 @@ var swapPagingDescriptor = func() pdata.Metric {
 
 var swapPageFaultsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.swap.page_faults")
 	metric.SetDescription("The number of page faults.")
 	metric.SetUnit("1")

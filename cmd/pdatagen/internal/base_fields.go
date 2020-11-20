@@ -414,7 +414,7 @@ func (one oneofField) generateSetWithTestValue(sb *strings.Builder) {
 }
 
 func (one oneofField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\t" + one.copyFuncName + "((*ms.orig), (*dest.orig))")
+	sb.WriteString("\t" + one.copyFuncName + "(ms.orig, dest.orig)")
 }
 
 var _ baseField = (*oneofField)(nil)

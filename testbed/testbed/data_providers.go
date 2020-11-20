@@ -185,7 +185,6 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
 		record := logRecords.At(i)
-		record.InitEmpty()
 		record.SetSeverityNumber(pdata.SeverityNumberINFO3)
 		record.SetSeverityText("INFO3")
 		record.SetName("load_generator_" + strconv.Itoa(i))

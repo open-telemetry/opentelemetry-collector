@@ -37,7 +37,6 @@ const (
 
 var networkPacketsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.network.packets")
 	metric.SetDescription("The number of packets transferred.")
 	metric.SetUnit("1")
@@ -50,7 +49,6 @@ var networkPacketsDescriptor = func() pdata.Metric {
 
 var networkDroppedPacketsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.network.dropped_packets")
 	metric.SetDescription("The number of packets dropped.")
 	metric.SetUnit("1")
@@ -63,7 +61,6 @@ var networkDroppedPacketsDescriptor = func() pdata.Metric {
 
 var networkErrorsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.network.errors")
 	metric.SetDescription("The number of errors encountered")
 	metric.SetUnit("1")
@@ -76,7 +73,6 @@ var networkErrorsDescriptor = func() pdata.Metric {
 
 var networkIODescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.network.io")
 	metric.SetDescription("The number of bytes transmitted and received")
 	metric.SetUnit("bytes")
@@ -89,7 +85,6 @@ var networkIODescriptor = func() pdata.Metric {
 
 var networkTCPConnectionsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.network.tcp_connections")
 	metric.SetDescription("The number of tcp connections")
 	metric.SetUnit("bytes")

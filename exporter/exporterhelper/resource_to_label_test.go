@@ -88,33 +88,3 @@ func TestConvertResourceToLabelsAllDataTypesNilDataPoint(t *testing.T) {
 
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 }
-
-func TestConvertResourceToLabelsOneMetricOneNil(t *testing.T) {
-	md := testdata.GenerateMetricsOneMetricOneNil()
-	assert.NotNil(t, md)
-
-	// Before converting resource to labels
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-
-	cloneMd := convertResourceToLabels(md)
-
-	// After converting resource to labels
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
-
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-}
-
-func TestConvertResourceToLabelsOneEmptyOneNilIlm(t *testing.T) {
-	md := testdata.GenerateMetricsOneEmptyOneNilInstrumentationLibrary()
-	assert.NotNil(t, md)
-
-	// Before converting resource to labels
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-
-	cloneMd := convertResourceToLabels(md)
-
-	// After converting resource to labels
-	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).Resource().Attributes().Len())
-
-	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
-}

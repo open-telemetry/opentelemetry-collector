@@ -48,7 +48,7 @@ var resourceSpansSlice = &sliceOfPtrs{
 	element:    resourceSpans,
 }
 
-var resourceSpans = &messagePtrStruct{
+var resourceSpans = &messageValueStruct{
 	structName:     "ResourceSpans",
 	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.ResourceSpans",
@@ -67,7 +67,7 @@ var instrumentationLibrarySpansSlice = &sliceOfPtrs{
 	element:    instrumentationLibrarySpans,
 }
 
-var instrumentationLibrarySpans = &messagePtrStruct{
+var instrumentationLibrarySpans = &messageValueStruct{
 	structName:     "InstrumentationLibrarySpans",
 	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.InstrumentationLibrarySpans",
@@ -86,7 +86,7 @@ var spanSlice = &sliceOfPtrs{
 	element:    span,
 }
 
-var span = &messagePtrStruct{
+var span = &messageValueStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
 		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37",
@@ -146,7 +146,7 @@ var spanEventSlice = &sliceOfPtrs{
 	element:    spanEvent,
 }
 
-var spanEvent = &messagePtrStruct{
+var spanEvent = &messageValueStruct{
 	structName: "SpanEvent",
 	description: "// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied\n" +
 		"// text description and key-value pairs. See OTLP for event definition.",
@@ -164,7 +164,7 @@ var spanLinkSlice = &sliceOfPtrs{
 	element:    spanLink,
 }
 
-var spanLink = &messagePtrStruct{
+var spanLink = &messageValueStruct{
 	structName: "SpanLink",
 	description: "// SpanLink is a pointer from the current span to another span in the same trace or in a\n" +
 		"// different trace. See OTLP for link definition.",

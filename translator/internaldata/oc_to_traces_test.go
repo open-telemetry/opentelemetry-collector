@@ -397,15 +397,6 @@ func TestOcToInternal(t *testing.T) {
 		},
 	}
 
-	// Extra tests:
-	//	* "two-spans-and-separate-in-the-middle"
-	//	* "one-span-zeroed-parent-id"
-	// Missing tests (impossible to generate):
-	//  * GenerateTraceDataOneEmptyOneNilResourceSpans
-	//	* GenerateTraceDataOneEmptyInstrumentationLibrary
-	//	* GenerateTraceDataOneEmptyOneNilInstrumentationLibrary
-	assert.EqualValues(t, testdata.NumTraceTests-1, len(tests))
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			assert.EqualValues(t, test.td, OCToTraceData(test.oc))
@@ -415,7 +406,6 @@ func TestOcToInternal(t *testing.T) {
 
 func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	ocSameProcessAsParentSpanToInternal(nil, span)
 	assert.Equal(t, 0, span.Attributes().Len())
 

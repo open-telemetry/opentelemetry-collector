@@ -258,22 +258,6 @@ func Test_PushMetrics(t *testing.T) {
 
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
-	nilBatch1 := testdata.GenerateMetricsOneEmptyResourceMetrics()
-	nilBatch2 := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
-	nilBatch3 := testdata.GenerateMetricsOneMetric()
-
-	nilResource := pdata.MetricsToOtlp(nilBatch1)
-	nilResource[0] = nil
-	nilResourceBatch := pdata.MetricsFromOtlp(nilResource)
-
-	nilInstrumentation := pdata.MetricsToOtlp(nilBatch2)
-	nilInstrumentation[0].InstrumentationLibraryMetrics[0] = nil
-	nilInstrumentationBatch := pdata.MetricsFromOtlp(nilInstrumentation)
-
-	nilMetric := pdata.MetricsToOtlp(nilBatch3)
-	nilMetric[0].InstrumentationLibraryMetrics[0].Metrics[0] = nil
-	nilMetricBatch := pdata.MetricsFromOtlp(nilMetric)
-
 	// success cases
 	intSumBatch := testdata.GenerateMetricsManyMetricsSameResource(10)
 
@@ -515,33 +499,6 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			invalidTypeBatch.MetricCount(),
-			true,
-		},
-		{
-			"nil_resourece_case",
-			&nilResourceBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			nilResourceBatch.MetricCount(),
-			false,
-		},
-		{
-			"nil_instrumentation_case",
-			&nilInstrumentationBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			nilInstrumentationBatch.MetricCount(),
-			false,
-		},
-		{
-			"nil_metric_case",
-			&nilMetricBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			nilMetricBatch.MetricCount(),
 			true,
 		},
 		{

@@ -176,7 +176,6 @@ func (mb *Metrics) getMetricsSlice() pdata.MetricSlice {
 	rmsLen := rms.Len()
 	rms.Resize(rmsLen + 1)
 	rm := rms.At(rmsLen)
-	rm.InitEmpty()
 
 	res := rm.Resource()
 	for k, v := range mb.ResourceAttributes {
@@ -186,7 +185,6 @@ func (mb *Metrics) getMetricsSlice() pdata.MetricSlice {
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilms.Resize(1)
 	ilm := ilms.At(0)
-	ilm.InitEmpty()
 
 	il := ilm.InstrumentationLibrary()
 	il.SetName(mb.InstrumentationLibraryName)
@@ -212,7 +210,6 @@ func (mb *Metrics) getOrCreateMetric(name string, typ pdata.MetricDataType) pdat
 		metric = fac()
 	} else {
 		metric = pdata.NewMetric()
-		metric.InitEmpty()
 
 		metric.SetName(name)
 		metric.SetDataType(typ)
@@ -239,7 +236,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		m := metric.IntGauge()
 		dps := m.DataPoints()
 		dp := pdata.NewIntDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(int64))
 		dp.SetTimestamp(tsNano)
@@ -249,7 +245,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		m := metric.IntSum()
 		dps := m.DataPoints()
 		dp := pdata.NewIntDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(int64))
 		dp.SetTimestamp(tsNano)
@@ -259,7 +254,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		m := metric.DoubleGauge()
 		dps := m.DataPoints()
 		dp := pdata.NewDoubleDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(float64))
 		dp.SetTimestamp(tsNano)
@@ -269,7 +263,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		m := metric.DoubleSum()
 		dps := m.DataPoints()
 		dp := pdata.NewDoubleDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(float64))
 		dp.SetTimestamp(tsNano)
@@ -279,7 +272,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		m := metric.IntHistogram()
 		dps := m.DataPoints()
 		dp := pdata.NewIntHistogramDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		val.(pdata.IntHistogramDataPoint).CopyTo(dp)
 		dp.SetTimestamp(tsNano)
@@ -289,7 +281,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		m := metric.DoubleHistogram()
 		dps := m.DataPoints()
 		dp := pdata.NewDoubleHistogramDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		val.(pdata.DoubleHistogramDataPoint).CopyTo(dp)
 		dp.SetTimestamp(tsNano)

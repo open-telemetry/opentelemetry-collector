@@ -87,16 +87,9 @@ func (ld Logs) LogRecordCount() int {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		ill := rs.InstrumentationLibraryLogs()
 		for i := 0; i < ill.Len(); i++ {
 			logs := ill.At(i)
-			if logs.IsNil() {
-				continue
-			}
 			logCount += logs.Logs().Len()
 		}
 	}

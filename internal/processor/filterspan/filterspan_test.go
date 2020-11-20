@@ -146,7 +146,6 @@ func TestSpan_Matching_False(t *testing.T) {
 	}
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("spanName")
 	library := pdata.NewInstrumentationLibrary()
 	resource := pdata.NewResource()
@@ -173,7 +172,6 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := pdata.NewSpan()
-	emptySpan.InitEmpty()
 	assert.False(t, mp.MatchSpan(emptySpan, pdata.NewResource(), pdata.NewInstrumentationLibrary()))
 }
 
@@ -222,7 +220,6 @@ func TestSpan_Matching_True(t *testing.T) {
 	}
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("spanName")
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"keyString": pdata.NewAttributeValueString("arithmetic"),

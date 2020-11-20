@@ -105,10 +105,8 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
-	rs.InitEmpty()
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ils := rs.InstrumentationLibrarySpans().At(0)
-	ils.InitEmpty()
 	ils.Spans().Resize(1)
 	span := ils.Spans().At(0)
 	span.SetTraceID(

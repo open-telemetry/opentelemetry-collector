@@ -150,13 +150,12 @@ func TestAnyValueArray_Resize(t *testing.T) {
 
 func TestAnyValueArray_Append(t *testing.T) {
 	es := generateTestAnyValueArray()
-	emptyVal := NewAttributeValue()
 
+	emptyVal := NewAttributeValue()
 	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewAttributeValue()
-
 	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 

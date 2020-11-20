@@ -64,11 +64,7 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, error) {
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		pt := pts.At(i)
-		if pt.IsNil() {
-			continue
-		}
-		matched, err := m.matchEnv(metricName, pt.LabelsMap())
+		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
 		if err != nil {
 			return false, err
 		}
@@ -82,11 +78,7 @@ func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, 
 func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (bool, error) {
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		pt := pts.At(i)
-		if pt.IsNil() {
-			continue
-		}
-		matched, err := m.matchEnv(metricName, pt.LabelsMap())
+		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
 		if err != nil {
 			return false, err
 		}
@@ -100,11 +92,7 @@ func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (
 func (m *Matcher) matchDoubleSum(metricName string, sum pdata.DoubleSum) (bool, error) {
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		pt := pts.At(i)
-		if pt.IsNil() {
-			continue
-		}
-		matched, err := m.matchEnv(metricName, pt.LabelsMap())
+		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
 		if err != nil {
 			return false, err
 		}
@@ -118,11 +106,7 @@ func (m *Matcher) matchDoubleSum(metricName string, sum pdata.DoubleSum) (bool, 
 func (m *Matcher) matchIntSum(metricName string, sum pdata.IntSum) (bool, error) {
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		pt := pts.At(i)
-		if pt.IsNil() {
-			continue
-		}
-		matched, err := m.matchEnv(metricName, pt.LabelsMap())
+		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
 		if err != nil {
 			return false, err
 		}
@@ -136,11 +120,7 @@ func (m *Matcher) matchIntSum(metricName string, sum pdata.IntSum) (bool, error)
 func (m *Matcher) matchIntHistogram(metricName string, histogram pdata.IntHistogram) (bool, error) {
 	pts := histogram.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		pt := pts.At(i)
-		if pt.IsNil() {
-			continue
-		}
-		matched, err := m.matchEnv(metricName, pt.LabelsMap())
+		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
 		if err != nil {
 			return false, err
 		}
@@ -154,11 +134,7 @@ func (m *Matcher) matchIntHistogram(metricName string, histogram pdata.IntHistog
 func (m *Matcher) matchDoubleHistogram(metricName string, histogram pdata.DoubleHistogram) (bool, error) {
 	pts := histogram.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
-		pt := pts.At(i)
-		if pt.IsNil() {
-			continue
-		}
-		matched, err := m.matchEnv(metricName, pt.LabelsMap())
+		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())
 		if err != nil {
 			return false, err
 		}

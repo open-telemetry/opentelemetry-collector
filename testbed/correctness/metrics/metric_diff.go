@@ -213,10 +213,6 @@ func diffDoubleExemplars(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs, mismatch = diffValues(diffs, expected.At(i).IsNil(), actual.At(i).IsNil(), "DoubleExemplar IsNil")
-		if mismatch {
-			continue
-		}
 		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "DoubleExemplar Value")
 	}
 	return diffs
@@ -262,10 +258,6 @@ func diffIntExemplars(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs, mismatch = diffValues(diffs, expected.At(i).IsNil(), actual.At(i).IsNil(), "DoubleExemplar IsNil")
-		if mismatch {
-			continue
-		}
 		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "DoubleExemplar Value")
 	}
 	return diffs

@@ -61,7 +61,7 @@ func (es ResourceSpansSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es ResourceSpansSlice) At(ix int) ResourceSpans {
-	return newResourceSpans(&(*es.orig)[ix])
+	return newResourceSpans((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -83,7 +83,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceSpans(&(*es.orig)[i]).CopyTo(newResourceSpans(&(*dest.orig)[i]))
+			newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans((*dest.orig)[i]))
 		}
 		return
 	}
@@ -91,7 +91,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceSpans(&(*es.orig)[i]).CopyTo(newResourceSpans(&wrappers[i]))
+		newResourceSpans((*es.orig)[i]).CopyTo(newResourceSpans(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -133,7 +133,7 @@ func (es ResourceSpansSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es ResourceSpansSlice) Append(e ResourceSpans) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -144,34 +144,23 @@ func (es ResourceSpansSlice) Append(e ResourceSpans) {
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpans struct {
-	// orig points to the pointer otlptrace.ResourceSpans field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.ResourceSpans
+	orig *otlptrace.ResourceSpans
 }
 
-func newResourceSpans(orig **otlptrace.ResourceSpans) ResourceSpans {
-	return ResourceSpans{orig}
+func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
+	return ResourceSpans{orig: orig}
 }
 
-// NewResourceSpans creates a new "nil" ResourceSpans.
-// To initialize the struct call "InitEmpty".
+// NewResourceSpans creates a new empty ResourceSpans.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewResourceSpans() ResourceSpans {
-	orig := (*otlptrace.ResourceSpans)(nil)
-	return newResourceSpans(&orig)
+	return newResourceSpans(&otlptrace.ResourceSpans{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms ResourceSpans) InitEmpty() {
-	*ms.orig = &otlptrace.ResourceSpans{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms ResourceSpans) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlptrace.ResourceSpans{}
 }
 
 // Resource returns the resource associated with this ResourceSpans.
@@ -190,13 +179,6 @@ func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpan
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.Resource().CopyTo(dest.Resource())
 	ms.InstrumentationLibrarySpans().CopyTo(dest.InstrumentationLibrarySpans())
 }
@@ -240,7 +222,7 @@ func (es InstrumentationLibrarySpansSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es InstrumentationLibrarySpansSlice) At(ix int) InstrumentationLibrarySpans {
-	return newInstrumentationLibrarySpans(&(*es.orig)[ix])
+	return newInstrumentationLibrarySpans((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -262,7 +244,7 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newInstrumentationLibrarySpans(&(*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans(&(*dest.orig)[i]))
+			newInstrumentationLibrarySpans((*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans((*dest.orig)[i]))
 		}
 		return
 	}
@@ -270,7 +252,7 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newInstrumentationLibrarySpans(&(*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans(&wrappers[i]))
+		newInstrumentationLibrarySpans((*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -312,7 +294,7 @@ func (es InstrumentationLibrarySpansSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es InstrumentationLibrarySpansSlice) Append(e InstrumentationLibrarySpans) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.
@@ -323,34 +305,23 @@ func (es InstrumentationLibrarySpansSlice) Append(e InstrumentationLibrarySpans)
 // Must use NewInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpans struct {
-	// orig points to the pointer otlptrace.InstrumentationLibrarySpans field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.InstrumentationLibrarySpans
+	orig *otlptrace.InstrumentationLibrarySpans
 }
 
-func newInstrumentationLibrarySpans(orig **otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
-	return InstrumentationLibrarySpans{orig}
+func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
+	return InstrumentationLibrarySpans{orig: orig}
 }
 
-// NewInstrumentationLibrarySpans creates a new "nil" InstrumentationLibrarySpans.
-// To initialize the struct call "InitEmpty".
+// NewInstrumentationLibrarySpans creates a new empty InstrumentationLibrarySpans.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	orig := (*otlptrace.InstrumentationLibrarySpans)(nil)
-	return newInstrumentationLibrarySpans(&orig)
+	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms InstrumentationLibrarySpans) InitEmpty() {
-	*ms.orig = &otlptrace.InstrumentationLibrarySpans{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms InstrumentationLibrarySpans) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlptrace.InstrumentationLibrarySpans{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
@@ -369,13 +340,6 @@ func (ms InstrumentationLibrarySpans) Spans() SpanSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrarySpans) CopyTo(dest InstrumentationLibrarySpans) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
 	ms.Spans().CopyTo(dest.Spans())
 }
@@ -419,7 +383,7 @@ func (es SpanSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es SpanSlice) At(ix int) Span {
-	return newSpan(&(*es.orig)[ix])
+	return newSpan((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -441,7 +405,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newSpan(&(*es.orig)[i]).CopyTo(newSpan(&(*dest.orig)[i]))
+			newSpan((*es.orig)[i]).CopyTo(newSpan((*dest.orig)[i]))
 		}
 		return
 	}
@@ -449,7 +413,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	wrappers := make([]*otlptrace.Span, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpan(&(*es.orig)[i]).CopyTo(newSpan(&wrappers[i]))
+		newSpan((*es.orig)[i]).CopyTo(newSpan(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -491,7 +455,7 @@ func (es SpanSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es SpanSlice) Append(e Span) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // Span represents a single operation within a trace.
@@ -503,34 +467,23 @@ func (es SpanSlice) Append(e Span) {
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Span struct {
-	// orig points to the pointer otlptrace.Span field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.Span
+	orig *otlptrace.Span
 }
 
-func newSpan(orig **otlptrace.Span) Span {
-	return Span{orig}
+func newSpan(orig *otlptrace.Span) Span {
+	return Span{orig: orig}
 }
 
-// NewSpan creates a new "nil" Span.
-// To initialize the struct call "InitEmpty".
+// NewSpan creates a new empty Span.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewSpan() Span {
-	orig := (*otlptrace.Span)(nil)
-	return newSpan(&orig)
+	return newSpan(&otlptrace.Span{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms Span) InitEmpty() {
-	*ms.orig = &otlptrace.Span{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms Span) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlptrace.Span{}
 }
 
 // TraceID returns the traceid associated with this Span.
@@ -720,13 +673,6 @@ func (ms Span) Status() SpanStatus {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Span) CopyTo(dest Span) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	dest.SetTraceState(ms.TraceState())
@@ -783,7 +729,7 @@ func (es SpanEventSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es SpanEventSlice) At(ix int) SpanEvent {
-	return newSpanEvent(&(*es.orig)[ix])
+	return newSpanEvent((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -805,7 +751,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newSpanEvent(&(*es.orig)[i]).CopyTo(newSpanEvent(&(*dest.orig)[i]))
+			newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent((*dest.orig)[i]))
 		}
 		return
 	}
@@ -813,7 +759,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	wrappers := make([]*otlptrace.Span_Event, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpanEvent(&(*es.orig)[i]).CopyTo(newSpanEvent(&wrappers[i]))
+		newSpanEvent((*es.orig)[i]).CopyTo(newSpanEvent(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -855,7 +801,7 @@ func (es SpanEventSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es SpanEventSlice) Append(e SpanEvent) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // SpanEvent is a time-stamped annotation of the span, consisting of user-supplied
@@ -867,34 +813,23 @@ func (es SpanEventSlice) Append(e SpanEvent) {
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanEvent struct {
-	// orig points to the pointer otlptrace.Span_Event field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.Span_Event
+	orig *otlptrace.Span_Event
 }
 
-func newSpanEvent(orig **otlptrace.Span_Event) SpanEvent {
-	return SpanEvent{orig}
+func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
+	return SpanEvent{orig: orig}
 }
 
-// NewSpanEvent creates a new "nil" SpanEvent.
-// To initialize the struct call "InitEmpty".
+// NewSpanEvent creates a new empty SpanEvent.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewSpanEvent() SpanEvent {
-	orig := (*otlptrace.Span_Event)(nil)
-	return newSpanEvent(&orig)
+	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms SpanEvent) InitEmpty() {
-	*ms.orig = &otlptrace.Span_Event{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms SpanEvent) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlptrace.Span_Event{}
 }
 
 // Timestamp returns the timestamp associated with this SpanEvent.
@@ -948,13 +883,6 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1000,7 +928,7 @@ func (es SpanLinkSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es SpanLinkSlice) At(ix int) SpanLink {
-	return newSpanLink(&(*es.orig)[ix])
+	return newSpanLink((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1022,7 +950,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newSpanLink(&(*es.orig)[i]).CopyTo(newSpanLink(&(*dest.orig)[i]))
+			newSpanLink((*es.orig)[i]).CopyTo(newSpanLink((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1030,7 +958,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	wrappers := make([]*otlptrace.Span_Link, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newSpanLink(&(*es.orig)[i]).CopyTo(newSpanLink(&wrappers[i]))
+		newSpanLink((*es.orig)[i]).CopyTo(newSpanLink(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1072,7 +1000,7 @@ func (es SpanLinkSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es SpanLinkSlice) Append(e SpanLink) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // SpanLink is a pointer from the current span to another span in the same trace or in a
@@ -1084,34 +1012,23 @@ func (es SpanLinkSlice) Append(e SpanLink) {
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanLink struct {
-	// orig points to the pointer otlptrace.Span_Link field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.Span_Link
+	orig *otlptrace.Span_Link
 }
 
-func newSpanLink(orig **otlptrace.Span_Link) SpanLink {
-	return SpanLink{orig}
+func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
+	return SpanLink{orig: orig}
 }
 
-// NewSpanLink creates a new "nil" SpanLink.
-// To initialize the struct call "InitEmpty".
+// NewSpanLink creates a new empty SpanLink.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewSpanLink() SpanLink {
-	orig := (*otlptrace.Span_Link)(nil)
-	return newSpanLink(&orig)
+	return newSpanLink(&otlptrace.Span_Link{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms SpanLink) InitEmpty() {
-	*ms.orig = &otlptrace.Span_Link{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms SpanLink) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlptrace.Span_Link{}
 }
 
 // TraceID returns the traceid associated with this SpanLink.
@@ -1179,13 +1096,6 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SpanLink) CopyTo(dest SpanLink) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	dest.SetTraceState(ms.TraceState())

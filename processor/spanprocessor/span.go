@@ -83,24 +83,14 @@ func (sp *spanProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdat
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
 		ilss := rs.InstrumentationLibrarySpans()
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
 			spans := ils.Spans()
 			library := ils.InstrumentationLibrary()
 			for k := 0; k < spans.Len(); k++ {
 				s := spans.At(k)
-				if s.IsNil() {
-					continue
-				}
-
 				if filterspan.SkipSpan(sp.include, sp.exclude, s, resource, library) {
 					continue
 				}

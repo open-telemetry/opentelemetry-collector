@@ -43,11 +43,7 @@ func MetricsToOC(md pdata.Metrics) []consumerdata.MetricsData {
 
 	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, resourceMetrics.Len())
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		rs := resourceMetrics.At(i)
-		if rs.IsNil() {
-			continue
-		}
-		ocResourceMetricsList = append(ocResourceMetricsList, resourceMetricsToOC(rs))
+		ocResourceMetricsList = append(ocResourceMetricsList, resourceMetricsToOC(resourceMetrics.At(i)))
 	}
 
 	return ocResourceMetricsList
@@ -65,17 +61,10 @@ func resourceMetricsToOC(rm pdata.ResourceMetrics) consumerdata.MetricsData {
 	ocMetrics := make([]*ocmetrics.Metric, 0, ilms.At(0).Metrics().Len())
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
-		if ilm.IsNil() {
-			continue
-		}
 		// TODO: Handle instrumentation library name and version.
 		metrics := ilm.Metrics()
 		for j := 0; j < metrics.Len(); j++ {
-			m := metrics.At(j)
-			if m.IsNil() {
-				continue
-			}
-			ocMetrics = append(ocMetrics, metricToOC(m))
+			ocMetrics = append(ocMetrics, metricToOC(metrics.At(j)))
 		}
 	}
 	if len(ocMetrics) != 0 {
@@ -161,51 +150,31 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 
 func collectLabelKeysIntDataPoints(ips pdata.IntDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < ips.Len(); i++ {
-		ip := ips.At(i)
-		if ip.IsNil() {
-			continue
-		}
-		addLabelKeys(keySet, ip.LabelsMap())
+		addLabelKeys(keySet, ips.At(i).LabelsMap())
 	}
 }
 
 func collectLabelKeysDoubleDataPoints(dps pdata.DoubleDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		if dp.IsNil() {
-			continue
-		}
-		addLabelKeys(keySet, dp.LabelsMap())
+		addLabelKeys(keySet, dps.At(i).LabelsMap())
 	}
 }
 
 func collectLabelKeysIntHistogramDataPoints(ihdp pdata.IntHistogramDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < ihdp.Len(); i++ {
-		hp := ihdp.At(i)
-		if hp.IsNil() {
-			continue
-		}
-		addLabelKeys(keySet, hp.LabelsMap())
+		addLabelKeys(keySet, ihdp.At(i).LabelsMap())
 	}
 }
 
 func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.DoubleHistogramDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
-		hp := dhdp.At(i)
-		if hp.IsNil() {
-			continue
-		}
-		addLabelKeys(keySet, hp.LabelsMap())
+		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
 	}
 }
 
 func collectLabelKeysDoubleSummaryDataPoints(dhdp pdata.DoubleSummaryDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
-		hp := dhdp.At(i)
-		if hp.IsNil() {
-			continue
-		}
-		addLabelKeys(keySet, hp.LabelsMap())
+		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
 	}
 }
 
@@ -216,9 +185,6 @@ func addLabelKeys(keySet map[string]struct{}, labels pdata.StringMap) {
 }
 
 func descriptorToOC(metric pdata.Metric, labelKeys *labelKeys) *ocmetrics.MetricDescriptor {
-	if metric.IsNil() {
-		return nil
-	}
 	return &ocmetrics.MetricDescriptor{
 		Name:        metric.Name(),
 		Description: metric.Description(),
@@ -292,9 +258,6 @@ func intPointsToOC(dps pdata.IntDataPointSlice, labelKeys *labelKeys) []*ocmetri
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
-		if ip.IsNil() {
-			continue
-		}
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: pdata.UnixNanoToTimestamp(ip.StartTime()),
 			LabelValues:    labelValuesToOC(ip.LabelsMap(), labelKeys),
@@ -319,9 +282,6 @@ func doublePointToOC(dps pdata.DoubleDataPointSlice, labelKeys *labelKeys) []*oc
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		if dp.IsNil() {
-			continue
-		}
 		ts := &ocmetrics.TimeSeries{
 			StartTimestamp: pdata.UnixNanoToTimestamp(dp.StartTime()),
 			LabelValues:    labelValuesToOC(dp.LabelsMap(), labelKeys),
@@ -346,10 +306,6 @@ func doubleHistogramPointToOC(dps pdata.DoubleHistogramDataPointSlice, labelKeys
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		if dp.IsNil() {
-			continue
-		}
-
 		buckets := histogramBucketsToOC(dp.BucketCounts())
 		doubleExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
@@ -383,10 +339,6 @@ func intHistogramPointToOC(dps pdata.IntHistogramDataPointSlice, labelKeys *labe
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		if dp.IsNil() {
-			continue
-		}
-
 		buckets := histogramBucketsToOC(dp.BucketCounts())
 		intExemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
 
@@ -448,10 +400,6 @@ func doubleSummaryPointToOC(dps pdata.DoubleSummaryDataPointSlice, labelKeys *la
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		if dp.IsNil() {
-			continue
-		}
-
 		percentileValues := summaryPercentilesToOC(dp.QuantileValues())
 
 		ts := &ocmetrics.TimeSeries{
@@ -485,10 +433,6 @@ func summaryPercentilesToOC(qtls pdata.ValueAtQuantileSlice) []*ocmetrics.Summar
 	ocPercentiles := make([]*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, 0, qtls.Len())
 	for i := 0; i < qtls.Len(); i++ {
 		quantile := qtls.At(i)
-		if quantile.IsNil() {
-			continue
-		}
-
 		ocPercentiles = append(ocPercentiles, &ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
 			Percentile: quantile.Quantile() * 100,
 			Value:      quantile.Value(),
@@ -504,9 +448,6 @@ func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionVa
 
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		if exemplar.IsNil() {
-			continue
-		}
 		val := exemplar.Value()
 		pos := 0
 		for ; pos < len(bounds); pos++ {
@@ -526,9 +467,6 @@ func intExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue
 
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		if exemplar.IsNil() {
-			continue
-		}
 		val := float64(exemplar.Value())
 		pos := 0
 		for ; pos < len(bounds); pos++ {

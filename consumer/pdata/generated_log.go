@@ -61,7 +61,7 @@ func (es ResourceLogsSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es ResourceLogsSlice) At(ix int) ResourceLogs {
-	return newResourceLogs(&(*es.orig)[ix])
+	return newResourceLogs((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -83,7 +83,7 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceLogs(&(*es.orig)[i]).CopyTo(newResourceLogs(&(*dest.orig)[i]))
+			newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs((*dest.orig)[i]))
 		}
 		return
 	}
@@ -91,7 +91,7 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	wrappers := make([]*otlplogs.ResourceLogs, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceLogs(&(*es.orig)[i]).CopyTo(newResourceLogs(&wrappers[i]))
+		newResourceLogs((*es.orig)[i]).CopyTo(newResourceLogs(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -133,7 +133,7 @@ func (es ResourceLogsSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es ResourceLogsSlice) Append(e ResourceLogs) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // ResourceLogs is a collection of logs from a Resource.
@@ -144,34 +144,23 @@ func (es ResourceLogsSlice) Append(e ResourceLogs) {
 // Must use NewResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceLogs struct {
-	// orig points to the pointer otlplogs.ResourceLogs field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlplogs.ResourceLogs
+	orig *otlplogs.ResourceLogs
 }
 
-func newResourceLogs(orig **otlplogs.ResourceLogs) ResourceLogs {
-	return ResourceLogs{orig}
+func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
+	return ResourceLogs{orig: orig}
 }
 
-// NewResourceLogs creates a new "nil" ResourceLogs.
-// To initialize the struct call "InitEmpty".
+// NewResourceLogs creates a new empty ResourceLogs.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewResourceLogs() ResourceLogs {
-	orig := (*otlplogs.ResourceLogs)(nil)
-	return newResourceLogs(&orig)
+	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms ResourceLogs) InitEmpty() {
-	*ms.orig = &otlplogs.ResourceLogs{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms ResourceLogs) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlplogs.ResourceLogs{}
 }
 
 // Resource returns the resource associated with this ResourceLogs.
@@ -190,13 +179,6 @@ func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSl
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.Resource().CopyTo(dest.Resource())
 	ms.InstrumentationLibraryLogs().CopyTo(dest.InstrumentationLibraryLogs())
 }
@@ -240,7 +222,7 @@ func (es InstrumentationLibraryLogsSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es InstrumentationLibraryLogsSlice) At(ix int) InstrumentationLibraryLogs {
-	return newInstrumentationLibraryLogs(&(*es.orig)[ix])
+	return newInstrumentationLibraryLogs((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -262,7 +244,7 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newInstrumentationLibraryLogs(&(*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs(&(*dest.orig)[i]))
+			newInstrumentationLibraryLogs((*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs((*dest.orig)[i]))
 		}
 		return
 	}
@@ -270,7 +252,7 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 	wrappers := make([]*otlplogs.InstrumentationLibraryLogs, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newInstrumentationLibraryLogs(&(*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs(&wrappers[i]))
+		newInstrumentationLibraryLogs((*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -312,7 +294,7 @@ func (es InstrumentationLibraryLogsSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es InstrumentationLibraryLogsSlice) Append(e InstrumentationLibraryLogs) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
@@ -323,34 +305,23 @@ func (es InstrumentationLibraryLogsSlice) Append(e InstrumentationLibraryLogs) {
 // Must use NewInstrumentationLibraryLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryLogs struct {
-	// orig points to the pointer otlplogs.InstrumentationLibraryLogs field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlplogs.InstrumentationLibraryLogs
+	orig *otlplogs.InstrumentationLibraryLogs
 }
 
-func newInstrumentationLibraryLogs(orig **otlplogs.InstrumentationLibraryLogs) InstrumentationLibraryLogs {
-	return InstrumentationLibraryLogs{orig}
+func newInstrumentationLibraryLogs(orig *otlplogs.InstrumentationLibraryLogs) InstrumentationLibraryLogs {
+	return InstrumentationLibraryLogs{orig: orig}
 }
 
-// NewInstrumentationLibraryLogs creates a new "nil" InstrumentationLibraryLogs.
-// To initialize the struct call "InitEmpty".
+// NewInstrumentationLibraryLogs creates a new empty InstrumentationLibraryLogs.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibraryLogs() InstrumentationLibraryLogs {
-	orig := (*otlplogs.InstrumentationLibraryLogs)(nil)
-	return newInstrumentationLibraryLogs(&orig)
+	return newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms InstrumentationLibraryLogs) InitEmpty() {
-	*ms.orig = &otlplogs.InstrumentationLibraryLogs{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms InstrumentationLibraryLogs) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlplogs.InstrumentationLibraryLogs{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
@@ -369,13 +340,6 @@ func (ms InstrumentationLibraryLogs) Logs() LogSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
 	ms.Logs().CopyTo(dest.Logs())
 }
@@ -419,7 +383,7 @@ func (es LogSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es LogSlice) At(ix int) LogRecord {
-	return newLogRecord(&(*es.orig)[ix])
+	return newLogRecord((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -441,7 +405,7 @@ func (es LogSlice) CopyTo(dest LogSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newLogRecord(&(*es.orig)[i]).CopyTo(newLogRecord(&(*dest.orig)[i]))
+			newLogRecord((*es.orig)[i]).CopyTo(newLogRecord((*dest.orig)[i]))
 		}
 		return
 	}
@@ -449,7 +413,7 @@ func (es LogSlice) CopyTo(dest LogSlice) {
 	wrappers := make([]*otlplogs.LogRecord, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newLogRecord(&(*es.orig)[i]).CopyTo(newLogRecord(&wrappers[i]))
+		newLogRecord((*es.orig)[i]).CopyTo(newLogRecord(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -491,7 +455,7 @@ func (es LogSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es LogSlice) Append(e LogRecord) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
@@ -503,34 +467,23 @@ func (es LogSlice) Append(e LogRecord) {
 // Must use NewLogRecord function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LogRecord struct {
-	// orig points to the pointer otlplogs.LogRecord field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlplogs.LogRecord
+	orig *otlplogs.LogRecord
 }
 
-func newLogRecord(orig **otlplogs.LogRecord) LogRecord {
-	return LogRecord{orig}
+func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
+	return LogRecord{orig: orig}
 }
 
-// NewLogRecord creates a new "nil" LogRecord.
-// To initialize the struct call "InitEmpty".
+// NewLogRecord creates a new empty LogRecord.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewLogRecord() LogRecord {
-	orig := (*otlplogs.LogRecord)(nil)
-	return newLogRecord(&orig)
+	return newLogRecord(&otlplogs.LogRecord{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms LogRecord) InitEmpty() {
-	*ms.orig = &otlplogs.LogRecord{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms LogRecord) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlplogs.LogRecord{}
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.
@@ -661,13 +614,6 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms LogRecord) CopyTo(dest LogRecord) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())

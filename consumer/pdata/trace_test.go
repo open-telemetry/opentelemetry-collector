@@ -74,18 +74,18 @@ func TestTracesSizeWithNil(t *testing.T) {
 	assert.Equal(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{nil}).Size())
 }
 
-func TestSpanCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{nil, {}}).SpanCount())
+func TestSpanCountWithEmpty(t *testing.T) {
+	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{{}}).SpanCount())
 	assert.EqualValues(t, 0, TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{nil, {}},
+			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{{}},
 		},
 	}).SpanCount())
-	assert.EqualValues(t, 2, TracesFromOtlp([]*otlptrace.ResourceSpans{
+	assert.EqualValues(t, 1, TracesFromOtlp([]*otlptrace.ResourceSpans{
 		{
 			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 				{
-					Spans: []*otlptrace.Span{nil, {}},
+					Spans: []*otlptrace.Span{{}},
 				},
 			},
 		},
@@ -163,7 +163,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	pdataRS := generateTestResourceSpans()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(*pdataRS.orig)
+	wire1, err := gogoproto.Marshal(pdataRS.orig)
 	assert.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -184,7 +184,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.EqualValues(t, *pdataRS.orig, &gogoprotoRS2)
+	assert.EqualValues(t, pdataRS.orig, &gogoprotoRS2)
 }
 
 func TestTracesToFromOtlpProtoBytes(t *testing.T) {

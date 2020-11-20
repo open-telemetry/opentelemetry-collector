@@ -418,7 +418,6 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 
 func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("spanName")
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{key: value})
 	return span
@@ -484,16 +483,9 @@ func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string)
 		rspans := td.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
 			rspan := rspans.At(i)
-			if rspan.IsNil() {
-				continue
-			}
-			ilss := rspans.At(i).InstrumentationLibrarySpans()
+			ilss := rspan.InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if ils.IsNil() {
-					continue
-				}
-
 				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {
 					continue
 				}

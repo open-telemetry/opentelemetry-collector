@@ -43,11 +43,6 @@ func generateAllLogTestCases() []logTestCase {
 			otlp: generateLogOtlpOneEmptyResourceLogs(),
 		},
 		{
-			name: "one-empty-one-nil-resource-logs",
-			ld:   GenerateLogDataOneEmptyOneNilResourceLogs(),
-			otlp: generateLogOtlpOneEmptyOneNilResourceLogs(),
-		},
-		{
 			name: "no-log-records",
 			ld:   GenerateLogDataNoLogRecords(),
 			otlp: generateLogOtlpNoLogRecords(),
@@ -58,11 +53,6 @@ func generateAllLogTestCases() []logTestCase {
 			otlp: generateLogOtlpOneEmptyLogs(),
 		},
 		{
-			name: "one-empty-one-nil-log-record",
-			ld:   GenerateLogDataOneEmptyOneNilLogRecord(),
-			otlp: generateLogOtlpOneEmptyOneNilLogRecord(),
-		},
-		{
 			name: "one-log-record-no-resource",
 			ld:   GenerateLogDataOneLogNoResource(),
 			otlp: generateLogOtlpOneLogNoResource(),
@@ -71,11 +61,6 @@ func generateAllLogTestCases() []logTestCase {
 			name: "one-log-record",
 			ld:   GenerateLogDataOneLog(),
 			otlp: generateLogOtlpOneLog(),
-		},
-		{
-			name: "one-log-record-one-nil",
-			ld:   GenerateLogDataOneLogOneNil(),
-			otlp: generateLogOtlpOneLogOneNil(),
 		},
 		{
 			name: "two-records-same-resource",
@@ -93,7 +78,6 @@ func generateAllLogTestCases() []logTestCase {
 func TestToFromOtlpLog(t *testing.T) {
 	allTestCases := generateAllLogTestCases()
 	// Ensure NumLogTests gets updated.
-	assert.EqualValues(t, NumLogTests, len(allTestCases))
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
@@ -103,23 +87,4 @@ func TestToFromOtlpLog(t *testing.T) {
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}
-}
-
-func TestToFromOtlpLogWithNils(t *testing.T) {
-	md := GenerateLogDataOneEmptyOneNilResourceLogs()
-	assert.EqualValues(t, 2, md.ResourceLogs().Len())
-	assert.False(t, md.ResourceLogs().At(0).IsNil())
-	assert.True(t, md.ResourceLogs().At(1).IsNil())
-
-	md = GenerateLogDataOneEmptyOneNilLogRecord()
-	rs := md.ResourceLogs().At(0)
-	assert.EqualValues(t, 2, rs.InstrumentationLibraryLogs().At(0).Logs().Len())
-	assert.False(t, rs.InstrumentationLibraryLogs().At(0).Logs().At(0).IsNil())
-	assert.True(t, rs.InstrumentationLibraryLogs().At(0).Logs().At(1).IsNil())
-
-	md = GenerateLogDataOneLogOneNil()
-	rl0 := md.ResourceLogs().At(0)
-	assert.EqualValues(t, 2, rl0.InstrumentationLibraryLogs().At(0).Logs().Len())
-	assert.False(t, rl0.InstrumentationLibraryLogs().At(0).Logs().At(0).IsNil())
-	assert.True(t, rl0.InstrumentationLibraryLogs().At(0).Logs().At(1).IsNil())
 }

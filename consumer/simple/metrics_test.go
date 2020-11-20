@@ -262,9 +262,7 @@ func TestMetrics(t *testing.T) {
 		AddDSumDataPoint("disk.time_awake", 100.6)
 
 	intHisto := pdata.NewIntHistogramDataPoint()
-	intHisto.InitEmpty()
 	doubleHisto := pdata.NewDoubleHistogramDataPoint()
-	doubleHisto.InitEmpty()
 
 	mb.WithLabels(map[string]string{
 		"partition": "1",
@@ -287,7 +285,6 @@ func TestMetricFactories(t *testing.T) {
 		MetricFactoriesByName: map[string]func() pdata.Metric{
 			"disk.ops": func() pdata.Metric {
 				m := pdata.NewMetric()
-				m.InitEmpty()
 				m.SetName("disk.ops")
 				m.SetDescription("This counts disk operations")
 				m.SetDataType(pdata.MetricDataTypeIntSum)
@@ -411,9 +408,7 @@ func TestSafeMetrics(t *testing.T) {
 				AddDSumDataPoint("disk.time_awake"+idx, 100.6)
 
 			intHisto := pdata.NewIntHistogramDataPoint()
-			intHisto.InitEmpty()
 			doubleHisto := pdata.NewDoubleHistogramDataPoint()
-			doubleHisto.InitEmpty()
 
 			for j := 0; j < 5; j++ {
 				mb.WithLabels(map[string]string{
@@ -473,7 +468,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		rmsLen := rms.Len()
 		rms.Resize(rmsLen + 1)
 		rm := rms.At(rmsLen)
-		rm.InitEmpty()
 
 		res := rm.Resource()
 		resAttrs := res.Attributes()
@@ -483,7 +477,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		ilms := rm.InstrumentationLibraryMetrics()
 		ilms.Resize(1)
 		ilm := ilms.At(0)
-		ilm.InitEmpty()
 		metrics := ilm.Metrics()
 		metrics.Resize(6)
 
@@ -493,7 +486,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 
 		for i := 0; i < 50; i++ {
 			metric := metrics.At(0)
-			metric.InitEmpty()
 			metric.SetName("gauge" + strconv.Itoa(i))
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			mAsType := metric.IntGauge()
