@@ -78,7 +78,7 @@ func NewMetricsExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
 	pushMetricsData PushMetricsData,
-	options ...ExporterOption,
+	options ...Option,
 ) (component.MetricsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig

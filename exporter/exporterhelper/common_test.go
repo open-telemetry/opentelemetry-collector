@@ -44,16 +44,17 @@ func TestBaseExporter(t *testing.T) {
 }
 
 func TestBaseExporterWithOptions(t *testing.T) {
+	want := errors.New("my error")
 	be := newBaseExporter(
 		defaultExporterCfg,
 		zap.NewNop(),
-		WithStart(func(ctx context.Context, host component.Host) error { return errors.New("my error") }),
-		WithShutdown(func(ctx context.Context) error { return errors.New("my error") }),
+		WithStart(func(ctx context.Context, host component.Host) error { return want }),
+		WithShutdown(func(ctx context.Context) error { return want }),
 		WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()),
 		WithTimeout(CreateDefaultTimeoutSettings()),
 	)
-	require.Error(t, be.Start(context.Background(), componenttest.NewNopHost()))
-	require.Error(t, be.Shutdown(context.Background()))
+	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.Equal(t, want, be.Shutdown(context.Background()))
 }
 
 func errToStatus(err error) trace.Status {
