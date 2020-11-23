@@ -18,12 +18,15 @@ import (
 	"context"
 	"errors"
 
+	"go.opencensus.io/trace"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // ErrSkipProcessingData is a sentinel value to indicate when traces or metrics should intentionally be dropped
@@ -102,8 +105,9 @@ func fromOptions(options []Option) *baseSettings {
 // internalOptions contains internalOptions concerning how an Processor is configured.
 type baseProcessor struct {
 	component.Component
-	fullName     string
-	capabilities component.ProcessorCapabilities
+	fullName        string
+	capabilities    component.ProcessorCapabilities
+	traceAttributes []trace.Attribute
 }
 
 // Construct the internalOptions from multiple Option.
@@ -113,6 +117,9 @@ func newBaseProcessor(fullName string, options ...Option) baseProcessor {
 		Component:    componenthelper.NewComponent(bs.ComponentSettings),
 		fullName:     fullName,
 		capabilities: bs.capabilities,
+		traceAttributes: []trace.Attribute{
+			trace.StringAttribute(obsreport.ProcessorKey, fullName),
+		},
 	}
 
 	return be
@@ -128,13 +135,16 @@ type tracesProcessor struct {
 	nextConsumer consumer.TracesConsumer
 }
 
-func (mp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	span := trace.FromContext(ctx)
+	span.Annotate(tp.traceAttributes, "Start processing.")
 	var err error
-	td, err = mp.processor.ProcessTraces(ctx, td)
+	td, err = tp.processor.ProcessTraces(ctx, td)
+	span.Annotate(tp.traceAttributes, "End processing.")
 	if err != nil {
 		return err
 	}
-	return mp.nextConsumer.ConsumeTraces(ctx, td)
+	return tp.nextConsumer.ConsumeTraces(ctx, td)
 }
 
 // NewTraceProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
@@ -167,8 +177,11 @@ type metricsProcessor struct {
 }
 
 func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	span := trace.FromContext(ctx)
+	span.Annotate(mp.traceAttributes, "Start processing.")
 	var err error
 	md, err = mp.processor.ProcessMetrics(ctx, md)
+	span.Annotate(mp.traceAttributes, "End processing.")
 	if err != nil {
 		if err == ErrSkipProcessingData {
 			return nil
@@ -208,8 +221,11 @@ type logProcessor struct {
 }
 
 func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	span := trace.FromContext(ctx)
+	span.Annotate(lp.traceAttributes, "Start processing.")
 	var err error
 	ld, err = lp.processor.ProcessLogs(ctx, ld)
+	span.Annotate(lp.traceAttributes, "End processing.")
 	if err != nil {
 		return err
 	}
