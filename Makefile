@@ -115,6 +115,11 @@ goimpi:
 gofmt:
 	@$(MAKE) for-all CMD="make fmt"
 
+.PHONY: gotidy
+gotidy:
+	$(MAKE) for-all CMD="rm -fr go.sum"
+	$(MAKE) for-all CMD="go mod tidy"
+
 .PHONY: install-tools
 install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
