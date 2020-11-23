@@ -27,17 +27,17 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// traceDataPusher is a helper function that is similar to ConsumeTraceData but also
+// PushTraces is a helper function that is similar to ConsumeTraces but also
 // returns the number of dropped spans.
-type traceDataPusher func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error)
+type PushTraces func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error)
 
 type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
-	pusher traceDataPusher
+	pusher PushTraces
 }
 
-func newTracesRequest(ctx context.Context, td pdata.Traces, pusher traceDataPusher) request {
+func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) request {
 	return &tracesRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
@@ -59,7 +59,7 @@ func (req *tracesRequest) count() int {
 
 type traceExporter struct {
 	*baseExporter
-	pusher traceDataPusher
+	pusher PushTraces
 }
 
 func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -73,7 +73,7 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 func NewTraceExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
-	dataPusher traceDataPusher,
+	pusher PushTraces,
 	options ...Option,
 ) (component.TracesExporter, error) {
 
@@ -85,7 +85,7 @@ func NewTraceExporter(
 		return nil, errNilLogger
 	}
 
-	if dataPusher == nil {
+	if pusher == nil {
 		return nil, errNilPushTraceData
 	}
 
@@ -99,7 +99,7 @@ func NewTraceExporter(
 
 	return &traceExporter{
 		baseExporter: be,
-		pusher:       dataPusher,
+		pusher:       pusher,
 	}, nil
 }
 

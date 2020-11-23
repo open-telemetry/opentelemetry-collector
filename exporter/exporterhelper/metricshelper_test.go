@@ -183,7 +183,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, me.Shutdown(context.Background()), want)
 }
 
-func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
+func newPushMetricsData(droppedTimeSeries int, retError error) PushMetrics {
 	return func(ctx context.Context, td pdata.Metrics) (int, error) {
 		return droppedTimeSeries, retError
 	}

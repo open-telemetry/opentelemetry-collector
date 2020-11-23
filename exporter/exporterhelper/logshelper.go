@@ -27,17 +27,17 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushLogsData is a helper function that is similar to ConsumeLogsData but also returns
+// PushLogs is a helper function that is similar to ConsumeLogs but also returns
 // the number of dropped logs.
-type PushLogsData func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error)
+type PushLogs func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error)
 
 type logsRequest struct {
 	baseRequest
 	ld     pdata.Logs
-	pusher PushLogsData
+	pusher PushLogs
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogsData) request {
+func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogs) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -59,12 +59,12 @@ func (req *logsRequest) count() int {
 
 type logsExporter struct {
 	*baseExporter
-	pushLogsData PushLogsData
+	pusher PushLogs
 }
 
 func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	exporterCtx := obsreport.ExporterContext(ctx, lexp.cfg.Name())
-	_, err := lexp.sender.send(newLogsRequest(exporterCtx, ld, lexp.pushLogsData))
+	_, err := lexp.sender.send(newLogsRequest(exporterCtx, ld, lexp.pusher))
 	return err
 }
 
@@ -72,7 +72,7 @@ func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error 
 func NewLogsExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
-	pushLogsData PushLogsData,
+	pusher PushLogs,
 	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
@@ -83,7 +83,7 @@ func NewLogsExporter(
 		return nil, errNilLogger
 	}
 
-	if pushLogsData == nil {
+	if pusher == nil {
 		return nil, errNilPushLogsData
 	}
 
@@ -97,7 +97,7 @@ func NewLogsExporter(
 
 	return &logsExporter{
 		baseExporter: be,
-		pushLogsData: pushLogsData,
+		pusher:       pusher,
 	}, nil
 }
 

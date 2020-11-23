@@ -163,7 +163,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, le.Shutdown(context.Background()), want)
 }
 
-func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
+func newPushLogsData(droppedTimeSeries int, retError error) PushLogs {
 	return func(ctx context.Context, td pdata.Logs) (int, error) {
 		return droppedTimeSeries, retError
 	}
