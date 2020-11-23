@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data"
 	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
-	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlplog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
@@ -60,8 +60,8 @@ func TestExport(t *testing.T) {
 				{
 					Logs: []*otlplog.LogRecord{
 						{
-							TraceId:      v1.NewTraceID(traceID),
-							SpanId:       v1.NewSpanID(spanID),
+							TraceId:      data.NewTraceID(traceID),
+							SpanId:       data.NewSpanID(spanID),
 							Name:         "operationB",
 							TimeUnixNano: unixnanos,
 						},

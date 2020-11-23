@@ -17,6 +17,7 @@ package testdata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
 
@@ -300,8 +301,8 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
 		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
-		SpanId:                 otlpcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}),
-		TraceId:                otlpcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}),
+		SpanId:                 data.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}),
+		TraceId:                data.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}),
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "app",
