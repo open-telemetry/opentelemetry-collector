@@ -26,6 +26,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
@@ -40,7 +41,7 @@ type testInitialize struct {
 	err error
 }
 
-func (ts *testInitialize) initialize(context.Context) error {
+func (ts *testInitialize) start(context.Context, component.Host) error {
 	ts.ch <- true
 	return ts.err
 }
@@ -50,7 +51,7 @@ type testClose struct {
 	err error
 }
 
-func (ts *testClose) close(context.Context) error {
+func (ts *testClose) shutdown(context.Context) error {
 	ts.ch <- true
 	return ts.err
 }
@@ -224,7 +225,7 @@ func TestScrapeController(t *testing.T) {
 			if expectedStartErr != nil {
 				assert.Equal(t, expectedStartErr, err)
 			} else if test.initialize {
-				assertChannelsCalled(t, initializeChs, "initialize was not called")
+				assertChannelsCalled(t, initializeChs, "start was not called")
 			}
 
 			const iterations = 5
@@ -265,7 +266,7 @@ func TestScrapeController(t *testing.T) {
 			if expectedShutdownErr != nil {
 				assert.EqualError(t, err, expectedShutdownErr.Error())
 			} else if test.close {
-				assertChannelsCalled(t, closeChs, "close was not called")
+				assertChannelsCalled(t, closeChs, "shutdown was not called")
 			}
 		})
 	}
@@ -279,12 +280,12 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 		if test.initialize {
 			initializeChs[i] = make(chan bool, 1)
 			ti := &testInitialize{ch: initializeChs[i], err: test.initializeErr}
-			scraperOptions = append(scraperOptions, WithInitialize(ti.initialize))
+			scraperOptions = append(scraperOptions, WithStart(ti.start))
 		}
 		if test.close {
 			closeChs[i] = make(chan bool, 1)
 			tc := &testClose{ch: closeChs[i], err: test.closeErr}
-			scraperOptions = append(scraperOptions, WithClose(tc.close))
+			scraperOptions = append(scraperOptions, WithShutdown(tc.shutdown))
 		}
 
 		scrapeMetricsChs[i] = make(chan int)
@@ -297,12 +298,12 @@ func configureMetricOptions(test metricsTestCase, initializeChs []chan bool, scr
 		if test.initialize {
 			initializeChs[test.scrapers+i] = make(chan bool, 1)
 			ti := &testInitialize{ch: initializeChs[test.scrapers+i], err: test.initializeErr}
-			scraperOptions = append(scraperOptions, WithInitialize(ti.initialize))
+			scraperOptions = append(scraperOptions, WithStart(ti.start))
 		}
 		if test.close {
 			closeChs[test.scrapers+i] = make(chan bool, 1)
 			tc := &testClose{ch: closeChs[test.scrapers+i], err: test.closeErr}
-			scraperOptions = append(scraperOptions, WithClose(tc.close))
+			scraperOptions = append(scraperOptions, WithShutdown(tc.shutdown))
 		}
 
 		testScrapeResourceMetricsChs[i] = make(chan int)

@@ -30,11 +30,11 @@ const totalInstanceName = "_Total"
 
 // PerfCounterScraper scrapes performance counter data.
 type PerfCounterScraper interface {
-	// Initialize initializes the PerfCounterScraper so that subsequent calls
-	// to Scrape will return performance counter data for the specified set.
+	// start initializes the PerfCounterScraper so that subsequent calls
+	// to scrape will return performance counter data for the specified set.
 	// of objects
 	Initialize(objects ...string) error
-	// Scrape returns performance data for the initialized objects.
+	// scrape returns performance data for the initialized objects.
 	Scrape() (PerfDataCollection, error)
 }
 

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -52,10 +53,10 @@ func TestScrape_Others(t *testing.T) {
 				scraper.ioCounters = test.ioCountersFunc
 			}
 
-			err = scraper.Initialize(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize disk scraper: %v", err)
 
-			_, err = scraper.Scrape(context.Background())
+			_, err = scraper.scrape(context.Background())
 			assert.EqualError(t, err, test.expectedErr)
 
 			isPartial := consumererror.IsPartialScrapeError(err)

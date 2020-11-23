@@ -21,6 +21,7 @@ import (
 	"github.com/shirou/gopsutil/load"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -42,18 +43,18 @@ func newLoadScraper(_ context.Context, logger *zap.Logger, cfg *Config) *scraper
 	return &scraper{logger: logger, config: cfg, load: getSampledLoadAverages}
 }
 
-// Initialize
-func (s *scraper) Initialize(ctx context.Context) error {
+// start
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return startSampling(ctx, s.logger)
 }
 
-// Close
-func (s *scraper) Close(ctx context.Context) error {
+// shutdown
+func (s *scraper) shutdown(ctx context.Context) error {
 	return stopSampling(ctx)
 }
 
-// Scrape
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
+// scrape
+func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := internal.TimeToUnixNano(time.Now())

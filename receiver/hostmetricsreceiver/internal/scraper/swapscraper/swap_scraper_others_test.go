@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -69,10 +70,10 @@ func TestScrape_Errors(t *testing.T) {
 				scraper.swapMemory = test.swapMemoryFunc
 			}
 
-			err := scraper.Initialize(context.Background())
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
 
-			_, err = scraper.Scrape(context.Background())
+			_, err = scraper.scrape(context.Background())
 			assert.EqualError(t, err, test.expectedError)
 
 			isPartial := consumererror.IsPartialScrapeError(err)

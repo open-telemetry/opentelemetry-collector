@@ -23,7 +23,7 @@ import (
 )
 
 // MockPerfCounterScraperError is an implementation of PerfCounterScraper that returns
-// the supplied errors when Scrape, GetObject, or GetValues are called.
+// the supplied errors when scrape, GetObject, or GetValues are called.
 type MockPerfCounterScraperError struct {
 	scrapeErr    error
 	getObjectErr error
@@ -36,12 +36,12 @@ func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr error)
 	return &MockPerfCounterScraperError{scrapeErr: scrapeErr, getObjectErr: getObjectErr, getValuesErr: getValuesErr}
 }
 
-// Initialize is a no-op
+// start is a no-op
 func (p *MockPerfCounterScraperError) Initialize(objects ...string) error {
 	return nil
 }
 
-// Scrape returns the specified scrapeErr or an object that will return a subsequent error
+// scrape returns the specified scrapeErr or an object that will return a subsequent error
 // if scrapeErr is nil
 func (p *MockPerfCounterScraperError) Scrape() (PerfDataCollection, error) {
 	if p.scrapeErr != nil {
@@ -80,7 +80,7 @@ func (obj mockPerfDataObjectError) GetValues(counterNames ...string) ([]*Counter
 }
 
 // MockPerfCounterScraper is an implementation of PerfCounterScraper that returns the supplied
-// object / counter values on each successive call to Scrape, in the specified order.
+// object / counter values on each successive call to scrape, in the specified order.
 //
 // Example Usage:
 //
@@ -91,7 +91,7 @@ func (obj mockPerfDataObjectError) GetValues(counterNames ...string) ([]*Counter
 //     },
 // })
 //
-// s.Scrape().GetObject("Object1").GetValues("Counter1", "Counter2")
+// s.scrape().GetObject("Object1").GetValues("Counter1", "Counter2")
 //
 // ... 1st call returns []*CounterValues{ { Values: { "Counter1": 1, "Counter2": 4 } } }
 // ... 2nd call returns []*CounterValues{ { Values: { "Counter1": 2, "Counter2": 4 } } }
@@ -101,17 +101,17 @@ type MockPerfCounterScraper struct {
 }
 
 // NewMockPerfCounterScraper returns a MockPerfCounterScraper that will return the supplied
-// object / counter values on each successive call to Scrape, in the specified order.
+// object / counter values on each successive call to scrape, in the specified order.
 func NewMockPerfCounterScraper(objectsAndValuesToReturn map[string]map[string][]int64) *MockPerfCounterScraper {
 	return &MockPerfCounterScraper{objectsAndValuesToReturn: objectsAndValuesToReturn}
 }
 
-// Initialize is a no-op
+// start is a no-op
 func (p *MockPerfCounterScraper) Initialize(objects ...string) error {
 	return nil
 }
 
-// Scrape returns a perf data collection with the supplied object / counter values,
+// scrape returns a perf data collection with the supplied object / counter values,
 // according to the supplied order.
 func (p *MockPerfCounterScraper) Scrape() (PerfDataCollection, error) {
 	objectsAndValuesToReturn := make(map[string]map[string]int64, len(p.objectsAndValuesToReturn))
