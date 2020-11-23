@@ -172,7 +172,7 @@ func newBaseExporter(cfg configmodels.Exporter, logger *zap.Logger, options ...O
 		convertResourceToTelemetry: bs.ResourceToTelemetrySettings.Enabled,
 	}
 
-	be.qrSender = newQueuedRetrySender(bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
+	be.qrSender = newQueuedRetrySender(cfg.Name(), bs.QueueSettings, bs.RetrySettings, &timeoutSender{cfg: bs.TimeoutSettings}, logger)
 	be.sender = be.qrSender
 
 	return be

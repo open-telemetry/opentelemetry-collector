@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
@@ -78,11 +79,12 @@ func CreateDefaultRetrySettings() RetrySettings {
 }
 
 type queuedRetrySender struct {
-	cfg            QueueSettings
-	consumerSender requestSender
-	queue          *queue.BoundedQueue
-	retryStopCh    chan struct{}
-	logger         *zap.Logger
+	cfg             QueueSettings
+	consumerSender  requestSender
+	queue           *queue.BoundedQueue
+	retryStopCh     chan struct{}
+	traceAttributes []trace.Attribute
+	logger          *zap.Logger
 }
 
 func createSampledLogger(logger *zap.Logger) *zap.Logger {
@@ -104,20 +106,23 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 	return logger.WithOptions(opts)
 }
 
-func newQueuedRetrySender(qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySettings, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
+	traceAttr := trace.StringAttribute(obsreport.ExporterKey, fullName)
 	return &queuedRetrySender{
 		cfg: qCfg,
 		consumerSender: &retrySender{
-			cfg:        rCfg,
-			nextSender: nextSender,
-			stopCh:     retryStopCh,
-			logger:     sampledLogger,
+			traceAttribute: traceAttr,
+			cfg:            rCfg,
+			nextSender:     nextSender,
+			stopCh:         retryStopCh,
+			logger:         sampledLogger,
 		},
-		queue:       queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
-		retryStopCh: retryStopCh,
-		logger:      sampledLogger,
+		queue:           queue.NewBoundedQueue(qCfg.QueueSize, func(item interface{}) {}),
+		retryStopCh:     retryStopCh,
+		traceAttributes: []trace.Attribute{traceAttr},
+		logger:          sampledLogger,
 	}
 }
 
@@ -146,14 +151,17 @@ func (qrs *queuedRetrySender) send(req request) (int, error) {
 	// The grpc/http based receivers will cancel the request context after this function returns.
 	req.setContext(noCancellationContext{Context: req.context()})
 
+	span := trace.FromContext(req.context())
 	if !qrs.queue.Produce(req) {
 		qrs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
 			zap.Int("dropped_items", req.count()),
 		)
+		span.Annotate(qrs.traceAttributes, "Dropped item, sending_queue is full.")
 		return req.count(), errors.New("sending_queue is full")
 	}
 
+	span.Annotate(qrs.traceAttributes, "Enqueued item.")
 	return 0, nil
 }
 
@@ -181,10 +189,11 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	cfg        RetrySettings
-	nextSender requestSender
-	stopCh     chan struct{}
-	logger     *zap.Logger
+	traceAttribute trace.Attribute
+	cfg            RetrySettings
+	nextSender     requestSender
+	stopCh         chan struct{}
+	logger         *zap.Logger
 }
 
 // send implements the requestSender interface
@@ -214,7 +223,11 @@ func (rs *retrySender) send(req request) (int, error) {
 	span := trace.FromContext(req.context())
 	retryNum := int64(0)
 	for {
-		span.Annotate([]trace.Attribute{trace.Int64Attribute("retry_num", retryNum)}, "Send request")
+		span.Annotate(
+			[]trace.Attribute{
+				rs.traceAttribute,
+				trace.Int64Attribute("retry_num", retryNum)},
+			"Sending request.")
 		droppedItems, err := rs.nextSender.send(req)
 
 		if err == nil {
@@ -256,9 +269,9 @@ func (rs *retrySender) send(req request) (int, error) {
 		backoffDelayStr := backoffDelay.String()
 		span.Annotate(
 			[]trace.Attribute{
+				rs.traceAttribute,
 				trace.StringAttribute("interval", backoffDelayStr),
-				trace.StringAttribute("error", err.Error()),
-			},
+				trace.StringAttribute("error", err.Error())},
 			"Exporting failed. Will retry the request after interval.")
 		rs.logger.Info(
 			"Exporting failed. Will retry the request after interval.",
