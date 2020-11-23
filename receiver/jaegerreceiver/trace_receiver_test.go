@@ -58,8 +58,7 @@ const jaegerReceiver = "jaeger_receiver_test"
 
 func TestTraceSource(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, params)
-	assert.NoError(t, err, "should not have failed to create the Jaeger receiver")
+	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, params)
 	require.NotNil(t, jr)
 }
 
@@ -136,9 +135,8 @@ func TestReception(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
-	assert.NoError(t, err, "should not have failed to create the Jaeger received")
 
 	t.Log("Starting")
 
@@ -170,8 +168,7 @@ func TestPortsNotOpen(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -200,8 +197,7 @@ func TestGRPCReception(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -257,8 +253,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -302,7 +297,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	rs.Resource().InitEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
 	rs.Resource().Attributes().InsertBool("bool", true)
 	rs.Resource().Attributes().InsertString("string", "yes")
@@ -396,8 +390,7 @@ func TestSampling(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -449,8 +442,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
@@ -479,8 +471,7 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, params)
-	assert.NoError(t, err, "should not have failed to create a new receiver")
+	jr := newJaegerReceiver(jaegerReceiver, config, sink, params)
 	defer jr.Shutdown(context.Background())
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 }
@@ -512,7 +503,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	defer server.GracefulStop()
 
 	// Create sampling strategies receiver
-	port, err := randomAvailablePort()
+	port := testutil.GetAvailablePort(t)
 	require.NoError(t, err)
 	hostEndpoint := fmt.Sprintf("localhost:%d", port)
 	factory := NewFactory()
@@ -533,7 +524,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 		HostEndpoint: hostEndpoint,
 	}
 	// at least one protocol has to be enabled
-	thriftHTTPPort, err := randomAvailablePort()
+	thriftHTTPPort := testutil.GetAvailablePort(t)
 	require.NoError(t, err)
 	cfg.Protocols.ThriftHTTP = &confighttp.HTTPServerSettings{
 		Endpoint: fmt.Sprintf("localhost:%d", thriftHTTPPort),
@@ -552,15 +543,6 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.Contains(t, "{\"strategyType\":1,\"rateLimitingSampling\":{\"maxTracesPerSecond\":5}}", string(bodyBytes))
-}
-
-func randomAvailablePort() (int, error) {
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer listener.Close()
-	return listener.Addr().(*net.TCPAddr).Port, nil
 }
 
 func TestConsumeThriftTrace(t *testing.T) {

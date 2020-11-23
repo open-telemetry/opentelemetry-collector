@@ -23,8 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
@@ -53,7 +53,6 @@ func generateLogData(logName string, attrs map[string]pdata.AttributeValue) pdat
 	td := pdata.NewLogs()
 	td.ResourceLogs().Resize(1)
 	rs := td.ResourceLogs().At(0)
-	rs.Resource().InitEmpty()
 	rs.InstrumentationLibraryLogs().Resize(1)
 	ils := rs.InstrumentationLibraryLogs().At(0)
 	lrs := ils.Logs()
@@ -70,9 +69,7 @@ func sortLogAttributes(ld pdata.Logs) {
 		if rs.IsNil() {
 			continue
 		}
-		if !rs.Resource().IsNil() {
-			rs.Resource().Attributes().Sort()
-		}
+		rs.Resource().Attributes().Sort()
 		ilss := rss.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
@@ -142,7 +139,7 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(
-		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, exportertest.NewNopLogsExporter())
+		context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, oCfg, consumertest.NewLogsNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
@@ -205,7 +202,7 @@ func TestAttributes_FilterLogs(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -268,7 +265,7 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 		LogNames: []string{"dont_apply"},
 		Config:   *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -331,7 +328,7 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 		LogNames: []string{".*dont_apply$"},
 		Config:   *createConfig(filterset.Regexp),
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -390,7 +387,7 @@ func TestLogAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: processorhelper.HASH},
 	}
 
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -434,7 +431,7 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	oCfg.Include = &filterconfig.MatchProperties{
 		LogNames: []string{"^apply.*"},
 	}
-	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	tp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, consumertest.NewLogsNop())
 	require.Nil(b, err)
 	require.NotNil(b, tp)
 

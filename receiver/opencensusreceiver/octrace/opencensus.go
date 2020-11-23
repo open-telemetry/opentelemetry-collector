@@ -81,7 +81,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 		ctx = client.NewContext(ctx, c)
 	}
 
-	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.instanceName, receiverTransport, receiverTagValue)
+	longLivedRPCCtx := obsreport.ReceiverContext(ctx, ocr.instanceName, receiverTransport)
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()

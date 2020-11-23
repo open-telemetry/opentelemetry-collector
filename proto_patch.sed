@@ -32,3 +32,8 @@ s+repeated opentelemetry.proto.common.v1.StringKeyValue \(.*\);+repeated opentel
   [\
   (gogoproto.nullable) = false\
   ];+g
+
+s+opentelemetry.proto.resource.v1.Resource resource = \(.*\);+opentelemetry.proto.resource.v1.Resource resource = \1\
+  [\
+  (gogoproto.nullable) = false\
+  ];+g

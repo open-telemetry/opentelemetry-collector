@@ -45,6 +45,9 @@ type HTTPClientSettings struct {
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
+
+	// Custom Round Tripper to allow for individual components to intercept HTTP requests
+	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 }
 
 func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
@@ -68,6 +71,13 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 		clientTransport = &headerRoundTripper{
 			transport: transport,
 			headers:   hcs.Headers,
+		}
+	}
+
+	if hcs.CustomRoundTripper != nil {
+		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
 		}
 	}
 

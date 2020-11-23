@@ -154,12 +154,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - gosec:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - coverage:
           requires:
             - setup-environment
@@ -179,7 +173,6 @@ workflows:
             - lint
             - loadtest
             - test
-            - gosec
             - coverage
             - windows-test
             - windows-msi
@@ -192,7 +185,6 @@ workflows:
             - lint
             - loadtest
             - test
-            - gosec
             - coverage
             - windows-test
             - windows-msi
@@ -210,7 +202,6 @@ workflows:
             - lint
             - loadtest
             - test
-            - gosec
             - coverage
             - windows-test
             - windows-msi
@@ -279,7 +270,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Lint
-          command: make -j4 checklicense impi lint misspell
+          command: make -j4 gochecklicense goimpi golint gomisspell
 
   cross-compile:
     executor: golang
@@ -335,7 +326,7 @@ jobs:
           command: |
             mkdir -p unit-test-results/junit
             trap "go-junit-report  -set-exit-code < unit-test-results/go-unit-tests.out > unit-test-results/junit/results.xml" EXIT
-            make test | tee unit-test-results/go-unit-tests.out
+            make gotest | tee unit-test-results/go-unit-tests.out
       - store_artifacts:
           path: unit-test-results
       - store_test_results:
@@ -356,14 +347,6 @@ jobs:
 
       - save_module_cache
 
-  gosec:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Golang Security Checker
-          command: make lint-gosec
-
   coverage:
     executor: golang
     steps:
@@ -373,7 +356,7 @@ jobs:
           command: sudo apt update && sudo apt-get install bzr time
       - run:
           name: Coverage tests
-          command: make test-with-cover
+          command: make gotest-with-cover
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)

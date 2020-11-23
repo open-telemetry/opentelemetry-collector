@@ -36,7 +36,9 @@ run:
   # If invoked with -mod=vendor, the go command assumes that the vendor
   # directory holds the correct copies of dependencies and ignores
   # the dependency descriptions in go.mod.
-  modules-download-mode: readonly
+  # TODO: re-enable after understanding the issue:
+  # ERRO Running error: context loading failed: failed to load packages: failed to load with go/packages: err: exit status 1: stderr: build flag -mod=readonly only valid when using modules
+  # modules-download-mode: readonly
 
 # output configuration options
 output:
@@ -69,13 +71,16 @@ linters-settings:
   golint:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
+
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
+
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
     local-prefixes: go.opentelemetry.io/collector
+
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
@@ -96,12 +101,14 @@ linters:
     - gofmt
     - goimports
     - golint
+    - gosec
     - govet
     - staticcheck
     - misspell
     - scopelint
     - unconvert
     - gocritic
+    - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
@@ -114,10 +121,18 @@ issues:
       linters:
         # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
         - structcheck
-    - path: opencensus_test.go
-      linters:
-        - unused
     - path: receiver/otlpreceiver/marshal_jsonpb\.go
       linters:
         - gocritic
         - gosimple
+
+    - path: main.go
+      text: "G101:"
+      linters:
+        - gosec
+    - text: "G404:"
+      linters:
+        - gosec
+    - text: "G402:"
+      linters:
+        - gosec

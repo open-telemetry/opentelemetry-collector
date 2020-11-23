@@ -21,23 +21,21 @@ import (
 )
 
 func initResource1(r pdata.Resource) {
-	r.InitEmpty()
 	initResourceAttributes1(r.Attributes())
 }
 
-func generateOtlpResource1() *otlpresource.Resource {
-	return &otlpresource.Resource{
+func generateOtlpResource1() otlpresource.Resource {
+	return otlpresource.Resource{
 		Attributes: generateOtlpResourceAttributes1(),
 	}
 }
 
 func initResource2(r pdata.Resource) {
-	r.InitEmpty()
 	initResourceAttributes2(r.Attributes())
 }
 
-func generateOtlpResource2() *otlpresource.Resource {
-	return &otlpresource.Resource{
+func generateOtlpResource2() otlpresource.Resource {
+	return otlpresource.Resource{
 		Attributes: generateOtlpResourceAttributes2(),
 	}
 }

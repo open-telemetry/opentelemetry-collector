@@ -30,7 +30,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -289,7 +288,7 @@ func TestTraceQueueProcessorHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	views := processor.MetricViews(configtelemetry.LevelDetailed)
+	views := processor.MetricViews()
 	assert.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -318,7 +317,7 @@ func TestTraceQueueProcessorHappyPath(t *testing.T) {
 	mockP.checkNumBatches(t, wantBatches)
 	mockP.checkNumSpans(t, wantSpans)
 
-	droppedView, err := findViewNamed(views, processor.StatDroppedSpanCount.Name())
+	droppedView, err := findViewNamed(views, "processor/"+processor.StatDroppedSpanCount.Name())
 	require.NoError(t, err)
 
 	data, err := view.RetrieveData(droppedView.Name)
@@ -326,7 +325,7 @@ func TestTraceQueueProcessorHappyPath(t *testing.T) {
 	require.Len(t, data, 1)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
 
-	data, err = view.RetrieveData(processor.StatTraceBatchesDroppedCount.Name())
+	data, err = view.RetrieveData("processor/" + processor.StatTraceBatchesDroppedCount.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 0.0, data[0].Data.(*view.SumData).Value)
 	obsreporttest.CheckProcessorTracesViews(t, cfg.Name(), int64(wantSpans), 0, 0)

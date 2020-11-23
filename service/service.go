@@ -32,13 +32,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/builder"
@@ -106,8 +106,8 @@ type Parameters struct {
 	// If it is not provided the default factory (FileLoaderConfigFactory) is used.
 	// The default factory loads the configuration specified as a command line flag.
 	ConfigFactory ConfigFactory
-	// LoggingHooks provides a way to supply a hook into logging events
-	LoggingHooks []func(zapcore.Entry) error
+	// LoggingOptions provides a way to change behavior of zap logging.
+	LoggingOptions []zap.Option
 }
 
 // ConfigFactory creates config.
@@ -146,7 +146,7 @@ func New(params Parameters) (*Application, error) {
 		Use:  params.ApplicationStartInfo.ExeName,
 		Long: params.ApplicationStartInfo.LongName,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := app.init(params.LoggingHooks...)
+			err := app.init(params.LoggingOptions)
 			if err != nil {
 				return err
 			}
@@ -163,6 +163,7 @@ func New(params Parameters) (*Application, error) {
 	// TODO: coalesce this code and expose this information to other components.
 	flagSet := new(flag.FlagSet)
 	addFlagsFns := []func(*flag.FlagSet){
+		configtelemetry.Flags,
 		telemetry.Flags,
 		builder.Flags,
 		loggerFlags,
@@ -227,8 +228,8 @@ func (app *Application) SignalTestComplete() {
 	close(app.stopTestChan)
 }
 
-func (app *Application) init(hooks ...func(zapcore.Entry) error) error {
-	l, err := newLogger(hooks...)
+func (app *Application) init(options []zap.Option) error {
+	l, err := newLogger(options)
 	if err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}

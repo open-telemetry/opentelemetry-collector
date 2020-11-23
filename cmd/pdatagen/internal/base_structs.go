@@ -75,32 +75,27 @@ func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
 
 // CopyTo copies all elements from the current slice to the dest.
 func (es ${structName}) CopyTo(dest ${structName}) {
-	newLen := es.Len()
-	if newLen == 0 {
-		*dest.orig = []*${originName}(nil)
-		return
-	}
-	oldLen := dest.Len()
-	if newLen <= oldLen {
-		(*dest.orig) = (*dest.orig)[:newLen]
-		for i, el := range *es.orig {
-			new${elementName}(&el).CopyTo(new${elementName}(&(*dest.orig)[i]))
+	srcLen := es.Len()
+	destCap := cap(*dest.orig)
+	if srcLen <= destCap {
+		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
+		for i := range *es.orig {
+			new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
 		}
 		return
 	}
-	origs := make([]${originName}, newLen)
-	wrappers := make([]*${originName}, newLen)
-	for i, el := range *es.orig {
+	origs := make([]${originName}, srcLen)
+	wrappers := make([]*${originName}, srcLen)
+	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		new${elementName}(&el).CopyTo(new${elementName}(&wrappers[i]))
+		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
-// 1. If newLen is 0 then the slice is replaced with a nil slice.
-// 2. If the newLen <= len then equivalent with slice[0:newLen].
-// 3. If the newLen > len then (newLen - len) empty elements will be appended to the slice.
+// 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
+// 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
 // Here is how a new ${structName} can be initialized:
 // es := New${structName}()
@@ -110,22 +105,24 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 //     // Here should set all the values for e.
 // }
 func (es ${structName}) Resize(newLen int) {
-	if newLen == 0 {
-		(*es.orig) = []*${originName}(nil)
-		return
-	}
 	oldLen := len(*es.orig)
+	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
-		(*es.orig) = (*es.orig)[:newLen]
+		*es.orig = (*es.orig)[:newLen:oldCap]
 		return
 	}
-	// TODO: Benchmark and optimize this logic.
-	extraOrigs := make([]${originName}, newLen-oldLen)
-	oldOrig := (*es.orig)
-	for i := range extraOrigs {
-		oldOrig = append(oldOrig, &extraOrigs[i])
+
+	if newLen > oldCap {
+		newOrig := make([]*${originName}, oldLen, newLen)
+		copy(newOrig, *es.orig)
+		*es.orig = newOrig
 	}
-	(*es.orig) = oldOrig
+
+	// Add extra empty elements to the array.
+	extraOrigs := make([]${originName}, newLen-oldLen)
+	for i := range extraOrigs {
+		*es.orig = append(*es.orig, &extraOrigs[i])
+	}
 }
 
 // Append will increase the length of the ${structName} by one and set the
@@ -204,9 +201,9 @@ func Test${structName}_Resize(t *testing.T) {
 	for i := 0; i < resizeSmallLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
+	assert.Equal(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
-	assert.EqualValues(t, resizeSmallLen, es.Len())
+	assert.Equal(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*${originName}]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
 		foundEs[*(es.At(i).orig)] = true
@@ -220,9 +217,9 @@ func Test${structName}_Resize(t *testing.T) {
 	for i := 0; i < oldLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, oldLen, len(expectedEs))
+	assert.Equal(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
-	assert.EqualValues(t, resizeLargeLen, es.Len())
+	assert.Equal(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*${originName}]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[*(es.At(i).orig)] = true
@@ -234,7 +231,7 @@ func Test${structName}_Resize(t *testing.T) {
 
 	// Test Resize 0 elements.
 	es.Resize(0)
-	assert.EqualValues(t, New${structName}(), es)
+	assert.Equal(t, 0, es.Len())
 }
 
 func Test${structName}_Append(t *testing.T) {
@@ -267,7 +264,7 @@ func fillTest${structName}(tv ${structName}) {
 	}
 }`
 
-const messageTemplate = `${description}
+const messagePtrTemplate = `${description}
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -305,7 +302,7 @@ func (ms ${structName}) IsNil() bool {
 	return *ms.orig == nil
 }`
 
-const messageCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
+const messagePtrCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
 func (ms ${structName}) CopyTo(dest ${structName}) {
 	if ms.IsNil() {
 		*dest.orig = nil
@@ -315,9 +312,9 @@ func (ms ${structName}) CopyTo(dest ${structName}) {
 		dest.InitEmpty()
 	}`
 
-const messageCopyToFooterTemplate = `}`
+const messagePtrCopyToFooterTemplate = `}`
 
-const messageTestTemplate = `func Test${structName}_InitEmpty(t *testing.T) {
+const messagePtrTestTemplate = `func Test${structName}_InitEmpty(t *testing.T) {
 	ms := New${structName}()
 	assert.True(t, ms.IsNil())
 	ms.InitEmpty()
@@ -332,19 +329,70 @@ func Test${structName}_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTest${structName}(), ms)
 }`
 
-const messageGenerateTestTemplate = `func generateTest${structName}() ${structName} {
+const messagePtrGenerateTestTemplate = `func generateTest${structName}() ${structName} {
 	tv := New${structName}()
 	tv.InitEmpty()
 	fillTest${structName}(tv)
 	return tv
 }`
 
-const messageFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
-const messageFillTestFooterTemplate = `}`
+const messagePtrFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
+const messagePtrFillTestFooterTemplate = `}`
+
+const messageValueTemplate = `${description}
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use New${structName} function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ${structName} struct {
+	// orig points to the pointer ${originName} field contained somewhere else.
+	orig *${originName}
+}
+
+func new${structName}(orig *${originName}) ${structName} {
+	return ${structName}{orig: orig}
+}
+
+// New${structName} creates a new empty ${structName}.
+//
+// This must be used only in testing code since no "Set" method available.
+func New${structName}() ${structName} {
+	return new${structName}(&${originName}{})
+}
+
+// Deprecated: This function will be removed soon.
+func (ms ${structName}) InitEmpty() {
+	*ms.orig = ${originName}{}
+}`
+
+const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
+func (ms ${structName}) CopyTo(dest ${structName}) {`
+
+const messageValueCopyToFooterTemplate = `}`
+
+const messageValueTestTemplate = `
+func Test${structName}_CopyTo(t *testing.T) {
+	ms := New${structName}()
+	generateTest${structName}().CopyTo(ms)
+	assert.EqualValues(t, generateTest${structName}(), ms)
+}`
+
+const messageValueGenerateTestTemplate = `func generateTest${structName}() ${structName} {
+	tv := New${structName}()
+	fillTest${structName}(tv)
+	return tv
+}`
+
+const messageValueFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
+const messageValueFillTestFooterTemplate = `}`
 
 const newLine = "\n"
 
 type baseStruct interface {
+	getName() string
+
 	generateStruct(sb *strings.Builder)
 
 	generateTests(sb *strings.Builder)
@@ -355,7 +403,11 @@ type baseStruct interface {
 // Will generate code only for the slice struct.
 type sliceStruct struct {
 	structName string
-	element    *messageStruct
+	element    *messagePtrStruct
+}
+
+func (ss *sliceStruct) getName() string {
+	return ss.structName
 }
 
 func (ss *sliceStruct) generateStruct(sb *strings.Builder) {
@@ -403,15 +455,19 @@ func (ss *sliceStruct) generateTestValueHelpers(sb *strings.Builder) {
 
 var _ baseStruct = (*sliceStruct)(nil)
 
-type messageStruct struct {
+type messagePtrStruct struct {
 	structName     string
 	description    string
 	originFullName string
 	fields         []baseField
 }
 
-func (ms *messageStruct) generateStruct(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messageTemplate, func(name string) string {
+func (ms *messagePtrStruct) getName() string {
+	return ms.structName
+}
+
+func (ms *messagePtrStruct) generateStruct(sb *strings.Builder) {
+	sb.WriteString(os.Expand(messagePtrTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
@@ -429,7 +485,7 @@ func (ms *messageStruct) generateStruct(sb *strings.Builder) {
 		f.generateAccessors(ms, sb)
 	}
 	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageCopyToHeaderTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messagePtrCopyToHeaderTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
@@ -443,13 +499,13 @@ func (ms *messageStruct) generateStruct(sb *strings.Builder) {
 		f.generateCopyToValue(sb)
 	}
 	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messageCopyToFooterTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messagePtrCopyToFooterTemplate, func(name string) string {
 		panic(name)
 	}))
 }
 
-func (ms *messageStruct) generateTests(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messageTestTemplate, func(name string) string {
+func (ms *messagePtrStruct) generateTests(sb *strings.Builder) {
+	sb.WriteString(os.Expand(messagePtrTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
@@ -464,8 +520,8 @@ func (ms *messageStruct) generateTests(sb *strings.Builder) {
 	}
 }
 
-func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messageGenerateTestTemplate, func(name string) string {
+func (ms *messagePtrStruct) generateTestValueHelpers(sb *strings.Builder) {
+	sb.WriteString(os.Expand(messagePtrGenerateTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
@@ -476,7 +532,7 @@ func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
 		}
 	}))
 	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messageFillTestHeaderTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messagePtrFillTestHeaderTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
@@ -490,9 +546,107 @@ func (ms *messageStruct) generateTestValueHelpers(sb *strings.Builder) {
 		f.generateSetWithTestValue(sb)
 	}
 	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messageFillTestFooterTemplate, func(name string) string {
+	sb.WriteString(os.Expand(messagePtrFillTestFooterTemplate, func(name string) string {
 		panic(name)
 	}))
 }
 
-var _ baseStruct = (*messageStruct)(nil)
+var _ baseStruct = (*messagePtrStruct)(nil)
+
+type messageValueStruct struct {
+	structName     string
+	description    string
+	originFullName string
+	fields         []baseField
+}
+
+func (ms *messageValueStruct) getName() string {
+	return ms.structName
+}
+
+func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
+	sb.WriteString(os.Expand(messageValueTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		case "originName":
+			return ms.originFullName
+		case "description":
+			return ms.description
+		default:
+			panic(name)
+		}
+	}))
+	// Write accessors for the struct
+	for _, f := range ms.fields {
+		sb.WriteString(newLine + newLine)
+		f.generateAccessors(ms, sb)
+	}
+	sb.WriteString(newLine + newLine)
+	sb.WriteString(os.Expand(messageValueCopyToHeaderTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		default:
+			panic(name)
+		}
+	}))
+	// Write accessors CopyTo for the struct
+	for _, f := range ms.fields {
+		sb.WriteString(newLine)
+		f.generateCopyToValue(sb)
+	}
+	sb.WriteString(newLine)
+	sb.WriteString(os.Expand(messageValueCopyToFooterTemplate, func(name string) string {
+		panic(name)
+	}))
+}
+
+func (ms *messageValueStruct) generateTests(sb *strings.Builder) {
+	sb.WriteString(os.Expand(messageValueTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		default:
+			panic(name)
+		}
+	}))
+	// Write accessors tests for the struct
+	for _, f := range ms.fields {
+		sb.WriteString(newLine + newLine)
+		f.generateAccessorsTest(ms, sb)
+	}
+}
+
+func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
+	sb.WriteString(os.Expand(messageValueGenerateTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		case "originName":
+			return ms.originFullName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString(newLine + newLine)
+	sb.WriteString(os.Expand(messageValueFillTestHeaderTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		default:
+			panic(name)
+		}
+	}))
+	// Write accessors test value for the struct
+	for _, f := range ms.fields {
+		sb.WriteString(newLine)
+		f.generateSetWithTestValue(sb)
+	}
+	sb.WriteString(newLine)
+	sb.WriteString(os.Expand(messageValueFillTestFooterTemplate, func(name string) string {
+		panic(name)
+	}))
+}
+
+var _ baseStruct = (*messageValueStruct)(nil)

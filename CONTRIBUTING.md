@@ -276,7 +276,7 @@ See [release](docs/release.md) for details.
 
 ## Common Issues
 
-Build fails due to depenedency issues, e.g.
+Build fails due to dependency issues, e.g.
 
 ```sh
 go: github.com/golangci/golangci-lint@v1.31.0 requires

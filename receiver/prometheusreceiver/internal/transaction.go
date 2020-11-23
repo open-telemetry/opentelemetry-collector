@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"math"
-	"strings"
+	"net"
 	"sync/atomic"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -66,14 +66,14 @@ type transaction struct {
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverName         string
-	ms                   MetadataService
+	ms                   *metadataService
 	node                 *commonpb.Node
 	resource             *resourcepb.Resource
 	metricBuilder        *metricBuilder
 	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms MetadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms *metadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -149,11 +149,10 @@ func (tr *transaction) Commit() error {
 	}
 
 	ctx := obsreport.StartMetricsReceiveOp(tr.ctx, tr.receiverName, transport)
-	metrics, numTimeseries, _, err := tr.metricBuilder.Build()
+	metrics, _, _, err := tr.metricBuilder.Build()
 	if err != nil {
-		// Only error by Build() is errNoDataToBuild, with numTimeseries and
-		// droppedTimeseries set to zero.
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+		// Only error by Build() is errNoDataToBuild, with numReceivedPoints set to zero.
+		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, err)
 		return err
 	}
 
@@ -164,7 +163,7 @@ func (tr *transaction) Commit() error {
 			// Since we are unable to adjust metrics properly, we will drop them
 			// and return an error.
 			err = errNoStartTimeMetrics
-			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+			obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, err)
 			return err
 		}
 
@@ -177,16 +176,15 @@ func (tr *transaction) Commit() error {
 
 	numPoints := 0
 	if len(metrics) > 0 {
-		md := consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{
 			Node:     tr.node,
 			Resource: tr.resource,
 			Metrics:  metrics,
-		}
-		numTimeseries, numPoints = obsreport.CountMetricPoints(md)
-		err = tr.sink.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+		})
+		_, numPoints = md.MetricAndDataPointCount()
+		err = tr.sink.ConsumeMetrics(ctx, md)
 	}
-	obsreport.EndMetricsReceiveOp(
-		ctx, dataformat, numPoints, numTimeseries, err)
+	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, err)
 	return err
 }
 
@@ -218,10 +216,9 @@ func timestampFromFloat64(ts float64) *timestamppb.Timestamp {
 }
 
 func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resourcepb.Resource) {
-	splitted := strings.Split(instance, ":")
-	host, port := splitted[0], "80"
-	if len(splitted) >= 2 {
-		port = splitted[1]
+	host, port, err := net.SplitHostPort(instance)
+	if err != nil {
+		host = instance
 	}
 	node := &commonpb.Node{
 		ServiceInfo: &commonpb.ServiceInfo{Name: job},

@@ -71,6 +71,12 @@ func TestTraceExporter_InvalidName(t *testing.T) {
 	require.Equal(t, errNilConfig, err)
 }
 
+func TestTraceExporter_NilLogger(t *testing.T) {
+	te, err := NewTraceExporter(fakeTraceExporterConfig, nil, newTraceDataPusher(0, nil))
+	require.Nil(t, te)
+	require.Equal(t, errNilLogger, err)
+}
+
 func TestTraceExporter_NilPushTraceData(t *testing.T) {
 	te, err := NewTraceExporter(fakeTraceExporterConfig, zap.NewNop(), nil)
 	require.Nil(t, te)
@@ -103,7 +109,7 @@ func TestTraceExporter_WithRecordMetrics(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraceExporter(t, te, nil, 0)
+	checkRecordedMetricsForTraceExporter(t, te, nil)
 }
 
 func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
@@ -111,7 +117,7 @@ func TestTraceExporter_WithRecordMetrics_NonZeroDropped(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraceExporter(t, te, nil, 1)
+	checkRecordedMetricsForTraceExporter(t, te, nil)
 }
 
 func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
@@ -120,7 +126,7 @@ func TestTraceExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, te)
 
-	checkRecordedMetricsForTraceExporter(t, te, want, 0)
+	checkRecordedMetricsForTraceExporter(t, te, want)
 }
 
 func TestTraceExporter_WithSpan(t *testing.T) {
@@ -177,7 +183,7 @@ func newTraceDataPusher(droppedSpans int, retError error) traceDataPusher {
 	}
 }
 
-func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TracesExporter, wantError error, droppedSpans int) {
+func checkRecordedMetricsForTraceExporter(t *testing.T, te component.TracesExporter, wantError error) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer doneFn()

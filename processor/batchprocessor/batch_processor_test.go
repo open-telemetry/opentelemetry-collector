@@ -116,8 +116,8 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	views := MetricViews(configtelemetry.LevelDetailed)
-	view.Register(views...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	sink := new(consumertest.TracesSink)
@@ -159,7 +159,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		}
 	}
 
-	viewData, err := view.RetrieveData(statBatchSendSize.Name())
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
@@ -168,7 +168,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	assert.Equal(t, sendBatchSize, int(distData.Min))
 	assert.Equal(t, sendBatchSize, int(distData.Max))
 
-	viewData, err = view.RetrieveData(statBatchSendSizeBytes.Name())
+	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
 	distData = viewData[0].Data.(*view.DistributionData)
@@ -297,8 +297,8 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-	views := MetricViews(configtelemetry.LevelDetailed)
-	view.Register(views...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data
@@ -341,7 +341,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 		}
 	}
 
-	viewData, err := view.RetrieveData(statBatchSendSize.Name())
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
@@ -350,7 +350,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
-	viewData, err = view.RetrieveData(statBatchSendSizeBytes.Name())
+	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
 	distData = viewData[0].Data.(*view.DistributionData)
@@ -553,8 +553,8 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	views := MetricViews(configtelemetry.LevelDetailed)
-	view.Register(views...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data
@@ -597,7 +597,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		}
 	}
 
-	viewData, err := view.RetrieveData(statBatchSendSize.Name())
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
 	distData := viewData[0].Data.(*view.DistributionData)
@@ -606,7 +606,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
 	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
 
-	viewData, err = view.RetrieveData(statBatchSendSizeBytes.Name())
+	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(viewData))
 	distData = viewData[0].Data.(*view.DistributionData)

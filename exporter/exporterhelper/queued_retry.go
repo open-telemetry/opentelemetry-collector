@@ -22,6 +22,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/jaegertracing/jaeger/pkg/queue"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -123,8 +124,8 @@ func newQueuedRetrySender(qCfg QueueSettings, rCfg RetrySettings, nextSender req
 // start is invoked during service startup.
 func (qrs *queuedRetrySender) start() {
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
-		value := item.(request)
-		_, _ = qrs.consumerSender.send(value)
+		req := item.(request)
+		_, _ = qrs.consumerSender.send(req)
 	})
 }
 
@@ -210,7 +211,10 @@ func (rs *retrySender) send(req request) (int, error) {
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
+	span := trace.FromContext(req.context())
+	retryNum := int64(0)
 	for {
+		span.Annotate([]trace.Attribute{trace.Int64Attribute("retry_num", retryNum)}, "Send request")
 		droppedItems, err := rs.nextSender.send(req)
 
 		if err == nil {
@@ -249,11 +253,19 @@ func (rs *retrySender) send(req request) (int, error) {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
+		backoffDelayStr := backoffDelay.String()
+		span.Annotate(
+			[]trace.Attribute{
+				trace.StringAttribute("interval", backoffDelayStr),
+				trace.StringAttribute("error", err.Error()),
+			},
+			"Exporting failed. Will retry the request after interval.")
 		rs.logger.Info(
 			"Exporting failed. Will retry the request after interval.",
 			zap.Error(err),
-			zap.String("interval", backoffDelay.String()),
+			zap.String("interval", backoffDelayStr),
 		)
+		retryNum++
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {

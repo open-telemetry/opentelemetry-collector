@@ -229,7 +229,7 @@ func TestMetrics(t *testing.T) {
               "int_histogram": {
                 "data_points": [
                   {
-                    "labels": null,
+                    "labels": [],
                     "time_unix_nano": 1597266546570840817
                   }
                 ]
@@ -242,7 +242,7 @@ func TestMetrics(t *testing.T) {
               "double_histogram": {
                 "data_points": [
                   {
-                    "labels": null,
+                    "labels": [],
                     "time_unix_nano": 1597266546570840817
                   }
                 ]
@@ -476,7 +476,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		rm.InitEmpty()
 
 		res := rm.Resource()
-		res.InitEmpty()
 		resAttrs := res.Attributes()
 		resAttrs.Insert("host", pdata.NewAttributeValueString("my-host"))
 		resAttrs.Insert("serviceName", pdata.NewAttributeValueString("app"))

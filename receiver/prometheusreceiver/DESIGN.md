@@ -256,7 +256,7 @@ type MetricsData struct {
 
 The scrape page as whole also can be fit into the above `MetricsData` data
 structure, and all the metrics data points can be stored with the `Metrics`
-array. We will explain the mappings of individual metirc types in the following
+array. We will explain the mappings of individual metric types in the following
 couple sections
 
 ### Metric Value Mapping

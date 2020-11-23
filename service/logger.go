@@ -26,20 +26,25 @@ import (
 const (
 	logLevelCfg   = "log-level"
 	logProfileCfg = "log-profile"
+	logFormatCfg  = "log-format"
 )
 
 var (
 	// Command line pointer to logger level flag configuration.
 	loggerLevelPtr   *string
 	loggerProfilePtr *string
+	loggerFormatPtr  *string
 )
 
 func loggerFlags(flags *flag.FlagSet) {
 	loggerLevelPtr = flags.String(logLevelCfg, "INFO", "Output level of logs (DEBUG, INFO, WARN, ERROR, DPANIC, PANIC, FATAL)")
 	loggerProfilePtr = flags.String(logProfileCfg, "", "Logging profile to use (dev, prod)")
+
+	// Note: we use "console" by default for more human-friendly mode of logging (tab delimited, formatted timestamps).
+	loggerFormatPtr = flags.String(logFormatCfg, "console", "Format of logs to use (json, console)")
 }
 
-func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
+func newLogger(options []zap.Option) (*zap.Logger, error) {
 	var level zapcore.Level
 	err := (&level).UnmarshalText([]byte(*loggerLevelPtr))
 	if err != nil {
@@ -61,6 +66,12 @@ func newLogger(hooks ...func(zapcore.Entry) error) (*zap.Logger, error) {
 		}
 	}
 
+	conf.Encoding = *loggerFormatPtr
+	if conf.Encoding == "console" {
+		// Human-readable timestamps for console format of logs.
+		conf.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	}
+
 	conf.Level.SetLevel(level)
-	return conf.Build(zap.Hooks(hooks...))
+	return conf.Build(options...)
 }

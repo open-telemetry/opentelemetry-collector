@@ -52,7 +52,7 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: componenttest.TestApplicationStartInfo(), LoggingHooks: []func(entry zapcore.Entry) error{hook}})
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: componenttest.TestApplicationStartInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 

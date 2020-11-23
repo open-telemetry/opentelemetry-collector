@@ -79,18 +79,13 @@ func getSDKLangToOCLangCodeMap() map[string]int32 {
 }
 
 func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.Resource) {
-	if resource.IsNil() {
+	attrs := resource.Attributes()
+	if attrs.Len() == 0 {
 		return nil, nil
 	}
-	attrs := resource.Attributes()
 
 	ocNode := occommon.Node{}
 	ocResource := ocresource.Resource{}
-
-	if attrs.Len() == 0 {
-		return &ocNode, &ocResource
-	}
-
 	labels := make(map[string]string, attrs.Len())
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
 		val := tracetranslator.AttributeValueToString(v, false)
@@ -113,7 +108,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}
 			ocNode.Identifier.StartTimestamp = ts
-		case conventions.AttributeHostHostname:
+		case conventions.AttributeHostName:
 			if ocNode.Identifier == nil {
 				ocNode.Identifier = &occommon.ProcessIdentifier{}
 			}

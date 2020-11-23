@@ -25,9 +25,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor/memorylimiter/internal/iruntime"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -108,6 +110,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
+		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		&Config{
@@ -177,6 +180,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
+		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
 	}
 	tp, err := processorhelper.NewTraceProcessor(
 		&Config{
@@ -246,6 +250,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
+		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		&Config{

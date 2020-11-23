@@ -20,8 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -61,8 +61,7 @@ func createTraceProcessor(
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
-	// error can be ignored, level is parsed at the service startup
-	level, _ := telemetry.GetLevel()
+	level := configtelemetry.GetMetricsLevelFlagValue()
 	return newBatchTracesProcessor(params, nextConsumer, oCfg, level), nil
 }
 
@@ -73,7 +72,7 @@ func createMetricsProcessor(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
-	level, _ := telemetry.GetLevel()
+	level := configtelemetry.GetMetricsLevelFlagValue()
 	return newBatchMetricsProcessor(params, nextConsumer, oCfg, level), nil
 }
 
@@ -84,6 +83,6 @@ func createLogsProcessor(
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
-	level, _ := telemetry.GetLevel()
+	level := configtelemetry.GetMetricsLevelFlagValue()
 	return newBatchLogsProcessor(params, nextConsumer, oCfg, level), nil
 }

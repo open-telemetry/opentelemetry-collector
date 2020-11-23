@@ -46,8 +46,6 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		return
 	}
 
-	dest.InitEmpty()
-
 	// Number of special fields in OC that will be translated to Attributes
 	const serviceInfoAttrCount = 1     // Number of Node.ServiceInfo fields.
 	const nodeIdentifierAttrCount = 3  // Number of Node.Identifier fields.
@@ -100,7 +98,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.UpsertString(conventions.OCAttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
 			}
 			if ocNode.Identifier.HostName != "" {
-				attrs.UpsertString(conventions.AttributeHostHostname, ocNode.Identifier.HostName)
+				attrs.UpsertString(conventions.AttributeHostName, ocNode.Identifier.HostName)
 			}
 			if ocNode.Identifier.Pid != 0 {
 				attrs.UpsertInt(conventions.OCAttributeProcessID, int64(ocNode.Identifier.Pid))

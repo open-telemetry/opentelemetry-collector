@@ -18,4 +18,6 @@ coverage:
         target: 95%
 
 ignore:
-  - **/*/metadata/generated_metrics.go
+  - "**/*/metadata/generated_metrics.go"
+  - "internal/data/opentelemetry-proto-gen/**/*"
+  - "testbed/**/*"

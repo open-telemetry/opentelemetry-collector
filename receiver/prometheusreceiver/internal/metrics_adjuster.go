@@ -363,6 +363,7 @@ func (ma *MetricsAdjuster) adjustBuckets(current, initial []*metricspb.Distribut
 	if len(current) != len(initial) {
 		// this shouldn't happen
 		ma.logger.Info("Bucket sizes not equal", zap.Int("len(current)", len(current)), zap.Int("len(initial)", len(initial)))
+		return
 	}
 	for i := 0; i < len(current); i++ {
 		current[i].Count -= initial[i].Count

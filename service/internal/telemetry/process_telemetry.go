@@ -82,10 +82,10 @@ var viewSysMem = &view.View{
 	TagKeys:     nil,
 }
 
-var mCPUSeconds = stats.Int64(
+var mCPUSeconds = stats.Float64(
 	"process/cpu_seconds",
 	"Total CPU user and system time in seconds",
-	stats.UnitDimensionless)
+	stats.UnitSeconds)
 var viewCPUSeconds = &view.View{
 	Name:        mCPUSeconds.Name(),
 	Description: mCPUSeconds.Description(),
@@ -97,7 +97,7 @@ var viewCPUSeconds = &view.View{
 var mRSSMemory = stats.Int64(
 	"process/memory/rss",
 	"Total physical memory (resident set size)",
-	stats.UnitDimensionless)
+	stats.UnitBytes)
 var viewRSSMemory = &view.View{
 	Name:        mRSSMemory.Name(),
 	Description: mRSSMemory.Description(),
@@ -166,7 +166,7 @@ func (pmv *ProcessMetricsViews) updateViews() {
 
 	if pmv.proc != nil {
 		if times, err := pmv.proc.Times(); err == nil {
-			stats.Record(context.Background(), mCPUSeconds.M(int64(times.Total())))
+			stats.Record(context.Background(), mCPUSeconds.M(times.Total()))
 		}
 		if mem, err := pmv.proc.MemoryInfo(); err == nil {
 			stats.Record(context.Background(), mRSSMemory.M(int64(mem.RSS)))

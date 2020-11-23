@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -72,10 +73,14 @@ func NewLogsExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
 	pushLogsData PushLogsData,
-	options ...ExporterOption,
+	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
+	}
+
+	if logger == nil {
+		return nil, errNilLogger
 	}
 
 	if pushLogsData == nil {
@@ -85,8 +90,8 @@ func NewLogsExporter(
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
-			exporterName: cfg.Name(),
-			nextSender:   nextSender,
+			obsrep:     obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			nextSender: nextSender,
 		}
 	})
 
@@ -97,13 +102,13 @@ func NewLogsExporter(
 }
 
 type logsExporterWithObservability struct {
-	exporterName string
-	nextSender   requestSender
+	obsrep     *obsreport.ExporterObsReport
+	nextSender requestSender
 }
 
 func (lewo *logsExporterWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName))
+	req.setContext(lewo.obsrep.StartLogsExportOp(req.context()))
 	numDroppedLogs, err := lewo.nextSender.send(req)
-	obsreport.EndLogsExportOp(req.context(), req.count(), numDroppedLogs, err)
+	lewo.obsrep.EndLogsExportOp(req.context(), req.count(), err)
 	return numDroppedLogs, err
 }

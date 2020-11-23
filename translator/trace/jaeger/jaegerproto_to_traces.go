@@ -91,17 +91,12 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 }
 
 func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
-	if process == nil || process.ServiceName == tracetranslator.ResourceNotSet {
+	if process == nil || process.ServiceName == tracetranslator.ResourceNoServiceName {
 		return
 	}
 
-	dest.InitEmpty()
-
-	serviceName := process.GetServiceName()
-	if serviceName == tracetranslator.ResourceNoAttrs {
-		return
-	}
-	tags := process.GetTags()
+	serviceName := process.ServiceName
+	tags := process.Tags
 	if serviceName == "" && tags == nil {
 		return
 	}
@@ -123,9 +118,9 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 // translateHostnameAttr translates "hostname" atttribute
 func translateHostnameAttr(attrs pdata.AttributeMap) {
 	hostname, hostnameFound := attrs.Get("hostname")
-	_, convHostnameFound := attrs.Get(conventions.AttributeHostHostname)
-	if hostnameFound && !convHostnameFound {
-		attrs.Insert(conventions.AttributeHostHostname, hostname)
+	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
+	if hostnameFound && !convHostNameFound {
+		attrs.Insert(conventions.AttributeHostName, hostname)
 		attrs.Delete("hostname")
 	}
 }

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -37,6 +38,10 @@ const (
 	protoGRPC          = "grpc"
 	protoHTTP          = "http"
 	protocolsFieldName = "protocols"
+
+	defaultGRPCEndpoint = "0.0.0.0:4317"
+	defaultHTTPEndpoint = "0.0.0.0:55681"
+	legacyGRPCEndpoint  = "0.0.0.0:55680"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -59,14 +64,14 @@ func createDefaultConfig() configmodels.Receiver {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  "0.0.0.0:55680",
+					Endpoint:  defaultGRPCEndpoint,
 					Transport: "tcp",
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: "0.0.0.0:55681",
+				Endpoint: defaultHTTPEndpoint,
 			},
 		},
 	}
@@ -117,11 +122,11 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 // CreateTracesReceiver creates a  trace receiver based on provided config.
 func createTraceReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateParams,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesReceiver, error) {
-	r, err := createReceiver(cfg)
+	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -134,11 +139,11 @@ func createTraceReceiver(
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateParams,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	r, err := createReceiver(cfg)
+	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +156,11 @@ func createMetricsReceiver(
 // CreateLogReceiver creates a log receiver based on provided config.
 func createLogReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateParams,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.LogsConsumer,
 ) (component.LogsReceiver, error) {
-	r, err := createReceiver(cfg)
+	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +170,7 @@ func createLogReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver) (*otlpReceiver, error) {
+func createReceiver(cfg configmodels.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -176,7 +181,7 @@ func createReceiver(cfg configmodels.Receiver) (*otlpReceiver, error) {
 	if !ok {
 		var err error
 		// We don't have a receiver, so create one.
-		receiver, err = newOtlpReceiver(rCfg)
+		receiver, err = newOtlpReceiver(rCfg, logger)
 		if err != nil {
 			return nil, err
 		}

@@ -216,7 +216,7 @@ dedicated port for Agent, while there could be multiple instrumented processes. 
    were sent in a subsequent message. Identifier is no longer needed once the
    streams are established.
 3. On Sender side, if connection to Collector failed, Sender should retry
-   indefintely if possible, subject to available/configured memory buffer size.
+   indefinitely if possible, subject to available/configured memory buffer size.
    (Reason: consider environments where the running applications are already
    instrumented with OpenTelemetry Library but Collector is not deployed yet.
    Sometime in the future, we can simply roll out the Collector to those

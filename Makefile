@@ -1,11 +1,12 @@
-# All source code excluding any third party code and excluding the testbed.
-# This is the code that we want to run tests for and lint, staticcheck, etc.
+include ./Makefile.Common
+
+# This is the code that we want to run checklicense, staticcheck, etc.
 ALL_SRC := $(shell find . -name '*.go' \
-							-not -path './testbed/*' \
-							-not -path '*/internal/data/opentelemetry-proto/*' \
-							-not -path '*/internal/data/opentelemetry-proto-gen/*' \
-							-not -path './.circleci/scripts/reportgenerator/*' \
+							-not -path './cmd/issuegenerator/*' \
+							-not -path './cmd/mdatagen/*' \
+							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
+							-not -path './internal/data/opentelemetry-proto-gen/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -15,18 +16,14 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
-GOTEST_OPT?= -v -race -timeout 180s
-GO_ACC=go-acc
-GOTEST=go test
+# ALL_MODULES includes ./* dirs (excludes . dir)
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+
+CMD?=
+TOOLS_MOD_DIR := ./internal/tools
+
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
-ADDLICENSE= addlicense
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
-LINT=golangci-lint
-IMPI=impi
-GOSEC=gosec
-STATIC_CHECK=staticcheck
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
@@ -51,16 +48,13 @@ $(1)
 
 endef
 
-all-srcs:
-	@echo $(ALL_SRC) | tr ' ' '\n' | sort
-
-all-pkgs:
-	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
-
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense impi lint misspell test otelcol
+all: gochecklicense goimpi golint gomisspell gotest otelcol
+
+all-modules:
+	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 .PHONY: testbed-loadtest
 testbed-loadtest: otelcol
@@ -78,89 +72,63 @@ testbed-list-loadtest:
 testbed-list-correctness:
 	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
 
-.PHONY: test
-test:
-	echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
+.PHONY: gotest
+gotest:
+	@$(MAKE) for-all CMD="make test"
 
-.PHONY: benchmark
-benchmark:
-	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
+.PHONY: gobenchmark
+gobenchmark:
+	@$(MAKE) for-all CMD="make benchmark"
 
-.PHONY: test-with-cover
-test-with-cover:
-	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst go.opentelemetry.io/collector,.,$(ALL_PKGS))
+.PHONY: gotest-with-cover
+gotest-with-cover:
 	@echo pre-compiling tests
-	@time go test -i $(ALL_PKGS)
-	$(GO_ACC) $(ALL_PKGS)
+	@time $(GOTEST) -i ./...
+	$(GO_ACC) ./...
 	go tool cover -html=coverage.txt -o coverage.html
 
-.PHONY: addlicense
-addlicense:
-	$(ADDLICENSE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC)
+.PHONY: goaddlicense
+goaddlicense:
+	@$(MAKE) for-all CMD="make addlicense"
 
-.PHONY: checklicense
-checklicense:
-	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENSEOUT" ]; then \
-			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENSEOUT\n"; \
-			echo "Use 'make addlicense' to fix this."; \
-			exit 1; \
-		else \
-			echo "Check License finished successfully"; \
-		fi
+.PHONY: gochecklicense
+gochecklicense:
+	@$(MAKE) for-all CMD="make checklicense"
 
-.PHONY: misspell
-misspell:
-	$(MISSPELL) $(ALL_DOC)
+.PHONY: gomisspell
+gomisspell:
+	@$(MAKE) for-all CMD="make misspell"
 
-.PHONY: misspell-correction
-misspell-correction:
-	$(MISSPELL_CORRECTION) $(ALL_DOC)
+.PHONY: gomisspell-correction
+gomisspell-correction:
+	@$(MAKE) for-all CMD="make misspell-correction"
 
-.PHONY: lint-gosec
-lint-gosec:
-	# TODO: Consider to use gosec from golangci-lint
-	$(GOSEC) -quiet -exclude=G104 $(ALL_PKGS)
+.PHONY: golint
+golint:
+	@$(MAKE) for-all CMD="make lint"
 
-.PHONY: lint-static-check
-lint-static-check:
-	@STATIC_CHECK_OUT=`$(STATIC_CHECK) $(ALL_PKGS) 2>&1`; \
-		if [ "$$STATIC_CHECK_OUT" ]; then \
-			echo "$(STATIC_CHECK) FAILED => static check errors:\n"; \
-			echo "$$STATIC_CHECK_OUT\n"; \
-			exit 1; \
-		else \
-			echo "Static check finished successfully"; \
-		fi
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) for-all CMD="make impi"
 
-.PHONY: lint
-lint: lint-static-check
-	$(LINT) run
-
-.PHONY: impi
-impi:
-	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal --skip internal/data/opentelemetry-proto ./...
-
-.PHONY: fmt
-fmt:
-	gofmt  -w -s ./
-	goimports -w  -local go.opentelemetry.io/collector ./
+.PHONY: gofmt
+gofmt:
+	@$(MAKE) for-all CMD="make fmt"
 
 .PHONY: install-tools
 install-tools:
-	go install github.com/client9/misspell/cmd/misspell
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	go install github.com/google/addlicense
-	go install github.com/jstemmer/go-junit-report
-	go install github.com/mjibson/esc
-	go install github.com/ory/go-acc
-	go install github.com/pavius/impi/cmd/impi
-	go install github.com/securego/gosec/cmd/gosec
-	go install github.com/tcnksm/ghr
-	go install golang.org/x/tools/cmd/goimports
-	go install honnef.co/go/tools/cmd/staticcheck
+	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
+	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
+	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
+	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
+	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
+	cd $(TOOLS_MOD_DIR) && go install github.com/securego/gosec/v2/cmd/gosec
+	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
+	cd cmd/mdatagen && go install ./
 
 .PHONY: otelcol
 otelcol:
@@ -177,6 +145,16 @@ docker-component: check-component
 	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
+
+.PHONY: for-all
+for-all:
+	@echo "running $${CMD} in root"
+	@$${CMD}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (cd "$${dir}" && \
+	  	echo "running $${CMD} in $${dir}" && \
+	 	$${CMD} ); \
+	done
 
 .PHONY: check-component
 check-component:

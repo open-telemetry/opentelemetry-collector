@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -97,7 +97,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	return metrics, receiverhelper.CombineScrapeErrors(errors)
+	return metrics, scraperhelper.CombineScrapeErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
@@ -194,19 +194,9 @@ func (s *scraper) scrapeAndAppendNetworkTCPConnectionsMetric(metrics pdata.Metri
 }
 
 func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]int64 {
-	var tcpStatuses = map[string]int64{
-		"CLOSE_WAIT":   0,
-		"CLOSED":       0,
-		"CLOSING":      0,
-		"DELETE":       0,
-		"ESTABLISHED":  0,
-		"FIN_WAIT_1":   0,
-		"FIN_WAIT_2":   0,
-		"LAST_ACK":     0,
-		"LISTEN":       0,
-		"SYN_SENT":     0,
-		"SYN_RECEIVED": 0,
-		"TIME_WAIT":    0,
+	tcpStatuses := make(map[string]int64, len(allTCPStates))
+	for _, state := range allTCPStates {
+		tcpStatuses[state] = 0
 	}
 
 	for _, connection := range connections {

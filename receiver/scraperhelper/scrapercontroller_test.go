@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receiverhelper
+package scraperhelper
 
 import (
 	"context"
@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -32,8 +32,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -181,8 +179,6 @@ func TestScrapeController(t *testing.T) {
 		},
 	}
 
-	views := obsreport.Configure(false, true)
-
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
@@ -191,8 +187,9 @@ func TestScrapeController(t *testing.T) {
 			trace.RegisterExporter(ss)
 			defer trace.UnregisterExporter(ss)
 
-			require.NoError(t, view.Register(views...))
-			defer view.Unregister(views...)
+			done, err := obsreporttest.SetupRecordedMetricsTest()
+			require.NoError(t, err)
+			defer done()
 
 			initializeChs := make([]chan bool, test.scrapers+test.resourceScrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)
@@ -204,7 +201,7 @@ func TestScrapeController(t *testing.T) {
 			options = append(options, WithTickerChannel(tickerCh))
 
 			var nextConsumer consumer.MetricsConsumer
-			sink := &exportertest.SinkMetricsExporter{}
+			sink := new(consumertest.MetricsSink)
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
@@ -215,7 +212,7 @@ func TestScrapeController(t *testing.T) {
 				cfg.NameVal = "receiver"
 			}
 
-			mr, err := NewScraperControllerReceiver(cfg, nextConsumer, options...)
+			mr, err := NewScraperControllerReceiver(cfg, zap.NewNop(), nextConsumer, options...)
 			if test.expectedNewErr != "" {
 				assert.EqualError(t, err, test.expectedNewErr)
 				return
@@ -357,8 +354,13 @@ func assertReceiverSpan(t *testing.T, spans []*trace.SpanData) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverViews(t *testing.T, sink *exportertest.SinkMetricsExporter) {
-	obsreporttest.CheckReceiverMetricsViews(t, "receiver", "", int64(sink.MetricsCount()), 0)
+func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
+	dataPointCount := 0
+	for _, md := range sink.AllMetrics() {
+		_, dpc := md.MetricAndDataPointCount()
+		dataPointCount += dpc
+	}
+	obsreporttest.CheckReceiverMetricsViews(t, "receiver", "", int64(dataPointCount), 0)
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData) {
@@ -381,7 +383,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []*trace.SpanData)
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperViews(t *testing.T, expectedErr error, sink *exportertest.SinkMetricsExporter) {
+func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.MetricsSink) {
 	expectedScraped := int64(sink.MetricsCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
@@ -399,6 +401,9 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *exportertest.Sink
 func singleMetric() pdata.MetricSlice {
 	metrics := pdata.NewMetricSlice()
 	metrics.Resize(1)
+	metrics.At(0).SetDataType(pdata.MetricDataTypeIntGauge)
+	metrics.At(0).IntGauge().InitEmpty()
+	metrics.At(0).IntGauge().DataPoints().Resize(1)
 	return metrics
 }
 
@@ -427,6 +432,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
+		zap.NewNop(),
 		new(consumertest.MetricsSink),
 		AddMetricsScraper(NewMetricsScraper("", tsm.scrape)),
 		AddResourceMetricsScraper(NewResourceMetricsScraper("", tsrm.scrape)),

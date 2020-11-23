@@ -82,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55680",
+						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
 					ReadBufferSize: 512 * 1024,
@@ -112,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55680",
+						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
 					MaxRecvMsgSizeMiB:    32,
@@ -139,7 +139,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:55680",
+						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
 					TLSSetting: &configtls.TLSServerSetting{

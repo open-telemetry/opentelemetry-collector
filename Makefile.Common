@@ -1,0 +1,90 @@
+# SRC_ROOT is the top of the source tree.
+SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+
+ALL_SRC := $(shell find . -name '*.go' \
+                                -not -path '*/third_party/*' \
+                                -type f | sort)
+
+# ALL_PKGS is the list of all packages where ALL_SRC files reside.
+ALL_PKGS := $(shell go list ./...)
+
+# All source code and documents. Used in spell check.
+ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
+                                -type f | sort)
+
+GOTEST_OPT?= -v -race -timeout 180s
+GO_ACC=go-acc
+GOTEST=go test
+ADDLICENCESE=addlicense
+MISSPELL=misspell -error
+MISSPELL_CORRECTION=misspell -w
+STATIC_CHECK=staticcheck
+LINT=golangci-lint
+IMPI=impi
+
+all-license-srcs:
+	@echo $(ALL_SRC) | tr ' ' '\n' | sort
+
+.PHONY: test
+test:
+	@echo "running go unit test ./... in `pwd`"
+	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
+
+.PHONY: benchmark
+benchmark:
+	$(GOTEST) -bench=. -run=notests ./...
+
+.PHONY: addlicense
+addlicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			exit 1; \
+		else \
+			echo "Add License finished successfully"; \
+		fi
+
+.PHONY: checklicense
+checklicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			echo "Use 'make addlicense' to fix this."; \
+			exit 1; \
+		else \
+			echo "Check License finished successfully"; \
+		fi
+
+.PHONY: fmt
+fmt:
+	gofmt -w -s ./
+	goimports -w  -local go.opentelemetry.io/collector ./
+
+.PHONY: lint-static-check
+lint-static-check:
+	@STATIC_CHECK_OUT=`$(STATIC_CHECK) $(ALL_PKGS) 2>&1`; \
+		if [ "$$STATIC_CHECK_OUT" ]; then \
+			echo "$(STATIC_CHECK) FAILED => static check errors:\n"; \
+			echo "$$STATIC_CHECK_OUT\n"; \
+			exit 1; \
+		else \
+			echo "Static check finished successfully"; \
+		fi
+
+.PHONY: lint
+lint: lint-static-check
+	$(LINT) run --allow-parallel-runners
+
+.PHONY: misspell
+misspell:
+	$(MISSPELL) $(ALL_DOC)
+
+.PHONY: misspell-correction
+misspell-correction:
+	$(MISSPELL_CORRECTION) $(ALL_DOC)
+
+.PHONY: impi
+impi:
+	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...

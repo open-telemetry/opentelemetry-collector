@@ -62,7 +62,9 @@ type configuration struct {
 	CollectorGRPCOptions []grpc.ServerOption
 
 	AgentCompactThriftPort       int
+	AgentCompactThriftConfig     ServerConfigUDP
 	AgentBinaryThriftPort        int
+	AgentBinaryThriftConfig      ServerConfigUDP
 	AgentHTTPPort                int
 	RemoteSamplingClientSettings configgrpc.GRPCClientSettings
 	RemoteSamplingStrategyFile   string
@@ -93,14 +95,6 @@ type jReceiver struct {
 }
 
 const (
-	defaultAgentQueueSize     = 1000
-	defaultAgentMaxPacketSize = 65000
-	defaultAgentServerWorkers = 10
-
-	// Legacy metrics receiver name tag values
-	collectorReceiverTagValue = "jaeger-collector"
-	agentReceiverTagValue     = "jaeger-agent"
-
 	agentTransportBinary   = "udp_thrift_binary"
 	agentTransportCompact  = "udp_thrift_compact"
 	collectorHTTPTransport = "collector_http"
@@ -124,13 +118,13 @@ func newJaegerReceiver(
 	config *configuration,
 	nextConsumer consumer.TracesConsumer,
 	params component.ReceiverCreateParams,
-) (*jReceiver, error) {
+) *jReceiver {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		instanceName: instanceName,
 		logger:       params.Logger,
-	}, nil
+	}
 }
 
 func (jr *jReceiver) agentCompactThriftAddr() string {
@@ -271,7 +265,7 @@ func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err
 // EmitBatch implements thrift-gen/agent/Agent and it forwards
 // Jaeger spans received by the Jaeger agent processor.
 func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error {
-	ctx = obsreport.ReceiverContext(ctx, h.name, h.transport, agentReceiverTagValue)
+	ctx = obsreport.ReceiverContext(ctx, h.name, h.transport)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, h.name, h.transport)
 
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
@@ -299,8 +293,7 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.ReceiverContext(
-		ctx, jr.instanceName, grpcTransport, collectorReceiverTagValue)
+	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, grpcTransport)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, grpcTransport)
 
 	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
@@ -325,7 +318,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			transport:    agentTransportBinary,
 			nextConsumer: jr.nextConsumer,
 		}
-		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
+		processor, err := jr.buildProcessor(jr.agentBinaryThriftAddr(), jr.config.AgentBinaryThriftConfig, apacheThrift.NewTBinaryProtocolFactoryDefault(), h)
 		if err != nil {
 			return err
 		}
@@ -338,7 +331,7 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 			transport:    agentTransportCompact,
 			nextConsumer: jr.nextConsumer,
 		}
-		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), apacheThrift.NewTCompactProtocolFactory(), h)
+		processor, err := jr.buildProcessor(jr.agentCompactThriftAddr(), jr.config.AgentCompactThriftConfig, apacheThrift.NewTCompactProtocolFactory(), h)
 		if err != nil {
 			return err
 		}
@@ -378,17 +371,22 @@ func (jr *jReceiver) startAgent(_ component.Host) error {
 	return nil
 }
 
-func (jr *jReceiver) buildProcessor(address string, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
+func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
 	handler := agent.NewAgentProcessor(a)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
 		return nil, err
 	}
-	server, err := servers.NewTBufferedServer(transport, defaultAgentQueueSize, defaultAgentMaxPacketSize, metrics.NullFactory)
+	if cfg.SocketBufferSize > 0 {
+		if err = transport.SetSocketBufferSize(cfg.SocketBufferSize); err != nil {
+			return nil, err
+		}
+	}
+	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, metrics.NullFactory)
 	if err != nil {
 		return nil, err
 	}
-	processor, err := processors.NewThriftProcessor(server, defaultAgentServerWorkers, metrics.NullFactory, factory, handler, jr.logger)
+	processor, err := processors.NewThriftProcessor(server, cfg.Workers, metrics.NullFactory, factory, handler, jr.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -437,10 +435,8 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		ctx = client.NewContext(ctx, c)
 	}
 
-	ctx = obsreport.ReceiverContext(
-		ctx, jr.instanceName, collectorHTTPTransport, collectorReceiverTagValue)
-	ctx = obsreport.StartTraceDataReceiveOp(
-		ctx, jr.instanceName, collectorHTTPTransport)
+	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, collectorHTTPTransport)
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, collectorHTTPTransport)
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {

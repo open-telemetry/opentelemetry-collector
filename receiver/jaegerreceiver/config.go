@@ -18,11 +18,18 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/confignet"
 )
 
-// The config field name to load the protocol map from
-const protocolsFieldName = "protocols"
+const (
+	// The config field name to load the protocol map from
+	protocolsFieldName = "protocols"
+
+	// Default UDP server options
+	defaultQueueSize        = 1_000
+	defaultMaxPacketSize    = 65_000
+	defaultServerWorkers    = 10
+	defaultSocketBufferSize = 0
+)
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
@@ -34,8 +41,29 @@ type RemoteSamplingConfig struct {
 type Protocols struct {
 	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 	ThriftHTTP    *confighttp.HTTPServerSettings `mapstructure:"thrift_http"`
-	ThriftBinary  *confignet.TCPAddr             `mapstructure:"thrift_binary"`
-	ThriftCompact *confignet.TCPAddr             `mapstructure:"thrift_compact"`
+	ThriftBinary  *ProtocolUDP                   `mapstructure:"thrift_binary"`
+	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
+}
+
+type ProtocolUDP struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	ServerConfigUDP `mapstructure:",squash"`
+}
+
+type ServerConfigUDP struct {
+	QueueSize        int `mapstructure:"queue_size"`
+	MaxPacketSize    int `mapstructure:"max_packet_size"`
+	Workers          int `mapstructure:"workers"`
+	SocketBufferSize int `mapstructure:"socket_buffer_size"`
+}
+
+func DefaultServerConfigUDP() ServerConfigUDP {
+	return ServerConfigUDP{
+		QueueSize:        defaultQueueSize,
+		MaxPacketSize:    defaultMaxPacketSize,
+		Workers:          defaultServerWorkers,
+		SocketBufferSize: defaultSocketBufferSize,
+	}
 }
 
 // Config defines configuration for Jaeger receiver.

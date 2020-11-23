@@ -83,7 +83,6 @@ func collectLogRecords(events []Event) pdata.Logs {
 	logs.Resize(1)
 	rls := logs.At(0)
 
-	rls.Resource().InitEmpty()
 	rls.InstrumentationLibraryLogs().Resize(1)
 	logSlice := rls.InstrumentationLibraryLogs().At(0).Logs()
 

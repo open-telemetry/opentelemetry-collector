@@ -126,9 +126,9 @@ func TestAnyValueArray_Resize(t *testing.T) {
 	for i := 0; i < resizeSmallLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, resizeSmallLen, len(expectedEs))
+	assert.Equal(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
-	assert.EqualValues(t, resizeSmallLen, es.Len())
+	assert.Equal(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
 		foundEs[*(es.At(i).orig)] = true
@@ -142,9 +142,9 @@ func TestAnyValueArray_Resize(t *testing.T) {
 	for i := 0; i < oldLen; i++ {
 		expectedEs[*(es.At(i).orig)] = true
 	}
-	assert.EqualValues(t, oldLen, len(expectedEs))
+	assert.Equal(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
-	assert.EqualValues(t, resizeLargeLen, es.Len())
+	assert.Equal(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[*(es.At(i).orig)] = true
@@ -156,7 +156,7 @@ func TestAnyValueArray_Resize(t *testing.T) {
 
 	// Test Resize 0 elements.
 	es.Resize(0)
-	assert.EqualValues(t, NewAnyValueArray(), es)
+	assert.Equal(t, 0, es.Len())
 }
 
 func TestAnyValueArray_Append(t *testing.T) {

@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -91,7 +91,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		appendSystemSpecificMetrics(metrics, 1, now, usages)
 	}
 
-	err = receiverhelper.CombineScrapeErrors(errors)
+	err = scraperhelper.CombineScrapeErrors(errors)
 	if err != nil && len(usages) == 0 {
 		partialErr := err.(consumererror.PartialScrapeError)
 		partialErr.Failed = metricsLen

@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 var standardMetrics = []string{
@@ -101,7 +101,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	config := &Config{
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
@@ -120,7 +120,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		config.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
 	}
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
@@ -154,8 +154,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-
-		if rm.Resource().IsNil() || rm.Resource().Attributes().Len() == 0 {
+		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
 		} else {
 			appendMapInto(returnedResourceMetrics, returnedMetricNames)
@@ -209,14 +208,14 @@ type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, internal.Config) (receiverhelper.MetricsScraper, error) {
+func (m *mockFactory) CreateMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.MetricsScraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
-	return args.Get(0).(receiverhelper.MetricsScraper), args.Error(1)
+	return args.Get(0).(scraperhelper.MetricsScraper), args.Error(1)
 }
 
-func (m *mockScraper) Name() string                     { return "" }
-func (m *mockScraper) Initialize(context.Context) error { return nil }
-func (m *mockScraper) Close(context.Context) error      { return nil }
+func (m *mockScraper) Name() string                                { return "" }
+func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
+func (m *mockScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockScraper) Scrape(context.Context, string) (pdata.MetricSlice, error) {
 	return pdata.NewMetricSlice(), errors.New("err1")
 }
@@ -225,14 +224,14 @@ type mockResourceFactory struct{ mock.Mock }
 type mockResourceScraper struct{ mock.Mock }
 
 func (m *mockResourceFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap.Logger, internal.Config) (receiverhelper.ResourceMetricsScraper, error) {
+func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.ResourceMetricsScraper, error) {
 	args := m.MethodCalled("CreateResourceMetricsScraper")
-	return args.Get(0).(receiverhelper.ResourceMetricsScraper), args.Error(1)
+	return args.Get(0).(scraperhelper.ResourceMetricsScraper), args.Error(1)
 }
 
-func (m *mockResourceScraper) Name() string                     { return "" }
-func (m *mockResourceScraper) Initialize(context.Context) error { return nil }
-func (m *mockResourceScraper) Close(context.Context) error      { return nil }
+func (m *mockResourceScraper) Name() string                                { return "" }
+func (m *mockResourceScraper) Start(context.Context, component.Host) error { return nil }
+func (m *mockResourceScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockResourceScraper) Scrape(context.Context, string) (pdata.ResourceMetricsSlice, error) {
 	return pdata.NewResourceMetricsSlice(), errors.New("err2")
 }
@@ -243,7 +242,7 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 	require.Error(t, err)
 }
 
@@ -255,7 +254,7 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 	require.Error(t, err)
 }
 
@@ -267,7 +266,7 @@ func TestGatherMetrics_CreateMetricsResourceScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	config := &Config{Scrapers: map[string]internal.Config{mockResourceTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, config, sink)
+	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationParams, config, sink)
 	require.Error(t, err)
 }
 
@@ -296,9 +295,9 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 
 	options, err := createAddScraperOptions(context.Background(), zap.NewNop(), cfg, scraperFactories, resourceScraperFactories)
 	require.NoError(b, err)
-	options = append(options, receiverhelper.WithTickerChannel(tickerCh))
+	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := receiverhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, sink, options...)
+	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, zap.NewNop(), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))
@@ -316,7 +315,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 
 func Benchmark_ScrapeCpuMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -325,7 +324,7 @@ func Benchmark_ScrapeCpuMetrics(b *testing.B) {
 
 func Benchmark_ScrapeDiskMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{diskscraper.TypeStr: (&diskscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -334,7 +333,7 @@ func Benchmark_ScrapeDiskMetrics(b *testing.B) {
 
 func Benchmark_ScrapeFileSystemMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -343,7 +342,7 @@ func Benchmark_ScrapeFileSystemMetrics(b *testing.B) {
 
 func Benchmark_ScrapeLoadMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{loadscraper.TypeStr: (&loadscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -352,7 +351,7 @@ func Benchmark_ScrapeLoadMetrics(b *testing.B) {
 
 func Benchmark_ScrapeMemoryMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{memoryscraper.TypeStr: (&memoryscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -361,7 +360,7 @@ func Benchmark_ScrapeMemoryMetrics(b *testing.B) {
 
 func Benchmark_ScrapeNetworkMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{networkscraper.TypeStr: (&networkscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -370,7 +369,7 @@ func Benchmark_ScrapeNetworkMetrics(b *testing.B) {
 
 func Benchmark_ScrapeProcessesMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{processesscraper.TypeStr: (&processesscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -379,7 +378,7 @@ func Benchmark_ScrapeProcessesMetrics(b *testing.B) {
 
 func Benchmark_ScrapeSwapMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{swapscraper.TypeStr: (&swapscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -392,7 +391,7 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 	}
 
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers:                  map[string]internal.Config{processscraper.TypeStr: (&processscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -401,7 +400,7 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 
 func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
 			diskscraper.TypeStr:       (&diskscraper.Factory{}).CreateDefaultConfig(),
@@ -419,7 +418,7 @@ func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 
 func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: receiverhelper.DefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},

@@ -38,45 +38,21 @@ var testCfg = &configmodels.ProcessorSettings{
 	NameVal: testFullName,
 }
 
-func TestWithStart(t *testing.T) {
-	startCalled := false
-	start := func(context.Context, component.Host) error { startCalled = true; return nil }
-
-	bp := newBaseProcessor(testFullName, WithStart(start))
-	assert.NoError(t, bp.Start(context.Background(), componenttest.NewNopHost()))
-	assert.True(t, startCalled)
-}
-
-func TestWithStart_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	start := func(context.Context, component.Host) error { return want }
-
-	bp := newBaseProcessor(testFullName, WithStart(start))
-	assert.Equal(t, want, bp.Start(context.Background(), componenttest.NewNopHost()))
-}
-
-func TestWithShutdown(t *testing.T) {
-	shutdownCalled := false
-	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
-
-	bp := newBaseProcessor(testFullName, WithShutdown(shutdown))
-	assert.NoError(t, bp.Shutdown(context.Background()))
-	assert.True(t, shutdownCalled)
-}
-
-func TestWithShutdown_ReturnError(t *testing.T) {
-	want := errors.New("my_error")
-	shutdownErr := func(context.Context) error { return want }
-
-	bp := newBaseProcessor(testFullName, WithShutdown(shutdownErr))
-	assert.Equal(t, want, bp.Shutdown(context.Background()))
-}
-
-func TestWithCapabilities(t *testing.T) {
+func TestDefaultOptions(t *testing.T) {
 	bp := newBaseProcessor(testFullName)
 	assert.True(t, bp.GetCapabilities().MutatesConsumedData)
+	assert.NoError(t, bp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, bp.Shutdown(context.Background()))
+}
 
-	bp = newBaseProcessor(testFullName, WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
+func TestWithOptions(t *testing.T) {
+	want := errors.New("my_error")
+	bp := newBaseProcessor(testFullName,
+		WithStart(func(context.Context, component.Host) error { return want }),
+		WithShutdown(func(context.Context) error { return want }),
+		WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
+	assert.Equal(t, want, bp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Equal(t, want, bp.Shutdown(context.Background()))
 	assert.False(t, bp.GetCapabilities().MutatesConsumedData)
 }
 

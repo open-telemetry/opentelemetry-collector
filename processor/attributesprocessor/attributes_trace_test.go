@@ -56,7 +56,6 @@ func generateTraceData(serviceName, spanName string, attrs map[string]pdata.Attr
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
-		rs.Resource().InitEmpty()
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
 	rs.InstrumentationLibrarySpans().Resize(1)
@@ -75,9 +74,7 @@ func sortAttributes(td pdata.Traces) {
 		if rs.IsNil() {
 			continue
 		}
-		if !rs.Resource().IsNil() {
-			rs.Resource().Attributes().Sort()
-		}
+		rs.Resource().Attributes().Sort()
 		ilss := rss.At(i).InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)

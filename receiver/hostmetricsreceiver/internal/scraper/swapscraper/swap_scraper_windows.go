@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -94,7 +94,7 @@ func (s *scraper) Scrape(context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	return metrics, receiverhelper.CombineScrapeErrors(errors)
+	return metrics, scraperhelper.CombineScrapeErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
