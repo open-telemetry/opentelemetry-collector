@@ -422,6 +422,7 @@ func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeM
 func (am AttributeMap) InitEmptyWithCapacity(cap int) {
 	if cap == 0 {
 		*am.orig = []otlpcommon.KeyValue(nil)
+		return
 	}
 	*am.orig = make([]otlpcommon.KeyValue, 0, cap)
 }
@@ -651,15 +652,10 @@ func (am AttributeMap) ForEach(f func(k string, v AttributeValue)) {
 // CopyTo copies all elements from the current map to the dest.
 func (am AttributeMap) CopyTo(dest AttributeMap) {
 	newLen := len(*am.orig)
-	if newLen == 0 {
-		*dest.orig = []otlpcommon.KeyValue(nil)
-		return
-	}
-
-	oldLen := len(*dest.orig)
-	if newLen <= oldLen {
+	oldCap := cap(*dest.orig)
+	if newLen <= oldCap {
 		// New slice fits in existing slice, no need to reallocate.
-		*dest.orig = (*dest.orig)[:newLen]
+		*dest.orig = (*dest.orig)[:newLen:oldCap]
 		for i := range *am.orig {
 			akv := &(*am.orig)[i]
 			destAkv := &(*dest.orig)[i]
@@ -724,6 +720,7 @@ func (sm StringMap) InitFromMap(attrMap map[string]string) StringMap {
 func (sm StringMap) InitEmptyWithCapacity(cap int) {
 	if cap == 0 {
 		*sm.orig = []otlpcommon.StringKeyValue(nil)
+		return
 	}
 	*sm.orig = make([]otlpcommon.StringKeyValue, 0, cap)
 }
@@ -806,20 +803,15 @@ func (sm StringMap) CopyTo(dest StringMap) {
 	oldCap := cap(*dest.orig)
 	if newLen <= oldCap {
 		*dest.orig = (*dest.orig)[:newLen:oldCap]
-		for i := range *sm.orig {
-			skv := &(*sm.orig)[i]
-			(*dest.orig)[i].Key = skv.Key
-			(*dest.orig)[i].Value = skv.Value
-		}
-		return
+	} else {
+		*dest.orig = make([]otlpcommon.StringKeyValue, newLen)
 	}
-	origs := make([]otlpcommon.StringKeyValue, newLen)
+
 	for i := range *sm.orig {
 		skv := &(*sm.orig)[i]
-		origs[i].Key = skv.Key
-		origs[i].Value = skv.Value
+		(*dest.orig)[i].Key = skv.Key
+		(*dest.orig)[i].Value = skv.Value
 	}
-	*dest.orig = origs
 }
 
 func (sm StringMap) get(k string) (*otlpcommon.StringKeyValue, bool) {

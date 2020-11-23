@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/testutil"
@@ -76,7 +75,7 @@ func TestSendTraces(t *testing.T) {
 
 	sink.Reset()
 	// Sending data no Node.
-	pdata.NewResource().CopyTo(td.ResourceSpans().At(0).Resource())
+	td.ResourceSpans().At(0).Resource().Attributes().InitEmptyWithCapacity(0)
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllTraces()) == 1
@@ -173,7 +172,7 @@ func TestSendMetrics(t *testing.T) {
 
 	// Sending data no node.
 	sink.Reset()
-	pdata.NewResource().CopyTo(md.ResourceMetrics().At(0).Resource())
+	md.ResourceMetrics().At(0).Resource().Attributes().InitEmptyWithCapacity(0)
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 	testutil.WaitFor(t, func() bool {
 		return len(sink.AllMetrics()) == 1
