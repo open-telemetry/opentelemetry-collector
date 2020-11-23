@@ -27,17 +27,17 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushMetricsData is a helper function that is similar to ConsumeMetricsData but also returns
+// PushMetrics is a helper function that is similar to ConsumeMetrics but also returns
 // the number of dropped metrics.
-type PushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+type PushMetrics func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 
 type metricsRequest struct {
 	baseRequest
 	md     pdata.Metrics
-	pusher PushMetricsData
+	pusher PushMetrics
 }
 
-func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetricsData) request {
+func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetrics) request {
 	return &metricsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		md:          md,
@@ -60,7 +60,7 @@ func (req *metricsRequest) count() int {
 
 type metricsExporter struct {
 	*baseExporter
-	pusher PushMetricsData
+	pusher PushMetrics
 }
 
 func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -77,7 +77,7 @@ func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metric
 func NewMetricsExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
-	pushMetricsData PushMetricsData,
+	pusher PushMetrics,
 	options ...Option,
 ) (component.MetricsExporter, error) {
 	if cfg == nil {
@@ -88,7 +88,7 @@ func NewMetricsExporter(
 		return nil, errNilLogger
 	}
 
-	if pushMetricsData == nil {
+	if pusher == nil {
 		return nil, errNilPushMetricsData
 	}
 
@@ -102,7 +102,7 @@ func NewMetricsExporter(
 
 	return &metricsExporter{
 		baseExporter: be,
-		pusher:       pushMetricsData,
+		pusher:       pusher,
 	}, nil
 }
 
