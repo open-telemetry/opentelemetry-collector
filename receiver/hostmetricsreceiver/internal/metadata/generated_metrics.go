@@ -85,7 +85,6 @@ var Metrics = &metricStruct{
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 			data := metric.DoubleSum()
-			data.InitEmpty()
 			data.SetIsMonotonic(true)
 			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
@@ -102,7 +101,6 @@ var Metrics = &metricStruct{
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			data := metric.IntSum()
-			data.InitEmpty()
 			data.SetIsMonotonic(false)
 			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 

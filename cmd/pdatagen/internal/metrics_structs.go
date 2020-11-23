@@ -127,7 +127,7 @@ var metric = &messagePtrStruct{
 	},
 }
 
-var intGauge = &messagePtrStruct{
+var intGauge = &messageValueStruct{
 	structName:     "IntGauge",
 	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.IntGauge",
@@ -140,7 +140,7 @@ var intGauge = &messagePtrStruct{
 	},
 }
 
-var doubleGauge = &messagePtrStruct{
+var doubleGauge = &messageValueStruct{
 	structName:     "DoubleGauge",
 	description:    "// DoubleGauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.DoubleGauge",
@@ -153,7 +153,7 @@ var doubleGauge = &messagePtrStruct{
 	},
 }
 
-var intSum = &messagePtrStruct{
+var intSum = &messageValueStruct{
 	structName:     "IntSum",
 	description:    "// IntSum represents the type of a numeric int scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.IntSum",
@@ -168,7 +168,7 @@ var intSum = &messagePtrStruct{
 	},
 }
 
-var doubleSum = &messagePtrStruct{
+var doubleSum = &messageValueStruct{
 	structName:     "DoubleSum",
 	description:    "// DoubleSum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleSum",
@@ -183,7 +183,7 @@ var doubleSum = &messagePtrStruct{
 	},
 }
 
-var intHistogram = &messagePtrStruct{
+var intHistogram = &messageValueStruct{
 	structName:     "IntHistogram",
 	description:    "// IntHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.IntHistogram",
@@ -197,7 +197,7 @@ var intHistogram = &messagePtrStruct{
 	},
 }
 
-var doubleHistogram = &messagePtrStruct{
+var doubleHistogram = &messageValueStruct{
 	structName:     "DoubleHistogram",
 	description:    "// DoubleHistogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleHistogram",
@@ -211,7 +211,7 @@ var doubleHistogram = &messagePtrStruct{
 	},
 }
 
-var doubleSummary = &messagePtrStruct{
+var doubleSummary = &messageValueStruct{
 	structName:     "DoubleSummary",
 	description:    "// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleSummary",
@@ -488,6 +488,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 var oneofDataField = &oneofField{
 	copyFuncName:    "copyData",
 	originFieldName: "Data",
-	testVal:         "&otlpmetrics.Metric_IntGauge{}",
+	testVal:         "&otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}",
 	fillTestName:    "IntGauge",
 }

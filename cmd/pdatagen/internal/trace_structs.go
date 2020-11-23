@@ -17,6 +17,7 @@ package internal
 var traceFile = &File{
 	Name: "trace",
 	imports: []string{
+		`"go.opentelemetry.io/collector/internal/data"`,
 		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
 		`otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"`,
 	},
@@ -217,7 +218,7 @@ var traceIDField = &primitiveTypedField{
 	fieldName:       "TraceID",
 	originFieldName: "TraceId",
 	returnType:      "TraceID",
-	rawType:         "otlpcommon.TraceID",
+	rawType:         "data.TraceID",
 	defaultVal:      "NewTraceID([16]byte{})",
 	testVal:         "NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
@@ -226,7 +227,7 @@ var spanIDField = &primitiveTypedField{
 	fieldName:       "SpanID",
 	originFieldName: "SpanId",
 	returnType:      "SpanID",
-	rawType:         "otlpcommon.SpanID",
+	rawType:         "data.SpanID",
 	defaultVal:      "NewSpanID([8]byte{})",
 	testVal:         "NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})",
 }
@@ -235,7 +236,7 @@ var parentSpanIDField = &primitiveTypedField{
 	fieldName:       "ParentSpanID",
 	originFieldName: "ParentSpanId",
 	returnType:      "SpanID",
-	rawType:         "otlpcommon.SpanID",
+	rawType:         "data.SpanID",
 	defaultVal:      "NewSpanID([8]byte{})",
 	testVal:         "NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }

@@ -123,36 +123,30 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 		switch cfg.MetricDescriptorType {
 		case pdata.MetricDataTypeIntGauge:
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			metric.IntGauge().InitEmpty()
 			populateIntPoints(cfg, metric.IntGauge().DataPoints())
 		case pdata.MetricDataTypeDoubleGauge:
 			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			metric.DoubleGauge().InitEmpty()
 			populateDoublePoints(cfg, metric.DoubleGauge().DataPoints())
 		case pdata.MetricDataTypeIntSum:
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			sum := metric.IntSum()
-			sum.InitEmpty()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntPoints(cfg, sum.DataPoints())
 		case pdata.MetricDataTypeDoubleSum:
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 			sum := metric.DoubleSum()
-			sum.InitEmpty()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoublePoints(cfg, sum.DataPoints())
 		case pdata.MetricDataTypeIntHistogram:
 			metric.SetDataType(pdata.MetricDataTypeIntHistogram)
 			histo := metric.IntHistogram()
-			histo.InitEmpty()
 			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateIntHistogram(cfg, histo)
 		case pdata.MetricDataTypeDoubleHistogram:
 			metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 			histo := metric.DoubleHistogram()
-			histo.InitEmpty()
 			histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		}

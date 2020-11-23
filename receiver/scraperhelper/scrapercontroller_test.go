@@ -403,7 +403,6 @@ func singleMetric() pdata.MetricSlice {
 	metrics := pdata.NewMetricSlice()
 	metrics.Resize(1)
 	metrics.At(0).SetDataType(pdata.MetricDataTypeIntGauge)
-	metrics.At(0).IntGauge().InitEmpty()
 	metrics.At(0).IntGauge().DataPoints().Resize(1)
 	return metrics
 }

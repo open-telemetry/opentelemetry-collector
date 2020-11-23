@@ -498,7 +498,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 			metric.SetName("gauge" + strconv.Itoa(i))
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			mAsType := metric.IntGauge()
-			mAsType.InitEmpty()
 			dps := mAsType.DataPoints()
 			dps.Resize(2)
 			{

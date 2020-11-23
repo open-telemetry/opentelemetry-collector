@@ -601,33 +601,23 @@ func (ms Metric) CopyTo(dest Metric) {
 // Important: zero-initialized instance is not valid for use.
 type IntGauge struct {
 	// orig points to the pointer otlpmetrics.IntGauge field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.IntGauge
+	orig *otlpmetrics.IntGauge
 }
 
-func newIntGauge(orig **otlpmetrics.IntGauge) IntGauge {
-	return IntGauge{orig}
+func newIntGauge(orig *otlpmetrics.IntGauge) IntGauge {
+	return IntGauge{orig: orig}
 }
 
-// NewIntGauge creates a new "nil" IntGauge.
-// To initialize the struct call "InitEmpty".
+// NewIntGauge creates a new empty IntGauge.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewIntGauge() IntGauge {
-	orig := (*otlpmetrics.IntGauge)(nil)
-	return newIntGauge(&orig)
+	return newIntGauge(&otlpmetrics.IntGauge{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms IntGauge) InitEmpty() {
-	*ms.orig = &otlpmetrics.IntGauge{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms IntGauge) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.IntGauge{}
 }
 
 // DataPoints returns the DataPoints associated with this IntGauge.
@@ -639,13 +629,6 @@ func (ms IntGauge) DataPoints() IntDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntGauge) CopyTo(dest IntGauge) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
@@ -658,33 +641,23 @@ func (ms IntGauge) CopyTo(dest IntGauge) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleGauge struct {
 	// orig points to the pointer otlpmetrics.DoubleGauge field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleGauge
+	orig *otlpmetrics.DoubleGauge
 }
 
-func newDoubleGauge(orig **otlpmetrics.DoubleGauge) DoubleGauge {
-	return DoubleGauge{orig}
+func newDoubleGauge(orig *otlpmetrics.DoubleGauge) DoubleGauge {
+	return DoubleGauge{orig: orig}
 }
 
-// NewDoubleGauge creates a new "nil" DoubleGauge.
-// To initialize the struct call "InitEmpty".
+// NewDoubleGauge creates a new empty DoubleGauge.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleGauge() DoubleGauge {
-	orig := (*otlpmetrics.DoubleGauge)(nil)
-	return newDoubleGauge(&orig)
+	return newDoubleGauge(&otlpmetrics.DoubleGauge{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleGauge) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleGauge{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleGauge) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleGauge{}
 }
 
 // DataPoints returns the DataPoints associated with this DoubleGauge.
@@ -696,13 +669,6 @@ func (ms DoubleGauge) DataPoints() DoubleDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleGauge) CopyTo(dest DoubleGauge) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
@@ -715,33 +681,23 @@ func (ms DoubleGauge) CopyTo(dest DoubleGauge) {
 // Important: zero-initialized instance is not valid for use.
 type IntSum struct {
 	// orig points to the pointer otlpmetrics.IntSum field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.IntSum
+	orig *otlpmetrics.IntSum
 }
 
-func newIntSum(orig **otlpmetrics.IntSum) IntSum {
-	return IntSum{orig}
+func newIntSum(orig *otlpmetrics.IntSum) IntSum {
+	return IntSum{orig: orig}
 }
 
-// NewIntSum creates a new "nil" IntSum.
-// To initialize the struct call "InitEmpty".
+// NewIntSum creates a new empty IntSum.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewIntSum() IntSum {
-	orig := (*otlpmetrics.IntSum)(nil)
-	return newIntSum(&orig)
+	return newIntSum(&otlpmetrics.IntSum{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms IntSum) InitEmpty() {
-	*ms.orig = &otlpmetrics.IntSum{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms IntSum) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.IntSum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this IntSum.
@@ -781,13 +737,6 @@ func (ms IntSum) DataPoints() IntDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntSum) CopyTo(dest IntSum) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
@@ -802,33 +751,23 @@ func (ms IntSum) CopyTo(dest IntSum) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleSum struct {
 	// orig points to the pointer otlpmetrics.DoubleSum field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleSum
+	orig *otlpmetrics.DoubleSum
 }
 
-func newDoubleSum(orig **otlpmetrics.DoubleSum) DoubleSum {
-	return DoubleSum{orig}
+func newDoubleSum(orig *otlpmetrics.DoubleSum) DoubleSum {
+	return DoubleSum{orig: orig}
 }
 
-// NewDoubleSum creates a new "nil" DoubleSum.
-// To initialize the struct call "InitEmpty".
+// NewDoubleSum creates a new empty DoubleSum.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleSum() DoubleSum {
-	orig := (*otlpmetrics.DoubleSum)(nil)
-	return newDoubleSum(&orig)
+	return newDoubleSum(&otlpmetrics.DoubleSum{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleSum) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleSum{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleSum) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleSum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this DoubleSum.
@@ -868,13 +807,6 @@ func (ms DoubleSum) DataPoints() DoubleDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleSum) CopyTo(dest DoubleSum) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
@@ -889,33 +821,23 @@ func (ms DoubleSum) CopyTo(dest DoubleSum) {
 // Important: zero-initialized instance is not valid for use.
 type IntHistogram struct {
 	// orig points to the pointer otlpmetrics.IntHistogram field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.IntHistogram
+	orig *otlpmetrics.IntHistogram
 }
 
-func newIntHistogram(orig **otlpmetrics.IntHistogram) IntHistogram {
-	return IntHistogram{orig}
+func newIntHistogram(orig *otlpmetrics.IntHistogram) IntHistogram {
+	return IntHistogram{orig: orig}
 }
 
-// NewIntHistogram creates a new "nil" IntHistogram.
-// To initialize the struct call "InitEmpty".
+// NewIntHistogram creates a new empty IntHistogram.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewIntHistogram() IntHistogram {
-	orig := (*otlpmetrics.IntHistogram)(nil)
-	return newIntHistogram(&orig)
+	return newIntHistogram(&otlpmetrics.IntHistogram{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms IntHistogram) InitEmpty() {
-	*ms.orig = &otlpmetrics.IntHistogram{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms IntHistogram) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.IntHistogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this IntHistogram.
@@ -941,13 +863,6 @@ func (ms IntHistogram) DataPoints() IntHistogramDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntHistogram) CopyTo(dest IntHistogram) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
@@ -961,33 +876,23 @@ func (ms IntHistogram) CopyTo(dest IntHistogram) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleHistogram struct {
 	// orig points to the pointer otlpmetrics.DoubleHistogram field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleHistogram
+	orig *otlpmetrics.DoubleHistogram
 }
 
-func newDoubleHistogram(orig **otlpmetrics.DoubleHistogram) DoubleHistogram {
-	return DoubleHistogram{orig}
+func newDoubleHistogram(orig *otlpmetrics.DoubleHistogram) DoubleHistogram {
+	return DoubleHistogram{orig: orig}
 }
 
-// NewDoubleHistogram creates a new "nil" DoubleHistogram.
-// To initialize the struct call "InitEmpty".
+// NewDoubleHistogram creates a new empty DoubleHistogram.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleHistogram() DoubleHistogram {
-	orig := (*otlpmetrics.DoubleHistogram)(nil)
-	return newDoubleHistogram(&orig)
+	return newDoubleHistogram(&otlpmetrics.DoubleHistogram{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleHistogram) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleHistogram{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleHistogram) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleHistogram{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this DoubleHistogram.
@@ -1013,13 +918,6 @@ func (ms DoubleHistogram) DataPoints() DoubleHistogramDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleHistogram) CopyTo(dest DoubleHistogram) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
@@ -1033,33 +931,23 @@ func (ms DoubleHistogram) CopyTo(dest DoubleHistogram) {
 // Important: zero-initialized instance is not valid for use.
 type DoubleSummary struct {
 	// orig points to the pointer otlpmetrics.DoubleSummary field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleSummary
+	orig *otlpmetrics.DoubleSummary
 }
 
-func newDoubleSummary(orig **otlpmetrics.DoubleSummary) DoubleSummary {
-	return DoubleSummary{orig}
+func newDoubleSummary(orig *otlpmetrics.DoubleSummary) DoubleSummary {
+	return DoubleSummary{orig: orig}
 }
 
-// NewDoubleSummary creates a new "nil" DoubleSummary.
-// To initialize the struct call "InitEmpty".
+// NewDoubleSummary creates a new empty DoubleSummary.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleSummary() DoubleSummary {
-	orig := (*otlpmetrics.DoubleSummary)(nil)
-	return newDoubleSummary(&orig)
+	return newDoubleSummary(&otlpmetrics.DoubleSummary{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleSummary) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleSummary{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleSummary) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleSummary{}
 }
 
 // DataPoints returns the DataPoints associated with this DoubleSummary.
@@ -1071,13 +959,6 @@ func (ms DoubleSummary) DataPoints() DoubleSummaryDataPointSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleSummary) CopyTo(dest DoubleSummary) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 

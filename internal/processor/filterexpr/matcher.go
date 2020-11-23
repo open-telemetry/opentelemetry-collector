@@ -62,9 +62,6 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 }
 
 func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, error) {
-	if gauge.IsNil() {
-		return false, nil
-	}
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		pt := pts.At(i)
@@ -83,9 +80,6 @@ func (m *Matcher) matchIntGauge(metricName string, gauge pdata.IntGauge) (bool, 
 }
 
 func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (bool, error) {
-	if gauge.IsNil() {
-		return false, nil
-	}
 	pts := gauge.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		pt := pts.At(i)
@@ -104,9 +98,6 @@ func (m *Matcher) matchDoubleGauge(metricName string, gauge pdata.DoubleGauge) (
 }
 
 func (m *Matcher) matchDoubleSum(metricName string, sum pdata.DoubleSum) (bool, error) {
-	if sum.IsNil() {
-		return false, nil
-	}
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		pt := pts.At(i)
@@ -125,9 +116,6 @@ func (m *Matcher) matchDoubleSum(metricName string, sum pdata.DoubleSum) (bool, 
 }
 
 func (m *Matcher) matchIntSum(metricName string, sum pdata.IntSum) (bool, error) {
-	if sum.IsNil() {
-		return false, nil
-	}
 	pts := sum.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		pt := pts.At(i)
@@ -146,9 +134,6 @@ func (m *Matcher) matchIntSum(metricName string, sum pdata.IntSum) (bool, error)
 }
 
 func (m *Matcher) matchIntHistogram(metricName string, histogram pdata.IntHistogram) (bool, error) {
-	if histogram.IsNil() {
-		return false, nil
-	}
 	pts := histogram.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		pt := pts.At(i)
@@ -167,9 +152,6 @@ func (m *Matcher) matchIntHistogram(metricName string, histogram pdata.IntHistog
 }
 
 func (m *Matcher) matchDoubleHistogram(metricName string, histogram pdata.DoubleHistogram) (bool, error) {
-	if histogram.IsNil() {
-		return false, nil
-	}
 	pts := histogram.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		pt := pts.At(i)
