@@ -146,6 +146,14 @@ func TestLoadTLSClientConfig(t *testing.T) {
 	tlsCfg, err = tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
+
+	tlsSetting = TLSClientSetting{
+		InsecureSkipVerify: true,
+	}
+	tlsCfg, err = tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, tlsCfg)
+	assert.True(t, tlsCfg.InsecureSkipVerify)
 }
 
 func TestLoadTLSServerConfigError(t *testing.T) {
