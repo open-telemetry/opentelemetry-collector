@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
 	tracev1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestNew(t *testing.T) {

@@ -28,7 +28,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 

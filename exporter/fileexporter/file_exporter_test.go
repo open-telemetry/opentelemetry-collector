@@ -30,7 +30,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
 

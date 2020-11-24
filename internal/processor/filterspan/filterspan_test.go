@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
