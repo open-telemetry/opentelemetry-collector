@@ -17,6 +17,7 @@ package configauth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"google.golang.org/grpc"
@@ -24,7 +25,6 @@ import (
 )
 
 var (
-	errNoOIDCProvided   = errors.New("no OIDC information provided")
 	errMetadataNotFound = errors.New("no request metadata found")
 	defaultAttribute    = "authorization"
 )
@@ -36,34 +36,21 @@ type Authenticator interface {
 	// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
 	Authenticate(context.Context, map[string][]string) (context.Context, error)
 
-	// Start will
-	Start(context.Context) error
-
 	// UnaryInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
 	UnaryInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error)
 
 	// StreamInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
 	StreamInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error
+
+	// ToServerOptions is a helper method that builds a set of server options ready to be used by the gRPC server
+	ToServerOptions() ([]grpc.ServerOption, error)
 }
 
-type authenticateFunc func(context.Context, map[string][]string) (context.Context, error)
-type unaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error)
-type streamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate authenticateFunc) error
+type AuthenticateFunc func(context.Context, map[string][]string) (context.Context, error)
+type UnaryInterceptorFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error)
+type StreamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error
 
-// NewAuthenticator creates an authenticator based on the given configuration
-func NewAuthenticator(cfg Authentication) (Authenticator, error) {
-	if cfg.OIDC == nil {
-		return nil, errNoOIDCProvided
-	}
-
-	if len(cfg.Attribute) == 0 {
-		cfg.Attribute = defaultAttribute
-	}
-
-	return newOIDCAuthenticator(cfg)
-}
-
-func defaultUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error) {
+func DefaultUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error) {
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, errMetadataNotFound
@@ -77,7 +64,7 @@ func defaultUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.Un
 	return handler(ctx, req)
 }
 
-func defaultStreamInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate authenticateFunc) error {
+func DefaultStreamInterceptor(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error {
 	ctx := stream.Context()
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -91,4 +78,22 @@ func defaultStreamInterceptor(srv interface{}, stream grpc.ServerStream, info *g
 	}
 
 	return handler(srv, stream)
+}
+
+var authRegistry = map[string]Authenticator{}
+
+func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
+	if _, ok := authRegistry[name]; ok {
+		return errors.New(fmt.Sprintf("Authenticator with name %s already registered", name))
+	}
+	authRegistry[name] = auth
+	return nil
+}
+
+func GetAuthenticatorFromRegistry(name string) (Authenticator, error) {
+	auth, ok := authRegistry[name]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Authenticar not found with name %s", name))
+	}
+	return auth, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package oidcextension
 
 import (
 	"context"
@@ -31,6 +31,9 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -43,17 +46,16 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	config := Authentication{
-		OIDC: &OIDC{
-			IssuerURL:   oidcServer.URL,
-			Audience:    "unit-test",
-			GroupsClaim: "memberships",
-		},
+	config := &Config{
+		IssuerURL:   oidcServer.URL,
+		Audience:    "unit-test",
+		GroupsClaim: "memberships",
 	}
+
 	p, err := newOIDCAuthenticator(config)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background())
+	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(map[string]interface{}{
@@ -120,7 +122,7 @@ func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	oidcServer.StartTLS()
 
 	// prepare the processor configuration
-	config := OIDC{
+	config := Config{
 		IssuerURL:    oidcServer.URL,
 		IssuerCAPath: caFile.Name(),
 		Audience:     "unit-test",
@@ -194,7 +196,7 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 	defer os.Remove(file.Name())
 	file.Write([]byte("foobar"))
 
-	config := OIDC{
+	config := Config{
 		IssuerCAPath: file.Name(),
 	}
 
@@ -208,11 +210,9 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 
 func TestOIDCInvalidAuthHeader(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
+	p, err := newOIDCAuthenticator(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
 	})
 	require.NoError(t, err)
 
@@ -226,11 +226,9 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 
 func TestOIDCNotAuthenticated(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
+	p, err := newOIDCAuthenticator(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
 	})
 	require.NoError(t, err)
 
@@ -244,16 +242,14 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 
 func TestProviderNotReacheable(t *testing.T) {
 	// prepare
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com",
-		},
+	p, err := newOIDCAuthenticator(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
 	})
 	require.NoError(t, err)
 
 	// test
-	err = p.Start(context.Background())
+	err = p.Start(context.Background(), componenttest.NewNopHost())
 
 	// verify
 	assert.Error(t, err)
@@ -266,15 +262,13 @@ func TestFailedToVerifyToken(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	p, err := newOIDCAuthenticator(Authentication{
-		OIDC: &OIDC{
-			IssuerURL: oidcServer.URL,
-			Audience:  "unit-test",
-		},
+	p, err := newOIDCAuthenticator(&Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com",
 	})
 	require.NoError(t, err)
 
-	err = p.Start(context.Background())
+	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
@@ -294,48 +288,42 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 
 	for _, tt := range []struct {
 		casename      string
-		config        Authentication
+		config        Config
 		expectedError error
 	}{
 		{
 			"groupsClaimNonExisting",
-			Authentication{
-				OIDC: &OIDC{
-					IssuerURL:   oidcServer.URL,
-					Audience:    "unit-test",
-					GroupsClaim: "non-existing-claim",
-				},
+			Config{
+				IssuerURL:   oidcServer.URL,
+				Audience:    "unit-test",
+				GroupsClaim: "non-existing-claim",
 			},
 			errGroupsClaimNotFound,
 		},
 		{
 			"usernameClaimNonExisting",
-			Authentication{
-				OIDC: &OIDC{
-					IssuerURL:     oidcServer.URL,
-					Audience:      "unit-test",
-					UsernameClaim: "non-existing-claim",
-				},
+			Config{
+				IssuerURL:   oidcServer.URL,
+				Audience:    "unit-test",
+				GroupsClaim: "non-existing-claim",
 			},
 			errClaimNotFound,
 		},
 		{
 			"usernameNotString",
-			Authentication{
-				OIDC: &OIDC{
-					IssuerURL:     oidcServer.URL,
-					Audience:      "unit-test",
-					UsernameClaim: "some-non-string-field",
-				},
+			Config{
+				IssuerURL:     oidcServer.URL,
+				Audience:      "unit-test",
+				UsernameClaim: "some-non-string-field",
 			},
 			errUsernameNotString,
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			p, err := newOIDCAuthenticator(tt.config)
+			p, err := newOIDCAuthenticator(&tt.config)
 			require.NoError(t, err)
 
-			err = p.Start(context.Background())
+			err = p.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			payload, _ := json.Marshal(map[string]interface{}{
@@ -436,10 +424,8 @@ func TestEmptyGroupsClaim(t *testing.T) {
 
 func TestMissingClient(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		IssuerURL: "http://example.com/",
 	}
 
 	// test
@@ -452,10 +438,8 @@ func TestMissingClient(t *testing.T) {
 
 func TestMissingIssuerURL(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience: "some-audience",
-		},
+	config := &Config{
+		Audience: "some-audience",
 	}
 
 	// test
@@ -468,11 +452,9 @@ func TestMissingIssuerURL(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
 	}
 	p, err := newOIDCAuthenticator(config)
 	require.NoError(t, err)
@@ -487,18 +469,16 @@ func TestClose(t *testing.T) {
 
 func TestUnaryInterceptor(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
 	}
 	p, err := newOIDCAuthenticator(config)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	interceptorCalled := false
-	p.unaryInterceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate authenticateFunc) (interface{}, error) {
+	p.unaryInterceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate configauth.AuthenticateFunc) (interface{}, error) {
 		interceptorCalled = true
 		return nil, nil
 	}
@@ -517,25 +497,23 @@ func TestUnaryInterceptor(t *testing.T) {
 
 func TestStreamInterceptor(t *testing.T) {
 	// prepare
-	config := Authentication{
-		OIDC: &OIDC{
-			Audience:  "some-audience",
-			IssuerURL: "http://example.com/",
-		},
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
 	}
 	p, err := newOIDCAuthenticator(config)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	interceptorCalled := false
-	p.streamInterceptor = func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate authenticateFunc) error {
+	p.streamInterceptor = func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate configauth.AuthenticateFunc) error {
 		interceptorCalled = true
 		return nil
 	}
 	handler := func(srv interface{}, stream grpc.ServerStream) error {
 		return nil
 	}
-	streamServer := &mockServerStream{
+	streamServer := mockServerStream{
 		ctx: context.Background(),
 	}
 
@@ -545,4 +523,9 @@ func TestStreamInterceptor(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.True(t, interceptorCalled)
+}
+
+type mockServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
 }

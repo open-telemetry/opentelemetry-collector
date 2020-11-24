@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package oidcextension
 
 import (
 	"context"
@@ -27,49 +27,52 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
+
 	"github.com/coreos/go-oidc"
 	"google.golang.org/grpc"
 )
 
 type oidcAuthenticator struct {
 	attribute string
-	config    OIDC
+	config    Config
 	provider  *oidc.Provider
 	verifier  *oidc.IDTokenVerifier
 
-	unaryInterceptor  unaryInterceptorFunc
-	streamInterceptor streamInterceptorFunc
+	unaryInterceptor  configauth.UnaryInterceptorFunc
+	streamInterceptor configauth.StreamInterceptorFunc
+	host              component.Host
 }
 
 var (
-	_ Authenticator = (*oidcAuthenticator)(nil)
-
-	errNoClientIDProvided                = errors.New("no ClientID provided for the OIDC configuration")
-	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
+	errNoClientIDProvided                = errors.New("no ClientID provided for the Config configuration")
+	errNoIssuerURL                       = errors.New("no IssuerURL provided for the Config configuration")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
-	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the OIDC provider")
-	errClaimNotFound                     = errors.New("username claim from the OIDC configuration not found on the token returned by the OIDC provider")
-	errUsernameNotString                 = errors.New("the username returned by the OIDC provider isn't a regular string")
-	errGroupsClaimNotFound               = errors.New("groups claim from the OIDC configuration not found on the token returned by the OIDC provider")
+	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the Config provider")
+	errClaimNotFound                     = errors.New("username claim from the Config configuration not found on the token returned by the Config provider")
+	errUsernameNotString                 = errors.New("the username returned by the Config provider isn't a regular string")
+	errGroupsClaimNotFound               = errors.New("groups claim from the Config configuration not found on the token returned by the Config provider")
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newOIDCAuthenticator(cfg Authentication) (*oidcAuthenticator, error) {
-	if cfg.OIDC.Audience == "" {
+func newOIDCAuthenticator(cfg *Config) (*oidcAuthenticator, error) {
+	if cfg.Audience == "" {
 		return nil, errNoClientIDProvided
 	}
-	if cfg.OIDC.IssuerURL == "" {
+	if cfg.IssuerURL == "" {
 		return nil, errNoIssuerURL
 	}
-	if cfg.Attribute == "" {
-		cfg.Attribute = defaultAttribute
-	}
+	// TODO what with this
+	//if cfg.Attribute == "" {
+	//	cfg.Attribute = configauth.defaultAttribute
+	//}
 
 	return &oidcAuthenticator{
-		attribute:         cfg.Attribute,
-		config:            *cfg.OIDC,
-		unaryInterceptor:  defaultUnaryInterceptor,
-		streamInterceptor: defaultStreamInterceptor,
+		attribute:         "cfg.Attribute", // TODO something with this
+		config:            *cfg,
+		unaryInterceptor:  configauth.DefaultUnaryInterceptor,
+		streamInterceptor: configauth.DefaultStreamInterceptor,
 	}, nil
 }
 
@@ -116,7 +119,7 @@ func (o *oidcAuthenticator) Authenticate(ctx context.Context, headers map[string
 	return ctx, nil
 }
 
-func (o *oidcAuthenticator) Start(context.Context) error {
+func (o *oidcAuthenticator) Start(ctx context.Context, host component.Host) error {
 	provider, err := getProviderForConfig(o.config)
 	if err != nil {
 		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
@@ -127,10 +130,12 @@ func (o *oidcAuthenticator) Start(context.Context) error {
 		ClientID: o.config.Audience,
 	})
 
+	o.host = host
+
 	return nil
 }
 
-func (o *oidcAuthenticator) Close() error {
+func (o *oidcAuthenticator) Shutdown(ctx context.Context) error {
 	// no-op at the moment
 	// once we implement caching of the tokens we might need this
 	return nil
@@ -142,6 +147,20 @@ func (o *oidcAuthenticator) UnaryInterceptor(ctx context.Context, req interface{
 
 func (o *oidcAuthenticator) StreamInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	return o.streamInterceptor(srv, str, info, handler, o.Authenticate)
+}
+
+// ToServerOptions builds a set of server options ready to be used by the gRPC server
+func (o *oidcAuthenticator) ToServerOptions() ([]grpc.ServerOption, error) {
+	// perhaps we should use a timeout here?
+	// TODO: we need a hook to call auth.Close()
+	if err := o.Start(context.Background(), o.host); err != nil {
+		return nil, err
+	}
+
+	return []grpc.ServerOption{
+		grpc.UnaryInterceptor(o.UnaryInterceptor),
+		grpc.StreamInterceptor(o.StreamInterceptor),
+	}, nil
 }
 
 func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {
@@ -187,7 +206,7 @@ func getGroupsFromClaims(claims map[string]interface{}, groupsClaim string) ([]s
 	return []string{}, nil
 }
 
-func getProviderForConfig(config OIDC) (*oidc.Provider, error) {
+func getProviderForConfig(config Config) (*oidc.Provider, error) {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
