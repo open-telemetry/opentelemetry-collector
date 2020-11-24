@@ -15,26 +15,22 @@
 package main
 
 import (
-	"os"
+	"reflect"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func main() {
-	switch len(os.Args) {
-	case 2:
-		if os.Args[1] == "all" {
-			allCfgs()
-		} else {
-			printUsage()
-		}
-	case 3:
-		singleCfg()
-	default:
-		printUsage()
-	}
-}
+const collectorSrcRoot = "../.."
+const moduleName = "go.opentelemetry.io/collector"
 
-func printUsage() {
-	println("usage:")
-	println("	cfgmeta all")
-	println("	cfgmeta <componentType> <componentName>")
+func TestFieldComments(t *testing.T) {
+	v := reflect.ValueOf(testStruct{})
+	comments := commentsForStruct(v, env{
+		srcRoot:    collectorSrcRoot,
+		moduleName: moduleName,
+	})
+	require.EqualValues(t, map[string]string{
+		"Duration": "embedded, package qualified\n",
+	}, comments)
 }

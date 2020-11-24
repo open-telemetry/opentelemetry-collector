@@ -14,24 +14,13 @@
 
 package main
 
-import "go.opentelemetry.io/collector/service/defaultcomponents"
+import (
+	"testing"
 
-// allCfgs creates config yaml metadata files for all registered components
-func allCfgs() {
-	components, err := defaultcomponents.Components()
-	if err != nil {
-		panic(err)
-	}
-	for _, f := range components.Receivers {
-		genMeta(f.CreateDefaultConfig())
-	}
-	for _, f := range components.Extensions {
-		genMeta(f.CreateDefaultConfig())
-	}
-	for _, f := range components.Processors {
-		genMeta(f.CreateDefaultConfig())
-	}
-	for _, f := range components.Exporters {
-		genMeta(f.CreateDefaultConfig())
-	}
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetAllConfigs(t *testing.T) {
+	cfgs := getAllConfigs()
+	require.NotNil(t, cfgs)
 }
