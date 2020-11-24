@@ -238,9 +238,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 	switch typ {
 	case pdata.MetricDataTypeIntGauge:
 		m := metric.IntGauge()
-		if m.IsNil() {
-			m.InitEmpty()
-		}
 		dps := m.DataPoints()
 		dp := pdata.NewIntDataPoint()
 		dp.InitEmpty()
@@ -251,9 +248,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 
 	case pdata.MetricDataTypeIntSum:
 		m := metric.IntSum()
-		if m.IsNil() {
-			m.InitEmpty()
-		}
 		dps := m.DataPoints()
 		dp := pdata.NewIntDataPoint()
 		dp.InitEmpty()
@@ -264,9 +258,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 
 	case pdata.MetricDataTypeDoubleGauge:
 		m := metric.DoubleGauge()
-		if m.IsNil() {
-			m.InitEmpty()
-		}
 		dps := m.DataPoints()
 		dp := pdata.NewDoubleDataPoint()
 		dp.InitEmpty()
@@ -277,9 +268,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 
 	case pdata.MetricDataTypeDoubleSum:
 		m := metric.DoubleSum()
-		if m.IsNil() {
-			m.InitEmpty()
-		}
 		dps := m.DataPoints()
 		dp := pdata.NewDoubleDataPoint()
 		dp.InitEmpty()
@@ -290,9 +278,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 
 	case pdata.MetricDataTypeIntHistogram:
 		m := metric.IntHistogram()
-		if m.IsNil() {
-			m.InitEmpty()
-		}
 		dps := m.DataPoints()
 		dp := pdata.NewIntHistogramDataPoint()
 		dp.InitEmpty()
@@ -303,9 +288,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 
 	case pdata.MetricDataTypeDoubleHistogram:
 		m := metric.DoubleHistogram()
-		if m.IsNil() {
-			m.InitEmpty()
-		}
 		dps := m.DataPoints()
 		dp := pdata.NewDoubleHistogramDataPoint()
 		dp.InitEmpty()

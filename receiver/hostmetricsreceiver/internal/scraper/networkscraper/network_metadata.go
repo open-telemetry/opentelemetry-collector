@@ -43,7 +43,6 @@ var networkPacketsDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -57,7 +56,6 @@ var networkDroppedPacketsDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -71,7 +69,6 @@ var networkErrorsDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -85,7 +82,6 @@ var networkIODescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -99,7 +95,6 @@ var networkTCPConnectionsDescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric

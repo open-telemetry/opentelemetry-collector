@@ -193,18 +193,15 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		metric.IntGauge().InitEmpty()
 		return pdata.MetricDataTypeIntGauge
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().InitEmpty()
 		return pdata.MetricDataTypeDoubleGauge
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
 		sum := metric.IntSum()
-		sum.InitEmpty()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeIntSum
@@ -212,7 +209,6 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 		sum := metric.DoubleSum()
-		sum.InitEmpty()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleSum
@@ -220,14 +216,11 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 		histo := metric.DoubleHistogram()
-		histo.InitEmpty()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleHistogram
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleSummary)
-		summary := metric.DoubleSummary()
-		summary.InitEmpty()
 		// no temporality specified for summary metric
 		return pdata.MetricDataTypeDoubleSummary
 	}

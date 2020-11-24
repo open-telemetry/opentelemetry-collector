@@ -42,7 +42,6 @@ var diskIODescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -56,7 +55,6 @@ var diskOpsDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -70,7 +68,6 @@ var diskIOTimeDescriptor = func() pdata.Metric {
 	metric.SetUnit("s")
 	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 	sum := metric.DoubleSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -84,7 +81,6 @@ var diskOperationTimeDescriptor = func() pdata.Metric {
 	metric.SetUnit("s")
 	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 	sum := metric.DoubleSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -98,7 +94,6 @@ var diskPendingOperationsDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -112,7 +107,6 @@ var diskMergedDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
