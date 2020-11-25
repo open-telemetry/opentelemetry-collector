@@ -263,8 +263,8 @@ func TestFailedToVerifyToken(t *testing.T) {
 	defer oidcServer.Close()
 
 	p, err := newOIDCAuthenticator(&Config{
-		Audience:  "some-audience",
-		IssuerURL: "http://example.com",
+		IssuerURL: oidcServer.URL,
+		Audience:  "unit-test",
 	})
 	require.NoError(t, err)
 
@@ -305,7 +305,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			Config{
 				IssuerURL:   oidcServer.URL,
 				Audience:    "unit-test",
-				GroupsClaim: "non-existing-claim",
+				UsernameClaim: "non-existing-claim",
 			},
 			errClaimNotFound,
 		},
@@ -450,7 +450,7 @@ func TestMissingIssuerURL(t *testing.T) {
 	assert.Equal(t, errNoIssuerURL, err)
 }
 
-func TestClose(t *testing.T) {
+func TestShutdown(t *testing.T) {
 	// prepare
 	config := &Config{
 		Audience:  "some-audience",
@@ -461,7 +461,7 @@ func TestClose(t *testing.T) {
 	require.NotNil(t, p)
 
 	// test
-	err = p.Close() // for now, we never fail
+	err = p.Shutdown(context.Background()) // for now, we never fail
 
 	// verify
 	assert.NoError(t, err)

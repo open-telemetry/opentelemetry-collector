@@ -39,25 +39,17 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
+	require.Error(t, err)
+	require.Nil(t, ext)
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
+	cfg := &Config{
+		ExtensionSettings: configmodels.ExtensionSettings{},
+		IssuerURL:         "some_issuer.com",
+		Audience:          "some_audience",
+	}
 	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
-}
-
-func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-
-	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, ext)
-
-	ext1, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
-	require.Error(t, err)
-	require.Nil(t, ext1)
 }

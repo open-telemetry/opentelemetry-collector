@@ -18,21 +18,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 var (
 	errMetadataNotFound = errors.New("no request metadata found")
-	defaultAttribute    = "authorization"
 )
 
 // Authenticator will authenticate the incoming request/RPC
 type Authenticator interface {
-	io.Closer
-
 	// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
 	Authenticate(context.Context, map[string][]string) (context.Context, error)
 

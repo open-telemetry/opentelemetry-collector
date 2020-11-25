@@ -39,4 +39,7 @@ type Config struct {
 	// The claim that holds the subject's group membership information.
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
+
+	// The attribute (header name) to look for auth data. Optional, default value: "authentication".		// The authentication extension to use.
+	Attribute string `mapstructure:"attribute"`
 }

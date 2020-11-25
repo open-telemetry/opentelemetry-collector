@@ -54,6 +54,7 @@ var (
 	errUsernameNotString                 = errors.New("the username returned by the Config provider isn't a regular string")
 	errGroupsClaimNotFound               = errors.New("groups claim from the Config configuration not found on the token returned by the Config provider")
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
+	defaultAttribute                     = "authorization"
 )
 
 func newOIDCAuthenticator(cfg *Config) (*oidcAuthenticator, error) {
@@ -63,13 +64,13 @@ func newOIDCAuthenticator(cfg *Config) (*oidcAuthenticator, error) {
 	if cfg.IssuerURL == "" {
 		return nil, errNoIssuerURL
 	}
-	// TODO what with this
-	//if cfg.Attribute == "" {
-	//	cfg.Attribute = configauth.defaultAttribute
-	//}
+
+	if cfg.Attribute == "" {
+		cfg.Attribute = defaultAttribute
+	}
 
 	return &oidcAuthenticator{
-		attribute:         "cfg.Attribute", // TODO something with this
+		attribute:         cfg.Attribute,
 		config:            *cfg,
 		unaryInterceptor:  configauth.DefaultUnaryInterceptor,
 		streamInterceptor: configauth.DefaultStreamInterceptor,

@@ -39,7 +39,12 @@ func NewFactory() component.ExtensionFactory {
 }
 
 func createDefaultConfig() configmodels.Extension {
-	return &Config{}
+	return &Config{
+		ExtensionSettings: configmodels.ExtensionSettings{
+			NameVal: typeStr,
+			TypeVal: typeStr,
+		},
+	}
 }
 
 func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
