@@ -32,7 +32,7 @@ var commonFile = &File{
 	},
 }
 
-var instrumentationLibrary = &messagePtrStruct{
+var instrumentationLibrary = &messageValueStruct{
 	structName:     "InstrumentationLibrary",
 	description:    "// InstrumentationLibrary is a message representing the instrumentation library information.",
 	originFullName: "otlpcommon.InstrumentationLibrary",
@@ -66,7 +66,7 @@ var attributeMap = &sliceStruct{
 
 var attributeKeyValue = &messagePtrStruct{}
 
-var instrumentationLibraryField = &messagePtrField{
+var instrumentationLibraryField = &messageValueField{
 	fieldName:       "InstrumentationLibrary",
 	originFieldName: "InstrumentationLibrary",
 	returnMessage:   instrumentationLibrary,

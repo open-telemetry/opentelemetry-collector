@@ -310,9 +310,6 @@ func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	ms.InitEmpty()
-	assert.True(t, ms.InstrumentationLibrary().IsNil())
-	ms.InstrumentationLibrary().InitEmpty()
-	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -2115,7 +2112,6 @@ func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 }
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
-	tv.InstrumentationLibrary().InitEmpty()
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	fillTestMetricSlice(tv.Metrics())
 }

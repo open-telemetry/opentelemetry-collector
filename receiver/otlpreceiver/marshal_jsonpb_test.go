@@ -37,6 +37,7 @@ const expectedJSON = `{
   },
   "instrumentationLibrarySpans": [
     {
+      "instrumentationLibrary": {},
       "spans": [
         {
           "traceId": "",
@@ -86,7 +87,7 @@ func TestJSONPbMarshal(t *testing.T) {
 	otlp := pdata.TracesToOtlp(td)
 	bytes, err := jpb.Marshal(otlp[0])
 	assert.NoError(t, err)
-	assert.EqualValues(t, expectedJSON, string(bytes))
+	assert.JSONEq(t, expectedJSON, string(bytes))
 }
 
 func TestJSONPbUnmarshal(t *testing.T) {

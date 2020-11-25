@@ -210,7 +210,6 @@ func Test_Matching_False(t *testing.T) {
 	})
 
 	library := pdata.NewInstrumentationLibrary()
-	library.InitEmpty()
 	library.SetName("lib")
 	library.SetVersion("ver")
 
@@ -374,7 +373,6 @@ func Test_Matching_True(t *testing.T) {
 	})
 
 	library := pdata.NewInstrumentationLibrary()
-	library.InitEmpty()
 	library.SetName("lib")
 	library.SetVersion("ver")
 

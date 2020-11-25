@@ -488,7 +488,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		metrics.Resize(6)
 
 		il := ilm.InstrumentationLibrary()
-		il.InitEmpty()
 		il.SetName("example")
 		il.SetVersion("0.1")
 

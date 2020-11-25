@@ -553,8 +553,6 @@ func generateTraceDataWithLibraryInfo() pdata.Traces {
 	td := generateTraceDataOneSpanNoResource()
 	rs0 := td.ResourceSpans().At(0)
 	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
-
-	rs0ils0.InstrumentationLibrary().InitEmpty()
 	rs0ils0.InstrumentationLibrary().SetName("io.opentelemetry.test")
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
 	return td
@@ -848,7 +846,6 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	rs0.InstrumentationLibrarySpans().Resize(2)
 
 	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
-	rs0ils0.InstrumentationLibrary().InitEmpty()
 	rs0ils0.InstrumentationLibrary().SetName("library1")
 	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
 	rs0ils0.Spans().Resize(1)
@@ -860,7 +857,6 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	span1.SetEndTime(testSpanEndTimestamp)
 
 	rs0ils1 := rs0.InstrumentationLibrarySpans().At(1)
-	rs0ils1.InstrumentationLibrary().InitEmpty()
 	rs0ils1.InstrumentationLibrary().SetName("library2")
 	rs0ils1.InstrumentationLibrary().SetVersion("0.42.0")
 	rs0ils1.Spans().Resize(1)

@@ -95,9 +95,6 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 }
 
 func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, zTags map[string]string) {
-	if il.IsNil() {
-		return
-	}
 	if ilName := il.Name(); ilName != "" {
 		zTags[tracetranslator.TagInstrumentationName] = ilName
 	}

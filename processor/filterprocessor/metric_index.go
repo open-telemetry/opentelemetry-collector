@@ -72,7 +72,6 @@ func (idx metricIndex) extract(pdm pdata.Metrics) pdata.Metrics {
 			ilmOut.InitEmpty()
 			ilmSliceOut.Append(ilmOut)
 			ilOut := ilmOut.InstrumentationLibrary()
-			ilOut.InitEmpty()
 			ilmIn.InstrumentationLibrary().CopyTo(ilOut)
 			mSliceOut := ilmOut.Metrics()
 			for _, metricIdx := range sortMetrics(ilmIndexes[ilmIdx]) {

@@ -30,33 +30,23 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
 	// orig points to the pointer otlpcommon.InstrumentationLibrary field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpcommon.InstrumentationLibrary
+	orig *otlpcommon.InstrumentationLibrary
 }
 
-func newInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
-	return InstrumentationLibrary{orig}
+func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+	return InstrumentationLibrary{orig: orig}
 }
 
-// NewInstrumentationLibrary creates a new "nil" InstrumentationLibrary.
-// To initialize the struct call "InitEmpty".
+// NewInstrumentationLibrary creates a new empty InstrumentationLibrary.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrary() InstrumentationLibrary {
-	orig := (*otlpcommon.InstrumentationLibrary)(nil)
-	return newInstrumentationLibrary(&orig)
+	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms InstrumentationLibrary) InitEmpty() {
-	*ms.orig = &otlpcommon.InstrumentationLibrary{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms InstrumentationLibrary) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpcommon.InstrumentationLibrary{}
 }
 
 // Name returns the name associated with this InstrumentationLibrary.
@@ -89,13 +79,6 @@ func (ms InstrumentationLibrary) SetVersion(v string) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 }
