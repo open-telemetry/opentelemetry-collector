@@ -91,13 +91,11 @@ var Metrics = &metricStruct{
 			metric.SetDescription("{{ $metric.Description }}")
 			metric.SetUnit("{{ $metric.Unit }}")
 			metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
-			data := metric.{{ $metric.Data.Type }}()
-			data.InitEmpty()
 			{{- if $metric.Data.HasMonotonic }}
-			data.SetIsMonotonic({{ $metric.Data.Monotonic }})
+			metric.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
 			{{- end }}
 			{{- if $metric.Data.HasAggregated }}
-			data.SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
+			metric.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
 			{{- end }}
 
 			return metric
