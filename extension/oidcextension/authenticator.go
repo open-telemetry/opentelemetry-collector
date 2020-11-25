@@ -46,7 +46,7 @@ type oidcAuthenticator struct {
 }
 
 var (
-	errNoClientIDProvided                = errors.New("no ClientID provided for the Config configuration")
+	errNoAudienceProvided                = errors.New("no Audience provided for the Config configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the Config configuration")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
 	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the Config provider")
@@ -59,7 +59,7 @@ var (
 
 func newOIDCAuthenticator(cfg *Config) (*oidcAuthenticator, error) {
 	if cfg.Audience == "" {
-		return nil, errNoClientIDProvided
+		return nil, errNoAudienceProvided
 	}
 	if cfg.IssuerURL == "" {
 		return nil, errNoIssuerURL

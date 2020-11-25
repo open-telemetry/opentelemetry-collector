@@ -24,13 +24,12 @@ import (
 )
 
 const (
-	typeStr = "oidc_auth"
+	typeStr = "oidc"
 )
 
 type OIDCFactory struct {
 }
 
-// NewFactory creates a factory for HealthCheck extension.
 func NewFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		typeStr,
