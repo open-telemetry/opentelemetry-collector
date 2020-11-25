@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -49,9 +50,10 @@ const (
 )
 
 type tracesamplerprocessor struct {
-	nextConsumer       consumer.TracesConsumer
-	scaledSamplingRate uint32
-	hashSeed           uint32
+	nextConsumer        consumer.TracesConsumer
+	scaledSamplingRate  uint32
+	samplingProbability float64
+	hashSeed            uint32
 }
 
 // newTraceProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
@@ -64,8 +66,9 @@ func newTraceProcessor(nextConsumer consumer.TracesConsumer, cfg Config) (compon
 	return &tracesamplerprocessor{
 		nextConsumer: nextConsumer,
 		// Adjust sampling percentage on private so recalculations are avoided.
-		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
-		hashSeed:           cfg.HashSeed,
+		scaledSamplingRate:  uint32(cfg.SamplingPercentage * percentageScaleFactor),
+		samplingProbability: float64(cfg.SamplingPercentage) * 0.01,
+		hashSeed:            cfg.HashSeed,
 	}, nil
 }
 
@@ -80,6 +83,16 @@ func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Tr
 		tsp.processTraces(rspan, sampledTraceData)
 	}
 	return tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData)
+}
+
+func (tsp *tracesamplerprocessor) updateSamplingProbability(sampledSpanAttributes pdata.AttributeMap) {
+	samplingProbability := tsp.samplingProbability
+	attr, found := sampledSpanAttributes.Get(conventions.AttributeSamplingProbability)
+	if found && attr.Type() == pdata.AttributeValueDOUBLE {
+		samplingProbability *= attr.DoubleVal()
+	}
+
+	sampledSpanAttributes.UpsertDouble(conventions.AttributeSamplingProbability, samplingProbability)
 }
 
 func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpans, sampledTraceData pdata.Traces) {
@@ -115,6 +128,7 @@ func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpan
 				hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < scaledSamplingRate
 
 			if sampled {
+				tsp.updateSamplingProbability(span.Attributes())
 				spns.Append(span)
 			}
 		}

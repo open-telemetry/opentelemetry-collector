@@ -20,6 +20,10 @@ The following configuration options can be modified:
 - `hash_seed` (no default): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `sampling_percentage` (default = 0): Percentage at which traces are sampled; >= 100 samples all traces
 
+The sampled spans have [`sampling.probability`](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/sdk.md#sampling)
+attribute added, which includes the value in range of `(0, 1.0]` representing the probability with which the record
+was sampled. If the span was already sampled before and the attribute is present, the existing value is multiplied.
+
 Examples:
 
 ```yaml

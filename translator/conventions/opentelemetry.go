@@ -61,6 +61,7 @@ const (
 	AttributeProcessExecutablePath = "process.executable.path"
 	AttributeProcessID             = "process.pid"
 	AttributeProcessOwner          = "process.owner"
+	AttributeSamplingProbability   = "sampling.probability"
 	AttributeServiceInstance       = "service.instance.id"
 	AttributeServiceName           = "service.name"
 	AttributeServiceNamespace      = "service.namespace"
