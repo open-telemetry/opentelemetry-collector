@@ -84,9 +84,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Total CPU seconds broken down by different states.")
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-			data := metric.DoubleSum()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.DoubleSum().SetIsMonotonic(true)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -100,9 +99,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Bytes of memory in use.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.SetIsMonotonic(false)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
