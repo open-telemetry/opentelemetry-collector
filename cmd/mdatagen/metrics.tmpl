@@ -92,7 +92,6 @@ var Metrics = &metricStruct{
 			metric.SetUnit("{{ $metric.Unit }}")
 			metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
 			data := metric.{{ $metric.Data.Type }}()
-			data.InitEmpty()
 			{{- if $metric.Data.HasMonotonic }}
 			data.SetIsMonotonic({{ $metric.Data.Monotonic }})
 			{{- end }}
