@@ -9,12 +9,11 @@ The following settings are required:
 
 The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers
-- `topic` (default = otlp_spans for traces, otlp_metrics for metrics): The name of the kafka topic to export to.
-- `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
-  - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics.
-  - The following encodings are valid *only* for **traces**.
-    - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`.
-    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`.
+- `topic` (default = otlp_spans): The name of the kafka topic to export to
+- `encoding` (default = otlp_proto): The encoding of the payload sent to kafka. Available encodings:
+  - `otlp_proto`: the payload is serialized to `ExportTraceServiceRequest`.
+  - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`.
+  - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`.
 - `auth`
   - `plain_text`
     - `username`: The username to use.

@@ -18,19 +18,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// TracesMarshaller marshals traces into Message array.
-type TracesMarshaller interface {
+// Marshaller marshals traces into Message array.
+type Marshaller interface {
 	// Marshal serializes spans into Messages
 	Marshal(traces pdata.Traces) ([]Message, error)
-
-	// Encoding returns encoding name
-	Encoding() string
-}
-
-// MetricsMarshaller marshals metrics into Message array
-type MetricsMarshaller interface {
-	// Marshal serializes metrics into Messages
-	Marshal(metrics pdata.Metrics) ([]Message, error)
 
 	// Encoding returns encoding name
 	Encoding() string
@@ -41,22 +32,14 @@ type Message struct {
 	Value []byte
 }
 
-// tracesMarshallers returns map of supported encodings with TracesMarshaller.
-func tracesMarshallers() map[string]TracesMarshaller {
-	otlppb := &otlpTracesPbMarshaller{}
+// defaultMarshallers returns map of supported encodings with Marshaller.
+func defaultMarshallers() map[string]Marshaller {
+	otlp := &otlpProtoMarshaller{}
 	jaegerProto := jaegerMarshaller{marshaller: jaegerProtoSpanMarshaller{}}
 	jaegerJSON := jaegerMarshaller{marshaller: newJaegerJSONMarshaller()}
-	return map[string]TracesMarshaller{
-		otlppb.Encoding():      otlppb,
+	return map[string]Marshaller{
+		otlp.Encoding():        otlp,
 		jaegerProto.Encoding(): jaegerProto,
 		jaegerJSON.Encoding():  jaegerJSON,
-	}
-}
-
-// metricsMarshallers returns map of supported encodings and MetricsMarshaller
-func metricsMarshallers() map[string]MetricsMarshaller {
-	otlppb := &otlpMetricsPbMarshaller{}
-	return map[string]MetricsMarshaller{
-		otlppb.Encoding(): otlppb,
 	}
 }
