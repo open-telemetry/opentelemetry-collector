@@ -32,9 +32,10 @@ type Config struct {
 	Brokers []string `mapstructure:"brokers"`
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
-	// The name of the kafka topic to export to (default "otlp_spans")
+	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
-	// Encoding of the messages (default "otlp_proto")
+
+	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 
 	// Metadata is the namespace for metadata management properties used by the
