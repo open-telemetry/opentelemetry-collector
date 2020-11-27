@@ -21,28 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefaultTracesMarshallers(t *testing.T) {
+func TestDefaultMarshallers(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
 		"jaeger_proto",
 		"jaeger_json",
 	}
-	marshallers := tracesMarshallers()
-	assert.Equal(t, len(expectedEncodings), len(marshallers))
-	for _, e := range expectedEncodings {
-		t.Run(e, func(t *testing.T) {
-			m, ok := marshallers[e]
-			require.True(t, ok)
-			assert.NotNil(t, m)
-		})
-	}
-}
-
-func TestDefaultMetricsMarshallers(t *testing.T) {
-	expectedEncodings := []string{
-		"otlp_proto",
-	}
-	marshallers := metricsMarshallers()
+	marshallers := defaultMarshallers()
 	assert.Equal(t, len(expectedEncodings), len(marshallers))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {

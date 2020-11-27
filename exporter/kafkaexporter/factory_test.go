@@ -32,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
-	assert.Equal(t, "", cfg.Topic)
+	assert.Equal(t, defaultTopic, cfg.Topic)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
@@ -41,48 +41,26 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// this disables contacting the broker so we can successfully create the exporter
 	cfg.Metadata.Full = false
-	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
+	f := kafkaExporterFactory{marshallers: defaultMarshallers()}
 	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
-}
-
-func TestCreateMetricsExport(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
-	cfg.ProtocolVersion = "2.0.0"
-	// this disables contacting the broker so we can successfully create the exporter
-	cfg.Metadata.Full = false
-	mf := kafkaExporterFactory{metricsMarshallers: metricsMarshallers()}
-	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
-	require.NoError(t, err)
-	assert.NotNil(t, mr)
 }
 
 func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaExporterFactory{tracesMarshallers: tracesMarshallers()}
+	f := kafkaExporterFactory{marshallers: defaultMarshallers()}
 	r, err := f.createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
 }
 
-func TestCreateMetricsExporter_err(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
-	cfg.ProtocolVersion = "2.0.0"
-	mf := kafkaExporterFactory{metricsMarshallers: metricsMarshallers()}
-	mr, err := mf.createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
-	require.Error(t, err)
-	assert.Nil(t, mr)
-}
-
 func TestWithMarshallers(t *testing.T) {
 	cm := &customMarshaller{}
-	f := NewFactory(WithAddTracesMarshallers(map[string]TracesMarshaller{cm.Encoding(): cm}))
+	f := NewFactory(WithAddMarshallers(map[string]Marshaller{cm.Encoding(): cm}))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
@@ -94,7 +72,7 @@ func TestWithMarshallers(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = new(otlpTracesPbMarshaller).Encoding()
+		cfg.Encoding = new(otlpProtoMarshaller).Encoding()
 		exporter, err := f.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
@@ -104,9 +82,9 @@ func TestWithMarshallers(t *testing.T) {
 type customMarshaller struct {
 }
 
-var _ TracesMarshaller = (*customMarshaller)(nil)
+var _ Marshaller = (*customMarshaller)(nil)
 
-func (c customMarshaller) Marshal(_ pdata.Traces) ([]Message, error) {
+func (c customMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 	panic("implement me")
 }
 

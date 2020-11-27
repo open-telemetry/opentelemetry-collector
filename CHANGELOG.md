@@ -2,9 +2,6 @@
 
 ## Unreleased
 
-## 💡 Enhancements 💡
-
-- `kafka` exporter: Add support for exporting metrics as otlp Protobuf. #1966
 ## v0.15.0 Beta
 
 ## 🛑 Breaking changes 🛑

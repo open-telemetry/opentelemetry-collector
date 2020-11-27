@@ -49,7 +49,7 @@ func TestJaegerMarshaller(t *testing.T) {
 	require.NoError(t, jsonMarshaller.Marshal(jsonByteBuffer, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaller TracesMarshaller
+		unmarshaller Marshaller
 		encoding     string
 		messages     []Message
 	}{
