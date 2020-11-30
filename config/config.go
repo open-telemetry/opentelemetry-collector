@@ -377,6 +377,7 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 		// Create the default config for this exporter
 		exporterCfg := factory.CreateDefaultConfig()
 		exporterCfg.SetName(fullName)
+		expandEnvLoadedConfig(exporterCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
