@@ -25,8 +25,8 @@ type ResourceToTelemetrySettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// createDefaultResourceToTelemetrySettings returns the default settings for ResourceToTelemetrySettings.
-func createDefaultResourceToTelemetrySettings() ResourceToTelemetrySettings {
+// defaultResourceToTelemetrySettings returns the default settings for ResourceToTelemetrySettings.
+func defaultResourceToTelemetrySettings() ResourceToTelemetrySettings {
 	return ResourceToTelemetrySettings{
 		Enabled: false,
 	}

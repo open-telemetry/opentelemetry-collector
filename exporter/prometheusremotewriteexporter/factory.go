@@ -77,15 +77,15 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.DefaultRetrySettings(),
+		QueueSettings:   exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.DefaultTimeoutSettings().Timeout,
 			Headers:         map[string]string{},
 		},
 	}
