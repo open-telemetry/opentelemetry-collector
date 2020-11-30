@@ -1,0 +1,9 @@
+name: contrib-test
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  setup-environment:
+  contribtest:

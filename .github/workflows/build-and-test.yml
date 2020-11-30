@@ -1,0 +1,40 @@
+name: build-and-test
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  windows-test:
+    runs-on: windows-latest
+    container:
+      image: cimg/go:1.15
+    env:
+      TEST_RESULTS: /tmp/test-results # path to where test results will be saved
+    steps:
+      - name: Setup required permissions
+        run: sudo chmod -R 777 $GITHUB_WORKSPACE /github /__w/_temp
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: restore cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-mod
+        with:
+          path: /home/circleci/go/pkg/mod
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+  setup-environment:
+  lint:
+  cross-compile:
+  loadtest:
+  correctness:
+  test:
+  coverage:
+  windows-msi:
+  publish-check:
+  publish-stable:
+  publish-dev:
+  check-links:
+  build-rpm-package:
+  build-deb-package:
+
