@@ -33,8 +33,8 @@ import (
 )
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
-	rCfg := CreateDefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	rCfg := DefaultRetrySettings()
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -58,8 +58,8 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
-	rCfg := CreateDefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.Enabled = false
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -84,9 +84,9 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 }
 
 func TestQueuedRetry_PartialError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = 0
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -113,9 +113,9 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 }
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -150,9 +150,9 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -179,9 +179,9 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 }
 
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
@@ -222,9 +222,9 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 }
 
 func TestQueuedRetry_ThrottleError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = 10 * time.Millisecond
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -254,10 +254,10 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 }
 
 func TestQueuedRetry_RetryOnError(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	rCfg.InitialInterval = 0
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -284,9 +284,9 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnFull(t *testing.T) {
-	qCfg := CreateDefaultQueueSettings()
+	qCfg := DefaultQueueSettings()
 	qCfg.QueueSize = 0
-	rCfg := CreateDefaultRetrySettings()
+	rCfg := DefaultRetrySettings()
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -304,8 +304,8 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	qCfg := CreateDefaultQueueSettings()
-	rCfg := CreateDefaultRetrySettings()
+	qCfg := DefaultQueueSettings()
+	rCfg := DefaultRetrySettings()
 	be := newBaseExporter(defaultExporterCfg, zap.NewNop(), WithRetry(rCfg), WithQueue(qCfg))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs

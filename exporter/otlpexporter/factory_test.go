@@ -38,9 +38,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings, exporterhelper.CreateDefaultRetrySettings())
-	assert.Equal(t, ocfg.QueueSettings, exporterhelper.CreateDefaultQueueSettings())
-	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.CreateDefaultTimeoutSettings())
+	assert.Equal(t, ocfg.RetrySettings, exporterhelper.DefaultRetrySettings())
+	assert.Equal(t, ocfg.QueueSettings, exporterhelper.DefaultQueueSettings())
+	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.DefaultTimeoutSettings())
 }
 
 func TestCreateMetricsExporter(t *testing.T) {

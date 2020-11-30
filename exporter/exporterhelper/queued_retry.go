@@ -40,8 +40,8 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-// CreateDefaultQueueSettings returns the default settings for QueueSettings.
-func CreateDefaultQueueSettings() QueueSettings {
+// DefaultQueueSettings returns the default settings for QueueSettings.
+func DefaultQueueSettings() QueueSettings {
 	return QueueSettings{
 		Enabled:      true,
 		NumConsumers: 10,
@@ -68,8 +68,8 @@ type RetrySettings struct {
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
 
-// CreateDefaultRetrySettings returns the default settings for RetrySettings.
-func CreateDefaultRetrySettings() RetrySettings {
+// DefaultRetrySettings returns the default settings for RetrySettings.
+func DefaultRetrySettings() RetrySettings {
 	return RetrySettings{
 		Enabled:         true,
 		InitialInterval: 5 * time.Second,

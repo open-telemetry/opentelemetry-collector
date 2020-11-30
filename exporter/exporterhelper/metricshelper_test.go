@@ -154,7 +154,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 
 func TestMetricsExporter_WithResourceToTelemetryConversionDisabled(t *testing.T) {
 	md := testdata.GenerateMetricsTwoMetrics()
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 

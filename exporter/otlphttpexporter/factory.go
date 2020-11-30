@@ -47,8 +47,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		RetrySettings: exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings: exporterhelper.CreateDefaultQueueSettings(),
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,

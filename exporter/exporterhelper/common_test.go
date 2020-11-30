@@ -50,8 +50,8 @@ func TestBaseExporterWithOptions(t *testing.T) {
 		zap.NewNop(),
 		WithStart(func(ctx context.Context, host component.Host) error { return want }),
 		WithShutdown(func(ctx context.Context) error { return want }),
-		WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()),
-		WithTimeout(CreateDefaultTimeoutSettings()),
+		WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
+		WithTimeout(DefaultTimeoutSettings()),
 	)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))
