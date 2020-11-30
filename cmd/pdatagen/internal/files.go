@@ -49,7 +49,7 @@ type File struct {
 	Name        string
 	imports     []string
 	testImports []string
-	// Can be any of slicePtrStruct or messagePtrStruct
+	// Can be any of sliceOfPtrFields, sliceOfValueFields, messageValueStruct, or messagePtrStruct
 	structs []baseStruct
 }
 

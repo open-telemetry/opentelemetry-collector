@@ -508,17 +508,17 @@ type baseSlice interface {
 	getName() string
 }
 
-// Will generate code only for the slice struct.
-type slicePtrStruct struct {
+// Will generate code only for a slice of pointer fields.
+type sliceOfPtrFields struct {
 	structName string
 	element    *messagePtrStruct
 }
 
-func (ss *slicePtrStruct) getName() string {
+func (ss *sliceOfPtrFields) getName() string {
 	return ss.structName
 }
 
-func (ss *slicePtrStruct) generateStruct(sb *strings.Builder) {
+func (ss *sliceOfPtrFields) generateStruct(sb *strings.Builder) {
 	sb.WriteString(os.Expand(slicePtrTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -533,7 +533,7 @@ func (ss *slicePtrStruct) generateStruct(sb *strings.Builder) {
 	}))
 }
 
-func (ss *slicePtrStruct) generateTests(sb *strings.Builder) {
+func (ss *sliceOfPtrFields) generateTests(sb *strings.Builder) {
 	sb.WriteString(os.Expand(slicePtrTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -548,7 +548,7 @@ func (ss *slicePtrStruct) generateTests(sb *strings.Builder) {
 	}))
 }
 
-func (ss *slicePtrStruct) generateTestValueHelpers(sb *strings.Builder) {
+func (ss *sliceOfPtrFields) generateTestValueHelpers(sb *strings.Builder) {
 	sb.WriteString(os.Expand(slicePtrGenerateTest, func(name string) string {
 		switch name {
 		case "structName":
@@ -561,19 +561,19 @@ func (ss *slicePtrStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-var _ baseStruct = (*slicePtrStruct)(nil)
+var _ baseStruct = (*sliceOfPtrFields)(nil)
 
-// Will generate code only for the slice struct.
-type sliceValueStruct struct {
+// Will generate code only for a slice of value fields.
+type sliceOfValueFields struct {
 	structName string
 	element    *messageValueStruct
 }
 
-func (ss *sliceValueStruct) getName() string {
+func (ss *sliceOfValueFields) getName() string {
 	return ss.structName
 }
 
-func (ss *sliceValueStruct) generateStruct(sb *strings.Builder) {
+func (ss *sliceOfValueFields) generateStruct(sb *strings.Builder) {
 	sb.WriteString(os.Expand(sliceValueTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -588,7 +588,7 @@ func (ss *sliceValueStruct) generateStruct(sb *strings.Builder) {
 	}))
 }
 
-func (ss *sliceValueStruct) generateTests(sb *strings.Builder) {
+func (ss *sliceOfValueFields) generateTests(sb *strings.Builder) {
 	sb.WriteString(os.Expand(sliceValueTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -603,7 +603,7 @@ func (ss *sliceValueStruct) generateTests(sb *strings.Builder) {
 	}))
 }
 
-func (ss *sliceValueStruct) generateTestValueHelpers(sb *strings.Builder) {
+func (ss *sliceOfValueFields) generateTestValueHelpers(sb *strings.Builder) {
 	sb.WriteString(os.Expand(sliceValueGenerateTest, func(name string) string {
 		switch name {
 		case "structName":
@@ -616,4 +616,4 @@ func (ss *sliceValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-var _ baseStruct = (*sliceValueStruct)(nil)
+var _ baseStruct = (*sliceOfValueFields)(nil)

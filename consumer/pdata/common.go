@@ -82,12 +82,6 @@ func (avt AttributeValueType) String() string {
 // Important: zero-initialized instance is not valid for use. All AttributeValue functions bellow must
 // be called only on instances that are created via NewAttributeValue+ functions.
 type AttributeValue struct {
-	// Double pointer is required so that in the Setters we can update the pointer if
-	// it is nil. This double pointer can be eliminated in the future if we embed AnyValue
-	// using Gogoproto `(gogoproto.nullable) = false` annotation.
-	//
-	// orig cannot be nil (it is an invalid instance if orig is nil).
-	// (*orig) may be nil.
 	orig *otlpcommon.AnyValue
 }
 

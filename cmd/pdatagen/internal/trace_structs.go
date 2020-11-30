@@ -43,7 +43,7 @@ var traceFile = &File{
 	},
 }
 
-var resourceSpansSlice = &slicePtrStruct{
+var resourceSpansSlice = &sliceOfPtrFields{
 	structName: "ResourceSpansSlice",
 	element:    resourceSpans,
 }
@@ -62,7 +62,7 @@ var resourceSpans = &messagePtrStruct{
 	},
 }
 
-var instrumentationLibrarySpansSlice = &slicePtrStruct{
+var instrumentationLibrarySpansSlice = &sliceOfPtrFields{
 	structName: "InstrumentationLibrarySpansSlice",
 	element:    instrumentationLibrarySpans,
 }
@@ -81,7 +81,7 @@ var instrumentationLibrarySpans = &messagePtrStruct{
 	},
 }
 
-var spanSlice = &slicePtrStruct{
+var spanSlice = &sliceOfPtrFields{
 	structName: "SpanSlice",
 	element:    span,
 }
@@ -141,7 +141,7 @@ var span = &messagePtrStruct{
 	},
 }
 
-var spanEventSlice = &slicePtrStruct{
+var spanEventSlice = &sliceOfPtrFields{
 	structName: "SpanEventSlice",
 	element:    spanEvent,
 }
@@ -159,7 +159,7 @@ var spanEvent = &messagePtrStruct{
 	},
 }
 
-var spanLinkSlice = &slicePtrStruct{
+var spanLinkSlice = &sliceOfPtrFields{
 	structName: "SpanLinkSlice",
 	element:    spanLink,
 }

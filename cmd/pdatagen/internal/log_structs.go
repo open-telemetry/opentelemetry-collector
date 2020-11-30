@@ -37,7 +37,7 @@ var logFile = &File{
 	},
 }
 
-var resourceLogsSlice = &slicePtrStruct{
+var resourceLogsSlice = &sliceOfPtrFields{
 	structName: "ResourceLogsSlice",
 	element:    resourceLogs,
 }
@@ -56,7 +56,7 @@ var resourceLogs = &messagePtrStruct{
 	},
 }
 
-var instrumentationLibraryLogsSlice = &slicePtrStruct{
+var instrumentationLibraryLogsSlice = &sliceOfPtrFields{
 	structName: "InstrumentationLibraryLogsSlice",
 	element:    instrumentationLibraryLogs,
 }
@@ -75,7 +75,7 @@ var instrumentationLibraryLogs = &messagePtrStruct{
 	},
 }
 
-var logSlice = &slicePtrStruct{
+var logSlice = &sliceOfPtrFields{
 	structName: "LogSlice",
 	element:    logRecord,
 }

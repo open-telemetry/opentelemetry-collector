@@ -59,7 +59,7 @@ var metricsFile = &File{
 	},
 }
 
-var resourceMetricsSlice = &slicePtrStruct{
+var resourceMetricsSlice = &sliceOfPtrFields{
 	structName: "ResourceMetricsSlice",
 	element:    resourceMetrics,
 }
@@ -78,7 +78,7 @@ var resourceMetrics = &messagePtrStruct{
 	},
 }
 
-var instrumentationLibraryMetricsSlice = &slicePtrStruct{
+var instrumentationLibraryMetricsSlice = &sliceOfPtrFields{
 	structName: "InstrumentationLibraryMetricsSlice",
 	element:    instrumentationLibraryMetrics,
 }
@@ -97,7 +97,7 @@ var instrumentationLibraryMetrics = &messagePtrStruct{
 	},
 }
 
-var metricSlice = &slicePtrStruct{
+var metricSlice = &sliceOfPtrFields{
 	structName: "MetricSlice",
 	element:    metric,
 }
@@ -224,7 +224,7 @@ var doubleSummary = &messageValueStruct{
 	},
 }
 
-var intDataPointSlice = &slicePtrStruct{
+var intDataPointSlice = &sliceOfPtrFields{
 	structName: "IntDataPointSlice",
 	element:    intDataPoint,
 }
@@ -242,7 +242,7 @@ var intDataPoint = &messagePtrStruct{
 	},
 }
 
-var doubleDataPointSlice = &slicePtrStruct{
+var doubleDataPointSlice = &sliceOfPtrFields{
 	structName: "DoubleDataPointSlice",
 	element:    doubleDataPoint,
 }
@@ -260,7 +260,7 @@ var doubleDataPoint = &messagePtrStruct{
 	},
 }
 
-var intHistogramDataPointSlice = &slicePtrStruct{
+var intHistogramDataPointSlice = &sliceOfPtrFields{
 	structName: "IntHistogramDataPointSlice",
 	element:    intHistogramDataPoint,
 }
@@ -281,7 +281,7 @@ var intHistogramDataPoint = &messagePtrStruct{
 	},
 }
 
-var doubleHistogramDataPointSlice = &slicePtrStruct{
+var doubleHistogramDataPointSlice = &sliceOfPtrFields{
 	structName: "DoubleHistogramDataPointSlice",
 	element:    doubleHistogramDataPoint,
 }
@@ -302,7 +302,7 @@ var doubleHistogramDataPoint = &messagePtrStruct{
 	},
 }
 
-var doubleSummaryDataPointSlice = &slicePtrStruct{
+var doubleSummaryDataPointSlice = &sliceOfPtrFields{
 	structName: "DoubleSummaryDataPointSlice",
 	element:    doubleSummaryDataPoint,
 }
@@ -325,7 +325,7 @@ var doubleSummaryDataPoint = &messagePtrStruct{
 	},
 }
 
-var quantileValuesSlice = &slicePtrStruct{
+var quantileValuesSlice = &sliceOfPtrFields{
 	structName: "ValueAtQuantileSlice",
 	element:    quantileValues,
 }
@@ -340,7 +340,7 @@ var quantileValues = &messagePtrStruct{
 	},
 }
 
-var intExemplarSlice = &slicePtrStruct{
+var intExemplarSlice = &sliceOfPtrFields{
 	structName: "IntExemplarSlice",
 	element:    intExemplar,
 }
@@ -363,7 +363,7 @@ var intExemplar = &messagePtrStruct{
 	},
 }
 
-var doubleExemplarSlice = &slicePtrStruct{
+var doubleExemplarSlice = &sliceOfPtrFields{
 	structName: "DoubleExemplarSlice",
 	element:    doubleExemplar,
 }
