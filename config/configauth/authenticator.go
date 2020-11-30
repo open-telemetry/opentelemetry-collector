@@ -88,7 +88,7 @@ func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
 func GetAuthenticatorFromRegistry(name string) (Authenticator, error) {
 	auth, ok := authRegistry[name]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Authenticar not found with name %s", name))
+		return nil, errors.New(fmt.Sprintf("Authenticator not found with name %s", name))
 	}
 	return auth, nil
 }
