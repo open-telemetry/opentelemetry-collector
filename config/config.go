@@ -680,10 +680,10 @@ func expandEnvLoadedConfig(s interface{}) {
 }
 
 func expandEnvLoadedConfigPointer(s interface{}) {
-	// Check that the value given is indeed a pointer
+	// Check that the value given is indeed a pointer, otherwise stop the search
 	value := reflect.ValueOf(s)
 	if value.Kind() != reflect.Ptr {
-		panic("not a pointer")
+		return
 	}
 	// Run expandLoadedConfigValue on the value behind the pointer
 	expandEnvLoadedConfigValue(value.Elem())
