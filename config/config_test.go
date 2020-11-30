@@ -597,14 +597,14 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 		},
 		NestedConfigPtr: &NestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
-			NestedIntValue: 1,
+			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
-			NestedIntValue: 2,
+			NestedIntValue:    2,
 		},
 		StringValue: "$VALUE",
-		IntValue: 3,
+		IntValue:    3,
 	}
 
 	expandEnvLoadedConfig(config)
@@ -616,14 +616,14 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 		},
 		NestedConfigPtr: &NestedConfig{
 			NestedStringValue: "nested_replaced_value",
-			NestedIntValue: 1,
+			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
 			NestedStringValue: "nested_replaced_value",
-			NestedIntValue: 2,
+			NestedIntValue:    2,
 		},
 		StringValue: "replaced_value",
-		IntValue: 3,
+		IntValue:    3,
 	}, config)
 }
 
@@ -637,14 +637,14 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 		},
 		NestedConfigPtr: &NestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
-			NestedIntValue: 1,
+			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
-			NestedIntValue: 2,
+			NestedIntValue:    2,
 		},
 		StringValue: "$$ESCAPED_VALUE",
-		IntValue: 3,
+		IntValue:    3,
 	}
 
 	expandEnvLoadedConfig(config)
@@ -656,14 +656,14 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 		},
 		NestedConfigPtr: &NestedConfig{
 			NestedStringValue: "nested_replaced_value",
-			NestedIntValue: 1,
+			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
 			NestedStringValue: "nested_replaced_value",
-			NestedIntValue: 2,
+			NestedIntValue:    2,
 		},
 		StringValue: "$ESCAPED_VALUE",
-		IntValue: 3,
+		IntValue:    3,
 	}, config)
 }
 
@@ -677,14 +677,14 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 		},
 		NestedConfigPtr: &NestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
-			NestedIntValue: 1,
+			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
 			NestedStringValue: "$NESTED_VALUE",
-			NestedIntValue: 2,
+			NestedIntValue:    2,
 		},
 		StringValue: "$VALUE",
-		IntValue: 3,
+		IntValue:    3,
 	}
 
 	expandEnvLoadedConfig(config)
@@ -696,14 +696,14 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 		},
 		NestedConfigPtr: &NestedConfig{
 			NestedStringValue: "nested_replaced_value",
-			NestedIntValue: 1,
+			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
 			NestedStringValue: "nested_replaced_value",
-			NestedIntValue: 2,
+			NestedIntValue:    2,
 		},
 		StringValue: "",
-		IntValue: 3,
+		IntValue:    3,
 	}, config)
 }
 

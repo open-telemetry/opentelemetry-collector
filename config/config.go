@@ -696,16 +696,17 @@ func expandEnvLoadedConfigValue(value reflect.Value) {
 	if value.Kind() != reflect.Struct {
 		return
 	}
-	// This loops through the fields
+	// This loops through the fields of the struct
 	for i := 0; i < value.NumField(); i++ {
-		field := value.Field(i)  // Returns the content of the field
-		if field.CanSet() {  // Only try to modify a field if it can be modified (eg. skip unexported private fields)
-			if field.Kind() == reflect.String {  // The current field is a string, we want to expand it
-				field.SetString(expandEnv(field.String()))  // Expand the env variable in the string
-			} else if field.Kind() == reflect.Ptr {  // Nested pointer to a struct
-				expandEnvLoadedConfigPointer(field.Interface())  // Go through the nested struct
-			} else if field.Kind() == reflect.Struct {  // Nested struct
-				expandEnvLoadedConfigValue(field)  // Go through the nested struct
+		field := value.Field(i) // Returns the content of the field
+		if field.CanSet() {     // Only try to modify a field if it can be modified (eg. skip unexported private fields)
+			switch field.Kind() {
+			case reflect.String: // The current field is a string, we want to expand it
+				field.SetString(expandEnv(field.String())) // Expand the env variable in the string
+			case reflect.Ptr: // The current field is a nested pointer to a struct
+				expandEnvLoadedConfigPointer(field.Interface()) // Go through the nested struct
+			case reflect.Struct: // The current field is a nested struct
+				expandEnvLoadedConfigValue(field) // Go through the nested struct
 			}
 		}
 	}
