@@ -571,3 +571,146 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 	}
 	return cfg, ValidateConfig(cfg, zap.NewNop())
 }
+
+type NestedConfig struct {
+	NestedStringValue string
+	NestedIntValue    int
+}
+
+type TestConfig struct {
+	configmodels.ExporterSettings
+
+	NestedConfigPtr   *NestedConfig
+	NestedConfigValue NestedConfig
+	StringValue       string
+	IntValue          int
+}
+
+func TestExpandEnvLoadedConfig(t *testing.T) {
+	assert.NoError(t, os.Setenv("NESTED_VALUE", "nested_replaced_value"))
+	assert.NoError(t, os.Setenv("VALUE", "replaced_value"))
+
+	config := &TestConfig{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type("test"),
+			NameVal: "test",
+		},
+		NestedConfigPtr: &NestedConfig{
+			NestedStringValue: "$NESTED_VALUE",
+			NestedIntValue: 1,
+		},
+		NestedConfigValue: NestedConfig{
+			NestedStringValue: "$NESTED_VALUE",
+			NestedIntValue: 2,
+		},
+		StringValue: "$VALUE",
+		IntValue: 3,
+	}
+
+	expandEnvLoadedConfig(config)
+
+	assert.Equal(t, &TestConfig{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type("test"),
+			NameVal: "test",
+		},
+		NestedConfigPtr: &NestedConfig{
+			NestedStringValue: "nested_replaced_value",
+			NestedIntValue: 1,
+		},
+		NestedConfigValue: NestedConfig{
+			NestedStringValue: "nested_replaced_value",
+			NestedIntValue: 2,
+		},
+		StringValue: "replaced_value",
+		IntValue: 3,
+	}, config)
+}
+
+func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
+	assert.NoError(t, os.Setenv("NESTED_VALUE", "nested_replaced_value"))
+
+	config := &TestConfig{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type("test"),
+			NameVal: "test",
+		},
+		NestedConfigPtr: &NestedConfig{
+			NestedStringValue: "$NESTED_VALUE",
+			NestedIntValue: 1,
+		},
+		NestedConfigValue: NestedConfig{
+			NestedStringValue: "$NESTED_VALUE",
+			NestedIntValue: 2,
+		},
+		StringValue: "$$ESCAPED_VALUE",
+		IntValue: 3,
+	}
+
+	expandEnvLoadedConfig(config)
+
+	assert.Equal(t, &TestConfig{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type("test"),
+			NameVal: "test",
+		},
+		NestedConfigPtr: &NestedConfig{
+			NestedStringValue: "nested_replaced_value",
+			NestedIntValue: 1,
+		},
+		NestedConfigValue: NestedConfig{
+			NestedStringValue: "nested_replaced_value",
+			NestedIntValue: 2,
+		},
+		StringValue: "$ESCAPED_VALUE",
+		IntValue: 3,
+	}, config)
+}
+
+func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
+	assert.NoError(t, os.Setenv("NESTED_VALUE", "nested_replaced_value"))
+
+	config := &TestConfig{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type("test"),
+			NameVal: "test",
+		},
+		NestedConfigPtr: &NestedConfig{
+			NestedStringValue: "$NESTED_VALUE",
+			NestedIntValue: 1,
+		},
+		NestedConfigValue: NestedConfig{
+			NestedStringValue: "$NESTED_VALUE",
+			NestedIntValue: 2,
+		},
+		StringValue: "$VALUE",
+		IntValue: 3,
+	}
+
+	expandEnvLoadedConfig(config)
+
+	assert.Equal(t, &TestConfig{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type("test"),
+			NameVal: "test",
+		},
+		NestedConfigPtr: &NestedConfig{
+			NestedStringValue: "nested_replaced_value",
+			NestedIntValue: 1,
+		},
+		NestedConfigValue: NestedConfig{
+			NestedStringValue: "nested_replaced_value",
+			NestedIntValue: 2,
+		},
+		StringValue: "",
+		IntValue: 3,
+	}, config)
+}
+
+func TestExpandEnvLoadedConfigNil(t *testing.T) {
+	var config *TestConfig
+
+	expandEnvLoadedConfig(config)
+
+	assert.Equal(t, (*TestConfig)(nil), config)
+}

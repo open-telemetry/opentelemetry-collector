@@ -671,6 +671,42 @@ func expandStringValues(value interface{}) interface{} {
 	}
 }
 
+// expandEnvLoadedConfig takes a pointer to a struct, goes through all of its fields recursively,
+// and expands all string fields with expandEnv
+func expandEnvLoadedConfig(s interface{}) {
+	expandEnvLoadedConfigPointer(s)
+}
+
+func expandEnvLoadedConfigPointer(s interface{}) {
+	// Check that the value given is indeed a pointer
+	value := reflect.ValueOf(s)
+	if value.Kind() != reflect.Ptr {
+		panic("not a pointer")
+	}
+	// Run expandLoadedConfigValue on the value behind the pointer
+	expandEnvLoadedConfigValue(value.Elem())
+}
+
+func expandEnvLoadedConfigValue(value reflect.Value) {
+	// Check that we did get a struct, otherwise stop the search
+	if value.Kind() != reflect.Struct {
+		return
+	}
+	// This loops through the fields
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)  // Returns the content of the field
+		if field.CanSet() {  // Only try to modify a field if it can be modified (eg. skip unexported private fields)
+			if field.Kind() == reflect.String {  // The current field is a string, we want to expand it
+				field.SetString(expandEnv(field.String()))  // Expand the env variable in the string
+			} else if field.Kind() == reflect.Ptr {  // Nested pointer to a struct
+				expandEnvLoadedConfigPointer(field.Interface())  // Go through the nested struct
+			} else if field.Kind() == reflect.Struct {  // Nested struct
+				expandEnvLoadedConfigValue(field)  // Go through the nested struct
+			}
+		}
+	}
+}
+
 func expandEnv(s string) string {
 	return os.Expand(s, func(str string) string {
 		// This allows escaping environment variable substitution via $$, e.g.
