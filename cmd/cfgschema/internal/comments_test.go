@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package internal
 
 import (
 	"reflect"
@@ -21,15 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const collectorSrcRoot = "../.."
-const moduleName = "go.opentelemetry.io/collector"
-
 func TestFieldComments(t *testing.T) {
 	v := reflect.ValueOf(testStruct{})
-	comments := commentsForStruct(v, env{
-		srcRoot:    collectorSrcRoot,
-		moduleName: moduleName,
-	})
+	comments := commentsForStruct(v, testEnv())
 	require.EqualValues(t, map[string]string{
 		"Duration": "embedded, package qualified\n",
 	}, comments)

@@ -17,12 +17,9 @@ package main
 import (
 	"flag"
 	"fmt"
-)
 
-type env struct {
-	srcRoot    string
-	moduleName string
-}
+	cfgschema "go.opentelemetry.io/collector/cmd/cfgschema/internal"
+)
 
 func main() {
 	prepUsage()
@@ -31,9 +28,9 @@ func main() {
 
 	switch {
 	case componentType == "all":
-		createAllCfgSchemaFiles(e)
+		cfgschema.CreateAllCfgSchemaFiles(e)
 	case componentType != "" && componentName != "":
-		createSingleCfgSchema(componentType, componentName, e)
+		cfgschema.CreateSingleCfgSchema(componentType, componentName, e)
 	default:
 		flag.Usage()
 	}
@@ -51,13 +48,10 @@ options
 	}
 }
 
-const defaultSrcRoot = "."
-const defaultModule = "go.opentelemetry.io/collector"
-
-func parseArgs() (env, string, string) {
-	e := env{}
-	flag.StringVar(&e.srcRoot, "s", defaultSrcRoot, "collector source root")
-	flag.StringVar(&e.moduleName, "m", defaultModule, "module name")
+func parseArgs() (cfgschema.Env, string, string) {
+	e := cfgschema.Env{}
+	flag.StringVar(&e.SrcRoot, "s", cfgschema.DefaultSrcRoot, "collector source root")
+	flag.StringVar(&e.ModuleName, "m", cfgschema.DefaultModule, "module name")
 	flag.Parse()
 	componentType := flag.Arg(0)
 	componentName := flag.Arg(1)

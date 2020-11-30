@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package internal
 
 import (
 	"fmt"
@@ -38,14 +38,14 @@ type field struct {
 // createSchemaFile creates a `cfg-schema.yaml` file in the directory of the passed-in
 // config instance. The yaml file contains the recursive field names, types,
 // comments, and default values for the config struct.
-func createSchemaFile(cfg interface{}, env env) {
+func createSchemaFile(cfg interface{}, env Env) {
 	v := reflect.ValueOf(cfg)
 	f := topLevelField(v, env)
 	packageDir := packageDir(v.Type().Elem(), env)
 	writeMarshaled(f, packageDir)
 }
 
-func topLevelField(v reflect.Value, env env) *field {
+func topLevelField(v reflect.Value, env Env) *field {
 	cfgType := v.Type()
 	field := &field{
 		Type: cfgType.String(),
@@ -54,7 +54,7 @@ func topLevelField(v reflect.Value, env env) *field {
 	return field
 }
 
-func refl(f *field, v reflect.Value, env env) {
+func refl(f *field, v reflect.Value, env Env) {
 	if v.Kind() == reflect.Ptr {
 		refl(f, v.Elem(), env)
 	}
@@ -97,7 +97,7 @@ func refl(f *field, v reflect.Value, env env) {
 	}
 }
 
-func handleKinds(v reflect.Value, f *field, env env) {
+func handleKinds(v reflect.Value, f *field, env Env) {
 	switch v.Kind() {
 	case reflect.Struct:
 		refl(f, v, env)

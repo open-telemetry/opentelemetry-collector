@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package internal
 
 import (
 	"reflect"
@@ -68,7 +68,7 @@ func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface
 		testEnv(),
 	)
 
-	assert.Equal(t, "main.testStruct", root.Type)
+	assert.Equal(t, "internal.testStruct", root.Type)
 
 	assert.Equal(t, 10, len(root.Fields))
 
@@ -111,7 +111,7 @@ func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface
 	}, getField(root.Fields, "name"))
 
 	personPtr := getField(root.Fields, "person_ptr")
-	assert.Equal(t, "*main.testPerson", personPtr.Type)
+	assert.Equal(t, "*internal.testPerson", personPtr.Type)
 	assert.Equal(t, "ptr", personPtr.Kind)
 	assert.Equal(t, 1, len(personPtr.Fields))
 	assert.Equal(t, &field{
@@ -121,7 +121,7 @@ func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface
 	}, getField(personPtr.Fields, "name"))
 
 	personStruct := getField(root.Fields, "person_struct")
-	assert.Equal(t, "main.testPerson", personStruct.Type)
+	assert.Equal(t, "internal.testPerson", personStruct.Type)
 	assert.Equal(t, "struct", personStruct.Kind)
 	assert.Equal(t, 1, len(personStruct.Fields))
 	assert.Equal(t, &field{
@@ -131,7 +131,7 @@ func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface
 	}, getField(personStruct.Fields, "name"))
 
 	persons := getField(root.Fields, "persons")
-	assert.Equal(t, "[]main.testPerson", persons.Type)
+	assert.Equal(t, "[]internal.testPerson", persons.Type)
 	assert.Equal(t, "slice", persons.Kind)
 	assert.Equal(t, 1, len(persons.Fields))
 	assert.Equal(t, &field{
@@ -140,7 +140,7 @@ func testTopLevelField(t *testing.T, s testStruct, defaults map[string]interface
 	}, getField(persons.Fields, "name"))
 
 	personPtrs := getField(root.Fields, "person_ptrs")
-	assert.Equal(t, "[]*main.testPerson", personPtrs.Type)
+	assert.Equal(t, "[]*internal.testPerson", personPtrs.Type)
 	assert.Equal(t, "slice", personPtrs.Kind)
 	assert.Equal(t, 1, len(personPtrs.Fields))
 	assert.Equal(t, &field{

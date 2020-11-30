@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package internal
 
 import (
 	"go/ast"
@@ -24,7 +24,7 @@ import (
 )
 
 // commentsForStruct returns a map of fieldname -> comment for a struct
-func commentsForStruct(v reflect.Value, env env) map[string]string {
+func commentsForStruct(v reflect.Value, env Env) map[string]string {
 	elem := v
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
@@ -34,9 +34,9 @@ func commentsForStruct(v reflect.Value, env env) map[string]string {
 	return commentsForStructName(packageDir, name)
 }
 
-func packageDir(t reflect.Type, env env) string {
-	pkg := strings.TrimPrefix(t.PkgPath(), env.moduleName+"/")
-	return path.Join(env.srcRoot, pkg)
+func packageDir(t reflect.Type, env Env) string {
+	pkg := strings.TrimPrefix(t.PkgPath(), env.ModuleName+"/")
+	return path.Join(env.SrcRoot, pkg)
 }
 
 func trimPackage(v reflect.Value) string {
