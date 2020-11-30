@@ -144,7 +144,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 
 	params := Parameters{
 		ApplicationStartInfo: componenttest.TestApplicationStartInfo(),
-		ConfigFactory: func(v *viper.Viper, command *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *viper.Viper, _ *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
 		Factories: factories,
@@ -419,7 +419,7 @@ func createExampleApplication(t *testing.T) *Application {
 
 	app, err := New(Parameters{
 		Factories: factories,
-		ConfigFactory: func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (c *configmodels.Config, err error) {
+		ConfigFactory: func(_ *viper.Viper, _ *cobra.Command, factories component.Factories) (c *configmodels.Config, err error) {
 			config := &configmodels.Config{
 				Receivers: map[string]configmodels.Receiver{
 					string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
