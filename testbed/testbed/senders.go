@@ -686,10 +686,7 @@ func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
-
-	if !lr.Body().IsNil() {
-		rec["log"] = lr.Body().StringVal()
-	}
+	rec["log"] = lr.Body().StringVal()
 
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		switch v.Type() {

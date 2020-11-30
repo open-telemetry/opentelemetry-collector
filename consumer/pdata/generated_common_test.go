@@ -52,7 +52,7 @@ func TestInstrumentationLibrary_Version(t *testing.T) {
 func TestAnyValueArray(t *testing.T) {
 	es := NewAnyValueArray()
 	assert.EqualValues(t, 0, es.Len())
-	es = newAnyValueArray(&[]*otlpcommon.AnyValue{})
+	es = newAnyValueArray(&[]otlpcommon.AnyValue{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
@@ -115,14 +115,14 @@ func TestAnyValueArray_Resize(t *testing.T) {
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
 	for i := 0; i < resizeSmallLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
 	assert.Equal(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
@@ -131,14 +131,14 @@ func TestAnyValueArray_Resize(t *testing.T) {
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
 	assert.Equal(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 	for i := oldLen; i < resizeLargeLen; i++ {

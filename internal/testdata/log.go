@@ -300,17 +300,17 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 		DroppedAttributesCount: 1,
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
-		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
+		Body:                   otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "This is a log message"}},
 		SpanId:                 data.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}),
 		TraceId:                data.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}),
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "app",
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "server"}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "server"}},
 			},
 			{
 				Key:   "instance_num",
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 1}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 1}},
 			},
 		},
 	}
@@ -337,15 +337,15 @@ func generateOtlpLogTwo() *otlplogs.LogRecord {
 		DroppedAttributesCount: 1,
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
-		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something happened"}},
+		Body:                   otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something happened"}},
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "customer",
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "acme"}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "acme"}},
 			},
 			{
 				Key:   "env",
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "dev"}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "dev"}},
 			},
 		},
 	}
@@ -368,7 +368,7 @@ func generateOtlpLogThree() *otlplogs.LogRecord {
 		DroppedAttributesCount: 1,
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN,
 		SeverityText:           "Warning",
-		Body:                   &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something else happened"}},
+		Body:                   otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "something else happened"}},
 	}
 }
 

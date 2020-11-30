@@ -876,7 +876,7 @@ func generateTestProtoResource() otlpresource.Resource {
 		Attributes: []otlpcommon.KeyValue{
 			{
 				Key:   "string",
-				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
+				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
 			},
 		},
 	}

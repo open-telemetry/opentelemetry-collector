@@ -45,32 +45,32 @@ func constructAttributeKeyValue(key string, value interface{}) otlpcommon.KeyVal
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: cast.ToInt64(val)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: cast.ToInt64(val)}},
 		}
 	case float32, float64:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: cast.ToFloat64(val)}},
 		}
 	case bool:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: cast.ToBool(val)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: cast.ToBool(val)}},
 		}
 	case *otlpcommon.ArrayValue:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: val}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: val}},
 		}
 	case *otlpcommon.KeyValueList:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: val}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: val}},
 		}
 	default:
 		attr = otlpcommon.KeyValue{
 			Key:   key,
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: val.(string)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: val.(string)}},
 		}
 	}
 	return attr

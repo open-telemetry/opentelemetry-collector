@@ -126,7 +126,7 @@ type baseField interface {
 type sliceField struct {
 	fieldName       string
 	originFieldName string
-	returnSlice     *sliceStruct
+	returnSlice     baseSlice
 }
 
 func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
@@ -137,7 +137,7 @@ func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 		case "fieldName":
 			return sf.fieldName
 		case "returnType":
-			return sf.returnSlice.structName
+			return sf.returnSlice.getName()
 		case "originFieldName":
 			return sf.originFieldName
 		default:
@@ -154,7 +154,7 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 		case "fieldName":
 			return sf.fieldName
 		case "returnType":
-			return sf.returnSlice.structName
+			return sf.returnSlice.getName()
 		default:
 			panic(name)
 		}
@@ -162,7 +162,7 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 }
 
 func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\tfillTest" + sf.returnSlice.structName + "(tv." + sf.fieldName + "())")
+	sb.WriteString("\tfillTest" + sf.returnSlice.getName() + "(tv." + sf.fieldName + "())")
 }
 
 func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {

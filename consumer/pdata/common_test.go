@@ -198,36 +198,31 @@ func TestAttributeValueMap(t *testing.T) {
 
 	// Test nil KvlistValue case for MapVal() func.
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	m1 = AttributeValue{orig: &orig}
+	m1 = AttributeValue{orig: orig}
 	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
 }
 
-func createNilOrigSetAttributeValue() AttributeValue {
-	var orig *otlpcommon.AnyValue
-	return AttributeValue{orig: &orig}
-}
-
 func TestNilOrigSetAttributeValue(t *testing.T) {
-	av := createNilOrigSetAttributeValue()
+	av := NewAttributeValueNull()
 	av.SetStringVal("abc")
 	assert.EqualValues(t, "abc", av.StringVal())
 
-	av = createNilOrigSetAttributeValue()
+	av = NewAttributeValueNull()
 	av.SetIntVal(123)
 	assert.EqualValues(t, 123, av.IntVal())
 
-	av = createNilOrigSetAttributeValue()
+	av = NewAttributeValueNull()
 	av.SetBoolVal(true)
 	assert.True(t, av.BoolVal())
 
-	av = createNilOrigSetAttributeValue()
+	av = NewAttributeValueNull()
 	av.SetDoubleVal(1.23)
 	assert.EqualValues(t, 1.23, av.DoubleVal())
 }
 
 func TestAttributeValueEqual(t *testing.T) {
-	av1 := createNilOrigSetAttributeValue()
-	av2 := createNilOrigSetAttributeValue()
+	av1 := NewAttributeValueNull()
+	av2 := NewAttributeValueNull()
 	assert.True(t, av1.Equal(av2))
 
 	av2 = NewAttributeValueString("abc")
@@ -355,15 +350,11 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 		{},
 		{
 			Key:   "test_key",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
 		{
 			Key:   "test_key2",
-			Value: nil,
-		},
-		{
-			Key:   "test_key3",
-			Value: &otlpcommon.AnyValue{Value: nil},
+			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
 	sm := AttributeMap{
@@ -375,11 +366,6 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, "test_value", val.StringVal())
 
 	val, exist = sm.Get("test_key2")
-	assert.True(t, exist)
-	assert.EqualValues(t, AttributeValueNULL, val.Type())
-	assert.EqualValues(t, "", val.StringVal())
-
-	val, exist = sm.Get("test_key3")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueNULL, val.Type())
 	assert.EqualValues(t, "", val.StringVal())
@@ -528,10 +514,8 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, AttributeValueNULL, val.Type())
 	assert.EqualValues(t, "", val.StringVal())
 
-	val, exist = sm.Get("test_key3")
-	assert.True(t, exist)
-	assert.EqualValues(t, AttributeValueNULL, val.Type())
-	assert.EqualValues(t, "", val.StringVal())
+	_, exist = sm.Get("test_key3")
+	assert.False(t, exist)
 
 	// Test Sort
 	assert.EqualValues(t, AttributeMap{orig: &origWithNil}, sm.Sort())
@@ -588,19 +572,18 @@ func TestAttributeValue_CopyTo(t *testing.T) {
 	// Test nil KvlistValue case for MapVal() func.
 	dest := NewAttributeValueNull()
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
-	AttributeValue{orig: &orig}.CopyTo(dest)
-	assert.Nil(t, (*dest.orig).Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
+	AttributeValue{orig: orig}.CopyTo(dest)
+	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
 
 	// Test nil ArrayValue case for ArrayVal() func.
 	dest = NewAttributeValueNull()
 	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
-	AttributeValue{orig: &orig}.CopyTo(dest)
-	assert.Nil(t, (*dest.orig).Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
+	AttributeValue{orig: orig}.CopyTo(dest)
+	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue)
 
-	// Test copy nil value.
-	var origNil *otlpcommon.AnyValue
-	AttributeValue{orig: &origNil}.CopyTo(dest)
-	assert.Nil(t, *dest.orig)
+	// Test copy empty value.
+	AttributeValue{orig: &otlpcommon.AnyValue{}}.CopyTo(dest)
+	assert.Nil(t, dest.orig.Value)
 }
 
 func TestAttributeMap_CopyTo(t *testing.T) {
@@ -617,14 +600,14 @@ func TestAttributeMap_CopyTo(t *testing.T) {
 	generateTestAttributeMap().CopyTo(dest)
 	assert.EqualValues(t, generateTestAttributeMap(), dest)
 
-	// Test CopyTo with a nil Value in the destination
-	(*dest.orig)[0].Value = nil
+	// Test CopyTo with an empty Value in the destination
+	(*dest.orig)[0].Value = otlpcommon.AnyValue{}
 	generateTestAttributeMap().CopyTo(dest)
 	assert.EqualValues(t, generateTestAttributeMap(), dest)
 }
 
 func TestAttributeValue_copyTo(t *testing.T) {
-	av := createNilOrigSetAttributeValue()
+	av := NewAttributeValueNull()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
 	av.copyTo(&destVal)
 	assert.EqualValues(t, nil, destVal.Value)
@@ -634,15 +617,11 @@ func TestAttributeMap_Update(t *testing.T) {
 	origWithNil := []otlpcommon.KeyValue{
 		{
 			Key:   "test_key",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
 		{
 			Key:   "test_key2",
-			Value: nil,
-		},
-		{
-			Key:   "test_key3",
-			Value: &otlpcommon.AnyValue{Value: nil},
+			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
 	sm := AttributeMap{
@@ -670,17 +649,6 @@ func TestAttributeMap_Update(t *testing.T) {
 	assert.True(t, exists)
 	assert.EqualValues(t, AttributeValueINT, av2.Type())
 	assert.EqualValues(t, 123, av2.IntVal())
-
-	av, exists = sm.Get("test_key3")
-	assert.True(t, exists)
-	assert.EqualValues(t, AttributeValueNULL, av.Type())
-	assert.EqualValues(t, "", av.StringVal())
-	av.SetBoolVal(true)
-
-	av2, exists = sm.Get("test_key3")
-	assert.True(t, exists)
-	assert.EqualValues(t, AttributeValueBOOL, av2.Type())
-	assert.True(t, av2.BoolVal())
 }
 
 func TestAttributeMap_InitEmptyWithCapacity(t *testing.T) {
@@ -896,7 +864,7 @@ func BenchmarkAttributeValue_CopyTo(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		c.copyTo(*av.orig)
+		c.copyTo(av.orig)
 	}
 	if av.IntVal() != 123 {
 		b.Fail()
@@ -921,7 +889,7 @@ func BenchmarkAttributeMap_ForEach(b *testing.B) {
 	for i := 0; i < numElements; i++ {
 		rawOrig[i] = otlpcommon.KeyValue{
 			Key:   "k" + strconv.Itoa(i),
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
 		}
 	}
 	am := AttributeMap{
@@ -1134,35 +1102,29 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, "somestr", v.StringVal())
 
 	// Test nil values case for ArrayVal() func.
-	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
-	a1 = AttributeValue{orig: &orig}
+	a1 = AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}}
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
 }
 
 func TestAnyValueArrayWithNilValues(t *testing.T) {
-	origWithNil := []*otlpcommon.AnyValue{
-		nil,
+	origWithNil := []otlpcommon.AnyValue{
+		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
-		nil,
-		{Value: nil},
 	}
 	sm := AnyValueArray{
 		orig: &origWithNil,
 	}
-	val := sm.At(1)
+
+	val := sm.At(0)
+	assert.EqualValues(t, AttributeValueNULL, val.Type())
+	assert.EqualValues(t, "", val.StringVal())
+
+	val = sm.At(1)
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "test_value", val.StringVal())
 
-	val = sm.At(3)
-	assert.EqualValues(t, AttributeValueNULL, val.Type())
-	assert.EqualValues(t, "", val.StringVal())
-
-	val = sm.At(0)
-	assert.EqualValues(t, AttributeValueNULL, val.Type())
-	assert.EqualValues(t, "", val.StringVal())
-
 	sm.Append(NewAttributeValueString("other_value"))
-	val = sm.At(4)
+	val = sm.At(2)
 	assert.EqualValues(t, AttributeValueSTRING, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
 }

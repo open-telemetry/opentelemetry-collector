@@ -117,7 +117,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
-						Value: &otlpcommon.AnyValue{
+						Value: otlpcommon.AnyValue{
 							Value: &otlpcommon.AnyValue_StringValue{
 								StringValue: "svc-1",
 							},
@@ -138,7 +138,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 							Attributes: []otlpcommon.KeyValue{
 								{
 									Key: conventions.AttributeNetHostIP,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: "192.168.0.1",
 										},
@@ -146,7 +146,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetHostPort,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_IntValue{
 											IntValue: 8009,
 										},
@@ -154,7 +154,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetPeerName,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: "memcached",
 										},
@@ -162,7 +162,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetPeerIP,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: "fe80::1453:a77c:da4d:d21b",
 										},
@@ -170,7 +170,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetPeerPort,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_IntValue{
 											IntValue: 11211,
 										},
@@ -178,7 +178,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: tracetranslator.TagSpanKind,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: string(tracetranslator.OpenTracingSpanKindConsumer),
 										},
@@ -195,7 +195,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key: conventions.AttributeServiceName,
-						Value: &otlpcommon.AnyValue{
+						Value: otlpcommon.AnyValue{
 							Value: &otlpcommon.AnyValue_StringValue{
 								StringValue: "search",
 							},
@@ -216,7 +216,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 							Attributes: []otlpcommon.KeyValue{
 								{
 									Key: conventions.AttributeNetHostIP,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: "10.0.0.13",
 										},
@@ -224,7 +224,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetHostPort,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_IntValue{
 											IntValue: 8009,
 										},
@@ -232,7 +232,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetPeerName,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: "redis",
 										},
@@ -240,7 +240,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetPeerIP,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: "fe80::1453:a77c:da4d:d21b",
 										},
@@ -248,7 +248,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: conventions.AttributeNetPeerPort,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_IntValue{
 											IntValue: 6379,
 										},
@@ -256,7 +256,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 								},
 								{
 									Key: tracetranslator.TagSpanKind,
-									Value: &otlpcommon.AnyValue{
+									Value: otlpcommon.AnyValue{
 										Value: &otlpcommon.AnyValue_StringValue{
 											StringValue: string(tracetranslator.OpenTracingSpanKindProducer),
 										},

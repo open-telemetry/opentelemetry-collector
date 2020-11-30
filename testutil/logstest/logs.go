@@ -42,9 +42,7 @@ func Logs(recs ...Log) pdata.Logs {
 	logSlice.Resize(len(recs))
 	for i := range recs {
 		l := logSlice.At(i)
-		if !recs[i].Body.IsNil() {
-			recs[i].Body.CopyTo(l.Body())
-		}
+		recs[i].Body.CopyTo(l.Body())
 		l.SetTimestamp(pdata.TimestampUnixNano(recs[i].Timestamp))
 		l.Attributes().InitFromMap(recs[i].Attributes)
 		l.Attributes().Sort()
