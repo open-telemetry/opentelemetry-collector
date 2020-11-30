@@ -59,7 +59,7 @@ var metricsFile = &File{
 	},
 }
 
-var resourceMetricsSlice = &sliceOfPtrFields{
+var resourceMetricsSlice = &sliceOfPtrs{
 	structName: "ResourceMetricsSlice",
 	element:    resourceMetrics,
 }
@@ -70,7 +70,7 @@ var resourceMetrics = &messagePtrStruct{
 	originFullName: "otlpmetrics.ResourceMetrics",
 	fields: []baseField{
 		resourceField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "InstrumentationLibraryMetrics",
 			originFieldName: "InstrumentationLibraryMetrics",
 			returnSlice:     instrumentationLibraryMetricsSlice,
@@ -78,7 +78,7 @@ var resourceMetrics = &messagePtrStruct{
 	},
 }
 
-var instrumentationLibraryMetricsSlice = &sliceOfPtrFields{
+var instrumentationLibraryMetricsSlice = &sliceOfPtrs{
 	structName: "InstrumentationLibraryMetricsSlice",
 	element:    instrumentationLibraryMetrics,
 }
@@ -89,7 +89,7 @@ var instrumentationLibraryMetrics = &messagePtrStruct{
 	originFullName: "otlpmetrics.InstrumentationLibraryMetrics",
 	fields: []baseField{
 		instrumentationLibraryField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "Metrics",
 			originFieldName: "Metrics",
 			returnSlice:     metricSlice,
@@ -97,7 +97,7 @@ var instrumentationLibraryMetrics = &messagePtrStruct{
 	},
 }
 
-var metricSlice = &sliceOfPtrFields{
+var metricSlice = &sliceOfPtrs{
 	structName: "MetricSlice",
 	element:    metric,
 }
@@ -132,7 +132,7 @@ var intGauge = &messageValueStruct{
 	description:    "// IntGauge represents the type of a int scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.IntGauge",
 	fields: []baseField{
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     intDataPointSlice,
@@ -145,7 +145,7 @@ var doubleGauge = &messageValueStruct{
 	description:    "// DoubleGauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.DoubleGauge",
 	fields: []baseField{
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleDataPointSlice,
@@ -160,7 +160,7 @@ var intSum = &messageValueStruct{
 	fields: []baseField{
 		aggregationTemporalityField,
 		isMonotonicField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     intDataPointSlice,
@@ -175,7 +175,7 @@ var doubleSum = &messageValueStruct{
 	fields: []baseField{
 		aggregationTemporalityField,
 		isMonotonicField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleDataPointSlice,
@@ -189,7 +189,7 @@ var intHistogram = &messageValueStruct{
 	originFullName: "otlpmetrics.IntHistogram",
 	fields: []baseField{
 		aggregationTemporalityField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     intHistogramDataPointSlice,
@@ -203,7 +203,7 @@ var doubleHistogram = &messageValueStruct{
 	originFullName: "otlpmetrics.DoubleHistogram",
 	fields: []baseField{
 		aggregationTemporalityField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleHistogramDataPointSlice,
@@ -216,7 +216,7 @@ var doubleSummary = &messageValueStruct{
 	description:    "// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleSummary",
 	fields: []baseField{
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "DataPoints",
 			originFieldName: "DataPoints",
 			returnSlice:     doubleSummaryDataPointSlice,
@@ -224,7 +224,7 @@ var doubleSummary = &messageValueStruct{
 	},
 }
 
-var intDataPointSlice = &sliceOfPtrFields{
+var intDataPointSlice = &sliceOfPtrs{
 	structName: "IntDataPointSlice",
 	element:    intDataPoint,
 }
@@ -242,7 +242,7 @@ var intDataPoint = &messagePtrStruct{
 	},
 }
 
-var doubleDataPointSlice = &sliceOfPtrFields{
+var doubleDataPointSlice = &sliceOfPtrs{
 	structName: "DoubleDataPointSlice",
 	element:    doubleDataPoint,
 }
@@ -260,7 +260,7 @@ var doubleDataPoint = &messagePtrStruct{
 	},
 }
 
-var intHistogramDataPointSlice = &sliceOfPtrFields{
+var intHistogramDataPointSlice = &sliceOfPtrs{
 	structName: "IntHistogramDataPointSlice",
 	element:    intHistogramDataPoint,
 }
@@ -281,7 +281,7 @@ var intHistogramDataPoint = &messagePtrStruct{
 	},
 }
 
-var doubleHistogramDataPointSlice = &sliceOfPtrFields{
+var doubleHistogramDataPointSlice = &sliceOfPtrs{
 	structName: "DoubleHistogramDataPointSlice",
 	element:    doubleHistogramDataPoint,
 }
@@ -302,7 +302,7 @@ var doubleHistogramDataPoint = &messagePtrStruct{
 	},
 }
 
-var doubleSummaryDataPointSlice = &sliceOfPtrFields{
+var doubleSummaryDataPointSlice = &sliceOfPtrs{
 	structName: "DoubleSummaryDataPointSlice",
 	element:    doubleSummaryDataPoint,
 }
@@ -317,7 +317,7 @@ var doubleSummaryDataPoint = &messagePtrStruct{
 		timeField,
 		countField,
 		doubleSumField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "QuantileValues",
 			originFieldName: "QuantileValues",
 			returnSlice:     quantileValuesSlice,
@@ -325,7 +325,7 @@ var doubleSummaryDataPoint = &messagePtrStruct{
 	},
 }
 
-var quantileValuesSlice = &sliceOfPtrFields{
+var quantileValuesSlice = &sliceOfPtrs{
 	structName: "ValueAtQuantileSlice",
 	element:    quantileValues,
 }
@@ -340,7 +340,7 @@ var quantileValues = &messagePtrStruct{
 	},
 }
 
-var intExemplarSlice = &sliceOfPtrFields{
+var intExemplarSlice = &sliceOfPtrs{
 	structName: "IntExemplarSlice",
 	element:    intExemplar,
 }
@@ -355,7 +355,7 @@ var intExemplar = &messagePtrStruct{
 	fields: []baseField{
 		timeField,
 		valueInt64Field,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "FilteredLabels",
 			originFieldName: "FilteredLabels",
 			returnSlice:     stringMap,
@@ -363,7 +363,7 @@ var intExemplar = &messagePtrStruct{
 	},
 }
 
-var doubleExemplarSlice = &sliceOfPtrFields{
+var doubleExemplarSlice = &sliceOfPtrs{
 	structName: "DoubleExemplarSlice",
 	element:    doubleExemplar,
 }
@@ -378,7 +378,7 @@ var doubleExemplar = &messagePtrStruct{
 	fields: []baseField{
 		timeField,
 		valueFloat64Field,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "FilteredLabels",
 			originFieldName: "FilteredLabels",
 			returnSlice:     stringMap,
@@ -386,19 +386,19 @@ var doubleExemplar = &messagePtrStruct{
 	},
 }
 
-var labelsField = &slicePtrField{
+var labelsField = &sliceField{
 	fieldName:       "LabelsMap",
 	originFieldName: "Labels",
 	returnSlice:     stringMap,
 }
 
-var intExemplarsField = &slicePtrField{
+var intExemplarsField = &sliceField{
 	fieldName:       "Exemplars",
 	originFieldName: "Exemplars",
 	returnSlice:     intExemplarSlice,
 }
 
-var doubleExemplarsField = &slicePtrField{
+var doubleExemplarsField = &sliceField{
 	fieldName:       "Exemplars",
 	originFieldName: "Exemplars",
 	returnSlice:     doubleExemplarSlice,

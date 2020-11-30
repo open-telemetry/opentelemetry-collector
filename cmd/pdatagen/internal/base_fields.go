@@ -123,13 +123,13 @@ type baseField interface {
 	generateCopyToValue(sb *strings.Builder)
 }
 
-type slicePtrField struct {
+type sliceField struct {
 	fieldName       string
 	originFieldName string
 	returnSlice     baseSlice
 }
 
-func (sf *slicePtrField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -146,7 +146,7 @@ func (sf *slicePtrField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	}))
 }
 
-func (sf *slicePtrField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -161,15 +161,15 @@ func (sf *slicePtrField) generateAccessorsTest(ms baseStruct, sb *strings.Builde
 	}))
 }
 
-func (sf *slicePtrField) generateSetWithTestValue(sb *strings.Builder) {
+func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\tfillTest" + sf.returnSlice.getName() + "(tv." + sf.fieldName + "())")
 }
 
-func (sf *slicePtrField) generateCopyToValue(sb *strings.Builder) {
+func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
 	sb.WriteString("\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())")
 }
 
-var _ baseField = (*slicePtrField)(nil)
+var _ baseField = (*sliceField)(nil)
 
 type messagePtrField struct {
 	fieldName       string

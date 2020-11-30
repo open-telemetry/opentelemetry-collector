@@ -43,7 +43,7 @@ var traceFile = &File{
 	},
 }
 
-var resourceSpansSlice = &sliceOfPtrFields{
+var resourceSpansSlice = &sliceOfPtrs{
 	structName: "ResourceSpansSlice",
 	element:    resourceSpans,
 }
@@ -54,7 +54,7 @@ var resourceSpans = &messagePtrStruct{
 	originFullName: "otlptrace.ResourceSpans",
 	fields: []baseField{
 		resourceField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "InstrumentationLibrarySpans",
 			originFieldName: "InstrumentationLibrarySpans",
 			returnSlice:     instrumentationLibrarySpansSlice,
@@ -62,7 +62,7 @@ var resourceSpans = &messagePtrStruct{
 	},
 }
 
-var instrumentationLibrarySpansSlice = &sliceOfPtrFields{
+var instrumentationLibrarySpansSlice = &sliceOfPtrs{
 	structName: "InstrumentationLibrarySpansSlice",
 	element:    instrumentationLibrarySpans,
 }
@@ -73,7 +73,7 @@ var instrumentationLibrarySpans = &messagePtrStruct{
 	originFullName: "otlptrace.InstrumentationLibrarySpans",
 	fields: []baseField{
 		instrumentationLibraryField,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "Spans",
 			originFieldName: "Spans",
 			returnSlice:     spanSlice,
@@ -81,7 +81,7 @@ var instrumentationLibrarySpans = &messagePtrStruct{
 	},
 }
 
-var spanSlice = &sliceOfPtrFields{
+var spanSlice = &sliceOfPtrs{
 	structName: "SpanSlice",
 	element:    span,
 }
@@ -109,7 +109,7 @@ var span = &messagePtrStruct{
 		endTimeField,
 		attributes,
 		droppedAttributesCount,
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "Events",
 			originFieldName: "Events",
 			returnSlice:     spanEventSlice,
@@ -121,7 +121,7 @@ var span = &messagePtrStruct{
 			defaultVal:      "uint32(0)",
 			testVal:         "uint32(17)",
 		},
-		&slicePtrField{
+		&sliceField{
 			fieldName:       "Links",
 			originFieldName: "Links",
 			returnSlice:     spanLinkSlice,
@@ -141,7 +141,7 @@ var span = &messagePtrStruct{
 	},
 }
 
-var spanEventSlice = &sliceOfPtrFields{
+var spanEventSlice = &sliceOfPtrs{
 	structName: "SpanEventSlice",
 	element:    spanEvent,
 }
@@ -159,7 +159,7 @@ var spanEvent = &messagePtrStruct{
 	},
 }
 
-var spanLinkSlice = &sliceOfPtrFields{
+var spanLinkSlice = &sliceOfPtrs{
 	structName: "SpanLinkSlice",
 	element:    spanLink,
 }
