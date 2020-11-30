@@ -136,10 +136,6 @@ func NewAttributeValueArray() AttributeValue {
 	return AttributeValue{orig: orig}
 }
 
-func (a AttributeValue) InitEmpty() {
-	*a.orig = otlpcommon.AnyValue{}
-}
-
 // Type returns the type of the value for this AttributeValue.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 func (a AttributeValue) Type() AttributeValueType {

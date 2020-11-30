@@ -381,7 +381,6 @@ const sliceValueTestTemplate = `func Test${structName}(t *testing.T) {
 
 	es.Resize(7)
 	emptyVal := New${elementName}()
-	emptyVal.InitEmpty()
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -434,7 +433,6 @@ func Test${structName}_CopyTo(t *testing.T) {
 func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
 	emptyVal := New${elementName}()
-	emptyVal.InitEmpty()
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
@@ -477,13 +475,11 @@ func Test${structName}_Resize(t *testing.T) {
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
 	emptyVal := New${elementName}()
-	emptyVal.InitEmpty()
 
 	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := New${elementName}()
-	emptyVal2.InitEmpty()
 
 	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
