@@ -29,7 +29,7 @@ func createSingleCfgSchema(componentType, componentName string, env env) {
 		println(err.Error())
 		os.Exit(1)
 	}
-	createSchema(cfg, env)
+	createSchemaFile(cfg, env)
 }
 
 func getConfig(componentType, componentName string) (configmodels.NamedEntity, error) {

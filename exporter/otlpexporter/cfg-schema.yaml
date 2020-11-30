@@ -88,9 +88,6 @@ fields:
     (InsecureSkipVerify in the tls Config). Please refer to
     https://godoc.org/crypto/tls#Config for more information.
     (optional, default false)
-    TODO(ccaraman): With further research InsecureSkipVerify is a valid option
-    for gRPC connections. Add that ability to the TLSClientSettings in a subsequent
-    pr.
 - name: server_name_override
   kind: string
   doc: |

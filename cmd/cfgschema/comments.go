@@ -35,15 +35,12 @@ func commentsForStruct(v reflect.Value, env env) map[string]string {
 }
 
 func packageDir(t reflect.Type, env env) string {
-	moduleName := "go.opentelemetry.io/collector"
-	if env.moduleName != "" {
-		moduleName = env.moduleName
-	}
-	return path.Join(env.srcRoot, strings.TrimPrefix(t.PkgPath(), moduleName+"/"))
+	pkg := strings.TrimPrefix(t.PkgPath(), env.moduleName+"/")
+	return path.Join(env.srcRoot, pkg)
 }
 
-func trimPackage(elem reflect.Value) string {
-	typeName := elem.Type().String()
+func trimPackage(v reflect.Value) string {
+	typeName := v.Type().String()
 	split := strings.Split(typeName, ".")
 	return split[1]
 }

@@ -36,5 +36,8 @@ type testStruct struct {
 }
 
 func testEnv() env {
-	return env{srcRoot: "../.."}
+	return env{
+		srcRoot:    "../..",
+		moduleName: defaultModule,
+	}
 }

@@ -31,7 +31,7 @@ func main() {
 
 	switch {
 	case componentType == "all":
-		createAllCfgSchemas(e)
+		createAllCfgSchemaFiles(e)
 	case componentType != "" && componentName != "":
 		createSingleCfgSchema(componentType, componentName, e)
 	default:
@@ -51,10 +51,13 @@ options
 	}
 }
 
+const defaultSrcRoot = "."
+const defaultModule = "go.opentelemetry.io/collector"
+
 func parseArgs() (env, string, string) {
 	e := env{}
-	flag.StringVar(&e.srcRoot, "s", ".", "collector source root")
-	flag.StringVar(&e.moduleName, "m", "go.opentelemetry.io/collector", "module name")
+	flag.StringVar(&e.srcRoot, "s", defaultSrcRoot, "collector source root")
+	flag.StringVar(&e.moduleName, "m", defaultModule, "module name")
 	flag.Parse()
 	componentType := flag.Arg(0)
 	componentName := flag.Arg(1)

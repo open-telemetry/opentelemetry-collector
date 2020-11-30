@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path"
 	"reflect"
@@ -34,10 +35,10 @@ type field struct {
 	Fields  []*field    `yaml:",omitempty"`
 }
 
-// createSchema creates a `cfg-schema.yaml` file in the directory of the passed-in
+// createSchemaFile creates a `cfg-schema.yaml` file in the directory of the passed-in
 // config instance. The yaml file contains the recursive field names, types,
 // comments, and default values for the config struct.
-func createSchema(cfg interface{}, env env) {
+func createSchemaFile(cfg interface{}, env env) {
 	v := reflect.ValueOf(cfg)
 	f := topLevelField(v, env)
 	packageDir := packageDir(v.Type().Elem(), env)
@@ -63,7 +64,11 @@ func refl(f *field, v reflect.Value, env env) {
 	comments := commentsForStruct(v, env)
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
-		tagName, options := mapstructure(structField.Tag)
+		tagName, options, err := mapstructure(structField.Tag)
+		if err != nil {
+			fmt.Printf("error parsing mapstructure tag for field %v: %q", structField, err.Error())
+			// not fatal, can keep going
+		}
 		if tagName == "-" {
 			continue
 		}
@@ -132,27 +137,25 @@ func handleKinds(v reflect.Value, f *field, env env) {
 	}
 }
 
-func mapstructure(s reflect.StructTag) (string, []string) {
-	tag := string(s)
+func mapstructure(st reflect.StructTag) (string, []string, error) {
+	tag := string(st)
 	if tag == "" {
-		return "", nil
+		return "", nil, nil
 	}
 	tags, err := structtag.Parse(tag)
 	if err != nil {
-		panic(err)
+		return "", nil, err
 	}
-	const key = "mapstructure"
-	ms, err := tags.Get(key)
+	ms, err := tags.Get("mapstructure")
 	if err != nil {
-		panic(err)
+		return "", nil, err
 	}
-	return ms.Name, ms.Options
+	return ms.Name, ms.Options, nil
 }
 
 func containsSquash(options []string) bool {
-	const squash = "squash"
 	for _, option := range options {
-		if option == squash {
+		if option == "squash" {
 			return true
 		}
 	}
