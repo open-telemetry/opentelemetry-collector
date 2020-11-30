@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-// CreateSingleCfgSchema creates a config schema yaml file for a single component
-func CreateSingleCfgSchema(componentType, componentName string, env Env) {
+// CreateSingleCfgSchemaFile creates a config schema yaml file for a single component
+func CreateSingleCfgSchemaFile(componentType, componentName string, env Env) {
 	cfg, err := getConfig(componentType, componentName)
 	if err != nil {
 		println(err.Error())

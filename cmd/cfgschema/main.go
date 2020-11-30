@@ -25,12 +25,13 @@ func main() {
 	prepUsage()
 
 	e, componentType, componentName := parseArgs()
+	e.GetTargetYamlDir = cfgschema.PackageDir
 
 	switch {
 	case componentType == "all":
 		cfgschema.CreateAllCfgSchemaFiles(e)
 	case componentType != "" && componentName != "":
-		cfgschema.CreateSingleCfgSchema(componentType, componentName, e)
+		cfgschema.CreateSingleCfgSchemaFile(componentType, componentName, e)
 	default:
 		flag.Usage()
 	}

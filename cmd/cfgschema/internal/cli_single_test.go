@@ -15,9 +15,13 @@
 package internal
 
 import (
+	"io/ioutil"
+	"path"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 func TestCreateReceiverConfig(t *testing.T) {
@@ -61,4 +65,20 @@ func TestGetConfig(t *testing.T) {
 			require.NotNil(t, cfg)
 		})
 	}
+}
+
+func TestCreateSingleConfigSchema(t *testing.T) {
+	env := testEnv()
+	tempDir := t.TempDir()
+	env.GetTargetYamlDir = func(reflect.Type, Env) string {
+		return tempDir
+	}
+	CreateSingleCfgSchemaFile("exporter", "otlp", env)
+	file, err := ioutil.ReadFile(path.Join(tempDir, schemaFile))
+	require.NoError(t, err)
+	field := field{}
+	err = yaml.Unmarshal(file, &field)
+	require.NoError(t, err)
+	require.Equal(t, "*otlpexporter.Config", field.Type)
+	require.NotNil(t, field.Fields)
 }

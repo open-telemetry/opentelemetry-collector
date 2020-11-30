@@ -41,8 +41,8 @@ type field struct {
 func createSchemaFile(cfg interface{}, env Env) {
 	v := reflect.ValueOf(cfg)
 	f := topLevelField(v, env)
-	packageDir := packageDir(v.Type().Elem(), env)
-	writeMarshaled(f, packageDir)
+	yamlDir := env.GetTargetYamlDir(v.Type().Elem(), env)
+	writeMarshaled(f, yamlDir)
 }
 
 func topLevelField(v reflect.Value, env Env) *field {
@@ -162,12 +162,14 @@ func containsSquash(options []string) bool {
 	return false
 }
 
-func writeMarshaled(field *field, packageDir string) {
+const schemaFile = "cfg-schema.yaml"
+
+func writeMarshaled(field *field, dir string) {
 	marshaled, err := yaml.Marshal(field)
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(path.Join(packageDir, "cfg-schema.yaml"), marshaled, 0600)
+	err = ioutil.WriteFile(path.Join(dir, schemaFile), marshaled, 0600)
 	if err != nil {
 		panic(err)
 	}

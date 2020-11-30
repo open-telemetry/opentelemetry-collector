@@ -18,7 +18,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"path"
 	"reflect"
 	"strings"
 )
@@ -29,14 +28,9 @@ func commentsForStruct(v reflect.Value, env Env) map[string]string {
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	packageDir := packageDir(elem.Type(), env)
+	dir := PackageDir(elem.Type(), env)
 	name := trimPackage(elem)
-	return commentsForStructName(packageDir, name)
-}
-
-func packageDir(t reflect.Type, env Env) string {
-	pkg := strings.TrimPrefix(t.PkgPath(), env.ModuleName+"/")
-	return path.Join(env.SrcRoot, pkg)
+	return commentsForStructName(dir, name)
 }
 
 func trimPackage(v reflect.Value) string {

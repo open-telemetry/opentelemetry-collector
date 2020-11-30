@@ -14,10 +14,22 @@
 
 package internal
 
+import (
+	"path"
+	"reflect"
+	"strings"
+)
+
 const DefaultSrcRoot = "."
 const DefaultModule = "go.opentelemetry.io/collector"
 
 type Env struct {
-	SrcRoot    string
-	ModuleName string
+	SrcRoot          string
+	ModuleName       string
+	GetTargetYamlDir func(reflect.Type, Env) string
+}
+
+func PackageDir(t reflect.Type, env Env) string {
+	pkg := strings.TrimPrefix(t.PkgPath(), env.ModuleName+"/")
+	return path.Join(env.SrcRoot, pkg)
 }
