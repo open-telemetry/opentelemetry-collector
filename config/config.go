@@ -270,6 +270,7 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 		// Create the default config for this extension
 		extensionCfg := factory.CreateDefaultConfig()
 		extensionCfg.SetName(fullName)
+		expandEnvLoadedConfig(extensionCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
