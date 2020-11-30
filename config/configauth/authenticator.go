@@ -79,7 +79,7 @@ var authRegistry = map[string]Authenticator{}
 
 func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
 	if _, ok := authRegistry[name]; ok {
-		return errors.New(fmt.Sprintf("Authenticator with name %s already registered", name))
+		return fmt.Errorf("Authenticator with name %s already registered", name)
 	}
 	authRegistry[name] = auth
 	return nil
