@@ -420,6 +420,7 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
 		processorCfg.SetName(fullName)
+		expandEnvLoadedConfig(processorCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
