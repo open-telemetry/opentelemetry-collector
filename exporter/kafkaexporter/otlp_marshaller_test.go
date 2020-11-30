@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpmetric "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 func TestOTLPTracesPbMarshaller(t *testing.T) {
