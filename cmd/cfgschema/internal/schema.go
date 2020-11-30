@@ -17,7 +17,6 @@ package internal
 import (
 	"fmt"
 	"io/ioutil"
-	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -41,8 +40,8 @@ type field struct {
 func createSchemaFile(cfg interface{}, env Env) {
 	v := reflect.ValueOf(cfg)
 	f := topLevelField(v, env)
-	yamlDir := env.GetTargetYamlDir(v.Type().Elem(), env)
-	writeMarshaled(f, yamlDir)
+	yamlFilename := env.YamlFilename(v.Type().Elem(), env)
+	writeMarshaled(f, yamlFilename)
 }
 
 func topLevelField(v reflect.Value, env Env) *field {
@@ -162,14 +161,12 @@ func containsSquash(options []string) bool {
 	return false
 }
 
-const schemaFile = "cfg-schema.yaml"
-
-func writeMarshaled(field *field, dir string) {
+func writeMarshaled(field *field, filename string) {
 	marshaled, err := yaml.Marshal(field)
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile(path.Join(dir, schemaFile), marshaled, 0600)
+	err = ioutil.WriteFile(filename, marshaled, 0600)
 	if err != nil {
 		panic(err)
 	}

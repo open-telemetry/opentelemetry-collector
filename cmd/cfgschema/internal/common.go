@@ -24,9 +24,15 @@ const DefaultSrcRoot = "."
 const DefaultModule = "go.opentelemetry.io/collector"
 
 type Env struct {
-	SrcRoot          string
-	ModuleName       string
-	GetTargetYamlDir func(reflect.Type, Env) string
+	SrcRoot      string
+	ModuleName   string
+	YamlFilename func(reflect.Type, Env) string
+}
+
+const schemaFilename = "cfg-schema.yaml"
+
+func YamlFilename(t reflect.Type, env Env) string {
+	return path.Join(PackageDir(t, env), schemaFilename)
 }
 
 func PackageDir(t reflect.Type, env Env) string {

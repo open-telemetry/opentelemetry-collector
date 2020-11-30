@@ -15,12 +15,35 @@
 package internal
 
 import (
+	"io/ioutil"
+	"path"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 func TestGetAllConfigs(t *testing.T) {
 	cfgs := getAllConfigs()
 	require.NotNil(t, cfgs)
+}
+
+func TestCreateAllSchemaFiles(t *testing.T) {
+	env := testEnv()
+	tempDir := t.TempDir()
+	env.YamlFilename = func(t reflect.Type, env Env) string {
+		return path.Join(tempDir, t.String()+".yaml")
+	}
+	CreateAllSchemaFiles(env)
+	fileInfos, err := ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.NotNil(t, fileInfos)
+	file, err := ioutil.ReadFile(path.Join(tempDir, "otlpexporter.Config.yaml"))
+	require.NoError(t, err)
+	field := field{}
+	err = yaml.Unmarshal(file, &field)
+	require.NoError(t, err)
+	require.Equal(t, "*otlpexporter.Config", field.Type)
+	require.NotNil(t, field.Fields)
 }

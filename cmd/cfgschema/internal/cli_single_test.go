@@ -67,14 +67,14 @@ func TestGetConfig(t *testing.T) {
 	}
 }
 
-func TestCreateSingleConfigSchema(t *testing.T) {
+func TestCreateSingleSchemaFile(t *testing.T) {
 	env := testEnv()
 	tempDir := t.TempDir()
-	env.GetTargetYamlDir = func(reflect.Type, Env) string {
-		return tempDir
+	env.YamlFilename = func(reflect.Type, Env) string {
+		return path.Join(tempDir, schemaFilename)
 	}
-	CreateSingleCfgSchemaFile("exporter", "otlp", env)
-	file, err := ioutil.ReadFile(path.Join(tempDir, schemaFile))
+	CreateSingleSchemaFile("exporter", "otlp", env)
+	file, err := ioutil.ReadFile(path.Join(tempDir, schemaFilename))
 	require.NoError(t, err)
 	field := field{}
 	err = yaml.Unmarshal(file, &field)
