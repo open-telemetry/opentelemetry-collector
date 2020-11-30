@@ -114,7 +114,7 @@ type Parameters struct {
 // ConfigFactory creates config.
 // The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
 // Viper and command instances are passed from the Application.
-// The factories also belong the Application and are equal to the factories passed via Parameters.
+// The factories also belong to the Application and are equal to the factories passed via Parameters.
 type ConfigFactory func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
