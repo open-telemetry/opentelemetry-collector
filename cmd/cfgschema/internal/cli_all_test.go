@@ -41,9 +41,9 @@ func TestCreateAllSchemaFiles(t *testing.T) {
 	require.NotNil(t, fileInfos)
 	file, err := ioutil.ReadFile(path.Join(tempDir, "otlpexporter.Config.yaml"))
 	require.NoError(t, err)
-	field := field{}
-	err = yaml.Unmarshal(file, &field)
+	fld := field{}
+	err = yaml.Unmarshal(file, &fld)
 	require.NoError(t, err)
-	require.Equal(t, "*otlpexporter.Config", field.Type)
-	require.NotNil(t, field.Fields)
+	require.Equal(t, "*otlpexporter.Config", fld.Type)
+	require.NotNil(t, fld.Fields)
 }
