@@ -292,7 +292,12 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 	}
 
 	if gss.Auth != nil {
-		authOpts, err := gss.Auth.ToServerOptions()
+		authName := gss.Auth.Authenticator
+		authenticator, err := configauth.GetAuthenticatorFromRegistry(authName)
+		if err != nil {
+			return nil, err
+		}
+		authOpts, err := authenticator.ToServerOptions()
 		if err != nil {
 			return nil, err
 		}

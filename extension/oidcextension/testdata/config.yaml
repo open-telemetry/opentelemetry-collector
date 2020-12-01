@@ -1,0 +1,26 @@
+extensions:
+  oidc:
+  oidc/1:
+    issuer_url: https://auth.example.com/
+    issuer_ca_path: /etc/pki/tls/cert.pem
+    audience: my-oidc-client
+    username_claim: email
+    groups_claim: group
+    attribute: authorization
+
+service:
+  extensions: [oidc/1]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+
+# Data pipeline is required to load the config.
+# Note: the receiver would normally be passed the name of the authenticator. However the example receiver does not support these settings
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:
