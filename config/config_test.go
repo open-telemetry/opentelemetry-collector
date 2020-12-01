@@ -758,14 +758,14 @@ func TestExpandEnvLoadedConfigNoPointer(t *testing.T) {
 	assert.NoError(t, os.Setenv("VALUE", "replaced_value"))
 
 	config := TestConfig{
-		StringValue:    "$VALUE",
+		StringValue: "$VALUE",
 	}
 
 	// This should do nothing as config is not a pointer
 	expandEnvLoadedConfig(config)
 
 	assert.Equal(t, TestConfig{
-		StringValue:    "$VALUE",
+		StringValue: "$VALUE",
 	}, config)
 }
 
