@@ -15,6 +15,7 @@
 package testbed
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -143,7 +144,7 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 	return fileName
 }
 
-// SetResourceLimits sets expected limits for resource consmption.
+// SetResourceLimits sets expected limits for resource consumption.
 // Error is signaled if consumption during ResourceCheckPeriod exceeds the limits.
 // Limits are modified only for non-zero fields of resourceSpec, all zero-value fields
 // fo resourceSpec are ignored and their previous values remain in effect.
@@ -180,14 +181,6 @@ func (tc *TestCase) StartAgent(args ...string) {
 		return
 	}
 
-	// Start watching resource consumption.
-	go func() {
-		err := tc.agentProc.WatchResourceConsumption()
-		if err != nil {
-			tc.indicateError(err)
-		}
-	}()
-
 	endpoint := tc.LoadGenerator.sender.GetEndpoint()
 	if endpoint != "" {
 		// Wait for agent to start. We consider the agent started when we can
@@ -197,8 +190,16 @@ func (tc *TestCase) StartAgent(args ...string) {
 		tc.WaitFor(func() bool {
 			_, err := net.Dial("tcp", tc.LoadGenerator.sender.GetEndpoint())
 			return err == nil
-		})
+		}, fmt.Sprintf("agent's receiver to start on %s", endpoint))
 	}
+
+	// Start watching resource consumption.
+	go func() {
+		err := tc.agentProc.WatchResourceConsumption()
+		if err != nil {
+			tc.indicateError(err)
+		}
+	}()
 }
 
 // StopAgent stops agent process.

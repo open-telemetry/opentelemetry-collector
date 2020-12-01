@@ -34,8 +34,8 @@ func TestIdleMode(t *testing.T) {
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
-		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
+		testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 		&testbed.ChildProcess{},
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
@@ -61,31 +61,33 @@ func TestBallastMemory(t *testing.T) {
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
-		tc := testbed.NewTestCase(
-			t,
-			dataProvider,
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-			&testbed.ChildProcess{},
-			&testbed.PerfTestValidator{},
-			performanceResultsSummary,
-			testbed.WithSkipResults(),
-		)
-		tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS})
+		t.Run(fmt.Sprintf("BalastSize %d", test.ballastSize), func(t *testing.T) {
+			tc := testbed.NewTestCase(
+				t,
+				dataProvider,
+				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
+				testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+				&testbed.ChildProcess{},
+				&testbed.PerfTestValidator{},
+				performanceResultsSummary,
+				testbed.WithSkipResults(),
+			)
+			defer tc.Stop()
 
-		tc.StartAgent("--mem-ballast-size-mib", strconv.Itoa(int(test.ballastSize)))
+			tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxRAM: test.maxRSS})
+			tc.StartAgent("--mem-ballast-size-mib", strconv.Itoa(int(test.ballastSize)))
 
-		var rss, vms uint32
-		// It is possible that the process is not ready or the ballast code path
-		// is not hit immediately so we give the process up to a couple of seconds
-		// to fire up and setup ballast. 2 seconds is a long time for this case but
-		// it is short enough to not be annoying if the test fails repeatedly
-		tc.WaitForN(func() bool {
-			rss, vms, _ = tc.AgentMemoryInfo()
-			return vms > test.ballastSize
-		}, time.Second*2, "VMS must be greater than %d", test.ballastSize)
+			var rss, vms uint32
+			// It is possible that the process is not ready or the ballast code path
+			// is not hit immediately so we give the process up to a couple of seconds
+			// to fire up and setup ballast. 2 seconds is a long time for this case but
+			// it is short enough to not be annoying if the test fails repeatedly
+			tc.WaitForN(func() bool {
+				rss, vms, _ = tc.AgentMemoryInfo()
+				return vms > test.ballastSize
+			}, time.Second*2, "VMS must be greater than %d", test.ballastSize)
 
-		assert.True(t, rss <= test.maxRSS, fmt.Sprintf("RSS must be less than or equal to %d", test.maxRSS))
-		tc.Stop()
+			assert.True(t, rss <= test.maxRSS, fmt.Sprintf("RSS must be less than or equal to %d", test.maxRSS))
+		})
 	}
 }

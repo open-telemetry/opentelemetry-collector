@@ -151,8 +151,8 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 	}{
 		{
 			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 70,
 				ExpectedMaxRAM: 198,
@@ -161,8 +161,18 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.DefaultZipkinAddressPort),
-			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 120,
+				ExpectedMaxRAM: 198,
+			},
+			processorsConfig,
+		},
+		{
+			"OTLP",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.DefaultOTLPPort),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
 				ExpectedMaxRAM: 198,

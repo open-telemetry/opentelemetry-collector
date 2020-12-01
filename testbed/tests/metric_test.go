@@ -23,14 +23,14 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
-func TestMetricNoBackend10kDPSOpenCensus(t *testing.T) {
+func TestMetricNoBackend10kDPS(t *testing.T) {
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
-		testbed.NewOCMetricDataSender(testbed.DefaultHost, 55678),
-		testbed.NewOCDataReceiver(testbed.DefaultOCPort),
+		testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 		&testbed.ChildProcess{},
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,

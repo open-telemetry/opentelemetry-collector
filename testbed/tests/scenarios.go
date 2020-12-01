@@ -224,8 +224,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			require.NoError(t, err)
 
 			// Create sender and receiver on available ports.
-			sender := testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-			receiver := testbed.NewOCDataReceiver(testbed.GetAvailablePort(t))
+			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
 			// Prepare config.
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
@@ -289,7 +289,10 @@ func ScenarioTestTraceNoBackend10kSPS(
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: 10_000,
+		ItemsPerBatch:      100,
+	}
 	agentProc := &testbed.ChildProcess{}
 	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
@@ -312,9 +315,10 @@ func ScenarioTestTraceNoBackend10kSPS(
 	tc.SetResourceLimits(resourceSpec)
 
 	tc.StartAgent()
-	tc.StartLoad(options)
 
+	tc.StartLoad(options)
 	tc.Sleep(tc.Duration)
+	tc.StopLoad()
 
 	rss, _, _ := tc.AgentMemoryInfo()
 	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)

@@ -90,8 +90,6 @@ type OCDataReceiver struct {
 // Ensure OCDataReceiver implements DataReceiver.
 var _ DataReceiver = (*OCDataReceiver)(nil)
 
-const DefaultOCPort = 56565
-
 // NewOCDataReceiver creates a new OCDataReceiver that will listen on the specified port after Start
 // is called.
 func NewOCDataReceiver(port int) *OCDataReceiver {
@@ -146,8 +144,6 @@ type JaegerDataReceiver struct {
 }
 
 var _ DataReceiver = (*JaegerDataReceiver)(nil)
-
-const DefaultJaegerPort = 14250
 
 func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
@@ -282,8 +278,6 @@ type ZipkinDataReceiver struct {
 
 var _ DataReceiver = (*ZipkinDataReceiver)(nil)
 
-const DefaultZipkinAddressPort = 9411
-
 func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
@@ -337,7 +331,7 @@ func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
 func (dr *PrometheusDataReceiver) Start(_ consumer.TracesConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
+	addr := fmt.Sprintf("localhost:%d", dr.Port)
 	cfg.PrometheusConfig = &config.Config{
 		ScrapeConfigs: []*config.ScrapeConfig{{
 			JobName:        "testbed-job",
