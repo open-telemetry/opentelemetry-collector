@@ -241,7 +241,7 @@ func wrapAndBatchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.Writ
 				// Other parameters of the WriteRequest are unnecessary for our Export
 			}
 
-			if proto.Size(&wrapped) >= maxBatchByteSize || len(tsArray) >= maxBatchMetric {
+			if b := proto.Size(&wrapped); b >= maxBatchByteSize || len(tsArray) >= maxBatchMetric {
 				requests = append(requests, &wrapped)
 				tsArray = make([]prompb.TimeSeries, 0)
 

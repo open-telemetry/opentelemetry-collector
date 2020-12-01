@@ -143,9 +143,9 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 			}
 		}
 
-		if err := prwe.export(ctx, tsMap); err != nil {
+		if exportErrors := prwe.export(ctx, tsMap); exportErrors != nil {
 			dropped = md.MetricCount()
-			errs = append(errs, err)
+			errs = append(errs, exportErrors...)
 		}
 
 		if dropped != 0 {
@@ -252,29 +252,34 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
+	var errs []error
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := wrapAndBatchTimeSeries(tsMap)
 	if err != nil {
-		return consumererror.Permanent(err)
+		errs = append(errs, err)
+		return errs
 	}
 
 	var wg sync.WaitGroup
+	var mtx sync.Mutex
 
 	// performs the batched requests concurrently
 	for _, request := range requests {
 		wg.Add(1)
 		go func(req *prompb.WriteRequest) {
 			requestError := prwe.execute(ctx, req)
-			if requestError != nil && err != nil {
-				err = consumererror.Permanent(requestError)
+			if requestError != nil {
+				mtx.Lock()
+				errs = append(errs, consumererror.Permanent(requestError))
+				mtx.Unlock()
 			}
 			wg.Done()
 		}(request)
 	}
 	wg.Wait()
 
-	return err
+	return errs
 }
 
 func (prwe *PrwExporter) execute(ctx context.Context, req *prompb.WriteRequest) error {
