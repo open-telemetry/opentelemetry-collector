@@ -208,7 +208,6 @@ are checked before the `exclude` properties.
 
       # Attributes specifies the list of attributes to match against.
       # All of these attributes must match exactly for a match to occur.
-      # Only match_type=strict is allowed if "attributes" are specified.
       # This is an optional field.
       attributes:
           # Key specifies the attribute to match against.
