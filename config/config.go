@@ -675,14 +675,14 @@ func expandStringValues(value interface{}) interface{} {
 	}
 }
 
-// expandEnvLoadedConfig takes a pointer to a struct, goes through all of its fields recursively,
-// and expands all string fields with expandEnv
+// expandEnvLoadedConfig is a utility function that goes recursively through a config object
+// and tries to expand environment variables in its string fields.
 func expandEnvLoadedConfig(s interface{}) {
 	expandEnvLoadedConfigPointer(s)
 }
 
 func expandEnvLoadedConfigPointer(s interface{}) {
-	// Check that the value given is indeed a pointer, otherwise stop the search
+	// Check that the value given is indeed a pointer, otherwise safely stop the search here
 	value := reflect.ValueOf(s)
 	if value.Kind() != reflect.Ptr {
 		return
@@ -692,11 +692,12 @@ func expandEnvLoadedConfigPointer(s interface{}) {
 }
 
 func expandEnvLoadedConfigValue(value reflect.Value) {
+	// The value given is a string, we expand it (if allowed)
 	if value.Kind() == reflect.String && value.CanSet() {
 		value.SetString(expandEnv(value.String()))
 	}
+	// The value given is a struct, we go through its fields
 	if value.Kind() == reflect.Struct {
-		// This loops through the fields of the struct
 		for i := 0; i < value.NumField(); i++ {
 			field := value.Field(i) // Returns the content of the field
 			if field.CanSet() {     // Only try to modify a field if it can be modified (eg. skip unexported private fields)
