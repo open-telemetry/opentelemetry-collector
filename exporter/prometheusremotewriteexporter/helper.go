@@ -42,6 +42,10 @@ const (
 	totalStr    = "total"
 	delimeter   = "_"
 	keyStr      = "key"
+
+	checkByteSizeInterval = 5000
+	maxBatchByteSize      = 3000000
+	maxBatchMetric        = 40000
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -224,20 +228,20 @@ func wrapAndBatchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.Writ
 	}
 
 	var requests []*prompb.WriteRequest
-	tsArray := make([]prompb.TimeSeries, 0)
+	var tsArray []prompb.TimeSeries
 	missingLastBatch := true
 
 	for _, v := range tsMap {
 		tsArray = append(tsArray, *v)
 		missingLastBatch = true
 
-		if len(tsArray)%5000 == 0 {
+		if len(tsArray)%checkByteSizeInterval == 0 {
 			wrapped := prompb.WriteRequest{
 				Timeseries: tsArray,
 				// Other parameters of the WriteRequest are unnecessary for our Export
 			}
 
-			if b := proto.Size(&wrapped); b >= 3000000 || len(tsArray) >= 40000 {
+			if proto.Size(&wrapped) >= maxBatchByteSize || len(tsArray) >= maxBatchMetric {
 				requests = append(requests, &wrapped)
 				tsArray = make([]prompb.TimeSeries, 0)
 
