@@ -702,7 +702,7 @@ func expandEnvLoadedConfigValue(value reflect.Value) {
 		if field.CanSet() {     // Only try to modify a field if it can be modified (eg. skip unexported private fields)
 			switch field.Kind() {
 			case reflect.String: // The current field is a string, we want to expand it
-				field.SetString(expandEnv(field.String())) // Expand the env variable in the string
+				field.SetString(expandEnv(field.String())) // Expand env variables in the string
 			case reflect.Ptr: // The current field is a nested pointer to a struct
 				expandEnvLoadedConfigPointer(field.Interface()) // Go through the nested struct
 			case reflect.Struct: // The current field is a nested struct
