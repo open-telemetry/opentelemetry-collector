@@ -17,7 +17,7 @@ processors:
   batch:
 
 extensions:
-  health_check:
+  health_check: {}
   pprof:
   zpages:
 

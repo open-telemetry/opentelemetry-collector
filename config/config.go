@@ -54,6 +54,11 @@ const (
 	errUnmarshalTopLevelStructureError
 )
 
+const (
+	// ViperDelimiter is used as the default key delimiter in the default viper instance
+	ViperDelimiter = "::"
+)
+
 type configError struct {
 	msg  string          // human readable error message.
 	code configErrorCode // internal error code.
@@ -114,7 +119,7 @@ const typeAndNameSeparator = "/"
 // Creates a new Viper instance with a different key-delimitor "::" instead of the
 // default ".". This way configs can have keys that contain ".".
 func NewViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter("::"))
+	return viper.NewWithOptions(viper.KeyDelimiter(ViperDelimiter))
 }
 
 // Load loads a Config from Viper.
