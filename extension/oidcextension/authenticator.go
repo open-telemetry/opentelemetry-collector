@@ -27,11 +27,11 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
-
 	"github.com/coreos/go-oidc"
 	"google.golang.org/grpc"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
 type oidcAuthenticator struct {

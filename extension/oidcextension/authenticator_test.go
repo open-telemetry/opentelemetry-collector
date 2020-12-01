@@ -31,12 +31,12 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configauth"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {

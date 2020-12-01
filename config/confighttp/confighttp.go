@@ -20,8 +20,6 @@ import (
 	"net/http"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configauth"
-
 	"github.com/rs/cors"
 
 	"go.opentelemetry.io/collector/config/configtls"
@@ -116,9 +114,6 @@ type HTTPServerSettings struct {
 	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
 	// used to match any origin or one or more characters of an origin.
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
-
-	// Auth for this server
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {

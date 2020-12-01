@@ -29,7 +29,7 @@ service:
   extensions: [oidc]
   pipeline:
     traces/toSomewhere:
-      recievers: [somereceiver]
+      receivers: [somereceiver]
 ```
 
 The full list of settings exposed for this exporter is documented [here](./config.go)

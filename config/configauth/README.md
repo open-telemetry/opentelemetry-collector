@@ -23,5 +23,5 @@ service:
   extensions: [oidc]
   pipeline:
     traces/toSomewhere:
-      recievers: [somereceiver]
+      receivers: [somereceiver]
 ```
