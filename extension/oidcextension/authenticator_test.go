@@ -303,8 +303,8 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 		{
 			"usernameClaimNonExisting",
 			Config{
-				IssuerURL:   oidcServer.URL,
-				Audience:    "unit-test",
+				IssuerURL:     oidcServer.URL,
+				Audience:      "unit-test",
 				UsernameClaim: "non-existing-claim",
 			},
 			errClaimNotFound,

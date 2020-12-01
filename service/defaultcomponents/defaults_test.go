@@ -31,6 +31,7 @@ func TestDefaultComponents(t *testing.T) {
 		"pprof",
 		"zpages",
 		"fluentbit",
+		"oidc",
 	}
 	expectedReceivers := []configmodels.Type{
 		"jaeger",

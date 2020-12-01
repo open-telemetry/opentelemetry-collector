@@ -1,13 +1,15 @@
 package oidcextension
 
 import (
+	"path"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"path"
-	"testing"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -31,12 +33,12 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "oidc",
 				NameVal: "oidc/1",
 			},
-			Attribute: "authorization",
-			IssuerCAPath: "/etc/pki/tls/cert.pem",
-			IssuerURL: "https://auth.example.com/",
+			Attribute:     "authorization",
+			IssuerCAPath:  "/etc/pki/tls/cert.pem",
+			IssuerURL:     "https://auth.example.com/",
 			UsernameClaim: "email",
-			GroupsClaim: "group",
-			Audience: "my-oidc-client",
+			GroupsClaim:   "group",
+			Audience:      "my-oidc-client",
 		},
 		ext1)
 

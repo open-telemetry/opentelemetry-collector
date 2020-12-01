@@ -118,7 +118,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 
 	// test
 	gss.Auth = &configauth.Authentication{
-		OIDC: &configauth.OIDC{},
+		Authenticator: "oidc",
 	}
 	opts, err := gss.ToServerOption()
 

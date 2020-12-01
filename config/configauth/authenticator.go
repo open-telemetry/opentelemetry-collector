@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -88,7 +89,7 @@ func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
 func GetAuthenticatorFromRegistry(name string) (Authenticator, error) {
 	auth, ok := authRegistry[name]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Authenticator not found with name %s", name))
+		return nil, fmt.Errorf("Authenticator not found with name %s", name)
 	}
 	return auth, nil
 }
