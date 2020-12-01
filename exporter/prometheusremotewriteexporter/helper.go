@@ -23,6 +23,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -215,21 +216,47 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 	return sanitize(b.String())
 }
 
-// Simple helper function that takes the <Signature String - *TimeSeries> map
-// and creates a WriteRequest from the struct -- can move to the helper.go file
-func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+// Helper function that takes the <Signature String - *TimeSeries> map
+// and creates a batch of WriteRequest from the struct
+func wrapAndBatchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
-	var tsArray []prompb.TimeSeries
+
+	var requests []*prompb.WriteRequest
+	tsArray := make([]prompb.TimeSeries, 0)
+	missingLastBatch := true
+
 	for _, v := range tsMap {
 		tsArray = append(tsArray, *v)
+		missingLastBatch = true
+
+		if len(tsArray)%5000 == 0 {
+			wrapped := prompb.WriteRequest{
+				Timeseries: tsArray,
+				// Other parameters of the WriteRequest are unnecessary for our Export
+			}
+
+			if b := proto.Size(&wrapped); b >= 3000000 || len(tsArray) >= 40000 {
+				requests = append(requests, &wrapped)
+				tsArray = make([]prompb.TimeSeries, 0)
+
+				missingLastBatch = false
+			}
+		}
 	}
-	wrapped := prompb.WriteRequest{
-		Timeseries: tsArray,
-		// Other parameters of the WriteRequest are unnecessary for our Export
+
+	if missingLastBatch {
+		wrapped := prompb.WriteRequest{
+			Timeseries: tsArray,
+			// Other parameters of the WriteRequest are unnecessary for our Export
+		}
+
+		requests = append(requests, &wrapped)
+		tsArray = make([]prompb.TimeSeries, 0)
 	}
-	return &wrapped, nil
+
+	return requests, nil
 }
 
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
