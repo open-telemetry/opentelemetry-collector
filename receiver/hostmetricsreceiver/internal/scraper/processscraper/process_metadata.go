@@ -50,7 +50,6 @@ var cpuTimeDescriptor = func() pdata.Metric {
 	metric.SetUnit("s")
 	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 	sum := metric.DoubleSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -64,7 +63,6 @@ var physicalMemoryUsageDescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -78,7 +76,6 @@ var virtualMemoryUsageDescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -92,7 +89,6 @@ var diskIODescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric

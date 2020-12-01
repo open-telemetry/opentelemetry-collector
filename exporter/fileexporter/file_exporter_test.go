@@ -30,7 +30,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	logspb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 	otresourcepb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -79,7 +79,7 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr1",
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
+						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -103,7 +103,7 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr2",
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
+						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
 					},
 				},
 			},
@@ -138,7 +138,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr1",
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
+						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 					},
 				},
 			},
@@ -162,7 +162,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 				Attributes: []otlpcommon.KeyValue{
 					{
 						Key:   "attr2",
-						Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
+						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
 					},
 				},
 			},

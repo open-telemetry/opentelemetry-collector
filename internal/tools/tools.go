@@ -14,7 +14,7 @@
 
 // +build tools
 
-package internal
+package tools
 
 // This file follows the recommendation at
 // https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module

@@ -91,7 +91,7 @@ Each Prometheus remote write TimeSeries represents less semantic information tha
 
 **INT64, MONOTONIC_INT64, DOUBLE, MONOTONIC_DOUBLE**
 
-Each unique label set within metrics of these types can be converted to exactly one TimeSeries. From the perspective of Prometheus client types, INT64 and DOUBLE correspond to gauge metrics, and MONOTONIC types correspond to counter metrics. In both cases, data points will be exported directly without aggregation. Any metric of the monotonic types that is not cumulative should be dropped; non-monotonic scalar types are assumed to represent gauge values, thus its temporality is not checked. Monotonic types need to have a `_total` suffix in its metric name when exporting; this is a requirement of [Prometheus](https://www.slideshare.net/brianbrazil/openmetrics-what-does-it-mean-for-you-promcon-2019-munich) (slide 11).
+Each unique label set within metrics of these types can be converted to exactly one TimeSeries. From the perspective of Prometheus client types, INT64 and DOUBLE correspond to gauge metrics, and MONOTONIC types correspond to counter metrics. In both cases, data points will be exported directly without aggregation. Any metric of the monotonic types that is not cumulative should be dropped; non-monotonic scalar types are assumed to represent gauge values, thus its temporality is not checked. Monotonic types need to have a `_total` suffix in its metric name when exporting; this is a requirement of Prometheus.
 
 
 **HISTOGRAM**

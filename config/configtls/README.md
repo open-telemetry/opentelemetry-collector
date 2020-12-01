@@ -27,6 +27,13 @@ A certificate authority may also need to be defined:
   certificate. For a server this verifies client certificates. If empty uses
   system root CA. Should only be used if `insecure` is set to false.
 
+Additionally you can configure TLS to be enabled but skip verifying the server's
+certificate chain. This cannot be combined with `insecure` since `insecure`
+won't use TLS at all.
+
+- `insecure_skip_verify` (default = false): whether to skip verifying the
+  certificate or not.
+
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
 
@@ -59,6 +66,10 @@ exporters:
   otlp/insecure:
     endpoint: myserver.local:55690
     insecure: true
+  otlp/secure_no_verify:
+    endpoint: myserver.local:55690
+    insecure: false
+    insecure_skip_verify: true
 ```
 
 ## Server Configuration

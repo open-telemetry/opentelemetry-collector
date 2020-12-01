@@ -153,10 +153,10 @@ func generateFassAttributes() map[string]interface{} {
 func generateExecAttributes() map[string]interface{} {
 	attrMap := make(map[string]interface{})
 	attrMap[conventions.AttributeProcessExecutableName] = "otelcol"
-	parts := make([]*otlpcommon.AnyValue, 3)
-	parts[0] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
-	parts[1] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
-	parts[2] = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
+	parts := make([]otlpcommon.AnyValue, 3)
+	parts[0] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "otelcol"}}
+	parts[1] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--config=/etc/otel-collector-config.yaml"}}
+	parts[2] = otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "--mem-ballast-size-mib=683"}}
 	attrMap[conventions.AttributeProcessCommandLine] = &otlpcommon.ArrayValue{
 		Values: parts,
 	}

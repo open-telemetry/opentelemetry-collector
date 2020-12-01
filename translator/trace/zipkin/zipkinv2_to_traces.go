@@ -25,7 +25,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -213,7 +213,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		link.InitEmpty()
 
 		// Convert trace id.
-		rawTrace := commonpb.TraceID{}
+		rawTrace := data.TraceID{}
 		errTrace := rawTrace.UnmarshalJSON([]byte(parts[0]))
 		if errTrace != nil {
 			return errTrace
@@ -221,7 +221,7 @@ func zTagsToSpanLinks(tags map[string]string, dest pdata.SpanLinkSlice) error {
 		link.SetTraceID(pdata.TraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan := commonpb.SpanID{}
+		rawSpan := data.SpanID{}
 		errSpan := rawSpan.UnmarshalJSON([]byte(parts[1]))
 		if errSpan != nil {
 			return errSpan
@@ -400,7 +400,6 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 	if instrLibName == "" {
 		return
 	}
-	library.InitEmpty()
 	if value, ok := tags[tracetranslator.TagInstrumentationName]; ok {
 		library.SetName(value)
 		delete(tags, tracetranslator.TagInstrumentationName)

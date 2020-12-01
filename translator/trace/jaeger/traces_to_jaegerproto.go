@@ -451,9 +451,6 @@ func getTagsFromTraceState(traceState pdata.TraceState) ([]model.KeyValue, bool)
 
 func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model.KeyValue, bool) {
 	keyValues := make([]model.KeyValue, 0)
-	if il.IsNil() {
-		return keyValues, false
-	}
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
 			Key:   tracetranslator.TagInstrumentationName,

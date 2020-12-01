@@ -360,9 +360,7 @@ func (s *loggingExporter) pushTraceData(
 				buf.logEntry("* Nil InstrumentationLibrarySpans")
 				continue
 			}
-			if !ils.InstrumentationLibrary().IsNil() {
-				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
-			}
+			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -424,9 +422,7 @@ func (s *loggingExporter) pushMetricsData(
 				buf.logEntry("* Nil InstrumentationLibraryMetrics")
 				continue
 			}
-			if !ilm.InstrumentationLibrary().IsNil() {
-				buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
-			}
+			buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				buf.logEntry("Metric #%d", k)
@@ -535,9 +531,7 @@ func (s *loggingExporter) pushLogData(
 				buf.logEntry("* Nil InstrumentationLibraryLogs")
 				continue
 			}
-			if !ils.InstrumentationLibrary().IsNil() {
-				buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
-			}
+			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 
 			logs := ils.Logs()
 			for j := 0; j < logs.Len(); j++ {

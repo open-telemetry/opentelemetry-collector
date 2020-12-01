@@ -488,7 +488,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 		metrics.Resize(6)
 
 		il := ilm.InstrumentationLibrary()
-		il.InitEmpty()
 		il.SetName("example")
 		il.SetVersion("0.1")
 
@@ -498,7 +497,6 @@ func BenchmarkPdataMetrics(b *testing.B) {
 			metric.SetName("gauge" + strconv.Itoa(i))
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			mAsType := metric.IntGauge()
-			mAsType.InitEmpty()
 			dps := mAsType.DataPoints()
 			dps.Resize(2)
 			{

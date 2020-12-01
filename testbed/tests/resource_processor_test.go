@@ -35,7 +35,7 @@ var (
 			Attributes: []otlpcommon.KeyValue{
 				{
 					Key: "opencensus.resourcetype",
-					Value: &otlpcommon.AnyValue{
+					Value: otlpcommon.AnyValue{
 						Value: &otlpcommon.AnyValue_StringValue{
 							StringValue: "host",
 						},
@@ -43,7 +43,7 @@ var (
 				},
 				{
 					Key: "label-key",
-					Value: &otlpcommon.AnyValue{
+					Value: otlpcommon.AnyValue{
 						Value: &otlpcommon.AnyValue_StringValue{
 							StringValue: "label-value",
 						},
@@ -153,11 +153,11 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "resource-type",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "host"}},
 						},
 						{
 							Key:   "label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "new-label-value"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "new-label-value"}},
 						},
 					},
 				},
@@ -179,7 +179,7 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},
@@ -200,7 +200,7 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 					Attributes: []otlpcommon.KeyValue{
 						{
 							Key:   "additional-label-key",
-							Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "additional-label-value"}},
 						},
 					},
 				},

@@ -22,11 +22,12 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/net"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -70,8 +71,7 @@ func newNetworkScraper(_ context.Context, cfg *Config) (*scraper, error) {
 	return scraper, nil
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
+func (s *scraper) start(context.Context, component.Host) error {
 	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
@@ -81,8 +81,7 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Scrape
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
+func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	var errors []error
@@ -97,7 +96,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		errors = append(errors, err)
 	}
 
-	return metrics, receiverhelper.CombineScrapeErrors(errors)
+	return metrics, scraperhelper.CombineScrapeErrors(errors)
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {

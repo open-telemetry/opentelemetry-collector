@@ -15,31 +15,31 @@
 package pdata
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 // TraceID is an alias of OTLP TraceID data type.
-type TraceID otlpcommon.TraceID
+type TraceID data.TraceID
 
 func InvalidTraceID() TraceID {
-	return TraceID(otlpcommon.NewTraceID([16]byte{}))
+	return TraceID(data.NewTraceID([16]byte{}))
 }
 
 func NewTraceID(bytes [16]byte) TraceID {
-	return TraceID(otlpcommon.NewTraceID(bytes))
+	return TraceID(data.NewTraceID(bytes))
 }
 
 // Bytes returns the byte array representation of the TraceID.
 func (t TraceID) Bytes() [16]byte {
-	return otlpcommon.TraceID(t).Bytes()
+	return data.TraceID(t).Bytes()
 }
 
 // HexString returns hex representation of the TraceID.
 func (t TraceID) HexString() string {
-	return otlpcommon.TraceID(t).HexString()
+	return data.TraceID(t).HexString()
 }
 
 // IsValid returns true if id contains at leas one non-zero byte.
 func (t TraceID) IsValid() bool {
-	return otlpcommon.TraceID(t).IsValid()
+	return data.TraceID(t).IsValid()
 }

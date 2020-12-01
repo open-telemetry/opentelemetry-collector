@@ -27,7 +27,6 @@ var loadAvg1MDescriptor = func() pdata.Metric {
 	metric.SetDescription("Average CPU Load over 1 minute.")
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	metric.DoubleGauge().InitEmpty()
 	return metric
 }()
 
@@ -38,7 +37,6 @@ var loadAvg5mDescriptor = func() pdata.Metric {
 	metric.SetDescription("Average CPU Load over 5 minutes.")
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	metric.DoubleGauge().InitEmpty()
 	return metric
 }()
 
@@ -49,6 +47,5 @@ var loadAvg15mDescriptor = func() pdata.Metric {
 	metric.SetDescription("Average CPU Load over 15 minutes.")
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	metric.DoubleGauge().InitEmpty()
 	return metric
 }()

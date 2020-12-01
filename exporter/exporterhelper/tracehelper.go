@@ -21,22 +21,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// traceDataPusher is a helper function that is similar to ConsumeTraceData but also
+// PushTraces is a helper function that is similar to ConsumeTraces but also
 // returns the number of dropped spans.
-type traceDataPusher func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error)
+type PushTraces func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error)
 
 type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
-	pusher traceDataPusher
+	pusher PushTraces
 }
 
-func newTracesRequest(ctx context.Context, td pdata.Traces, pusher traceDataPusher) request {
+func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) request {
 	return &tracesRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
@@ -58,7 +59,7 @@ func (req *tracesRequest) count() int {
 
 type traceExporter struct {
 	*baseExporter
-	pusher traceDataPusher
+	pusher PushTraces
 }
 
 func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -72,8 +73,8 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 func NewTraceExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
-	dataPusher traceDataPusher,
-	options ...ExporterOption,
+	pusher PushTraces,
+	options ...Option,
 ) (component.TracesExporter, error) {
 
 	if cfg == nil {
@@ -84,37 +85,37 @@ func NewTraceExporter(
 		return nil, errNilLogger
 	}
 
-	if dataPusher == nil {
+	if pusher == nil {
 		return nil, errNilPushTraceData
 	}
 
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
-			exporterName: cfg.Name(),
-			nextSender:   nextSender,
+			obsrep:     obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			nextSender: nextSender,
 		}
 	})
 
 	return &traceExporter{
 		baseExporter: be,
-		pusher:       dataPusher,
+		pusher:       pusher,
 	}, nil
 }
 
 type tracesExporterWithObservability struct {
-	exporterName string
-	nextSender   requestSender
+	obsrep     *obsreport.ExporterObsReport
+	nextSender requestSender
 }
 
 func (tewo *tracesExporterWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartTraceDataExportOp(req.context(), tewo.exporterName))
+	req.setContext(tewo.obsrep.StartTracesExportOp(req.context()))
 	// Forward the data to the next consumer (this pusher is the next).
 	droppedSpans, err := tewo.nextSender.send(req)
 
 	// TODO: this is not ideal: it should come from the next function itself.
 	// 	temporarily loading it from internal format. Once full switch is done
 	// 	to new metrics will remove this.
-	obsreport.EndTraceDataExportOp(req.context(), req.count(), err)
+	tewo.obsrep.EndTracesExportOp(req.context(), req.count(), err)
 	return droppedSpans, err
 }

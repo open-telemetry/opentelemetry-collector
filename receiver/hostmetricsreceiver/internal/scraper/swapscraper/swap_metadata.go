@@ -57,7 +57,6 @@ var swapUsageDescriptor = func() pdata.Metric {
 	metric.SetUnit("bytes")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -71,7 +70,6 @@ var swapPagingDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -85,7 +83,6 @@ var swapPageFaultsDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric

@@ -176,7 +176,6 @@ func (melr *MessageEventLogRecord) LogRecords() pdata.LogSlice {
 func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 	melr.LogSlice = pdata.NewLogSlice()
 	melr.LogSlice.Resize(1)
-	melr.LogSlice.At(0).Body().InitEmpty()
 
 	var arrLen uint32
 	var err error
@@ -276,7 +275,6 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 	fe.LogSlice.Resize(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
 		lr := fe.LogSlice.At(i)
-		lr.Body().InitEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {
@@ -400,7 +398,6 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 	for {
 		lr := pdata.NewLogRecord()
 		lr.InitEmpty()
-		lr.Body().InitEmpty()
 
 		err := parseEntryToLogRecord(msgpReader, lr)
 		if err != nil {

@@ -21,22 +21,23 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
-// PushLogsData is a helper function that is similar to ConsumeLogsData but also returns
+// PushLogs is a helper function that is similar to ConsumeLogs but also returns
 // the number of dropped logs.
-type PushLogsData func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error)
+type PushLogs func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error)
 
 type logsRequest struct {
 	baseRequest
 	ld     pdata.Logs
-	pusher PushLogsData
+	pusher PushLogs
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogsData) request {
+func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogs) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -58,12 +59,12 @@ func (req *logsRequest) count() int {
 
 type logsExporter struct {
 	*baseExporter
-	pushLogsData PushLogsData
+	pusher PushLogs
 }
 
 func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	exporterCtx := obsreport.ExporterContext(ctx, lexp.cfg.Name())
-	_, err := lexp.sender.send(newLogsRequest(exporterCtx, ld, lexp.pushLogsData))
+	_, err := lexp.sender.send(newLogsRequest(exporterCtx, ld, lexp.pusher))
 	return err
 }
 
@@ -71,8 +72,8 @@ func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error 
 func NewLogsExporter(
 	cfg configmodels.Exporter,
 	logger *zap.Logger,
-	pushLogsData PushLogsData,
-	options ...ExporterOption,
+	pusher PushLogs,
+	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
@@ -82,32 +83,32 @@ func NewLogsExporter(
 		return nil, errNilLogger
 	}
 
-	if pushLogsData == nil {
+	if pusher == nil {
 		return nil, errNilPushLogsData
 	}
 
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
-			exporterName: cfg.Name(),
-			nextSender:   nextSender,
+			obsrep:     obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			nextSender: nextSender,
 		}
 	})
 
 	return &logsExporter{
 		baseExporter: be,
-		pushLogsData: pushLogsData,
+		pusher:       pusher,
 	}, nil
 }
 
 type logsExporterWithObservability struct {
-	exporterName string
-	nextSender   requestSender
+	obsrep     *obsreport.ExporterObsReport
+	nextSender requestSender
 }
 
 func (lewo *logsExporterWithObservability) send(req request) (int, error) {
-	req.setContext(obsreport.StartLogsExportOp(req.context(), lewo.exporterName))
+	req.setContext(lewo.obsrep.StartLogsExportOp(req.context()))
 	numDroppedLogs, err := lewo.nextSender.send(req)
-	obsreport.EndLogsExportOp(req.context(), req.count(), err)
+	lewo.obsrep.EndLogsExportOp(req.context(), req.count(), err)
 	return numDroppedLogs, err
 }

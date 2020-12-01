@@ -656,31 +656,20 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 	m.SetUnit("1")
 	m.SetDataType(ty)
 	switch ty {
-	case pdata.MetricDataTypeIntGauge:
-		m.IntGauge().InitEmpty()
-	case pdata.MetricDataTypeDoubleGauge:
-		m.DoubleGauge().InitEmpty()
 	case pdata.MetricDataTypeIntSum:
 		sum := m.IntSum()
-		sum.InitEmpty()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeDoubleSum:
 		sum := m.DoubleSum()
-		sum.InitEmpty()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeIntHistogram:
 		histo := m.IntHistogram()
-		histo.InitEmpty()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	case pdata.MetricDataTypeDoubleHistogram:
 		histo := m.DoubleHistogram()
-		histo.InitEmpty()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	case pdata.MetricDataTypeDoubleSummary:
-		summary := m.DoubleSummary()
-		summary.InitEmpty()
 	}
 }
 

@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -154,7 +154,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 
 func TestMetricsExporter_WithResourceToTelemetryConversionDisabled(t *testing.T) {
 	md := testdata.GenerateMetricsTwoMetrics()
-	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(createDefaultResourceToTelemetrySettings()))
+	me, err := NewMetricsExporter(fakeMetricsExporterConfig, zap.NewNop(), newPushMetricsData(0, nil), WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -183,7 +183,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, me.Shutdown(context.Background()), want)
 }
 
-func newPushMetricsData(droppedTimeSeries int, retError error) PushMetricsData {
+func newPushMetricsData(droppedTimeSeries int, retError error) PushMetrics {
 	return func(ctx context.Context, td pdata.Metrics) (int, error) {
 		return droppedTimeSeries, retError
 	}

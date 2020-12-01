@@ -25,9 +25,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -120,7 +120,7 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 			input: testdata.GenerateLogDataOneEmptyOneNilLogRecord(),
 			output: func() pdata.Logs {
 				lr := testdata.GenerateLogDataOneEmptyOneNilLogRecord()
-				lr.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InitEmptyWithCapacity(0)
+				lr.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InitEmptyWithCapacity(1)
 				return lr
 			}(),
 		},

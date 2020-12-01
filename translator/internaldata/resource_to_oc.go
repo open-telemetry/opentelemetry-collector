@@ -84,8 +84,8 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		return nil, nil
 	}
 
-	ocNode := occommon.Node{}
-	ocResource := ocresource.Resource{}
+	ocNode := &occommon.Node{}
+	ocResource := &ocresource.Resource{}
 	labels := make(map[string]string, attrs.Len())
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
 		val := tracetranslator.AttributeValueToString(v, false)
@@ -94,50 +94,32 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
-			if ocNode.ServiceInfo == nil {
-				ocNode.ServiceInfo = &occommon.ServiceInfo{}
-			}
-			ocNode.ServiceInfo.Name = val
+			getServiceInfo(ocNode).Name = val
 		case conventions.OCAttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
 				return
 			}
 			ts := timestamppb.New(t)
-			if ocNode.Identifier == nil {
-				ocNode.Identifier = &occommon.ProcessIdentifier{}
-			}
-			ocNode.Identifier.StartTimestamp = ts
+			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
-			if ocNode.Identifier == nil {
-				ocNode.Identifier = &occommon.ProcessIdentifier{}
-			}
-			ocNode.Identifier.HostName = val
+			getProcessIdentifier(ocNode).HostName = val
 		case conventions.OCAttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID
 			}
-			if ocNode.Identifier == nil {
-				ocNode.Identifier = &occommon.ProcessIdentifier{}
-			}
-			ocNode.Identifier.Pid = uint32(pid)
+			getProcessIdentifier(ocNode).Pid = uint32(pid)
 		case conventions.AttributeTelemetrySDKVersion:
 			if ocNode.LibraryInfo == nil {
 				ocNode.LibraryInfo = &occommon.LibraryInfo{}
 			}
-			ocNode.LibraryInfo.CoreLibraryVersion = val
+			getLibraryInfo(ocNode).CoreLibraryVersion = val
 		case conventions.OCAttributeExporterVersion:
-			if ocNode.LibraryInfo == nil {
-				ocNode.LibraryInfo = &occommon.LibraryInfo{}
-			}
-			ocNode.LibraryInfo.ExporterVersion = val
+			getLibraryInfo(ocNode).ExporterVersion = val
 		case conventions.AttributeTelemetrySDKLanguage:
 			if code, ok := langToOCLangCodeMap[val]; ok {
-				if ocNode.LibraryInfo == nil {
-					ocNode.LibraryInfo = &occommon.LibraryInfo{}
-				}
-				ocNode.LibraryInfo.Language = occommon.LibraryInfo_Language(code)
+				getLibraryInfo(ocNode).Language = occommon.LibraryInfo_Language(code)
 			}
 		default:
 			// Not a special attribute, put it into resource labels
@@ -154,7 +136,28 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		}
 	}
 
-	return &ocNode, &ocResource
+	return ocNode, ocResource
+}
+
+func getProcessIdentifier(ocNode *occommon.Node) *occommon.ProcessIdentifier {
+	if ocNode.Identifier == nil {
+		ocNode.Identifier = &occommon.ProcessIdentifier{}
+	}
+	return ocNode.Identifier
+}
+
+func getLibraryInfo(ocNode *occommon.Node) *occommon.LibraryInfo {
+	if ocNode.LibraryInfo == nil {
+		ocNode.LibraryInfo = &occommon.LibraryInfo{}
+	}
+	return ocNode.LibraryInfo
+}
+
+func getServiceInfo(ocNode *occommon.Node) *occommon.ServiceInfo {
+	if ocNode.ServiceInfo == nil {
+		ocNode.ServiceInfo = &occommon.ServiceInfo{}
+	}
+	return ocNode.ServiceInfo
 }
 
 func inferResourceType(labels map[string]string) (string, bool) {

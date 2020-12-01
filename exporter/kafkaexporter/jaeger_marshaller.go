@@ -29,7 +29,7 @@ type jaegerMarshaller struct {
 	marshaller jaegerSpanMarshaller
 }
 
-var _ Marshaller = (*jaegerMarshaller)(nil)
+var _ TracesMarshaller = (*jaegerMarshaller)(nil)
 
 func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(traces)

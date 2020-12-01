@@ -310,9 +310,6 @@ func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
 	ms.InitEmpty()
-	assert.True(t, ms.InstrumentationLibrary().IsNil())
-	ms.InstrumentationLibrary().InitEmpty()
-	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -486,17 +483,8 @@ func TestMetric_Unit(t *testing.T) {
 	assert.EqualValues(t, testValUnit, ms.Unit())
 }
 
-func TestIntGauge_InitEmpty(t *testing.T) {
-	ms := NewIntGauge()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestIntGauge_CopyTo(t *testing.T) {
 	ms := NewIntGauge()
-	NewIntGauge().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestIntGauge().CopyTo(ms)
 	assert.EqualValues(t, generateTestIntGauge(), ms)
 }
@@ -510,17 +498,8 @@ func TestIntGauge_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestDoubleGauge_InitEmpty(t *testing.T) {
-	ms := NewDoubleGauge()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestDoubleGauge_CopyTo(t *testing.T) {
 	ms := NewDoubleGauge()
-	NewDoubleGauge().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestDoubleGauge().CopyTo(ms)
 	assert.EqualValues(t, generateTestDoubleGauge(), ms)
 }
@@ -534,17 +513,8 @@ func TestDoubleGauge_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestIntSum_InitEmpty(t *testing.T) {
-	ms := NewIntSum()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestIntSum_CopyTo(t *testing.T) {
 	ms := NewIntSum()
-	NewIntSum().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestIntSum().CopyTo(ms)
 	assert.EqualValues(t, generateTestIntSum(), ms)
 }
@@ -576,17 +546,8 @@ func TestIntSum_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestDoubleSum_InitEmpty(t *testing.T) {
-	ms := NewDoubleSum()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestDoubleSum_CopyTo(t *testing.T) {
 	ms := NewDoubleSum()
-	NewDoubleSum().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestDoubleSum().CopyTo(ms)
 	assert.EqualValues(t, generateTestDoubleSum(), ms)
 }
@@ -618,17 +579,8 @@ func TestDoubleSum_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestIntHistogram_InitEmpty(t *testing.T) {
-	ms := NewIntHistogram()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestIntHistogram_CopyTo(t *testing.T) {
 	ms := NewIntHistogram()
-	NewIntHistogram().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestIntHistogram().CopyTo(ms)
 	assert.EqualValues(t, generateTestIntHistogram(), ms)
 }
@@ -651,17 +603,8 @@ func TestIntHistogram_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestDoubleHistogram_InitEmpty(t *testing.T) {
-	ms := NewDoubleHistogram()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestDoubleHistogram_CopyTo(t *testing.T) {
 	ms := NewDoubleHistogram()
-	NewDoubleHistogram().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestDoubleHistogram().CopyTo(ms)
 	assert.EqualValues(t, generateTestDoubleHistogram(), ms)
 }
@@ -684,17 +627,8 @@ func TestDoubleHistogram_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
-func TestDoubleSummary_InitEmpty(t *testing.T) {
-	ms := NewDoubleSummary()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestDoubleSummary_CopyTo(t *testing.T) {
 	ms := NewDoubleSummary()
-	NewDoubleSummary().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestDoubleSummary().CopyTo(ms)
 	assert.EqualValues(t, generateTestDoubleSummary(), ms)
 }
@@ -2178,7 +2112,6 @@ func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 }
 
 func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
-	tv.InstrumentationLibrary().InitEmpty()
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	fillTestMetricSlice(tv.Metrics())
 }
@@ -2207,14 +2140,13 @@ func fillTestMetric(tv Metric) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
-	(*tv.orig).Data = &otlpmetrics.Metric_IntGauge{}
+	(*tv.orig).Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
 	tv.IntGauge().InitEmpty()
 	fillTestIntGauge(tv.IntGauge())
 }
 
 func generateTestIntGauge() IntGauge {
 	tv := NewIntGauge()
-	tv.InitEmpty()
 	fillTestIntGauge(tv)
 	return tv
 }
@@ -2225,7 +2157,6 @@ func fillTestIntGauge(tv IntGauge) {
 
 func generateTestDoubleGauge() DoubleGauge {
 	tv := NewDoubleGauge()
-	tv.InitEmpty()
 	fillTestDoubleGauge(tv)
 	return tv
 }
@@ -2236,7 +2167,6 @@ func fillTestDoubleGauge(tv DoubleGauge) {
 
 func generateTestIntSum() IntSum {
 	tv := NewIntSum()
-	tv.InitEmpty()
 	fillTestIntSum(tv)
 	return tv
 }
@@ -2249,7 +2179,6 @@ func fillTestIntSum(tv IntSum) {
 
 func generateTestDoubleSum() DoubleSum {
 	tv := NewDoubleSum()
-	tv.InitEmpty()
 	fillTestDoubleSum(tv)
 	return tv
 }
@@ -2262,7 +2191,6 @@ func fillTestDoubleSum(tv DoubleSum) {
 
 func generateTestIntHistogram() IntHistogram {
 	tv := NewIntHistogram()
-	tv.InitEmpty()
 	fillTestIntHistogram(tv)
 	return tv
 }
@@ -2274,7 +2202,6 @@ func fillTestIntHistogram(tv IntHistogram) {
 
 func generateTestDoubleHistogram() DoubleHistogram {
 	tv := NewDoubleHistogram()
-	tv.InitEmpty()
 	fillTestDoubleHistogram(tv)
 	return tv
 }
@@ -2286,7 +2213,6 @@ func fillTestDoubleHistogram(tv DoubleHistogram) {
 
 func generateTestDoubleSummary() DoubleSummary {
 	tv := NewDoubleSummary()
-	tv.InitEmpty()
 	fillTestDoubleSummary(tv)
 	return tv
 }

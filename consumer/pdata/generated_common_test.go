@@ -25,17 +25,8 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 )
 
-func TestInstrumentationLibrary_InitEmpty(t *testing.T) {
-	ms := NewInstrumentationLibrary()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestInstrumentationLibrary_CopyTo(t *testing.T) {
 	ms := NewInstrumentationLibrary()
-	NewInstrumentationLibrary().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestInstrumentationLibrary().CopyTo(ms)
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms)
 }
@@ -61,12 +52,11 @@ func TestInstrumentationLibrary_Version(t *testing.T) {
 func TestAnyValueArray(t *testing.T) {
 	es := NewAnyValueArray()
 	assert.EqualValues(t, 0, es.Len())
-	es = newAnyValueArray(&[]*otlpcommon.AnyValue{})
+	es = newAnyValueArray(&[]otlpcommon.AnyValue{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
 	emptyVal := NewAttributeValue()
-	emptyVal.InitEmpty()
 	testVal := generateTestAttributeValue()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -119,19 +109,18 @@ func TestAnyValueArray_CopyTo(t *testing.T) {
 func TestAnyValueArray_Resize(t *testing.T) {
 	es := generateTestAnyValueArray()
 	emptyVal := NewAttributeValue()
-	emptyVal.InitEmpty()
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
 	for i := 0; i < resizeSmallLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
 	assert.Equal(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*otlpcommon.AnyValue]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
@@ -140,14 +129,14 @@ func TestAnyValueArray_Resize(t *testing.T) {
 	oldLen := es.Len()
 	expectedEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
 	assert.Equal(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*otlpcommon.AnyValue]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 	for i := oldLen; i < resizeLargeLen; i++ {
@@ -162,13 +151,11 @@ func TestAnyValueArray_Resize(t *testing.T) {
 func TestAnyValueArray_Append(t *testing.T) {
 	es := generateTestAnyValueArray()
 	emptyVal := NewAttributeValue()
-	emptyVal.InitEmpty()
 
 	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := NewAttributeValue()
-	emptyVal2.InitEmpty()
 
 	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
@@ -178,7 +165,6 @@ func TestAnyValueArray_Append(t *testing.T) {
 
 func generateTestInstrumentationLibrary() InstrumentationLibrary {
 	tv := NewInstrumentationLibrary()
-	tv.InitEmpty()
 	fillTestInstrumentationLibrary(tv)
 	return tv
 }

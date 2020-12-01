@@ -23,11 +23,12 @@ import (
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/process"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -73,8 +74,7 @@ func newProcessScraper(cfg *Config) (*scraper, error) {
 	return scraper, nil
 }
 
-// Initialize
-func (s *scraper) Initialize(_ context.Context) error {
+func (s *scraper) start(context.Context, component.Host) error {
 	bootTime, err := s.bootTime()
 	if err != nil {
 		return err
@@ -84,8 +84,7 @@ func (s *scraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-// Scrape
-func (s *scraper) Scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
 
 	var errs []error
@@ -123,7 +122,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		}
 	}
 
-	return rms, receiverhelper.CombineScrapeErrors(errs)
+	return rms, scraperhelper.CombineScrapeErrors(errs)
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -175,7 +174,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	return metadata, receiverhelper.CombineScrapeErrors(errs)
+	return metadata, scraperhelper.CombineScrapeErrors(errs)
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {

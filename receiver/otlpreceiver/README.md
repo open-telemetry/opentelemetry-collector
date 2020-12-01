@@ -25,9 +25,9 @@ receivers:
 
 The following settings are configurable:
 
-- `endpoint` (default = 0.0.0.0:55680): host:port to which the receiver is
-  going to receive data. The valid syntax is described at
-  https://github.com/grpc/grpc/blob/master/doc/naming.md.
+- `endpoint` (default = 0.0.0.0:4317 for grpc protocol, 0.0.0.0:55681 http protocol):
+  host:port to which the receiver is going to receive data. The valid syntax is
+  described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 
 ## Advanced Configuration
 

@@ -271,6 +271,12 @@ jobs:
       - run:
           name: Lint
           command: make -j4 gochecklicense goimpi golint gomisspell
+      - run:
+          name: Gen Metadata
+          command: make genmdata
+      - run:
+          name: Check generated metadata
+          command: git diff --exit-code || (echo 'Generated code is out of date, please run "make genmdata" and commit the changes in this PR.' && exit 1)
 
   cross-compile:
     executor: golang

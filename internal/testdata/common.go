@@ -48,7 +48,7 @@ func generateOtlpResourceAttributes1() []otlpcommon.KeyValue {
 	return []otlpcommon.KeyValue{
 		{
 			Key:   "resource-attr",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "resource-attr-val-1"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "resource-attr-val-1"}},
 		},
 	}
 }
@@ -61,7 +61,7 @@ func generateOtlpResourceAttributes2() []otlpcommon.KeyValue {
 	return []otlpcommon.KeyValue{
 		{
 			Key:   "resource-attr",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "resource-attr-val-2"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "resource-attr-val-2"}},
 		},
 	}
 }
@@ -74,7 +74,7 @@ func generateOtlpSpanAttributes() []otlpcommon.KeyValue {
 	return []otlpcommon.KeyValue{
 		{
 			Key:   "span-attr",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-attr-val"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-attr-val"}},
 		},
 	}
 }
@@ -87,7 +87,7 @@ func generateOtlpSpanEventAttributes() []otlpcommon.KeyValue {
 	return []otlpcommon.KeyValue{
 		{
 			Key:   "span-event-attr",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-event-attr-val"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-event-attr-val"}},
 		},
 	}
 }
@@ -100,7 +100,7 @@ func generateOtlpSpanLinkAttributes() []otlpcommon.KeyValue {
 	return []otlpcommon.KeyValue{
 		{
 			Key:   "span-link-attr",
-			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-link-attr-val"}},
+			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "span-link-attr-val"}},
 		},
 	}
 }

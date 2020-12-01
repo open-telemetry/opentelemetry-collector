@@ -18,7 +18,7 @@
 package pdata
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
 )
 
@@ -354,9 +354,6 @@ func (ms InstrumentationLibraryLogs) IsNil() bool {
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
-// If no instrumentationlibrary available, it creates an empty message and associates it with this InstrumentationLibraryLogs.
-//
-//  Empty initialized InstrumentationLibraryLogs will return "nil" InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryLogs) InstrumentationLibrary() InstrumentationLibrary {
@@ -561,7 +558,7 @@ func (ms LogRecord) TraceID() TraceID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = otlpcommon.TraceID(v)
+	(*ms.orig).TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
@@ -575,7 +572,7 @@ func (ms LogRecord) SpanID() SpanID {
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = otlpcommon.SpanID(v)
+	(*ms.orig).SpanId = data.SpanID(v)
 }
 
 // Flags returns the flags associated with this LogRecord.
@@ -635,9 +632,6 @@ func (ms LogRecord) SetName(v string) {
 }
 
 // Body returns the body associated with this LogRecord.
-// If no body available, it creates an empty message and associates it with this LogRecord.
-//
-//  Empty initialized LogRecord will return "nil" AttributeValue.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Body() AttributeValue {

@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -163,7 +163,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, le.Shutdown(context.Background()), want)
 }
 
-func newPushLogsData(droppedTimeSeries int, retError error) PushLogsData {
+func newPushLogsData(droppedTimeSeries int, retError error) PushLogs {
 	return func(ctx context.Context, td pdata.Logs) (int, error) {
 		return droppedTimeSeries, retError
 	}

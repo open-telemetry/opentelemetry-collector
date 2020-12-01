@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -54,11 +55,11 @@ func TestScrape(t *testing.T) {
 				scraper.load = test.loadFunc
 			}
 
-			err := scraper.Initialize(context.Background())
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize load scraper: %v", err)
-			defer func() { assert.NoError(t, scraper.Close(context.Background())) }()
+			defer func() { assert.NoError(t, scraper.shutdown(context.Background())) }()
 
-			metrics, err := scraper.Scrape(context.Background())
+			metrics, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 

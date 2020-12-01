@@ -30,33 +30,23 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
 	// orig points to the pointer otlpcommon.InstrumentationLibrary field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpcommon.InstrumentationLibrary
+	orig *otlpcommon.InstrumentationLibrary
 }
 
-func newInstrumentationLibrary(orig **otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
-	return InstrumentationLibrary{orig}
+func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+	return InstrumentationLibrary{orig: orig}
 }
 
-// NewInstrumentationLibrary creates a new "nil" InstrumentationLibrary.
-// To initialize the struct call "InitEmpty".
+// NewInstrumentationLibrary creates a new empty InstrumentationLibrary.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibrary() InstrumentationLibrary {
-	orig := (*otlpcommon.InstrumentationLibrary)(nil)
-	return newInstrumentationLibrary(&orig)
+	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms InstrumentationLibrary) InitEmpty() {
-	*ms.orig = &otlpcommon.InstrumentationLibrary{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms InstrumentationLibrary) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpcommon.InstrumentationLibrary{}
 }
 
 // Name returns the name associated with this InstrumentationLibrary.
@@ -89,13 +79,6 @@ func (ms InstrumentationLibrary) SetVersion(v string) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 }
@@ -110,17 +93,17 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 type AnyValueArray struct {
 	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
-	orig *[]*otlpcommon.AnyValue
+	orig *[]otlpcommon.AnyValue
 }
 
-func newAnyValueArray(orig *[]*otlpcommon.AnyValue) AnyValueArray {
+func newAnyValueArray(orig *[]otlpcommon.AnyValue) AnyValueArray {
 	return AnyValueArray{orig}
 }
 
 // NewAnyValueArray creates a AnyValueArray with 0 elements.
 // Can use "Resize" to initialize with a given length.
 func NewAnyValueArray() AnyValueArray {
-	orig := []*otlpcommon.AnyValue(nil)
+	orig := []otlpcommon.AnyValue(nil)
 	return AnyValueArray{&orig}
 }
 
@@ -160,18 +143,13 @@ func (es AnyValueArray) CopyTo(dest AnyValueArray) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&(*dest.orig)[i]))
-		}
-		return
+	} else {
+		(*dest.orig) = make([]otlpcommon.AnyValue, srcLen)
 	}
-	origs := make([]otlpcommon.AnyValue, srcLen)
-	wrappers := make([]*otlpcommon.AnyValue, srcLen)
+
 	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&wrappers[i]))
+		newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&(*dest.orig)[i]))
 	}
-	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -194,15 +172,15 @@ func (es AnyValueArray) Resize(newLen int) {
 	}
 
 	if newLen > oldCap {
-		newOrig := make([]*otlpcommon.AnyValue, oldLen, newLen)
+		newOrig := make([]otlpcommon.AnyValue, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
 
 	// Add extra empty elements to the array.
-	extraOrigs := make([]otlpcommon.AnyValue, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
+	empty := otlpcommon.AnyValue{}
+	for i := oldLen; i < newLen; i++ {
+		*es.orig = append(*es.orig, empty)
 	}
 }
 

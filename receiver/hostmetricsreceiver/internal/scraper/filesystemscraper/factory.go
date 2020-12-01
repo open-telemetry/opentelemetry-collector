@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements Factory for FileSystem scraper.
@@ -49,14 +49,14 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	_ *zap.Logger,
 	config internal.Config,
-) (receiverhelper.MetricsScraper, error) {
+) (scraperhelper.MetricsScraper, error) {
 	cfg := config.(*Config)
 	s, err := newFileSystemScraper(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	ms := receiverhelper.NewMetricsScraper(TypeStr, s.Scrape)
+	ms := scraperhelper.NewMetricsScraper(TypeStr, s.Scrape)
 
 	return ms, nil
 }

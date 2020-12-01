@@ -310,9 +310,6 @@ func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
 	ms.InitEmpty()
-	assert.True(t, ms.InstrumentationLibrary().IsNil())
-	ms.InstrumentationLibrary().InitEmpty()
-	assert.False(t, ms.InstrumentationLibrary().IsNil())
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
@@ -525,9 +522,6 @@ func TestLogRecord_Name(t *testing.T) {
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
 	ms.InitEmpty()
-	assert.True(t, ms.Body().IsNil())
-	ms.Body().InitEmpty()
-	assert.False(t, ms.Body().IsNil())
 	fillTestAttributeValue(ms.Body())
 	assert.EqualValues(t, generateTestAttributeValue(), ms.Body())
 }
@@ -596,7 +590,6 @@ func generateTestInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 }
 
 func fillTestInstrumentationLibraryLogs(tv InstrumentationLibraryLogs) {
-	tv.InstrumentationLibrary().InitEmpty()
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	fillTestLogSlice(tv.Logs())
 }
@@ -629,7 +622,6 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.SetSeverityText("INFO")
 	tv.SetSeverityNumber(SeverityNumberINFO)
 	tv.SetName("test_name")
-	tv.Body().InitEmpty()
 	fillTestAttributeValue(tv.Body())
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))

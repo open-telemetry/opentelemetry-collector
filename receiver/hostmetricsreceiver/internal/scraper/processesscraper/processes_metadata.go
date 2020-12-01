@@ -28,7 +28,6 @@ var processesRunningDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
@@ -42,7 +41,6 @@ var processesBlockedDescriptor = func() pdata.Metric {
 	metric.SetUnit("1")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.InitEmpty()
 	sum.SetIsMonotonic(false)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric

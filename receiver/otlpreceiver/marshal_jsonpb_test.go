@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/testdata"
 )
 
 const expectedJSON = `{
@@ -37,6 +37,7 @@ const expectedJSON = `{
   },
   "instrumentationLibrarySpans": [
     {
+      "instrumentationLibrary": {},
       "spans": [
         {
           "traceId": "",
@@ -86,7 +87,7 @@ func TestJSONPbMarshal(t *testing.T) {
 	otlp := pdata.TracesToOtlp(td)
 	bytes, err := jpb.Marshal(otlp[0])
 	assert.NoError(t, err)
-	assert.EqualValues(t, expectedJSON, string(bytes))
+	assert.JSONEq(t, expectedJSON, string(bytes))
 }
 
 func TestJSONPbUnmarshal(t *testing.T) {
