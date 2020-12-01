@@ -588,9 +588,15 @@ type TestConfig struct {
 }
 
 func TestExpandEnvLoadedConfig(t *testing.T) {
-	assert.NoError(t, os.Setenv("NESTED_VALUE", "nested_replaced_value"))
+	assert.NoError(t, os.Setenv("NESTED_VALUE", "replaced_nested_value"))
 	assert.NoError(t, os.Setenv("VALUE", "replaced_value"))
 	assert.NoError(t, os.Setenv("PTR_VALUE", "replaced_ptr_value"))
+
+	defer func() {
+		assert.NoError(t, os.Unsetenv("NESTED_VALUE"))
+		assert.NoError(t, os.Unsetenv("VALUE"))
+		assert.NoError(t, os.Unsetenv("PTR_VALUE"))
+	}()
 
 	testString := "$PTR_VALUE"
 
@@ -622,11 +628,11 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 			NameVal: "test",
 		},
 		NestedConfigPtr: &NestedConfig{
-			NestedStringValue: "nested_replaced_value",
+			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
-			NestedStringValue: "nested_replaced_value",
+			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    2,
 		},
 		StringValue:    "replaced_value",
@@ -636,7 +642,15 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 }
 
 func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
-	assert.NoError(t, os.Setenv("NESTED_VALUE", "nested_replaced_value"))
+	assert.NoError(t, os.Setenv("NESTED_VALUE", "replaced_nested_value"))
+	assert.NoError(t, os.Setenv("ESCAPED_VALUE", "replaced_escaped_value"))
+	assert.NoError(t, os.Setenv("ESCAPED_PTR_VALUE", "replaced_escaped_pointer_value"))
+
+	defer func() {
+		assert.NoError(t, os.Unsetenv("NESTED_VALUE"))
+		assert.NoError(t, os.Unsetenv("ESCAPED_VALUE"))
+		assert.NoError(t, os.Unsetenv("ESCAPED_PTR_VALUE"))
+	}()
 
 	testString := "$$ESCAPED_PTR_VALUE"
 
@@ -668,11 +682,11 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 			NameVal: "test",
 		},
 		NestedConfigPtr: &NestedConfig{
-			NestedStringValue: "nested_replaced_value",
+			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
-			NestedStringValue: "nested_replaced_value",
+			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    2,
 		},
 		StringValue:    "$ESCAPED_VALUE",
@@ -682,7 +696,11 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 }
 
 func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
-	assert.NoError(t, os.Setenv("NESTED_VALUE", "nested_replaced_value"))
+	assert.NoError(t, os.Setenv("NESTED_VALUE", "replaced_nested_value"))
+
+	defer func() {
+		assert.NoError(t, os.Unsetenv("NESTED_VALUE"))
+	}()
 
 	testString := "$PTR_VALUE"
 
@@ -714,11 +732,11 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 			NameVal: "test",
 		},
 		NestedConfigPtr: &NestedConfig{
-			NestedStringValue: "nested_replaced_value",
+			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    1,
 		},
 		NestedConfigValue: NestedConfig{
-			NestedStringValue: "nested_replaced_value",
+			NestedStringValue: "replaced_nested_value",
 			NestedIntValue:    2,
 		},
 		StringValue:    "",
@@ -733,4 +751,31 @@ func TestExpandEnvLoadedConfigNil(t *testing.T) {
 	expandEnvLoadedConfig(config)
 
 	assert.Equal(t, (*TestConfig)(nil), config)
+}
+
+type TestUnexportedConfig struct {
+	configmodels.ExporterSettings
+
+	unexportedStringValue string
+	ExportedStringValue   string
+}
+
+func TestExpandEnvLoadedConfigUnexportedField(t *testing.T) {
+	assert.NoError(t, os.Setenv("VALUE", "replaced_value"))
+
+	defer func() {
+		assert.NoError(t, os.Unsetenv("VALUE"))
+	}()
+
+	config := &TestUnexportedConfig{
+		unexportedStringValue: "$VALUE",
+		ExportedStringValue:   "$VALUE",
+	}
+
+	expandEnvLoadedConfig(config)
+
+	assert.Equal(t, &TestUnexportedConfig{
+		unexportedStringValue: "$VALUE",
+		ExportedStringValue:   "replaced_value",
+	}, config)
 }
