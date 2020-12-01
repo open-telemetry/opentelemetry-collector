@@ -79,11 +79,15 @@ lint: lint-static-check
 
 .PHONY: misspell
 misspell:
+ifdef ALL_DOC
 	$(MISSPELL) $(ALL_DOC)
+endif
 
 .PHONY: misspell-correction
 misspell-correction:
+ifdef ALL_DOC
 	$(MISSPELL_CORRECTION) $(ALL_DOC)
+endif
 
 .PHONY: impi
 impi:
