@@ -115,10 +115,6 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 func (b *logDataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		b.logEntry("IntDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
@@ -131,10 +127,6 @@ func (b *logDataBuffer) logIntDataPoints(ps pdata.IntDataPointSlice) {
 func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		b.logEntry("DoubleDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
@@ -147,10 +139,6 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
@@ -178,10 +166,6 @@ func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDat
 func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		b.logEntry("HistogramDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
@@ -209,10 +193,6 @@ func (b *logDataBuffer) logIntHistogramDataPoints(ps pdata.IntHistogramDataPoint
 func (b *logDataBuffer) logDoubleSummaryDataPoints(ps pdata.DoubleSummaryDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		b.logEntry("SummaryDataPoints #%d", i)
 		b.logDataPointLabels(p.LabelsMap())
 
@@ -249,9 +229,6 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 	b.logEntry("%s:", description)
 	for i := 0; i < se.Len(); i++ {
 		e := se.At(i)
-		if e.IsNil() {
-			continue
-		}
 		b.logEntry("SpanEvent #%d", i)
 		b.logEntry("     -> Name: %s", e.Name())
 		b.logEntry("     -> Timestamp: %d", e.Timestamp())
@@ -276,9 +253,6 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 
 	for i := 0; i < sl.Len(); i++ {
 		l := sl.At(i)
-		if l.IsNil() {
-			continue
-		}
 		b.logEntry("SpanLink #%d", i)
 		b.logEntry("     -> Trace ID: %s", l.TraceID().HexString())
 		b.logEntry("     -> ID: %s", l.SpanID().HexString())
@@ -347,30 +321,17 @@ func (s *loggingExporter) pushTraceData(
 	for i := 0; i < rss.Len(); i++ {
 		buf.logEntry("ResourceSpans #%d", i)
 		rs := rss.At(i)
-		if rs.IsNil() {
-			buf.logEntry("* Nil ResourceSpans")
-			continue
-		}
 		buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("InstrumentationLibrarySpans #%d", j)
 			ils := ilss.At(j)
-			if ils.IsNil() {
-				buf.logEntry("* Nil InstrumentationLibrarySpans")
-				continue
-			}
 			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				buf.logEntry("Span #%d", k)
 				span := spans.At(k)
-				if span.IsNil() {
-					buf.logEntry("* Nil Span")
-					continue
-				}
-
 				buf.logAttr("Trace ID", span.TraceID().HexString())
 				buf.logAttr("Parent ID", span.ParentSpanID().HexString())
 				buf.logAttr("ID", span.SpanID().HexString())
@@ -409,29 +370,16 @@ func (s *loggingExporter) pushMetricsData(
 	for i := 0; i < rms.Len(); i++ {
 		buf.logEntry("ResourceMetrics #%d", i)
 		rm := rms.At(i)
-		if rm.IsNil() {
-			buf.logEntry("* Nil ResourceMetrics")
-			continue
-		}
 		buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
 			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				buf.logEntry("* Nil InstrumentationLibraryMetrics")
-				continue
-			}
 			buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				buf.logEntry("Metric #%d", k)
 				metric := metrics.At(k)
-				if metric.IsNil() {
-					buf.logEntry("* Nil Metric")
-					continue
-				}
-
 				buf.logMetricDescriptor(metric)
 				buf.logMetricDataPoints(metric)
 			}
@@ -518,29 +466,17 @@ func (s *loggingExporter) pushLogData(
 	for i := 0; i < rls.Len(); i++ {
 		buf.logEntry("ResourceLog #%d", i)
 		rl := rls.At(i)
-		if rl.IsNil() {
-			buf.logEntry("* Nil ResourceLog")
-			continue
-		}
 		buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryLogs #%d", j)
 			ils := ills.At(j)
-			if ils.IsNil() {
-				buf.logEntry("* Nil InstrumentationLibraryLogs")
-				continue
-			}
 			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 
 			logs := ils.Logs()
-			for j := 0; j < logs.Len(); j++ {
-				buf.logEntry("LogRecord #%d", j)
-				lr := logs.At(j)
-				if lr.IsNil() {
-					buf.logEntry("* Nil LogRecord")
-					continue
-				}
+			for k := 0; k < logs.Len(); k++ {
+				buf.logEntry("LogRecord #%d", k)
+				lr := logs.At(k)
 				buf.logLogRecord(lr)
 			}
 		}

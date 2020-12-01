@@ -46,11 +46,7 @@ func TraceDataToOC(td pdata.Traces) []consumerdata.TraceData {
 	ocResourceSpansList := make([]consumerdata.TraceData, 0, resourceSpans.Len())
 
 	for i := 0; i < resourceSpans.Len(); i++ {
-		rs := resourceSpans.At(i)
-		if rs.IsNil() {
-			continue
-		}
-		ocResourceSpansList = append(ocResourceSpansList, resourceSpansToOC(rs))
+		ocResourceSpansList = append(ocResourceSpansList, resourceSpansToOC(resourceSpans.At(i)))
 	}
 
 	return ocResourceSpansList
@@ -70,17 +66,10 @@ func resourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
 	ocSpans := make([]*octrace.Span, 0, ilss.At(0).Spans().Len())
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		if ils.IsNil() {
-			continue
-		}
 		// TODO: Handle instrumentation library name and version.
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spans.At(j)
-			if span.IsNil() {
-				continue
-			}
-			ocSpans = append(ocSpans, spanToOC(span))
+			ocSpans = append(ocSpans, spanToOC(spans.At(j)))
 		}
 	}
 	ocTraceData.Spans = ocSpans

@@ -96,15 +96,9 @@ func (md Metrics) MetricCount() int {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				continue
-			}
 			metricCount += ilm.Metrics().Len()
 		}
 	}
@@ -128,23 +122,14 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				continue
-			}
 			metrics := ilm.Metrics()
 			metricCount += metrics.Len()
 			ms := ilm.Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				if m.IsNil() {
-					continue
-				}
 				switch m.DataType() {
 				case MetricDataTypeIntGauge:
 					dataPointCount += m.IntGauge().DataPoints().Len()
@@ -206,7 +191,7 @@ func (mdt MetricDataType) String() string {
 // DataType returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DataType() MetricDataType {
-	switch (*ms.orig).Data.(type) {
+	switch ms.orig.Data.(type) {
 	case *otlpmetrics.Metric_IntGauge:
 		return MetricDataTypeIntGauge
 	case *otlpmetrics.Metric_DoubleGauge:
@@ -230,19 +215,19 @@ func (ms Metric) DataType() MetricDataType {
 func (ms Metric) SetDataType(ty MetricDataType) {
 	switch ty {
 	case MetricDataTypeIntGauge:
-		(*ms.orig).Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
+		ms.orig.Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
 	case MetricDataTypeDoubleGauge:
-		(*ms.orig).Data = &otlpmetrics.Metric_DoubleGauge{DoubleGauge: &otlpmetrics.DoubleGauge{}}
+		ms.orig.Data = &otlpmetrics.Metric_DoubleGauge{DoubleGauge: &otlpmetrics.DoubleGauge{}}
 	case MetricDataTypeIntSum:
-		(*ms.orig).Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
+		ms.orig.Data = &otlpmetrics.Metric_IntSum{IntSum: &otlpmetrics.IntSum{}}
 	case MetricDataTypeDoubleSum:
-		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSum{DoubleSum: &otlpmetrics.DoubleSum{}}
+		ms.orig.Data = &otlpmetrics.Metric_DoubleSum{DoubleSum: &otlpmetrics.DoubleSum{}}
 	case MetricDataTypeIntHistogram:
-		(*ms.orig).Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
+		ms.orig.Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
 	case MetricDataTypeDoubleHistogram:
-		(*ms.orig).Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
+		ms.orig.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
 	case MetricDataTypeDoubleSummary:
-		(*ms.orig).Data = &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
+		ms.orig.Data = &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
 	}
 }
 
@@ -250,49 +235,49 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 // Calling this function when DataType() != MetricDataTypeIntGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) IntGauge() IntGauge {
-	return newIntGauge((*ms.orig).Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
+	return newIntGauge(ms.orig.Data.(*otlpmetrics.Metric_IntGauge).IntGauge)
 }
 
 // DoubleGauge returns the data as DoubleGauge.
 // Calling this function when DataType() != MetricDataTypeDoubleGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleGauge() DoubleGauge {
-	return newDoubleGauge((*ms.orig).Data.(*otlpmetrics.Metric_DoubleGauge).DoubleGauge)
+	return newDoubleGauge(ms.orig.Data.(*otlpmetrics.Metric_DoubleGauge).DoubleGauge)
 }
 
 // IntSum returns the data as IntSum.
 // Calling this function when DataType() != MetricDataTypeIntSum  will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) IntSum() IntSum {
-	return newIntSum((*ms.orig).Data.(*otlpmetrics.Metric_IntSum).IntSum)
+	return newIntSum(ms.orig.Data.(*otlpmetrics.Metric_IntSum).IntSum)
 }
 
 // DoubleSum returns the data as DoubleSum.
 // Calling this function when DataType() != MetricDataTypeDoubleSum will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleSum() DoubleSum {
-	return newDoubleSum((*ms.orig).Data.(*otlpmetrics.Metric_DoubleSum).DoubleSum)
+	return newDoubleSum(ms.orig.Data.(*otlpmetrics.Metric_DoubleSum).DoubleSum)
 }
 
 // IntHistogram returns the data as IntHistogram.
 // Calling this function when DataType() != MetricDataTypeIntHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) IntHistogram() IntHistogram {
-	return newIntHistogram((*ms.orig).Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram)
+	return newIntHistogram(ms.orig.Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram)
 }
 
 // DoubleHistogram returns the data as DoubleHistogram.
 // Calling this function when DataType() != MetricDataTypeDoubleHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleHistogram() DoubleHistogram {
-	return newDoubleHistogram((*ms.orig).Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
+	return newDoubleHistogram(ms.orig.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
 }
 
 // DoubleSummary returns the data as DoubleSummary.
 // Calling this function when DataType() != MetricDataTypeDoubleSummary will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) DoubleSummary() DoubleSummary {
-	return newDoubleSummary((*ms.orig).Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary)
+	return newDoubleSummary(ms.orig.Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary)
 }
 
 func copyData(src, dest *otlpmetrics.Metric) {

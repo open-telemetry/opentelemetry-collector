@@ -73,11 +73,7 @@ func (tsp *tracesamplerprocessor) ConsumeTraces(ctx context.Context, td pdata.Tr
 	rspans := td.ResourceSpans()
 	sampledTraceData := pdata.NewTraces()
 	for i := 0; i < rspans.Len(); i++ {
-		rspan := rspans.At(i)
-		if rspan.IsNil() {
-			continue
-		}
-		tsp.processTraces(rspan, sampledTraceData)
+		tsp.processTraces(rspans.At(i), sampledTraceData)
 	}
 	return tsp.nextConsumer.ConsumeTraces(ctx, sampledTraceData)
 }
@@ -94,9 +90,6 @@ func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpan
 	ilss := resourceSpans.InstrumentationLibrarySpans()
 	for j := 0; j < ilss.Len(); j++ {
 		ils := ilss.At(j)
-		if ils.IsNil() {
-			continue
-		}
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
 			sp := parseSpanSamplingPriority(span)
@@ -140,9 +133,6 @@ func (tsp *tracesamplerprocessor) Shutdown(context.Context) error {
 // OpenTracing semantic tags:
 // https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table
 func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
-	if span.IsNil() {
-		return deferDecision
-	}
 	attribMap := span.Attributes()
 	if attribMap.Len() <= 0 {
 		return deferDecision

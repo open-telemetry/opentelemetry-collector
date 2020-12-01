@@ -91,23 +91,11 @@ func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Me
 	rms := pdm.ResourceMetrics()
 	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rms.At(i).InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
-			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				continue
-			}
-			ms := ilm.Metrics()
+			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
-				metric := ms.At(k)
-				if metric.IsNil() {
-					continue
-				}
-				keep, err := fmp.shouldKeepMetric(metric)
+				keep, err := fmp.shouldKeepMetric(ms.At(k))
 				if err != nil {
 					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
 					// don't `continue`, keep the metric if there's an error

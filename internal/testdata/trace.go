@@ -33,10 +33,6 @@ var (
 	TestSpanEndTimestamp = pdata.TimestampUnixNano(TestSpanEndTime.UnixNano())
 )
 
-const (
-	NumTraceTests = 11
-)
-
 func GenerateTraceDataEmpty() pdata.Traces {
 	td := pdata.NewTraces()
 	return td
@@ -55,18 +51,6 @@ func GenerateTraceDataOneEmptyResourceSpans() pdata.Traces {
 func generateTraceOtlpOneEmptyResourceSpans() []*otlptrace.ResourceSpans {
 	return []*otlptrace.ResourceSpans{
 		{},
-	}
-}
-
-func GenerateTraceDataOneEmptyOneNilResourceSpans() pdata.Traces {
-	return pdata.TracesFromOtlp(generateTraceOtlpOneEmptyOneNilResourceSpans())
-
-}
-
-func generateTraceOtlpOneEmptyOneNilResourceSpans() []*otlptrace.ResourceSpans {
-	return []*otlptrace.ResourceSpans{
-		{},
-		nil,
 	}
 }
 
@@ -98,22 +82,6 @@ func generateTraceOtlpOneEmptyInstrumentationLibrary() []*otlptrace.ResourceSpan
 			Resource: generateOtlpResource1(),
 			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
 				{},
-			},
-		},
-	}
-}
-
-func GenerateTraceDataOneEmptyOneNilInstrumentationLibrary() pdata.Traces {
-	return pdata.TracesFromOtlp(generateTraceOtlpOneEmptyOneNilInstrumentationLibrary())
-}
-
-func generateTraceOtlpOneEmptyOneNilInstrumentationLibrary() []*otlptrace.ResourceSpans {
-	return []*otlptrace.ResourceSpans{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{},
-				nil,
 			},
 		},
 	}
@@ -159,26 +127,6 @@ func generateTraceOtlpOneSpan() []*otlptrace.ResourceSpans {
 				{
 					Spans: []*otlptrace.Span{
 						generateOtlpSpanOne(),
-					},
-				},
-			},
-		},
-	}
-}
-
-func GenerateTraceDataOneSpanOneNil() pdata.Traces {
-	return pdata.TracesFromOtlp(generateTraceOtlpOneSpanOneNil())
-}
-
-func generateTraceOtlpOneSpanOneNil() []*otlptrace.ResourceSpans {
-	return []*otlptrace.ResourceSpans{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						generateOtlpSpanOne(),
-						nil,
 					},
 				},
 			},

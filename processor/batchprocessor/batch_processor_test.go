@@ -438,19 +438,9 @@ func spansReceivedByName(tds []pdata.Traces) map[string]pdata.Span {
 	for i := range tds {
 		rss := tds[i].ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			rs := rss.At(i)
-			if rs.IsNil() {
-				continue
-			}
-
-			ilss := rs.InstrumentationLibrarySpans()
+			ilss := rss.At(i).InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
-				ils := ilss.At(j)
-				if ils.IsNil() {
-					continue
-				}
-
-				spans := ils.Spans()
+				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
 					span := spans.At(k)
 					spansReceivedByName[spans.At(k).Name()] = span
@@ -466,17 +456,9 @@ func metricsReceivedByName(mds []pdata.Metrics) map[string]pdata.Metric {
 	for _, md := range mds {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
-			rm := rms.At(i)
-			if rm.IsNil() {
-				continue
-			}
-			ilms := rm.InstrumentationLibraryMetrics()
+			ilms := rms.At(i).InstrumentationLibraryMetrics()
 			for j := 0; j < ilms.Len(); j++ {
-				ilm := ilms.At(j)
-				if ilm.IsNil() {
-					continue
-				}
-				metrics := ilm.Metrics()
+				metrics := ilms.At(j).Metrics()
 				for k := 0; k < metrics.Len(); k++ {
 					metric := metrics.At(k)
 					metricsReceivedByName[metric.Name()] = metric
@@ -695,17 +677,9 @@ func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
 		ld := lds[i]
 		rms := ld.ResourceLogs()
 		for i := 0; i < rms.Len(); i++ {
-			rm := rms.At(i)
-			if rm.IsNil() {
-				continue
-			}
-			ilms := rm.InstrumentationLibraryLogs()
+			ilms := rms.At(i).InstrumentationLibraryLogs()
 			for j := 0; j < ilms.Len(); j++ {
-				ilm := ilms.At(j)
-				if ilm.IsNil() {
-					continue
-				}
-				logs := ilm.Logs()
+				logs := ilms.At(j).Logs()
 				for k := 0; k < logs.Len(); k++ {
 					log := logs.At(k)
 					logsReceivedByName[log.Name()] = log

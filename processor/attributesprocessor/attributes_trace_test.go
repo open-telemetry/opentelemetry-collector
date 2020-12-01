@@ -71,22 +71,12 @@ func sortAttributes(td pdata.Traces) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
 		rs.Resource().Attributes().Sort()
-		ilss := rss.At(i).InstrumentationLibrarySpans()
+		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
-			spans := ils.Spans()
+			spans := ilss.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				s := spans.At(k)
-				if !s.IsNil() {
-					s.Attributes().Sort()
-				}
+				spans.At(k).Attributes().Sort()
 			}
 		}
 	}
@@ -112,11 +102,6 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 			output: testdata.GenerateTraceDataOneEmptyResourceSpans(),
 		},
 		{
-			name:   "one-empty-one-nil-resource-spans",
-			input:  testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
-			output: testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
-		},
-		{
 			name:   "no-libraries",
 			input:  testdata.GenerateTraceDataNoLibraries(),
 			output: testdata.GenerateTraceDataNoLibraries(),
@@ -125,11 +110,6 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 			name:   "one-empty-instrumentation-library",
 			input:  testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
 			output: testdata.GenerateTraceDataOneEmptyInstrumentationLibrary(),
-		},
-		{
-			name:   "one-empty-one-nil-instrumentation-library",
-			input:  testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
-			output: testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
 		},
 	}
 	factory := NewFactory()

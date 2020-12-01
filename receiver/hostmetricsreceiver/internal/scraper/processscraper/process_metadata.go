@@ -44,7 +44,6 @@ const (
 
 var cpuTimeDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("process.cpu.time")
 	metric.SetDescription("Total CPU seconds broken down by different states.")
 	metric.SetUnit("s")
@@ -57,7 +56,6 @@ var cpuTimeDescriptor = func() pdata.Metric {
 
 var physicalMemoryUsageDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("process.memory.physical_usage")
 	metric.SetDescription("The amount of physical memory in use.")
 	metric.SetUnit("bytes")
@@ -70,7 +68,6 @@ var physicalMemoryUsageDescriptor = func() pdata.Metric {
 
 var virtualMemoryUsageDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("process.memory.virtual_usage")
 	metric.SetDescription("Virtual memory size.")
 	metric.SetUnit("bytes")
@@ -83,7 +80,6 @@ var virtualMemoryUsageDescriptor = func() pdata.Metric {
 
 var diskIODescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("process.disk.io")
 	metric.SetDescription("Disk bytes transferred.")
 	metric.SetUnit("bytes")

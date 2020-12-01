@@ -223,7 +223,6 @@ func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	td.ResourceSpans().At(0).InitEmpty()
 	request := &otlptrace.ExportTraceServiceRequest{
 		ResourceSpans: pdata.TracesToOtlp(td),
 	}

@@ -40,7 +40,6 @@ const (
 
 var fileSystemUsageDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.filesystem.usage")
 	metric.SetDescription("Filesystem bytes used.")
 	metric.SetUnit("bytes")
@@ -53,7 +52,6 @@ var fileSystemUsageDescriptor = func() pdata.Metric {
 
 var fileSystemINodesUsageDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.filesystem.inodes.usage")
 	metric.SetDescription("FileSystem iNodes used.")
 	metric.SetUnit("1")

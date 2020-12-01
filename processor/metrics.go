@@ -146,20 +146,12 @@ func spanCountByResourceStringAttribute(td pdata.Traces, attrKey string) map[str
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		var attrStringVal string
 		if attrVal, ok := rs.Resource().Attributes().Get(attrKey); ok {
 			attrStringVal = attrVal.StringVal()
 		}
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
 			spanCounts[attrStringVal] += ilss.At(j).Spans().Len()
 		}
 	}

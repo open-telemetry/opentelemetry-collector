@@ -191,35 +191,29 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Metric) pdata.MetricDataType {
 	switch t {
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
-		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		return pdata.MetricDataTypeIntGauge
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
-		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		return pdata.MetricDataTypeDoubleGauge
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
-		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
 		sum := metric.IntSum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeIntSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
-		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 		sum := metric.DoubleSum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 		histo := metric.DoubleHistogram()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleHistogram
 	case ocmetrics.MetricDescriptor_SUMMARY:
-		metric.InitEmpty()
 		metric.SetDataType(pdata.MetricDataTypeDoubleSummary)
 		// no temporality specified for summary metric
 		return pdata.MetricDataTypeDoubleSummary
@@ -394,7 +388,6 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 		buckets[i] = uint64(ocBuckets[i].GetCount())
 		if ocBuckets[i].GetExemplar() != nil {
 			exemplar := pdata.NewDoubleExemplar()
-			exemplar.InitEmpty()
 			exemplarToMetrics(ocBuckets[i].GetExemplar(), exemplar)
 			dp.Exemplars().Append(exemplar)
 		}

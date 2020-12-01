@@ -101,7 +101,6 @@ func TestCopyData(t *testing.T) {
 
 func TestDataType(t *testing.T) {
 	m := NewMetric()
-	m.InitEmpty()
 	assert.Equal(t, MetricDataTypeNone, m.DataType())
 	m.SetDataType(MetricDataTypeIntGauge)
 	assert.Equal(t, MetricDataTypeIntGauge, m.DataType())
@@ -115,8 +114,8 @@ func TestDataType(t *testing.T) {
 	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeDoubleHistogram)
 	assert.Equal(t, MetricDataTypeDoubleHistogram, m.DataType())
-	m.InitEmpty()
-	assert.Equal(t, MetricDataTypeNone, m.DataType())
+	m.SetDataType(MetricDataTypeDoubleSummary)
+	assert.Equal(t, MetricDataTypeDoubleSummary, m.DataType())
 }
 
 func TestResourceMetricsWireCompatibility(t *testing.T) {
@@ -128,7 +127,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 	pdataRM := generateTestResourceMetrics()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(*pdataRM.orig)
+	wire1, err := gogoproto.Marshal(pdataRM.orig)
 	assert.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -149,7 +148,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, assert.EqualValues(t, *pdataRM.orig, &gogoprotoRM))
+	assert.True(t, assert.EqualValues(t, pdataRM.orig, &gogoprotoRM))
 }
 
 func TestMetricCount(t *testing.T) {
@@ -185,7 +184,6 @@ func TestMetricSize(t *testing.T) {
 	metric := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	metric.SetDataType(MetricDataTypeDoubleHistogram)
 	doubleHistogram := metric.DoubleHistogram()
-	doubleHistogram.InitEmpty()
 	doubleHistogram.DataPoints().Resize(1)
 	doubleHistogram.DataPoints().At(0).SetCount(123)
 	doubleHistogram.DataPoints().At(0).SetSum(123)
@@ -206,18 +204,18 @@ func TestMetricsSizeWithNil(t *testing.T) {
 	assert.Equal(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil}).Size())
 }
 
-func TestMetricCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).MetricCount())
+func TestMetricCountWithEmpty(t *testing.T) {
+	assert.EqualValues(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{{}}).MetricCount())
 	assert.EqualValues(t, 0, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{nil, {}},
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
 		},
 	}).MetricCount())
-	assert.EqualValues(t, 2, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
+	assert.EqualValues(t, 1, MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					Metrics: []*otlpmetrics.Metric{nil, {}},
+					Metrics: []*otlpmetrics.Metric{{}},
 				},
 			},
 		},
@@ -248,7 +246,6 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.EqualValues(t, 0, dps)
 	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeIntSum)
 	intSum := ilms.At(0).Metrics().At(0).IntSum()
-	intSum.InitEmpty()
 	intSum.DataPoints().Resize(3)
 	_, dps = md.MetricAndDataPointCount()
 	assert.EqualValues(t, 3, dps)
@@ -268,25 +265,23 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	assert.EqualValues(t, 0, dps)
 	ilms.At(0).Metrics().At(1).SetDataType(MetricDataTypeDoubleGauge)
 	doubleGauge := ilms.At(0).Metrics().At(1).DoubleGauge()
-	doubleGauge.InitEmpty()
 	doubleGauge.DataPoints().Resize(1)
 	ilms.At(0).Metrics().At(3).SetDataType(MetricDataTypeIntHistogram)
 	intHistogram := ilms.At(0).Metrics().At(3).IntHistogram()
-	intHistogram.InitEmpty()
 	intHistogram.DataPoints().Resize(3)
 	ms, dps = md.MetricAndDataPointCount()
 	assert.EqualValues(t, 6, ms)
 	assert.EqualValues(t, 4, dps)
 }
 
-func TestMetricAndDataPointCountWithNil(t *testing.T) {
-	ms, dps := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{nil, {}}).MetricAndDataPointCount()
+func TestMetricAndDataPointCountWithEmpty(t *testing.T) {
+	ms, dps := MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{{}}).MetricAndDataPointCount()
 	assert.EqualValues(t, 0, ms)
 	assert.EqualValues(t, 0, dps)
 
 	ms, dps = MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
 		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{nil, {}},
+			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
 		},
 	}).MetricAndDataPointCount()
 	assert.EqualValues(t, 0, ms)
@@ -296,12 +291,12 @@ func TestMetricAndDataPointCountWithNil(t *testing.T) {
 		{
 			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
 				{
-					Metrics: []*otlpmetrics.Metric{nil, {}},
+					Metrics: []*otlpmetrics.Metric{{}},
 				},
 			},
 		},
 	}).MetricAndDataPointCount()
-	assert.EqualValues(t, 2, ms)
+	assert.EqualValues(t, 1, ms)
 	assert.EqualValues(t, 0, dps)
 
 	ms, dps = MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{
@@ -312,7 +307,7 @@ func TestMetricAndDataPointCountWithNil(t *testing.T) {
 						Data: &otlpmetrics.Metric_DoubleGauge{
 							DoubleGauge: &otlpmetrics.DoubleGauge{
 								DataPoints: []*otlpmetrics.DoubleDataPoint{
-									nil, {},
+									{},
 								},
 							},
 						},
@@ -322,40 +317,32 @@ func TestMetricAndDataPointCountWithNil(t *testing.T) {
 		},
 	}).MetricAndDataPointCount()
 	assert.EqualValues(t, 1, ms)
-	assert.EqualValues(t, 2, dps)
+	assert.EqualValues(t, 1, dps)
 
 }
 
 func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
 	rm := NewResourceMetrics()
-	rm.InitEmpty()
 	metrics.ResourceMetrics().Append(rm)
 	ilm := NewInstrumentationLibraryMetrics()
-	ilm.InitEmpty()
 	rm.InstrumentationLibraryMetrics().Append(ilm)
 	intGauge := NewMetric()
-	intGauge.InitEmpty()
 	ilm.Metrics().Append(intGauge)
 	intGauge.SetDataType(MetricDataTypeIntGauge)
 	doubleGauge := NewMetric()
-	doubleGauge.InitEmpty()
 	ilm.Metrics().Append(doubleGauge)
 	doubleGauge.SetDataType(MetricDataTypeDoubleGauge)
 	intHistogram := NewMetric()
-	intHistogram.InitEmpty()
 	ilm.Metrics().Append(intHistogram)
 	intHistogram.SetDataType(MetricDataTypeIntHistogram)
 	doubleHistogram := NewMetric()
-	doubleHistogram.InitEmpty()
 	ilm.Metrics().Append(doubleHistogram)
 	doubleHistogram.SetDataType(MetricDataTypeDoubleHistogram)
 	intSum := NewMetric()
-	intSum.InitEmpty()
 	ilm.Metrics().Append(intSum)
 	intSum.SetDataType(MetricDataTypeIntSum)
 	doubleSum := NewMetric()
-	doubleSum.InitEmpty()
 	ilm.Metrics().Append(doubleSum)
 	doubleSum.SetDataType(MetricDataTypeDoubleSum)
 

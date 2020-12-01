@@ -66,22 +66,13 @@ func sortLogAttributes(ld pdata.Logs) {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
 		rs.Resource().Attributes().Sort()
-		ilss := rss.At(i).InstrumentationLibraryLogs()
+		ilss := rs.InstrumentationLibraryLogs()
 		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
-			logs := ils.Logs()
+			logs := ilss.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
 				s := logs.At(k)
-				if !s.IsNil() {
-					s.Attributes().Sort()
-				}
+				s.Attributes().Sort()
 			}
 		}
 	}
@@ -104,25 +95,6 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 			name:   "one-empty-resource-logs",
 			input:  testdata.GenerateLogDataOneEmptyResourceLogs(),
 			output: testdata.GenerateLogDataOneEmptyResourceLogs(),
-		},
-		{
-			name:   "one-empty-one-nil-resource-logs",
-			input:  testdata.GenerateLogDataOneEmptyOneNilResourceLogs(),
-			output: testdata.GenerateLogDataOneEmptyOneNilResourceLogs(),
-		},
-		{
-			name:   "one-empty-one-nil-instrumentation-library",
-			input:  testdata.GenerateLogDataOneEmptyOneNilInstrumentationLibrary(),
-			output: testdata.GenerateLogDataOneEmptyOneNilInstrumentationLibrary(),
-		},
-		{
-			name:  "one-empty-one-nil-log-record",
-			input: testdata.GenerateLogDataOneEmptyOneNilLogRecord(),
-			output: func() pdata.Logs {
-				lr := testdata.GenerateLogDataOneEmptyOneNilLogRecord()
-				lr.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InitEmptyWithCapacity(1)
-				return lr
-			}(),
 		},
 		{
 			name:   "no-libraries",

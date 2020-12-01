@@ -333,19 +333,6 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			name: "one-empty-one-nil-resource-spans",
-			td:   testdata.GenerateTraceDataOneEmptyOneNilResourceSpans(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         nil,
-					Resource:     nil,
-					Spans:        []*octrace.Span(nil),
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
 			name: "no-libraries",
 			td:   testdata.GenerateTraceDataNoLibraries(),
 			oc: []consumerdata.TraceData{
@@ -372,19 +359,6 @@ func TestInternalToOC(t *testing.T) {
 		},
 
 		{
-			name: "one-empty-one-nil-instrumentation-library",
-			td:   testdata.GenerateTraceDataOneEmptyOneNilInstrumentationLibrary(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
 			name: "one-span-no-resource",
 			td:   testdata.GenerateTraceDataOneSpanNoResource(),
 			oc: []consumerdata.TraceData{
@@ -400,19 +374,6 @@ func TestInternalToOC(t *testing.T) {
 		{
 			name: "one-span",
 			td:   testdata.GenerateTraceDataOneSpan(),
-			oc: []consumerdata.TraceData{
-				{
-					Node:         ocNode,
-					Resource:     ocResource1,
-					Spans:        []*octrace.Span{ocSpan1},
-					SourceFormat: sourceFormat,
-				},
-			},
-		},
-
-		{
-			name: "one-span-one-nil",
-			td:   testdata.GenerateTraceDataOneSpanOneNil(),
 			oc: []consumerdata.TraceData{
 				{
 					Node:         ocNode,
@@ -455,8 +416,6 @@ func TestInternalToOC(t *testing.T) {
 			},
 		},
 	}
-
-	assert.EqualValues(t, testdata.NumTraceTests, len(tests))
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

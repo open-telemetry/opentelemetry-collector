@@ -127,7 +127,6 @@ func TestLogRecord_Matching_False(t *testing.T) {
 	}
 
 	lr := pdata.NewLogRecord()
-	lr.InitEmpty()
 	lr.SetName("logName")
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -169,7 +168,6 @@ func TestLogRecord_Matching_True(t *testing.T) {
 	}
 
 	lr := pdata.NewLogRecord()
-	lr.InitEmpty()
 	lr.SetName("logName")
 
 	for _, tc := range testcases {

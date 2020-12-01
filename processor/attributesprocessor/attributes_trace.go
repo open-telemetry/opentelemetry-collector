@@ -44,25 +44,14 @@ func (a *spanAttributesProcessor) ProcessTraces(_ context.Context, td pdata.Trac
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
 		resource := rs.Resource()
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
 			spans := ils.Spans()
 			library := ils.InstrumentationLibrary()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if span.IsNil() {
-					// Do not create empty spans just to add attributes
-					continue
-				}
-
 				if filterspan.SkipSpan(a.include, a.exclude, span, resource, library) {
 					continue
 				}

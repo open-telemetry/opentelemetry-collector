@@ -60,7 +60,6 @@ func TestGenDefault(t *testing.T) {
 
 func TestDoubleHistogramFunctions(t *testing.T) {
 	pt := pdata.NewDoubleHistogramDataPoint()
-	pt.InitEmpty()
 	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
 	require.Equal(t, 5, len(pt.BucketCounts()))
@@ -83,7 +82,6 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 
 func TestIntHistogramFunctions(t *testing.T) {
 	pt := pdata.NewIntHistogramDataPoint()
-	pt.InitEmpty()
 	setIntHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
 	require.Equal(t, 5, len(pt.BucketCounts()))

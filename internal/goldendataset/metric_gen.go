@@ -154,7 +154,6 @@ func (g *metricGenerator) populateMetrics(cfg MetricCfg, ilm pdata.Instrumentati
 }
 
 func (g *metricGenerator) populateMetricDesc(cfg MetricCfg, metric pdata.Metric) {
-	metric.InitEmpty()
 	metric.SetName(fmt.Sprintf("%smetric_%d", cfg.MetricNamePrefix, g.metricID))
 	g.metricID++
 	metric.SetDescription("my-md-description")

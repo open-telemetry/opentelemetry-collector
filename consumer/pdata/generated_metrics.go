@@ -60,7 +60,7 @@ func (es ResourceMetricsSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
-	return newResourceMetrics(&(*es.orig)[ix])
+	return newResourceMetrics((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -82,7 +82,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newResourceMetrics(&(*es.orig)[i]).CopyTo(newResourceMetrics(&(*dest.orig)[i]))
+			newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics((*dest.orig)[i]))
 		}
 		return
 	}
@@ -90,7 +90,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newResourceMetrics(&(*es.orig)[i]).CopyTo(newResourceMetrics(&wrappers[i]))
+		newResourceMetrics((*es.orig)[i]).CopyTo(newResourceMetrics(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -132,7 +132,7 @@ func (es ResourceMetricsSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es ResourceMetricsSlice) Append(e ResourceMetrics) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -143,34 +143,23 @@ func (es ResourceMetricsSlice) Append(e ResourceMetrics) {
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetrics struct {
-	// orig points to the pointer otlpmetrics.ResourceMetrics field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.ResourceMetrics
+	orig *otlpmetrics.ResourceMetrics
 }
 
-func newResourceMetrics(orig **otlpmetrics.ResourceMetrics) ResourceMetrics {
-	return ResourceMetrics{orig}
+func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
+	return ResourceMetrics{orig: orig}
 }
 
-// NewResourceMetrics creates a new "nil" ResourceMetrics.
-// To initialize the struct call "InitEmpty".
+// NewResourceMetrics creates a new empty ResourceMetrics.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewResourceMetrics() ResourceMetrics {
-	orig := (*otlpmetrics.ResourceMetrics)(nil)
-	return newResourceMetrics(&orig)
+	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms ResourceMetrics) InitEmpty() {
-	*ms.orig = &otlpmetrics.ResourceMetrics{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms ResourceMetrics) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.ResourceMetrics{}
 }
 
 // Resource returns the resource associated with this ResourceMetrics.
@@ -189,13 +178,6 @@ func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibrary
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.Resource().CopyTo(dest.Resource())
 	ms.InstrumentationLibraryMetrics().CopyTo(dest.InstrumentationLibraryMetrics())
 }
@@ -239,7 +221,7 @@ func (es InstrumentationLibraryMetricsSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es InstrumentationLibraryMetricsSlice) At(ix int) InstrumentationLibraryMetrics {
-	return newInstrumentationLibraryMetrics(&(*es.orig)[ix])
+	return newInstrumentationLibraryMetrics((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -261,7 +243,7 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newInstrumentationLibraryMetrics(&(*es.orig)[i]).CopyTo(newInstrumentationLibraryMetrics(&(*dest.orig)[i]))
+			newInstrumentationLibraryMetrics((*es.orig)[i]).CopyTo(newInstrumentationLibraryMetrics((*dest.orig)[i]))
 		}
 		return
 	}
@@ -269,7 +251,7 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 	wrappers := make([]*otlpmetrics.InstrumentationLibraryMetrics, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newInstrumentationLibraryMetrics(&(*es.orig)[i]).CopyTo(newInstrumentationLibraryMetrics(&wrappers[i]))
+		newInstrumentationLibraryMetrics((*es.orig)[i]).CopyTo(newInstrumentationLibraryMetrics(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -311,7 +293,7 @@ func (es InstrumentationLibraryMetricsSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es InstrumentationLibraryMetricsSlice) Append(e InstrumentationLibraryMetrics) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.
@@ -322,34 +304,23 @@ func (es InstrumentationLibraryMetricsSlice) Append(e InstrumentationLibraryMetr
 // Must use NewInstrumentationLibraryMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetrics struct {
-	// orig points to the pointer otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.InstrumentationLibraryMetrics
+	orig *otlpmetrics.InstrumentationLibraryMetrics
 }
 
-func newInstrumentationLibraryMetrics(orig **otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetrics {
-	return InstrumentationLibraryMetrics{orig}
+func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetrics {
+	return InstrumentationLibraryMetrics{orig: orig}
 }
 
-// NewInstrumentationLibraryMetrics creates a new "nil" InstrumentationLibraryMetrics.
-// To initialize the struct call "InitEmpty".
+// NewInstrumentationLibraryMetrics creates a new empty InstrumentationLibraryMetrics.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
-	orig := (*otlpmetrics.InstrumentationLibraryMetrics)(nil)
-	return newInstrumentationLibraryMetrics(&orig)
+	return newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms InstrumentationLibraryMetrics) InitEmpty() {
-	*ms.orig = &otlpmetrics.InstrumentationLibraryMetrics{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms InstrumentationLibraryMetrics) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.InstrumentationLibraryMetrics{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
@@ -368,13 +339,6 @@ func (ms InstrumentationLibraryMetrics) Metrics() MetricSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms InstrumentationLibraryMetrics) CopyTo(dest InstrumentationLibraryMetrics) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
 	ms.Metrics().CopyTo(dest.Metrics())
 }
@@ -418,7 +382,7 @@ func (es MetricSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es MetricSlice) At(ix int) Metric {
-	return newMetric(&(*es.orig)[ix])
+	return newMetric((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -440,7 +404,7 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newMetric(&(*es.orig)[i]).CopyTo(newMetric(&(*dest.orig)[i]))
+			newMetric((*es.orig)[i]).CopyTo(newMetric((*dest.orig)[i]))
 		}
 		return
 	}
@@ -448,7 +412,7 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	wrappers := make([]*otlpmetrics.Metric, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newMetric(&(*es.orig)[i]).CopyTo(newMetric(&wrappers[i]))
+		newMetric((*es.orig)[i]).CopyTo(newMetric(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -490,7 +454,7 @@ func (es MetricSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es MetricSlice) Append(e Metric) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // Metric represents one metric as a collection of datapoints.
@@ -502,34 +466,23 @@ func (es MetricSlice) Append(e Metric) {
 // Must use NewMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Metric struct {
-	// orig points to the pointer otlpmetrics.Metric field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.Metric
+	orig *otlpmetrics.Metric
 }
 
-func newMetric(orig **otlpmetrics.Metric) Metric {
-	return Metric{orig}
+func newMetric(orig *otlpmetrics.Metric) Metric {
+	return Metric{orig: orig}
 }
 
-// NewMetric creates a new "nil" Metric.
-// To initialize the struct call "InitEmpty".
+// NewMetric creates a new empty Metric.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewMetric() Metric {
-	orig := (*otlpmetrics.Metric)(nil)
-	return newMetric(&orig)
+	return newMetric(&otlpmetrics.Metric{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms Metric) InitEmpty() {
-	*ms.orig = &otlpmetrics.Metric{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms Metric) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.Metric{}
 }
 
 // Name returns the name associated with this Metric.
@@ -576,17 +529,10 @@ func (ms Metric) SetUnit(v string) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
-	copyData((*ms.orig), (*dest.orig))
+	copyData(ms.orig, dest.orig)
 }
 
 // IntGauge represents the type of a int scalar metric that always exports the "current value" for every data point.
@@ -597,7 +543,6 @@ func (ms Metric) CopyTo(dest Metric) {
 // Must use NewIntGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type IntGauge struct {
-	// orig points to the pointer otlpmetrics.IntGauge field contained somewhere else.
 	orig *otlpmetrics.IntGauge
 }
 
@@ -637,7 +582,6 @@ func (ms IntGauge) CopyTo(dest IntGauge) {
 // Must use NewDoubleGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleGauge struct {
-	// orig points to the pointer otlpmetrics.DoubleGauge field contained somewhere else.
 	orig *otlpmetrics.DoubleGauge
 }
 
@@ -677,7 +621,6 @@ func (ms DoubleGauge) CopyTo(dest DoubleGauge) {
 // Must use NewIntSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type IntSum struct {
-	// orig points to the pointer otlpmetrics.IntSum field contained somewhere else.
 	orig *otlpmetrics.IntSum
 }
 
@@ -747,7 +690,6 @@ func (ms IntSum) CopyTo(dest IntSum) {
 // Must use NewDoubleSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleSum struct {
-	// orig points to the pointer otlpmetrics.DoubleSum field contained somewhere else.
 	orig *otlpmetrics.DoubleSum
 }
 
@@ -817,7 +759,6 @@ func (ms DoubleSum) CopyTo(dest DoubleSum) {
 // Must use NewIntHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type IntHistogram struct {
-	// orig points to the pointer otlpmetrics.IntHistogram field contained somewhere else.
 	orig *otlpmetrics.IntHistogram
 }
 
@@ -872,7 +813,6 @@ func (ms IntHistogram) CopyTo(dest IntHistogram) {
 // Must use NewDoubleHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleHistogram struct {
-	// orig points to the pointer otlpmetrics.DoubleHistogram field contained somewhere else.
 	orig *otlpmetrics.DoubleHistogram
 }
 
@@ -927,7 +867,6 @@ func (ms DoubleHistogram) CopyTo(dest DoubleHistogram) {
 // Must use NewDoubleSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleSummary struct {
-	// orig points to the pointer otlpmetrics.DoubleSummary field contained somewhere else.
 	orig *otlpmetrics.DoubleSummary
 }
 
@@ -998,7 +937,7 @@ func (es IntDataPointSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es IntDataPointSlice) At(ix int) IntDataPoint {
-	return newIntDataPoint(&(*es.orig)[ix])
+	return newIntDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1020,7 +959,7 @@ func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newIntDataPoint(&(*es.orig)[i]).CopyTo(newIntDataPoint(&(*dest.orig)[i]))
+			newIntDataPoint((*es.orig)[i]).CopyTo(newIntDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1028,7 +967,7 @@ func (es IntDataPointSlice) CopyTo(dest IntDataPointSlice) {
 	wrappers := make([]*otlpmetrics.IntDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newIntDataPoint(&(*es.orig)[i]).CopyTo(newIntDataPoint(&wrappers[i]))
+		newIntDataPoint((*es.orig)[i]).CopyTo(newIntDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1070,7 +1009,7 @@ func (es IntDataPointSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es IntDataPointSlice) Append(e IntDataPoint) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // IntDataPoint is a single data point in a timeseries that describes the time-varying values of a scalar int metric.
@@ -1081,34 +1020,23 @@ func (es IntDataPointSlice) Append(e IntDataPoint) {
 // Must use NewIntDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type IntDataPoint struct {
-	// orig points to the pointer otlpmetrics.IntDataPoint field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.IntDataPoint
+	orig *otlpmetrics.IntDataPoint
 }
 
-func newIntDataPoint(orig **otlpmetrics.IntDataPoint) IntDataPoint {
-	return IntDataPoint{orig}
+func newIntDataPoint(orig *otlpmetrics.IntDataPoint) IntDataPoint {
+	return IntDataPoint{orig: orig}
 }
 
-// NewIntDataPoint creates a new "nil" IntDataPoint.
-// To initialize the struct call "InitEmpty".
+// NewIntDataPoint creates a new empty IntDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewIntDataPoint() IntDataPoint {
-	orig := (*otlpmetrics.IntDataPoint)(nil)
-	return newIntDataPoint(&orig)
+	return newIntDataPoint(&otlpmetrics.IntDataPoint{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms IntDataPoint) InitEmpty() {
-	*ms.orig = &otlpmetrics.IntDataPoint{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms IntDataPoint) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.IntDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this IntDataPoint.
@@ -1169,13 +1097,6 @@ func (ms IntDataPoint) Exemplars() IntExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1222,7 +1143,7 @@ func (es DoubleDataPointSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es DoubleDataPointSlice) At(ix int) DoubleDataPoint {
-	return newDoubleDataPoint(&(*es.orig)[ix])
+	return newDoubleDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1244,7 +1165,7 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleDataPoint(&(*es.orig)[i]).CopyTo(newDoubleDataPoint(&(*dest.orig)[i]))
+			newDoubleDataPoint((*es.orig)[i]).CopyTo(newDoubleDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1252,7 +1173,7 @@ func (es DoubleDataPointSlice) CopyTo(dest DoubleDataPointSlice) {
 	wrappers := make([]*otlpmetrics.DoubleDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleDataPoint(&(*es.orig)[i]).CopyTo(newDoubleDataPoint(&wrappers[i]))
+		newDoubleDataPoint((*es.orig)[i]).CopyTo(newDoubleDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1294,7 +1215,7 @@ func (es DoubleDataPointSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es DoubleDataPointSlice) Append(e DoubleDataPoint) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // DoubleDataPoint is a single data point in a timeseries that describes the time-varying value of a double metric.
@@ -1305,34 +1226,23 @@ func (es DoubleDataPointSlice) Append(e DoubleDataPoint) {
 // Must use NewDoubleDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleDataPoint struct {
-	// orig points to the pointer otlpmetrics.DoubleDataPoint field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleDataPoint
+	orig *otlpmetrics.DoubleDataPoint
 }
 
-func newDoubleDataPoint(orig **otlpmetrics.DoubleDataPoint) DoubleDataPoint {
-	return DoubleDataPoint{orig}
+func newDoubleDataPoint(orig *otlpmetrics.DoubleDataPoint) DoubleDataPoint {
+	return DoubleDataPoint{orig: orig}
 }
 
-// NewDoubleDataPoint creates a new "nil" DoubleDataPoint.
-// To initialize the struct call "InitEmpty".
+// NewDoubleDataPoint creates a new empty DoubleDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleDataPoint() DoubleDataPoint {
-	orig := (*otlpmetrics.DoubleDataPoint)(nil)
-	return newDoubleDataPoint(&orig)
+	return newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleDataPoint) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleDataPoint{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleDataPoint) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this DoubleDataPoint.
@@ -1393,13 +1303,6 @@ func (ms DoubleDataPoint) Exemplars() DoubleExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1446,7 +1349,7 @@ func (es IntHistogramDataPointSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es IntHistogramDataPointSlice) At(ix int) IntHistogramDataPoint {
-	return newIntHistogramDataPoint(&(*es.orig)[ix])
+	return newIntHistogramDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1468,7 +1371,7 @@ func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newIntHistogramDataPoint(&(*es.orig)[i]).CopyTo(newIntHistogramDataPoint(&(*dest.orig)[i]))
+			newIntHistogramDataPoint((*es.orig)[i]).CopyTo(newIntHistogramDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1476,7 +1379,7 @@ func (es IntHistogramDataPointSlice) CopyTo(dest IntHistogramDataPointSlice) {
 	wrappers := make([]*otlpmetrics.IntHistogramDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newIntHistogramDataPoint(&(*es.orig)[i]).CopyTo(newIntHistogramDataPoint(&wrappers[i]))
+		newIntHistogramDataPoint((*es.orig)[i]).CopyTo(newIntHistogramDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1518,7 +1421,7 @@ func (es IntHistogramDataPointSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es IntHistogramDataPointSlice) Append(e IntHistogramDataPoint) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // IntHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of int values.
@@ -1529,34 +1432,23 @@ func (es IntHistogramDataPointSlice) Append(e IntHistogramDataPoint) {
 // Must use NewIntHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type IntHistogramDataPoint struct {
-	// orig points to the pointer otlpmetrics.IntHistogramDataPoint field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.IntHistogramDataPoint
+	orig *otlpmetrics.IntHistogramDataPoint
 }
 
-func newIntHistogramDataPoint(orig **otlpmetrics.IntHistogramDataPoint) IntHistogramDataPoint {
-	return IntHistogramDataPoint{orig}
+func newIntHistogramDataPoint(orig *otlpmetrics.IntHistogramDataPoint) IntHistogramDataPoint {
+	return IntHistogramDataPoint{orig: orig}
 }
 
-// NewIntHistogramDataPoint creates a new "nil" IntHistogramDataPoint.
-// To initialize the struct call "InitEmpty".
+// NewIntHistogramDataPoint creates a new empty IntHistogramDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewIntHistogramDataPoint() IntHistogramDataPoint {
-	orig := (*otlpmetrics.IntHistogramDataPoint)(nil)
-	return newIntHistogramDataPoint(&orig)
+	return newIntHistogramDataPoint(&otlpmetrics.IntHistogramDataPoint{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms IntHistogramDataPoint) InitEmpty() {
-	*ms.orig = &otlpmetrics.IntHistogramDataPoint{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms IntHistogramDataPoint) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.IntHistogramDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this IntHistogramDataPoint.
@@ -1659,13 +1551,6 @@ func (ms IntHistogramDataPoint) Exemplars() IntExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1715,7 +1600,7 @@ func (es DoubleHistogramDataPointSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es DoubleHistogramDataPointSlice) At(ix int) DoubleHistogramDataPoint {
-	return newDoubleHistogramDataPoint(&(*es.orig)[ix])
+	return newDoubleHistogramDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1737,7 +1622,7 @@ func (es DoubleHistogramDataPointSlice) CopyTo(dest DoubleHistogramDataPointSlic
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleHistogramDataPoint(&(*es.orig)[i]).CopyTo(newDoubleHistogramDataPoint(&(*dest.orig)[i]))
+			newDoubleHistogramDataPoint((*es.orig)[i]).CopyTo(newDoubleHistogramDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1745,7 +1630,7 @@ func (es DoubleHistogramDataPointSlice) CopyTo(dest DoubleHistogramDataPointSlic
 	wrappers := make([]*otlpmetrics.DoubleHistogramDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleHistogramDataPoint(&(*es.orig)[i]).CopyTo(newDoubleHistogramDataPoint(&wrappers[i]))
+		newDoubleHistogramDataPoint((*es.orig)[i]).CopyTo(newDoubleHistogramDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1787,7 +1672,7 @@ func (es DoubleHistogramDataPointSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es DoubleHistogramDataPointSlice) Append(e DoubleHistogramDataPoint) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // DoubleHistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of double values.
@@ -1798,34 +1683,23 @@ func (es DoubleHistogramDataPointSlice) Append(e DoubleHistogramDataPoint) {
 // Must use NewDoubleHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleHistogramDataPoint struct {
-	// orig points to the pointer otlpmetrics.DoubleHistogramDataPoint field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleHistogramDataPoint
+	orig *otlpmetrics.DoubleHistogramDataPoint
 }
 
-func newDoubleHistogramDataPoint(orig **otlpmetrics.DoubleHistogramDataPoint) DoubleHistogramDataPoint {
-	return DoubleHistogramDataPoint{orig}
+func newDoubleHistogramDataPoint(orig *otlpmetrics.DoubleHistogramDataPoint) DoubleHistogramDataPoint {
+	return DoubleHistogramDataPoint{orig: orig}
 }
 
-// NewDoubleHistogramDataPoint creates a new "nil" DoubleHistogramDataPoint.
-// To initialize the struct call "InitEmpty".
+// NewDoubleHistogramDataPoint creates a new empty DoubleHistogramDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleHistogramDataPoint() DoubleHistogramDataPoint {
-	orig := (*otlpmetrics.DoubleHistogramDataPoint)(nil)
-	return newDoubleHistogramDataPoint(&orig)
+	return newDoubleHistogramDataPoint(&otlpmetrics.DoubleHistogramDataPoint{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleHistogramDataPoint) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleHistogramDataPoint{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleHistogramDataPoint) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleHistogramDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this DoubleHistogramDataPoint.
@@ -1928,13 +1802,6 @@ func (ms DoubleHistogramDataPoint) Exemplars() DoubleExemplarSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleHistogramDataPoint) CopyTo(dest DoubleHistogramDataPoint) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1984,7 +1851,7 @@ func (es DoubleSummaryDataPointSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es DoubleSummaryDataPointSlice) At(ix int) DoubleSummaryDataPoint {
-	return newDoubleSummaryDataPoint(&(*es.orig)[ix])
+	return newDoubleSummaryDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2006,7 +1873,7 @@ func (es DoubleSummaryDataPointSlice) CopyTo(dest DoubleSummaryDataPointSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleSummaryDataPoint(&(*es.orig)[i]).CopyTo(newDoubleSummaryDataPoint(&(*dest.orig)[i]))
+			newDoubleSummaryDataPoint((*es.orig)[i]).CopyTo(newDoubleSummaryDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -2014,7 +1881,7 @@ func (es DoubleSummaryDataPointSlice) CopyTo(dest DoubleSummaryDataPointSlice) {
 	wrappers := make([]*otlpmetrics.DoubleSummaryDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleSummaryDataPoint(&(*es.orig)[i]).CopyTo(newDoubleSummaryDataPoint(&wrappers[i]))
+		newDoubleSummaryDataPoint((*es.orig)[i]).CopyTo(newDoubleSummaryDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -2056,7 +1923,7 @@ func (es DoubleSummaryDataPointSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es DoubleSummaryDataPointSlice) Append(e DoubleSummaryDataPoint) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
@@ -2067,34 +1934,23 @@ func (es DoubleSummaryDataPointSlice) Append(e DoubleSummaryDataPoint) {
 // Must use NewDoubleSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleSummaryDataPoint struct {
-	// orig points to the pointer otlpmetrics.DoubleSummaryDataPoint field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleSummaryDataPoint
+	orig *otlpmetrics.DoubleSummaryDataPoint
 }
 
-func newDoubleSummaryDataPoint(orig **otlpmetrics.DoubleSummaryDataPoint) DoubleSummaryDataPoint {
-	return DoubleSummaryDataPoint{orig}
+func newDoubleSummaryDataPoint(orig *otlpmetrics.DoubleSummaryDataPoint) DoubleSummaryDataPoint {
+	return DoubleSummaryDataPoint{orig: orig}
 }
 
-// NewDoubleSummaryDataPoint creates a new "nil" DoubleSummaryDataPoint.
-// To initialize the struct call "InitEmpty".
+// NewDoubleSummaryDataPoint creates a new empty DoubleSummaryDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleSummaryDataPoint() DoubleSummaryDataPoint {
-	orig := (*otlpmetrics.DoubleSummaryDataPoint)(nil)
-	return newDoubleSummaryDataPoint(&orig)
+	return newDoubleSummaryDataPoint(&otlpmetrics.DoubleSummaryDataPoint{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleSummaryDataPoint) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleSummaryDataPoint{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleSummaryDataPoint) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleSummaryDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this DoubleSummaryDataPoint.
@@ -2169,13 +2025,6 @@ func (ms DoubleSummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleSummaryDataPoint) CopyTo(dest DoubleSummaryDataPoint) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetTimestamp(ms.Timestamp())
@@ -2223,7 +2072,7 @@ func (es ValueAtQuantileSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
-	return newValueAtQuantile(&(*es.orig)[ix])
+	return newValueAtQuantile((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2245,7 +2094,7 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newValueAtQuantile(&(*es.orig)[i]).CopyTo(newValueAtQuantile(&(*dest.orig)[i]))
+			newValueAtQuantile((*es.orig)[i]).CopyTo(newValueAtQuantile((*dest.orig)[i]))
 		}
 		return
 	}
@@ -2253,7 +2102,7 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 	wrappers := make([]*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newValueAtQuantile(&(*es.orig)[i]).CopyTo(newValueAtQuantile(&wrappers[i]))
+		newValueAtQuantile((*es.orig)[i]).CopyTo(newValueAtQuantile(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -2295,7 +2144,7 @@ func (es ValueAtQuantileSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es ValueAtQuantileSlice) Append(e ValueAtQuantile) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // ValueAtQuantile is a quantile value within a Summary data point
@@ -2306,34 +2155,23 @@ func (es ValueAtQuantileSlice) Append(e ValueAtQuantile) {
 // Must use NewValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ValueAtQuantile struct {
-	// orig points to the pointer otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile
+	orig *otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile
 }
 
-func newValueAtQuantile(orig **otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
-	return ValueAtQuantile{orig}
+func newValueAtQuantile(orig *otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
+	return ValueAtQuantile{orig: orig}
 }
 
-// NewValueAtQuantile creates a new "nil" ValueAtQuantile.
-// To initialize the struct call "InitEmpty".
+// NewValueAtQuantile creates a new empty ValueAtQuantile.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewValueAtQuantile() ValueAtQuantile {
-	orig := (*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile)(nil)
-	return newValueAtQuantile(&orig)
+	return newValueAtQuantile(&otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms ValueAtQuantile) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms ValueAtQuantile) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{}
 }
 
 // Quantile returns the quantile associated with this ValueAtQuantile.
@@ -2366,13 +2204,6 @@ func (ms ValueAtQuantile) SetValue(v float64) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
 }
@@ -2416,7 +2247,7 @@ func (es IntExemplarSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es IntExemplarSlice) At(ix int) IntExemplar {
-	return newIntExemplar(&(*es.orig)[ix])
+	return newIntExemplar((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2438,7 +2269,7 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newIntExemplar(&(*es.orig)[i]).CopyTo(newIntExemplar(&(*dest.orig)[i]))
+			newIntExemplar((*es.orig)[i]).CopyTo(newIntExemplar((*dest.orig)[i]))
 		}
 		return
 	}
@@ -2446,7 +2277,7 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 	wrappers := make([]*otlpmetrics.IntExemplar, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newIntExemplar(&(*es.orig)[i]).CopyTo(newIntExemplar(&wrappers[i]))
+		newIntExemplar((*es.orig)[i]).CopyTo(newIntExemplar(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -2488,7 +2319,7 @@ func (es IntExemplarSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es IntExemplarSlice) Append(e IntExemplar) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // IntExemplar is a sample input int measurement.
@@ -2502,34 +2333,23 @@ func (es IntExemplarSlice) Append(e IntExemplar) {
 // Must use NewIntExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type IntExemplar struct {
-	// orig points to the pointer otlpmetrics.IntExemplar field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.IntExemplar
+	orig *otlpmetrics.IntExemplar
 }
 
-func newIntExemplar(orig **otlpmetrics.IntExemplar) IntExemplar {
-	return IntExemplar{orig}
+func newIntExemplar(orig *otlpmetrics.IntExemplar) IntExemplar {
+	return IntExemplar{orig: orig}
 }
 
-// NewIntExemplar creates a new "nil" IntExemplar.
-// To initialize the struct call "InitEmpty".
+// NewIntExemplar creates a new empty IntExemplar.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewIntExemplar() IntExemplar {
-	orig := (*otlpmetrics.IntExemplar)(nil)
-	return newIntExemplar(&orig)
+	return newIntExemplar(&otlpmetrics.IntExemplar{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms IntExemplar) InitEmpty() {
-	*ms.orig = &otlpmetrics.IntExemplar{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms IntExemplar) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.IntExemplar{}
 }
 
 // Timestamp returns the timestamp associated with this IntExemplar.
@@ -2569,13 +2389,6 @@ func (ms IntExemplar) FilteredLabels() StringMap {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntExemplar) CopyTo(dest IntExemplar) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
@@ -2620,7 +2433,7 @@ func (es DoubleExemplarSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es DoubleExemplarSlice) At(ix int) DoubleExemplar {
-	return newDoubleExemplar(&(*es.orig)[ix])
+	return newDoubleExemplar((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2642,7 +2455,7 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleExemplar(&(*es.orig)[i]).CopyTo(newDoubleExemplar(&(*dest.orig)[i]))
+			newDoubleExemplar((*es.orig)[i]).CopyTo(newDoubleExemplar((*dest.orig)[i]))
 		}
 		return
 	}
@@ -2650,7 +2463,7 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 	wrappers := make([]*otlpmetrics.DoubleExemplar, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleExemplar(&(*es.orig)[i]).CopyTo(newDoubleExemplar(&wrappers[i]))
+		newDoubleExemplar((*es.orig)[i]).CopyTo(newDoubleExemplar(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -2692,7 +2505,7 @@ func (es DoubleExemplarSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }
 
 // DoubleExemplar is a sample input double measurement.
@@ -2706,34 +2519,23 @@ func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
 // Must use NewDoubleExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type DoubleExemplar struct {
-	// orig points to the pointer otlpmetrics.DoubleExemplar field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlpmetrics.DoubleExemplar
+	orig *otlpmetrics.DoubleExemplar
 }
 
-func newDoubleExemplar(orig **otlpmetrics.DoubleExemplar) DoubleExemplar {
-	return DoubleExemplar{orig}
+func newDoubleExemplar(orig *otlpmetrics.DoubleExemplar) DoubleExemplar {
+	return DoubleExemplar{orig: orig}
 }
 
-// NewDoubleExemplar creates a new "nil" DoubleExemplar.
-// To initialize the struct call "InitEmpty".
+// NewDoubleExemplar creates a new empty DoubleExemplar.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleExemplar() DoubleExemplar {
-	orig := (*otlpmetrics.DoubleExemplar)(nil)
-	return newDoubleExemplar(&orig)
+	return newDoubleExemplar(&otlpmetrics.DoubleExemplar{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms DoubleExemplar) InitEmpty() {
-	*ms.orig = &otlpmetrics.DoubleExemplar{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms DoubleExemplar) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlpmetrics.DoubleExemplar{}
 }
 
 // Timestamp returns the timestamp associated with this DoubleExemplar.
@@ -2773,13 +2575,6 @@ func (ms DoubleExemplar) FilteredLabels() StringMap {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleExemplar) CopyTo(dest DoubleExemplar) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())

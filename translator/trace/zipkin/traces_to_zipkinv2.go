@@ -43,12 +43,7 @@ func InternalTracesToZipkinSpans(td pdata.Traces) ([]*zipkinmodel.SpanModel, err
 	zSpans := make([]*zipkinmodel.SpanModel, 0, td.SpanCount())
 
 	for i := 0; i < resourceSpans.Len(); i++ {
-		rs := resourceSpans.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
-		batch, err := resourceSpansToZipkinSpans(rs, td.SpanCount()/resourceSpans.Len())
+		batch, err := resourceSpansToZipkinSpans(resourceSpans.At(i), td.SpanCount()/resourceSpans.Len())
 		if err != nil {
 			return zSpans, err
 		}
@@ -73,17 +68,10 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	zSpans := make([]*zipkinmodel.SpanModel, 0, estSpanCount)
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		if ils.IsNil() {
-			continue
-		}
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spans.At(j)
-			if span.IsNil() {
-				continue
-			}
-			zSpan, err := spanToZipkinSpan(span, localServiceName, zTags)
+			zSpan, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
 			if err != nil {
 				return zSpans, err
 			}
@@ -188,9 +176,6 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 		zAnnos := make([]zipkinmodel.Annotation, events.Len())
 		for i := 0; i < events.Len(); i++ {
 			event := events.At(i)
-			if event.IsNil() {
-				continue
-			}
 			if event.Attributes().Len() == 0 && event.DroppedAttributesCount() == 0 {
 				zAnnos[i] = zipkinmodel.Annotation{
 					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
@@ -216,15 +201,13 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) error {
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
-		if !link.IsNil() {
-			key := fmt.Sprintf("otlp.link.%d", i)
-			jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(link.Attributes()))
-			if err != nil {
-				return err
-			}
-			zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().HexString(),
-				link.SpanID().HexString(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
+		key := fmt.Sprintf("otlp.link.%d", i)
+		jsonStr, err := json.Marshal(tracetranslator.AttributeMapToMap(link.Attributes()))
+		if err != nil {
+			return err
 		}
+		zTags[key] = fmt.Sprintf(tracetranslator.SpanLinkDataFormat, link.TraceID().HexString(),
+			link.SpanID().HexString(), link.TraceState(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil
 }

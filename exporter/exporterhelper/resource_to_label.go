@@ -44,15 +44,9 @@ func convertResourceToLabels(md pdata.Metrics) pdata.Metrics {
 		ilms := rms.At(i).InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				continue
-			}
 			metricSlice := ilm.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				if metric.IsNil() {
-					continue
-				}
 				addLabelsToMetric(&metric, labelMap)
 			}
 		}
@@ -93,41 +87,25 @@ func addLabelsToMetric(metric *pdata.Metric, labelMap pdata.StringMap) {
 
 func addLabelsToIntDataPoints(ps pdata.IntDataPointSlice, newLabelMap pdata.StringMap) {
 	for i := 0; i < ps.Len(); i++ {
-		dataPoint := ps.At(i)
-		if dataPoint.IsNil() {
-			continue
-		}
-		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
+		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}
 }
 
 func addLabelsToDoubleDataPoints(ps pdata.DoubleDataPointSlice, newLabelMap pdata.StringMap) {
 	for i := 0; i < ps.Len(); i++ {
-		dataPoint := ps.At(i)
-		if dataPoint.IsNil() {
-			continue
-		}
-		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
+		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}
 }
 
 func addLabelsToIntHistogramDataPoints(ps pdata.IntHistogramDataPointSlice, newLabelMap pdata.StringMap) {
 	for i := 0; i < ps.Len(); i++ {
-		dataPoint := ps.At(i)
-		if dataPoint.IsNil() {
-			continue
-		}
-		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
+		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}
 }
 
 func addLabelsToDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice, newLabelMap pdata.StringMap) {
 	for i := 0; i < ps.Len(); i++ {
-		dataPoint := ps.At(i)
-		if dataPoint.IsNil() {
-			continue
-		}
-		joinStringMaps(newLabelMap, dataPoint.LabelsMap())
+		joinStringMaps(newLabelMap, ps.At(i).LabelsMap())
 	}
 }
 

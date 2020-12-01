@@ -58,7 +58,7 @@ func (es ${structName}) Len() int {
 //     ... // Do something with the element
 // }
 func (es ${structName}) At(ix int) ${elementName} {
-	return new${elementName}(&(*es.orig)[ix])
+	return new${elementName}((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -80,7 +80,7 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&(*dest.orig)[i]))
+			new${elementName}((*es.orig)[i]).CopyTo(new${elementName}((*dest.orig)[i]))
 		}
 		return
 	}
@@ -88,7 +88,7 @@ func (es ${structName}) CopyTo(dest ${structName}) {
 	wrappers := make([]*${originName}, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		new${elementName}(&(*es.orig)[i]).CopyTo(new${elementName}(&wrappers[i]))
+		new${elementName}((*es.orig)[i]).CopyTo(new${elementName}(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -130,7 +130,7 @@ func (es ${structName}) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es ${structName}) Append(e ${elementName}) {
-	*es.orig = append(*es.orig, *e.orig)
+	*es.orig = append(*es.orig, e.orig)
 }`
 
 const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
@@ -141,7 +141,6 @@ const slicePtrTestTemplate = `func Test${structName}(t *testing.T) {
 
 	es.Resize(7)
 	emptyVal := New${elementName}()
-	emptyVal.InitEmpty()
 	testVal := generateTest${elementName}()
 	assert.EqualValues(t, 7, es.Len())
 	for i := 0; i < es.Len(); i++ {
@@ -194,19 +193,18 @@ func Test${structName}_CopyTo(t *testing.T) {
 func Test${structName}_Resize(t *testing.T) {
 	es := generateTest${structName}()
 	emptyVal := New${elementName}()
-	emptyVal.InitEmpty()
 	// Test Resize less elements.
 	const resizeSmallLen = 4
 	expectedEs := make(map[*${originName}]bool, resizeSmallLen)
 	for i := 0; i < resizeSmallLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, resizeSmallLen, len(expectedEs))
 	es.Resize(resizeSmallLen)
 	assert.Equal(t, resizeSmallLen, es.Len())
 	foundEs := make(map[*${originName}]bool, resizeSmallLen)
 	for i := 0; i < es.Len(); i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 
@@ -215,14 +213,14 @@ func Test${structName}_Resize(t *testing.T) {
 	oldLen := es.Len()
 	expectedEs = make(map[*${originName}]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		expectedEs[*(es.At(i).orig)] = true
+		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.Resize(resizeLargeLen)
 	assert.Equal(t, resizeLargeLen, es.Len())
 	foundEs = make(map[*${originName}]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
-		foundEs[*(es.At(i).orig)] = true
+		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 	for i := oldLen; i < resizeLargeLen; i++ {
@@ -236,17 +234,14 @@ func Test${structName}_Resize(t *testing.T) {
 
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := New${elementName}()
-	emptyVal.InitEmpty()
 
+	emptyVal := New${elementName}()
 	es.Append(emptyVal)
-	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
 
 	emptyVal2 := New${elementName}()
-	emptyVal2.InitEmpty()
-
 	es.Append(emptyVal2)
-	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
 
 	assert.Equal(t, 9, es.Len())
 }`
@@ -474,13 +469,12 @@ func Test${structName}_Resize(t *testing.T) {
 
 func Test${structName}_Append(t *testing.T) {
 	es := generateTest${structName}()
-	emptyVal := New${elementName}()
 
+	emptyVal := New${elementName}()
 	es.Append(emptyVal)
 	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
 
 	emptyVal2 := New${elementName}()
-
 	es.Append(emptyVal2)
 	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
 
@@ -507,7 +501,7 @@ type baseSlice interface {
 // Will generate code only for a slice of pointer fields.
 type sliceOfPtrs struct {
 	structName string
-	element    *messagePtrStruct
+	element    *messageValueStruct
 }
 
 func (ss *sliceOfPtrs) getName() string {

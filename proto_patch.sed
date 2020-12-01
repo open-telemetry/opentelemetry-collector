@@ -24,15 +24,8 @@ s+repeated opentelemetry.proto.common.v1.KeyValue \(.*\);+repeated opentelemetry
 s+repeated KeyValue \(.*\);+repeated KeyValue \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+repeated opentelemetry.proto.common.v1.AnyValue \(.*\);+repeated opentelemetry.proto.common.v1.AnyValue \1\
-  [\
-  (gogoproto.nullable) = false\
-  ];+g
-
 s+AnyValue \(.*\);+AnyValue \1\
-  [\
-  (gogoproto.nullable) = false\
-  ];+g
+  [ (gogoproto.nullable) = false ];+g
 
 s+repeated opentelemetry.proto.common.v1.StringKeyValue \(.*\);+repeated opentelemetry.proto.common.v1.StringKeyValue \1\
   [ (gogoproto.nullable) = false ];+g

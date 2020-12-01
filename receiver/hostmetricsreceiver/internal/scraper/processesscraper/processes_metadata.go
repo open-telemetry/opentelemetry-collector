@@ -22,7 +22,6 @@ import (
 
 var processesRunningDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.processes.running")
 	metric.SetDescription("Total number of running processes.")
 	metric.SetUnit("1")
@@ -35,7 +34,6 @@ var processesRunningDescriptor = func() pdata.Metric {
 
 var processesBlockedDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.processes.blocked")
 	metric.SetDescription("Total number of blocked processes.")
 	metric.SetUnit("1")

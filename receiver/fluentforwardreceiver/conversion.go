@@ -397,8 +397,6 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 	msgpReader := msgp.NewReader(reader)
 	for {
 		lr := pdata.NewLogRecord()
-		lr.InitEmpty()
-
 		err := parseEntryToLogRecord(msgpReader, lr)
 		if err != nil {
 			if msgp.Cause(err) == io.EOF {

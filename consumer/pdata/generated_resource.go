@@ -29,7 +29,6 @@ import (
 // Must use NewResource function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Resource struct {
-	// orig points to the pointer otlpresource.Resource field contained somewhere else.
 	orig *otlpresource.Resource
 }
 

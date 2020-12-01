@@ -44,7 +44,6 @@ var (
 
 func createMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName(name)
 	return metric
 }

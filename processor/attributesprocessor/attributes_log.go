@@ -44,25 +44,14 @@ func (a *logAttributesProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rs := rls.At(i)
-		if rs.IsNil() {
-			continue
-		}
 		ilss := rs.InstrumentationLibraryLogs()
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
 			logs := ils.Logs()
 			library := ils.InstrumentationLibrary()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
-				if lr.IsNil() {
-					// Do not create empty log records just to add attributes
-					continue
-				}
-
 				if a.skipLog(lr, resource, library) {
 					continue
 				}

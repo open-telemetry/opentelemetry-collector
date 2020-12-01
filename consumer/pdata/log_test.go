@@ -47,18 +47,18 @@ func TestLogRecordCount(t *testing.T) {
 	assert.EqualValues(t, 6, md.LogRecordCount())
 }
 
-func TestLogRecordCountWithNils(t *testing.T) {
-	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{nil, {}})).LogRecordCount())
+func TestLogRecordCountWithEmpty(t *testing.T) {
+	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{{}})).LogRecordCount())
 	assert.EqualValues(t, 0, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
 		{
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{nil, {}},
+			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
 		},
 	})).LogRecordCount())
-	assert.EqualValues(t, 2, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
+	assert.EqualValues(t, 1, LogsFromInternalRep(internal.LogsFromOtlp([]*otlplogs.ResourceLogs{
 		{
 			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
 				{
-					Logs: []*otlplogs.LogRecord{nil, {}},
+					Logs: []*otlplogs.LogRecord{{}},
 				},
 			},
 		},

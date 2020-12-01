@@ -36,7 +36,6 @@ const (
 
 var diskIODescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.disk.io")
 	metric.SetDescription("Disk bytes transferred.")
 	metric.SetUnit("bytes")
@@ -49,7 +48,6 @@ var diskIODescriptor = func() pdata.Metric {
 
 var diskOpsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.disk.ops")
 	metric.SetDescription("Disk operations count.")
 	metric.SetUnit("1")
@@ -62,7 +60,6 @@ var diskOpsDescriptor = func() pdata.Metric {
 
 var diskIOTimeDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.disk.io_time")
 	metric.SetDescription("Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.")
 	metric.SetUnit("s")
@@ -75,7 +72,6 @@ var diskIOTimeDescriptor = func() pdata.Metric {
 
 var diskOperationTimeDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.disk.operation_time")
 	metric.SetDescription("Time spent in disk operations.")
 	metric.SetUnit("s")
@@ -88,7 +84,6 @@ var diskOperationTimeDescriptor = func() pdata.Metric {
 
 var diskPendingOperationsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.disk.pending_operations")
 	metric.SetDescription("The queue size of pending I/O operations.")
 	metric.SetUnit("1")
@@ -101,7 +96,6 @@ var diskPendingOperationsDescriptor = func() pdata.Metric {
 
 var diskMergedDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("system.disk.merged")
 	metric.SetDescription("The number of disk reads merged into single physical disk access operations.")
 	metric.SetUnit("1")

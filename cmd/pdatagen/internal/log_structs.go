@@ -42,7 +42,7 @@ var resourceLogsSlice = &sliceOfPtrs{
 	element:    resourceLogs,
 }
 
-var resourceLogs = &messagePtrStruct{
+var resourceLogs = &messageValueStruct{
 	structName:     "ResourceLogs",
 	description:    "// ResourceLogs is a collection of logs from a Resource.",
 	originFullName: "otlplogs.ResourceLogs",
@@ -61,7 +61,7 @@ var instrumentationLibraryLogsSlice = &sliceOfPtrs{
 	element:    instrumentationLibraryLogs,
 }
 
-var instrumentationLibraryLogs = &messagePtrStruct{
+var instrumentationLibraryLogs = &messageValueStruct{
 	structName:     "InstrumentationLibraryLogs",
 	description:    "// InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.",
 	originFullName: "otlplogs.InstrumentationLibraryLogs",
@@ -80,7 +80,7 @@ var logSlice = &sliceOfPtrs{
 	element:    logRecord,
 }
 
-var logRecord = &messagePtrStruct{
+var logRecord = &messageValueStruct{
 	structName:     "LogRecord",
 	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
 	originFullName: "otlplogs.LogRecord",

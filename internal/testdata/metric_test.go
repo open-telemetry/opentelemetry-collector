@@ -42,11 +42,6 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			otlp: generateMetricsOtlpOneEmptyResourceMetrics(),
 		},
 		{
-			name: "one-empty-one-nil-resource-metrics",
-			td:   GenerateMetricsOneEmptyOneNilResourceMetrics(),
-			otlp: generateMetricsOtlpOneEmptyOneNilResourceMetrics(),
-		},
-		{
 			name: "no-libraries",
 			td:   GenerateMetricsNoLibraries(),
 			otlp: generateMetricsOtlpNoLibraries(),
@@ -55,11 +50,6 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			name: "one-empty-instrumentation-library",
 			td:   GenerateMetricsOneEmptyInstrumentationLibrary(),
 			otlp: generateMetricsOtlpOneEmptyInstrumentationLibrary(),
-		},
-		{
-			name: "one-empty-one-nil-instrumentation-library",
-			td:   GenerateMetricsOneEmptyOneNilInstrumentationLibrary(),
-			otlp: generateMetricsOtlpOneEmptyOneNilInstrumentationLibrary(),
 		},
 		{
 			name: "one-metric-no-resource",
@@ -77,19 +67,9 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 			otlp: GenerateMetricsOtlpTwoMetrics(),
 		},
 		{
-			name: "one-metric-one-nil",
-			td:   GenerateMetricsOneMetricOneNil(),
-			otlp: generateMetricsOtlpOneMetricOneNil(),
-		},
-		{
 			name: "one-metric-no-labels",
 			td:   GenerateMetricsOneMetricNoLabels(),
 			otlp: generateMetricsOtlpOneMetricNoLabels(),
-		},
-		{
-			name: "one-metric-one-nil-point",
-			td:   GenerateMetricsOneMetricOneNilPoint(),
-			otlp: generateMetricsOtlpOneMetricOneNilPoint(),
 		},
 		{
 			name: "all-types-no-data-points",
@@ -107,7 +87,6 @@ func generateAllMetricsTestCases() []traceMetricsCase {
 func TestToFromOtlpMetrics(t *testing.T) {
 	allTestCases := generateAllMetricsTestCases()
 	// Ensure NumMetricTests gets updated.
-	assert.EqualValues(t, NumMetricTests, len(allTestCases))
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
@@ -117,25 +96,6 @@ func TestToFromOtlpMetrics(t *testing.T) {
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}
-}
-
-func TestToFromOtlpMetricsWithNils(t *testing.T) {
-	md := GenerateMetricsOneEmptyOneNilResourceMetrics()
-	assert.EqualValues(t, 2, md.ResourceMetrics().Len())
-	assert.False(t, md.ResourceMetrics().At(0).IsNil())
-	assert.True(t, md.ResourceMetrics().At(1).IsNil())
-
-	md = GenerateMetricsOneEmptyOneNilInstrumentationLibrary()
-	rs := md.ResourceMetrics().At(0)
-	assert.EqualValues(t, 2, rs.InstrumentationLibraryMetrics().Len())
-	assert.False(t, rs.InstrumentationLibraryMetrics().At(0).IsNil())
-	assert.True(t, rs.InstrumentationLibraryMetrics().At(1).IsNil())
-
-	md = GenerateMetricsOneMetricOneNil()
-	ilss := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	assert.EqualValues(t, 2, ilss.Metrics().Len())
-	assert.False(t, ilss.Metrics().At(0).IsNil())
-	assert.True(t, ilss.Metrics().At(1).IsNil())
 }
 
 func TestGenerateMetricsManyMetricsSameResource(t *testing.T) {
