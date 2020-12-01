@@ -748,9 +748,25 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 func TestExpandEnvLoadedConfigNil(t *testing.T) {
 	var config *TestConfig
 
+	// This should safely do nothing
 	expandEnvLoadedConfig(config)
 
 	assert.Equal(t, (*TestConfig)(nil), config)
+}
+
+func TestExpandEnvLoadedConfigNoPointer(t *testing.T) {
+	assert.NoError(t, os.Setenv("VALUE", "replaced_value"))
+
+	config := TestConfig{
+		StringValue:    "$VALUE",
+	}
+
+	// This should do nothing as config is not a pointer
+	expandEnvLoadedConfig(config)
+
+	assert.Equal(t, TestConfig{
+		StringValue:    "$VALUE",
+	}, config)
 }
 
 type TestUnexportedConfig struct {
