@@ -33,7 +33,7 @@ import (
 	"time"
 )
 
-// oidcServer is an overly simplified Config mock server, good enough to sign the tokens required by the test
+// oidcServer is an overly simplified OIDC mock server, good enough to sign the tokens required by the test
 // and pass the verification done by the underlying libraries
 type oidcServer struct {
 	*httptest.Server
