@@ -80,6 +80,11 @@ func GetAvailableLocalAddress(t *testing.T) string {
 // available for opening when this function returns provided that there is no
 // race by some other code to grab the same port immediately.
 func GetAvailablePort(t *testing.T) uint16 {
+	// Retry has been added for windows as net.Listen can return a port that is not actually available. Details can be
+	// found in https://github.com/docker/for-win/issues/3171 but to summarize Hyper-V will reserve ranges of ports
+	// which do not show up under the "netstat -ano" but can only be found by
+	// "netsh interface ipv4 show excludedportrange protocol=tcp".  We'll use []exclusions to hold those ranges and
+	// retry if the port returned by GetAvailableLocalAddress falls in one of those them.
 	var exclusions []portpair
 	portFound := false
 	var port string
