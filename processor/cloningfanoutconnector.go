@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -34,28 +35,34 @@ func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumer) consumer.M
 		// Don't wrap if no need to do it.
 		return mcs[0]
 	}
-	return metricsCloningFanOutConnector(mcs)
+	return &metricsCloningFanOutConnector{
+		Consumer:  consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+		consumers: mcs,
+	}
 }
 
-type metricsCloningFanOutConnector []consumer.MetricsConsumer
+type metricsCloningFanOutConnector struct {
+	consumer.Consumer
+	consumers []consumer.MetricsConsumer
+}
 
 var _ consumer.MetricsConsumer = (*metricsCloningFanOutConnector)(nil)
 
 // ConsumeMetrics exports the MetricsData to all consumers wrapped by the current one.
-func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (mfc *metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
-	for i := 0; i < len(mfc)-1; i++ {
+	for i := 0; i < len(mfc.consumers)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		if err := mfc[i].ConsumeMetrics(ctx, md.Clone()); err != nil {
+		if err := mfc.consumers[i].ConsumeMetrics(ctx, md.Clone()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 
-	if len(mfc) > 0 {
+	if len(mfc.consumers) > 0 {
 		// Give the original data to the last consumer.
-		lastTc := mfc[len(mfc)-1]
+		lastTc := mfc.consumers[len(mfc.consumers)-1]
 		if err := lastTc.ConsumeMetrics(ctx, md); err != nil {
 			errs = append(errs, err)
 		}
@@ -71,28 +78,34 @@ func NewTracesCloningFanOutConnector(tcs []consumer.TracesConsumer) consumer.Tra
 		// Don't wrap if no need to do it.
 		return tcs[0]
 	}
-	return tracesCloningFanOutConnector(tcs)
+	return &tracesCloningFanOutConnector{
+		Consumer:  consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+		consumers: tcs,
+	}
 }
 
-type tracesCloningFanOutConnector []consumer.TracesConsumer
+type tracesCloningFanOutConnector struct {
+	consumer.Consumer
+	consumers []consumer.TracesConsumer
+}
 
 var _ consumer.TracesConsumer = (*tracesCloningFanOutConnector)(nil)
 
 // ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
-func (tfc tracesCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (tfc *tracesCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
-	for i := 0; i < len(tfc)-1; i++ {
+	for i := 0; i < len(tfc.consumers)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		if err := tfc[i].ConsumeTraces(ctx, td.Clone()); err != nil {
+		if err := tfc.consumers[i].ConsumeTraces(ctx, td.Clone()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 
-	if len(tfc) > 0 {
+	if len(tfc.consumers) > 0 {
 		// Give the original data to the last consumer.
-		lastTc := tfc[len(tfc)-1]
+		lastTc := tfc.consumers[len(tfc.consumers)-1]
 		if err := lastTc.ConsumeTraces(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
@@ -107,28 +120,34 @@ func NewLogsCloningFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsCon
 		// Don't wrap if no need to do it.
 		return lcs[0]
 	}
-	return logsCloningFanOutConnector(lcs)
+	return &logsCloningFanOutConnector{
+		Consumer:  consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+		consumers: lcs,
+	}
 }
 
-type logsCloningFanOutConnector []consumer.LogsConsumer
+type logsCloningFanOutConnector struct {
+	consumer.Consumer
+	consumers []consumer.LogsConsumer
+}
 
 var _ consumer.LogsConsumer = (*logsCloningFanOutConnector)(nil)
 
 // ConsumeLogs exports the log data to all consumers wrapped by the current one.
-func (lfc logsCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (lfc *logsCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
-	for i := 0; i < len(lfc)-1; i++ {
+	for i := 0; i < len(lfc.consumers)-1; i++ {
 		// Create a clone of data. We need to clone because consumers may modify the data.
-		if err := lfc[i].ConsumeLogs(ctx, ld.Clone()); err != nil {
+		if err := lfc.consumers[i].ConsumeLogs(ctx, ld.Clone()); err != nil {
 			errs = append(errs, err)
 		}
 	}
 
-	if len(lfc) > 0 {
+	if len(lfc.consumers) > 0 {
 		// Give the original data to the last consumer.
-		lastTc := lfc[len(lfc)-1]
+		lastTc := lfc.consumers[len(lfc.consumers)-1]
 		if err := lastTc.ConsumeLogs(ctx, ld); err != nil {
 			errs = append(errs, err)
 		}

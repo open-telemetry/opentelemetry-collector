@@ -21,22 +21,41 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// MetricsConsumer is the new metrics consumer interface that receives pdata.MetricData, processes it
-// as needed, and sends it to the next processing node if any or to the destination.
-type MetricsConsumer interface {
-	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
+// Capabilities describes the capabilities of a Processor.
+type Capabilities struct {
+	// MutatesData is set to true if Consume* function of the Consumer modifies the input
+	// pdata.Traces, pdata.Metrics, or pdata.Logs argument.
+	// Consumer which modify the input data MUST set this flag to true. If the Consumer
+	// does not modify the data it MUST set this flag to false. If the Consumer creates
+	// a copy of the data before modifying then this flag can be safely set to false.
+	MutatesData bool
+}
+
+type Consumer interface {
+	// GetCapabilities must return the capabilities of the Consumer.
+	GetCapabilities() Capabilities
 }
 
 // TracesConsumer is an interface that receives pdata.Traces, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type TracesConsumer interface {
-	// ConsumeTraces receives pdata.Traces for processing.
+	Consumer
+	// ConsumeTraces receives pdata.Traces for consumption.
 	ConsumeTraces(ctx context.Context, td pdata.Traces) error
+}
+
+// MetricsConsumer is the new metrics consumer interface that receives pdata.MetricData, processes it
+// as needed, and sends it to the next processing node if any or to the destination.
+type MetricsConsumer interface {
+	Consumer
+	// ConsumeMetrics receives pdata.Metrics for consumption.
+	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
 }
 
 // LogsConsumer is an interface that receives pdata.Logs, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type LogsConsumer interface {
-	// ConsumeLogs receives pdata.Logs for processing.
+	Consumer
+	// ConsumeLogs receives pdata.Logs for consumption.
 	ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 }

@@ -46,6 +46,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
@@ -63,6 +65,7 @@ func TestTraceSource(t *testing.T) {
 }
 
 type traceConsumer struct {
+	consumer.Consumer
 	cb func(context.Context, pdata.Traces)
 }
 
@@ -99,7 +102,8 @@ func TestClientIPDetection(t *testing.T) {
 	ch := make(chan context.Context)
 	jr := jReceiver{
 		nextConsumer: traceConsumer{
-			func(ctx context.Context, _ pdata.Traces) {
+			Consumer: consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+			cb: func(ctx context.Context, _ pdata.Traces) {
 				ch <- ctx
 			},
 		},

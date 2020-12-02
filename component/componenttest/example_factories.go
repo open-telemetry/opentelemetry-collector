@@ -330,6 +330,10 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 	return nil
 }
 
+func (exp *ExampleExporterConsumer) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 // ConsumeTraceData receives consumerdata.TraceData for processing by the TracesConsumer.
 func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
@@ -417,8 +421,8 @@ func (ep *ExampleProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (ep *ExampleProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (ep *ExampleProcessor) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (ep *ExampleProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {

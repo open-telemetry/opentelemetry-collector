@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -76,7 +77,7 @@ func WithShutdown(shutdown componenthelper.Shutdown) Option {
 
 // WithShutdown overrides the default GetCapabilities function for an processor.
 // The default GetCapabilities function returns mutable capabilities.
-func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
+func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
 		o.capabilities = capabilities
 	}
@@ -84,7 +85,7 @@ func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
 
 type baseSettings struct {
 	*componenthelper.ComponentSettings
-	capabilities component.ProcessorCapabilities
+	capabilities consumer.Capabilities
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
@@ -92,7 +93,7 @@ func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
 		ComponentSettings: componenthelper.DefaultComponentSettings(),
-		capabilities:      component.ProcessorCapabilities{MutatesConsumedData: true},
+		capabilities:      consumer.Capabilities{MutatesData: true},
 	}
 
 	for _, op := range options {
@@ -104,9 +105,9 @@ func fromOptions(options []Option) *baseSettings {
 
 // internalOptions contains internalOptions concerning how an Processor is configured.
 type baseProcessor struct {
+	consumer.Consumer
 	component.Component
 	fullName        string
-	capabilities    component.ProcessorCapabilities
 	traceAttributes []trace.Attribute
 }
 
@@ -114,19 +115,15 @@ type baseProcessor struct {
 func newBaseProcessor(fullName string, options ...Option) baseProcessor {
 	bs := fromOptions(options)
 	be := baseProcessor{
-		Component:    componenthelper.NewComponent(bs.ComponentSettings),
-		fullName:     fullName,
-		capabilities: bs.capabilities,
+		Consumer:  consumerhelper.NewConsumer(bs.capabilities),
+		Component: componenthelper.NewComponent(bs.ComponentSettings),
+		fullName:  fullName,
 		traceAttributes: []trace.Attribute{
 			trace.StringAttribute(obsreport.ProcessorKey, fullName),
 		},
 	}
 
 	return be
-}
-
-func (bp *baseProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return bp.capabilities
 }
 
 type tracesProcessor struct {

@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -31,17 +32,23 @@ func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsC
 		// Don't wrap if no need to do it.
 		return mcs[0]
 	}
-	return metricsFanOutConnector(mcs)
+	return &metricsFanOutConnector{
+		Consumer:  consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+		consumers: mcs,
+	}
 }
 
-type metricsFanOutConnector []consumer.MetricsConsumer
+type metricsFanOutConnector struct {
+	consumer.Consumer
+	consumers []consumer.MetricsConsumer
+}
 
 var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
 
 // ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
-func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (mfc *metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
-	for _, mc := range mfc {
+	for _, mc := range mfc.consumers {
 		if err := mc.ConsumeMetrics(ctx, md); err != nil {
 			errs = append(errs, err)
 		}
@@ -55,17 +62,23 @@ func NewTracesFanOutConnector(tcs []consumer.TracesConsumer) consumer.TracesCons
 		// Don't wrap if no need to do it.
 		return tcs[0]
 	}
-	return traceFanOutConnector(tcs)
+	return &traceFanOutConnector{
+		Consumer:  consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+		consumers: tcs,
+	}
 }
 
-type traceFanOutConnector []consumer.TracesConsumer
+type traceFanOutConnector struct {
+	consumer.Consumer
+	consumers []consumer.TracesConsumer
+}
 
 var _ consumer.TracesConsumer = (*traceFanOutConnector)(nil)
 
 // ConsumeTraces exports the span data to all trace consumers wrapped by the current one.
-func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (tfc *traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
-	for _, tc := range tfc {
+	for _, tc := range tfc.consumers {
 		if err := tc.ConsumeTraces(ctx, td); err != nil {
 			errs = append(errs, err)
 		}
@@ -79,17 +92,23 @@ func NewLogsFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 		// Don't wrap if no need to do it.
 		return lcs[0]
 	}
-	return logsFanOutConnector(lcs)
+	return &logsFanOutConnector{
+		Consumer:  consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+		consumers: lcs,
+	}
 }
 
-type logsFanOutConnector []consumer.LogsConsumer
+type logsFanOutConnector struct {
+	consumer.Consumer
+	consumers []consumer.LogsConsumer
+}
 
 var _ consumer.LogsConsumer = (*logsFanOutConnector)(nil)
 
 // Consume exports the log data to all consumers wrapped by the current one.
-func (fc logsFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (fc *logsFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
-	for _, tc := range fc {
+	for _, tc := range fc.consumers {
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {
 			errs = append(errs, err)
 		}

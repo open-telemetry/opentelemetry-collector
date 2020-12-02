@@ -404,8 +404,8 @@ func (p *mockConcurrentSpanProcessor) ConsumeMetrics(_ context.Context, md pdata
 	return p.consumeError
 }
 
-func (p *mockConcurrentSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (p *mockConcurrentSpanProcessor) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (p *mockConcurrentSpanProcessor) checkNumBatches(t *testing.T, want int) {

@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -85,7 +87,10 @@ func createExporter(config configmodels.Exporter) (*fileExporter, error) {
 		if err != nil {
 			return nil, err
 		}
-		exporter = &fileExporter{file: file}
+		exporter = &fileExporter{
+			Consumer: consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
+			file:     file,
+		}
 
 		// Remember the receiver in the map
 		exporters[cfg] = exporter

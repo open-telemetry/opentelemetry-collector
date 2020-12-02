@@ -549,12 +549,12 @@ func (app *Application) getPipelinesSummaryTableData() internal.SummaryPipelines
 	data.Rows = make([]internal.SummaryPipelinesTableRowData, 0, len(app.builtExtensions))
 	for c, p := range app.builtPipelines {
 		row := internal.SummaryPipelinesTableRowData{
-			FullName:            c.Name,
-			InputType:           string(c.InputType),
-			MutatesConsumedData: p.MutatesConsumedData,
-			Receivers:           c.Receivers,
-			Processors:          c.Processors,
-			Exporters:           c.Exporters,
+			FullName:    c.Name,
+			InputType:   string(c.InputType),
+			MutatesData: p.MutatesData,
+			Receivers:   c.Receivers,
+			Processors:  c.Processors,
+			Exporters:   c.Exporters,
 		}
 		data.Rows = append(data.Rows, row)
 	}

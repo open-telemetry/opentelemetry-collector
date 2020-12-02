@@ -114,8 +114,8 @@ func (tsp *tracesamplerprocessor) processTraces(resourceSpans pdata.ResourceSpan
 	}
 }
 
-func (tsp *tracesamplerprocessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (tsp *tracesamplerprocessor) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 // Start is invoked during service startup.

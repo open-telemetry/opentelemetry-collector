@@ -27,6 +27,10 @@ var (
 
 type nopConsumer struct{}
 
+func (nc *nopConsumer) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (nc *nopConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
 	return nil
 }

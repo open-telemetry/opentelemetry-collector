@@ -27,6 +27,10 @@ type baseErrorConsumer struct {
 	consumeError error // to be returned by ConsumeTraces, if set
 }
 
+func (bec *baseErrorConsumer) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 // SetConsumeError sets an error that will be returned by the Consume function.
 func (bec *baseErrorConsumer) SetConsumeError(err error) {
 	bec.mu.Lock()

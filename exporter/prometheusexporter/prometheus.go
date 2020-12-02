@@ -25,6 +25,7 @@ import (
 	"github.com/orijtech/prometheus-go-metrics-exporter"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -35,6 +36,10 @@ type prometheusExporter struct {
 	name         string
 	exporter     *prometheus.Exporter
 	shutdownFunc func() error
+}
+
+func (pe *prometheusExporter) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {

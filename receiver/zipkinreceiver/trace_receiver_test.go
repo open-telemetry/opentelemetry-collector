@@ -524,6 +524,10 @@ type zipkinMockTraceConsumer struct {
 	err error
 }
 
+func (m *zipkinMockTraceConsumer) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (m *zipkinMockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	m.ch <- td
 	return m.err

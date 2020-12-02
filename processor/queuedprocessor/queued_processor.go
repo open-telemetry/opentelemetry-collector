@@ -271,8 +271,8 @@ func (sp *queuedProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics)
 	return nil
 }
 
-func (sp *queuedProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (sp *queuedProcessor) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 // Shutdown is invoked during service shutdown.

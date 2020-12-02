@@ -22,7 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -59,6 +61,7 @@ func (req *logsRequest) count() int {
 
 type logsExporter struct {
 	*baseExporter
+	consumer.Consumer
 	pusher PushLogs
 }
 
@@ -97,6 +100,7 @@ func NewLogsExporter(
 
 	return &logsExporter{
 		baseExporter: be,
+		Consumer:     consumerhelper.NewConsumer(consumer.Capabilities{MutatesData: false}),
 		pusher:       pusher,
 	}, nil
 }

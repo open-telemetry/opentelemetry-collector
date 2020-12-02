@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -40,7 +41,7 @@ var testCfg = &configmodels.ProcessorSettings{
 
 func TestDefaultOptions(t *testing.T) {
 	bp := newBaseProcessor(testFullName)
-	assert.True(t, bp.GetCapabilities().MutatesConsumedData)
+	assert.True(t, bp.GetCapabilities().MutatesData)
 	assert.NoError(t, bp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, bp.Shutdown(context.Background()))
 }
@@ -50,10 +51,10 @@ func TestWithOptions(t *testing.T) {
 	bp := newBaseProcessor(testFullName,
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
-		WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
+		WithCapabilities(consumer.Capabilities{MutatesData: false}))
 	assert.Equal(t, want, bp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, want, bp.Shutdown(context.Background()))
-	assert.False(t, bp.GetCapabilities().MutatesConsumedData)
+	assert.False(t, bp.GetCapabilities().MutatesData)
 }
 
 func TestNewTraceExporter(t *testing.T) {

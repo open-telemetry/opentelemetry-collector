@@ -62,12 +62,12 @@ func TestNoCrash(t *testing.T) {
 		WriteHTMLPipelinesSummaryTable(buf, SummaryPipelinesTableData{
 			ComponentEndpoint: "pagez",
 			Rows: []SummaryPipelinesTableRowData{{
-				FullName:            "test",
-				InputType:           "metrics",
-				MutatesConsumedData: false,
-				Receivers:           []string{"oc"},
-				Processors:          []string{"nop"},
-				Exporters:           []string{"oc"},
+				FullName:    "test",
+				InputType:   "metrics",
+				MutatesData: false,
+				Receivers:   []string{"oc"},
+				Processors:  []string{"nop"},
+				Exporters:   []string{"oc"},
 			}},
 		})
 	})
