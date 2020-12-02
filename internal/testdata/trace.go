@@ -258,7 +258,7 @@ func generateOtlpSpanOne() *otlptrace.Span {
 			},
 		},
 		DroppedEventsCount: 1,
-		Status: &otlptrace.Status{
+		Status: otlptrace.Status{
 			Code:           otlptrace.Status_STATUS_CODE_ERROR,
 			DeprecatedCode: otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR,
 			Message:        "status-cancelled",

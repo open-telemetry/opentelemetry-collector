@@ -106,7 +106,7 @@ func TestExportMultiplexing(t *testing.T) {
 	require.NoError(t, err, "Failed to send the initiating message: %v", err)
 
 	// Step 1a) Send some spans without a node, they should be registered as coming from the initiating node.
-	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcdef")}}
+	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcdef"), Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLi})
 	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
@@ -115,13 +115,13 @@ func TestExportMultiplexing(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 9489, HostName: "nodejs-host"},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_NODE_JS},
 	}
-	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), Name: &tracepb.TruncatableString{Value: "test"}}}
+	sL1 := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), Name: &tracepb.TruncatableString{Value: "test"}, Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node1, Spans: sL1})
 	require.NoError(t, err, "Failed to send the proxied message from app1: %v", err)
 
 	// Step 3) Send a trace message without a node but with spans: this
 	// should be registered as belonging to the last used node i.e. "node1".
-	sLn1 := []*tracepb.Span{{TraceId: []byte("ABCDEFGHIJKLMNOP")}, {TraceId: []byte("1234567890abcdef")}}
+	sLn1 := []*tracepb.Span{{TraceId: []byte("ABCDEFGHIJKLMNOP"), Status: &tracepb.Status{}}, {TraceId: []byte("1234567890abcdef"), Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn1})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
@@ -130,18 +130,18 @@ func TestExportMultiplexing(t *testing.T) {
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 7752, HostName: "golang-host"},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_GO_LANG},
 	}
-	sL2 := []*tracepb.Span{{TraceId: []byte("_B_D_F_H_J_L_N_O")}}
+	sL2 := []*tracepb.Span{{TraceId: []byte("_B_D_F_H_J_L_N_O"), Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node2, Spans: sL2})
 	require.NoError(t, err, "Failed to send the proxied message from app2: %v", err)
 
 	// Step 5a) Send a trace message without a node but with spans: this
 	// should be registered as belonging to the last used node i.e. "node2".
-	sLn2a := []*tracepb.Span{{TraceId: []byte("_BCDEFGHIJKLMNO_")}, {TraceId: []byte("_234567890abcde_")}}
+	sLn2a := []*tracepb.Span{{TraceId: []byte("_BCDEFGHIJKLMNO_"), Status: &tracepb.Status{}}, {TraceId: []byte("_234567890abcde_"), Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2a})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 
 	// Step 5b)
-	sLn2b := []*tracepb.Span{{TraceId: []byte("_xxxxxxxxxxxxxx_")}, {TraceId: []byte("B234567890abcdAB")}}
+	sLn2b := []*tracepb.Span{{TraceId: []byte("_xxxxxxxxxxxxxx_"), Status: &tracepb.Status{}}, {TraceId: []byte("B234567890abcdAB"), Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2b})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
 	// Give the process sometime to send data over the wire and perform batching
@@ -290,7 +290,10 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
 
-	sLi := []*tracepb.Span{{TraceId: []byte("1234567890abcdef")}, {TraceId: []byte("XXXXXXXXXXabcdef")}}
+	sLi := []*tracepb.Span{
+		{TraceId: []byte("1234567890abcdef"), Status: &tracepb.Status{}},
+		{TraceId: []byte("XXXXXXXXXXabcdef"), Status: &tracepb.Status{}},
+	}
 	ni := &commonpb.Node{
 		Identifier:  &commonpb.ProcessIdentifier{Pid: 1},
 		LibraryInfo: &commonpb.LibraryInfo{Language: commonpb.LibraryInfo_JAVA},

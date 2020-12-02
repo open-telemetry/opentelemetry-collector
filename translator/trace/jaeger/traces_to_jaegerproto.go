@@ -202,21 +202,19 @@ func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.Instru
 		tagsCount++
 	}
 	status := span.Status()
-	if !status.IsNil() {
-		statusCodeTag, statusCodeTagFound = getTagFromStatusCode(status.Code())
-		if statusCodeTagFound {
-			tagsCount++
-		}
+	statusCodeTag, statusCodeTagFound = getTagFromStatusCode(status.Code())
+	if statusCodeTagFound {
+		tagsCount++
+	}
 
-		errorTag, errorTagFound = getErrorTagFromStatusCode(status.Code())
-		if errorTagFound {
-			tagsCount++
-		}
+	errorTag, errorTagFound = getErrorTagFromStatusCode(status.Code())
+	if errorTagFound {
+		tagsCount++
+	}
 
-		statusMsgTag, statusMsgTagFound = getTagFromStatusMsg(status.Message())
-		if statusMsgTagFound {
-			tagsCount++
-		}
+	statusMsgTag, statusMsgTagFound = getTagFromStatusMsg(status.Message())
+	if statusMsgTagFound {
+		tagsCount++
 	}
 
 	traceStateTags, traceStateTagsFound := getTagsFromTraceState(span.TraceState())

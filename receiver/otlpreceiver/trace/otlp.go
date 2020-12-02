@@ -72,11 +72,9 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 	for _, rss := range req.ResourceSpans {
 		for _, ils := range rss.InstrumentationLibrarySpans {
 			for _, span := range ils.Spans {
-				if span.Status != nil {
-					if span.Status.Code == otlptrace.Status_STATUS_CODE_UNSET &&
-						span.Status.DeprecatedCode != otlptrace.Status_DEPRECATED_STATUS_CODE_OK {
-						span.Status.Code = otlptrace.Status_STATUS_CODE_ERROR
-					}
+				if span.Status.Code == otlptrace.Status_STATUS_CODE_UNSET &&
+					span.Status.DeprecatedCode != otlptrace.Status_DEPRECATED_STATUS_CODE_OK {
+					span.Status.Code = otlptrace.Status_STATUS_CODE_ERROR
 				}
 			}
 		}

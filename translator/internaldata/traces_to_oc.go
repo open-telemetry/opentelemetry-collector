@@ -386,10 +386,6 @@ func spanIDToOC(sid pdata.SpanID) []byte {
 }
 
 func statusToOC(status pdata.SpanStatus) (*octrace.Status, *octrace.AttributeValue) {
-	if status.IsNil() {
-		return nil, nil
-	}
-
 	var attr *octrace.AttributeValue
 	var oc int32
 	switch status.Code() {

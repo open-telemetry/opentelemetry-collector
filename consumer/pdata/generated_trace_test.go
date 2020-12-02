@@ -543,9 +543,6 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
 	ms.InitEmpty()
-	assert.True(t, ms.Status().IsNil())
-	ms.Status().InitEmpty()
-	assert.False(t, ms.Status().IsNil())
 	fillTestSpanStatus(ms.Status())
 	assert.EqualValues(t, generateTestSpanStatus(), ms.Status())
 }
@@ -869,17 +866,8 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
 }
 
-func TestSpanStatus_InitEmpty(t *testing.T) {
-	ms := NewSpanStatus()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
 func TestSpanStatus_CopyTo(t *testing.T) {
 	ms := NewSpanStatus()
-	NewSpanStatus().CopyTo(ms)
-	assert.True(t, ms.IsNil())
 	generateTestSpanStatus().CopyTo(ms)
 	assert.EqualValues(t, generateTestSpanStatus(), ms)
 }
@@ -993,7 +981,6 @@ func fillTestSpan(tv Span) {
 	tv.SetDroppedEventsCount(uint32(17))
 	fillTestSpanLinkSlice(tv.Links())
 	tv.SetDroppedLinksCount(uint32(17))
-	tv.Status().InitEmpty()
 	fillTestSpanStatus(tv.Status())
 }
 
@@ -1052,7 +1039,6 @@ func fillTestSpanLink(tv SpanLink) {
 
 func generateTestSpanStatus() SpanStatus {
 	tv := NewSpanStatus()
-	tv.InitEmpty()
 	fillTestSpanStatus(tv)
 	return tv
 }

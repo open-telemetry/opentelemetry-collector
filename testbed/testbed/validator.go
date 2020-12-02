@@ -389,24 +389,13 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan *otlptrace.Span, recdS
 }
 
 func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan *otlptrace.Span, recdSpan *otlptrace.Span) {
-	if sentSpan.Status != nil && recdSpan.Status != nil {
-		if sentSpan.Status.Code != recdSpan.Status.Code {
-			af := &TraceAssertionFailure{
-				typeName:      "Span",
-				dataComboName: sentSpan.Name,
-				fieldPath:     "Status.Code",
-				expectedValue: sentSpan.Status.Code,
-				actualValue:   recdSpan.Status.Code,
-			}
-			v.assertionFailures = append(v.assertionFailures, af)
-		}
-	} else if (sentSpan.Status != nil && recdSpan.Status == nil) || (sentSpan.Status == nil && recdSpan.Status != nil) {
+	if sentSpan.Status.Code != recdSpan.Status.Code {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name,
-			fieldPath:     "Status",
-			expectedValue: sentSpan.Status,
-			actualValue:   recdSpan.Status,
+			fieldPath:     "Status.Code",
+			expectedValue: sentSpan.Status.Code,
+			actualValue:   recdSpan.Status.Code,
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}

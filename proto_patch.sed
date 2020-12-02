@@ -35,3 +35,6 @@ s+opentelemetry.proto.resource.v1.Resource resource = \(.*\);+opentelemetry.prot
 
 s+opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library = \(.*\);+opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library = \1\
   [ (gogoproto.nullable) = false ];+g
+
+s+Status \(.*\);+Status \1\
+  [ (gogoproto.nullable) = false ];+g

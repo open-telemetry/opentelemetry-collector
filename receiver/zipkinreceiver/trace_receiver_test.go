@@ -169,7 +169,8 @@ func TestConversionRoundtrip(t *testing.T) {
   ],
   "tags": {
     "http.path": "/api",
-    "clnt/finagle.version": "6.45.0"
+    "clnt/finagle.version": "6.45.0",
+	"status.code": "STATUS_CODE_UNSET"
   }
 },
 {
@@ -201,7 +202,8 @@ func TestConversionRoundtrip(t *testing.T) {
   ],
   "tags": {
     "http.path": "/api",
-    "clnt/finagle.version": "6.45.0"
+    "clnt/finagle.version": "6.45.0",
+	"status.code": "STATUS_CODE_UNSET"
   }
 }]`)
 
@@ -262,7 +264,7 @@ func TestConversionRoundtrip(t *testing.T) {
 				matchFound = true
 			}
 		}
-		assert.True(t, matchFound, fmt.Sprintf("no match found for {\"annotations\":%s", wjspan))
+		assert.True(t, matchFound, fmt.Sprintf("no match found for {\"annotations\":%s %v", wjspan, gjSpans))
 	}
 }
 
