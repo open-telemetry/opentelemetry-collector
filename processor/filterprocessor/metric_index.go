@@ -50,17 +50,20 @@ func (idx metricIndex) add(rmIdx, ilmIdx, mIdx int) {
 }
 
 func (idx metricIndex) extract(pdm pdata.Metrics) pdata.Metrics {
-	rmsIn := pdm.ResourceMetrics()
 	out := pdata.NewMetrics()
 	rmSliceOut := out.ResourceMetrics()
-	for _, rmIdx := range sortRM(idx.m) {
+
+	sortRMIdx := sortRM(idx.m)
+	rmsIn := pdm.ResourceMetrics()
+	rmSliceOut.Resize(len(sortRMIdx))
+	pos := 0
+	for _, rmIdx := range sortRMIdx {
 		rmIn := rmsIn.At(rmIdx)
 		ilmSliceIn := rmIn.InstrumentationLibraryMetrics()
 
-		rmOut := pdata.NewResourceMetrics()
-		rmSliceOut.Append(rmOut)
-		resourceOut := rmOut.Resource()
-		rmIn.Resource().CopyTo(resourceOut)
+		rmOut := rmSliceOut.At(pos)
+		pos++
+		rmIn.Resource().CopyTo(rmOut.Resource())
 		ilmSliceOut := rmOut.InstrumentationLibraryMetrics()
 		ilmIndexes := idx.m[rmIdx]
 		for _, ilmIdx := range sortILM(ilmIndexes) {
@@ -73,8 +76,7 @@ func (idx metricIndex) extract(pdm pdata.Metrics) pdata.Metrics {
 			ilmIn.InstrumentationLibrary().CopyTo(ilOut)
 			mSliceOut := ilmOut.Metrics()
 			for _, metricIdx := range sortMetrics(ilmIndexes[ilmIdx]) {
-				metric := mSliceIn.At(metricIdx)
-				mSliceOut.Append(metric)
+				mSliceOut.Append(mSliceIn.At(metricIdx))
 			}
 		}
 	}

@@ -1070,11 +1070,11 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
 	assert.EqualValues(t, 0, a1.ArrayVal().Len())
 
-	a1.ArrayVal().Append(NewAttributeValueDouble(123))
+	a1.ArrayVal().Resize(1)
+	v := a1.ArrayVal().At(0)
+	v.SetDoubleVal(123)
 	assertArrayJSON(t, `[123]`, a1)
 	assert.EqualValues(t, 1, a1.ArrayVal().Len())
-
-	v := a1.ArrayVal().At(0)
 	assert.EqualValues(t, AttributeValueDOUBLE, v.Type())
 	assert.EqualValues(t, 123, v.DoubleVal())
 
@@ -1083,7 +1083,8 @@ func TestAttributeValueArray(t *testing.T) {
 	assertArrayJSON(t, `[]`, a2)
 	assert.EqualValues(t, 0, a2.ArrayVal().Len())
 
-	a2.ArrayVal().Append(NewAttributeValueString("somestr"))
+	a2.ArrayVal().Resize(1)
+	a2.ArrayVal().At(0).SetStringVal("somestr")
 	assertArrayJSON(t, `["somestr"]`, a2)
 	assert.EqualValues(t, 1, a2.ArrayVal().Len())
 
