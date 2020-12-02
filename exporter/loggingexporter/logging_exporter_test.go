@@ -27,7 +27,7 @@ import (
 )
 
 func TestLoggingTraceExporterNoErrors(t *testing.T) {
-	lte, err := newTraceExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	lte, err := newTraceExporter(&configmodels.ExporterSettings{}, "Debug", zap.NewNop())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -38,7 +38,7 @@ func TestLoggingTraceExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&configmodels.ExporterSettings{}, "debug", zap.NewNop())
+	lme, err := newMetricsExporter(&configmodels.ExporterSettings{}, "DEBUG", zap.NewNop())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
