@@ -667,6 +667,10 @@ func (f *FluentBitFileLogWriter) setupParsers() {
 	f.parsersFile.Close()
 }
 
+func (f *FluentBitFileLogWriter) GetCapabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
