@@ -257,7 +257,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := wrapAndBatchTimeSeries(tsMap)
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs, consumererror.Permanent(err))
 		return errs
 	}
 
@@ -271,7 +271,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 			requestError := prwe.execute(ctx, req)
 			if requestError != nil {
 				mtx.Lock()
-				errs = append(errs, consumererror.Permanent(requestError))
+				errs = append(errs, requestError)
 				mtx.Unlock()
 			}
 			wg.Done()
