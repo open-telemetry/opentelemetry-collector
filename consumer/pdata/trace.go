@@ -165,10 +165,8 @@ const (
 func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
 
 // SetCode replaces the code associated with this SpanStatus.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms SpanStatus) SetCode(v StatusCode) {
-	(*ms.orig).Code = otlptrace.Status_StatusCode(v)
+	ms.orig.Code = otlptrace.Status_StatusCode(v)
 
 	// According to OTLP spec we also need to set the deprecated_code field.
 	// See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231

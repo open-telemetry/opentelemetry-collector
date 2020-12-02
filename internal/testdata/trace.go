@@ -233,7 +233,6 @@ func fillSpanOne(span pdata.Span) {
 	ev1.SetDroppedAttributesCount(2)
 	span.SetDroppedEventsCount(1)
 	status := span.Status()
-	status.InitEmpty()
 	status.SetCode(pdata.StatusCodeError)
 	status.SetMessage("status-cancelled")
 }
