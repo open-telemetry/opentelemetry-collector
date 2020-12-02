@@ -142,7 +142,7 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.Inst
 		if span == nil || reflect.DeepEqual(span, blankJaegerProtoSpan) {
 			continue
 		}
-		span, library := jSpanToInternal(span)
+		pSpan, library := jSpanToInternal(span)
 		ils, found := spansByLibrary[library]
 		if !found {
 			ils = pdata.NewInstrumentationLibrarySpans()
@@ -153,7 +153,7 @@ func jSpansToInternal(spans []*model.Span) map[instrumentationLibrary]pdata.Inst
 				ils.InstrumentationLibrary().SetVersion(library.version)
 			}
 		}
-		ils.Spans().Append(span)
+		ils.Spans().Append(pSpan)
 	}
 	return spansByLibrary
 }

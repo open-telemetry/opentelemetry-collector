@@ -323,10 +323,10 @@ func TestMetricAndDataPointCountWithEmpty(t *testing.T) {
 
 func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
-	rm := NewResourceMetrics()
-	metrics.ResourceMetrics().Append(rm)
-	ilm := NewInstrumentationLibraryMetrics()
-	rm.InstrumentationLibraryMetrics().Append(ilm)
+	metrics.ResourceMetrics().Resize(1)
+	rm := metrics.ResourceMetrics().At(0)
+	rm.InstrumentationLibraryMetrics().Resize(1)
+	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	intGauge := NewMetric()
 	ilm.Metrics().Append(intGauge)
 	intGauge.SetDataType(MetricDataTypeIntGauge)
