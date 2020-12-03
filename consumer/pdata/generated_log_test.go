@@ -146,14 +146,12 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
-	ms.InitEmpty()
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
 func TestResourceLogs_InstrumentationLibraryLogs(t *testing.T) {
 	ms := NewResourceLogs()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewInstrumentationLibraryLogsSlice(), ms.InstrumentationLibraryLogs())
 	fillTestInstrumentationLibraryLogsSlice(ms.InstrumentationLibraryLogs())
 	testValInstrumentationLibraryLogs := generateTestInstrumentationLibraryLogsSlice()
@@ -281,14 +279,12 @@ func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
 
 func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
-	ms.InitEmpty()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
 
 func TestInstrumentationLibraryLogs_Logs(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewLogSlice(), ms.Logs())
 	fillTestLogSlice(ms.Logs())
 	testValLogs := generateTestLogSlice()
@@ -416,7 +412,6 @@ func TestLogRecord_CopyTo(t *testing.T) {
 
 func TestLogRecord_Timestamp(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -425,7 +420,6 @@ func TestLogRecord_Timestamp(t *testing.T) {
 
 func TestLogRecord_TraceID(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewTraceID([16]byte{}), ms.TraceID())
 	testValTraceID := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	ms.SetTraceID(testValTraceID)
@@ -434,7 +428,6 @@ func TestLogRecord_TraceID(t *testing.T) {
 
 func TestLogRecord_SpanID(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewSpanID([8]byte{}), ms.SpanID())
 	testValSpanID := NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	ms.SetSpanID(testValSpanID)
@@ -443,7 +436,6 @@ func TestLogRecord_SpanID(t *testing.T) {
 
 func TestLogRecord_Flags(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.Flags())
 	testValFlags := uint32(0x01)
 	ms.SetFlags(testValFlags)
@@ -452,7 +444,6 @@ func TestLogRecord_Flags(t *testing.T) {
 
 func TestLogRecord_SeverityText(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.SeverityText())
 	testValSeverityText := "INFO"
 	ms.SetSeverityText(testValSeverityText)
@@ -461,7 +452,6 @@ func TestLogRecord_SeverityText(t *testing.T) {
 
 func TestLogRecord_SeverityNumber(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, SeverityNumberUNDEFINED, ms.SeverityNumber())
 	testValSeverityNumber := SeverityNumberINFO
 	ms.SetSeverityNumber(testValSeverityNumber)
@@ -470,7 +460,6 @@ func TestLogRecord_SeverityNumber(t *testing.T) {
 
 func TestLogRecord_Name(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
@@ -479,14 +468,12 @@ func TestLogRecord_Name(t *testing.T) {
 
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	fillTestAttributeValue(ms.Body())
 	assert.EqualValues(t, generateTestAttributeValue(), ms.Body())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
 	fillTestAttributeMap(ms.Attributes())
 	testValAttributes := generateTestAttributeMap()
@@ -495,7 +482,6 @@ func TestLogRecord_Attributes(t *testing.T) {
 
 func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 	ms := NewLogRecord()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
 	testValDroppedAttributesCount := uint32(17)
 	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)

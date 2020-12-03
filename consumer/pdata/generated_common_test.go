@@ -33,7 +33,6 @@ func TestInstrumentationLibrary_CopyTo(t *testing.T) {
 
 func TestInstrumentationLibrary_Name(t *testing.T) {
 	ms := NewInstrumentationLibrary()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
@@ -42,7 +41,6 @@ func TestInstrumentationLibrary_Name(t *testing.T) {
 
 func TestInstrumentationLibrary_Version(t *testing.T) {
 	ms := NewInstrumentationLibrary()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Version())
 	testValVersion := "test_version"
 	ms.SetVersion(testValVersion)

@@ -43,11 +43,6 @@ func NewInstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms InstrumentationLibrary) InitEmpty() {
-	*ms.orig = otlpcommon.InstrumentationLibrary{}
-}
-
 // Name returns the name associated with this InstrumentationLibrary.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
