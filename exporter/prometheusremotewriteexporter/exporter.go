@@ -143,7 +143,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 			}
 		}
 
-		if exportErrors := prwe.export(ctx, tsMap); exportErrors != nil {
+		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
 			dropped = md.MetricCount()
 			errs = append(errs, exportErrors...)
 		}
@@ -264,7 +264,6 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	var wg sync.WaitGroup
 	var mtx sync.Mutex
 
-	// performs the batched requests concurrently
 	for _, request := range requests {
 		wg.Add(1)
 		go func(req *prompb.WriteRequest) {

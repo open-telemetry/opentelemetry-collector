@@ -43,9 +43,9 @@ const (
 	delimeter   = "_"
 	keyStr      = "key"
 
-	checkByteSizeInterval = 5000
-	maxBatchByteSize      = 3000000
-	maxBatchMetric        = 40000
+	metricIntervalToCheckByteSize = 5000
+	maxBatchByteSize              = 3000000
+	maxBatchMetric                = 40000
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -229,35 +229,23 @@ func wrapAndBatchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.Writ
 
 	var requests []*prompb.WriteRequest
 	var tsArray []prompb.TimeSeries
-	missingLastBatch := true
 
 	for _, v := range tsMap {
 		tsArray = append(tsArray, *v)
-		missingLastBatch = true
 
-		if len(tsArray)%checkByteSizeInterval == 0 {
-			wrapped := prompb.WriteRequest{
-				Timeseries: tsArray,
-				// Other parameters of the WriteRequest are unnecessary for our Export
-			}
+		if len(tsArray)%metricIntervalToCheckByteSize == 0 {
+			wrapped := convertTimeseriesToRequest(tsArray)
 
-			if b := proto.Size(&wrapped); b >= maxBatchByteSize || len(tsArray) >= maxBatchMetric {
-				requests = append(requests, &wrapped)
+			if b := proto.Size(wrapped); b >= maxBatchByteSize || len(tsArray) >= maxBatchMetric {
+				requests = append(requests, wrapped)
 				tsArray = make([]prompb.TimeSeries, 0)
-
-				missingLastBatch = false
 			}
 		}
 	}
 
-	if missingLastBatch {
-		wrapped := prompb.WriteRequest{
-			Timeseries: tsArray,
-			// Other parameters of the WriteRequest are unnecessary for our Export
-		}
-
-		requests = append(requests, &wrapped)
-		tsArray = make([]prompb.TimeSeries, 0)
+	if len(tsArray) != 0 {
+		wrapped := convertTimeseriesToRequest(tsArray)
+		requests = append(requests, wrapped)
 	}
 
 	return requests, nil
@@ -495,5 +483,13 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
 		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric)
+	}
+}
+
+func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
+	// the remotewrite endpoint only needs the timeseries.
+	// otlp defines it's own way to handle metric metadata
+	return &prompb.WriteRequest{
+		Timeseries: tsArray,
 	}
 }
