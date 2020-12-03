@@ -16,7 +16,6 @@ package prometheusremotewriteexporter
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"sort"
 	"strconv"
@@ -228,15 +227,10 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.WriteReques
 	var tsArray []prompb.TimeSeries
 	sizeOfCurrentBatch := 0
 
-	fmt.Println("total metrics to process: " + fmt.Sprintf("%d", len(tsMap)))
-
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
-			fmt.Println("tsArray length: " + fmt.Sprintf("%d", len(tsArray)))
-			fmt.Println("sizeOfCurrentBatch: " + fmt.Sprintf("%d", sizeOfCurrentBatch))
-
 			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
@@ -249,9 +243,6 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.WriteReques
 	}
 
 	if sizeOfCurrentBatch != 0 {
-		fmt.Println("tsArray length: " + fmt.Sprintf("%d", len(tsArray)))
-		fmt.Println("sizeOfCurrentBatch: " + fmt.Sprintf("%d", sizeOfCurrentBatch))
-
 		wrapped := convertTimeseriesToRequest(tsArray)
 		requests = append(requests, wrapped)
 	}
@@ -495,7 +486,7 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 }
 
 func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
-	// the remotewrite endpoint only needs the timeseries.
+	// the remote_write endpoint only requires the timeseries.
 	// otlp defines it's own way to handle metric metadata
 	return &prompb.WriteRequest{
 		Timeseries: tsArray,

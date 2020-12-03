@@ -269,11 +269,10 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 
 	for i := 0; i < numOfRequests; i += maxConcurrentRequests {
 		var wg sync.WaitGroup
-		fmt.Println("next batch of requests")
+
 		for k := i; k < int(math.Min(float64(i+maxConcurrentRequests), float64(numOfRequests))); k++ {
 			wg.Add(1)
 			go func(i int, req *prompb.WriteRequest) {
-				fmt.Println("making request " + fmt.Sprintf("%d", i))
 				requestError := prwe.execute(ctx, req)
 				if requestError != nil {
 					mu.Lock()
@@ -283,6 +282,7 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 				wg.Done()
 			}(k, requests[k])
 		}
+
 		wg.Wait()
 	}
 
