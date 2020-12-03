@@ -16,6 +16,7 @@ package prometheusremotewriteexporter
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 	"strconv"
@@ -23,7 +24,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -43,9 +43,7 @@ const (
 	delimeter   = "_"
 	keyStr      = "key"
 
-	metricIntervalToCheckByteSize = 5000
-	maxBatchByteSize              = 3000000
-	maxBatchMetric                = 40000
+	maxBatchByteSize = 3000000
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -220,30 +218,40 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 	return sanitize(b.String())
 }
 
-// Helper function that takes the <Signature String - *TimeSeries> map
-// and creates a batch of WriteRequest from the struct
-func wrapAndBatchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.WriteRequest, error) {
+// batchTimeSeries splits series into multiple batch write requests.
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
 	var requests []*prompb.WriteRequest
 	var tsArray []prompb.TimeSeries
+	sizeOfCurrentBatch := 0
+
+	fmt.Println("total metrics to process: " + fmt.Sprintf("%d", len(tsMap)))
 
 	for _, v := range tsMap {
-		tsArray = append(tsArray, *v)
+		sizeOfSeries := v.Size()
 
-		if len(tsArray)%metricIntervalToCheckByteSize == 0 {
+		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
+			fmt.Println("tsArray length: " + fmt.Sprintf("%d", len(tsArray)))
+			fmt.Println("sizeOfCurrentBatch: " + fmt.Sprintf("%d", sizeOfCurrentBatch))
+
 			wrapped := convertTimeseriesToRequest(tsArray)
+			requests = append(requests, wrapped)
 
-			if b := proto.Size(wrapped); b >= maxBatchByteSize || len(tsArray) >= maxBatchMetric {
-				requests = append(requests, wrapped)
-				tsArray = make([]prompb.TimeSeries, 0)
-			}
+			tsArray = make([]prompb.TimeSeries, 0)
+			sizeOfCurrentBatch = 0
 		}
+
+		tsArray = append(tsArray, *v)
+		sizeOfCurrentBatch += sizeOfSeries
 	}
 
-	if len(tsArray) != 0 {
+	if sizeOfCurrentBatch != 0 {
+		fmt.Println("tsArray length: " + fmt.Sprintf("%d", len(tsArray)))
+		fmt.Println("sizeOfCurrentBatch: " + fmt.Sprintf("%d", sizeOfCurrentBatch))
+
 		wrapped := convertTimeseriesToRequest(tsArray)
 		requests = append(requests, wrapped)
 	}

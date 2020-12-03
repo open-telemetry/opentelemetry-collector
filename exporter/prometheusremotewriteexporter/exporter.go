@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sync"
@@ -36,6 +37,8 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/version"
 )
+
+const maxConcurrentRequests = 5
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
 type PrwExporter struct {
@@ -255,28 +258,33 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
 	var errs []error
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := wrapAndBatchTimeSeries(tsMap)
+	requests, err := batchTimeSeries(tsMap)
 	if err != nil {
 		errs = append(errs, consumererror.Permanent(err))
 		return errs
 	}
 
-	var wg sync.WaitGroup
-	var mtx sync.Mutex
+	var mu sync.Mutex
+	numOfRequests := len(requests)
 
-	for _, request := range requests {
-		wg.Add(1)
-		go func(req *prompb.WriteRequest) {
-			requestError := prwe.execute(ctx, req)
-			if requestError != nil {
-				mtx.Lock()
-				errs = append(errs, requestError)
-				mtx.Unlock()
-			}
-			wg.Done()
-		}(request)
+	for i := 0; i < numOfRequests; i += maxConcurrentRequests {
+		var wg sync.WaitGroup
+		fmt.Println("next batch of requests")
+		for k := i; k < int(math.Min(float64(i+maxConcurrentRequests), float64(numOfRequests))); k++ {
+			wg.Add(1)
+			go func(i int, req *prompb.WriteRequest) {
+				fmt.Println("making request " + fmt.Sprintf("%d", i))
+				requestError := prwe.execute(ctx, req)
+				if requestError != nil {
+					mu.Lock()
+					errs = append(errs, requestError)
+					mu.Unlock()
+				}
+				wg.Done()
+			}(k, requests[k])
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 
 	return errs
 }
