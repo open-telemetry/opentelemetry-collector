@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/url"
 	"sync"
@@ -264,27 +263,34 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 		return errs
 	}
 
+	input := make(chan *prompb.WriteRequest, len(requests))
+	for _, request := range requests {
+		input <- request
+	}
+	close(input)
+
 	var mu sync.Mutex
-	numOfRequests := len(requests)
+	var wg sync.WaitGroup
 
-	for i := 0; i < numOfRequests; i += maxConcurrentRequests {
-		var wg sync.WaitGroup
+	wg.Add(maxConcurrentRequests) // used to wait for workers to be finished
 
-		for k := i; k < int(math.Min(float64(i+maxConcurrentRequests), float64(numOfRequests))); k++ {
-			wg.Add(1)
-			go func(i int, req *prompb.WriteRequest) {
-				requestError := prwe.execute(ctx, req)
-				if requestError != nil {
+	// Run concurrencyLimit of workers until there
+	// is no more requests to execute in the input channel.
+	for i := 0; i < maxConcurrentRequests; i++ {
+		go func() {
+			defer wg.Done()
+
+			for request := range input {
+				err := prwe.execute(ctx, request)
+				if err != nil {
 					mu.Lock()
-					errs = append(errs, requestError)
+					errs = append(errs, err)
 					mu.Unlock()
 				}
-				wg.Done()
-			}(k, requests[k])
-		}
-
-		wg.Wait()
+			}
+		}()
 	}
+	wg.Wait()
 
 	return errs
 }
