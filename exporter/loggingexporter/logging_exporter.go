@@ -339,10 +339,9 @@ func (s *loggingExporter) pushTraceData(
 				buf.logAttr("Kind", span.Kind().String())
 				buf.logAttr("Start time", span.StartTime().String())
 				buf.logAttr("End time", span.EndTime().String())
-				if !span.Status().IsNil() {
-					buf.logAttr("Status code", span.Status().Code().String())
-					buf.logAttr("Status message", span.Status().Message())
-				}
+
+				buf.logAttr("Status code", span.Status().Code().String())
+				buf.logAttr("Status message", span.Status().Message())
 
 				buf.logAttributeMap("Attributes", span.Attributes())
 				buf.logEvents("Events", span.Events())

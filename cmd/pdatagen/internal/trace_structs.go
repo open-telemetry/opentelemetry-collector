@@ -133,7 +133,7 @@ var span = &messageValueStruct{
 			defaultVal:      "uint32(0)",
 			testVal:         "uint32(17)",
 		},
-		&messagePtrField{
+		&messageValueField{
 			fieldName:       "Status",
 			originFieldName: "Status",
 			returnMessage:   spanStatus,
@@ -178,7 +178,7 @@ var spanLink = &messageValueStruct{
 	},
 }
 
-var spanStatus = &messagePtrStruct{
+var spanStatus = &messageValueStruct{
 	structName: "SpanStatus",
 	description: "// SpanStatus is an optional final status for this span. Semantically when Status wasn't set\n" +
 		"// it is means span ended without errors and assume Status.Ok (code = 0).",

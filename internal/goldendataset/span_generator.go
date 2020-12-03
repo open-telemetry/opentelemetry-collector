@@ -205,11 +205,11 @@ func generateSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputS
 	return convertMapToAttributeKeyValues(attrs)
 }
 
-func generateStatus(statusStr PICTInputStatus) *otlptrace.Status {
+func generateStatus(statusStr PICTInputStatus) otlptrace.Status {
 	if SpanStatusUnset == statusStr {
-		return nil
+		return otlptrace.Status{}
 	}
-	return &otlptrace.Status{
+	return otlptrace.Status{
 		Code:    statusCodeMap[statusStr],
 		Message: statusMsgMap[statusStr],
 	}

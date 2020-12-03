@@ -65,7 +65,7 @@ func TestExport(t *testing.T) {
 							Kind:              otlptrace.Span_SPAN_KIND_SERVER,
 							StartTimeUnixNano: unixnanos,
 							EndTimeUnixNano:   unixnanos,
-							Status:            &otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_STATUS_CODE_ERROR},
+							Status:            otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_STATUS_CODE_ERROR},
 							TraceState:        "a=text,b=123",
 						},
 					},
@@ -254,7 +254,7 @@ func TestDeprecatedStatusCode(t *testing.T) {
 					{
 						Spans: []*otlptrace.Span{
 							{
-								Status: &otlptrace.Status{
+								Status: otlptrace.Status{
 									Code:           test.sendCode,
 									DeprecatedCode: test.sendDeprecatedCode,
 								},

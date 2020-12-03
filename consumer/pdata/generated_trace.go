@@ -662,9 +662,6 @@ func (ms Span) SetDroppedLinksCount(v uint32) {
 }
 
 // Status returns the status associated with this Span.
-// If no status available, it creates an empty message and associates it with this Span.
-//
-//  Empty initialized Span will return "nil" SpanStatus.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
 func (ms Span) Status() SpanStatus {
@@ -1112,34 +1109,23 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 // Must use NewSpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type SpanStatus struct {
-	// orig points to the pointer otlptrace.Status field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **otlptrace.Status
+	orig *otlptrace.Status
 }
 
-func newSpanStatus(orig **otlptrace.Status) SpanStatus {
-	return SpanStatus{orig}
+func newSpanStatus(orig *otlptrace.Status) SpanStatus {
+	return SpanStatus{orig: orig}
 }
 
-// NewSpanStatus creates a new "nil" SpanStatus.
-// To initialize the struct call "InitEmpty".
+// NewSpanStatus creates a new empty SpanStatus.
 //
 // This must be used only in testing code since no "Set" method available.
 func NewSpanStatus() SpanStatus {
-	orig := (*otlptrace.Status)(nil)
-	return newSpanStatus(&orig)
+	return newSpanStatus(&otlptrace.Status{})
 }
 
-// InitEmpty overwrites the current value with empty.
+// Deprecated: This function will be removed soon.
 func (ms SpanStatus) InitEmpty() {
-	*ms.orig = &otlptrace.Status{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms SpanStatus) IsNil() bool {
-	return *ms.orig == nil
+	*ms.orig = otlptrace.Status{}
 }
 
 // Code returns the code associated with this SpanStatus.
@@ -1179,13 +1165,6 @@ func (ms SpanStatus) SetMessage(v string) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SpanStatus) CopyTo(dest SpanStatus) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}
 	dest.SetCode(ms.Code())
 	dest.SetDeprecatedCode(ms.DeprecatedCode())
 	dest.SetMessage(ms.Message())

@@ -325,23 +325,19 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 
 func TestSetInternalSpanStatus(t *testing.T) {
 
-	nilStatus := pdata.NewSpanStatus()
+	emptyStatus := pdata.NewSpanStatus()
 
 	okStatus := pdata.NewSpanStatus()
-	okStatus.InitEmpty()
 	okStatus.SetCode(pdata.StatusCodeOk)
 
 	errorStatus := pdata.NewSpanStatus()
-	errorStatus.InitEmpty()
 	errorStatus.SetCode(pdata.StatusCodeError)
 
 	errorStatusWithMessage := pdata.NewSpanStatus()
-	errorStatusWithMessage.InitEmpty()
 	errorStatusWithMessage.SetCode(pdata.StatusCodeError)
 	errorStatusWithMessage.SetMessage("Error: Invalid argument")
 
 	errorStatusWith404Message := pdata.NewSpanStatus()
-	errorStatusWith404Message.InitEmpty()
 	errorStatusWith404Message.SetCode(pdata.StatusCodeError)
 	errorStatusWith404Message.SetMessage("HTTP 404: Not Found")
 
@@ -354,7 +350,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name:             "No tags set -> OK status",
 			attrs:            pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{}),
-			status:           nilStatus,
+			status:           emptyStatus,
 			attrsModifiedLen: 0,
 		},
 		{
@@ -723,7 +719,6 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTime(spans.At(0).StartTime())
 	span.SetEndTime(spans.At(0).EndTime())
-	span.Status().InitEmpty()
 	span.Status().SetCode(pdata.StatusCodeError)
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
@@ -777,7 +772,6 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetStartTime(spans.At(0).EndTime())
 	span.SetEndTime(spans.At(0).EndTime() + 1000000)
 	span.SetKind(pdata.SpanKindCONSUMER)
-	span.Status().InitEmpty()
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
 	span.Links().Resize(1)

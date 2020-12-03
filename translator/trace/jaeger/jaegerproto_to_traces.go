@@ -266,7 +266,6 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 	}
 
 	if statusExists {
-		dest.InitEmpty()
 		dest.SetCode(statusCode)
 		dest.SetMessage(statusMessage)
 	}

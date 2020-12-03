@@ -311,7 +311,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetName("DBSearch")
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
-	span0.Status().InitEmpty()
 	span0.Status().SetCode(pdata.StatusCodeError)
 	span0.Status().SetMessage("Stale indices")
 
@@ -321,7 +320,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetName("ProxyFetch")
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
-	span1.Status().InitEmpty()
 	span1.Status().SetCode(pdata.StatusCodeError)
 	span1.Status().SetMessage("Frontend crash")
 

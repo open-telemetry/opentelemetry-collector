@@ -177,19 +177,13 @@ func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attribut
 	if ocStatus == nil {
 		return
 	}
-	dest.InitEmpty()
 
 	var code pdata.StatusCode
 	switch ocStatus.Code {
 	case trace.StatusCodeOK:
 		code = pdata.StatusCodeUnset
-
-	case trace.StatusCodeUnknown:
-		// It is an error.
-		fallthrough
-
 	default:
-		// all other OC status codes are also errors.
+		// all other OC status codes are errors.
 		code = pdata.StatusCodeError
 	}
 

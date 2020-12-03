@@ -53,7 +53,6 @@ import (
 
 const ocReceiverName = "oc_receiver_test"
 
-// TODO(ccaraman): Migrate tests to use assert for validating functionality.
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
@@ -145,6 +144,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 						},
 					},
 				},
+				Status: &tracepb.Status{},
 			},
 		},
 		SourceFormat: "oc_trace",
@@ -153,7 +153,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	assert.True(t, proto.Equal(want.Resource, gotOc[0].Resource))
 	require.Len(t, want.Spans, 1)
 	require.Len(t, gotOc[0].Spans, 1)
-	assert.True(t, proto.Equal(want.Spans[0], gotOc[0].Spans[0]))
+	assert.EqualValues(t, want.Spans[0], gotOc[0].Spans[0])
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {

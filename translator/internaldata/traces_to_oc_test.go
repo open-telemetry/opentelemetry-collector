@@ -289,6 +289,7 @@ func TestInternalToOC(t *testing.T) {
 			},
 			DroppedLinksCount: 3,
 		},
+		Status: &octrace.Status{},
 	}
 
 	ocSpan3 := &octrace.Span{
@@ -306,6 +307,7 @@ func TestInternalToOC(t *testing.T) {
 			},
 			DroppedAttributesCount: 5,
 		},
+		Status: &octrace.Status{},
 	}
 
 	tests := []struct {
