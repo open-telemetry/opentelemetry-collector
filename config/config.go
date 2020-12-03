@@ -275,6 +275,7 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 		// Create the default config for this extension
 		extensionCfg := factory.CreateDefaultConfig()
 		extensionCfg.SetName(fullName)
+		expandEnvLoadedConfig(extensionCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -310,6 +311,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetName(fullName)
+	expandEnvLoadedConfig(receiverCfg)
 
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
@@ -382,6 +384,7 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 		// Create the default config for this exporter
 		exporterCfg := factory.CreateDefaultConfig()
 		exporterCfg.SetName(fullName)
+		expandEnvLoadedConfig(exporterCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -424,6 +427,7 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
 		processorCfg.SetName(fullName)
+		expandEnvLoadedConfig(processorCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
@@ -673,6 +677,45 @@ func expandStringValues(value interface{}) interface{} {
 			nmap[k] = expandStringValues(vint)
 		}
 		return nmap
+	}
+}
+
+// expandEnvLoadedConfig is a utility function that goes recursively through a config object
+// and tries to expand environment variables in its string fields.
+func expandEnvLoadedConfig(s interface{}) {
+	expandEnvLoadedConfigPointer(s)
+}
+
+func expandEnvLoadedConfigPointer(s interface{}) {
+	// Check that the value given is indeed a pointer, otherwise safely stop the search here
+	value := reflect.ValueOf(s)
+	if value.Kind() != reflect.Ptr {
+		return
+	}
+	// Run expandLoadedConfigValue on the value behind the pointer
+	expandEnvLoadedConfigValue(value.Elem())
+}
+
+func expandEnvLoadedConfigValue(value reflect.Value) {
+	// The value given is a string, we expand it (if allowed)
+	if value.Kind() == reflect.String && value.CanSet() {
+		value.SetString(expandEnv(value.String()))
+	}
+	// The value given is a struct, we go through its fields
+	if value.Kind() == reflect.Struct {
+		for i := 0; i < value.NumField(); i++ {
+			field := value.Field(i) // Returns the content of the field
+			if field.CanSet() {     // Only try to modify a field if it can be modified (eg. skip unexported private fields)
+				switch field.Kind() {
+				case reflect.String: // The current field is a string, we want to expand it
+					field.SetString(expandEnv(field.String())) // Expand env variables in the string
+				case reflect.Ptr: // The current field is a pointer
+					expandEnvLoadedConfigPointer(field.Interface()) // Run the expansion function on the pointer
+				case reflect.Struct: // The current field is a nested struct
+					expandEnvLoadedConfigValue(field) // Go through the nested struct
+				}
+			}
+		}
 	}
 }
 
