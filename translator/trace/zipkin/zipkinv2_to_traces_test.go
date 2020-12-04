@@ -57,6 +57,12 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 			td:   generateTraceSingleSpanMinmalResource(),
 			err:  nil,
 		},
+		{
+			name: "errorTag",
+			zs:   generateSpanErrorTag(),
+			td:   generateTraceSingleSpanErrorStatus(),
+			err:  nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -101,6 +107,12 @@ func generateSpanNoTags() []*zipkinmodel.SpanModel {
 	return spans
 }
 
+func generateSpanErrorTag() []*zipkinmodel.SpanModel {
+	spans := generateSpanNoEndpoints()
+	spans[0].Tags = &zipkinmodel.Tags{error: "true"}
+	return spans
+}
+
 func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
@@ -126,5 +138,18 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 	rsc := rs.Resource()
 	rsc.Attributes().InitEmptyWithCapacity(1)
 	rsc.Attributes().UpsertString(conventions.AttributeServiceName, "SoleAttr")
+	return td
+}
+
+func generateTraceSingleSpanErrorStatus() pdata.Traces {
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	rs := td.ResourceSpans().At(0)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	span := ils.Spans().At(0)
+	span.Attributes().InitEmptyWithCapacity(0)
+	span.Status().SetCode(pdata.StatusCodeError)
 	return td
 }
