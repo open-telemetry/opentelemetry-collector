@@ -286,7 +286,6 @@ var (
 
 func TestFilterMetricProcessor(t *testing.T) {
 	for _, test := range standardTests {
-		fmt.Println("in - outMN: ", len(test.inMN), len(test.outMN))
 		t.Run(test.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
