@@ -41,8 +41,6 @@ const (
 	totalStr    = "total"
 	delimeter   = "_"
 	keyStr      = "key"
-
-	maxBatchByteSize = 3000000
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -218,7 +216,7 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 }
 
 // batchTimeSeries splits series into multiple batch write requests.
-func batchTimeSeries(tsMap map[string]*prompb.TimeSeries) ([]*prompb.WriteRequest, error) {
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}

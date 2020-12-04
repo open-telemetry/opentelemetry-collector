@@ -37,7 +37,10 @@ import (
 	"go.opentelemetry.io/collector/internal/version"
 )
 
-const maxConcurrentRequests = 5
+const (
+	maxConcurrentRequests = 5
+	maxBatchByteSize      = 3000000
+)
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
 type PrwExporter struct {
@@ -257,7 +260,7 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
 	var errs []error
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap)
+	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
 		errs = append(errs, consumererror.Permanent(err))
 		return errs
