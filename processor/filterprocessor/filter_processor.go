@@ -16,32 +16,19 @@ package filterprocessor
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/processor/filtermetric"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 type filterMetricProcessor struct {
-	cfg     *Config
-	include filtermetric.Matcher
-	exclude filtermetric.Matcher
-	logger  *zap.Logger
+	cfg           *Config
+	metricsFilter *MetricsFilter
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
-	inc, err := createMatcher(cfg.Metrics.Include)
-	if err != nil {
-		return nil, err
-	}
-
-	exc, err := createMatcher(cfg.Metrics.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
 	includeMatchType := ""
 	var includeExpressions []string
 	var includeMetricNames []string
@@ -70,69 +57,18 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude metric names", excludeMetricNames),
 	)
 
-	return &filterMetricProcessor{
-		cfg:     cfg,
-		include: inc,
-		exclude: exc,
-		logger:  logger,
-	}, nil
-}
-
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
-	// Nothing specified in configuration
-	if mp == nil {
-		return nil, nil
+	metricsFilter, err := NewMetricsFilter(cfg.Metrics.Include, cfg.Metrics.Exclude, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metrics filter: %w", err)
 	}
-	return filtermetric.NewMatcher(mp)
+
+	return &filterMetricProcessor{
+		cfg:           cfg,
+		metricsFilter: metricsFilter,
+	}, nil
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
-	rms := pdm.ResourceMetrics()
-	idx := newMetricIndex()
-	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ms := ilms.At(j).Metrics()
-			for k := 0; k < ms.Len(); k++ {
-				keep, err := fmp.shouldKeepMetric(ms.At(k))
-				if err != nil {
-					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
-					// don't `continue`, keep the metric if there's an error
-				}
-				if keep {
-					idx.add(i, j, k)
-				}
-			}
-		}
-	}
-	if idx.isEmpty() {
-		return pdm, processorhelper.ErrSkipProcessingData
-	}
-	return idx.extract(pdm), nil
-}
-
-func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) (bool, error) {
-	if fmp.include != nil {
-		matches, err := fmp.include.MatchMetric(metric)
-		if err != nil {
-			// default to keep if there's an error
-			return true, err
-		}
-		if !matches {
-			return false, nil
-		}
-	}
-
-	if fmp.exclude != nil {
-		matches, err := fmp.exclude.MatchMetric(metric)
-		if err != nil {
-			return true, err
-		}
-		if matches {
-			return false, nil
-		}
-	}
-
-	return true, nil
+	return fmp.metricsFilter.FilterMetrics(pdm)
 }
