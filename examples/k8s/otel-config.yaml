@@ -162,7 +162,7 @@ spec:
     port: 55680
     protocol: TCP
     targetPort: 55680
-  - name: jaeger-grpc # Default endpoing for Jaeger gRPC receiver
+  - name: jaeger-grpc # Default endpoint for Jaeger gRPC receiver
     port: 14250
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268
