@@ -19,6 +19,10 @@ The following settings can be optionally configured:
   - `plain_text`
     - `username`: The username to use.
     - `password`: The password to use
+  - `sasl`
+    - `username`: The username to use.
+    - `password`: The password to use
+    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512 or PLAIN)
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
       only be used if `insecure` is set to true.
