@@ -236,12 +236,17 @@ workflows:
     jobs:
       - setup-environment:
           filters:
+            branches:
+              ignore: master
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - contribtest:
           requires:
             - setup-environment
           filters:
+            branches:
+              # Don't run contribtest on master. We only want to run it for PRs and releases.
+              ignore: master
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
 
