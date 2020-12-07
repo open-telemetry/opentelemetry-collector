@@ -30,12 +30,12 @@ func TestGetAllConfigs(t *testing.T) {
 }
 
 func TestCreateAllSchemaFiles(t *testing.T) {
-	env := testEnv()
+	e := testEnv()
 	tempDir := t.TempDir()
-	env.YamlFilename = func(t reflect.Type, env Env) string {
+	e.yamlFilename = func(t reflect.Type, e env) string {
 		return path.Join(tempDir, t.String()+".yaml")
 	}
-	CreateAllSchemaFiles(testComponents(), env)
+	createAllSchemaFiles(testComponents(), e)
 	fileInfos, err := ioutil.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.NotNil(t, fileInfos)

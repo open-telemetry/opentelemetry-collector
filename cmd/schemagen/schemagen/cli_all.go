@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// CreateAllSchemaFiles creates config yaml schema files for all registered components
-func CreateAllSchemaFiles(components component.Factories, env Env) {
+// createAllSchemaFiles creates config yaml schema files for all registered components
+func createAllSchemaFiles(components component.Factories, env env) {
 	cfgs := getAllConfigs(components)
 	for _, cfg := range cfgs {
 		createSchemaFile(cfg, env)

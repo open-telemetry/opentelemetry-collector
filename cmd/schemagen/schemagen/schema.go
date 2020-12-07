@@ -37,14 +37,14 @@ type field struct {
 // createSchemaFile creates a `cfg-schema.yaml` file in the directory of the passed-in
 // config instance. The yaml file contains the recursive field names, types,
 // comments, and default values for the config struct.
-func createSchemaFile(cfg interface{}, env Env) {
+func createSchemaFile(cfg interface{}, env env) {
 	v := reflect.ValueOf(cfg)
 	f := topLevelField(v, env)
-	yamlFilename := env.YamlFilename(v.Type().Elem(), env)
+	yamlFilename := env.yamlFilename(v.Type().Elem(), env)
 	writeMarshaled(f, yamlFilename)
 }
 
-func topLevelField(v reflect.Value, env Env) *field {
+func topLevelField(v reflect.Value, env env) *field {
 	cfgType := v.Type()
 	field := &field{
 		Type: cfgType.String(),
@@ -53,7 +53,7 @@ func topLevelField(v reflect.Value, env Env) *field {
 	return field
 }
 
-func refl(f *field, v reflect.Value, env Env) {
+func refl(f *field, v reflect.Value, env env) {
 	if v.Kind() == reflect.Ptr {
 		refl(f, v.Elem(), env)
 	}
@@ -96,7 +96,7 @@ func refl(f *field, v reflect.Value, env Env) {
 	}
 }
 
-func handleKinds(v reflect.Value, f *field, env Env) {
+func handleKinds(v reflect.Value, f *field, env env) {
 	switch v.Kind() {
 	case reflect.Struct:
 		refl(f, v, env)

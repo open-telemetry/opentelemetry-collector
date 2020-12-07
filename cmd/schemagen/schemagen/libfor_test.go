@@ -35,9 +35,9 @@ type testStruct struct {
 	Ignored       string        `mapstructure:"-"`
 }
 
-func testEnv() Env {
-	return Env{
-		SrcRoot:    "../../..",
-		ModuleName: DefaultModule,
+func testEnv() env {
+	return env{
+		srcRoot:    "../../..",
+		moduleName: defaultModule,
 	}
 }

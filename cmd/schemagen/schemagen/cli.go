@@ -25,13 +25,13 @@ func CLI(c component.Factories) {
 	prepUsage()
 
 	e, componentType, componentName := parseArgs()
-	e.YamlFilename = YamlFilename
+	e.yamlFilename = yamlFilename
 
 	switch {
 	case componentType == "all":
-		CreateAllSchemaFiles(c, e)
+		createAllSchemaFiles(c, e)
 	case componentType != "" && componentName != "":
-		CreateSingleSchemaFile(
+		createSingleSchemaFile(
 			c,
 			componentType,
 			componentName,
@@ -54,10 +54,10 @@ options
 	}
 }
 
-func parseArgs() (Env, string, string) {
-	e := Env{}
-	flag.StringVar(&e.SrcRoot, "s", DefaultSrcRoot, "collector source root")
-	flag.StringVar(&e.ModuleName, "m", DefaultModule, "module name")
+func parseArgs() (env, string, string) {
+	e := env{}
+	flag.StringVar(&e.srcRoot, "s", defaultSrcRoot, "collector source root")
+	flag.StringVar(&e.moduleName, "m", defaultModule, "module name")
 	flag.Parse()
 	componentType := flag.Arg(0)
 	componentName := flag.Arg(1)

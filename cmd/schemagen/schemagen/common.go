@@ -20,22 +20,22 @@ import (
 	"strings"
 )
 
-const DefaultSrcRoot = "."
-const DefaultModule = "go.opentelemetry.io/collector"
+const defaultSrcRoot = "."
+const defaultModule = "go.opentelemetry.io/collector"
 
-type Env struct {
-	SrcRoot      string
-	ModuleName   string
-	YamlFilename func(reflect.Type, Env) string
+type env struct {
+	srcRoot      string
+	moduleName   string
+	yamlFilename func(reflect.Type, env) string
 }
 
 const schemaFilename = "cfg-schema.yaml"
 
-func YamlFilename(t reflect.Type, env Env) string {
-	return path.Join(PackageDir(t, env), schemaFilename)
+func yamlFilename(t reflect.Type, env env) string {
+	return path.Join(packageDir(t, env), schemaFilename)
 }
 
-func PackageDir(t reflect.Type, env Env) string {
-	pkg := strings.TrimPrefix(t.PkgPath(), env.ModuleName+"/")
-	return path.Join(env.SrcRoot, pkg)
+func packageDir(t reflect.Type, env env) string {
+	pkg := strings.TrimPrefix(t.PkgPath(), env.moduleName+"/")
+	return path.Join(env.srcRoot, pkg)
 }

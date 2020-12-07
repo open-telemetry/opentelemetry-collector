@@ -71,12 +71,12 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestCreateSingleSchemaFile(t *testing.T) {
-	env := testEnv()
+	e := testEnv()
 	tempDir := t.TempDir()
-	env.YamlFilename = func(reflect.Type, Env) string {
+	e.yamlFilename = func(reflect.Type, env) string {
 		return path.Join(tempDir, schemaFilename)
 	}
-	CreateSingleSchemaFile(testComponents(), "exporter", "otlp", env)
+	createSingleSchemaFile(testComponents(), "exporter", "otlp", e)
 	file, err := ioutil.ReadFile(path.Join(tempDir, schemaFilename))
 	require.NoError(t, err)
 	fld := field{}

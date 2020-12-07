@@ -23,12 +23,12 @@ import (
 )
 
 // commentsForStruct returns a map of fieldname -> comment for a struct
-func commentsForStruct(v reflect.Value, env Env) map[string]string {
+func commentsForStruct(v reflect.Value, env env) map[string]string {
 	elem := v
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	dir := PackageDir(elem.Type(), env)
+	dir := packageDir(elem.Type(), env)
 	name := trimPackage(elem)
 	return commentsForStructName(dir, name)
 }
