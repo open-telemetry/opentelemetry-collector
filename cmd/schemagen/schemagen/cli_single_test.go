@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package schemagen
 
 import (
 	"io/ioutil"
@@ -22,16 +22,19 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 func TestCreateReceiverConfig(t *testing.T) {
-	cfg, err := getConfig("receiver", "otlp")
+	cfg, err := getConfig(testComponents(), "receiver", "otlp")
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
 
 func TestCreateProcesorConfig(t *testing.T) {
-	cfg, err := getConfig("processor", "filter")
+	cfg, err := getConfig(testComponents(), "processor", "filter")
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
@@ -60,7 +63,7 @@ func TestGetConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfg, err := getConfig(test.componentType, test.name)
+			cfg, err := getConfig(testComponents(), test.componentType, test.name)
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 		})
@@ -73,7 +76,7 @@ func TestCreateSingleSchemaFile(t *testing.T) {
 	env.YamlFilename = func(reflect.Type, Env) string {
 		return path.Join(tempDir, schemaFilename)
 	}
-	CreateSingleSchemaFile("exporter", "otlp", env)
+	CreateSingleSchemaFile(testComponents(), "exporter", "otlp", env)
 	file, err := ioutil.ReadFile(path.Join(tempDir, schemaFilename))
 	require.NoError(t, err)
 	fld := field{}
@@ -81,4 +84,12 @@ func TestCreateSingleSchemaFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "*otlpexporter.Config", fld.Type)
 	require.NotNil(t, fld.Fields)
+}
+
+func testComponents() component.Factories {
+	components, err := defaultcomponents.Components()
+	if err != nil {
+		panic(err)
+	}
+	return components
 }

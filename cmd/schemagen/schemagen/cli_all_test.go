@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package schemagen
 
 import (
 	"io/ioutil"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestGetAllConfigs(t *testing.T) {
-	cfgs := getAllConfigs()
+	cfgs := getAllConfigs(testComponents())
 	require.NotNil(t, cfgs)
 }
 
@@ -35,7 +35,7 @@ func TestCreateAllSchemaFiles(t *testing.T) {
 	env.YamlFilename = func(t reflect.Type, env Env) string {
 		return path.Join(tempDir, t.String()+".yaml")
 	}
-	CreateAllSchemaFiles(env)
+	CreateAllSchemaFiles(testComponents(), env)
 	fileInfos, err := ioutil.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.NotNil(t, fileInfos)

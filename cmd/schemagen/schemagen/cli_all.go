@@ -12,26 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package schemagen
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 // CreateAllSchemaFiles creates config yaml schema files for all registered components
-func CreateAllSchemaFiles(env Env) {
-	cfgs := getAllConfigs()
+func CreateAllSchemaFiles(components component.Factories, env Env) {
+	cfgs := getAllConfigs(components)
 	for _, cfg := range cfgs {
 		createSchemaFile(cfg, env)
 	}
 }
 
-func getAllConfigs() []configmodels.NamedEntity {
-	components, err := defaultcomponents.Components()
-	if err != nil {
-		panic(err)
-	}
+func getAllConfigs(components component.Factories) []configmodels.NamedEntity {
 	var cfgs []configmodels.NamedEntity
 	for _, f := range components.Receivers {
 		cfgs = append(cfgs, f.CreateDefaultConfig())

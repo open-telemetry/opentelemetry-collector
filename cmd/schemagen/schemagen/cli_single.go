@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package schemagen
 
 import (
 	"fmt"
 	"os"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 // CreateSingleSchemaFile creates a config schema yaml file for a single component
-func CreateSingleSchemaFile(componentType, componentName string, env Env) {
-	cfg, err := getConfig(componentType, componentName)
+func CreateSingleSchemaFile(components component.Factories, componentType, componentName string, env Env) {
+	cfg, err := getConfig(components, componentType, componentName)
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
@@ -32,11 +32,7 @@ func CreateSingleSchemaFile(componentType, componentName string, env Env) {
 	createSchemaFile(cfg, env)
 }
 
-func getConfig(componentType, componentName string) (configmodels.NamedEntity, error) {
-	components, err := defaultcomponents.Components()
-	if err != nil {
-		return nil, err
-	}
+func getConfig(components component.Factories, componentType, componentName string) (configmodels.NamedEntity, error) {
 	t := configmodels.Type(componentName)
 	switch componentType {
 	case "receiver":

@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/cmd/cfgschema
+module go.opentelemetry.io/collector/cmd/schemagen
 
 go 1.15
 

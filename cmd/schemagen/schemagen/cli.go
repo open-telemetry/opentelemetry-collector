@@ -12,26 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package schemagen
 
 import (
 	"flag"
 	"fmt"
 
-	cfgschema "go.opentelemetry.io/collector/cmd/cfgschema/internal"
+	"go.opentelemetry.io/collector/component"
 )
 
-func main() {
+func CLI(c component.Factories) {
 	prepUsage()
 
 	e, componentType, componentName := parseArgs()
-	e.YamlFilename = cfgschema.YamlFilename
+	e.YamlFilename = YamlFilename
 
 	switch {
 	case componentType == "all":
-		cfgschema.CreateAllSchemaFiles(e)
+		CreateAllSchemaFiles(c, e)
 	case componentType != "" && componentName != "":
-		cfgschema.CreateSingleSchemaFile(componentType, componentName, e)
+		CreateSingleSchemaFile(
+			c,
+			componentType,
+			componentName,
+			e,
+		)
 	default:
 		flag.Usage()
 	}
@@ -49,10 +54,10 @@ options
 	}
 }
 
-func parseArgs() (cfgschema.Env, string, string) {
-	e := cfgschema.Env{}
-	flag.StringVar(&e.SrcRoot, "s", cfgschema.DefaultSrcRoot, "collector source root")
-	flag.StringVar(&e.ModuleName, "m", cfgschema.DefaultModule, "module name")
+func parseArgs() (Env, string, string) {
+	e := Env{}
+	flag.StringVar(&e.SrcRoot, "s", DefaultSrcRoot, "collector source root")
+	flag.StringVar(&e.ModuleName, "m", DefaultModule, "module name")
 	flag.Parse()
 	componentType := flag.Arg(0)
 	componentName := flag.Arg(1)

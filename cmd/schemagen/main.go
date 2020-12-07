@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package main
 
 import (
-	"reflect"
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/cmd/schemagen/schemagen"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-func TestFieldComments(t *testing.T) {
-	v := reflect.ValueOf(testStruct{})
-	comments := commentsForStruct(v, testEnv())
-	require.EqualValues(t, map[string]string{
-		"Duration": "embedded, package qualified\n",
-	}, comments)
+func main() {
+	components, err := defaultcomponents.Components()
+	if err != nil {
+		panic(err)
+	}
+	schemagen.CLI(components)
 }
