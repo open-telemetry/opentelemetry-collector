@@ -4,9 +4,8 @@ This extension enables bearer token authorization for GRPC receivers.
 
 The following settings are required:
 
-- `issuer_url`: The base URL for the Config provider.
+- `issuer_url`: The base URL for the OIDC provider.
 - `audience`: Audience of the token, used during the verification
-- `attribute` (default: `authorization`): The attribute (header name) to look for auth data
 
 Example:
 
@@ -14,7 +13,8 @@ Example:
 receivers:
   somereceiver:
     grpc:
-      authenticator: oidc
+      auth:
+        authenticator: oidc
 
 extensions:
   oidc:

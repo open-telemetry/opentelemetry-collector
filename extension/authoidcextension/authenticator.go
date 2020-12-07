@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidcextension
+package authoidcextension
 
 import (
 	"context"
@@ -46,20 +46,20 @@ type oidcAuthenticator struct {
 }
 
 var (
-	errNoAudienceProvided                = errors.New("no Audience provided for the Config configuration")
-	errNoIssuerURL                       = errors.New("no IssuerURL provided for the Config configuration")
+	errNoClientIDProvided                = errors.New("no ClientID provided for the OIDC configuration")
+	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
-	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the Config provider")
-	errClaimNotFound                     = errors.New("username claim from the Config configuration not found on the token returned by the Config provider")
-	errUsernameNotString                 = errors.New("the username returned by the Config provider isn't a regular string")
-	errGroupsClaimNotFound               = errors.New("groups claim from the Config configuration not found on the token returned by the Config provider")
+	errFailedToObtainClaimsFromToken     = errors.New("failed to get the subject from the token issued by the OIDC provider")
+	errClaimNotFound                     = errors.New("username claim from the OIDC configuration not found on the token returned by the OIDC provider")
+	errUsernameNotString                 = errors.New("the username returned by the OIDC provider isn't a regular string")
+	errGroupsClaimNotFound               = errors.New("groups claim from the OIDC configuration not found on the token returned by the OIDC provider")
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 	defaultAttribute                     = "authorization"
 )
 
 func newOIDCAuthenticator(cfg *Config) (*oidcAuthenticator, error) {
 	if cfg.Audience == "" {
-		return nil, errNoAudienceProvided
+		return nil, errNoClientIDProvided
 	}
 	if cfg.IssuerURL == "" {
 		return nil, errNoIssuerURL
@@ -130,9 +130,6 @@ func (o *oidcAuthenticator) Start(ctx context.Context, host component.Host) erro
 	o.verifier = o.provider.Verifier(&oidc.Config{
 		ClientID: o.config.Audience,
 	})
-
-	o.host = host
-
 	return nil
 }
 
@@ -152,12 +149,6 @@ func (o *oidcAuthenticator) StreamInterceptor(srv interface{}, str grpc.ServerSt
 
 // ToServerOptions builds a set of server options ready to be used by the gRPC server
 func (o *oidcAuthenticator) ToServerOptions() ([]grpc.ServerOption, error) {
-	// perhaps we should use a timeout here?
-	// TODO: we need a hook to call auth.Close()
-	if err := o.Start(context.Background(), o.host); err != nil {
-		return nil, err
-	}
-
 	return []grpc.ServerOption{
 		grpc.UnaryInterceptor(o.UnaryInterceptor),
 		grpc.StreamInterceptor(o.StreamInterceptor),

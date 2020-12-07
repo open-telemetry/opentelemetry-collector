@@ -1,5 +1,5 @@
 extensions:
-  oidc:
+  oidc: # this config should fail as it is missing the required properties issuer_url and audience
   oidc/1:
     issuer_url: https://auth.example.com/
     issuer_ca_path: /etc/pki/tls/cert.pem

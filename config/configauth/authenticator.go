@@ -80,7 +80,7 @@ var authRegistry = map[string]Authenticator{}
 
 func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
 	if _, ok := authRegistry[name]; ok {
-		return fmt.Errorf("Authenticator with name %s already registered", name)
+		return fmt.Errorf("authenticator with name %s already registered", name)
 	}
 	authRegistry[name] = auth
 	return nil
@@ -89,7 +89,7 @@ func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
 func GetAuthenticatorFromRegistry(name string) (Authenticator, error) {
 	auth, ok := authRegistry[name]
 	if !ok {
-		return nil, fmt.Errorf("Authenticator not found with name %s", name)
+		return nil, fmt.Errorf("authenticator not found with name %s", name)
 	}
 	return auth, nil
 }

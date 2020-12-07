@@ -1,10 +1,10 @@
-// Copyright -c Google LLC
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidcextension
+package authoidcextension
 
 import "go.opentelemetry.io/collector/config/configmodels"
 
 // Config defines the OpenID Connect properties for this processor
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
-	// IssuerURL is the base URL for the Config provider.
+	// IssuerURL is the base URL for the OIDC provider.
 	// Required.
 	IssuerURL string `mapstructure:"issuer_url"`
 
@@ -40,6 +40,6 @@ type Config struct {
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
 
-	// The attribute (header name) to look for auth data. Optional, default value: "authentication".
+	// The attribute (header name) to look for auth data. Optional, default value: "authorization".
 	Attribute string `mapstructure:"attribute"`
 }
