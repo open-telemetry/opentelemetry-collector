@@ -57,6 +57,10 @@ type batchProcessor struct {
 }
 
 type batch interface {
+	// readyExportCh signals that current batch is ready to export.
+	// Must be called after export and before reset
+	readyExportCh() <-chan struct{}
+
 	// export the current batch
 	export(ctx context.Context) error
 
@@ -183,9 +187,12 @@ func (bp *batchProcessor) sendItems(measure *stats.Int64Measure) {
 		_ = stats.RecordWithTags(context.Background(), statsTags, statBatchSendSizeBytes.M(int64(bp.batch.size())))
 	}
 
-	if err := bp.batch.export(context.Background()); err != nil {
-		bp.logger.Warn("Sender failed", zap.Error(err))
-	}
+	go func() {
+		if err := bp.batch.export(context.Background()); err != nil {
+			bp.logger.Warn("Sender failed", zap.Error(err))
+		}
+	}()
+	<-bp.batch.readyExportCh()
 	bp.batch.reset()
 }
 
@@ -227,10 +234,11 @@ type batchTraces struct {
 	nextConsumer consumer.TracesConsumer
 	traceData    pdata.Traces
 	spanCount    uint32
+	exportReady  chan struct{}
 }
 
 func newBatchTraces(nextConsumer consumer.TracesConsumer) *batchTraces {
-	b := &batchTraces{nextConsumer: nextConsumer}
+	b := &batchTraces{nextConsumer: nextConsumer, exportReady: make(chan struct{}, 1)}
 	b.reset()
 	return b
 }
@@ -247,8 +255,14 @@ func (bt *batchTraces) add(item interface{}) {
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 }
 
+func (bt *batchTraces) readyExportCh() <-chan struct{} {
+	return bt.exportReady
+}
+
 func (bt *batchTraces) export(ctx context.Context) error {
-	return bt.nextConsumer.ConsumeTraces(ctx, bt.traceData)
+	traceData := bt.traceData
+	bt.exportReady <- struct{}{}
+	return bt.nextConsumer.ConsumeTraces(ctx, traceData)
 }
 
 func (bt *batchTraces) itemCount() uint32 {
@@ -269,16 +283,23 @@ type batchMetrics struct {
 	nextConsumer consumer.MetricsConsumer
 	metricData   pdata.Metrics
 	metricCount  uint32
+	exportReady  chan struct{}
 }
 
 func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
-	b := &batchMetrics{nextConsumer: nextConsumer}
+	b := &batchMetrics{nextConsumer: nextConsumer, exportReady: make(chan struct{}, 1)}
 	b.reset()
 	return b
 }
 
+func (bm *batchMetrics) readyExportCh() <-chan struct{} {
+	return bm.exportReady
+}
+
 func (bm *batchMetrics) export(ctx context.Context) error {
-	return bm.nextConsumer.ConsumeMetrics(ctx, bm.metricData)
+	metricData := bm.metricData
+	bm.exportReady <- struct{}{}
+	return bm.nextConsumer.ConsumeMetrics(ctx, metricData)
 }
 
 func (bm *batchMetrics) itemCount() uint32 {
@@ -310,16 +331,23 @@ type batchLogs struct {
 	nextConsumer consumer.LogsConsumer
 	logData      pdata.Logs
 	logCount     uint32
+	exportReady  chan struct{}
 }
 
 func newBatchLogs(nextConsumer consumer.LogsConsumer) *batchLogs {
-	b := &batchLogs{nextConsumer: nextConsumer}
+	b := &batchLogs{nextConsumer: nextConsumer, exportReady: make(chan struct{}, 1)}
 	b.reset()
 	return b
 }
 
+func (bm *batchLogs) readyExportCh() <-chan struct{} {
+	return bm.exportReady
+}
+
 func (bm *batchLogs) export(ctx context.Context) error {
-	return bm.nextConsumer.ConsumeLogs(ctx, bm.logData)
+	logData := bm.logData
+	bm.exportReady <- struct{}{}
+	return bm.nextConsumer.ConsumeLogs(ctx, logData)
 }
 
 func (bm *batchLogs) itemCount() uint32 {
