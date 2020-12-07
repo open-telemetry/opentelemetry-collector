@@ -43,11 +43,6 @@ func NewResource() Resource {
 	return newResource(&otlpresource.Resource{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms Resource) InitEmpty() {
-	*ms.orig = otlpresource.Resource{}
-}
-
 // Attributes returns the Attributes associated with this Resource.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
