@@ -394,7 +394,7 @@ func (s *loggingExporter) pushMetricsData(
 // received data and logs debugging messages.
 func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.TracesExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
@@ -414,7 +414,7 @@ func newTraceExporter(config configmodels.Exporter, level string, logger *zap.Lo
 // received data and logs debugging messages.
 func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.MetricsExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
@@ -434,7 +434,7 @@ func newMetricsExporter(config configmodels.Exporter, level string, logger *zap.
 // received data and logs debugging messages.
 func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Logger) (component.LogsExporter, error) {
 	s := &loggingExporter{
-		debug:  level == "debug",
+		debug:  strings.ToLower(level) == "debug",
 		logger: logger,
 	}
 
