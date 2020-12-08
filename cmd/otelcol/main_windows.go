@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"golang.org/x/sys/windows/svc"
 
@@ -25,15 +26,24 @@ import (
 )
 
 func run(params service.Parameters) error {
-	isInteractive, err := svc.IsAnInteractiveSession()
-	if err != nil {
-		return fmt.Errorf("failed to determine if we are running in an interactive session %w", err)
-	}
-
-	if isInteractive {
+	if isInteractiveMode, err := checkInteractiveMode(); err != nil {
+		return err
+	} else if isInteractiveMode {
 		return runInteractive(params)
 	} else {
 		return runService(params)
+	}
+}
+
+func checkInteractiveMode() (bool, error) {
+	if value, present := os.LookupEnv("NO_WINDOWS_SERVICE"); present && value != "0" {
+		return true, nil
+	}
+
+	if isInteractiveSession, err := svc.IsAnInteractiveSession(); err != nil {
+		return false, fmt.Errorf("failed to determine if we are running in an interactive session %w", err)
+	} else {
+		return isInteractiveSession, nil
 	}
 }
 
