@@ -26,16 +26,16 @@ import (
 )
 
 func run(params service.Parameters) error {
-	if isInteractiveMode, err := checkInteractiveMode(); err != nil {
+	if useInteractiveMode, err := checkUseInteractiveMode(); err != nil {
 		return err
-	} else if isInteractiveMode {
+	} else if useInteractiveMode {
 		return runInteractive(params)
 	} else {
 		return runService(params)
 	}
 }
 
-func checkInteractiveMode() (bool, error) {
+func checkUseInteractiveMode() (bool, error) {
 	if value, present := os.LookupEnv("NO_WINDOWS_SERVICE"); present && value != "0" {
 		return true, nil
 	}
