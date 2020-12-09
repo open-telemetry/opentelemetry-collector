@@ -26,7 +26,10 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/processor/filterprocessor"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 var creationParams = component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -63,4 +66,20 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 
 	_, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewMetricsNop())
 	assert.EqualError(t, err, fmt.Sprintf("host metrics scraper factory not found for key: %q", errorKey))
+}
+
+func TestCreateReceiver_ConsumerWithFilterError(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	hCfg := cfg.(*Config)
+	hCfg.FilterSettings = receiverhelper.FilterSettings{
+		MetricFilters: filterprocessor.MetricFilters{
+			Include: &filtermetric.MatchProperties{
+				MatchType: "invalid",
+			},
+		},
+	}
+
+	_, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewMetricsNop())
+	assert.Error(t, err)
 }

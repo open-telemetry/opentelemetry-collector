@@ -16,6 +16,7 @@ package hostmetricsreceiver
 
 import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -23,4 +24,5 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	Scrapers                                map[string]internal.Config `mapstructure:"-"`
+	receiverhelper.FilterSettings           `mapstructure:",squash"`
 }

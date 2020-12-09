@@ -154,10 +154,15 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	nextConsumer, err := receiverhelper.ConsumerWithFilter(params.Logger, consumer, oCfg.FilterSettings)
+	if err != nil {
+		return nil, err
+	}
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
 		params.Logger,
-		consumer,
+		nextConsumer,
 		addScraperOptions...,
 	)
 }
