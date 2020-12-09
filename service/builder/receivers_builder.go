@@ -84,6 +84,7 @@ type ReceiversBuilder struct {
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
 	factories      map[configmodels.Type]component.ReceiverFactory
+	extensions     Extensions
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
@@ -93,8 +94,9 @@ func NewReceiversBuilder(
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
 	factories map[configmodels.Type]component.ReceiverFactory,
+	extensions Extensions,
 ) *ReceiversBuilder {
-	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories}
+	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories, extensions}
 }
 
 // BuildProcessors receivers from config.
@@ -104,7 +106,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
 		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
-		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg)
+		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg, rb.extensions)
 		if err != nil {
 			if err == errUnusedReceiver {
 				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
@@ -172,15 +174,19 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	config configmodels.Receiver,
 	rcv *builtReceiver,
 	builtPipelines []*builtPipeline,
+	extensions Extensions,
 ) error {
 	// There are pipelines of the specified data type that must be attached to
 	// the receiver. Create the receiver of corresponding data type and make
 	// sure its output is fanned out to all attached pipelines.
 	var err error
 	var createdReceiver component.Receiver
+
+	builtExtensions := rb.getBuiltExtensions(extensions)
 	creationParams := component.ReceiverCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
+		Extensions:           builtExtensions,
 	}
 
 	switch dataType {
@@ -237,7 +243,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver) (*builtReceiver, error) {
+func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver, extensions Extensions) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)
@@ -263,7 +269,7 @@ func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := rb.attachReceiverToPipelines(ctx, logger, appInfo, factory, dataType, config, rcv, pipelines)
+		err := rb.attachReceiverToPipelines(ctx, logger, appInfo, factory, dataType, config, rcv, pipelines, extensions)
 		if err != nil {
 			return nil, err
 		}
@@ -274,6 +280,15 @@ func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 	}
 
 	return rcv, nil
+}
+
+func (rb *ReceiversBuilder) getBuiltExtensions(extensions Extensions) map[string]component.ServiceExtension {
+	builtExtensions := map[string]component.ServiceExtension{}
+	for key, builtExtension := range extensions {
+		name := key.Name()
+		builtExtensions[name] = builtExtension.extension
+	}
+	return builtExtensions
 }
 
 func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TracesConsumer {

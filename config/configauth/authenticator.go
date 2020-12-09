@@ -17,7 +17,6 @@ package configauth
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -74,22 +73,4 @@ func DefaultStreamInterceptor(srv interface{}, stream grpc.ServerStream, info *g
 	}
 
 	return handler(srv, stream)
-}
-
-var authRegistry = map[string]Authenticator{}
-
-func AddAuthenticatorToRegistry(name string, auth Authenticator) error {
-	if _, ok := authRegistry[name]; ok {
-		return fmt.Errorf("authenticator with name %s already registered", name)
-	}
-	authRegistry[name] = auth
-	return nil
-}
-
-func GetAuthenticatorFromRegistry(name string) (Authenticator, error) {
-	auth, ok := authRegistry[name]
-	if !ok {
-		return nil, fmt.Errorf("authenticator not found with name %s", name)
-	}
-	return auth, nil
 }

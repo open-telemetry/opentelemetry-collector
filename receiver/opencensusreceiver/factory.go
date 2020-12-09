@@ -57,11 +57,11 @@ func createDefaultConfig() configmodels.Receiver {
 
 func createTraceReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesReceiver, error) {
-	r, err := createReceiver(cfg)
+	r, err := createReceiver(cfg, params)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +73,11 @@ func createTraceReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateParams,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	r, err := createReceiver(cfg)
+	r, err := createReceiver(cfg, params)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func createMetricsReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
+func createReceiver(cfg configmodels.Receiver, params component.ReceiverCreateParams) (*ocReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -97,7 +97,7 @@ func createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
 	receiver, ok := receivers[rCfg]
 	if !ok {
 		// Build the configuration options.
-		opts, err := rCfg.buildOptions()
+		opts, err := rCfg.buildOptions(params.Extensions)
 		if err != nil {
 			return nil, err
 		}

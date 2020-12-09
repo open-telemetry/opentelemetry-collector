@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -236,7 +237,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
-func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption(extensions map[string]component.ServiceExtension) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -293,10 +294,16 @@ func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 
 	if gss.Auth != nil {
 		authName := gss.Auth.Authenticator
-		authenticator, err := configauth.GetAuthenticatorFromRegistry(authName)
-		if err != nil {
-			return nil, err
+		authExtension, extFound := extensions[authName]
+		if !extFound {
+			return nil, fmt.Errorf("auth extension %s not found", authName)
 		}
+
+		authenticator, extIsAuth := authExtension.(configauth.Authenticator)
+		if !extIsAuth {
+			return nil, fmt.Errorf("extension %s is not of type configauth.Authenticator", authName)
+		}
+
 		authOpts, err := authenticator.ToServerOptions()
 		if err != nil {
 			return nil, err

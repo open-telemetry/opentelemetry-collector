@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
@@ -46,16 +45,12 @@ func createDefaultConfig() configmodels.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(_ context.Context, _ component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 	oidcAuth, err := newOIDCAuthenticator(config)
 	if err != nil {
 		return nil, err
 	}
 
-	err = configauth.AddAuthenticatorToRegistry(cfg.Name(), oidcAuth)
-	if err != nil {
-		return nil, err
-	}
 	return oidcAuth, nil
 }
