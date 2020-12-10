@@ -240,8 +240,10 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 		sizeOfCurrentBatch += sizeOfSeries
 	}
 
-	wrapped := convertTimeseriesToRequest(tsArray)
-	requests = append(requests, wrapped)
+	if len(tsArray) != 0 {
+		wrapped := convertTimeseriesToRequest(tsArray)
+		requests = append(requests, wrapped)
+	}
 
 	return requests, nil
 }

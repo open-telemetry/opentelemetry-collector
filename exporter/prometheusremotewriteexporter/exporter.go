@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sync"
@@ -275,11 +276,12 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	wg.Add(maxConcurrentRequests) // used to wait for workers to be finished
+	concurrencyLimit := int(math.Min(maxConcurrentRequests, float64(len(requests))))
+	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	// Run concurrencyLimit of workers until there
 	// is no more requests to execute in the input channel.
-	for i := 0; i < maxConcurrentRequests; i++ {
+	for i := 0; i < concurrencyLimit; i++ {
 		go func() {
 			defer wg.Done()
 
