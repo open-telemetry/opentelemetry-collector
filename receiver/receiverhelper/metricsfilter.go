@@ -25,6 +25,10 @@ import (
 	"go.opentelemetry.io/collector/processor/filterprocessor"
 )
 
+type FilterSettings struct {
+	filterprocessor.MetricsFilterConfig `mapstructure:"metrics_filter"`
+}
+
 // consumerWithFilter wraps a consumer with *filterprocessor.MetricsFilter
 type consumerWithFilter struct {
 	metricsFilter *filterprocessor.MetricsFilter
@@ -36,8 +40,8 @@ type consumerWithFilter struct {
 func ConsumerWithFilter(
 	logger *zap.Logger,
 	consumer consumer.MetricsConsumer,
-	filterCfg filterprocessor.MetricsFilterConfig) (consumer.MetricsConsumer, error) {
-	metricsFilterer, err := filterprocessor.NewMetricsFilter(filterCfg.Include, filterCfg.Exclude, logger)
+	filterSettings FilterSettings) (consumer.MetricsConsumer, error) {
+	metricsFilterer, err := filterprocessor.NewMetricsFilter(filterSettings.Include, filterSettings.Exclude, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics filterCfg: %w", err)
 	}

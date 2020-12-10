@@ -45,16 +45,16 @@ func TestConsumerWithFilter(t *testing.T) {
 	tests := []struct {
 		name                    string
 		consumer                *consumertest.MetricsSink
-		filterCfg               filterprocessor.MetricsFilterConfig
+		filterSettings          FilterSettings
 		inputMetrics            pdata.Metrics
 		expectedMetrics         []string
 		wantErr                 bool
 		wantErrOnConsumeMetrics bool
 	}{
 		{
-			name:      "Empty filterCfg",
-			consumer:  &consumertest.MetricsSink{},
-			filterCfg: filterprocessor.MetricsFilterConfig{},
+			name:           "Empty filterCfg",
+			consumer:       &consumertest.MetricsSink{},
+			filterSettings: FilterSettings{},
 			expectedMetrics: []string{
 				"metric_1",
 				"metric_2",
@@ -65,11 +65,13 @@ func TestConsumerWithFilter(t *testing.T) {
 		{
 			name:     "Strict include filterCfg",
 			consumer: &consumertest.MetricsSink{},
-			filterCfg: filterprocessor.MetricsFilterConfig{
-				Include: &filtermetric.MatchProperties{
-					MatchType: "strict",
-					MetricNames: []string{
-						"metric_1",
+			filterSettings: FilterSettings{
+				MetricsFilterConfig: filterprocessor.MetricsFilterConfig{
+					Include: &filtermetric.MatchProperties{
+						MatchType: "strict",
+						MetricNames: []string{
+							"metric_1",
+						},
 					},
 				},
 			},
@@ -81,12 +83,14 @@ func TestConsumerWithFilter(t *testing.T) {
 		{
 			name:     "Strict exclude filterCfg",
 			consumer: &consumertest.MetricsSink{},
-			filterCfg: filterprocessor.MetricsFilterConfig{
-				Exclude: &filtermetric.MatchProperties{
-					MatchType: "strict",
-					MetricNames: []string{
-						"metric_2",
-						"metric_3",
+			filterSettings: FilterSettings{
+				MetricsFilterConfig: filterprocessor.MetricsFilterConfig{
+					Exclude: &filtermetric.MatchProperties{
+						MatchType: "strict",
+						MetricNames: []string{
+							"metric_2",
+							"metric_3",
+						},
 					},
 				},
 			},
@@ -98,11 +102,13 @@ func TestConsumerWithFilter(t *testing.T) {
 		{
 			name:     "Regex include filterCfg",
 			consumer: &consumertest.MetricsSink{},
-			filterCfg: filterprocessor.MetricsFilterConfig{
-				Include: &filtermetric.MatchProperties{
-					MatchType: "regexp",
-					MetricNames: []string{
-						".*1",
+			filterSettings: FilterSettings{
+				MetricsFilterConfig: filterprocessor.MetricsFilterConfig{
+					Include: &filtermetric.MatchProperties{
+						MatchType: "regexp",
+						MetricNames: []string{
+							".*1",
+						},
 					},
 				},
 			},
@@ -114,11 +120,13 @@ func TestConsumerWithFilter(t *testing.T) {
 		{
 			name:     "Regex exclude filterCfg",
 			consumer: &consumertest.MetricsSink{},
-			filterCfg: filterprocessor.MetricsFilterConfig{
-				Exclude: &filtermetric.MatchProperties{
-					MatchType: "regexp",
-					MetricNames: []string{
-						".*2",
+			filterSettings: FilterSettings{
+				MetricsFilterConfig: filterprocessor.MetricsFilterConfig{
+					Exclude: &filtermetric.MatchProperties{
+						MatchType: "regexp",
+						MetricNames: []string{
+							".*2",
+						},
 					},
 				},
 			},
@@ -131,11 +139,13 @@ func TestConsumerWithFilter(t *testing.T) {
 		{
 			name:     "Filter error",
 			consumer: &consumertest.MetricsSink{},
-			filterCfg: filterprocessor.MetricsFilterConfig{
-				Exclude: &filtermetric.MatchProperties{
-					MatchType: "regexp",
-					MetricNames: []string{
-						"*2",
+			filterSettings: FilterSettings{
+				MetricsFilterConfig: filterprocessor.MetricsFilterConfig{
+					Exclude: &filtermetric.MatchProperties{
+						MatchType: "regexp",
+						MetricNames: []string{
+							"*2",
+						},
 					},
 				},
 			},
@@ -145,7 +155,7 @@ func TestConsumerWithFilter(t *testing.T) {
 		{
 			name:                    "ConsumeMetrics error",
 			consumer:                &consumertest.MetricsSink{},
-			filterCfg:               filterprocessor.MetricsFilterConfig{},
+			filterSettings:          FilterSettings{},
 			wantErrOnConsumeMetrics: true,
 			inputMetrics:            pdata.NewMetrics(),
 		},
@@ -154,7 +164,7 @@ func TestConsumerWithFilter(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConsumerWithFilter(logger, tt.consumer, tt.filterCfg)
+			got, err := ConsumerWithFilter(logger, tt.consumer, tt.filterSettings)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Nil(t, got)
