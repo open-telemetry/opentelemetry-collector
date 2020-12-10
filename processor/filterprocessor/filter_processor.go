@@ -24,8 +24,8 @@ import (
 )
 
 type filterMetricProcessor struct {
-	cfg           *Config
-	metricsFilter *MetricsFilter
+	cfg             *Config
+	metricsFilterer *MetricsFilterer
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
@@ -57,18 +57,18 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude metric names", excludeMetricNames),
 	)
 
-	metricsFilter, err := NewMetricsFilter(cfg.Metrics.Include, cfg.Metrics.Exclude, logger)
+	metricsFilterer, err := NewMetricsFilterer(cfg.Metrics.Include, cfg.Metrics.Exclude, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics filter: %w", err)
 	}
 
 	return &filterMetricProcessor{
-		cfg:           cfg,
-		metricsFilter: metricsFilter,
+		cfg:             cfg,
+		metricsFilterer: metricsFilterer,
 	}, nil
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) ProcessMetrics(_ context.Context, pdm pdata.Metrics) (pdata.Metrics, error) {
-	return fmp.metricsFilter.FilterMetrics(pdm)
+	return fmp.metricsFilterer.FilterMetrics(pdm)
 }

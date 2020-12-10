@@ -22,15 +22,44 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-type MetricsFilter struct {
+type MetricsFilterer struct {
 	include filtermetric.Matcher
 	exclude filtermetric.Matcher
 
 	logger *zap.Logger
 }
 
-// FilterMetrics filters the given metrics based off the MetricsFilter's filters.
-func (f *MetricsFilter) FilterMetrics(pdm pdata.Metrics) (pdata.Metrics, error) {
+func NewMetricsFilterer(
+	include *filtermetric.MatchProperties,
+	exclude *filtermetric.MatchProperties,
+	logger *zap.Logger) (*MetricsFilterer, error) {
+	inc, err := createMatcher(include)
+	if err != nil {
+		return nil, err
+	}
+
+	exc, err := createMatcher(exclude)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MetricsFilterer{
+		include: inc,
+		exclude: exc,
+		logger:  logger,
+	}, nil
+}
+
+func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
+	// Nothing specified in configuration
+	if mp == nil {
+		return nil, nil
+	}
+	return filtermetric.NewMatcher(mp)
+}
+
+// FilterMetrics filters the given metrics based off the MetricsFilterer's filters.
+func (f *MetricsFilterer) FilterMetrics(pdm pdata.Metrics) (pdata.Metrics, error) {
 	rms := pdm.ResourceMetrics()
 	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
@@ -55,7 +84,7 @@ func (f *MetricsFilter) FilterMetrics(pdm pdata.Metrics) (pdata.Metrics, error) 
 	return idx.extract(pdm), nil
 }
 
-func (f *MetricsFilter) shouldKeepMetric(metric pdata.Metric) (bool, error) {
+func (f *MetricsFilterer) shouldKeepMetric(metric pdata.Metric) (bool, error) {
 	if f.include != nil {
 		matches, err := f.include.MatchMetric(metric)
 		if err != nil {
@@ -78,33 +107,4 @@ func (f *MetricsFilter) shouldKeepMetric(metric pdata.Metric) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func NewMetricsFilter(
-	include *filtermetric.MatchProperties,
-	exclude *filtermetric.MatchProperties,
-	logger *zap.Logger) (*MetricsFilter, error) {
-	inc, err := createMatcher(include)
-	if err != nil {
-		return nil, err
-	}
-
-	exc, err := createMatcher(exclude)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MetricsFilter{
-		include: inc,
-		exclude: exc,
-		logger:  logger,
-	}, nil
-}
-
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
-	// Nothing specified in configuration
-	if mp == nil {
-		return nil, nil
-	}
-	return filtermetric.NewMatcher(mp)
 }
