@@ -189,7 +189,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: test.inc,
 					Exclude: test.exc,
 				},
@@ -294,7 +294,7 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
-	pcfg.Metrics = MetricFilters{
+	pcfg.Metrics = MetricsFilterConfig{
 		Exclude: mp,
 	}
 	ctx := context.Background()
@@ -392,7 +392,7 @@ func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)
-	pcfg.Metrics = MetricFilters{
+	pcfg.Metrics = MetricsFilterConfig{
 		Exclude: &filtermetric.MatchProperties{
 			MatchType:   "strict",
 			MetricNames: []string{"foo"},

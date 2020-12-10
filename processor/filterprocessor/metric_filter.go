@@ -22,17 +22,17 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-type MetricsFilterer struct {
+type MetricsFilter struct {
 	include filtermetric.Matcher
 	exclude filtermetric.Matcher
 
 	logger *zap.Logger
 }
 
-func NewMetricsFilterer(
+func NewMetricsFilter(
 	include *filtermetric.MatchProperties,
 	exclude *filtermetric.MatchProperties,
-	logger *zap.Logger) (*MetricsFilterer, error) {
+	logger *zap.Logger) (*MetricsFilter, error) {
 	inc, err := createMatcher(include)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func NewMetricsFilterer(
 		return nil, err
 	}
 
-	return &MetricsFilterer{
+	return &MetricsFilter{
 		include: inc,
 		exclude: exc,
 		logger:  logger,
@@ -58,8 +58,8 @@ func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, erro
 	return filtermetric.NewMatcher(mp)
 }
 
-// FilterMetrics filters the given metrics based off the MetricsFilterer's filters.
-func (f *MetricsFilterer) FilterMetrics(pdm pdata.Metrics) (pdata.Metrics, error) {
+// FilterMetrics filters the given metrics based off the MetricsFilter's filters.
+func (f *MetricsFilter) FilterMetrics(pdm pdata.Metrics) (pdata.Metrics, error) {
 	rms := pdm.ResourceMetrics()
 	idx := newMetricIndex()
 	for i := 0; i < rms.Len(); i++ {
@@ -84,7 +84,7 @@ func (f *MetricsFilterer) FilterMetrics(pdm pdata.Metrics) (pdata.Metrics, error
 	return idx.extract(pdm), nil
 }
 
-func (f *MetricsFilterer) shouldKeepMetric(metric pdata.Metric) (bool, error) {
+func (f *MetricsFilter) shouldKeepMetric(metric pdata.Metric) (bool, error) {
 	if f.include != nil {
 		matches, err := f.include.MatchMetric(metric)
 		if err != nil {

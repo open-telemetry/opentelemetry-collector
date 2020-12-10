@@ -62,7 +62,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 					NameVal: "filter/empty",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Strict,
 					},
@@ -75,7 +75,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: testDataMetricProperties,
 				},
 			},
@@ -86,7 +86,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Exclude: testDataMetricProperties,
 				},
 			},
@@ -97,7 +97,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 					NameVal: "filter/includeexclude",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: testDataMetricProperties,
 					Exclude: &filtermetric.MatchProperties{
 						MatchType:   filtermetric.Strict,
@@ -156,7 +156,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: testDataMetricProperties,
 				},
 			},
@@ -167,7 +167,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Exclude: testDataMetricProperties,
 				},
 			},
@@ -178,7 +178,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 					NameVal: "filter/unlimitedcache",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
 						RegexpConfig: &fsregexp.Config{
@@ -195,7 +195,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 					NameVal: "filter/limitedcache",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
 						RegexpConfig: &fsregexp.Config{
@@ -237,7 +237,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 					NameVal: "filter/empty",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
 					},
@@ -251,7 +251,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 					NameVal: "filter/include",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
 						Expressions: []string{
@@ -269,7 +269,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 					NameVal: "filter/exclude",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
 						Expressions: []string{
@@ -287,7 +287,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 					NameVal: "filter/includeexclude",
 					TypeVal: typeStr,
 				},
-				Metrics: MetricFilters{
+				Metrics: MetricsFilterConfig{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
 						Expressions: []string{

@@ -25,7 +25,7 @@ import (
 
 type filterMetricProcessor struct {
 	cfg             *Config
-	metricsFilterer *MetricsFilterer
+	metricsFilterer *MetricsFilter
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
@@ -57,7 +57,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude metric names", excludeMetricNames),
 	)
 
-	metricsFilterer, err := NewMetricsFilterer(cfg.Metrics.Include, cfg.Metrics.Exclude, logger)
+	metricsFilterer, err := NewMetricsFilter(cfg.Metrics.Include, cfg.Metrics.Exclude, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics filter: %w", err)
 	}

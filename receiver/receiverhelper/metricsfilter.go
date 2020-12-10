@@ -25,21 +25,21 @@ import (
 	"go.opentelemetry.io/collector/processor/filterprocessor"
 )
 
-// consumerWithFilter wraps a consumer with *filterprocessor.MetricsFilterer
+// consumerWithFilter wraps a consumer with *filterprocessor.MetricsFilter
 type consumerWithFilter struct {
-	metricsFilter *filterprocessor.MetricsFilterer
+	metricsFilter *filterprocessor.MetricsFilter
 	nextConsumer  consumer.MetricsConsumer
 }
 
-// ConsumerWithFilter returns the consumer wrapped with a filter. This is an experimental
+// ConsumerWithFilter returns the consumer wrapped with a filterCfg. This is an experimental
 // feature, expect breaking changes.
 func ConsumerWithFilter(
 	logger *zap.Logger,
 	consumer consumer.MetricsConsumer,
-	filter filterprocessor.MetricFilters) (consumer.MetricsConsumer, error) {
-	metricsFilterer, err := filterprocessor.NewMetricsFilterer(filter.Include, filter.Exclude, logger)
+	filterCfg filterprocessor.MetricsFilterConfig) (consumer.MetricsConsumer, error) {
+	metricsFilterer, err := filterprocessor.NewMetricsFilter(filterCfg.Include, filterCfg.Exclude, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metrics filter: %w", err)
+		return nil, fmt.Errorf("failed to create metrics filterCfg: %w", err)
 	}
 
 	return &consumerWithFilter{

@@ -168,7 +168,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) configmodels.Processor {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
-	pCfg.Metrics = MetricFilters{}
+	pCfg.Metrics = MetricsFilterConfig{}
 	if include != nil {
 		pCfg.Metrics.Include = &filtermetric.MatchProperties{
 			MatchType:   "expr",
