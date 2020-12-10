@@ -22,9 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -52,7 +49,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		ConstLabels:      map[string]string{},
 		SendTimestamps:   false,
-		MetricExpiration: time.Minute * 120,
+		MetricExpiration: time.Minute * 5,
 	}
 }
 
@@ -68,15 +65,12 @@ func createMetricsExporter(
 		return nil, errBlankPrometheusAddress
 	}
 
-	reg := prometheus.NewRegistry()
-	ph := promhttp.HandlerFor(
-		reg,
-		promhttp.HandlerOpts{
-			ErrorHandling: promhttp.ContinueOnError,
-		},
-	)
-
 	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	pexp, err := newPrometheusExporter(pcfg, ln.Close, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -84,24 +78,12 @@ func createMetricsExporter(
 	// The Prometheus metrics exporter has to run on the provided address
 	// as a server that'll be scraped by Prometheus.
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", ph)
+	mux.Handle("/metrics", pexp.handler)
 
 	srv := &http.Server{Handler: mux}
 	go func() {
 		_ = srv.Serve(ln)
 	}()
-
-	pexp := &prometheusExporter{
-		name:         cfg.Name(),
-		shutdownFunc: ln.Close,
-		collector: &collector{
-			registry:          reg,
-			config:            pcfg,
-			registeredMetrics: make(map[string]*prometheus.Desc),
-			metricsValues:     make(map[string]*metricValue),
-			logger:            params.Logger,
-		},
-	}
 
 	return pexp, nil
 }
