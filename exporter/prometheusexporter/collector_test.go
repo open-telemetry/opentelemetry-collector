@@ -25,6 +25,153 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+func TestMetricWithNoLabels(t *testing.T) {
+	dp := pdata.NewIntDataPoint()
+	dp.SetValue(42)
+
+	metric := pdata.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.IntGauge().DataPoints().Append(dp)
+	metric.SetDescription("test description")
+
+	c := newCollector(&Config{}, zap.NewNop())
+
+	lk := collectLabelKeys(metric)
+	signature := metricSignature(c.config.Namespace, metric, lk.keys)
+	holder := &metricHolder{
+		desc: prometheus.NewDesc(
+			metricName(c.config.Namespace, metric),
+			metric.Description(),
+			lk.keys,
+			c.config.ConstLabels,
+		),
+		metricValues: make(map[string]*metricValue, 1),
+	}
+	c.registeredMetrics[signature] = holder
+	c.accumulateMetrics(metric, lk)
+
+	valueSignature := metricSignature(c.config.Namespace, metric, nil)
+	v := holder.metricValues[valueSignature]
+	require.NotNil(t, v)
+
+	require.Equal(t, 42.0, v.value)
+}
+
+func TestAccumulateDeltaAggregation(t *testing.T) {
+	tests := []struct {
+		name   string
+		metric pdata.Metric
+	}{
+		{
+			name: "IntSum",
+			metric: func() (metric pdata.Metric) {
+				dp := pdata.NewIntDataPoint()
+				dp.SetValue(42)
+				dp.LabelsMap().Insert("label_1", "1")
+				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeIntSum)
+				metric.IntSum().DataPoints().Append(dp)
+				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+
+				return
+			}(),
+		},
+		{
+			name: "DoubleSum",
+			metric: func() (metric pdata.Metric) {
+				dp := pdata.NewDoubleDataPoint()
+				dp.SetValue(42.42)
+				dp.LabelsMap().Insert("label_1", "1")
+				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+				metric.DoubleSum().DataPoints().Append(dp)
+				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+
+				return
+			}(),
+		},
+		{
+			name: "IntHistogram",
+			metric: func() (metric pdata.Metric) {
+				dp := pdata.NewIntHistogramDataPoint()
+				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetCount(7)
+				dp.SetExplicitBounds([]float64{1.2, 10.0})
+				dp.SetSum(42)
+				dp.LabelsMap().Insert("label_1", "1")
+				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+				metric.IntHistogram().DataPoints().Append(dp)
+				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+
+				return
+			}(),
+		},
+		{
+			name: "DoubleHistogram",
+			metric: func() (metric pdata.Metric) {
+				dp := pdata.NewDoubleHistogramDataPoint()
+				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetCount(7)
+				dp.SetExplicitBounds([]float64{3.5, 10.0})
+				dp.SetSum(42.42)
+				dp.LabelsMap().Insert("label_1", "1")
+				dp.LabelsMap().Insert("label_2", "2")
+				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+
+				metric = pdata.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+				metric.DoubleHistogram().DataPoints().Append(dp)
+				metric.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				metric.SetDescription("test description")
+
+				return
+			}(),
+		},
+	}
+	c := newCollector(&Config{
+		Namespace: "test-space",
+	}, zap.NewNop())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lk := collectLabelKeys(tt.metric)
+			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
+			holder := &metricHolder{
+				desc: prometheus.NewDesc(
+					metricName(c.config.Namespace, tt.metric),
+					tt.metric.Description(),
+					lk.keys,
+					c.config.ConstLabels,
+				),
+				metricValues: make(map[string]*metricValue, 1),
+			}
+			c.registeredMetrics[signature] = holder
+			c.accumulateMetrics(tt.metric, lk)
+
+			labelValues := []string{"1", "2"}
+			valueSignature := metricSignature(c.config.Namespace, tt.metric, labelValues)
+			v := holder.metricValues[valueSignature]
+
+			require.Nil(t, v)
+		})
+	}
+}
+
 func TestAccumulateMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
