@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -125,7 +126,7 @@ func createTraceReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesReceiver, error) {
-	r, err := createReceiver(cfg, params)
+	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +143,7 @@ func createMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	r, err := createReceiver(cfg, params)
+	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +160,7 @@ func createLogReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.LogsConsumer,
 ) (component.LogsReceiver, error) {
-	r, err := createReceiver(cfg, params)
+	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ func createLogReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver, params component.ReceiverCreateParams) (*otlpReceiver, error) {
+func createReceiver(cfg configmodels.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of
@@ -180,7 +181,7 @@ func createReceiver(cfg configmodels.Receiver, params component.ReceiverCreatePa
 	if !ok {
 		var err error
 		// We don't have a receiver, so create one.
-		receiver, err = newOtlpReceiver(rCfg, params.Logger, params.Extensions)
+		receiver, err = newOtlpReceiver(rCfg, logger)
 		if err != nil {
 			return nil, err
 		}

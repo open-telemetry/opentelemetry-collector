@@ -163,7 +163,7 @@ func createTraceReceiver(
 			return nil, fmt.Errorf("unable to extract port for GRPC: %w", err)
 		}
 
-		config.CollectorGRPCOptions, err = rCfg.Protocols.GRPC.ToServerOption(params.Extensions)
+		config.CollectorGRPCOptions, err = rCfg.Protocols.GRPC.ToServerOption()
 		if err != nil {
 			return nil, err
 		}

@@ -179,3 +179,12 @@ func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, appInfo componen
 
 	return ext, nil
 }
+
+func GetBuiltExtensions(extensions Extensions) map[string]component.ServiceExtension {
+	builtExtensions := map[string]component.ServiceExtension{}
+	for key, builtExtension := range extensions {
+		name := key.Name()
+		builtExtensions[name] = builtExtension.extension
+	}
+	return builtExtensions
+}

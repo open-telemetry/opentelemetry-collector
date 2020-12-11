@@ -98,13 +98,13 @@ func testReceivers(
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	require.Nil(t, err)
 
+	svcExtensions := map[string]component.ServiceExtension{}
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.NoError(t, err)
-	extensions := Extensions{}
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
@@ -199,19 +199,18 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 
 			cfg := createExampleConfig(dataType)
 
+			svcExtensions := map[string]component.ServiceExtension{}
 			// Build the pipeline
-			allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+			allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
 			}
 
 			assert.NoError(t, err)
-			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 			assert.NoError(t, err)
-			extensions := Extensions{}
-			receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
-
+			receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 			assert.NoError(t, err)
 			require.NotNil(t, receivers)
 
@@ -272,13 +271,13 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	receiver := cfg.Receivers["examplereceiver"]
 	receiver.(*componenttest.ExampleReceiver).FailTraceCreation = true
 
+	svcExtensions := map[string]component.ServiceExtension{}
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.NoError(t, err)
-	extensions := Extensions{}
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 
 	// This should fail because "examplereceiver" is attached to "traces" pipeline
 	// which is a configuration error.
@@ -333,10 +332,11 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
 	require.Nil(t, err)
 
+	svcExtensions := map[string]component.ServiceExtension{}
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.NoError(t, err)
 
 	// First test only trace receivers by removing the metrics pipeline.
@@ -346,8 +346,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	delete(cfg.Service.Pipelines, "logs")
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	extensions := Extensions{}
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
 
@@ -356,7 +355,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	cfg.Service.Pipelines["metrics"] = metricsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	receivers, err = NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
+	receivers, err = NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
 
@@ -365,7 +364,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	cfg.Service.Pipelines["logs"] = logsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	receivers, err = NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
+	receivers, err = NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
 }
@@ -377,13 +376,13 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	cfg, err := configtest.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
 	assert.NoError(t, err)
 
+	svcExtensions := map[string]component.ServiceExtension{}
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.NoError(t, err)
-	extensions := Extensions{}
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, extensions).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers, svcExtensions).Build()
 	assert.NoError(t, err)
 	assert.NotNil(t, receivers)
 

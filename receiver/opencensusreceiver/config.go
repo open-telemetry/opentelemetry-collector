@@ -15,7 +15,6 @@
 package opencensusreceiver
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -34,13 +33,13 @@ type Config struct {
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
 }
 
-func (rOpts *Config) buildOptions(extensions map[string]component.ServiceExtension) ([]ocOption, error) {
+func (rOpts *Config) buildOptions() ([]ocOption, error) {
 	var opts []ocOption
 	if len(rOpts.CorsOrigins) > 0 {
 		opts = append(opts, withCorsOrigins(rOpts.CorsOrigins))
 	}
 
-	grpcServerOptions, err := rOpts.GRPCServerSettings.ToServerOption(extensions)
+	grpcServerOptions, err := rOpts.GRPCServerSettings.ToServerOption()
 	if err != nil {
 		return nil, err
 	}

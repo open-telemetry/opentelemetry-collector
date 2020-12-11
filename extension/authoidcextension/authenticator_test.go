@@ -433,7 +433,7 @@ func TestMissingClient(t *testing.T) {
 
 	// verify
 	assert.Nil(t, p)
-	assert.Equal(t, errNoAudienceProvided, err)
+	assert.Equal(t, errNoClientIDProvided, err)
 }
 
 func TestMissingIssuerURL(t *testing.T) {

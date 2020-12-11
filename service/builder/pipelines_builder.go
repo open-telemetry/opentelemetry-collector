@@ -80,11 +80,12 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 
 // PipelinesBuilder builds pipelines from config.
 type PipelinesBuilder struct {
-	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
-	config    *configmodels.Config
-	exporters Exporters
-	factories map[configmodels.Type]component.ProcessorFactory
+	logger     *zap.Logger
+	appInfo    component.ApplicationStartInfo
+	config     *configmodels.Config
+	exporters  Exporters
+	factories  map[configmodels.Type]component.ProcessorFactory
+	extensions map[string]component.ServiceExtension
 }
 
 // NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
@@ -95,8 +96,9 @@ func NewPipelinesBuilder(
 	config *configmodels.Config,
 	exporters Exporters,
 	factories map[configmodels.Type]component.ProcessorFactory,
+	extensions map[string]component.ServiceExtension,
 ) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, appInfo, config, exporters, factories}
+	return &PipelinesBuilder{logger, appInfo, config, exporters, factories, extensions}
 }
 
 // BuildProcessors pipeline processors from config.
@@ -108,7 +110,13 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		pipelineProcessors[pipeline] = firstProcessor
+
+		var procInterface interface{} = firstProcessor
+		if procWantsSvcExt, wantsSvcExt := procInterface.(component.WantsServiceExtensions); wantsSvcExt {
+			procWantsSvcExt.SetServiceExtensions(pb.extensions)
+		}
 	}
 
 	return pipelineProcessors, nil
@@ -199,6 +207,13 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		// Check if the factory really created the processor.
 		if tc == nil && mc == nil && lc == nil {
 			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
+		}
+	}
+
+	for _, proc := range processors {
+		var procInterface interface{} = proc
+		if procWantsSvcExt, wantsSvcExt := procInterface.(component.WantsServiceExtensions); wantsSvcExt {
+			procWantsSvcExt.SetServiceExtensions(pb.extensions)
 		}
 	}
 

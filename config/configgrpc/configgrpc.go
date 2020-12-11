@@ -162,6 +162,9 @@ type GRPCServerSettings struct {
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// serviceExtensions to use when configuring auth
+	serviceExtensions map[string]component.ServiceExtension
 }
 
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC
@@ -237,7 +240,7 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 }
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC
-func (gss *GRPCServerSettings) ToServerOption(extensions map[string]component.ServiceExtension) ([]grpc.ServerOption, error) {
+func (gss *GRPCServerSettings) ToServerOption() ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -294,7 +297,7 @@ func (gss *GRPCServerSettings) ToServerOption(extensions map[string]component.Se
 
 	if gss.Auth != nil {
 		authName := gss.Auth.Authenticator
-		authExtension, extFound := extensions[authName]
+		authExtension, extFound := gss.serviceExtensions[authName]
 		if !extFound {
 			return nil, fmt.Errorf("auth extension %s not found", authName)
 		}
@@ -312,6 +315,10 @@ func (gss *GRPCServerSettings) ToServerOption(extensions map[string]component.Se
 	}
 
 	return opts, nil
+}
+
+func (gss *GRPCServerSettings) SetServiceExtensions(extensions map[string]component.ServiceExtension) {
+	gss.serviceExtensions = extensions
 }
 
 // GetGRPCCompressionKey returns the grpc registered compression key if the

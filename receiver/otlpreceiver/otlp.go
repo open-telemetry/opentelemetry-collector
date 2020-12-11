@@ -58,13 +58,13 @@ type otlpReceiver struct {
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, logger *zap.Logger, extensions map[string]component.ServiceExtension) (*otlpReceiver, error) {
+func newOtlpReceiver(cfg *Config, logger *zap.Logger) (*otlpReceiver, error) {
 	r := &otlpReceiver{
 		cfg:    cfg,
 		logger: logger,
 	}
 	if cfg.GRPC != nil {
-		opts, err := cfg.GRPC.ToServerOption(extensions)
+		opts, err := cfg.GRPC.ToServerOption()
 		if err != nil {
 			return nil, err
 		}
@@ -229,4 +229,8 @@ func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Log
 		return collectorlog.RegisterLogsServiceHandlerServer(ctx, r.gatewayMux, r.logReceiver)
 	}
 	return nil
+}
+
+func (r *otlpReceiver) SetServiceExtensions(extensions map[string]component.ServiceExtension) {
+	r.cfg.GRPC.SetServiceExtensions(extensions)
 }

@@ -72,3 +72,7 @@ type ExtensionFactory interface {
 	// CreateExtension creates a service extension based on the given config.
 	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg configmodels.Extension) (ServiceExtension, error)
 }
+
+type WantsServiceExtensions interface {
+	SetServiceExtensions(map[string]ServiceExtension)
+}

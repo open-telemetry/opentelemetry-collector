@@ -142,10 +142,11 @@ type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
 
 // ExportersBuilder builds exporters from config.
 type ExportersBuilder struct {
-	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
-	config    *configmodels.Config
-	factories map[configmodels.Type]component.ExporterFactory
+	logger     *zap.Logger
+	appInfo    component.ApplicationStartInfo
+	config     *configmodels.Config
+	factories  map[configmodels.Type]component.ExporterFactory
+	extensions map[string]component.ServiceExtension
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
@@ -154,8 +155,9 @@ func NewExportersBuilder(
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	factories map[configmodels.Type]component.ExporterFactory,
+	extensions map[string]component.ServiceExtension,
 ) *ExportersBuilder {
-	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), appInfo, config, factories}
+	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), appInfo, config, factories, extensions}
 }
 
 // BuildExporters exporters from config.
@@ -172,6 +174,11 @@ func (eb *ExportersBuilder) Build() (Exporters, error) {
 		exp, err := eb.buildExporter(context.Background(), componentLogger, eb.appInfo, cfg, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
+		}
+
+		var exporter interface{} = exp
+		if expWantsSvcExt, wantsSvcExt := exporter.(component.WantsServiceExtensions); wantsSvcExt {
+			expWantsSvcExt.SetServiceExtensions(eb.extensions)
 		}
 
 		exporters[cfg] = exp

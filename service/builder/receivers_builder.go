@@ -84,7 +84,7 @@ type ReceiversBuilder struct {
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
 	factories      map[configmodels.Type]component.ReceiverFactory
-	extensions     Extensions
+	extensions     map[string]component.ServiceExtension
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
@@ -94,7 +94,7 @@ func NewReceiversBuilder(
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
 	factories map[configmodels.Type]component.ReceiverFactory,
-	extensions Extensions,
+	extensions map[string]component.ServiceExtension,
 ) *ReceiversBuilder {
 	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories, extensions}
 }
@@ -106,7 +106,7 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
 		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
-		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg, rb.extensions)
+		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				logger.Info("Ignoring receiver as it is not used by any pipeline", zap.String("receiver", cfg.Name()))
@@ -115,6 +115,11 @@ func (rb *ReceiversBuilder) Build() (Receivers, error) {
 			return nil, err
 		}
 		receivers[cfg] = rcv
+
+		var rcvInterface interface{} = rcv
+		if rcvWantsSvcExt, wantsSvcExt := rcvInterface.(component.WantsServiceExtensions); wantsSvcExt {
+			rcvWantsSvcExt.SetServiceExtensions(rb.extensions)
+		}
 	}
 
 	return receivers, nil
@@ -174,7 +179,6 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	config configmodels.Receiver,
 	rcv *builtReceiver,
 	builtPipelines []*builtPipeline,
-	extensions Extensions,
 ) error {
 	// There are pipelines of the specified data type that must be attached to
 	// the receiver. Create the receiver of corresponding data type and make
@@ -182,11 +186,9 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	var err error
 	var createdReceiver component.Receiver
 
-	builtExtensions := rb.getBuiltExtensions(extensions)
 	creationParams := component.ReceiverCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
-		Extensions:           builtExtensions,
 	}
 
 	switch dataType {
@@ -243,7 +245,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver, extensions Extensions) (*builtReceiver, error) {
+func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)
@@ -269,7 +271,7 @@ func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		err := rb.attachReceiverToPipelines(ctx, logger, appInfo, factory, dataType, config, rcv, pipelines, extensions)
+		err := rb.attachReceiverToPipelines(ctx, logger, appInfo, factory, dataType, config, rcv, pipelines)
 		if err != nil {
 			return nil, err
 		}
@@ -280,15 +282,6 @@ func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 	}
 
 	return rcv, nil
-}
-
-func (rb *ReceiversBuilder) getBuiltExtensions(extensions Extensions) map[string]component.ServiceExtension {
-	builtExtensions := map[string]component.ServiceExtension{}
-	for key, builtExtension := range extensions {
-		name := key.Name()
-		builtExtensions[name] = builtExtension.extension
-	}
-	return builtExtensions
 }
 
 func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TracesConsumer {

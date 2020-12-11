@@ -131,9 +131,9 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			dataType := test.dataType
 
 			cfg := createExampleConfig(dataType)
-
+			svcExtensions := map[string]component.ServiceExtension{}
 			// BuildProcessors the pipeline
-			allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+			allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
@@ -141,7 +141,7 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 
 			require.NoError(t, err)
 			require.EqualValues(t, 1, len(allExporters))
-			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 
 			assert.NoError(t, err)
 			require.NotNil(t, pipelineProcessors)
@@ -204,10 +204,11 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Load the config
 	require.Nil(t, err)
 
+	svcExtensions := map[string]component.ServiceExtension{}
 	// BuildProcessors the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, pipelineProcessors)
@@ -266,7 +267,8 @@ func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
 	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
 	require.Nil(t, err)
 
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	svcExtensions := map[string]component.ServiceExtension{}
+	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters, svcExtensions).Build()
 	assert.NoError(t, err)
 
 	// First test only trace receivers by removing the metrics pipeline.
@@ -276,7 +278,7 @@ func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
 	delete(cfg.Service.Pipelines, "logs")
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 
@@ -285,7 +287,7 @@ func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
 	cfg.Service.Pipelines["metrics"] = metricsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 
@@ -294,7 +296,7 @@ func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
 	cfg.Service.Pipelines["logs"] = logsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err = NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors, svcExtensions).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(pipelineProcessors))
 }

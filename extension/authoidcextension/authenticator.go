@@ -42,7 +42,6 @@ type oidcAuthenticator struct {
 
 	unaryInterceptor  configauth.UnaryInterceptorFunc
 	streamInterceptor configauth.StreamInterceptorFunc
-	host              component.Host
 }
 
 var (
