@@ -26,7 +26,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 type prometheusExporter struct {
@@ -36,6 +38,7 @@ type prometheusExporter struct {
 	handler      http.Handler
 	collector    *collector
 	registry     *prometheus.Registry
+	obsrep       *obsreport.ExporterObsReport
 }
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
@@ -45,6 +48,8 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
+
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), config.Name())
 
 	collector := newCollector(config, logger)
 	registry := prometheus.NewRegistry()
@@ -56,6 +61,7 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 		collector:    collector,
 		registry:     registry,
 		shutdownFunc: func() error { return nil },
+		obsrep:       obsrep,
 		handler: promhttp.HandlerFor(
 			registry,
 			promhttp.HandlerOpts{
@@ -84,12 +90,15 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 }
 
 func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	pe.obsrep.StartMetricsExportOp(ctx)
+	n := 0
 	rmetrics := md.ResourceMetrics()
 	for i := 0; i < rmetrics.Len(); i++ {
 		rs := rmetrics.At(i)
 
-		pe.collector.processMetrics(rs)
+		n += pe.collector.processMetrics(rs)
 	}
+	pe.obsrep.EndMetricsExportOp(ctx, n, nil)
 
 	return nil
 }
