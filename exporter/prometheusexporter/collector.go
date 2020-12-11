@@ -15,9 +15,9 @@
 package prometheusexporter
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -90,7 +90,7 @@ func (c *collector) processMetrics(rm pdata.ResourceMetrics) {
 						lk.keys,
 						c.config.ConstLabels,
 					),
-					metricValues: make(map[string]*metricValue, 1),
+					metricValues: make(map[string]*metricValue),
 				}
 				c.registeredMetrics[signature] = holder
 				c.logger.Debug(fmt.Sprintf("new metric: %s", holder.desc.String()))
@@ -411,12 +411,12 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 */
 
 func metricSignature(namespace string, metric pdata.Metric, keys []string) string {
-	var buf bytes.Buffer
-	buf.WriteString(metricName(namespace, metric))
+	var b strings.Builder
+	b.WriteString(metricName(namespace, metric))
 	for _, k := range keys {
-		buf.WriteString("-" + k)
+		b.WriteString("-" + k)
 	}
-	return buf.String()
+	return b.String()
 }
 
 func metricName(namespace string, metric pdata.Metric) string {
