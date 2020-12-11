@@ -17,6 +17,7 @@ package prometheusremotewriteexporter
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -75,13 +76,24 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
+		Namespace:      "",
+		ExternalLabels: map[string]string{},
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 5 * time.Second, // based on Prometheus' behavior
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 50 * time.Millisecond,
+			MaxInterval:     200 * time.Millisecond,
+			MaxElapsedTime:  5 * time.Minute, // TODO(jbd): This is to revise.
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 10,
+			QueueSize:    5000,
+		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://some.url:9411/api/prom/push",
+			Endpoint: "",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
