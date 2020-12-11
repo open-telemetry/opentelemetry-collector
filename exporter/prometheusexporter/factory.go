@@ -16,18 +16,12 @@ package prometheusexporter
 
 import (
 	"context"
-	"errors"
-	"net"
-	"net/http"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
-
-var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 const (
 	// The value of "type" key in configuration.
@@ -59,31 +53,5 @@ func createMetricsExporter(
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
-
-	addr := strings.TrimSpace(pcfg.Endpoint)
-	if addr == "" {
-		return nil, errBlankPrometheusAddress
-	}
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-
-	pexp, err := newPrometheusExporter(pcfg, ln.Close, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	// The Prometheus metrics exporter has to run on the provided address
-	// as a server that'll be scraped by Prometheus.
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", pexp.handler)
-
-	srv := &http.Server{Handler: mux}
-	go func() {
-		_ = srv.Serve(ln)
-	}()
-
-	return pexp, nil
+	return newPrometheusExporter(pcfg, params.Logger)
 }

@@ -30,6 +30,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -74,6 +75,7 @@ func TestPrometheusExporter(t *testing.T) {
 
 			assert.NotNil(t, exp)
 			require.Nil(t, err)
+			require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
 			require.NoError(t, exp.Shutdown(context.Background()))
 		}
 	}
@@ -102,6 +104,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	})
 
 	assert.NotNil(t, exp)
+
+	require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
 
 	// Should accumulate multiple metrics
 	md := internaldata.OCToMetrics(consumerdata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
@@ -179,6 +183,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	})
 
 	assert.NotNil(t, exp)
+	require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
 
 	// Should accumulate multiple metrics
 
