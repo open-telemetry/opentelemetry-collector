@@ -167,8 +167,8 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	assert.Equal(t, Starting, <-app.GetStateChannel())
 	assert.Equal(t, Running, <-app.GetStateChannel())
 
-	app.SignalTestComplete()
-	app.SignalTestComplete()
+	app.Shutdown()
+	app.Shutdown()
 	<-appDone
 	assert.Equal(t, Closing, <-app.GetStateChannel())
 	assert.Equal(t, Closed, <-app.GetStateChannel())

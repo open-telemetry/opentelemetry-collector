@@ -231,7 +231,9 @@ func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), app.handleExtensionzRequest)
 }
 
-func (app *Application) SignalTestComplete() {
+func (app *Application) Shutdown() {
+	// TODO: Implement a proper shutdown with graceful draining of the pipeline.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/483.
 	defer func() {
 		if r := recover(); r != nil {
 			app.logger.Info("stopTestChan already closed")
