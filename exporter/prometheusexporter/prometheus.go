@@ -31,7 +31,7 @@ import (
 
 type prometheusExporter struct {
 	name         string
-	addr         string
+	endpoint     string
 	shutdownFunc func() error
 	handler      http.Handler
 	collector    *collector
@@ -44,13 +44,13 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 	registry := prometheus.NewRegistry()
 
 	addr := strings.TrimSpace(config.Endpoint)
-	if addr == "" {
+	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
 
 	return &prometheusExporter{
 		name:         config.Name(),
-		addr:         addr,
+		endpoint:     addr,
 		collector:    newCollector(config, logger),
 		registry:     registry,
 		shutdownFunc: func() error { return nil },
@@ -64,7 +64,7 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 }
 
 func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
-	ln, err := net.Listen("tcp", pe.addr)
+	ln, err := net.Listen("tcp", pe.endpoint)
 	if err != nil {
 		return err
 	}

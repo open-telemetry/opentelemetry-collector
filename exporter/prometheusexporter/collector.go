@@ -33,7 +33,6 @@ type metricHolder struct {
 }
 
 type metricValue struct {
-	desc        *prometheus.Desc
 	labelValues []string
 	metricType  prometheus.ValueType
 	timestamp   time.Time
@@ -94,32 +93,31 @@ func (c *collector) processMetrics(rm pdata.ResourceMetrics) {
 				c.logger.Debug(fmt.Sprintf("new metric: %s", holder.desc.String()))
 			}
 
-			c.accumulateMetrics(metric, lk, holder.desc)
+			c.accumulateMetrics(metric, lk)
+			c.logger.Debug(fmt.Sprintf("metric accumulated: %s", holder.desc.String()))
 			c.mu.Unlock()
 		}
 	}
 }
 
-func (c *collector) accumulateMetrics(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateMetrics(metric pdata.Metric, lk *labelKeys) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		c.accumulateIntGauge(metric, lk, desc)
+		c.accumulateIntGauge(metric, lk)
 	case pdata.MetricDataTypeIntSum:
-		c.accumulateIntSum(metric, lk, desc)
+		c.accumulateIntSum(metric, lk)
 	case pdata.MetricDataTypeDoubleGauge:
-		c.accumulateDoubleGauge(metric, lk, desc)
+		c.accumulateDoubleGauge(metric, lk)
 	case pdata.MetricDataTypeDoubleSum:
-		c.accumulateDoubleSum(metric, lk, desc)
+		c.accumulateDoubleSum(metric, lk)
 	case pdata.MetricDataTypeIntHistogram:
-		c.accumulateIntHistogram(metric, lk, desc)
+		c.accumulateIntHistogram(metric, lk)
 	case pdata.MetricDataTypeDoubleHistogram:
-		c.accumulateDoubleHistogram(metric, lk, desc)
+		c.accumulateDoubleHistogram(metric, lk)
 	}
-
-	c.logger.Debug(fmt.Sprintf("metric accumulated: %s", desc.String()))
 }
 
-func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys) {
 	dps := metric.IntGauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -131,8 +129,10 @@ func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys, desc 
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
-			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
+			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
 			c.registeredMetrics[signature].metricValues[valueSignature] = v
+		} else if v.timestamp.Sub(ts) > 0 {
+			continue
 		}
 		v.value = float64(ip.Value())
 		v.timestamp = ts
@@ -140,7 +140,7 @@ func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys, desc 
 	}
 }
 
-func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys) {
 	dps := metric.DoubleGauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -152,8 +152,10 @@ func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys, de
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
-			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
+			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
 			c.registeredMetrics[signature].metricValues[valueSignature] = v
+		} else if v.timestamp.Sub(ts) > 0 {
+			continue
 		}
 		v.value = ip.Value()
 		v.timestamp = ts
@@ -161,7 +163,7 @@ func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys, de
 	}
 }
 
-func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys) {
 	m := metric.IntSum()
 
 	// Drop metrics with non-cumulative aggregations
@@ -180,8 +182,10 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *p
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
-			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
+			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
 			c.registeredMetrics[signature].metricValues[valueSignature] = v
+		} else if v.timestamp.Sub(ts) > 0 {
+			continue
 		}
 
 		if m.IsMonotonic() {
@@ -197,7 +201,7 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *p
 	}
 }
 
-func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys) {
 	m := metric.DoubleSum()
 
 	// Drop metrics with non-cumulative aggregations
@@ -216,8 +220,10 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
-			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
+			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
 			c.registeredMetrics[signature].metricValues[valueSignature] = v
+		} else if v.timestamp.Sub(ts) > 0 {
+			continue
 		}
 
 		if m.IsMonotonic() {
@@ -232,7 +238,7 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc
 	}
 }
 
-func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys) {
 	m := metric.IntHistogram()
 
 	// Drop metrics with non-cumulative aggregations
@@ -274,8 +280,10 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys, d
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
-			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, isHistogram: true}
+			v = &metricValue{value: 0, labelValues: labelValues, isHistogram: true}
 			c.registeredMetrics[signature].metricValues[valueSignature] = v
+		} else if v.timestamp.Sub(ts) > 0 {
+			continue
 		}
 
 		v.histogramPoints = points
@@ -287,7 +295,7 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys, d
 	}
 }
 
-func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
+func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys) {
 	m := metric.DoubleHistogram()
 
 	// Drop metrics with non-cumulative aggregations
@@ -329,8 +337,10 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
-			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, isHistogram: true}
+			v = &metricValue{value: 0, labelValues: labelValues, isHistogram: true}
 			c.registeredMetrics[signature].metricValues[valueSignature] = v
+		} else if v.timestamp.Sub(ts) > 0 {
+			continue
 		}
 
 		v.histogramPoints = points
@@ -348,7 +358,11 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
-	metrics := make([]prometheus.Metric, 0, len(c.registeredMetrics))
+	size := 0
+	for _, metric := range c.registeredMetrics {
+		size += len(metric.metricValues)
+	}
+	metrics := make([]prometheus.Metric, 0, size)
 
 	c.mu.Lock()
 
@@ -357,9 +371,9 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 			var m prometheus.Metric
 			var err error
 			if v.isHistogram {
-				m, err = prometheus.NewConstHistogram(v.desc, v.histogramCount, v.histogramSum, v.histogramPoints, v.labelValues...)
+				m, err = prometheus.NewConstHistogram(metric.desc, v.histogramCount, v.histogramSum, v.histogramPoints, v.labelValues...)
 			} else {
-				m, err = prometheus.NewConstMetric(v.desc, v.metricType, v.value, v.labelValues...)
+				m, err = prometheus.NewConstMetric(metric.desc, v.metricType, v.value, v.labelValues...)
 			}
 			if err == nil {
 				if !c.config.SendTimestamps {
