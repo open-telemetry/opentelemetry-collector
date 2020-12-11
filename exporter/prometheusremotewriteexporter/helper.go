@@ -126,7 +126,6 @@ func timeSeriesSignature(metric *otlp.Metric, labels *[]prompb.Label) string {
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
 func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]string, extras ...string) []prompb.Label {
-
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
@@ -165,7 +164,6 @@ func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]st
 	}
 
 	s := make([]prompb.Label, 0, len(l))
-
 	for _, lb := range l {
 		s = append(s, lb)
 	}
@@ -176,7 +174,6 @@ func createLabelSet(labels []common.StringKeyValue, externalLabels map[string]st
 // getPromMetricName creates a Prometheus metric name by attaching namespace prefix, and _total suffix for Monotonic
 // metrics.
 func getPromMetricName(metric *otlp.Metric, ns string) string {
-
 	if metric == nil {
 		return ""
 	}
