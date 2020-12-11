@@ -17,9 +17,12 @@ package prometheusexporter
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -53,28 +56,36 @@ type metricValue struct {
 
 type prometheusExporter struct {
 	name         string
+	addr         string
 	shutdownFunc func() error
 	handler      http.Handler
 	collector    *collector
+	registry     *prometheus.Registry
 }
 
-func newPrometheusExporter(cfg *Config, shutdownFunc func() error, logger *zap.Logger) (*prometheusExporter, error) {
-	registry := prometheus.NewRegistry()
+var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
+var errNotStarted = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
+
+func newPrometheusExporter(cfg *Config, logger *zap.Logger) (*prometheusExporter, error) {
 	collector := &collector{
-		registry:          registry,
 		config:            cfg,
 		registeredMetrics: make(map[string]*metricHolder),
 		logger:            logger,
 	}
 
-	if err := registry.Register(collector); err != nil {
-		return nil, err
+	registry := prometheus.NewRegistry()
+
+	addr := strings.TrimSpace(cfg.Endpoint)
+	if addr == "" {
+		return nil, errBlankPrometheusAddress
 	}
 
 	return &prometheusExporter{
 		name:         cfg.Name(),
-		shutdownFunc: shutdownFunc,
+		addr:         addr,
 		collector:    collector,
+		registry:     registry,
+		shutdownFunc: func() error { return nil },
 		handler: promhttp.HandlerFor(
 			registry,
 			promhttp.HandlerOpts{
@@ -85,6 +96,28 @@ func newPrometheusExporter(cfg *Config, shutdownFunc func() error, logger *zap.L
 }
 
 func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
+	ln, err := net.Listen("tcp", pe.addr)
+	if err != nil {
+		return err
+	}
+
+	if err := pe.registry.Register(pe.collector); err != nil {
+		ln.Close()
+		return err
+	}
+
+	pe.shutdownFunc = func() error {
+		pe.registry.Unregister(pe.collector)
+		return ln.Close()
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", pe.handler)
+	srv := &http.Server{Handler: mux}
+	go func() {
+		_ = srv.Serve(ln)
+	}()
+
 	return nil
 }
 
@@ -99,8 +132,7 @@ func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	return nil
 }
 
-// Shutdown stops the exporter and is invoked during shutdown.
-func (pe *prometheusExporter) Shutdown(context.Context) error {
+func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
 	return pe.shutdownFunc()
 }
 
@@ -108,7 +140,6 @@ func (pe *prometheusExporter) Shutdown(context.Context) error {
 type collector struct {
 	config            *Config
 	mu                sync.Mutex
-	registry          *prometheus.Registry
 	registeredMetrics map[string]*metricHolder
 	logger            *zap.Logger
 }
