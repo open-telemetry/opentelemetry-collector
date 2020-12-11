@@ -38,21 +38,10 @@ func TestMetricWithNoLabels(t *testing.T) {
 	c := newCollector(&Config{}, zap.NewNop())
 
 	lk := collectLabelKeys(metric)
-	signature := metricSignature(c.config.Namespace, metric, lk.keys)
-	holder := &metricHolder{
-		desc: prometheus.NewDesc(
-			metricName(c.config.Namespace, metric),
-			metric.Description(),
-			lk.keys,
-			c.config.ConstLabels,
-		),
-		metricValues: make(map[string]*metricValue, 1),
-	}
-	c.registeredMetrics[signature] = holder
-	c.accumulateMetrics(metric, lk)
+	c.accumulateMetric(metric)
 
-	valueSignature := metricSignature(c.config.Namespace, metric, nil)
-	v := holder.metricValues[valueSignature]
+	signature := metricSignature(c.config.Namespace, metric, lk.keys)
+	v := c.registeredMetrics[signature]
 	require.NotNil(t, v)
 
 	require.Equal(t, 42.0, v.value)
@@ -61,16 +50,16 @@ func TestMetricWithNoLabels(t *testing.T) {
 func TestAccumulateDeltaAggregation(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric pdata.Metric
+		metric func(time.Time) pdata.Metric
 	}{
 		{
 			name: "IntSum",
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewIntDataPoint()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -79,16 +68,16 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 
 				return
-			}(),
+			},
 		},
 		{
 			name: "DoubleSum",
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewDoubleDataPoint()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -97,11 +86,11 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 
 				return
-			}(),
+			},
 		},
 		{
 			name: "IntHistogram",
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewIntHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
@@ -109,7 +98,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetSum(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -118,11 +107,11 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 
 				return
-			}(),
+			},
 		},
 		{
 			name: "DoubleHistogram",
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewDoubleHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
@@ -130,7 +119,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetSum(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -140,7 +129,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 	}
 
@@ -149,24 +138,14 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			c := newCollector(&Config{
 				Namespace: "test-space",
 			}, zap.NewNop())
+			m := tt.metric(time.Now())
 
-			lk := collectLabelKeys(tt.metric)
-			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
-			holder := &metricHolder{
-				desc: prometheus.NewDesc(
-					metricName(c.config.Namespace, tt.metric),
-					tt.metric.Description(),
-					lk.keys,
-					c.config.ConstLabels,
-				),
-				metricValues: make(map[string]*metricValue, 1),
-			}
-			c.registeredMetrics[signature] = holder
-			c.accumulateMetrics(tt.metric, lk)
+			c.accumulateMetric(m)
 
+			lk := collectLabelKeys(m)
 			labelValues := []string{"1", "2"}
-			valueSignature := metricSignature(c.config.Namespace, tt.metric, labelValues)
-			v := holder.metricValues[valueSignature]
+			signature := metricSignature(c.config.Namespace, m, append(lk.keys, labelValues...))
+			v := c.registeredMetrics[signature]
 
 			require.Nil(t, v)
 		})
@@ -176,7 +155,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 func TestAccumulateMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
-		metric     pdata.Metric
+		metric     func(time.Time) pdata.Metric
 		metricType prometheus.ValueType
 		value      float64
 	}{
@@ -184,12 +163,12 @@ func TestAccumulateMetrics(t *testing.T) {
 			name:       "IntGauge",
 			metricType: prometheus.GaugeValue,
 			value:      42.0,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewIntDataPoint()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -198,18 +177,18 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 		{
 			name:       "DoubleGauge",
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewDoubleDataPoint()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -218,18 +197,18 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 		{
 			name:       "IntSum",
 			metricType: prometheus.GaugeValue,
 			value:      42.0,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewIntDataPoint()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -240,18 +219,18 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 		{
 			name:       "DoubleSum",
 			metricType: prometheus.GaugeValue,
 			value:      42.42,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewDoubleDataPoint()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -262,18 +241,18 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 		{
 			name:       "MonotonicIntSum",
 			metricType: prometheus.CounterValue,
 			value:      42.0,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewIntDataPoint()
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -284,18 +263,18 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 		{
 			name:       "MonotonicDoubleSum",
 			metricType: prometheus.CounterValue,
 			value:      42.42,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewDoubleDataPoint()
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -306,7 +285,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 	}
 
@@ -315,32 +294,26 @@ func TestAccumulateMetrics(t *testing.T) {
 			c := newCollector(&Config{
 				Namespace: "test-space",
 			}, zap.NewNop())
+			ts1 := time.Now().Add(-2 * time.Second)
+			ts2 := time.Now().Add(-1 * time.Second)
+			m1 := tt.metric(ts1)
+			m2 := tt.metric(ts2)
 
-			lk := collectLabelKeys(tt.metric)
-			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
-			holder := &metricHolder{
-				desc: prometheus.NewDesc(
-					metricName(c.config.Namespace, tt.metric),
-					tt.metric.Description(),
-					lk.keys,
-					c.config.ConstLabels,
-				),
-				metricValues: make(map[string]*metricValue, 1),
-			}
-			c.registeredMetrics[signature] = holder
-			c.accumulateMetrics(tt.metric, lk)
+			c.accumulateMetric(m2)
+			c.accumulateMetric(m1)
 
+			lk := collectLabelKeys(m2)
 			labelValues := []string{"1", "2"}
-			valueSignature := metricSignature(c.config.Namespace, tt.metric, labelValues)
-			v := holder.metricValues[valueSignature]
+			signature := metricSignature(c.config.Namespace, m2, append(lk.keys, labelValues...))
+			v := c.registeredMetrics[signature]
 
 			require.NotNil(t, v)
 			require.Equal(t, tt.metricType, v.metricType)
 			require.Equal(t, "1", v.labelValues[0])
 			require.Equal(t, "2", v.labelValues[1])
 			require.False(t, v.isHistogram)
-			require.Greater(t, v.timestamp.Unix(), int64(0))
-			require.GreaterOrEqual(t, v.updated.UnixNano(), v.timestamp.UnixNano())
+			require.Equal(t, v.timestamp.Unix(), ts2.Unix())
+			require.Greater(t, v.updated.Unix(), v.timestamp.Unix())
 			require.Equal(t, tt.value, v.value)
 
 			ch := make(chan prometheus.Metric, 1)
@@ -363,7 +336,7 @@ func TestAccumulateMetrics(t *testing.T) {
 func TestAccumulateHistograms(t *testing.T) {
 	tests := []struct {
 		name   string
-		metric pdata.Metric
+		metric func(time.Time) pdata.Metric
 
 		histogramPoints map[float64]uint64
 		histogramSum    float64
@@ -377,7 +350,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			},
 			histogramSum:   42.0,
 			histogramCount: 7,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewIntHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
@@ -385,7 +358,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetSum(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -395,7 +368,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 		{
 			name: "DoubleHistogram",
@@ -405,7 +378,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			},
 			histogramSum:   42.42,
 			histogramCount: 7,
-			metric: func() (metric pdata.Metric) {
+			metric: func(ts time.Time) (metric pdata.Metric) {
 				dp := pdata.NewDoubleHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
@@ -413,7 +386,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetSum(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -423,7 +396,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric.SetDescription("test description")
 
 				return
-			}(),
+			},
 		},
 	}
 
@@ -432,31 +405,25 @@ func TestAccumulateHistograms(t *testing.T) {
 			c := newCollector(&Config{
 				Namespace: "test-space",
 			}, zap.NewNop())
+			ts1 := time.Now().Add(-2 * time.Second)
+			ts2 := time.Now().Add(-1 * time.Second)
+			m1 := tt.metric(ts1)
+			m2 := tt.metric(ts2)
 
-			lk := collectLabelKeys(tt.metric)
-			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
-			holder := &metricHolder{
-				desc: prometheus.NewDesc(
-					metricName(c.config.Namespace, tt.metric),
-					tt.metric.Description(),
-					lk.keys,
-					c.config.ConstLabels,
-				),
-				metricValues: make(map[string]*metricValue),
-			}
-			c.registeredMetrics[signature] = holder
-			c.accumulateMetrics(tt.metric, lk)
+			c.accumulateMetric(m2)
+			c.accumulateMetric(m1)
 
+			lk := collectLabelKeys(m2)
 			labelValues := []string{"1", "2"}
-			valueSignature := metricSignature(c.config.Namespace, tt.metric, labelValues)
-			v := holder.metricValues[valueSignature]
+			signature := metricSignature(c.config.Namespace, m2, append(lk.keys, labelValues...))
+			v := c.registeredMetrics[signature]
 
 			require.NotNil(t, v)
 			require.Equal(t, "1", v.labelValues[0])
 			require.Equal(t, "2", v.labelValues[1])
 			require.True(t, v.isHistogram)
-			require.Greater(t, v.timestamp.Unix(), int64(0))
-			require.GreaterOrEqual(t, v.updated.UnixNano(), v.timestamp.UnixNano())
+			require.Equal(t, v.timestamp.Unix(), ts2.Unix())
+			require.Greater(t, v.updated.Unix(), v.timestamp.Unix())
 			require.Equal(t, tt.histogramCount, v.histogramCount)
 			require.Equal(t, tt.histogramSum, v.histogramSum)
 			require.Equal(t, len(tt.histogramPoints), len(v.histogramPoints))

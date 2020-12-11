@@ -27,12 +27,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-type metricHolder struct {
-	desc         *prometheus.Desc
-	metricValues map[string]*metricValue
-}
-
 type metricValue struct {
+	desc *prometheus.Desc
+
 	labelValues []string
 	metricType  prometheus.ValueType
 	timestamp   time.Time
@@ -49,14 +46,14 @@ type metricValue struct {
 type collector struct {
 	config            *Config
 	mu                sync.Mutex
-	registeredMetrics map[string]*metricHolder
+	registeredMetrics map[string]*metricValue
 	logger            *zap.Logger
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
 		config:            config,
-		registeredMetrics: make(map[string]*metricHolder),
+		registeredMetrics: make(map[string]*metricValue),
 		logger:            logger,
 	}
 }
@@ -75,98 +72,93 @@ func (c *collector) processMetrics(rm pdata.ResourceMetrics) {
 
 		metrics := ilm.Metrics()
 		for j := 0; j < metrics.Len(); j++ {
-			metric := metrics.At(j)
-			lk := collectLabelKeys(metric)
-
-			signature := metricSignature(c.config.Namespace, metric, lk.keys)
-
-			c.mu.Lock()
-			holder, ok := c.registeredMetrics[signature]
-			if !ok {
-				holder = &metricHolder{
-					desc: prometheus.NewDesc(
-						metricName(c.config.Namespace, metric),
-						metric.Description(),
-						lk.keys,
-						c.config.ConstLabels,
-					),
-					metricValues: make(map[string]*metricValue),
-				}
-				c.registeredMetrics[signature] = holder
-				c.logger.Debug(fmt.Sprintf("new metric: %s", holder.desc.String()))
-			}
-
-			c.accumulateMetrics(metric, lk)
-			c.logger.Debug(fmt.Sprintf("metric accumulated: %s", holder.desc.String()))
-			c.mu.Unlock()
+			c.accumulateMetric(metrics.At(j))
 		}
 	}
 }
 
-func (c *collector) accumulateMetrics(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateMetric(metric pdata.Metric) {
+	lk := collectLabelKeys(metric)
+	desc := prometheus.NewDesc(
+		metricName(c.config.Namespace, metric),
+		metric.Description(),
+		lk.keys,
+		c.config.ConstLabels,
+	)
+
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		c.accumulateIntGauge(metric, lk)
+		c.accumulateIntGauge(metric, lk, desc)
 	case pdata.MetricDataTypeIntSum:
-		c.accumulateIntSum(metric, lk)
+		c.accumulateIntSum(metric, lk, desc)
 	case pdata.MetricDataTypeDoubleGauge:
-		c.accumulateDoubleGauge(metric, lk)
+		c.accumulateDoubleGauge(metric, lk, desc)
 	case pdata.MetricDataTypeDoubleSum:
-		c.accumulateDoubleSum(metric, lk)
+		c.accumulateDoubleSum(metric, lk, desc)
 	case pdata.MetricDataTypeIntHistogram:
-		c.accumulateIntHistogram(metric, lk)
+		c.accumulateIntHistogram(metric, lk, desc)
 	case pdata.MetricDataTypeDoubleHistogram:
-		c.accumulateDoubleHistogram(metric, lk)
+		c.accumulateDoubleHistogram(metric, lk, desc)
 	}
+
+	c.logger.Debug(fmt.Sprintf("metric accumulated: %s", desc))
 }
 
-func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
 	dps := metric.IntGauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
-		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
+		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
-		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
+		c.mu.Lock()
+		v, ok := c.registeredMetrics[signature]
 		if !ok {
-			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
-			c.registeredMetrics[signature].metricValues[valueSignature] = v
-		} else if v.timestamp.Sub(ts) > 0 {
+			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
+			c.registeredMetrics[signature] = v
+		}
+		c.mu.Unlock()
+
+		if v.timestamp.Sub(ts) > 0 {
 			continue
 		}
+
 		v.value = float64(ip.Value())
 		v.timestamp = ts
 		v.updated = time.Now()
 	}
 }
 
-func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
 	dps := metric.DoubleGauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
-		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
+		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
-		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
+		c.mu.Lock()
+		v, ok := c.registeredMetrics[signature]
 		if !ok {
-			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
-			c.registeredMetrics[signature].metricValues[valueSignature] = v
-		} else if v.timestamp.Sub(ts) > 0 {
+			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.GaugeValue}
+			c.registeredMetrics[signature] = v
+		}
+		c.mu.Unlock()
+
+		if v.timestamp.Sub(ts) > 0 {
 			continue
 		}
+
 		v.value = ip.Value()
 		v.timestamp = ts
 		v.updated = time.Now()
 	}
 }
 
-func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
 	m := metric.IntSum()
 
 	// Drop metrics with non-cumulative aggregations
@@ -180,14 +172,17 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys) {
 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
-		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
+		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
-		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
+		c.mu.Lock()
+		v, ok := c.registeredMetrics[signature]
 		if !ok {
-			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
-			c.registeredMetrics[signature].metricValues[valueSignature] = v
-		} else if v.timestamp.Sub(ts) > 0 {
+			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
+			c.registeredMetrics[signature] = v
+		}
+		c.mu.Unlock()
+
+		if v.timestamp.Sub(ts) > 0 {
 			continue
 		}
 
@@ -204,7 +199,7 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys) {
 	}
 }
 
-func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
 	m := metric.DoubleSum()
 
 	// Drop metrics with non-cumulative aggregations
@@ -218,14 +213,17 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys) {
 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
-		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
+		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
-		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
+		c.mu.Lock()
+		v, ok := c.registeredMetrics[signature]
 		if !ok {
-			v = &metricValue{value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
-			c.registeredMetrics[signature].metricValues[valueSignature] = v
-		} else if v.timestamp.Sub(ts) > 0 {
+			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, metricType: prometheus.CounterValue}
+			c.registeredMetrics[signature] = v
+		}
+		c.mu.Unlock()
+
+		if v.timestamp.Sub(ts) > 0 {
 			continue
 		}
 
@@ -241,7 +239,7 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys) {
 	}
 }
 
-func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
 	m := metric.IntHistogram()
 
 	// Drop metrics with non-cumulative aggregations
@@ -255,8 +253,7 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys) {
 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
-		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
+		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
 		indicesMap := make(map[float64]int)
 		buckets := make([]float64, 0, len(ip.BucketCounts()))
@@ -281,11 +278,15 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys) {
 			points[bucket] = cumCount
 		}
 
-		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
+		c.mu.Lock()
+		v, ok := c.registeredMetrics[signature]
 		if !ok {
-			v = &metricValue{value: 0, labelValues: labelValues, isHistogram: true}
-			c.registeredMetrics[signature].metricValues[valueSignature] = v
-		} else if v.timestamp.Sub(ts) > 0 {
+			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, isHistogram: true}
+			c.registeredMetrics[signature] = v
+		}
+		c.mu.Unlock()
+
+		if v.timestamp.Sub(ts) > 0 {
 			continue
 		}
 
@@ -298,7 +299,7 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys) {
 	}
 }
 
-func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys) {
+func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys, desc *prometheus.Desc) {
 	m := metric.DoubleHistogram()
 
 	// Drop metrics with non-cumulative aggregations
@@ -312,8 +313,7 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
-		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
+		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
 		indicesMap := make(map[float64]int)
 		buckets := make([]float64, 0, len(ip.BucketCounts()))
@@ -338,11 +338,15 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 			points[bucket] = cumCount
 		}
 
-		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
+		c.mu.Lock()
+		v, ok := c.registeredMetrics[signature]
 		if !ok {
-			v = &metricValue{value: 0, labelValues: labelValues, isHistogram: true}
-			c.registeredMetrics[signature].metricValues[valueSignature] = v
-		} else if v.timestamp.Sub(ts) > 0 {
+			v = &metricValue{desc: desc, value: 0, labelValues: labelValues, isHistogram: true}
+			c.registeredMetrics[signature] = v
+		}
+		c.mu.Unlock()
+
+		if v.timestamp.Sub(ts) > 0 {
 			continue
 		}
 
@@ -361,40 +365,29 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
-	size := 0
-	for _, metric := range c.registeredMetrics {
-		size += len(metric.metricValues)
-	}
-	metrics := make([]prometheus.Metric, 0, size)
+	metrics := make([]prometheus.Metric, 0, len(c.registeredMetrics))
 
 	c.mu.Lock()
 
-	for signature, metric := range c.registeredMetrics {
-		for k, v := range metric.metricValues {
-			var m prometheus.Metric
-			var err error
-			if v.isHistogram {
-				m, err = prometheus.NewConstHistogram(metric.desc, v.histogramCount, v.histogramSum, v.histogramPoints, v.labelValues...)
+	for k, v := range c.registeredMetrics {
+		var m prometheus.Metric
+		var err error
+		if v.isHistogram {
+			m, err = prometheus.NewConstHistogram(v.desc, v.histogramCount, v.histogramSum, v.histogramPoints, v.labelValues...)
+		} else {
+			m, err = prometheus.NewConstMetric(v.desc, v.metricType, v.value, v.labelValues...)
+		}
+		if err == nil {
+			if !c.config.SendTimestamps {
+				metrics = append(metrics, m)
 			} else {
-				m, err = prometheus.NewConstMetric(metric.desc, v.metricType, v.value, v.labelValues...)
-			}
-			if err == nil {
-				if !c.config.SendTimestamps {
-					metrics = append(metrics, m)
-				} else {
-					metrics = append(metrics, prometheus.NewMetricWithTimestamp(v.timestamp, m))
-				}
-			}
-
-			if time.Now().UnixNano()-v.updated.UnixNano() > c.config.MetricExpiration.Nanoseconds() {
-				c.logger.Debug(fmt.Sprintf("value expired: %s", m.Desc().String()))
-				delete(metric.metricValues, k)
+				metrics = append(metrics, prometheus.NewMetricWithTimestamp(v.timestamp, m))
 			}
 		}
 
-		if len(metric.metricValues) == 0 {
-			c.logger.Debug(fmt.Sprintf("metric expired: %s", metric.desc.String()))
-			delete(c.registeredMetrics, signature)
+		if time.Now().UnixNano()-v.updated.UnixNano() > c.config.MetricExpiration.Nanoseconds() {
+			c.logger.Debug(fmt.Sprintf("metric expired: %s", m.Desc().String()))
+			delete(c.registeredMetrics, k)
 		}
 	}
 
