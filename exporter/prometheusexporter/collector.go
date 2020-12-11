@@ -127,7 +127,7 @@ func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys, desc 
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
+		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
@@ -148,7 +148,7 @@ func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys, de
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
+		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
@@ -176,7 +176,7 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *p
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
+		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
@@ -212,7 +212,7 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
+		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
 
 		v, ok := c.registeredMetrics[signature].metricValues[valueSignature]
 		if !ok {
@@ -247,7 +247,7 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys, d
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
+		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
 
 		indicesMap := make(map[float64]int)
 		buckets := make([]float64, 0, len(ip.BucketCounts()))
@@ -302,7 +302,7 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 		ts := pdata.UnixNanoToTime(ip.Timestamp())
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, lk.keys)
-		valueSignature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
+		valueSignature := metricSignature(c.config.Namespace, metric, labelValues)
 
 		indicesMap := make(map[float64]int)
 		buckets := make([]float64, 0, len(ip.BucketCounts()))
