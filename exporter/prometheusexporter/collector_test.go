@@ -143,12 +143,13 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			}(),
 		},
 	}
-	c := newCollector(&Config{
-		Namespace: "test-space",
-	}, zap.NewNop())
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			c := newCollector(&Config{
+				Namespace: "test-space",
+			}, zap.NewNop())
+
 			lk := collectLabelKeys(tt.metric)
 			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
 			holder := &metricHolder{
@@ -308,12 +309,13 @@ func TestAccumulateMetrics(t *testing.T) {
 			}(),
 		},
 	}
-	c := newCollector(&Config{
-		Namespace: "test-space",
-	}, zap.NewNop())
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			c := newCollector(&Config{
+				Namespace: "test-space",
+			}, zap.NewNop())
+
 			lk := collectLabelKeys(tt.metric)
 			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
 			holder := &metricHolder{
@@ -410,12 +412,13 @@ func TestAccumulateHistograms(t *testing.T) {
 			}(),
 		},
 	}
-	c := newCollector(&Config{
-		Namespace: "test-space",
-	}, zap.NewNop())
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			c := newCollector(&Config{
+				Namespace: "test-space",
+			}, zap.NewNop())
+
 			lk := collectLabelKeys(tt.metric)
 			signature := metricSignature(c.config.Namespace, tt.metric, lk.keys)
 			holder := &metricHolder{
@@ -425,7 +428,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					lk.keys,
 					c.config.ConstLabels,
 				),
-				metricValues: make(map[string]*metricValue, 1),
+				metricValues: make(map[string]*metricValue),
 			}
 			c.registeredMetrics[signature] = holder
 			c.accumulateMetrics(tt.metric, lk)
@@ -446,6 +449,20 @@ func TestAccumulateHistograms(t *testing.T) {
 			for b, p := range tt.histogramPoints {
 				require.Equal(t, p, v.histogramPoints[b])
 			}
+
+			ch := make(chan prometheus.Metric, 1)
+			go func() {
+				c.Collect(ch)
+				close(ch)
+			}()
+
+			n := 0
+			for m := range ch {
+				n++
+				require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+				require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+			}
+			require.Equal(t, 1, n)
 		})
 	}
 }

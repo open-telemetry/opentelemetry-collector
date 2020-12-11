@@ -37,8 +37,9 @@ import (
 
 func TestPrometheusExporter(t *testing.T) {
 	tests := []struct {
-		config  *Config
-		wantErr string
+		config       *Config
+		wantErr      string
+		wantStartErr string
 	}{
 		{
 			config: &Config{
@@ -51,6 +52,12 @@ func TestPrometheusExporter(t *testing.T) {
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
 			},
+		},
+		{
+			config: &Config{
+				Endpoint: ":88999",
+			},
+			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
 			config:  &Config{},
@@ -74,8 +81,15 @@ func TestPrometheusExporter(t *testing.T) {
 			}
 
 			assert.NotNil(t, exp)
-			require.Nil(t, err)
-			require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
+			err = exp.Start(context.Background(), &componenttest.NopHost{})
+
+			if tt.wantStartErr != "" {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantStartErr, err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+
 			require.NoError(t, exp.Shutdown(context.Background()))
 		}
 	}

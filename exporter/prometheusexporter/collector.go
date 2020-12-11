@@ -61,6 +61,9 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	}
 }
 
+// Collector dynamically allocates metrics, describe shoud be noop
+func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
+
 /*
 	Processing
 */
@@ -403,22 +406,6 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (c *collector) Describe(ch chan<- *prometheus.Desc) {
-	registered := make(map[string]*prometheus.Desc)
-
-	c.mu.Lock()
-
-	for key, holder := range c.registeredMetrics {
-		registered[key] = holder.desc
-	}
-
-	c.mu.Unlock()
-
-	for _, desc := range registered {
-		ch <- desc
-	}
-}
-
 /*
 	Helpers
 */
@@ -433,12 +420,10 @@ func metricSignature(namespace string, metric pdata.Metric, keys []string) strin
 }
 
 func metricName(namespace string, metric pdata.Metric) string {
-	var name string
 	if namespace != "" {
-		name = namespace + "_"
+		return sanitize(namespace) + "_" + sanitize(metric.Name())
 	}
-	mName := metric.Name()
-	return name + sanitize(mName)
+	return sanitize(metric.Name())
 }
 
 type labelKeys struct {
