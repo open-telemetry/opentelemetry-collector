@@ -142,7 +142,7 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 func (ipp *InProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
-		ipp.svc.SignalTestComplete()
+		ipp.svc.Shutdown()
 	}
 	<-ipp.appDone
 	stopped = ipp.stopped
