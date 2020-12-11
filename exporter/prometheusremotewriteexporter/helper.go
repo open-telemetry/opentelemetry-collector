@@ -215,21 +215,37 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 	return sanitize(b.String())
 }
 
-// Simple helper function that takes the <Signature String - *TimeSeries> map
-// and creates a WriteRequest from the struct -- can move to the helper.go file
-func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
+// batchTimeSeries splits series into multiple batch write requests.
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
+
+	var requests []*prompb.WriteRequest
 	var tsArray []prompb.TimeSeries
+	sizeOfCurrentBatch := 0
+
 	for _, v := range tsMap {
+		sizeOfSeries := v.Size()
+
+		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
+			wrapped := convertTimeseriesToRequest(tsArray)
+			requests = append(requests, wrapped)
+
+			tsArray = make([]prompb.TimeSeries, 0)
+			sizeOfCurrentBatch = 0
+		}
+
 		tsArray = append(tsArray, *v)
+		sizeOfCurrentBatch += sizeOfSeries
 	}
-	wrapped := prompb.WriteRequest{
-		Timeseries: tsArray,
-		// Other parameters of the WriteRequest are unnecessary for our Export
+
+	if len(tsArray) != 0 {
+		wrapped := convertTimeseriesToRequest(tsArray)
+		requests = append(requests, wrapped)
 	}
-	return &wrapped, nil
+
+	return requests, nil
 }
 
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
@@ -464,5 +480,13 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
 		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric)
+	}
+}
+
+func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
+	// the remote_write endpoint only requires the timeseries.
+	// otlp defines it's own way to handle metric metadata
+	return &prompb.WriteRequest{
+		Timeseries: tsArray,
 	}
 }

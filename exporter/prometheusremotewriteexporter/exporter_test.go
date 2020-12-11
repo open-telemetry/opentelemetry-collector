@@ -227,17 +227,19 @@ func Test_export(t *testing.T) {
 			if !tt.serverUp {
 				server.Close()
 			}
-			err := runExportPipeline(ts1, serverURL)
+			errs := runExportPipeline(ts1, serverURL)
 			if tt.returnError {
-				assert.Error(t, err)
+				assert.Error(t, errs[0])
 				return
 			}
-			assert.NoError(t, err)
+			assert.Len(t, errs, 0)
 		})
 	}
 }
 
-func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
+func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
+	var errs []error
+
 	// First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
@@ -246,10 +248,11 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := NewPrwExporter("test", endpoint.String(), HTTPClient, map[string]string{})
 	if err != nil {
-		return err
+		errs = append(errs, err)
+		return errs
 	}
-	err = prwe.export(context.Background(), testmap)
-	return err
+	errs = append(errs, prwe.export(context.Background(), testmap)...)
+	return errs
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as

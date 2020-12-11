@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sync"
@@ -35,6 +36,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/version"
+)
+
+const (
+	maxConcurrentRequests = 5
+	maxBatchByteSize      = 3000000
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
@@ -143,9 +149,9 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 			}
 		}
 
-		if err := prwe.export(ctx, tsMap); err != nil {
+		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
 			dropped = md.MetricCount()
-			errs = append(errs, consumererror.Permanent(err))
+			errs = append(errs, exportErrors...)
 		}
 
 		if dropped != 0 {
@@ -252,13 +258,49 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
-	// Calls the helper function to convert the TsMap to the desired format
-	req, err := wrapTimeSeries(tsMap)
+func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
+	var errs []error
+	// Calls the helper function to convert and batch the TsMap to the desired format
+	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
-		return consumererror.Permanent(err)
+		errs = append(errs, consumererror.Permanent(err))
+		return errs
 	}
 
+	input := make(chan *prompb.WriteRequest, len(requests))
+	for _, request := range requests {
+		input <- request
+	}
+	close(input)
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	concurrencyLimit := int(math.Min(maxConcurrentRequests, float64(len(requests))))
+	wg.Add(concurrencyLimit) // used to wait for workers to be finished
+
+	// Run concurrencyLimit of workers until there
+	// is no more requests to execute in the input channel.
+	for i := 0; i < concurrencyLimit; i++ {
+		go func() {
+			defer wg.Done()
+
+			for request := range input {
+				err := prwe.execute(ctx, request)
+				if err != nil {
+					mu.Lock()
+					errs = append(errs, err)
+					mu.Unlock()
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	return errs
+}
+
+func (prwe *PrwExporter) execute(ctx context.Context, req *prompb.WriteRequest) error {
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(req)
 	if err != nil {
