@@ -342,6 +342,20 @@ func TestAccumulateMetrics(t *testing.T) {
 			require.Greater(t, v.timestamp.Unix(), int64(0))
 			require.GreaterOrEqual(t, v.updated.UnixNano(), v.timestamp.UnixNano())
 			require.Equal(t, tt.value, v.value)
+
+			ch := make(chan prometheus.Metric, 1)
+			go func() {
+				c.Collect(ch)
+				close(ch)
+			}()
+
+			n := 0
+			for m := range ch {
+				n++
+				require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+				require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+			}
+			require.Equal(t, 1, n)
 		})
 	}
 }
