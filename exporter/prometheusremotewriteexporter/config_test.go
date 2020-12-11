@@ -76,12 +76,9 @@ func Test_loadConfig(t *testing.T) {
 					},
 					Insecure: false,
 				},
-				ReadBufferSize: 0,
-
+				ReadBufferSize:  0,
 				WriteBufferSize: 512 * 1024,
-
-				Timeout: 5 * time.Second,
-
+				Timeout:         5 * time.Second,
 				Headers: map[string]string{
 					"prometheus-remote-write-version": "0.1.0",
 					"x-scope-orgid":                   "234"},
