@@ -59,7 +59,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 		},
 		{
 			name: "errorTag",
-			zs:   generateSpanErrorTag(),
+			zs:   generateSpanErrorTags(),
 			td:   generateTraceSingleSpanErrorStatus(),
 			err:  nil,
 		},
@@ -107,9 +107,12 @@ func generateSpanNoTags() []*zipkinmodel.SpanModel {
 	return spans
 }
 
-func generateSpanErrorTag() []*zipkinmodel.SpanModel {
+func generateSpanError() []*zipkinmodel.SpanModel {
+	errorTags := make(map[string]string)
+	errorTags["error"] = "true"
+
 	spans := generateSpanNoEndpoints()
-	spans[0].Tags = &zipkinmodel.Tags{error: "true"}
+	spans[0].Tags = errorTags
 	return spans
 }
 

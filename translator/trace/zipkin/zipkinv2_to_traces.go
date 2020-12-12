@@ -165,8 +165,8 @@ func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 		}
 	}
 
-	if _, ok := tags[tracetranslator.TagError]; ok {
-		if value == "true" {
+	if val, ok := tags[tracetranslator.TagError]; ok {
+		if val == "true" {
 			status.SetCode(pdata.StatusCodeError)
 			delete(tags, tracetranslator.TagError)
 		}
