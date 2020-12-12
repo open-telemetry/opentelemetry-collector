@@ -107,7 +107,7 @@ func generateSpanNoTags() []*zipkinmodel.SpanModel {
 	return spans
 }
 
-func generateSpanError() []*zipkinmodel.SpanModel {
+func generateSpanErrorTags() []*zipkinmodel.SpanModel {
 	errorTags := make(map[string]string)
 	errorTags["error"] = "true"
 
