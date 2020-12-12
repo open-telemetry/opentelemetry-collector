@@ -115,7 +115,6 @@ func TestSpanStatusCode(t *testing.T) {
 	rss.At(0).InstrumentationLibrarySpans().Resize(1)
 	rss.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	status := rss.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Status()
-	status.InitEmpty()
 
 	// Check handling of deprecated status code, see spec here:
 	// https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231

@@ -157,11 +157,6 @@ func NewResourceMetrics() ResourceMetrics {
 	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms ResourceMetrics) InitEmpty() {
-	*ms.orig = otlpmetrics.ResourceMetrics{}
-}
-
 // Resource returns the resource associated with this ResourceMetrics.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -316,11 +311,6 @@ func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMe
 // This must be used only in testing code since no "Set" method available.
 func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 	return newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms InstrumentationLibraryMetrics) InitEmpty() {
-	*ms.orig = otlpmetrics.InstrumentationLibraryMetrics{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
@@ -480,11 +470,6 @@ func NewMetric() Metric {
 	return newMetric(&otlpmetrics.Metric{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms Metric) InitEmpty() {
-	*ms.orig = otlpmetrics.Metric{}
-}
-
 // Name returns the name associated with this Metric.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -557,11 +542,6 @@ func NewIntGauge() IntGauge {
 	return newIntGauge(&otlpmetrics.IntGauge{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms IntGauge) InitEmpty() {
-	*ms.orig = otlpmetrics.IntGauge{}
-}
-
 // DataPoints returns the DataPoints associated with this IntGauge.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -596,11 +576,6 @@ func NewDoubleGauge() DoubleGauge {
 	return newDoubleGauge(&otlpmetrics.DoubleGauge{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms DoubleGauge) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleGauge{}
-}
-
 // DataPoints returns the DataPoints associated with this DoubleGauge.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -633,11 +608,6 @@ func newIntSum(orig *otlpmetrics.IntSum) IntSum {
 // This must be used only in testing code since no "Set" method available.
 func NewIntSum() IntSum {
 	return newIntSum(&otlpmetrics.IntSum{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms IntSum) InitEmpty() {
-	*ms.orig = otlpmetrics.IntSum{}
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this IntSum.
@@ -704,11 +674,6 @@ func NewDoubleSum() DoubleSum {
 	return newDoubleSum(&otlpmetrics.DoubleSum{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms DoubleSum) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleSum{}
-}
-
 // AggregationTemporality returns the aggregationtemporality associated with this DoubleSum.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -773,11 +738,6 @@ func NewIntHistogram() IntHistogram {
 	return newIntHistogram(&otlpmetrics.IntHistogram{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms IntHistogram) InitEmpty() {
-	*ms.orig = otlpmetrics.IntHistogram{}
-}
-
 // AggregationTemporality returns the aggregationtemporality associated with this IntHistogram.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -827,11 +787,6 @@ func NewDoubleHistogram() DoubleHistogram {
 	return newDoubleHistogram(&otlpmetrics.DoubleHistogram{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms DoubleHistogram) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleHistogram{}
-}
-
 // AggregationTemporality returns the aggregationtemporality associated with this DoubleHistogram.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -879,11 +834,6 @@ func newDoubleSummary(orig *otlpmetrics.DoubleSummary) DoubleSummary {
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleSummary() DoubleSummary {
 	return newDoubleSummary(&otlpmetrics.DoubleSummary{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms DoubleSummary) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleSummary{}
 }
 
 // DataPoints returns the DataPoints associated with this DoubleSummary.
@@ -1032,11 +982,6 @@ func newIntDataPoint(orig *otlpmetrics.IntDataPoint) IntDataPoint {
 // This must be used only in testing code since no "Set" method available.
 func NewIntDataPoint() IntDataPoint {
 	return newIntDataPoint(&otlpmetrics.IntDataPoint{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms IntDataPoint) InitEmpty() {
-	*ms.orig = otlpmetrics.IntDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this IntDataPoint.
@@ -1240,11 +1185,6 @@ func NewDoubleDataPoint() DoubleDataPoint {
 	return newDoubleDataPoint(&otlpmetrics.DoubleDataPoint{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms DoubleDataPoint) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleDataPoint{}
-}
-
 // LabelsMap returns the Labels associated with this DoubleDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -1444,11 +1384,6 @@ func newIntHistogramDataPoint(orig *otlpmetrics.IntHistogramDataPoint) IntHistog
 // This must be used only in testing code since no "Set" method available.
 func NewIntHistogramDataPoint() IntHistogramDataPoint {
 	return newIntHistogramDataPoint(&otlpmetrics.IntHistogramDataPoint{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms IntHistogramDataPoint) InitEmpty() {
-	*ms.orig = otlpmetrics.IntHistogramDataPoint{}
 }
 
 // LabelsMap returns the Labels associated with this IntHistogramDataPoint.
@@ -1697,11 +1632,6 @@ func NewDoubleHistogramDataPoint() DoubleHistogramDataPoint {
 	return newDoubleHistogramDataPoint(&otlpmetrics.DoubleHistogramDataPoint{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms DoubleHistogramDataPoint) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleHistogramDataPoint{}
-}
-
 // LabelsMap returns the Labels associated with this DoubleHistogramDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -1948,11 +1878,6 @@ func NewDoubleSummaryDataPoint() DoubleSummaryDataPoint {
 	return newDoubleSummaryDataPoint(&otlpmetrics.DoubleSummaryDataPoint{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms DoubleSummaryDataPoint) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleSummaryDataPoint{}
-}
-
 // LabelsMap returns the Labels associated with this DoubleSummaryDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -2169,11 +2094,6 @@ func NewValueAtQuantile() ValueAtQuantile {
 	return newValueAtQuantile(&otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms ValueAtQuantile) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{}
-}
-
 // Quantile returns the quantile associated with this ValueAtQuantile.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -2345,11 +2265,6 @@ func newIntExemplar(orig *otlpmetrics.IntExemplar) IntExemplar {
 // This must be used only in testing code since no "Set" method available.
 func NewIntExemplar() IntExemplar {
 	return newIntExemplar(&otlpmetrics.IntExemplar{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms IntExemplar) InitEmpty() {
-	*ms.orig = otlpmetrics.IntExemplar{}
 }
 
 // Timestamp returns the timestamp associated with this IntExemplar.
@@ -2531,11 +2446,6 @@ func newDoubleExemplar(orig *otlpmetrics.DoubleExemplar) DoubleExemplar {
 // This must be used only in testing code since no "Set" method available.
 func NewDoubleExemplar() DoubleExemplar {
 	return newDoubleExemplar(&otlpmetrics.DoubleExemplar{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms DoubleExemplar) InitEmpty() {
-	*ms.orig = otlpmetrics.DoubleExemplar{}
 }
 
 // Timestamp returns the timestamp associated with this DoubleExemplar.

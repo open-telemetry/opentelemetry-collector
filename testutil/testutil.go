@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -30,6 +32,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+type portpair struct {
+	first string
+	last  string
+}
 
 // GenerateNormalizedJSON generates a normalized JSON from the string
 // given to the function. Useful to compare JSON contents that
@@ -73,14 +80,67 @@ func GetAvailableLocalAddress(t *testing.T) string {
 // available for opening when this function returns provided that there is no
 // race by some other code to grab the same port immediately.
 func GetAvailablePort(t *testing.T) uint16 {
-	endpoint := GetAvailableLocalAddress(t)
-	_, port, err := net.SplitHostPort(endpoint)
-	require.NoError(t, err)
+	// Retry has been added for windows as net.Listen can return a port that is not actually available. Details can be
+	// found in https://github.com/docker/for-win/issues/3171 but to summarize Hyper-V will reserve ranges of ports
+	// which do not show up under the "netstat -ano" but can only be found by
+	// "netsh interface ipv4 show excludedportrange protocol=tcp".  We'll use []exclusions to hold those ranges and
+	// retry if the port returned by GetAvailableLocalAddress falls in one of those them.
+	var exclusions []portpair
+	portFound := false
+	var port string
+	var err error
+	if runtime.GOOS == "windows" {
+		exclusions = getExclusionsList(t)
+	}
+
+	for !portFound {
+		endpoint := GetAvailableLocalAddress(t)
+		_, port, err = net.SplitHostPort(endpoint)
+		require.NoError(t, err)
+		portFound = true
+		if runtime.GOOS == "windows" {
+			for _, pair := range exclusions {
+				if port >= pair.first && port <= pair.last {
+					portFound = false
+					break
+				}
+			}
+		}
+	}
 
 	portInt, err := strconv.Atoi(port)
 	require.NoError(t, err)
 
 	return uint16(portInt)
+}
+
+// Get excluded ports on Windows from the command: netsh interface ipv4 show excludedportrange protocol=tcp
+func getExclusionsList(t *testing.T) []portpair {
+	cmd := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err)
+
+	exclusions := createExclusionsList(string(output), t)
+	return exclusions
+}
+
+func createExclusionsList(exclusionsText string, t *testing.T) []portpair {
+	exclusions := []portpair{}
+
+	parts := strings.Split(exclusionsText, "--------")
+	require.Equal(t, len(parts), 3)
+	portsText := strings.Split(parts[2], "*")
+	require.Equal(t, len(portsText), 2)
+	lines := strings.Split(portsText[0], "\n")
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			entries := strings.Fields(strings.TrimSpace(line))
+			require.Equal(t, len(entries), 2)
+			pair := portpair{entries[0], entries[1]}
+			exclusions = append(exclusions, pair)
+		}
+	}
+	return exclusions
 }
 
 // WaitForPort repeatedly attempts to open a local port until it either succeeds or 5 seconds pass

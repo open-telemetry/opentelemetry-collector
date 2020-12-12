@@ -303,3 +303,61 @@ func Test_getPromMetricName(t *testing.T) {
 		})
 	}
 }
+
+// Test_batchTimeSeries checks batchTimeSeries return the correct number of requests
+// depending on byte size.
+func Test_batchTimeSeries(t *testing.T) {
+	// First we will instantiate a dummy TimeSeries instance to pass into both the export call and compare the http request
+	labels := getPromLabels(label11, value11, label12, value12, label21, value21, label22, value22)
+	sample1 := getSample(floatVal1, msTime1)
+	sample2 := getSample(floatVal2, msTime2)
+	sample3 := getSample(floatVal3, msTime3)
+	ts1 := getTimeSeries(labels, sample1, sample2)
+	ts2 := getTimeSeries(labels, sample1, sample2, sample3)
+
+	tsMap1 := getTimeseriesMap([]*prompb.TimeSeries{})
+	tsMap2 := getTimeseriesMap([]*prompb.TimeSeries{ts1})
+	tsMap3 := getTimeseriesMap([]*prompb.TimeSeries{ts1, ts2})
+
+	tests := []struct {
+		name                string
+		tsMap               map[string]*prompb.TimeSeries
+		maxBatchByteSize    int
+		numExpectedRequests int
+		returnErr           bool
+	}{
+		{
+			"no_timeseries",
+			tsMap1,
+			100,
+			-1,
+			true,
+		},
+		{
+			"normal_case",
+			tsMap2,
+			300,
+			1,
+			false,
+		},
+		{
+			"two_requests",
+			tsMap3,
+			300,
+			2,
+			false,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize)
+			if tt.returnErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.numExpectedRequests, len(requests))
+		})
+	}
+}

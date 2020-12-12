@@ -1,9 +1,9 @@
 # Long-term Roadmap
 
-This is the long-term, draft Roadmap. Note that this a vision document that reflects our
+This long-term roadmap (draft) is a vision document that reflects our
 current desires. It is not a commitment to implement everything listed in this roadmap.
-The primary purpose of this document is to ensure all contributors work in alignment.
-As our vision changes over time maintainers reserve the right to add, modify, and _remove_
+The primary purpose of this document is to ensure that all contributors work in alignment.
+As our vision changes over time, maintainers reserve the right to add, modify, and _remove_
 items from this roadmap.
 
 Description|Status|Links|

@@ -58,7 +58,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 		if err != nil {
 			return err
 		}
-		pprof.StartCPUProfile(f)
+		return pprof.StartCPUProfile(f)
 	}
 
 	return nil

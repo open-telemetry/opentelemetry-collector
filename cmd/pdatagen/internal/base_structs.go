@@ -19,81 +19,6 @@ import (
 	"strings"
 )
 
-const messagePtrTemplate = `${description}
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ${structName} struct {
-	// orig points to the pointer ${originName} field contained somewhere else.
-	// We use pointer-to-pointer to be able to modify it in InitEmpty func.
-	orig **${originName}
-}
-
-func new${structName}(orig **${originName}) ${structName} {
-	return ${structName}{orig}
-}
-
-// New${structName} creates a new "nil" ${structName}.
-// To initialize the struct call "InitEmpty".
-//
-// This must be used only in testing code since no "Set" method available.
-func New${structName}() ${structName} {
-	orig := (*${originName})(nil)
-	return new${structName}(&orig)
-}
-
-// InitEmpty overwrites the current value with empty.
-func (ms ${structName}) InitEmpty() {
-	*ms.orig = &${originName}{}
-}
-
-// IsNil returns true if the underlying data are nil.
-//
-// Important: All other functions will cause a runtime error if this returns "true".
-func (ms ${structName}) IsNil() bool {
-	return *ms.orig == nil
-}`
-
-const messagePtrCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
-func (ms ${structName}) CopyTo(dest ${structName}) {
-	if ms.IsNil() {
-		*dest.orig = nil
-		return
-	}
-	if dest.IsNil() {
-		dest.InitEmpty()
-	}`
-
-const messagePtrCopyToFooterTemplate = `}`
-
-const messagePtrTestTemplate = `func Test${structName}_InitEmpty(t *testing.T) {
-	ms := New${structName}()
-	assert.True(t, ms.IsNil())
-	ms.InitEmpty()
-	assert.False(t, ms.IsNil())
-}
-
-func Test${structName}_CopyTo(t *testing.T) {
-	ms := New${structName}()
-	New${structName}().CopyTo(ms)
-	assert.True(t, ms.IsNil())
-	generateTest${structName}().CopyTo(ms)
-	assert.EqualValues(t, generateTest${structName}(), ms)
-}`
-
-const messagePtrGenerateTestTemplate = `func generateTest${structName}() ${structName} {
-	tv := New${structName}()
-	tv.InitEmpty()
-	fillTest${structName}(tv)
-	return tv
-}`
-
-const messagePtrFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
-const messagePtrFillTestFooterTemplate = `}`
-
 const messageValueTemplate = `${description}
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -114,11 +39,6 @@ func new${structName}(orig *${originName}) ${structName} {
 // This must be used only in testing code since no "Set" method available.
 func New${structName}() ${structName} {
 	return new${structName}(&${originName}{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms ${structName}) InitEmpty() {
-	*ms.orig = ${originName}{}
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
@@ -153,104 +73,6 @@ type baseStruct interface {
 
 	generateTestValueHelpers(sb *strings.Builder)
 }
-
-type messagePtrStruct struct {
-	structName     string
-	description    string
-	originFullName string
-	fields         []baseField
-}
-
-func (ms *messagePtrStruct) getName() string {
-	return ms.structName
-}
-
-func (ms *messagePtrStruct) generateStruct(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messagePtrTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		case "originName":
-			return ms.originFullName
-		case "description":
-			return ms.description
-		default:
-			panic(name)
-		}
-	}))
-	// Write accessors for the struct
-	for _, f := range ms.fields {
-		sb.WriteString(newLine + newLine)
-		f.generateAccessors(ms, sb)
-	}
-	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messagePtrCopyToHeaderTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		default:
-			panic(name)
-		}
-	}))
-	// Write accessors CopyTo for the struct
-	for _, f := range ms.fields {
-		sb.WriteString(newLine)
-		f.generateCopyToValue(sb)
-	}
-	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messagePtrCopyToFooterTemplate, func(name string) string {
-		panic(name)
-	}))
-}
-
-func (ms *messagePtrStruct) generateTests(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messagePtrTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		default:
-			panic(name)
-		}
-	}))
-	// Write accessors tests for the struct
-	for _, f := range ms.fields {
-		sb.WriteString(newLine + newLine)
-		f.generateAccessorsTest(ms, sb)
-	}
-}
-
-func (ms *messagePtrStruct) generateTestValueHelpers(sb *strings.Builder) {
-	sb.WriteString(os.Expand(messagePtrGenerateTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		case "originName":
-			return ms.originFullName
-		default:
-			panic(name)
-		}
-	}))
-	sb.WriteString(newLine + newLine)
-	sb.WriteString(os.Expand(messagePtrFillTestHeaderTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.structName
-		default:
-			panic(name)
-		}
-	}))
-	// Write accessors test value for the struct
-	for _, f := range ms.fields {
-		sb.WriteString(newLine)
-		f.generateSetWithTestValue(sb)
-	}
-	sb.WriteString(newLine)
-	sb.WriteString(os.Expand(messagePtrFillTestFooterTemplate, func(name string) string {
-		panic(name)
-	}))
-}
-
-var _ baseStruct = (*messagePtrStruct)(nil)
 
 type messageValueStruct struct {
 	structName     string

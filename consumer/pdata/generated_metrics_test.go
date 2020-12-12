@@ -146,14 +146,12 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
-	ms.InitEmpty()
 	fillTestResource(ms.Resource())
 	assert.EqualValues(t, generateTestResource(), ms.Resource())
 }
 
 func TestResourceMetrics_InstrumentationLibraryMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), ms.InstrumentationLibraryMetrics())
 	fillTestInstrumentationLibraryMetricsSlice(ms.InstrumentationLibraryMetrics())
 	testValInstrumentationLibraryMetrics := generateTestInstrumentationLibraryMetricsSlice()
@@ -281,14 +279,12 @@ func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
 
 func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
-	ms.InitEmpty()
 	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
 	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
 }
 
 func TestInstrumentationLibraryMetrics_Metrics(t *testing.T) {
 	ms := NewInstrumentationLibraryMetrics()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewMetricSlice(), ms.Metrics())
 	fillTestMetricSlice(ms.Metrics())
 	testValMetrics := generateTestMetricSlice()
@@ -416,7 +412,6 @@ func TestMetric_CopyTo(t *testing.T) {
 
 func TestMetric_Name(t *testing.T) {
 	ms := NewMetric()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
@@ -425,7 +420,6 @@ func TestMetric_Name(t *testing.T) {
 
 func TestMetric_Description(t *testing.T) {
 	ms := NewMetric()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Description())
 	testValDescription := "test_description"
 	ms.SetDescription(testValDescription)
@@ -434,7 +428,6 @@ func TestMetric_Description(t *testing.T) {
 
 func TestMetric_Unit(t *testing.T) {
 	ms := NewMetric()
-	ms.InitEmpty()
 	assert.EqualValues(t, "", ms.Unit())
 	testValUnit := "1"
 	ms.SetUnit(testValUnit)
@@ -449,7 +442,6 @@ func TestIntGauge_CopyTo(t *testing.T) {
 
 func TestIntGauge_DataPoints(t *testing.T) {
 	ms := NewIntGauge()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewIntDataPointSlice(), ms.DataPoints())
 	fillTestIntDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestIntDataPointSlice()
@@ -464,7 +456,6 @@ func TestDoubleGauge_CopyTo(t *testing.T) {
 
 func TestDoubleGauge_DataPoints(t *testing.T) {
 	ms := NewDoubleGauge()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewDoubleDataPointSlice(), ms.DataPoints())
 	fillTestDoubleDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestDoubleDataPointSlice()
@@ -479,7 +470,6 @@ func TestIntSum_CopyTo(t *testing.T) {
 
 func TestIntSum_AggregationTemporality(t *testing.T) {
 	ms := NewIntSum()
-	ms.InitEmpty()
 	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -488,7 +478,6 @@ func TestIntSum_AggregationTemporality(t *testing.T) {
 
 func TestIntSum_IsMonotonic(t *testing.T) {
 	ms := NewIntSum()
-	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsMonotonic())
 	testValIsMonotonic := true
 	ms.SetIsMonotonic(testValIsMonotonic)
@@ -497,7 +486,6 @@ func TestIntSum_IsMonotonic(t *testing.T) {
 
 func TestIntSum_DataPoints(t *testing.T) {
 	ms := NewIntSum()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewIntDataPointSlice(), ms.DataPoints())
 	fillTestIntDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestIntDataPointSlice()
@@ -512,7 +500,6 @@ func TestDoubleSum_CopyTo(t *testing.T) {
 
 func TestDoubleSum_AggregationTemporality(t *testing.T) {
 	ms := NewDoubleSum()
-	ms.InitEmpty()
 	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -521,7 +508,6 @@ func TestDoubleSum_AggregationTemporality(t *testing.T) {
 
 func TestDoubleSum_IsMonotonic(t *testing.T) {
 	ms := NewDoubleSum()
-	ms.InitEmpty()
 	assert.EqualValues(t, false, ms.IsMonotonic())
 	testValIsMonotonic := true
 	ms.SetIsMonotonic(testValIsMonotonic)
@@ -530,7 +516,6 @@ func TestDoubleSum_IsMonotonic(t *testing.T) {
 
 func TestDoubleSum_DataPoints(t *testing.T) {
 	ms := NewDoubleSum()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewDoubleDataPointSlice(), ms.DataPoints())
 	fillTestDoubleDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestDoubleDataPointSlice()
@@ -545,7 +530,6 @@ func TestIntHistogram_CopyTo(t *testing.T) {
 
 func TestIntHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewIntHistogram()
-	ms.InitEmpty()
 	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -554,7 +538,6 @@ func TestIntHistogram_AggregationTemporality(t *testing.T) {
 
 func TestIntHistogram_DataPoints(t *testing.T) {
 	ms := NewIntHistogram()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewIntHistogramDataPointSlice(), ms.DataPoints())
 	fillTestIntHistogramDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestIntHistogramDataPointSlice()
@@ -569,7 +552,6 @@ func TestDoubleHistogram_CopyTo(t *testing.T) {
 
 func TestDoubleHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewDoubleHistogram()
-	ms.InitEmpty()
 	assert.EqualValues(t, AggregationTemporalityUnspecified, ms.AggregationTemporality())
 	testValAggregationTemporality := AggregationTemporalityCumulative
 	ms.SetAggregationTemporality(testValAggregationTemporality)
@@ -578,7 +560,6 @@ func TestDoubleHistogram_AggregationTemporality(t *testing.T) {
 
 func TestDoubleHistogram_DataPoints(t *testing.T) {
 	ms := NewDoubleHistogram()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewDoubleHistogramDataPointSlice(), ms.DataPoints())
 	fillTestDoubleHistogramDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestDoubleHistogramDataPointSlice()
@@ -593,7 +574,6 @@ func TestDoubleSummary_CopyTo(t *testing.T) {
 
 func TestDoubleSummary_DataPoints(t *testing.T) {
 	ms := NewDoubleSummary()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewDoubleSummaryDataPointSlice(), ms.DataPoints())
 	fillTestDoubleSummaryDataPointSlice(ms.DataPoints())
 	testValDataPoints := generateTestDoubleSummaryDataPointSlice()
@@ -721,7 +701,6 @@ func TestIntDataPoint_CopyTo(t *testing.T) {
 
 func TestIntDataPoint_LabelsMap(t *testing.T) {
 	ms := NewIntDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -730,7 +709,6 @@ func TestIntDataPoint_LabelsMap(t *testing.T) {
 
 func TestIntDataPoint_StartTime(t *testing.T) {
 	ms := NewIntDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
 	testValStartTime := TimestampUnixNano(1234567890)
 	ms.SetStartTime(testValStartTime)
@@ -739,7 +717,6 @@ func TestIntDataPoint_StartTime(t *testing.T) {
 
 func TestIntDataPoint_Timestamp(t *testing.T) {
 	ms := NewIntDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -748,7 +725,6 @@ func TestIntDataPoint_Timestamp(t *testing.T) {
 
 func TestIntDataPoint_Value(t *testing.T) {
 	ms := NewIntDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, int64(0), ms.Value())
 	testValValue := int64(-17)
 	ms.SetValue(testValValue)
@@ -757,7 +733,6 @@ func TestIntDataPoint_Value(t *testing.T) {
 
 func TestIntDataPoint_Exemplars(t *testing.T) {
 	ms := NewIntDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewIntExemplarSlice(), ms.Exemplars())
 	fillTestIntExemplarSlice(ms.Exemplars())
 	testValExemplars := generateTestIntExemplarSlice()
@@ -885,7 +860,6 @@ func TestDoubleDataPoint_CopyTo(t *testing.T) {
 
 func TestDoubleDataPoint_LabelsMap(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -894,7 +868,6 @@ func TestDoubleDataPoint_LabelsMap(t *testing.T) {
 
 func TestDoubleDataPoint_StartTime(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
 	testValStartTime := TimestampUnixNano(1234567890)
 	ms.SetStartTime(testValStartTime)
@@ -903,7 +876,6 @@ func TestDoubleDataPoint_StartTime(t *testing.T) {
 
 func TestDoubleDataPoint_Timestamp(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -912,7 +884,6 @@ func TestDoubleDataPoint_Timestamp(t *testing.T) {
 
 func TestDoubleDataPoint_Value(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, float64(0.0), ms.Value())
 	testValValue := float64(17.13)
 	ms.SetValue(testValValue)
@@ -921,7 +892,6 @@ func TestDoubleDataPoint_Value(t *testing.T) {
 
 func TestDoubleDataPoint_Exemplars(t *testing.T) {
 	ms := NewDoubleDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewDoubleExemplarSlice(), ms.Exemplars())
 	fillTestDoubleExemplarSlice(ms.Exemplars())
 	testValExemplars := generateTestDoubleExemplarSlice()
@@ -1049,7 +1019,6 @@ func TestIntHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestIntHistogramDataPoint_LabelsMap(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -1058,7 +1027,6 @@ func TestIntHistogramDataPoint_LabelsMap(t *testing.T) {
 
 func TestIntHistogramDataPoint_StartTime(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
 	testValStartTime := TimestampUnixNano(1234567890)
 	ms.SetStartTime(testValStartTime)
@@ -1067,7 +1035,6 @@ func TestIntHistogramDataPoint_StartTime(t *testing.T) {
 
 func TestIntHistogramDataPoint_Timestamp(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -1076,7 +1043,6 @@ func TestIntHistogramDataPoint_Timestamp(t *testing.T) {
 
 func TestIntHistogramDataPoint_Count(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint64(0), ms.Count())
 	testValCount := uint64(17)
 	ms.SetCount(testValCount)
@@ -1085,7 +1051,6 @@ func TestIntHistogramDataPoint_Count(t *testing.T) {
 
 func TestIntHistogramDataPoint_Sum(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, int64(0.0), ms.Sum())
 	testValSum := int64(1713)
 	ms.SetSum(testValSum)
@@ -1094,7 +1059,6 @@ func TestIntHistogramDataPoint_Sum(t *testing.T) {
 
 func TestIntHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
 	testValBucketCounts := []uint64{1, 2, 3}
 	ms.SetBucketCounts(testValBucketCounts)
@@ -1103,7 +1067,6 @@ func TestIntHistogramDataPoint_BucketCounts(t *testing.T) {
 
 func TestIntHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, []float64(nil), ms.ExplicitBounds())
 	testValExplicitBounds := []float64{1, 2, 3}
 	ms.SetExplicitBounds(testValExplicitBounds)
@@ -1112,7 +1075,6 @@ func TestIntHistogramDataPoint_ExplicitBounds(t *testing.T) {
 
 func TestIntHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewIntHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewIntExemplarSlice(), ms.Exemplars())
 	fillTestIntExemplarSlice(ms.Exemplars())
 	testValExemplars := generateTestIntExemplarSlice()
@@ -1240,7 +1202,6 @@ func TestDoubleHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_LabelsMap(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -1249,7 +1210,6 @@ func TestDoubleHistogramDataPoint_LabelsMap(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_StartTime(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
 	testValStartTime := TimestampUnixNano(1234567890)
 	ms.SetStartTime(testValStartTime)
@@ -1258,7 +1218,6 @@ func TestDoubleHistogramDataPoint_StartTime(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_Timestamp(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -1267,7 +1226,6 @@ func TestDoubleHistogramDataPoint_Timestamp(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_Count(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint64(0), ms.Count())
 	testValCount := uint64(17)
 	ms.SetCount(testValCount)
@@ -1276,7 +1234,6 @@ func TestDoubleHistogramDataPoint_Count(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_Sum(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, float64(0.0), ms.Sum())
 	testValSum := float64(17.13)
 	ms.SetSum(testValSum)
@@ -1285,7 +1242,6 @@ func TestDoubleHistogramDataPoint_Sum(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
 	testValBucketCounts := []uint64{1, 2, 3}
 	ms.SetBucketCounts(testValBucketCounts)
@@ -1294,7 +1250,6 @@ func TestDoubleHistogramDataPoint_BucketCounts(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, []float64(nil), ms.ExplicitBounds())
 	testValExplicitBounds := []float64{1, 2, 3}
 	ms.SetExplicitBounds(testValExplicitBounds)
@@ -1303,7 +1258,6 @@ func TestDoubleHistogramDataPoint_ExplicitBounds(t *testing.T) {
 
 func TestDoubleHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewDoubleHistogramDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewDoubleExemplarSlice(), ms.Exemplars())
 	fillTestDoubleExemplarSlice(ms.Exemplars())
 	testValExemplars := generateTestDoubleExemplarSlice()
@@ -1431,7 +1385,6 @@ func TestDoubleSummaryDataPoint_CopyTo(t *testing.T) {
 
 func TestDoubleSummaryDataPoint_LabelsMap(t *testing.T) {
 	ms := NewDoubleSummaryDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.LabelsMap())
 	fillTestStringMap(ms.LabelsMap())
 	testValLabelsMap := generateTestStringMap()
@@ -1440,7 +1393,6 @@ func TestDoubleSummaryDataPoint_LabelsMap(t *testing.T) {
 
 func TestDoubleSummaryDataPoint_StartTime(t *testing.T) {
 	ms := NewDoubleSummaryDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
 	testValStartTime := TimestampUnixNano(1234567890)
 	ms.SetStartTime(testValStartTime)
@@ -1449,7 +1401,6 @@ func TestDoubleSummaryDataPoint_StartTime(t *testing.T) {
 
 func TestDoubleSummaryDataPoint_Timestamp(t *testing.T) {
 	ms := NewDoubleSummaryDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -1458,7 +1409,6 @@ func TestDoubleSummaryDataPoint_Timestamp(t *testing.T) {
 
 func TestDoubleSummaryDataPoint_Count(t *testing.T) {
 	ms := NewDoubleSummaryDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, uint64(0), ms.Count())
 	testValCount := uint64(17)
 	ms.SetCount(testValCount)
@@ -1467,7 +1417,6 @@ func TestDoubleSummaryDataPoint_Count(t *testing.T) {
 
 func TestDoubleSummaryDataPoint_Sum(t *testing.T) {
 	ms := NewDoubleSummaryDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, float64(0.0), ms.Sum())
 	testValSum := float64(17.13)
 	ms.SetSum(testValSum)
@@ -1476,7 +1425,6 @@ func TestDoubleSummaryDataPoint_Sum(t *testing.T) {
 
 func TestDoubleSummaryDataPoint_QuantileValues(t *testing.T) {
 	ms := NewDoubleSummaryDataPoint()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewValueAtQuantileSlice(), ms.QuantileValues())
 	fillTestValueAtQuantileSlice(ms.QuantileValues())
 	testValQuantileValues := generateTestValueAtQuantileSlice()
@@ -1604,7 +1552,6 @@ func TestValueAtQuantile_CopyTo(t *testing.T) {
 
 func TestValueAtQuantile_Quantile(t *testing.T) {
 	ms := NewValueAtQuantile()
-	ms.InitEmpty()
 	assert.EqualValues(t, float64(0.0), ms.Quantile())
 	testValQuantile := float64(17.13)
 	ms.SetQuantile(testValQuantile)
@@ -1613,7 +1560,6 @@ func TestValueAtQuantile_Quantile(t *testing.T) {
 
 func TestValueAtQuantile_Value(t *testing.T) {
 	ms := NewValueAtQuantile()
-	ms.InitEmpty()
 	assert.EqualValues(t, float64(0.0), ms.Value())
 	testValValue := float64(17.13)
 	ms.SetValue(testValValue)
@@ -1741,7 +1687,6 @@ func TestIntExemplar_CopyTo(t *testing.T) {
 
 func TestIntExemplar_Timestamp(t *testing.T) {
 	ms := NewIntExemplar()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -1750,7 +1695,6 @@ func TestIntExemplar_Timestamp(t *testing.T) {
 
 func TestIntExemplar_Value(t *testing.T) {
 	ms := NewIntExemplar()
-	ms.InitEmpty()
 	assert.EqualValues(t, int64(0), ms.Value())
 	testValValue := int64(-17)
 	ms.SetValue(testValValue)
@@ -1759,7 +1703,6 @@ func TestIntExemplar_Value(t *testing.T) {
 
 func TestIntExemplar_FilteredLabels(t *testing.T) {
 	ms := NewIntExemplar()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
 	fillTestStringMap(ms.FilteredLabels())
 	testValFilteredLabels := generateTestStringMap()
@@ -1887,7 +1830,6 @@ func TestDoubleExemplar_CopyTo(t *testing.T) {
 
 func TestDoubleExemplar_Timestamp(t *testing.T) {
 	ms := NewDoubleExemplar()
-	ms.InitEmpty()
 	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
 	testValTimestamp := TimestampUnixNano(1234567890)
 	ms.SetTimestamp(testValTimestamp)
@@ -1896,7 +1838,6 @@ func TestDoubleExemplar_Timestamp(t *testing.T) {
 
 func TestDoubleExemplar_Value(t *testing.T) {
 	ms := NewDoubleExemplar()
-	ms.InitEmpty()
 	assert.EqualValues(t, float64(0.0), ms.Value())
 	testValValue := float64(17.13)
 	ms.SetValue(testValValue)
@@ -1905,7 +1846,6 @@ func TestDoubleExemplar_Value(t *testing.T) {
 
 func TestDoubleExemplar_FilteredLabels(t *testing.T) {
 	ms := NewDoubleExemplar()
-	ms.InitEmpty()
 	assert.EqualValues(t, NewStringMap(), ms.FilteredLabels())
 	fillTestStringMap(ms.FilteredLabels())
 	testValFilteredLabels := generateTestStringMap()
@@ -1984,7 +1924,6 @@ func fillTestMetric(tv Metric) {
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
 	(*tv.orig).Data = &otlpmetrics.Metric_IntGauge{IntGauge: &otlpmetrics.IntGauge{}}
-	tv.IntGauge().InitEmpty()
 	fillTestIntGauge(tv.IntGauge())
 }
 
