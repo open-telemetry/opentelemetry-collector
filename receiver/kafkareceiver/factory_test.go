@@ -59,15 +59,15 @@ func TestCreateTraceReceiver_error(t *testing.T) {
 }
 
 func TestWithUnmarshallers(t *testing.T) {
-	cum := &customUnamarshaller{}
-	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{cum.Encoding(): cum}))
+	unmarshaller := &customUnamarshaller{}
+	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{unmarshaller.Encoding(): unmarshaller}))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
 	cfg.ProtocolVersion = "2.0.0"
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.Encoding = cum.Encoding()
+		cfg.Encoding = unmarshaller.Encoding()
 		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
