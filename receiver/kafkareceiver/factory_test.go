@@ -59,15 +59,15 @@ func TestCreateTraceReceiver_error(t *testing.T) {
 }
 
 func TestWithUnmarshallers(t *testing.T) {
-	cum := &customUnamarshaller{}
-	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{cum.Encoding(): cum}))
+	cstumar := &customUnmarshaller{}
+	f := NewFactory(WithAddUnmarshallers(map[string]Unmarshaller{cstumar.Encoding(): cstumar}))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
 	cfg.Metadata.Full = false
 	cfg.ProtocolVersion = "2.0.0"
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.Encoding = cum.Encoding()
+		cfg.Encoding = cstumar.Encoding()
 		exporter, err := f.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
@@ -80,15 +80,15 @@ func TestWithUnmarshallers(t *testing.T) {
 	})
 }
 
-type customUnamarshaller struct {
+type customUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*customUnamarshaller)(nil)
+var _ Unmarshaller = (*customUnmarshaller)(nil)
 
-func (c customUnamarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (c customUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
 	panic("implement me")
 }
 
-func (c customUnamarshaller) Encoding() string {
+func (c customUnmarshaller) Encoding() string {
 	return "custom"
 }
