@@ -271,7 +271,7 @@ var (
 			},
 		},
 		{
-			name: "includeAllWithMissingResourceAttributes",
+			name: "excludeAllWithMissingResourceAttributes",
 			exc: &filtermetric.MatchProperties{
 				MatchType:          filtermetric.Strict,
 				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
@@ -280,6 +280,22 @@ var (
 			outMN: [][]string{
 				{"metric3"},
 				{"metric4"},
+			},
+		},
+		{
+			name: "includeWithRegexResourceAttributes",
+			inc: &filtermetric.MatchProperties{
+				MatchType: filtermetric.Regexp,
+				MetricNames: []string{
+					"metric1",
+					"metric3",
+				},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "(attr1/val1|attr1/val2)"}},
+			},
+			inMN: [][]*metricspb.Metric{metricsWithNameAndResource(inMetricForTwoResource)},
+			outMN: [][]string{
+				{"metric1"},
+				{"metric3"},
 			},
 		},
 	}
