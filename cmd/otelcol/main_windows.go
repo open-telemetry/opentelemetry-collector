@@ -36,6 +36,10 @@ func run(params service.Parameters) error {
 }
 
 func checkUseInteractiveMode() (bool, error) {
+	// If environment variable NO_WINDOWS_SERVICE is set with any value other
+	// than 0, use interactive mode instead of running as a service. This should
+	// be set in case running as a service is not possible or desired even
+	// though the current session is not detected to be interactive
 	if value, present := os.LookupEnv("NO_WINDOWS_SERVICE"); present && value != "0" {
 		return true, nil
 	}
