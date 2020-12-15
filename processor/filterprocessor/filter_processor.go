@@ -20,25 +20,30 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
+	"go.opentelemetry.io/collector/internal/processor/filtermatcher"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
+	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type filterMetricProcessor struct {
-	cfg     *Config
-	include filtermetric.Matcher
-	exclude filtermetric.Matcher
-	logger  *zap.Logger
+	cfg              *Config
+	include          filtermetric.Matcher
+	includeAttribute filtermatcher.AttributesMatcher
+	exclude          filtermetric.Matcher
+	excludeAttribute filtermatcher.AttributesMatcher
+	logger           *zap.Logger
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
-	inc, err := createMatcher(cfg.Metrics.Include)
+
+	inc, includeAttr, err := createMatcher(cfg.Metrics.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	exc, err := createMatcher(cfg.Metrics.Exclude)
+	exc, excludeAttr, err := createMatcher(cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +51,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	includeMatchType := ""
 	var includeExpressions []string
 	var includeMetricNames []string
-	var includeResourceAttributes map[string][]string
+	var includeResourceAttributes []filterconfig.Attribute
 	if cfg.Metrics.Include != nil {
 		includeMatchType = string(cfg.Metrics.Include.MatchType)
 		includeExpressions = cfg.Metrics.Include.Expressions
@@ -57,7 +62,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	excludeMatchType := ""
 	var excludeExpressions []string
 	var excludeMetricNames []string
-	var excludeResourceAttributes map[string][]string
+	var excludeResourceAttributes []filterconfig.Attribute
 	if cfg.Metrics.Exclude != nil {
 		excludeMatchType = string(cfg.Metrics.Exclude.MatchType)
 		excludeExpressions = cfg.Metrics.Exclude.Expressions
@@ -78,19 +83,34 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	)
 
 	return &filterMetricProcessor{
-		cfg:     cfg,
-		include: inc,
-		exclude: exc,
-		logger:  logger,
+		cfg:              cfg,
+		include:          inc,
+		includeAttribute: includeAttr,
+		exclude:          exc,
+		excludeAttribute: excludeAttr,
+		logger:           logger,
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, error) {
+func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
-	return filtermetric.NewMatcher(mp)
+	var attributeMatcher filtermatcher.AttributesMatcher
+	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
+		filterset.Config{
+			MatchType:    filterset.MatchType(mp.MatchType),
+			RegexpConfig: mp.RegexpConfig,
+		},
+		mp.ResourceAttributes,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nameMatcher, err := filtermetric.NewMatcher(mp)
+	return nameMatcher, attributeMatcher, err
 }
 
 // ProcessMetrics filters the given metrics based off the filterMetricProcessor's filters.
@@ -155,39 +175,18 @@ func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pdata.Re
 	resourceAttributes := resource.Attributes()
 
 	if fmp.include != nil {
-		for key, filterList := range fmp.cfg.Metrics.Include.ResourceAttributes {
-			attributeValue, ok := resourceAttributes.Get(key)
-			if ok {
-				attributeMatched := attributeMatch(filterList, attributeValue)
-				if !attributeMatched {
-					return false
-				}
-			}
+		matches := fmp.includeAttribute.Match(resourceAttributes)
+		if !matches {
+			return false
 		}
 	}
 
 	if fmp.exclude != nil {
-		for key, filterList := range fmp.cfg.Metrics.Exclude.ResourceAttributes {
-			attributeValue, ok := resourceAttributes.Get(key)
-			if ok {
-				attributeMatched := attributeMatch(filterList, attributeValue)
-				if attributeMatched {
-					return false
-				}
-			}
+		matches := fmp.excludeAttribute.Match(resourceAttributes)
+		if matches {
+			return false
 		}
 	}
 
 	return true
-}
-
-func attributeMatch(filterList []string, attributeValue pdata.AttributeValue) bool {
-	attribute := tracetranslator.AttributeValueToString(attributeValue, false)
-
-	for _, item := range filterList {
-		if item == attribute {
-			return true
-		}
-	}
-	return false
 }

@@ -15,6 +15,7 @@
 package filtermetric
 
 import (
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/internal/processor/filterset/regexp"
 )
@@ -50,7 +51,7 @@ type MatchProperties struct {
 	// A match occurs if any datapoint in a metric matches at least one expression in this list.
 	Expressions []string `mapstructure:"expressions"`
 
-	// ResourceAttributes defines a map of resource attribute key to a list of possible values to match metrics against.
-	// A match occurs if any resource attribute matches at least one value in this given list.
-	ResourceAttributes map[string][]string `mapstructure:"resource_attributes"`
+	// ResourceAttributes defines a list of possible resource attributes to match metrics against.
+	// A match occurs if any resource attribute matches at least one expression in this given list.
+	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
 }

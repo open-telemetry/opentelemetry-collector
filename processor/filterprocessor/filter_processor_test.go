@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
+	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -243,7 +244,7 @@ var (
 					"metric1",
 					"metric2",
 				},
-				ResourceAttributes: map[string][]string{"attr1": {"attr1/val1"}},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
 			},
 			inMN: [][]*metricspb.Metric{metricsWithNameAndResource(inMetricForResourceTest)},
 			outMN: [][]string{
@@ -261,7 +262,7 @@ var (
 					"metric3",
 					"metric4",
 				},
-				ResourceAttributes: map[string][]string{"attr1": {"attr1/val1"}},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
 			},
 			inMN: [][]*metricspb.Metric{metricsWithNameAndResource(inMetricForTwoResource)},
 			outMN: [][]string{
@@ -273,7 +274,7 @@ var (
 			name: "includeAllWithMissingResourceAttributes",
 			exc: &filtermetric.MatchProperties{
 				MatchType:          filtermetric.Strict,
-				ResourceAttributes: map[string][]string{"attr1": {"attr1/val1"}},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
 			},
 			inMN: [][]*metricspb.Metric{metricsWithNameAndResource(inMetricForTwoResource)},
 			outMN: [][]string{
