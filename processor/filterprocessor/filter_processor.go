@@ -106,7 +106,7 @@ func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filt
 		mp.ResourceAttributes,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, attributeMatcher, err
 	}
 
 	nameMatcher, err := filtermetric.NewMatcher(mp)
@@ -174,14 +174,14 @@ func (fmp *filterMetricProcessor) shouldKeepMetric(metric pdata.Metric) (bool, e
 func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pdata.Resource) bool {
 	resourceAttributes := resource.Attributes()
 
-	if fmp.include != nil {
+	if fmp.include != nil && fmp.includeAttribute != nil {
 		matches := fmp.includeAttribute.Match(resourceAttributes)
 		if !matches {
 			return false
 		}
 	}
 
-	if fmp.exclude != nil {
+	if fmp.exclude != nil && fmp.excludeAttribute != nil {
 		matches := fmp.excludeAttribute.Match(resourceAttributes)
 		if matches {
 			return false
