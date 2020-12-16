@@ -258,3 +258,11 @@ More often than not, exporting data does not work because of a network
 configuration issue. This could be due to a firewall, DNS, or proxy
 issue. Note that the Collector does have
 [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+
+### Startup failing in Windows Docker containers
+
+The process may fail to start in a Windows Docker container with the following
+error: `The service process could not connect to the service controller`. In
+this case the `NO_WINDOWS_SERVICE=1` environment variable should be set to force
+the collector to be started as if it were running in an interactive terminal,
+without attempting to run as a Windows service.
