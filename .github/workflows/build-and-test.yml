@@ -108,7 +108,7 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -142,7 +142,7 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -171,7 +171,7 @@ jobs:
         with:
           go-version: 1.15
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -228,7 +228,7 @@ jobs:
         with:
           go-version: 1.15
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -279,12 +279,12 @@ jobs:
       - name: Install fpm and dependencies
         run: gem install --no-document fpm -v 1.11.0
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
       - name: Download collector binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: collector-binaries
           path: ./bin
