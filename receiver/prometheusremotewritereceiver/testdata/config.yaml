@@ -1,0 +1,18 @@
+receivers:
+  prometheusremotewrite:
+  prometheusremotewrite/customname:
+    endpoint: "localhost:8765"
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+     receivers: [prometheusremotewrite]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]
+
