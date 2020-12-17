@@ -55,6 +55,7 @@ type metricBuilder struct {
 	droppedTimeseries    int
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
+	keepInternalMetrics  bool
 	startTime            float64
 	logger               *zap.Logger
 	currentMf            MetricFamily
@@ -63,7 +64,7 @@ type metricBuilder struct {
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, keepInternalMetrics bool, logger *zap.Logger) *metricBuilder {
 	var regex *regexp.Regexp
 	if startTimeMetricRegex != "" {
 		regex, _ = regexp.Compile(startTimeMetricRegex)
@@ -76,6 +77,7 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 		droppedTimeseries:    0,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: regex,
+		keepInternalMetrics:  keepInternalMetrics,
 	}
 }
 
@@ -98,7 +100,11 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
 		lm := ls.Map()
-		delete(lm, model.MetricNameLabel)
+		b.logger.Info("internal metric", zap.String("metric name", metricName), zap.String("target_labels", fmt.Sprintf("%v", lm)))
+		if !b.keepInternalMetrics {
+			b.logger.Info("delete internal metric " + metricName)
+			delete(lm, model.MetricNameLabel)
+		}
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 		if metricName == scrapeUpMetricName && v != 1.0 {
@@ -113,7 +119,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 					zap.String("target_labels", fmt.Sprintf("%v", lm)))
 			}
 		}
-		return nil
+		if !b.keepInternalMetrics {
+			return nil
+		}
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
 		b.startTime = v
 	}
@@ -132,7 +140,25 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.currentMf = newMetricFamily(metricName, b.mc)
 	}
 
-	return b.currentMf.Add(metricName, ls, t, v)
+	if isInternalMetric(metricName) {
+		b.logger.Info("add metric " + metricName)
+	}
+
+	temp := b.currentMf.Add(metricName, ls, t, v)
+
+	if b.currentMf == nil {
+		b.logger.Info("empty family")
+	} else {
+		m, _, _ := b.currentMf.ToMetric()
+		if m != nil {
+			b.logger.Info("checking metrics", zap.String("metric name", metricName))
+			b.logger.Info(m.String())
+		} else {
+			b.logger.Info("no metric")
+		}
+	}
+
+	return temp
 }
 
 // Build an opencensus data.MetricsData based on all added data complexValue.

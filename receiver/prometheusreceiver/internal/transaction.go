@@ -65,6 +65,7 @@ type transaction struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
+	keepInternalMetrics  bool
 	receiverName         string
 	ms                   *metadataService
 	node                 *commonpb.Node
@@ -73,7 +74,7 @@ type transaction struct {
 	logger               *zap.Logger
 }
 
-func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string, ms *metadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
+func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, keepInternalMetrics bool, receiverName string, ms *metadataService, sink consumer.MetricsConsumer, logger *zap.Logger) *transaction {
 	return &transaction{
 		id:                   atomic.AddInt64(&idSeq, 1),
 		ctx:                  ctx,
@@ -82,6 +83,7 @@ func newTransaction(ctx context.Context, jobsMap *JobsMap, useStartTimeMetric bo
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
+		keepInternalMetrics:  keepInternalMetrics,
 		receiverName:         receiverName,
 		ms:                   ms,
 		logger:               logger,
@@ -135,7 +137,9 @@ func (tr *transaction) initTransaction(ls labels.Labels) error {
 		tr.instance = instance
 	}
 	tr.node, tr.resource = createNodeAndResource(job, instance, mc.SharedLabels().Get(model.SchemeLabel))
-	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.logger)
+	tr.logger.Info("new metric builder")
+	tr.metricBuilder = newMetricBuilder(mc, tr.useStartTimeMetric, tr.startTimeMetricRegex, tr.keepInternalMetrics, tr.logger)
+	tr.logger.Info("new metric builder end")
 	tr.isNew = false
 	return nil
 }
@@ -183,6 +187,7 @@ func (tr *transaction) Commit() error {
 		})
 		_, numPoints = md.MetricAndDataPointCount()
 		err = tr.sink.ConsumeMetrics(ctx, md)
+		tr.logger.Info("Transcation commit", zap.String("metric name", metrics[0].MetricDescriptor.Name), zap.String("start time", metrics[0].Timeseries[0].StartTimestamp.AsTime().String()))
 	}
 	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, err)
 	return err

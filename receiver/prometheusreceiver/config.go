@@ -30,6 +30,7 @@ type Config struct {
 	BufferCount                   int            `mapstructure:"buffer_count"`
 	UseStartTimeMetric            bool           `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex          string         `mapstructure:"start_time_metric_regex"`
+	KeepInternalMetrics           bool           `mapstructure:"keep_internal_metrics"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the

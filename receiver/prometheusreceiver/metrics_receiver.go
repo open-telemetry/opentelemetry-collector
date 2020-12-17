@@ -73,8 +73,14 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	if !r.cfg.UseStartTimeMetric {
 		jobsMap = internal.NewJobsMap(2 * time.Minute)
 	}
-	ocaStore := internal.NewOcaStore(ctx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.Name())
-
+	if r.cfg.KeepInternalMetrics {
+		r.logger.Info("keep internal metrics")
+	} else {
+		r.logger.Info("drop internal metrics")
+	}
+	r.logger.Info("Start new oca store")
+	ocaStore := internal.NewOcaStore(ctx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.KeepInternalMetrics, r.cfg.Name())
+	r.logger.Info("End new oca store")
 	scrapeManager := scrape.NewManager(logger, ocaStore)
 	ocaStore.SetScrapeManager(scrapeManager)
 	if err := scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {

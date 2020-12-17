@@ -19,6 +19,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
 )
 
@@ -57,8 +58,42 @@ type mCache struct {
 	t *scrape.Target
 }
 
+var internalMetrics = map[string]scrape.MetricMetadata{
+	"up": {
+		Metric: "up",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "",
+		Unit:   "",
+	},
+	"up": {
+		Metric: "up",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "",
+		Unit:   "",
+	},
+	"up": {
+		Metric: "up",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "",
+		Unit:   "",
+	},
+	"up": {
+		Metric: "up",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "",
+		Unit:   "",
+	},
+	"up": {
+		Metric: "up",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "",
+		Unit:   "",
+	},
+}
+
 func (m *mCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
-	return m.t.Metadata(metricName)
+	metadata, ok := m.t.Metadata(metricName)
+	return metadata, ok
 }
 
 func (m *mCache) SharedLabels() labels.Labels {
