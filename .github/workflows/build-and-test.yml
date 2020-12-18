@@ -58,7 +58,16 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Restore tools binaries
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
+        with:
+          path: /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install tools
+        if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: split loadtest jobs
         id: splitloadtest
