@@ -38,6 +38,8 @@ jobs:
           go run cmd/issuegenerator/main.go $TEST_RESULTS
   setup-environment:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.splitloadtest.outputs.matrix }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -58,8 +60,29 @@ jobs:
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Install tools
         run: make install-tools
+      - name: split loadtest jobs
+        id: splitloadtest
+        run: |
+          TESTS="$(make -s testbed-list-loadtest | xargs echo|sed 's/ /|/g')"
+          TESTS=(${TESTS//|/ })
+          MATRIX="{\"include\":["
+          curr=""
+          for i in "${!TESTS[@]}"; do
+            if (( i > 0 && i % 2 == 0 )); then
+              curr+="|${TESTS[$i]}"
+            else
+              if [ -n "$curr" ] && (( i>1 )); then
+                MATRIX+=",{\"test\":\"$curr\"}"
+              elif [ -n "$curr" ]; then
+                MATRIX+="{\"test\":\"$curr\"}"
+              fi
+              curr="${TESTS[$i]}"
+            fi
+          done
+          MATRIX+="]}"
+          echo "::set-output name=matrix::$MATRIX"
       - name: Upload tool binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -128,7 +151,168 @@ jobs:
       - name: Build collector for all archs
         run: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|xargs make
       - name: Upload collector binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v1
         with:
           name: collector-binaries
           path: ./bin
+  loadtest:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-environment.outputs.matrix) }}
+    env:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Download tool binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Add execute permissions to tool binaries
+        run: chmod -R +x /home/runner/go/bin
+      - name: Setup env
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Restore module cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: /home/runner/go/pkg/mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Install fluentbit
+        if: ${{ contains(matrix.test, 'Log10kDPS') }}
+        run: |
+          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
+          sudo dpkg -i ./td-agent-bit*.deb
+          echo "/opt/td-agent-bit/bin" >> $GITHUB_PATH
+          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
+      - run: mkdir -p results && touch results/TESTRESULTS.md
+      - name: Loadtest
+        run: make testbed-loadtest
+        env:
+          TEST_ARGS: "-test.run=${{ matrix.test }}"
+      - name: Create test result archive # some test results have invalid characters
+        if: ${{ failure() || success() }}
+        continue-on-error: true
+        run: tar -cvf test_results.tar testbed/tests/results
+      - name: Upload test results
+        if: ${{ failure() || success() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v1
+        with:
+          name: test-results
+          path: test_results.tar
+      - name: GitHub issue generator
+        if: ${{ failure() && github.ref == 'ref/head/master' }}
+        run: |
+          go run cmd/issuegenerator/main.go $TEST_RESULTS
+  correctness:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    env:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Download tool binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Setup env
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Add execute permissions to tool binaries
+        run: chmod -R +x /home/runner/go/bin
+      - name: Restore module cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: /home/runner/go/pkg/mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Loadtest
+        run: make testbed-correctness
+      - name: GitHub issue generator
+        if: ${{ failure() && github.ref == 'ref/head/master' }}
+        run: |
+          go run cmd/issuegenerator/main.go $TEST_RESULTS
+  build-package:
+    runs-on: ubuntu-latest
+    needs: [cross-compile]
+    strategy:
+      fail-fast: false
+      matrix:
+        package_type: ["deb", "rpm"]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Setup env
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          mkdir bin/
+      - name: Install Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.6'
+      - name: Install fpm and dependencies
+        run: gem install --no-document fpm -v 1.11.0
+      - name: Download tool binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Download collector binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: collector-binaries
+          path: ./bin
+      - name: Add execute permissions to downloaded binaries
+        run: |
+          chmod -R +x /home/runner/go/bin
+          chmod -R +x ./bin
+      - name: Set Release Tag
+        id: github_tag
+        run: |
+          TAG="${GITHUB_REF##*/}"
+          if [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+.* ]]
+          then
+            echo "::set-output name=tag::$TAG"
+          fi
+      - name: Build ${{ matrix.package_type }} amd64 package
+        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "amd64" "./dist/"
+      - name: Build ${{ matrix.package_type }} arm64 package
+        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "arm64" "./dist/"
+      - name: Test ${{ matrix.package_type }} package
+        run: |
+          if [[ "${{ matrix.package_type }}" = "deb" ]]; then
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*amd64.deb
+          else
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-collector*x86_64.rpm
+          fi
+      - name: Upload Packages
+        uses: actions/upload-artifact@v1
+        with:
+          name: build-packages
+          path: ./dist
