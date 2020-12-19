@@ -58,7 +58,16 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Restore tools binaries
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
+        with:
+          path: /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install tools
+        if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: split loadtest jobs
         id: splitloadtest
@@ -108,7 +117,7 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -142,7 +151,7 @@ jobs:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -171,7 +180,7 @@ jobs:
         with:
           go-version: 1.15
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -228,7 +237,7 @@ jobs:
         with:
           go-version: 1.15
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
@@ -279,12 +288,12 @@ jobs:
       - name: Install fpm and dependencies
         run: gem install --no-document fpm -v 1.11.0
       - name: Download tool binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
       - name: Download collector binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v1
         with:
           name: collector-binaries
           path: ./bin
