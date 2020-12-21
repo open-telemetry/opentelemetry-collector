@@ -232,23 +232,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-  contrib-test:
-    jobs:
-      - setup-environment:
-          filters:
-            branches:
-              ignore: master
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - contribtest:
-          requires:
-            - setup-environment
-          filters:
-            branches:
-              # Don't run contribtest on master. We only want to run it for PRs and releases.
-              ignore: master
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
 
 jobs:
   setup-environment:
@@ -344,19 +327,6 @@ jobs:
           path: unit-test-results/junit
       - save_module_cache
       - github_issue_generator
-
-  contribtest:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Contrib repo tests
-          command: |
-            contrib_path=/tmp/opentelemetry-collector-contrib
-            git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
-            make CONTRIB_PATH=$contrib_path check-contrib
-
-      - save_module_cache
 
   coverage:
     executor: golang
