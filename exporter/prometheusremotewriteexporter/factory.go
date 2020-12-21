@@ -44,6 +44,10 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
+	if prwCfg.HTTPClientSettings.Endpoint == "" {
+		return nil, errors.New("missing Prometheus remote write endpoint")
+	}
+
 	client, err := prwCfg.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, err
@@ -54,7 +58,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, err
 	}
 
-	prwexp, err := exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
 		prwe.PushMetrics,
@@ -63,8 +67,6 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
-
-	return prwexp, err
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -79,7 +81,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings:   exporterhelper.DefaultRetrySettings(),
 		QueueSettings:   exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://some.url:9411/api/prom/push",
+			Endpoint: "",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
