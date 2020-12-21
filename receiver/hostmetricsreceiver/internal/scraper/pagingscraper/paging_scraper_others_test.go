@@ -14,7 +14,7 @@
 
 // +build !windows
 
-package swapscraper
+package pagingscraper
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func TestScrape_Errors(t *testing.T) {
 			name:              "virtualMemoryError",
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedError:     "err1",
-			expectedErrCount:  swapUsageMetricsLen,
+			expectedErrCount:  pagingUsageMetricsLen,
 		},
 		{
 			name:             "swapMemoryError",
@@ -56,13 +56,13 @@ func TestScrape_Errors(t *testing.T) {
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:     "[err1; err2]",
-			expectedErrCount:  swapUsageMetricsLen + pagingMetricsLen,
+			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newSwapScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), &Config{})
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -71,7 +71,7 @@ func TestScrape_Errors(t *testing.T) {
 			}
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
+			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			_, err = scraper.scrape(context.Background())
 			assert.EqualError(t, err, test.expectedError)

@@ -18,25 +18,38 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+// labels
+
+const (
+	statusLabelName = "status"
+)
+
+// status label values
+
+const (
+	blockedStatusLabelValue = "blocked"
+	runningStatusLabelValue = "running"
+)
+
 // descriptors
 
-var processesRunningDescriptor = func() pdata.Metric {
+var processesCreatedDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.processes.running")
-	metric.SetDescription("Total number of running processes.")
-	metric.SetUnit("1")
+	metric.SetName("system.processes.created")
+	metric.SetDescription("Total number of created processes.")
+	metric.SetUnit("{processes}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
-	sum.SetIsMonotonic(false)
+	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	return metric
 }()
 
-var processesBlockedDescriptor = func() pdata.Metric {
+var processesCountDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.processes.blocked")
-	metric.SetDescription("Total number of blocked processes.")
-	metric.SetUnit("1")
+	metric.SetName("system.processes.count")
+	metric.SetDescription("Total number of processes in each state.")
+	metric.SetUnit("{processes}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(false)

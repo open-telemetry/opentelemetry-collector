@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swapscraper
+package pagingscraper
 
 import (
 	"context"
@@ -54,7 +54,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newSwapScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), &Config{})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -64,22 +64,22 @@ func TestScrape(t *testing.T) {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
-			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
+			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			metrics, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
 
-			// expect 3 metrics (windows does not currently support page_faults metric)
+			// expect 3 metrics (windows does not currently support the faults metric)
 			expectedMetrics := 3
 			if runtime.GOOS == "windows" {
 				expectedMetrics = 2
 			}
 			assert.Equal(t, expectedMetrics, metrics.Len())
 
-			assertSwapUsageMetricValid(t, metrics.At(0))
+			assertPagingUsageMetricValid(t, metrics.At(0))
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, 1)
 
-			assertPagingMetricValid(t, metrics.At(1), test.expectedStartTime)
+			assertPagingOperationsMetricValid(t, metrics.At(1), test.expectedStartTime)
 			if runtime.GOOS != "windows" {
 				assertPageFaultsMetricValid(t, metrics.At(2), test.expectedStartTime)
 			}
@@ -88,11 +88,11 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, swapUsageDescriptor, hostSwapUsageMetric)
+func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metric) {
+	internal.AssertDescriptorEqual(t, pagingUsageDescriptor, hostPagingUsageMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
-	if hostSwapUsageMetric.IntSum().DataPoints().Len() == 0 {
+	if hostPagingUsageMetric.IntSum().DataPoints().Len() == 0 {
 		return
 	}
 
@@ -103,22 +103,22 @@ func assertSwapUsageMetricValid(t *testing.T, hostSwapUsageMetric pdata.Metric) 
 		expectedDataPoints = 2
 	}
 
-	assert.GreaterOrEqual(t, hostSwapUsageMetric.IntSum().DataPoints().Len(), expectedDataPoints)
-	internal.AssertIntSumMetricLabelHasValue(t, hostSwapUsageMetric, 0, stateLabelName, usedLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, hostSwapUsageMetric, 1, stateLabelName, freeLabelValue)
+	assert.GreaterOrEqual(t, hostPagingUsageMetric.IntSum().DataPoints().Len(), expectedDataPoints)
+	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 0, stateLabelName, usedLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 1, stateLabelName, freeLabelValue)
 	// on non-windows, also expect a cached state label
 	if runtime.GOOS != "windows" {
-		internal.AssertIntSumMetricLabelHasValue(t, hostSwapUsageMetric, 2, stateLabelName, cachedLabelValue)
+		internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 2, stateLabelName, cachedLabelValue)
 	}
 	// on windows, also expect the page file device name label
 	if runtime.GOOS == "windows" {
-		internal.AssertIntSumMetricLabelExists(t, hostSwapUsageMetric, 0, deviceLabelName)
-		internal.AssertIntSumMetricLabelExists(t, hostSwapUsageMetric, 1, deviceLabelName)
+		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 0, deviceLabelName)
+		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 1, deviceLabelName)
 	}
 }
 
-func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
-	internal.AssertDescriptorEqual(t, swapPagingDescriptor, pagingMetric)
+func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+	internal.AssertDescriptorEqual(t, pagingOperationsDescriptor, pagingMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, pagingMetric, startTime)
 	}
@@ -143,11 +143,12 @@ func assertPagingMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime 
 }
 
 func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
-	internal.AssertDescriptorEqual(t, swapPageFaultsDescriptor, pageFaultsMetric)
+	internal.AssertDescriptorEqual(t, pagingFaultsDescriptor, pageFaultsMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)
 	}
 
-	assert.Equal(t, 1, pageFaultsMetric.IntSum().DataPoints().Len())
-	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 0, typeLabelName, minorTypeLabelValue)
+	assert.Equal(t, 2, pageFaultsMetric.IntSum().DataPoints().Len())
+	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 0, typeLabelName, majorTypeLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 1, typeLabelName, minorTypeLabelValue)
 }
