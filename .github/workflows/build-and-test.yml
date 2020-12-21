@@ -72,15 +72,11 @@ jobs:
       - name: Split Loadtest Jobs
         id: splitloadtest
         run: ./.github/workflows/scripts/setup_load_tests.sh
-      - name: Add Execute Permissions to Binaries
-        run: chmod -R +x /home/runner/go/bin
-      - name: Create Tool Binaries Archive
-        run: tar -cvf tool-bin.tar /home/runner/go/bin
       - name: Upload Tool Binaries
         uses: actions/upload-artifact@v1
         with:
           name: tool-binaries
-          path: ./tool-bin.tar
+          path: /home/runner/go/bin
   lint:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -106,8 +102,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
-      - name: Extract Tool Binaries Archive
-        run: tar -xvf tool-binaries/tool-bin.tar -C /
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Lint
         run: make -j4 gochecklicense goimpi golint gomisspell
       - name: Gen Metadata
@@ -139,8 +136,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
-      - name: Extract Tool Binaries Archive
-        run: tar -xvf tool-binaries/tool-bin.tar -C /
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Build Collector for All Architectures
         run: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|xargs make
       - name: Create Collector Binaries Archive
@@ -178,8 +176,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
-      - name: Extract Tool Binaries Archive
-        run: tar -xvf tool-binaries/tool-bin.tar -C /
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Install fluentbit
         if: ${{ contains(matrix.test, 'Log10kDPS') }}
         run: |
@@ -232,8 +231,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
-      - name: Extract Tool Binaries Archive
-        run: tar -xvf tool-binaries/tool-bin.tar -C /
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Loadtest
         run: make testbed-correctness
       - name: GitHub Issue Generator
@@ -271,14 +271,15 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Download Collector Binaries
         uses: actions/download-artifact@v1
         with:
           name: collector-binaries
       - name: Extract Binaries Archive
-        run: |
-          tar -xvf tool-binaries/tool-bin.tar -C /
-          tar -xvf collector-binaries/bin.tar
+        run: tar -xvf collector-binaries/bin.tar
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
