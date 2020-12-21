@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux,!darwin,!freebsd,!openbsd
+// +build darwin freebsd
 
 package processesscraper
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import (
+	"github.com/shirou/gopsutil/load"
 
-func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
+	"go.opentelemetry.io/collector/consumer/pdata"
+)
+
+const unixSystemSpecificMetricsLen = 0
+
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.TimestampUnixNano, misc *load.MiscStat) error {
 	return nil
 }

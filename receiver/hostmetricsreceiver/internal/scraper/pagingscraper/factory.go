@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swapscraper
+package pagingscraper
 
 import (
 	"context"
@@ -23,11 +23,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-// This file implements Factory for Swap scraper.
+// This file implements Factory for Paging scraper.
 
 const (
 	// The value of "type" key in configuration.
-	TypeStr = "swap"
+	TypeStr = "paging"
 )
 
 // Factory is the Factory for scraper.
@@ -46,7 +46,7 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (scraperhelper.MetricsScraper, error) {
 	cfg := config.(*Config)
-	s := newSwapScraper(ctx, cfg)
+	s := newPagingScraper(ctx, cfg)
 
 	ms := scraperhelper.NewMetricsScraper(
 		TypeStr,

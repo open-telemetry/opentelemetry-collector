@@ -14,7 +14,7 @@
 
 // +build windows
 
-package swapscraper
+package pagingscraper
 
 import (
 	"context"
@@ -60,7 +60,7 @@ func TestScrape_Errors(t *testing.T) {
 			name:             "pageFileError",
 			getPageFileStats: func() ([]*pageFileData, error) { return nil, errors.New("err1") },
 			expectedErr:      "err1",
-			expectedErrCount: swapUsageMetricsLen,
+			expectedErrCount: pagingUsageMetricsLen,
 		},
 		{
 			name:             "scrapeError",
@@ -85,13 +85,13 @@ func TestScrape_Errors(t *testing.T) {
 			getPageFileStats: func() ([]*pageFileData, error) { return nil, errors.New("err1") },
 			getObjectErr:     errors.New("err2"),
 			expectedErr:      "[err1; err2]",
-			expectedErrCount: swapUsageMetricsLen + pagingMetricsLen,
+			expectedErrCount: pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newSwapScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), &Config{})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -104,7 +104,7 @@ func TestScrape_Errors(t *testing.T) {
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err, "Failed to initialize swap scraper: %v", err)
+			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
 			metrics, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
@@ -119,9 +119,9 @@ func TestScrape_Errors(t *testing.T) {
 				return
 			}
 
-			swapUsageMetric := metrics.At(0)
-			assert.Equal(t, test.expectedUsedValue, swapUsageMetric.IntSum().DataPoints().At(0).Value())
-			assert.Equal(t, test.expectedFreeValue, swapUsageMetric.IntSum().DataPoints().At(1).Value())
+			pagingUsageMetric := metrics.At(0)
+			assert.Equal(t, test.expectedUsedValue, pagingUsageMetric.IntSum().DataPoints().At(0).Value())
+			assert.Equal(t, test.expectedFreeValue, pagingUsageMetric.IntSum().DataPoints().At(1).Value())
 		})
 	}
 }

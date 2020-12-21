@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swapscraper
+package pagingscraper
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -49,11 +49,11 @@ const (
 	minorTypeLabelValue = "minor"
 )
 
-var swapUsageDescriptor = func() pdata.Metric {
+var pagingUsageDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.swap.usage")
+	metric.SetName("system.paging.usage")
 	metric.SetDescription("Swap (unix) or pagefile (windows) usage.")
-	metric.SetUnit("bytes")
+	metric.SetUnit("By")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(false)
@@ -61,11 +61,11 @@ var swapUsageDescriptor = func() pdata.Metric {
 	return metric
 }()
 
-var swapPagingDescriptor = func() pdata.Metric {
+var pagingOperationsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.swap.paging_ops")
+	metric.SetName("system.paging.operations")
 	metric.SetDescription("The number of paging operations.")
-	metric.SetUnit("1")
+	metric.SetUnit("{operations}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -73,11 +73,11 @@ var swapPagingDescriptor = func() pdata.Metric {
 	return metric
 }()
 
-var swapPageFaultsDescriptor = func() pdata.Metric {
+var pagingFaultsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.swap.page_faults")
+	metric.SetName("system.paging.faults")
 	metric.SetDescription("The number of page faults.")
-	metric.SetUnit("1")
+	metric.SetUnit("{faults}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)

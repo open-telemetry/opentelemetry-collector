@@ -14,7 +14,7 @@
 
 // +build windows
 
-package swapscraper
+package pagingscraper
 
 import (
 	"context"
@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	swapUsageMetricsLen = 1
-	pagingMetricsLen    = 1
+	pagingUsageMetricsLen = 1
+	pagingMetricsLen      = 1
 
 	memory = "Memory"
 
@@ -41,7 +41,7 @@ const (
 	pageWritesPerSec = "Page Writes/sec"
 )
 
-// scraper for Swap Metrics
+// scraper for Paging Metrics
 type scraper struct {
 	config    *Config
 	startTime pdata.TimestampUnixNano
@@ -60,8 +60,8 @@ var (
 	pageSize uint64
 )
 
-// newSwapScraper creates a Swap Scraper
-func newSwapScraper(_ context.Context, cfg *Config) *scraper {
+// newPagingScraper creates a Paging Scraper
+func newPagingScraper(_ context.Context, cfg *Config) *scraper {
 	once.Do(func() { pageSize = getPageSize() })
 
 	return &scraper{config: cfg, pageSize: pageSize, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
@@ -83,12 +83,12 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 
 	var errors []error
 
-	err := s.scrapeAndAppendSwapUsageMetric(metrics)
+	err := s.scrapeAndAppendPagingUsageMetric(metrics)
 	if err != nil {
 		errors = append(errors, err)
 	}
 
-	err = s.scrapeAndAppendPagingMetric(metrics)
+	err = s.scrapeAndAppendPagingOperationsMetric(metrics)
 	if err != nil {
 		errors = append(errors, err)
 	}
@@ -96,34 +96,34 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	return metrics, scraperhelper.CombineScrapeErrors(errors)
 }
 
-func (s *scraper) scrapeAndAppendSwapUsageMetric(metrics pdata.MetricSlice) error {
+func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, swapUsageMetricsLen)
+		return consumererror.NewPartialScrapeError(err, pagingUsageMetricsLen)
 	}
 
 	idx := metrics.Len()
-	metrics.Resize(idx + swapUsageMetricsLen)
-	s.initializeSwapUsageMetric(metrics.At(idx), now, pageFiles)
+	metrics.Resize(idx + pagingUsageMetricsLen)
+	s.initializePagingUsageMetric(metrics.At(idx), now, pageFiles)
 	return nil
 }
 
-func (s *scraper) initializeSwapUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
-	swapUsageDescriptor.CopyTo(metric)
+func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
+	pagingUsageDescriptor.CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(pageFiles))
 
 	idx := 0
 	for _, pageFile := range pageFiles {
-		initializeSwapUsageDataPoint(idps.At(idx+0), now, pageFile.name, usedLabelValue, int64(pageFile.usedPages*s.pageSize))
-		initializeSwapUsageDataPoint(idps.At(idx+1), now, pageFile.name, freeLabelValue, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
+		initializePagingUsageDataPoint(idps.At(idx+0), now, pageFile.name, usedLabelValue, int64(pageFile.usedPages*s.pageSize))
+		initializePagingUsageDataPoint(idps.At(idx+1), now, pageFile.name, freeLabelValue, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
 		idx += 2
 	}
 }
 
-func initializeSwapUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
+func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(deviceLabelName, deviceLabel)
 	labelsMap.Insert(stateLabelName, stateLabel)
@@ -131,7 +131,7 @@ func initializeSwapUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timest
 	dataPoint.SetValue(value)
 }
 
-func (s *scraper) scrapeAndAppendPagingMetric(metrics pdata.MetricSlice) error {
+func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
@@ -152,22 +152,22 @@ func (s *scraper) scrapeAndAppendPagingMetric(metrics pdata.MetricSlice) error {
 	if len(memoryCounterValues) > 0 {
 		idx := metrics.Len()
 		metrics.Resize(idx + pagingMetricsLen)
-		initializePagingMetric(metrics.At(idx), s.startTime, now, memoryCounterValues[0])
+		initializePagingOperationsMetric(metrics.At(idx), s.startTime, now, memoryCounterValues[0])
 	}
 
 	return nil
 }
 
-func initializePagingMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, memoryCounterValues *perfcounters.CounterValues) {
-	swapPagingDescriptor.CopyTo(metric)
+func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, memoryCounterValues *perfcounters.CounterValues) {
+	pagingOperationsDescriptor.CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2)
-	initializePagingDataPoint(idps.At(0), startTime, now, inDirectionLabelValue, memoryCounterValues.Values[pageReadsPerSec])
-	initializePagingDataPoint(idps.At(1), startTime, now, outDirectionLabelValue, memoryCounterValues.Values[pageWritesPerSec])
+	initializePagingOperationsDataPoint(idps.At(0), startTime, now, inDirectionLabelValue, memoryCounterValues.Values[pageReadsPerSec])
+	initializePagingOperationsDataPoint(idps.At(1), startTime, now, outDirectionLabelValue, memoryCounterValues.Values[pageWritesPerSec])
 }
 
-func initializePagingDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, directionLabel string, value int64) {
+func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(typeLabelName, majorTypeLabelValue)
 	labelsMap.Insert(directionLabelName, directionLabel)

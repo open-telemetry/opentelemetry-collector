@@ -38,7 +38,7 @@ var diskIODescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.disk.io")
 	metric.SetDescription("Disk bytes transferred.")
-	metric.SetUnit("bytes")
+	metric.SetUnit("By")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -46,11 +46,11 @@ var diskIODescriptor = func() pdata.Metric {
 	return metric
 }()
 
-var diskOpsDescriptor = func() pdata.Metric {
+var diskOperationsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.disk.ops")
+	metric.SetName("system.disk.operations")
 	metric.SetDescription("Disk operations count.")
-	metric.SetUnit("1")
+	metric.SetUnit("{operations}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -86,7 +86,7 @@ var diskPendingOperationsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.disk.pending_operations")
 	metric.SetDescription("The queue size of pending I/O operations.")
-	metric.SetUnit("1")
+	metric.SetUnit("{operations}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(false)
@@ -98,7 +98,7 @@ var diskMergedDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.disk.merged")
 	metric.SetDescription("The number of disk reads merged into single physical disk access operations.")
-	metric.SetUnit("1")
+	metric.SetUnit("{operations}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)

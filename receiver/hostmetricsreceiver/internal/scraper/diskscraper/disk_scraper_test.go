@@ -105,7 +105,7 @@ func TestScrape(t *testing.T) {
 			assert.GreaterOrEqual(t, metrics.Len(), 4)
 
 			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, true, test.expectedStartTime)
-			assertInt64DiskMetricValid(t, metrics.At(1), diskOpsDescriptor, true, test.expectedStartTime)
+			assertInt64DiskMetricValid(t, metrics.At(1), diskOperationsDescriptor, true, test.expectedStartTime)
 			assertDoubleDiskMetricValid(t, metrics.At(2), diskIOTimeDescriptor, false, test.expectedStartTime)
 			assertDoubleDiskMetricValid(t, metrics.At(3), diskOperationTimeDescriptor, true, test.expectedStartTime)
 			assertDiskPendingOperationsMetricValid(t, metrics.At(4))

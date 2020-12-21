@@ -33,9 +33,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -82,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			processesscraper.TypeStr: &processesscraper.Config{},
-			swapscraper.TypeStr:      &swapscraper.Config{},
+			pagingscraper.TypeStr:    &pagingscraper.Config{},
 			processscraper.TypeStr: &processscraper.Config{
 				Include: processscraper.MatchConfig{
 					Names:  []string{"test2", "test3"},

@@ -14,7 +14,7 @@
 
 // +build windows
 
-package swapscraper
+package pagingscraper
 
 import (
 	"syscall"
