@@ -149,9 +149,9 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		if err != nil {
 			// The protocol doesn't specify this but apparently some map keys
 			// can be binary type instead of string
-			keyBytes, err := dc.ReadBytes(nil)
-			if err != nil {
-				return msgp.WrapError(err, "Record")
+			keyBytes, keyBytesErr := dc.ReadBytes(nil)
+			if keyBytesErr != nil {
+				return msgp.WrapError(keyBytesErr, "Record")
 			}
 			key = string(keyBytes)
 		}
