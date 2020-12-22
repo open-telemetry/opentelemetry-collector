@@ -3,14 +3,14 @@ on:
   push:
     branches: [master]
     tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
 
 jobs:
   windows-test:
     runs-on: windows-latest
-    env:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -18,12 +18,12 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - name: Restore module cache
+      - name: Cache Go Modules
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
@@ -32,7 +32,7 @@ jobs:
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Run Unit tests
         run: go test ./...
-      - name: GitHub issue generator
+      - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/master' }}
         run: |
           go run cmd/issuegenerator/main.go $TEST_RESULTS
@@ -47,11 +47,11 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Restore module cache
+      - name: Cache Go Modules
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
@@ -69,28 +69,10 @@ jobs:
       - name: Install tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - name: split loadtest jobs
+      - name: Split Loadtest Jobs
         id: splitloadtest
-        run: |
-          TESTS="$(make -s testbed-list-loadtest | xargs echo|sed 's/ /|/g')"
-          TESTS=(${TESTS//|/ })
-          MATRIX="{\"include\":["
-          curr=""
-          for i in "${!TESTS[@]}"; do
-            if (( i > 0 && i % 2 == 0 )); then
-              curr+="|${TESTS[$i]}"
-            else
-              if [ -n "$curr" ] && (( i>1 )); then
-                MATRIX+=",{\"test\":\"$curr\"}"
-              elif [ -n "$curr" ]; then
-                MATRIX+="{\"test\":\"$curr\"}"
-              fi
-              curr="${TESTS[$i]}"
-            fi
-          done
-          MATRIX+="]}"
-          echo "::set-output name=matrix::$MATRIX"
-      - name: Upload tool binaries
+        run: ./.github/workflows/scripts/setup_load_tests.sh
+      - name: Upload Tool Binaries
         uses: actions/upload-artifact@v1
         with:
           name: tool-binaries
@@ -105,23 +87,23 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Restore module cache
+      - name: Cache Go Modules
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Download tool binaries
+      - name: Download Tool Binaries
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add execute permissions to tool binaries
+      - name: Add Permissions to Tool Binaries
         run: chmod -R +x /home/runner/go/bin
       - name: Lint
         run: make -j4 gochecklicense goimpi golint gomisspell
@@ -139,39 +121,39 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Restore module cache
+      - name: Cache Go Modules
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Download tool binaries
+      - name: Download Tool Binaries
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add execute permissions to tool binaries
+      - name: Add Permissions to Tool Binaries
         run: chmod -R +x /home/runner/go/bin
-      - name: Build collector for all archs
+      - name: Build Collector for All Architectures
         run: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|xargs make
-      - name: Upload collector binaries
+      - name: Create Collector Binaries Archive
+        run: tar -cvf bin.tar ./bin
+      - name: Upload Collector Binaries
         uses: actions/upload-artifact@v1
         with:
           name: collector-binaries
-          path: ./bin
+          path: ./bin.tar
   loadtest:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup-environment.outputs.matrix) }}
-    env:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
+      matrix: ${{ fromJson(needs.loadtestpre.outputs.matrix) }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -179,24 +161,24 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Download tool binaries
-        uses: actions/download-artifact@v1
-        with:
-          name: tool-binaries
-          path: /home/runner/go/bin
-      - name: Add execute permissions to tool binaries
-        run: chmod -R +x /home/runner/go/bin
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Restore module cache
+      - name: Cache Go Modules
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Download Tool Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Install fluentbit
         if: ${{ contains(matrix.test, 'Log10kDPS') }}
         run: |
@@ -209,26 +191,24 @@ jobs:
         run: make testbed-loadtest
         env:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
-      - name: Create test result archive # some test results have invalid characters
+      - name: Create Test Result Archive # some test results have invalid characters
         if: ${{ failure() || success() }}
         continue-on-error: true
         run: tar -cvf test_results.tar testbed/tests/results
-      - name: Upload test results
+      - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
         uses: actions/upload-artifact@v1
         with:
           name: test-results
           path: test_results.tar
-      - name: GitHub issue generator
+      - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/master' }}
         run: |
           go run cmd/issuegenerator/main.go $TEST_RESULTS
   correctness:
     runs-on: ubuntu-latest
     needs: [setup-environment]
-    env:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -236,27 +216,27 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Download tool binaries
-        uses: actions/download-artifact@v1
-        with:
-          name: tool-binaries
-          path: /home/runner/go/bin
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Add execute permissions to tool binaries
-        run: chmod -R +x /home/runner/go/bin
-      - name: Restore module cache
+      - name: Cache Go Modules
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Download Tool Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
       - name: Loadtest
         run: make testbed-correctness
-      - name: GitHub issue generator
+      - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'ref/head/master' }}
         run: |
           go run cmd/issuegenerator/main.go $TEST_RESULTS
@@ -276,7 +256,7 @@ jobs:
         uses: actions/setup-go@v2.1.3
         with:
           go-version: 1.15
-      - name: Setup env
+      - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
@@ -285,30 +265,24 @@ jobs:
         uses: actions/setup-ruby@v1
         with:
           ruby-version: '2.6'
-      - name: Install fpm and dependencies
+      - name: Install fpm
         run: gem install --no-document fpm -v 1.11.0
-      - name: Download tool binaries
+      - name: Download Tool Binaries
         uses: actions/download-artifact@v1
         with:
           name: tool-binaries
           path: /home/runner/go/bin
-      - name: Download collector binaries
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
+      - name: Download Collector Binaries
         uses: actions/download-artifact@v1
         with:
           name: collector-binaries
-          path: ./bin
-      - name: Add execute permissions to downloaded binaries
-        run: |
-          chmod -R +x /home/runner/go/bin
-          chmod -R +x ./bin
+      - name: Extract Binaries Archive
+        run: tar -xvf collector-binaries/bin.tar
       - name: Set Release Tag
         id: github_tag
-        run: |
-          TAG="${GITHUB_REF##*/}"
-          if [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+.* ]]
-          then
-            echo "::set-output name=tag::$TAG"
-          fi
+        run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Build ${{ matrix.package_type }} amd64 package
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "amd64" "./dist/"
       - name: Build ${{ matrix.package_type }} arm64 package
