@@ -299,3 +299,179 @@ jobs:
         with:
           name: build-packages
           path: ./dist
+  windows-msi:
+    runs-on: windows-latest
+    needs: [cross-compile]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          mkdir bin/
+      - name: Cache Go Modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: \Users\runneradmin\go\pkg\mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: collector-binaries
+      - name: Extract Binaries Archive
+        run: tar -xvf collector-binaries/bin.tar
+      - name: Install Wix Toolset
+        run: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
+      - name: Build MSI
+        run: |
+          $Version = if ($env:GITHUB_REF -match '^refs/tags/(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+          .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
+      - name: Validate MSI
+        run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
+      - name: Upload MSI
+        uses: actions/upload-artifact@v1
+        with:
+          name: msi-binaries
+          path: ./dist
+  publish-dev:
+    runs-on: ubuntu-latest
+    needs: [build-package, windows-msi]
+    if: (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')) && github.repository == 'open-telemetry/opentelemetry-collector'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          mkdir bin/ dist/
+      - name: Download Tool Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: collector-binaries
+      - name: Extract Binaries Archive
+        run: tar -xvf collector-binaries/bin.tar
+      - name: Download Packages
+        uses: actions/download-artifact@v1
+        with:
+          name: build-packages
+          path: ./dist
+      - name: Download MSI Packages
+        uses: actions/download-artifact@v1
+        with:
+          name: msi-binaries
+          path: ./dist
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x ./dist
+      - name: Verify Distribution Files Exist
+        id: check
+        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
+      - name: Build Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            make docker-otelcol
+            docker tag otelcol:latest otel/opentelemetry-collector-dev:$GITHUB_SHA
+            docker tag otelcol:latest otel/opentelemetry-collector-dev:latest
+      - name: Push Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker push otel/opentelemetry-collector-dev:$GITHUB_SHA
+            docker push otel/opentelemetry-collector-dev:latest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME}}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD}}
+  publish-stable:
+    runs-on: ubuntu-latest
+    needs: [build-package, windows-msi]
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'open-telemetry/opentelemetry-collector'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          mkdir bin/ dist/
+      - name: Download Tool Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: tool-binaries
+          path: /home/runner/go/bin
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x /home/runner/go/bin
+      - name: Download Binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: collector-binaries
+      - name: Extract Binaries Archive
+        run: tar -xvf collector-binaries/bin.tar
+      - name: Download Packages
+        uses: actions/download-artifact@v1
+        with:
+          name: build-packages
+          path: ./dist
+      - name: Download MSI Packages
+        uses: actions/download-artifact@v1
+        with:
+          name: msi-binaries
+          path: ./dist
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x ./dist
+      - name: Verify Distribution Files Exist
+        id: check
+        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
+      - name: Set Release Tag
+        id: github_tag
+        run: ./.github/workflows/scripts/set_release_tag.sh
+      - name: Build Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            make docker-otelcol
+            docker tag otelcol:latest otel/opentelemetry-collector:$RELEASE_TAG
+            docker tag otelcol:latest otel/opentelemetry-collector:latest
+        env:
+          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+      - name: Push Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker push otel/opentelemetry-collector:$RELEASE_TAG
+            docker push otel/opentelemetry-collector:latest
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME}}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD}}
+          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+      - name: Create Github Release
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          cp bin/* dist/
+          cd dist && shasum -a 256 * > checksums.txt
+          ghr -t $GITHUB_TOKEN -u "GitHub Action" -r opentelemetry-collector --replace $RELEASE_TAG dist/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
