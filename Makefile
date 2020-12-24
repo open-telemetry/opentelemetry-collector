@@ -4,6 +4,7 @@ include ./Makefile.Common
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
+							-not -path './cmd/schemagen/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
 							-not -path './internal/data/opentelemetry-proto-gen/*' \
