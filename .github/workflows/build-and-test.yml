@@ -153,7 +153,7 @@ jobs:
     needs: [setup-environment]
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.loadtestpre.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.setup-environment.outputs.matrix) }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
