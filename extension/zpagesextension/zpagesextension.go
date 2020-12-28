@@ -52,7 +52,9 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 		return err
 	}
 
-	zpe.logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
+	zpe.logger.Info("Starting zPages extension",
+		zap.Any("listen_addr", ln.Addr()),
+		zap.Any("config", zpe.config))
 	zpe.server = http.Server{Handler: zPagesMux}
 	go func() {
 		if err := zpe.server.Serve(ln); err != nil && err != http.ErrServerClosed {

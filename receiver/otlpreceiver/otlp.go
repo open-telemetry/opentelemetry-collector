@@ -17,6 +17,7 @@ package otlpreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -90,12 +91,12 @@ func newOtlpReceiver(cfg *Config, logger *zap.Logger) (*otlpReceiver, error) {
 }
 
 func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host component.Host) error {
-	r.logger.Info("Starting GRPC server on endpoint " + cfg.NetAddr.Endpoint)
 	var gln net.Listener
 	gln, err := cfg.ToListener()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start OTLP gRPC reciever: %v", err)
 	}
+	r.logger.Info("Starting GRPC server on endpoint", zap.Any("listen_addr", gln.Addr()))
 	go func() {
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil {
 			host.ReportFatalError(errGrpc)
@@ -105,12 +106,12 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 }
 
 func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host component.Host) error {
-	r.logger.Info("Starting HTTP server on endpoint " + cfg.Endpoint)
 	var hln net.Listener
 	hln, err := r.cfg.HTTP.ToListener()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start OTLP HTTP reciever: %v", err)
 	}
+	r.logger.Info("Starting HTTP server on endpoint", zap.Any("listen_addr", hln.Addr()))
 	go func() {
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil {
 			host.ReportFatalError(errHTTP)

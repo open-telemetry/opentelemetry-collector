@@ -45,7 +45,9 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	runtime.SetBlockProfileRate(p.config.BlockProfileFraction)
 	runtime.SetMutexProfileFraction(p.config.MutexProfileFraction)
 
-	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
+	p.logger.Info("Starting net/http/pprof server",
+		zap.Any("listen_addr", ln.Addr()),
+		zap.Any("config", p.config))
 	go func() {
 		// The listener ownership goes to the server.
 		if err := p.server.Serve(ln); err != nil && err != http.ErrServerClosed {
