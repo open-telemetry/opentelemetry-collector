@@ -82,6 +82,18 @@ var diskOperationTimeDescriptor = func() pdata.Metric {
 	return metric
 }()
 
+var diskWeightedIOTimeDescriptor = func() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.SetName("system.disk.weighted_io_time")
+	metric.SetDescription("Time disk spent activated multiplied by the queue length.")
+	metric.SetUnit("s")
+	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	sum := metric.DoubleSum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	return metric
+}()
+
 var diskPendingOperationsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.disk.pending_operations")

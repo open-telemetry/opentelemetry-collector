@@ -102,16 +102,17 @@ func TestScrape(t *testing.T) {
 				return
 			}
 
-			assert.GreaterOrEqual(t, metrics.Len(), 4)
+			assert.Equal(t, metricsLen, metrics.Len())
 
-			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, true, test.expectedStartTime)
-			assertInt64DiskMetricValid(t, metrics.At(1), diskOperationsDescriptor, true, test.expectedStartTime)
+			assertInt64DiskMetricValid(t, metrics.At(0), diskIODescriptor, test.expectedStartTime)
+			assertInt64DiskMetricValid(t, metrics.At(1), diskOperationsDescriptor, test.expectedStartTime)
 			assertDoubleDiskMetricValid(t, metrics.At(2), diskIOTimeDescriptor, false, test.expectedStartTime)
 			assertDoubleDiskMetricValid(t, metrics.At(3), diskOperationTimeDescriptor, true, test.expectedStartTime)
 			assertDiskPendingOperationsMetricValid(t, metrics.At(4))
 
 			if runtime.GOOS == "linux" {
-				assertInt64DiskMetricValid(t, metrics.At(5), diskMergedDescriptor, true, test.expectedStartTime)
+				assertDoubleDiskMetricValid(t, metrics.At(5), diskWeightedIOTimeDescriptor, false, test.expectedStartTime)
+				assertInt64DiskMetricValid(t, metrics.At(6), diskMergedDescriptor, test.expectedStartTime)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -119,23 +120,17 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.TimestampUnixNano) {
+func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
 	}
 
-	minExpectedPoints := 1
-	if expectDirectionLabels {
-		minExpectedPoints = 2
-	}
-	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), minExpectedPoints)
+	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
 
 	internal.AssertIntSumMetricLabelExists(t, metric, 0, deviceLabelName)
-	if expectDirectionLabels {
-		internal.AssertIntSumMetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
-		internal.AssertIntSumMetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
-	}
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, directionLabelName, readDirectionLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, directionLabelName, writeDirectionLabelValue)
 }
 
 func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.TimestampUnixNano) {
