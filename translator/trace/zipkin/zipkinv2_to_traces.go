@@ -164,6 +164,13 @@ func populateSpanStatus(tags map[string]string, status pdata.SpanStatus) {
 			delete(tags, tracetranslator.TagStatusMsg)
 		}
 	}
+
+	if val, ok := tags[tracetranslator.TagError]; ok {
+		if val == "true" {
+			status.SetCode(pdata.StatusCodeError)
+			delete(tags, tracetranslator.TagError)
+		}
+	}
 }
 
 func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) pdata.SpanKind {
