@@ -52,12 +52,34 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.TracesExporter, error) {
-	oCfg := config.(*Config)
-	return newTraceExporter(ctx, oCfg, params.Logger)
+func createTraceExporter(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.TracesExporter, error) {
+	oCfg := cfg.(*Config)
+	oce, err := newTraceExporter(ctx, oCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		params.Logger,
+		oce.pushTraceData,
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func createMetricsExporter(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.MetricsExporter, error) {
-	oCfg := config.(*Config)
-	return newMetricsExporter(ctx, oCfg, params.Logger)
+func createMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
+	oCfg := cfg.(*Config)
+	oce, err := newMetricsExporter(ctx, oCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		params.Logger,
+		oce.pushMetricsData,
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithShutdown(oce.shutdown))
 }
