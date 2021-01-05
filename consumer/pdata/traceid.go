@@ -43,3 +43,8 @@ func (t TraceID) HexString() string {
 func (t TraceID) IsValid() bool {
 	return data.TraceID(t).IsValid()
 }
+
+// IsEmpty returns true if id doesn't contain at least one non-zero byte.
+func (t TraceID) IsEmpty() bool {
+	return !data.TraceID(t).IsValid()
+}
