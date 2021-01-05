@@ -40,6 +40,7 @@ func (t TraceID) HexString() string {
 }
 
 // IsValid returns true if id contains at leas one non-zero byte.
+// Deprecated: use !IsEmpty() instead.
 func (t TraceID) IsValid() bool {
 	return data.TraceID(t).IsValid()
 }
