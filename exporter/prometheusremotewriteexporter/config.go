@@ -36,4 +36,8 @@ type Config struct {
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
+
+	// MaxBatchByteSize sets the maximum uncompressed size to send in a single HTTP request.
+	// Default is 3000000
+	MaxBatchByteSize int `mapstructure:"max_batch_byte_size"`
 }

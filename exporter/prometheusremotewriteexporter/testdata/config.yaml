@@ -1,9 +1,9 @@
 receivers:
     examplereceiver:
-  
+
 processors:
     exampleprocessor:
- 
+
 exporters:
     prometheusremotewrite:
     prometheusremotewrite/2:
@@ -26,6 +26,7 @@ exporters:
         external_labels:
             key1: value1
             key2: value2
+        max_batch_byte_size: 1048576
 
 service:
     pipelines:
@@ -33,5 +34,5 @@ service:
             receivers: [examplereceiver]
             processors: [exampleprocessor]
             exporters: [prometheusremotewrite]
-    
-    
+
+

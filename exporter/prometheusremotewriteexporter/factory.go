@@ -64,6 +64,10 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 
+	if err == nil {
+		prwe.SetMaxBatchByteSize(prwCfg.MaxBatchByteSize)
+	}
+
 	return prwexp, err
 }
 
@@ -86,5 +90,6 @@ func createDefaultConfig() configmodels.Exporter {
 			Timeout:         exporterhelper.DefaultTimeoutSettings().Timeout,
 			Headers:         map[string]string{},
 		},
+		MaxBatchByteSize: defaultMaxBatchByteSize,
 	}
 }

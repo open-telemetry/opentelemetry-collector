@@ -39,18 +39,19 @@ import (
 )
 
 const (
-	maxConcurrentRequests = 5
-	maxBatchByteSize      = 3000000
+	maxConcurrentRequests   = 5
+	defaultMaxBatchByteSize = 3000000
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type PrwExporter struct {
-	namespace      string
-	externalLabels map[string]string
-	endpointURL    *url.URL
-	client         *http.Client
-	wg             *sync.WaitGroup
-	closeChan      chan struct{}
+	namespace        string
+	externalLabels   map[string]string
+	endpointURL      *url.URL
+	client           *http.Client
+	wg               *sync.WaitGroup
+	closeChan        chan struct{}
+	maxBatchByteSize int
 }
 
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
@@ -71,13 +72,24 @@ func NewPrwExporter(namespace string, endpoint string, client *http.Client, exte
 	}
 
 	return &PrwExporter{
-		namespace:      namespace,
-		externalLabels: sanitizedLabels,
-		endpointURL:    endpointURL,
-		client:         client,
-		wg:             new(sync.WaitGroup),
-		closeChan:      make(chan struct{}),
+		namespace:        namespace,
+		externalLabels:   sanitizedLabels,
+		endpointURL:      endpointURL,
+		client:           client,
+		wg:               new(sync.WaitGroup),
+		closeChan:        make(chan struct{}),
+		maxBatchByteSize: defaultMaxBatchByteSize,
 	}, nil
+}
+
+// SetMaxBatchByteSize sets the maximum uncompressed size to send in a single HTTP request.
+// This should be called before using the exporter.
+func (prwe *PrwExporter) SetMaxBatchByteSize(maxBatchByteSize int) {
+	if maxBatchByteSize <= 0 {
+		maxBatchByteSize = defaultMaxBatchByteSize
+	}
+
+	prwe.maxBatchByteSize = maxBatchByteSize
 }
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
@@ -258,6 +270,12 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
 	var errs []error
+
+	maxBatchByteSize := prwe.maxBatchByteSize
+	if maxBatchByteSize == 0 {
+		maxBatchByteSize = defaultMaxBatchByteSize
+	}
+
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
