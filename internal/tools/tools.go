@@ -29,7 +29,6 @@ import (
 	_ "github.com/mjibson/esc"
 	_ "github.com/ory/go-acc"
 	_ "github.com/pavius/impi/cmd/impi"
-	_ "github.com/securego/gosec/v2/cmd/gosec"
 	_ "github.com/tcnksm/ghr"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "honnef.co/go/tools/cmd/staticcheck"
