@@ -27,9 +27,8 @@ The [contributors repository](https://github.com/open-telemetry/opentelemetry-co
 
 ## <a name="recommended-processors"></a>Recommended Processors
 
-No processors are enabled by default, however multiple processors are
-recommended to be enabled depending on the data source. Processors must be
-enabled for every data source and not all processors support all data sources.
+By default, no processors are enabled. Depending on the data source, it may be recommended that multiple processors be enabled. Processors must be
+enabled for every data source: Not all processors support all data sources.
 In addition, it is important to note that the order of processors matters. The
 order in each section below is the best practice. Refer to the individual
 processor documentation for more information.
