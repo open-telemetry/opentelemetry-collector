@@ -38,9 +38,8 @@ install_pkg() {
     local pkg_base=$( basename "$pkg_path" )
 
     echo "Installing $pkg_base ..."
-    echo "$(ls -l $pkg_path)"
-    docker cp "$pkg_path" $image_name:/tmp/$pkg_base
-    sleep 5
+    docker cp "$pkg_path" $image_name:/tmp/$pkg_base &
+    wait $!
     if [[ "${pkg_base##*.}" = "deb" ]]; then
         $docker_exec dpkg -i /tmp/$pkg_base
     else
