@@ -103,9 +103,11 @@ func TestSpanID(t *testing.T) {
 func TestTraceID(t *testing.T) {
 	tid := InvalidTraceID()
 	assert.EqualValues(t, [16]byte{}, tid.Bytes())
+	assert.True(t, tid.IsEmpty())
 
 	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	assert.False(t, tid.IsEmpty())
 }
 
 func TestSpanStatusCode(t *testing.T) {
