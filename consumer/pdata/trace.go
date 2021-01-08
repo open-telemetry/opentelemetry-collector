@@ -15,8 +15,8 @@
 package pdata
 
 import (
-	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 // This file defines in-memory data structures to represent traces (spans).

@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/version"
 )
 

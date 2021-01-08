@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
-	tracev1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	tracev1 "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 

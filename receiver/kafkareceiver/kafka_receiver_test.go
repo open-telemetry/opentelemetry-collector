@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 func TestNewReceiver_version_err(t *testing.T) {

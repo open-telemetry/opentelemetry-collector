@@ -23,7 +23,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 func TestSpanCount(t *testing.T) {

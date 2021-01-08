@@ -16,8 +16,8 @@ package kafkaexporter
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlpmetric "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlpmetric "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 var _ TracesMarshaller = (*otlpTracesPbMarshaller)(nil)
