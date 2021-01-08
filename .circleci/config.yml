@@ -148,6 +148,12 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - correctness-metrics:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - test:
           requires:
             - setup-environment
@@ -170,6 +176,7 @@ workflows:
           requires:
             - cross-compile
             - correctness
+            - correctness-metrics
             - lint
             - loadtest
             - test
@@ -182,6 +189,7 @@ workflows:
           requires:
             - cross-compile
             - correctness
+            - correctness-metrics
             - lint
             - loadtest
             - test
@@ -199,6 +207,7 @@ workflows:
           requires:
             - cross-compile
             - correctness
+            - correctness-metrics
             - lint
             - loadtest
             - test
@@ -304,6 +313,16 @@ jobs:
           name: Loadtest
           command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness
       - github_issue_generator
+
+  correctness-metrics:
+    executor: golang
+    parallelism: 4
+    resource_class: medium+
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Metrics correctness tests
+          command: TEST_ARGS="-test.run=$(make -s testbed-list-correctness-metrics | circleci tests split|xargs echo|sed 's/ /|/g')" make testbed-correctness-metrics
 
   test:
     executor: golang

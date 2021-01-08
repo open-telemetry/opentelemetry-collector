@@ -73,6 +73,14 @@ testbed-list-loadtest:
 testbed-list-correctness:
 	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
 
+.PHONY: testbed-list-correctness-metrics
+testbed-list-correctness-metrics:
+	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness/metrics --test.list '.*'| grep "^TestHarness_"
+
+.PHONY: testbed-correctness-metrics
+testbed-correctness-metrics: otelcol
+	cd ./testbed/correctness/metrics && ./runtests.sh
+
 .PHONY: gotest
 gotest:
 	@$(MAKE) for-all CMD="make test"
