@@ -17,6 +17,11 @@ data:
       otlp:
         endpoint: "otel-collector.default:55680" # TODO: Update me
         insecure: true
+        sending_queue:
+          num_consumers: 4
+          queue_size: 100
+        retry_on_failure:
+          enabled: true
     processors:
       batch:
       memory_limiter:
@@ -27,10 +32,6 @@ data:
         # 25% of limit up to 2G
         spike_limit_mib: 100
         check_interval: 5s
-      queued_retry:
-        num_workers: 4
-        queue_size: 100
-        retry_on_failure: true
     extensions:
       health_check: {}
       zpages: {}
@@ -39,7 +40,7 @@ data:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, batch, queued_retry]
+          processors: [memory_limiter, batch]
           exporters: [otlp]
 ---
 apiVersion: apps/v1
@@ -127,7 +128,6 @@ data:
         # 25% of limit up to 2G
         spike_limit_mib: 512
         check_interval: 5s
-      queued_retry:
     extensions:
       health_check: {}
       zpages: {}
@@ -142,11 +142,11 @@ data:
       pipelines:
         traces/1:
           receivers: [otlp, zipkin]
-          processors: [memory_limiter, batch, queued_retry]
+          processors: [memory_limiter, batch]
           exporters: [zipkin]
         traces/2:
           receivers: [otlp, jaeger]
-          processors: [memory_limiter, batch, queued_retry]
+          processors: [memory_limiter, batch]
           exporters: [jaeger]
 ---
 apiVersion: v1
@@ -162,7 +162,7 @@ spec:
     port: 55680
     protocol: TCP
     targetPort: 55680
-  - name: jaeger-grpc # Default endpoing for Jaeger gRPC receiver
+  - name: jaeger-grpc # Default endpoint for Jaeger gRPC receiver
     port: 14250
   - name: jaeger-thrift-http # Default endpoint for Jaeger HTTP receiver.
     port: 14268

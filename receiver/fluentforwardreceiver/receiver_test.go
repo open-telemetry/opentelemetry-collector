@@ -237,10 +237,9 @@ func TestForwardPackedEvent(t *testing.T) {
 	require.EqualValues(t, logstest.Logs(
 		logstest.Log{
 			Timestamp: 1593032517024597622,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("starting fluentd worker pid=17 ppid=7 worker=0"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("starting fluentd worker pid=17 ppid=7 worker=0"),
 				"pid":        pdata.NewAttributeValueInt(17),
 				"ppid":       pdata.NewAttributeValueInt(7),
 				"worker":     pdata.NewAttributeValueInt(0),
@@ -248,35 +247,31 @@ func TestForwardPackedEvent(t *testing.T) {
 		},
 		logstest.Log{
 			Timestamp: 1593032517028573686,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			},
 		},
 		logstest.Log{
 			Timestamp: 1593032517028815948,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			},
 		},
 		logstest.Log{
 			Timestamp: 1593032517031174229,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("fluentd worker is now running worker=0"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("fluentd worker is now running worker=0"),
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
 		logstest.Log{
 			Timestamp: 1593032522187382822,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("fluentd worker is now stopping worker=0"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("fluentd worker is now stopping worker=0"),
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
@@ -308,10 +303,9 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	require.EqualValues(t, logstest.Logs(
 		logstest.Log{
 			Timestamp: 1593032426012197420,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("starting fluentd worker pid=17 ppid=7 worker=0"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("starting fluentd worker pid=17 ppid=7 worker=0"),
 				"pid":        pdata.NewAttributeValueInt(17),
 				"ppid":       pdata.NewAttributeValueInt(7),
 				"worker":     pdata.NewAttributeValueInt(0),
@@ -319,35 +313,31 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		},
 		logstest.Log{
 			Timestamp: 1593032426013724933,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			},
 		},
 		logstest.Log{
 			Timestamp: 1593032426020510455,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("following tail of /var/log/kern.log"),
 			},
 		},
 		logstest.Log{
 			Timestamp: 1593032426024346580,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("fluentd worker is now running worker=0"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("fluentd worker is now running worker=0"),
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},
 		logstest.Log{
 			Timestamp: 1593032434346935532,
-			Body:      pdata.NewAttributeValueNull(),
+			Body:      pdata.NewAttributeValueString("fluentd worker is now stopping worker=0"),
 			Attributes: map[string]pdata.AttributeValue{
 				"fluent.tag": pdata.NewAttributeValueString("fluent.info"),
-				"message":    pdata.NewAttributeValueString("fluentd worker is now stopping worker=0"),
 				"worker":     pdata.NewAttributeValueInt(0),
 			},
 		},

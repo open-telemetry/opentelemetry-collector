@@ -19,5 +19,5 @@ coverage:
 
 ignore:
   - "**/*/metadata/generated_metrics.go"
-  - "internal/data/opentelemetry-proto-gen/**/*"
+  - "internal/data/protogen/**/*"
   - "testbed/**/*"

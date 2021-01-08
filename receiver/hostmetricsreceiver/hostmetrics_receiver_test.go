@@ -37,31 +37,31 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/swapscraper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 var standardMetrics = []string{
 	"system.cpu.time",
-	"system.memory.usage",
-	"system.disk.io",
-	"system.disk.io_time",
-	"system.disk.ops",
-	"system.disk.operation_time",
-	"system.disk.pending_operations",
-	"system.filesystem.usage",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
 	"system.cpu.load_average.15m",
-	"system.network.packets",
-	"system.network.dropped_packets",
+	"system.disk.io",
+	"system.disk.io_time",
+	"system.disk.operations",
+	"system.disk.operation_time",
+	"system.disk.pending_operations",
+	"system.filesystem.usage",
+	"system.memory.usage",
+	"system.network.connections",
+	"system.network.dropped",
 	"system.network.errors",
 	"system.network.io",
-	"system.network.tcp_connections",
-	"system.swap.paging_ops",
-	"system.swap.usage",
+	"system.network.packets",
+	"system.paging.operations",
+	"system.paging.usage",
 }
 
 var resourceMetrics = []string{
@@ -72,11 +72,11 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.processes.running", "system.processes.blocked", "system.swap.page_faults"},
-	"solaris": {"system.filesystem.inodes.usage", "system.swap.page_faults"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
+	"solaris": {"system.filesystem.inodes.usage", "system.paging.faults"},
 }
 
 var factories = map[string]internal.ScraperFactory{
@@ -86,8 +86,8 @@ var factories = map[string]internal.ScraperFactory{
 	loadscraper.TypeStr:       &loadscraper.Factory{},
 	memoryscraper.TypeStr:     &memoryscraper.Factory{},
 	networkscraper.TypeStr:    &networkscraper.Factory{},
+	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
-	swapscraper.TypeStr:       &swapscraper.Factory{},
 }
 
 var resourceFactories = map[string]internal.ResourceScraperFactory{
@@ -111,8 +111,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr:    &networkscraper.Config{},
+			pagingscraper.TypeStr:     &pagingscraper.Config{},
 			processesscraper.TypeStr:  &processesscraper.Config{},
-			swapscraper.TypeStr:       &swapscraper.Config{},
 		},
 	}
 
@@ -376,10 +376,10 @@ func Benchmark_ScrapeProcessesMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
-func Benchmark_ScrapeSwapMetrics(b *testing.B) {
+func Benchmark_ScrapePagingMetrics(b *testing.B) {
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
-		Scrapers:                  map[string]internal.Config{swapscraper.TypeStr: (&swapscraper.Factory{}).CreateDefaultConfig()},
+		Scrapers:                  map[string]internal.Config{pagingscraper.TypeStr: (&pagingscraper.Factory{}).CreateDefaultConfig()},
 	}
 
 	benchmarkScrapeMetrics(b, cfg)
@@ -408,8 +408,8 @@ func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 			loadscraper.TypeStr:       (&loadscraper.Factory{}).CreateDefaultConfig(),
 			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
 			networkscraper.TypeStr:    (&networkscraper.Factory{}).CreateDefaultConfig(),
+			pagingscraper.TypeStr:     (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processesscraper.TypeStr:  (&processesscraper.Factory{}).CreateDefaultConfig(),
-			swapscraper.TypeStr:       (&swapscraper.Factory{}).CreateDefaultConfig(),
 		},
 	}
 
@@ -417,6 +417,10 @@ func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 }
 
 func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		b.Skip("skipping test on non linux/windows")
+	}
+
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(""),
 		Scrapers: map[string]internal.Config{
@@ -426,13 +430,9 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr:    &networkscraper.Config{},
+			pagingscraper.TypeStr:     (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processesscraper.TypeStr:  &processesscraper.Config{},
-			swapscraper.TypeStr:       &swapscraper.Config{},
 		},
-	}
-
-	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
-		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
 	}
 
 	benchmarkScrapeMetrics(b, cfg)

@@ -35,7 +35,11 @@ function Install-Tools {
     $ProgressPreference = $OriginalPref
 
     choco install wixtoolset -y
-    setx /m PATH "%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin"
+    if(-not (Test-Path env:GITHUB_SHA)) {
+        setx /m PATH "%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin"
+    } else {
+        echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    }
     refreshenv
 }
 
@@ -65,10 +69,8 @@ function Confirm-MSI {
     # start service
     Start-Service otelcol
 
-    # uninstall msi, validate service is uninstalled
+    # uninstall msi
     Start-Process -Wait msiexec "/x `"$msipath`" /qn"
-    sc.exe query state=all | findstr "otelcol" | Out-Null
-    if ($LASTEXITCODE -ne 1) { Throw "otelcol service failed to uninstall" }
 }
 
 $sb = [scriptblock]::create("$Target")

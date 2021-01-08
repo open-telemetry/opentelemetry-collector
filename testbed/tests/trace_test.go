@@ -22,7 +22,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"path/filepath"
 	"testing"
@@ -120,8 +119,8 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 	limitProcessors := map[string]string{
 		"memory_limiter": `
   memory_limiter:
-   check_interval: 1s
-   limit_mib: 10
+   check_interval: 100ms
+   limit_mib: 20
 `,
 	}
 
@@ -131,60 +130,31 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
-			ExpectedMaxRAM:      200,
-			ExpectedMinFinalRAM: 30,
+			ExpectedMaxRAM:      150,
+			ExpectedMinFinalRAM: 100,
 		},
 		{
 			Name:                "MemoryLimit",
 			Processor:           limitProcessors,
-			ExpectedMaxRAM:      60,
-			ExpectedMinFinalRAM: 10,
+			ExpectedMaxRAM:      70,
+			ExpectedMinFinalRAM: 40,
 		},
 	}
 
-	var testSenders = []struct {
-		name          string
-		sender        testbed.DataSender
-		receiver      testbed.DataReceiver
-		resourceSpec  testbed.ResourceSpec
-		configuration []processorConfig
-	}{
-		{
-			"JaegerGRPC",
-			testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.DefaultJaegerPort),
-			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 70,
-				ExpectedMaxRAM: 198,
-			},
-			processorsConfig,
-		},
-		{
-			"Zipkin",
-			testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.DefaultZipkinAddressPort),
-			testbed.NewOCDataReceiver(testbed.DefaultOCPort),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 120,
-				ExpectedMaxRAM: 198,
-			},
-			processorsConfig,
-		},
-	}
-
-	for _, test := range testSenders {
-		for _, testConf := range test.configuration {
-			testName := fmt.Sprintf("%s/%s", test.name, testConf.Name)
-			t.Run(testName, func(t *testing.T) {
-				ScenarioTestTraceNoBackend10kSPS(
-					t,
-					test.sender,
-					test.receiver,
-					test.resourceSpec,
-					performanceResultsSummary,
-					testConf,
-				)
-			})
-		}
+	for _, testConf := range processorsConfig {
+		t.Run(testConf.Name, func(t *testing.T) {
+			ScenarioTestTraceNoBackend10kSPS(
+				t,
+				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+				testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+				testbed.ResourceSpec{
+					ExpectedMaxCPU: 50,
+					ExpectedMaxRAM: testConf.ExpectedMaxRAM,
+				},
+				performanceResultsSummary,
+				testConf,
+			)
+		})
 	}
 }
 

@@ -96,7 +96,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	if len(ioCounters) > 0 {
 		metrics.Resize(metricsLen)
 		initializeDiskIOMetric(metrics.At(0), s.startTime, now, ioCounters)
-		initializeDiskOpsMetric(metrics.At(1), s.startTime, now, ioCounters)
+		initializeDiskOperationsMetric(metrics.At(1), s.startTime, now, ioCounters)
 		initializeDiskIOTimeMetric(metrics.At(2), s.startTime, now, ioCounters)
 		initializeDiskOperationTimeMetric(metrics.At(3), s.startTime, now, ioCounters)
 		initializeDiskPendingOperationsMetric(metrics.At(4), now, ioCounters)
@@ -120,8 +120,8 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampU
 	}
 }
 
-func initializeDiskOpsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
-	diskOpsDescriptor.CopyTo(metric)
+func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+	diskOperationsDescriptor.CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCounters))

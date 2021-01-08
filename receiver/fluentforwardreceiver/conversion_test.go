@@ -53,13 +53,12 @@ func TestMessageEventConversion(t *testing.T) {
 }
 
 func TestAttributeTypeConversion(t *testing.T) {
-
 	var b []byte
 
 	b = msgp.AppendArrayHeader(b, 3)
 	b = msgp.AppendString(b, "my-tag")
 	b = msgp.AppendInt(b, 5000)
-	b = msgp.AppendMapHeader(b, 14)
+	b = msgp.AppendMapHeader(b, 15)
 	b = msgp.AppendString(b, "a")
 	b = msgp.AppendFloat64(b, 5.0)
 	b = msgp.AppendString(b, "b")
@@ -90,11 +89,15 @@ func TestAttributeTypeConversion(t *testing.T) {
 	b = msgp.AppendArrayHeader(b, 2)
 	b = msgp.AppendString(b, "first")
 	b = msgp.AppendString(b, "second")
+	b = msgp.AppendString(b, "o")
+	b, err := msgp.AppendIntf(b, []uint8{99, 100, 101})
+
+	require.NoError(t, err)
 
 	reader := msgp.NewReader(bytes.NewReader(b))
 
 	var event MessageEventLogRecord
-	err := event.DecodeMsg(reader)
+	err = event.DecodeMsg(reader)
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
@@ -119,6 +122,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"l":          pdata.NewAttributeValueString("(0+0i)"),
 				"m":          pdata.NewAttributeValueString("\001e\002"),
 				"n":          pdata.NewAttributeValueString(`["first","second"]`),
+				"o":          pdata.NewAttributeValueString("cde"),
 			},
 		},
 	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)

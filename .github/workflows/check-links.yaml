@@ -1,0 +1,24 @@
+name: check-links
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '9'
+      - name: Check links in markdown docs
+        run: |
+          pushd $HOME
+          npm install --save-dev markdown-link-check@3.8.1
+          popd
+      - run: ./.github/workflows/check-links/check-links.sh

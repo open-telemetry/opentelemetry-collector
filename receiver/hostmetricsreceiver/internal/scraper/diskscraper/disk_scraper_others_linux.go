@@ -22,10 +22,27 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const systemSpecificMetricsLen = 1
+const systemSpecificMetricsLen = 2
 
 func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
-	metric := metrics.At(startIdx)
+	initializeDiskWeightedIOTimeMetric(metrics.At(startIdx+0), startTime, now, ioCounters)
+	initializeDiskMergedMetric(metrics.At(startIdx+1), startTime, now, ioCounters)
+}
+
+func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+	diskWeightedIOTimeDescriptor.CopyTo(metric)
+
+	ddps := metric.DoubleSum().DataPoints()
+	ddps.Resize(len(ioCounters))
+
+	idx := 0
+	for device, ioCounter := range ioCounters {
+		initializeDoubleDataPoint(ddps.At(idx+0), startTime, now, device, "", float64(ioCounter.WeightedIO)/1e3)
+		idx++
+	}
+}
+
+func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
 	diskMergedDescriptor.CopyTo(metric)
 
 	idps := metric.IntSum().DataPoints()

@@ -125,11 +125,6 @@ issues:
       linters:
         - gocritic
         - gosimple
-
-    - path: main.go
-      text: "G101:"
-      linters:
-        - gosec
     - text: "G404:"
       linters:
         - gosec

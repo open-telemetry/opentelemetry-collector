@@ -3,28 +3,45 @@
 Supported pipeline types: metrics, traces
 
 The memory limiter processor is used to prevent out of memory situations on
-the collector. Given that the amount and type of data a collector processes is
+the collector. Given that the amount and type of data the collector processes is
 environment specific and resource utilization of the collector is also dependent
 on the configured processors, it is important to put checks in place regarding
-memory usage. The memory_limiter processor offers the follow safeguards:
+memory usage.
+ 
+The memory_limiter processor allows to perform periodic checks of memory
+usage if it exceeds defined limits will begin dropping data and forcing GC to reduce
+memory consumption.
 
-- Ability to define an interval when memory usage will be checked and if memory
-usage exceeds a defined limit will trigger GC to reduce memory consumption.
-- Ability to define an interval when memory usage will be compared against the
-previous interval's value and if the delta exceeds a defined limit will trigger
-GC to reduce memory consumption.
+The memory_limiter uses soft and hard memory limits. Hard limit is always above or equal
+the soft limit.
 
-In addition, there is a command line option (`mem-ballast-size-mib`) which can be
-used to define a ballast, which allocates memory and provides stability to the
-heap. If defined, the ballast increases the base size of the heap so that GC
-triggers are delayed and the number of GC cycles over time is reduced. While the
-ballast is configured via the command line, today the same value configured on the
-command line must also be defined in the memory_limiter processor.
+When the memory usage exceeds the soft limit the processor will start dropping the data and
+return errors to the preceding component it in the pipeline (which should be normally a
+receiver).
 
-Note that while these configuration options can help mitigate out of memory
-situations, they are not a replacement for properly sizing and configuring the
-collector. For example, if the limit or spike thresholds are crossed, the collector
-will return errors to all receive operations until enough memory is freed. This may
+When the memory usage is above the hard limit in addition to dropping the data the
+processor will forcedly perform garbage collection in order to try to free memory.
+
+When the memory usage drop below the soft limit, the normal operation is resumed (data
+will not longer be dropped and no forced garbage collection will be performed).
+
+The difference between the soft limit and hard limits is defined via `spike_limit_mib`
+configuration option. The value of this option should be selected in a way that ensures
+that between the memory check intervals the memory usage cannot increase by more than this
+value (otherwise memory usage may exceed the hard limit - even if temporarily).
+A good starting point for `spike_limit_mib` is 20% of the hard limit. Bigger
+`spike_limit_mib` values may be necessary for spiky traffic or for longer check intervals.
+
+In addition, if the command line option `mem-ballast-size-mib` is used to specify a
+ballast (see command line help for details), the same value that is provided via the
+command line must also be defined in the memory_limiter processor using `ballast_size_mib`
+config option. If the command line option value and config option value don't match
+the behavior of the memory_limiter processor will be unpredictable.
+
+Note that while the processor can help mitigate out of memory situations,
+it is not a replacement for properly sizing and configuring the
+collector. Keep in mind that if the soft limit is crossed, the collector will
+return errors to all receive operations until enough memory is freed. This will
 result in dropped data.
 
 It is highly recommended to configure the ballast command line option as well as the
@@ -39,13 +56,16 @@ Please refer to [config.go](./config.go) for the config spec.
 
 The following configuration options **must be changed**:
 - `check_interval` (default = 0s): Time between measurements of memory
-usage. Values below 1 second are not recommended since it can result in
-unnecessary CPU consumption.
+usage. The recommended value is 1 second.
+If the expected traffic to the Collector is very spiky then decrease the `check_interval`
+or increase `spike_limit_mib` to avoid memory usage going over the hard limit.
 - `limit_mib` (default = 0): Maximum amount of memory, in MiB, targeted to be
 allocated by the process heap. Note that typically the total memory usage of
-process will be about 50MiB higher than this value.
-- `spike_limit_mib` (default = 0): Maximum spike expected between the
-measurements of memory usage. The value must be less than `limit_mib`.
+process will be about 50MiB higher than this value.  This defines the hard limit.
+- `spike_limit_mib` (default = 20% of `limit_mib`): Maximum spike expected between the
+measurements of memory usage. The value must be less than `limit_mib`. The soft limit
+value will be equal to (limit_mib - spike_limit_mib).
+The recommended value for `spike_limit_mib` is about 20% `limit_mib`.
 - `limit_percentage` (default = 0): Maximum amount of total memory targeted to be
 allocated by the process heap. This configuration is supported on Linux systems with cgroups
 and it's intended to be used in dynamic platforms like docker.
@@ -69,16 +89,16 @@ Examples:
 processors:
   memory_limiter:
     ballast_size_mib: 2000
-    check_interval: 5s
+    check_interval: 1s
     limit_mib: 4000
-    spike_limit_mib: 500
+    spike_limit_mib: 800
 ```
 
 ```yaml
 processors:
   memory_limiter:
     ballast_size_mib: 2000
-    check_interval: 5s
+    check_interval: 1s
     limit_percentage: 50
     spike_limit_percentage: 30
 ```

@@ -60,7 +60,7 @@ type DataReceiverBase struct {
 	Port int
 }
 
-const DefaultHost = "localhost"
+const DefaultHost = "127.0.0.1"
 
 func (mb *DataReceiverBase) ReportFatalError(err error) {
 	log.Printf("Fatal error reported: %v", err)

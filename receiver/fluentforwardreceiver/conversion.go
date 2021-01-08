@@ -147,15 +147,30 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		recordLen--
 		key, err := dc.ReadString()
 		if err != nil {
-			return msgp.WrapError(err, "Record")
+			// The protocol doesn't specify this but apparently some map keys
+			// can be binary type instead of string
+			keyBytes, keyBytesErr := dc.ReadBytes(nil)
+			if keyBytesErr != nil {
+				return msgp.WrapError(keyBytesErr, "Record")
+			}
+			key = string(keyBytes)
 		}
 		val, err := dc.ReadIntf()
 		if err != nil {
 			return msgp.WrapError(err, "Record", key)
 		}
 
-		if s, ok := val.(string); ok && key == "log" {
-			lr.Body().SetStringVal(s)
+		// fluentd uses message, fluentbit log.
+		if key == "message" || key == "log" {
+			switch v := val.(type) {
+			case string:
+				lr.Body().SetStringVal(v)
+			case []uint8:
+				// Sometimes strings come in as uint8's.
+				lr.Body().SetStringVal(string(v))
+			default:
+				return fmt.Errorf("cannot convert message type %T to string", val)
+			}
 		} else {
 			insertToAttributeMap(key, val, &attrs)
 		}
