@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
-	collectorlog "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/logs/v1"
+	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/obsreport"
 )
 

@@ -27,9 +27,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/testutil"
 )

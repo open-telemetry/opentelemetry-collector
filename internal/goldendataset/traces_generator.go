@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"io"
 
-	otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 // GenerateResourceSpans generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise

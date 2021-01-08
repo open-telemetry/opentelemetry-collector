@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
 func TestResourceLogsSlice(t *testing.T) {

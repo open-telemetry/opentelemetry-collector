@@ -17,15 +17,15 @@ package internal
 var logFile = &File{
 	Name: "log",
 	imports: []string{
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
-		`otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
+		`otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"`,
+		`otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"`,
 	},
 	structs: []baseStruct{
 		resourceLogsSlice,

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	collectormetrics "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/metrics/v1"
+	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/obsreport"
 )
 

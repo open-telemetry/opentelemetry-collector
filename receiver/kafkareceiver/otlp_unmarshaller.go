@@ -16,7 +16,7 @@ package kafkareceiver
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/collector/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 type otlpProtoUnmarshaller struct {

@@ -18,7 +18,7 @@
 package pdata
 
 import (
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
 // Resource information.

@@ -12,7 +12,7 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 
-	v1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
+	v1 "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
