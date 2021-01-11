@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
+// +build !linux
 
 package networkscraper
 
 var allTCPStates = []string{
 	"CLOSE_WAIT",
-	"CLOSE",
+	"CLOSED",
 	"CLOSING",
 	"DELETE",
 	"ESTABLISHED",
@@ -27,6 +27,6 @@ var allTCPStates = []string{
 	"LAST_ACK",
 	"LISTEN",
 	"SYN_SENT",
-	"SYN_RECV",
+	"SYN_RECEIVED",
 	"TIME_WAIT",
 }

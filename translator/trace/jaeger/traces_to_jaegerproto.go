@@ -274,7 +274,7 @@ func makeJaegerProtoReferences(
 	parentSpanID pdata.SpanID,
 	traceID model.TraceID,
 ) ([]model.SpanRef, error) {
-	parentSpanIDSet := parentSpanID.IsValid()
+	parentSpanIDSet := !parentSpanID.IsEmpty()
 	if !parentSpanIDSet && links.Len() == 0 {
 		return nil, nil
 	}

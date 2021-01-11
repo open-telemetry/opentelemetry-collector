@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Note: implementation for this class is in a separate PR
+// Package prometheusremotewriteexporter implements an exporter that sends Prometheus remote write requests.
 package prometheusremotewriteexporter
 
 import (
@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sync"
@@ -33,11 +34,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/version"
 )
 
-// PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
+const (
+	maxConcurrentRequests = 5
+	maxBatchByteSize      = 3000000
+)
+
+// PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type PrwExporter struct {
 	namespace      string
 	externalLabels map[string]string
@@ -50,7 +56,6 @@ type PrwExporter struct {
 // NewPrwExporter initializes a new PrwExporter instance and sets fields accordingly.
 // client parameter cannot be nil.
 func NewPrwExporter(namespace string, endpoint string, client *http.Client, externalLabels map[string]string) (*PrwExporter, error) {
-
 	if client == nil {
 		return nil, errors.New("http client cannot be nil")
 	}
@@ -89,6 +94,7 @@ func (prwe *PrwExporter) Shutdown(context.Context) error {
 func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
+
 	select {
 	case <-prwe.closeChan:
 		return md.MetricCount(), errors.New("shutdown has been called")
@@ -143,9 +149,9 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 			}
 		}
 
-		if err := prwe.export(ctx, tsMap); err != nil {
+		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
 			dropped = md.MetricCount()
-			errs = append(errs, consumererror.Permanent(err))
+			errs = append(errs, exportErrors...)
 		}
 
 		if dropped != 0 {
@@ -179,7 +185,6 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 // its corresponding TimeSeries in tsMap.
 // tsMap and metric cannot be nil, and metric must have a non-nil descriptor
 func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-
 	switch metric.Data.(type) {
 	// int points
 	case *otlp.Metric_DoubleGauge:
@@ -218,7 +223,6 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
 func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-
 	switch metric.Data.(type) {
 	case *otlp.Metric_IntHistogram:
 		if metric.GetIntHistogram().GetDataPoints() == nil {
@@ -252,15 +256,51 @@ func (prwe *PrwExporter) handleSummaryMetric(tsMap map[string]*prompb.TimeSeries
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
-	// Calls the helper function to convert the TsMap to the desired format
-	req, err := wrapTimeSeries(tsMap)
+func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
+	var errs []error
+	// Calls the helper function to convert and batch the TsMap to the desired format
+	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
-		return consumererror.Permanent(err)
+		errs = append(errs, consumererror.Permanent(err))
+		return errs
 	}
 
+	input := make(chan *prompb.WriteRequest, len(requests))
+	for _, request := range requests {
+		input <- request
+	}
+	close(input)
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	concurrencyLimit := int(math.Min(maxConcurrentRequests, float64(len(requests))))
+	wg.Add(concurrencyLimit) // used to wait for workers to be finished
+
+	// Run concurrencyLimit of workers until there
+	// is no more requests to execute in the input channel.
+	for i := 0; i < concurrencyLimit; i++ {
+		go func() {
+			defer wg.Done()
+
+			for request := range input {
+				err := prwe.execute(ctx, request)
+				if err != nil {
+					mu.Lock()
+					errs = append(errs, err)
+					mu.Unlock()
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	return errs
+}
+
+func (prwe *PrwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
-	data, err := proto.Marshal(req)
+	data, err := proto.Marshal(writeReq)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -268,19 +308,19 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	compressedData := snappy.Encode(buf, data)
 
 	// Create the HTTP POST request to send to the endpoint
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
+	req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
 
 	// Add necessary headers specified by:
 	// https://cortexmetrics.io/docs/apis/#remote-api
-	httpReq.Header.Add("Content-Encoding", "snappy")
-	httpReq.Header.Set("Content-Type", "application/x-protobuf")
-	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-	httpReq.Header.Set("User-Agent", "OpenTelemetry-Collector/"+version.Version)
+	req.Header.Add("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	req.Header.Set("User-Agent", "OpenTelemetry-Collector/"+version.Version)
 
-	httpResp, err := prwe.client.Do(httpReq)
+	resp, err := prwe.client.Do(req)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -289,18 +329,17 @@ func (prwe *PrwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	// 5xx errors are recoverable and the exporter should retry
 	// Reference for different behavior according to status code:
 	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
-	if httpResp.StatusCode/100 != 2 {
-		scanner := bufio.NewScanner(io.LimitReader(httpResp.Body, 256))
-		line := ""
+	if resp.StatusCode/100 != 2 {
+		scanner := bufio.NewScanner(io.LimitReader(resp.Body, 256))
+		var line string
 		if scanner.Scan() {
 			line = scanner.Text()
 		}
-		errMsg := "server returned HTTP status " + httpResp.Status + ": " + line
-		if httpResp.StatusCode >= 500 && httpResp.StatusCode < 600 {
-			return errors.New(errMsg)
+		err := fmt.Errorf("server returned HTTP status %v: %v ", resp.Status, line)
+		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+			return err
 		}
-		return consumererror.Permanent(errors.New(errMsg))
-
+		return consumererror.Permanent(err)
 	}
 	return nil
 }

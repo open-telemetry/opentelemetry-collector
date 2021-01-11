@@ -28,31 +28,10 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 
 const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	ms.InitEmpty()
 	assert.EqualValues(t, New${returnType}(), ms.${fieldName}())
 	fillTest${returnType}(ms.${fieldName}())
 	testVal${fieldName} := generateTest${returnType}()
 	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
-}`
-
-const accessorsMessagePtrTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-// If no ${lowerFieldName} available, it creates an empty message and associates it with this ${structName}.
-//
-//  Empty initialized ${structName} will return "nil" ${returnType}.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&(*ms.orig).${originFieldName})
-}`
-
-const accessorsMessagePtrTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
-	ms := New${structName}()
-	ms.InitEmpty()
-	assert.True(t, ms.${fieldName}().IsNil())
-	ms.${fieldName}().InitEmpty()
-	assert.False(t, ms.${fieldName}().IsNil())
-	fillTest${returnType}(ms.${fieldName}())
-	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
 }`
 
 const accessorsMessageValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
@@ -64,7 +43,6 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 
 const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	ms.InitEmpty()
 	fillTest${returnType}(ms.${fieldName}())
 	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
 }`
@@ -85,7 +63,6 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 
 const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	ms.InitEmpty()
 	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
 	testVal${fieldName} := ${testValue}
 	ms.Set${fieldName}(testVal${fieldName})
@@ -170,59 +147,6 @@ func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
 }
 
 var _ baseField = (*sliceField)(nil)
-
-type messagePtrField struct {
-	fieldName       string
-	originFieldName string
-	returnMessage   *messagePtrStruct
-}
-
-func (mf *messagePtrField) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsMessagePtrTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return mf.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(mf.fieldName)
-		case "returnType":
-			return mf.returnMessage.structName
-		case "structOriginFullName":
-			return mf.returnMessage.originFullName
-		case "originFieldName":
-			return mf.originFieldName
-		default:
-			panic(name)
-		}
-	}))
-}
-
-func (mf *messagePtrField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsMessagePtrTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return mf.fieldName
-		case "returnType":
-			return mf.returnMessage.structName
-		default:
-			panic(name)
-		}
-	}))
-}
-
-func (mf *messagePtrField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv." + mf.fieldName + "().InitEmpty()\n")
-	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldName + "())")
-}
-
-func (mf *messagePtrField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
-}
-
-var _ baseField = (*messagePtrField)(nil)
 
 type messageValueField struct {
 	fieldName       string
@@ -409,7 +333,6 @@ func (one oneofField) generateAccessorsTest(baseStruct, *strings.Builder) {}
 
 func (one oneofField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\t(*tv.orig)." + one.originFieldName + " = " + one.testVal + "\n")
-	sb.WriteString("\ttv." + one.fillTestName + "().InitEmpty()\n")
 	sb.WriteString("\tfillTest" + one.fillTestName + "(tv." + one.fillTestName + "())")
 }
 

@@ -23,7 +23,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 func TestSpanCount(t *testing.T) {
@@ -95,17 +95,21 @@ func TestSpanCountWithEmpty(t *testing.T) {
 func TestSpanID(t *testing.T) {
 	sid := InvalidSpanID()
 	assert.EqualValues(t, [8]byte{}, sid.Bytes())
+	assert.True(t, sid.IsEmpty())
 
 	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
 	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
+	assert.False(t, sid.IsEmpty())
 }
 
 func TestTraceID(t *testing.T) {
 	tid := InvalidTraceID()
 	assert.EqualValues(t, [16]byte{}, tid.Bytes())
+	assert.True(t, tid.IsEmpty())
 
 	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	assert.False(t, tid.IsEmpty())
 }
 
 func TestSpanStatusCode(t *testing.T) {
@@ -115,7 +119,6 @@ func TestSpanStatusCode(t *testing.T) {
 	rss.At(0).InstrumentationLibrarySpans().Resize(1)
 	rss.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	status := rss.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Status()
-	status.InitEmpty()
 
 	// Check handling of deprecated status code, see spec here:
 	// https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231

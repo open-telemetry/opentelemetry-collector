@@ -31,6 +31,7 @@ import (
 type pprofExtension struct {
 	config Config
 	logger *zap.Logger
+	file   *os.File
 	server http.Server
 }
 
@@ -58,15 +59,17 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 		if err != nil {
 			return err
 		}
-		pprof.StartCPUProfile(f)
+		p.file = f
+		return pprof.StartCPUProfile(f)
 	}
 
 	return nil
 }
 
 func (p *pprofExtension) Shutdown(context.Context) error {
-	if p.config.SaveToFile != "" {
+	if p.file != nil {
 		pprof.StopCPUProfile()
+		p.file.Close() // ignore the error
 	}
 	return p.server.Close()
 }

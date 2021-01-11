@@ -18,7 +18,7 @@
 package pdata
 
 import (
-	otlpresource "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/resource/v1"
+	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
 // Resource information.
@@ -41,11 +41,6 @@ func newResource(orig *otlpresource.Resource) Resource {
 // This must be used only in testing code since no "Set" method available.
 func NewResource() Resource {
 	return newResource(&otlpresource.Resource{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms Resource) InitEmpty() {
-	*ms.orig = otlpresource.Resource{}
 }
 
 // Attributes returns the Attributes associated with this Resource.

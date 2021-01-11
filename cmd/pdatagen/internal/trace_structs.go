@@ -18,15 +18,15 @@ var traceFile = &File{
 	Name: "trace",
 	imports: []string{
 		`"go.opentelemetry.io/collector/internal/data"`,
-		`otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"`,
-		`otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"`,
+		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
+		`otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
-		`otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"`,
+		`otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"`,
 	},
 	structs: []baseStruct{
 		resourceSpansSlice,

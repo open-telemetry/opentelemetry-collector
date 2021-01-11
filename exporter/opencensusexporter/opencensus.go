@@ -23,13 +23,10 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
@@ -107,7 +104,7 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newTraceExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
+func newTraceExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -120,15 +117,10 @@ func newTraceExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (com
 		// constant in the channel.
 		oce.tracesClients <- nil
 	}
-
-	return exporterhelper.NewTraceExporter(
-		cfg,
-		logger,
-		oce.pushTraceData,
-		exporterhelper.WithShutdown(oce.shutdown))
+	return oce, nil
 }
 
-func newMetricsExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (component.MetricsExporter, error) {
+func newMetricsExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
 	oce, err := newOcExporter(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -141,12 +133,7 @@ func newMetricsExporter(ctx context.Context, cfg *Config, logger *zap.Logger) (c
 		// constant in the channel.
 		oce.metricsClients <- nil
 	}
-
-	return exporterhelper.NewMetricsExporter(
-		cfg,
-		logger,
-		oce.pushMetricsData,
-		exporterhelper.WithShutdown(oce.shutdown))
+	return oce, nil
 }
 
 func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) (int, error) {

@@ -18,11 +18,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// network metric constants
+// labels
 
 const (
-	interfaceLabelName = "interface"
+	deviceLabelName    = "device"
 	directionLabelName = "direction"
+	protocolLabelName  = "protocol"
 	stateLabelName     = "state"
 )
 
@@ -33,13 +34,19 @@ const (
 	transmitDirectionLabelValue = "transmit"
 )
 
+// protocol label values
+
+const (
+	tcpProtocolLabelValue = "tcp"
+)
+
 // descriptors
 
 var networkPacketsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.network.packets")
 	metric.SetDescription("The number of packets transferred.")
-	metric.SetUnit("1")
+	metric.SetUnit("{packets}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -49,9 +56,9 @@ var networkPacketsDescriptor = func() pdata.Metric {
 
 var networkDroppedPacketsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.network.dropped_packets")
+	metric.SetName("system.network.dropped")
 	metric.SetDescription("The number of packets dropped.")
-	metric.SetUnit("1")
+	metric.SetUnit("{packets}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -63,7 +70,7 @@ var networkErrorsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.network.errors")
 	metric.SetDescription("The number of errors encountered")
-	metric.SetUnit("1")
+	metric.SetUnit("{errors}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -75,7 +82,7 @@ var networkIODescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName("system.network.io")
 	metric.SetDescription("The number of bytes transmitted and received")
-	metric.SetUnit("bytes")
+	metric.SetUnit("By")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(true)
@@ -83,11 +90,11 @@ var networkIODescriptor = func() pdata.Metric {
 	return metric
 }()
 
-var networkTCPConnectionsDescriptor = func() pdata.Metric {
+var networkConnectionsDescriptor = func() pdata.Metric {
 	metric := pdata.NewMetric()
-	metric.SetName("system.network.tcp_connections")
-	metric.SetDescription("The number of tcp connections")
-	metric.SetUnit("bytes")
+	metric.SetName("system.network.connections")
+	metric.SetDescription("The number of connections")
+	metric.SetUnit("{connections}")
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	sum := metric.IntSum()
 	sum.SetIsMonotonic(false)

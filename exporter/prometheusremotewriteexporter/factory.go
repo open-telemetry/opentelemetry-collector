@@ -45,13 +45,11 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	}
 
 	client, err := prwCfg.HTTPClientSettings.ToClient()
-
 	if err != nil {
 		return nil, err
 	}
 
 	prwe, err := NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels)
-
 	if err != nil {
 		return nil, err
 	}

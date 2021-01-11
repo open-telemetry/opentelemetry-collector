@@ -34,7 +34,7 @@ const (
 	projectRepoNameKey = "CIRCLE_PROJECT_REPONAME"
 	circleBuildURLKey  = "CIRCLE_BUILD_URL"
 	jobNameKey         = "CIRCLE_JOB"
-	githubAPITokenKey  = "GITHUB_TOKEN"
+	githubAPITokenKey  = "GITHUB_TOKEN" // #nosec G101
 )
 
 func main() {

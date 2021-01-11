@@ -4,9 +4,10 @@ include ./Makefile.Common
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
+							-not -path './cmd/schemagen/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
-							-not -path './internal/data/opentelemetry-proto-gen/*' \
+							-not -path './internal/data/protogen/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
@@ -71,6 +72,14 @@ testbed-list-loadtest:
 .PHONY: testbed-list-correctness
 testbed-list-correctness:
 	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness --test.list '.*'| grep "^Test"
+
+.PHONY: testbed-list-correctness-metrics
+testbed-list-correctness-metrics:
+	RUN_TESTBED=1 $(GOTEST) -v ./testbed/correctness/metrics --test.list '.*'| grep "^TestHarness_"
+
+.PHONY: testbed-correctness-metrics
+testbed-correctness-metrics: otelcol
+	cd ./testbed/correctness/metrics && ./runtests.sh
 
 .PHONY: gotest
 gotest:
@@ -225,7 +234,7 @@ OPENTELEMETRY_PROTO_SRC_DIR=internal/data/opentelemetry-proto
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
 # Target directory to write generated files to.
-PROTO_TARGET_GEN_DIR=internal/data/opentelemetry-proto-gen
+PROTO_TARGET_GEN_DIR=internal/data/protogen
 
 # Go package name to use for generated files.
 PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)

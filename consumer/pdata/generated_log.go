@@ -19,7 +19,7 @@ package pdata
 
 import (
 	"go.opentelemetry.io/collector/internal/data"
-	otlplogs "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/logs/v1"
+	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
 
 // ResourceLogsSlice logically represents a slice of ResourceLogs.
@@ -156,11 +156,6 @@ func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
 // This must be used only in testing code since no "Set" method available.
 func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms ResourceLogs) InitEmpty() {
-	*ms.orig = otlplogs.ResourceLogs{}
 }
 
 // Resource returns the resource associated with this ResourceLogs.
@@ -319,11 +314,6 @@ func NewInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 	return newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms InstrumentationLibraryLogs) InitEmpty() {
-	*ms.orig = otlplogs.InstrumentationLibraryLogs{}
-}
-
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -479,11 +469,6 @@ func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
 // This must be used only in testing code since no "Set" method available.
 func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms LogRecord) InitEmpty() {
-	*ms.orig = otlplogs.LogRecord{}
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.

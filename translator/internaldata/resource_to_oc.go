@@ -111,9 +111,6 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			}
 			getProcessIdentifier(ocNode).Pid = uint32(pid)
 		case conventions.AttributeTelemetrySDKVersion:
-			if ocNode.LibraryInfo == nil {
-				ocNode.LibraryInfo = &occommon.LibraryInfo{}
-			}
 			getLibraryInfo(ocNode).CoreLibraryVersion = val
 		case conventions.OCAttributeExporterVersion:
 			getLibraryInfo(ocNode).ExporterVersion = val

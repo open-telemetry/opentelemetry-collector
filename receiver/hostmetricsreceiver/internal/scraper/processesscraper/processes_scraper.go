@@ -24,8 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const metricsLen = systemSpecificMetricsLen
-
 // scraper for Processes Metrics
 type scraper struct {
 	config    *Config

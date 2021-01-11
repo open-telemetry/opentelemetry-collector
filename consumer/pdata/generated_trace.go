@@ -19,7 +19,7 @@ package pdata
 
 import (
 	"go.opentelemetry.io/collector/internal/data"
-	otlptrace "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
 // ResourceSpansSlice logically represents a slice of ResourceSpans.
@@ -156,11 +156,6 @@ func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 // This must be used only in testing code since no "Set" method available.
 func NewResourceSpans() ResourceSpans {
 	return newResourceSpans(&otlptrace.ResourceSpans{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms ResourceSpans) InitEmpty() {
-	*ms.orig = otlptrace.ResourceSpans{}
 }
 
 // Resource returns the resource associated with this ResourceSpans.
@@ -319,11 +314,6 @@ func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
 	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms InstrumentationLibrarySpans) InitEmpty() {
-	*ms.orig = otlptrace.InstrumentationLibrarySpans{}
-}
-
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -479,11 +469,6 @@ func newSpan(orig *otlptrace.Span) Span {
 // This must be used only in testing code since no "Set" method available.
 func NewSpan() Span {
 	return newSpan(&otlptrace.Span{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms Span) InitEmpty() {
-	*ms.orig = otlptrace.Span{}
 }
 
 // TraceID returns the traceid associated with this Span.
@@ -824,11 +809,6 @@ func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms SpanEvent) InitEmpty() {
-	*ms.orig = otlptrace.Span_Event{}
-}
-
 // Timestamp returns the timestamp associated with this SpanEvent.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -1023,11 +1003,6 @@ func NewSpanLink() SpanLink {
 	return newSpanLink(&otlptrace.Span_Link{})
 }
 
-// Deprecated: This function will be removed soon.
-func (ms SpanLink) InitEmpty() {
-	*ms.orig = otlptrace.Span_Link{}
-}
-
 // TraceID returns the traceid associated with this SpanLink.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
@@ -1121,11 +1096,6 @@ func newSpanStatus(orig *otlptrace.Status) SpanStatus {
 // This must be used only in testing code since no "Set" method available.
 func NewSpanStatus() SpanStatus {
 	return newSpanStatus(&otlptrace.Status{})
-}
-
-// Deprecated: This function will be removed soon.
-func (ms SpanStatus) InitEmpty() {
-	*ms.orig = otlptrace.Status{}
 }
 
 // Code returns the code associated with this SpanStatus.

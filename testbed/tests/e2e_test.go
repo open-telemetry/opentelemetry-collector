@@ -42,7 +42,7 @@ func TestIdleMode(t *testing.T) {
 	)
 	defer tc.Stop()
 
-	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 50})
+	tc.SetResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 4, ExpectedMaxRAM: 55})
 	tc.StartAgent()
 
 	tc.Sleep(tc.Duration)
@@ -53,7 +53,7 @@ func TestBallastMemory(t *testing.T) {
 		ballastSize uint32
 		maxRSS      uint32
 	}{
-		{100, 50},
+		{100, 60},
 		{500, 70},
 		{1000, 100},
 	}

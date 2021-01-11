@@ -19,31 +19,43 @@ package processesscraper
 import (
 	"time"
 
+	"github.com/shirou/gopsutil/load"
+
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 )
 
-const systemSpecificMetricsLen = 2
+const (
+	standardUnixMetricsLen = 1
+	unixMetricsLen         = standardUnixMetricsLen + unixSystemSpecificMetricsLen
+)
 
 func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
 	now := internal.TimeToUnixNano(time.Now())
 	misc, err := miscFunc()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, systemSpecificMetricsLen)
+		return consumererror.NewPartialScrapeError(err, unixMetricsLen)
 	}
 
-	metrics.Resize(startIndex + systemSpecificMetricsLen)
-	initializeProcessesMetric(metrics.At(startIndex+0), processesRunningDescriptor, now, int64(misc.ProcsRunning))
-	initializeProcessesMetric(metrics.At(startIndex+1), processesBlockedDescriptor, now, int64(misc.ProcsBlocked))
+	metrics.Resize(startIndex + unixMetricsLen)
+	initializeProcessesCountMetric(metrics.At(startIndex+0), now, misc)
+	appendUnixSystemSpecificProcessesMetrics(metrics, startIndex+1, now, misc)
 	return nil
 }
 
-func initializeProcessesMetric(metric pdata.Metric, descriptor pdata.Metric, now pdata.TimestampUnixNano, value int64) {
-	descriptor.CopyTo(metric)
+func initializeProcessesCountMetric(metric pdata.Metric, now pdata.TimestampUnixNano, misc *load.MiscStat) {
+	processesCountDescriptor.CopyTo(metric)
 
 	ddps := metric.IntSum().DataPoints()
-	ddps.Resize(1)
-	ddps.At(0).SetTimestamp(now)
-	ddps.At(0).SetValue(value)
+	ddps.Resize(2)
+	initializeProcessesCountDataPoint(ddps.At(0), now, runningStatusLabelValue, int64(misc.ProcsRunning))
+	initializeProcessesCountDataPoint(ddps.At(1), now, blockedStatusLabelValue, int64(misc.ProcsBlocked))
+}
+
+func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, statusLabel string, value int64) {
+	labelsMap := dataPoint.LabelsMap()
+	labelsMap.Insert(statusLabelName, statusLabel)
+	dataPoint.SetTimestamp(now)
+	dataPoint.SetValue(value)
 }

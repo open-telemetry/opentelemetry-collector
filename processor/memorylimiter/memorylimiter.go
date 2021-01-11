@@ -61,7 +61,7 @@ var (
 var getMemoryFn = iruntime.TotalMemory
 
 type memoryLimiter struct {
-	decision dropDecision
+	usageChecker memUsageChecker
 
 	memCheckWait time.Duration
 	ballastSize  uint64
@@ -70,6 +70,8 @@ type memoryLimiter struct {
 	forceDrop int64
 
 	ticker *time.Ticker
+
+	lastGCDone time.Time
 
 	// The function to read the mem values is set as a reference to help with
 	// testing different values.
@@ -83,6 +85,10 @@ type memoryLimiter struct {
 	obsrep *obsreport.ProcessorObsReport
 }
 
+// Minimum interval between forced GC when in soft limited mode. We don't want to
+// do GCs too frequently since it is a CPU-heavy operation.
+const minGCIntervalWhenSoftLimited = 10 * time.Second
+
 // newMemoryLimiter returns a new memorylimiter processor.
 func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	ballastSize := uint64(cfg.BallastSizeMiB) * mibBytes
@@ -94,18 +100,18 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		return nil, errLimitOutOfRange
 	}
 
-	decision, err := getDecision(cfg, logger)
+	usageChecker, err := getMemUsageChecker(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	logger.Info("Memory limiter configured",
-		zap.Uint64("limit_mib", decision.memAllocLimit),
-		zap.Uint64("spike_limit_mib", decision.memSpikeLimit),
+		zap.Uint64("limit_mib", usageChecker.memAllocLimit),
+		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
 	ml := &memoryLimiter{
-		decision:       *decision,
+		usageChecker:   *usageChecker,
 		memCheckWait:   cfg.CheckInterval,
 		ballastSize:    ballastSize,
 		ticker:         time.NewTicker(cfg.CheckInterval),
@@ -120,11 +126,11 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 	return ml, nil
 }
 
-func getDecision(cfg *Config, logger *zap.Logger) (*dropDecision, error) {
+func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, error) {
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
 	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
 	if cfg.MemoryLimitMiB != 0 {
-		return newFixedDecision(memAllocLimit, memSpikeLimit)
+		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit)
 	}
 	totalMemory, err := getMemoryFn()
 	if err != nil {
@@ -134,7 +140,7 @@ func getDecision(cfg *Config, logger *zap.Logger) (*dropDecision, error) {
 		zap.Int64("total_memory", totalMemory),
 		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
 		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageDecision(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
+	return newPercentageMemUsageChecker(totalMemory, int64(cfg.MemoryLimitPercentage), int64(cfg.MemorySpikePercentage))
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
@@ -220,6 +226,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 		ml.logger.Warn(typeStr + " is likely incorrectly configured. " + ballastSizeMibKey +
 			" must be set equal to --mem-ballast-size-mib command line option.")
 	}
+
 	return ms
 }
 
@@ -228,7 +235,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 func (ml *memoryLimiter) startMonitoring() {
 	go func() {
 		for range ml.ticker.C {
-			ml.memCheck()
+			ml.checkMemLimits()
 		}
 	}()
 }
@@ -238,44 +245,95 @@ func (ml *memoryLimiter) forcingDrop() bool {
 	return atomic.LoadInt64(&ml.forceDrop) != 0
 }
 
-func (ml *memoryLimiter) memCheck() {
-	ms := ml.readMemStats()
-	ml.memLimiting(ms)
-}
-
-func (ml *memoryLimiter) memLimiting(ms *runtime.MemStats) {
-	if !ml.decision.shouldDrop(ms) {
-		atomic.StoreInt64(&ml.forceDrop, 0)
-	} else {
-		atomic.StoreInt64(&ml.forceDrop, 1)
-		// Force a GC at this point and see if this is enough to get to
-		// the desired level.
-		runtime.GC()
+func (ml *memoryLimiter) setForcingDrop(b bool) {
+	var i int64
+	if b {
+		i = 1
 	}
+	atomic.StoreInt64(&ml.forceDrop, i)
 }
 
-type dropDecision struct {
+func memstatToZapField(ms *runtime.MemStats) zap.Field {
+	return zap.Uint64("cur_mem_mib", ms.Alloc/1024/1024)
+}
+
+func (ml *memoryLimiter) doGCandReadMemStats() *runtime.MemStats {
+	runtime.GC()
+	ml.lastGCDone = time.Now()
+	ms := ml.readMemStats()
+	ml.logger.Info("Memory usage after GC.", memstatToZapField(ms))
+	return ms
+}
+
+func (ml *memoryLimiter) checkMemLimits() {
+	ms := ml.readMemStats()
+
+	ml.logger.Debug("Currently used memory.", memstatToZapField(ms))
+
+	if ml.usageChecker.aboveHardLimit(ms) {
+		ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
+		ms = ml.doGCandReadMemStats()
+	}
+
+	// Remember current dropping state.
+	wasForcingDrop := ml.forcingDrop()
+
+	// Check if the memory usage is above the soft limit.
+	mustForceDrop := ml.usageChecker.aboveSoftLimit(ms)
+
+	if wasForcingDrop && !mustForceDrop {
+		// Was previously dropping but enough memory is available now, no need to limit.
+		ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
+	}
+
+	if !wasForcingDrop && mustForceDrop {
+		// We are above soft limit, do a GC if it wasn't done recently and see if
+		// it brings memory usage below the soft limit.
+		if time.Since(ml.lastGCDone) > minGCIntervalWhenSoftLimited {
+			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
+			ms = ml.doGCandReadMemStats()
+			// Check the limit again to see if GC helped.
+			mustForceDrop = ml.usageChecker.aboveSoftLimit(ms)
+		}
+
+		if mustForceDrop {
+			ml.logger.Warn("Memory usage is above soft limit. Dropping data.", memstatToZapField(ms))
+		}
+	}
+
+	ml.setForcingDrop(mustForceDrop)
+}
+
+type memUsageChecker struct {
 	memAllocLimit uint64
 	memSpikeLimit uint64
 }
 
-func (d dropDecision) shouldDrop(ms *runtime.MemStats) bool {
-	return d.memAllocLimit <= ms.Alloc || d.memAllocLimit-ms.Alloc <= d.memSpikeLimit
+func (d memUsageChecker) aboveSoftLimit(ms *runtime.MemStats) bool {
+	return ms.Alloc >= d.memAllocLimit-d.memSpikeLimit
 }
 
-func newFixedDecision(memAllocLimit, memSpikeLimit uint64) (*dropDecision, error) {
+func (d memUsageChecker) aboveHardLimit(ms *runtime.MemStats) bool {
+	return ms.Alloc >= d.memAllocLimit
+}
+
+func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) (*memUsageChecker, error) {
 	if memSpikeLimit >= memAllocLimit {
 		return nil, errMemSpikeLimitOutOfRange
 	}
-	return &dropDecision{
+	if memSpikeLimit == 0 {
+		// If spike limit is unspecified use 20% of mem limit.
+		memSpikeLimit = memAllocLimit / 5
+	}
+	return &memUsageChecker{
 		memAllocLimit: memAllocLimit,
 		memSpikeLimit: memSpikeLimit,
 	}, nil
 }
 
-func newPercentageDecision(totalMemory int64, percentageLimit, percentageSpike int64) (*dropDecision, error) {
+func newPercentageMemUsageChecker(totalMemory int64, percentageLimit, percentageSpike int64) (*memUsageChecker, error) {
 	if percentageLimit > 100 || percentageLimit <= 0 || percentageSpike > 100 || percentageSpike <= 0 {
 		return nil, errPercentageLimitOutOfRange
 	}
-	return newFixedDecision(uint64(percentageLimit*totalMemory)/100, uint64(percentageSpike*totalMemory)/100)
+	return newFixedMemUsageChecker(uint64(percentageLimit*totalMemory)/100, uint64(percentageSpike*totalMemory)/100)
 }
