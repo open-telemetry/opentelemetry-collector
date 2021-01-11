@@ -101,11 +101,11 @@ func spanToZipkinSpan(
 
 	zs := &zipkinmodel.SpanModel{}
 
-	if !span.TraceID().IsValid() {
+	if span.TraceID().IsEmpty() {
 		return zs, errors.New("TraceID is invalid")
 	}
 	zs.TraceID = convertTraceID(span.TraceID())
-	if !span.SpanID().IsValid() {
+	if span.SpanID().IsEmpty() {
 		return zs, errors.New("SpanID is invalid")
 	}
 	zs.ID = convertSpanID(span.SpanID())
@@ -114,7 +114,7 @@ func spanToZipkinSpan(
 		tags[tracetranslator.TagW3CTraceState] = string(span.TraceState())
 	}
 
-	if span.ParentSpanID().IsValid() {
+	if !span.ParentSpanID().IsEmpty() {
 		id := convertSpanID(span.ParentSpanID())
 		zs.ParentID = &id
 	}

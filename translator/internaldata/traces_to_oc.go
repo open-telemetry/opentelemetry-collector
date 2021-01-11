@@ -370,7 +370,7 @@ func linksToOC(links pdata.SpanLinkSlice, droppedCount uint32) *octrace.Span_Lin
 }
 
 func traceIDToOC(tid pdata.TraceID) []byte {
-	if !tid.IsValid() {
+	if tid.IsEmpty() {
 		return nil
 	}
 	tidBytes := tid.Bytes()
@@ -378,7 +378,7 @@ func traceIDToOC(tid pdata.TraceID) []byte {
 }
 
 func spanIDToOC(sid pdata.SpanID) []byte {
-	if !sid.IsValid() {
+	if sid.IsEmpty() {
 		return nil
 	}
 	sidBytes := sid.Bytes()
