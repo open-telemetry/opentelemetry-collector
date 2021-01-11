@@ -23,9 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
-const memStatesLen = 2
-
 func appendMemoryUsageStateDataPoints(idps pdata.IntDataPointSlice, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	initializeMemoryUsageDataPoint(idps.At(0), now, metadata.LabelMemState.Used, int64(memInfo.Used))
-	initializeMemoryUsageDataPoint(idps.At(1), now, metadata.LabelMemState.Free, int64(memInfo.Available))
+	idps.Append(createMemoryUsageDataPoint(now, metadata.LabelMemState.Used, int64(memInfo.Used)))
+	idps.Append(createMemoryUsageDataPoint(now, metadata.LabelMemState.Free, int64(memInfo.Available)))
 }

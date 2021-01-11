@@ -62,7 +62,7 @@ func TestScrape(t *testing.T) {
 				isPartial := consumererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, metricsLen, err.(consumererror.PartialScrapeError).Failed)
+					assert.Equal(t, metrics.Len(), err.(consumererror.PartialScrapeError).Failed)
 				}
 
 				return

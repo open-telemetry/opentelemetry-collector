@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
-const metricsLen = 1
-
 // scraper for Memory Metrics
 type scraper struct {
 	config *Config
@@ -44,29 +42,25 @@ func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
 // Scrape
 func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
+	metric := metadata.Metrics.SystemMemoryUsage.New()
 
 	now := internal.TimeToUnixNano(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, consumererror.NewPartialScrapeError(err, metrics.Len())
 	}
 
-	metrics.Resize(metricsLen)
-	initializeMemoryUsageMetric(metrics.At(0), now, memInfo)
+	idps := metric.IntSum().DataPoints()
+	appendMemoryUsageStateDataPoints(idps, now, memInfo)
+
 	return metrics, nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, memInfo *mem.VirtualMemoryStat) {
-	metadata.Metrics.SystemMemoryUsage.New().CopyTo(metric)
-
-	idps := metric.IntSum().DataPoints()
-	idps.Resize(memStatesLen)
-	appendMemoryUsageStateDataPoints(idps, now, memInfo)
-}
-
-func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
+func createMemoryUsageDataPoint(now pdata.TimestampUnixNano, stateLabel string, value int64) pdata.IntDataPoint {
+	dataPoint := pdata.NewIntDataPoint()
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.MemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
+	return dataPoint
 }

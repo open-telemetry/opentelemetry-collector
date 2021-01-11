@@ -28,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
-const metricsLen = 1
+const (
+	gopsCPUTotal string = "cpu-total"
+)
 
 // scraper for CPU Metrics
 type scraper struct {
@@ -57,31 +59,29 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
+	metric := metadata.Metrics.SystemCPUTime.New()
+	metrics.Append(metric)
 
 	now := internal.TimeToUnixNano(time.Now())
 	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, consumererror.NewPartialScrapeError(err, metrics.Len())
 	}
-
-	metrics.Resize(metricsLen)
-	initializeCPUTimeMetric(metrics.At(0), s.startTime, now, cpuTimes)
-	return metrics, nil
-}
-
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, cpuTimes []cpu.TimesStat) {
-	metadata.Metrics.SystemCPUTime.New().CopyTo(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(len(cpuTimes) * cpuStatesLen)
-	for i, cpuTime := range cpuTimes {
-		appendCPUTimeStateDataPoints(ddps, i*cpuStatesLen, startTime, now, cpuTime)
+
+	for _, cpuTime := range cpuTimes {
+		ddps.Append(createCPUTimeDataPoint(s.startTime, now, cpuTime.CPU, metadata.LabelCPUState.User, cpuTime.User))
+		ddps.Append(createCPUTimeDataPoint(s.startTime, now, cpuTime.CPU, metadata.LabelCPUState.System, cpuTime.System))
+		ddps.Append(createCPUTimeDataPoint(s.startTime, now, cpuTime.CPU, metadata.LabelCPUState.Idle, cpuTime.Idle))
+		ddps.Append(createCPUTimeDataPoint(s.startTime, now, cpuTime.CPU, metadata.LabelCPUState.Interrupt, cpuTime.Irq))
 	}
+	return metrics, nil
 }
 
-const gopsCPUTotal string = "cpu-total"
-
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) {
+func createCPUTimeDataPoint(startTime, now pdata.TimestampUnixNano, cpuLabel string, stateLabel string, value float64) pdata.DoubleDataPoint {
+	dataPoint := pdata.NewDoubleDataPoint()
 	labelsMap := dataPoint.LabelsMap()
 	// ignore cpu label if reporting "total" cpu usage
 	if cpuLabel != gopsCPUTotal {
@@ -92,4 +92,5 @@ func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now 
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
+	return dataPoint
 }
