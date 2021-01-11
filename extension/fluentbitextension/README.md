@@ -4,20 +4,45 @@
 at any time.**
 
 The `fluentbit` extension facilitates running a FluentBit subprocess of the
-collector.  This is meant to be used in conjunction with the `fluentforward`
-receiver such that the FluentBit subprocess will be configured to send to the
-TCP socket opened by the `fluentforward` receiver. This extension does not
-actually listen for the logs from FluentBit, it just starts a FluentBit
-subprocess that will generally send to a `fluentforward` receiver, which must
-be configured separately.
+collector. You are responsible for providing a configuration to FluentBit via the `config`
+config option.  This will be provided to FluentBit subprocess, along with a few other
+config options to enhance the integration with the collector.       
 
-You are responsible for providing a configuration to FluentBit via the `config`
-config option.  This will be provided to the subprocess, along with a few other
-config options to enhance the integration with the collector.
+There are 2 typical ways to use Fluent Bit and Collector together: side-by-side
+and chained.
+
+## Side-by-side
+
+With this approach Collector is responsible for traces and metrics and
+Fluent Bit is responsible for logs. `fluentbit` extension is used to start/stop and
+provide configuration to Fluent Bit:
+
+![Side by side](images/sidebyside.png)
+
+### Chained
+
+In this approach we use `fluentbit` extension in conjunction with the `fluentforward`
+receiver such that the FluentBit process will be configured to send to the
+TCP socket opened by the `fluentforward` receiver:
+
+![Side by side](images/chained.png)
+
+`fluentbit` extension does not actually listen for the logs from FluentBit, 
+it just starts a FluentBit subprocess that will generally send to a `fluentforward` 
+receiver, which must be configured separately.
+
+The downside of the chained approach is that log data is serialized and deserialized
+when going from Fluent Bit to Collector, which has performance implications. The benefit
+is that all logs are passed through the Collector which allows log data to be processed
+inside the Collector uniformly with traces and metrics (e.g. the same attributes added
+to all 3 signals if needed) and also allows to export logs in the formats supported
+by the Collector, which Fluent Bit does not necessarily support.
 
 **As of now, this extension is only targeted for Linux environments.  It does not
 work on Windows or MacOS.**
 
+Note: if you are only collecting logs and not traces or metrics it is likely simpler
+to use Fluent Bit alone without Collector.
 
 ## Example Config
 

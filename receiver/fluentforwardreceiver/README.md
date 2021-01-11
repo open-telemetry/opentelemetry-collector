@@ -3,6 +3,10 @@
 This receiver runs a TCP server that accepts events via the [Fluent Forward
 protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1).
 
+This receiver is usually used Collector and Fluent Bit are used in chained configuration.
+For more details see [FluentBit Subprocess Extension
+docs](../../extension/fluentbitextension/README.md#chained).
+
 This receiver:
 
  - Does **not** support TLS or the handshake portion of the Forward protocol.
