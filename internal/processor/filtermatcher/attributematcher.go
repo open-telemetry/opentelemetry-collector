@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 )
 
-type attributesMatcher []attributeMatcher
+type AttributesMatcher []AttributeMatcher
 
 // attributeMatcher is a attribute key/value pair to match to.
-type attributeMatcher struct {
+type AttributeMatcher struct {
 	Key string
 	// If both AttributeValue and StringFilter are nil only check for key existence.
 	AttributeValue *pdata.AttributeValue
@@ -38,16 +38,16 @@ type attributeMatcher struct {
 
 var errUnexpectedAttributeType = errors.New("unexpected attribute type")
 
-func newAttributesMatcher(config filterset.Config, attributes []filterconfig.Attribute) (attributesMatcher, error) {
+func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Attribute) (AttributesMatcher, error) {
 	// Convert attribute values from mp representation to in-memory representation.
-	var rawAttributes []attributeMatcher
+	var rawAttributes []AttributeMatcher
 	for _, attribute := range attributes {
 
 		if attribute.Key == "" {
 			return nil, errors.New("can't have empty key in the list of attributes")
 		}
 
-		entry := attributeMatcher{
+		entry := AttributeMatcher{
 			Key: attribute.Key,
 		}
 		if attribute.Value != nil {
@@ -80,7 +80,7 @@ func newAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 }
 
 // match attributes specification against a span/log.
-func (ma attributesMatcher) Match(attrs pdata.AttributeMap) bool {
+func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
 	// If there are no attributes to match against, the span/log matches.
 	if len(ma) == 0 {
 		return true
