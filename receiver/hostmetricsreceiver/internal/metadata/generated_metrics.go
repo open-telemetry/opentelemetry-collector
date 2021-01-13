@@ -27,20 +27,30 @@ const Type configmodels.Type = "hostmetricsreceiver"
 type metricIntf interface {
 	Name() string
 	New() pdata.Metric
+	Init(metric pdata.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
-	name    string
-	newFunc func() pdata.Metric
+	name     string
+	initFunc func(pdata.Metric)
 }
 
+// Name returns the metric name.
 func (m *metricImpl) Name() string {
 	return m.name
 }
 
+// New creates a metric object preinitialized.
 func (m *metricImpl) New() pdata.Metric {
-	return m.newFunc()
+	metric := pdata.NewMetric()
+	m.Init(metric)
+	return metric
+}
+
+// Init initializes the provided metric object.
+func (m *metricImpl) Init(metric pdata.Metric) {
+	m.initFunc(metric)
 }
 
 type metricStruct struct {
@@ -77,30 +87,24 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 var Metrics = &metricStruct{
 	&metricImpl{
 		"system.cpu.time",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("system.cpu.time")
 			metric.SetDescription("Total CPU seconds broken down by different states.")
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 			metric.DoubleSum().SetIsMonotonic(true)
 			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"system.memory.usage",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("system.memory.usage")
 			metric.SetDescription("Bytes of memory in use.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(false)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 }
