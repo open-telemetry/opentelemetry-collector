@@ -138,7 +138,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && go install github.com/securego/gosec/v2/cmd/gosec
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
@@ -181,12 +180,30 @@ add-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Adding tag ${TAG}"
 	@git tag -a ${TAG} -s -m "Version ${TAG}"
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Adding tag "$${dir:2}/$${TAG}" && \
+	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
+	done
+
+.PHONY: push-tag
+push-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Pushing tag ${TAG}"
+	@git push upstream ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
+	 	git push upstream "$${dir:2}/$${TAG}"); \
+	done
 
 .PHONY: delete-tag
 delete-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Deleting tag ${TAG}"
 	@git tag -d ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
+	 	git tag -d "$${dir:2}/$${TAG}" ); \
+	done
 
 .PHONY: docker-otelcol
 docker-otelcol:
