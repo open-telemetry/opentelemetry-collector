@@ -36,16 +36,19 @@ type metricImpl struct {
 	initFunc func(pdata.Metric)
 }
 
+// Name returns the metric name.
 func (m *metricImpl) Name() string {
 	return m.name
 }
 
+// New creates a metric object preinitialized.
 func (m *metricImpl) New() pdata.Metric {
 	metric := pdata.NewMetric()
 	m.Init(metric)
 	return metric
 }
 
+// Init initializes the provided metric object.
 func (m *metricImpl) Init(metric pdata.Metric) {
 	m.initFunc(metric)
 }
