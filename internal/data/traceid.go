@@ -38,7 +38,7 @@ func NewTraceID(bytes [16]byte) TraceID {
 
 // HexString returns hex representation of the ID.
 func (tid TraceID) HexString() string {
-	if !tid.IsValid() {
+	if tid.IsEmpty() {
 		return ""
 	}
 	return hex.EncodeToString(tid.id[:])
@@ -46,7 +46,7 @@ func (tid TraceID) HexString() string {
 
 // Size returns the size of the data to serialize.
 func (tid *TraceID) Size() int {
-	if !tid.IsValid() {
+	if tid.IsEmpty() {
 		return 0
 	}
 	return traceIDSize
@@ -58,8 +58,8 @@ func (tid TraceID) Equal(that TraceID) bool {
 }
 
 // IsValid returns true if id contains at leas one non-zero byte.
-func (tid TraceID) IsValid() bool {
-	return tid.id != [16]byte{}
+func (tid TraceID) IsEmpty() bool {
+	return tid.id == [16]byte{}
 }
 
 // Bytes returns the byte array representation of the TraceID.
@@ -69,7 +69,7 @@ func (tid TraceID) Bytes() [16]byte {
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
 func (tid *TraceID) MarshalTo(data []byte) (n int, err error) {
-	if !tid.IsValid() {
+	if tid.IsEmpty() {
 		return 0, nil
 	}
 	return marshalBytes(data, tid.id[:])
@@ -92,7 +92,7 @@ func (tid *TraceID) Unmarshal(data []byte) error {
 
 // MarshalJSON converts trace id into a hex string enclosed in quotes.
 func (tid TraceID) MarshalJSON() ([]byte, error) {
-	if !tid.IsValid() {
+	if tid.IsEmpty() {
 		return []byte(`""`), nil
 	}
 	return marshalJSON(tid.id[:])

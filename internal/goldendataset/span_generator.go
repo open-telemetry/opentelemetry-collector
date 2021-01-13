@@ -79,10 +79,10 @@ func GenerateSpans(count int, startPos int, pictFile string, random io.Reader) (
 			parentID = data.NewSpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
-			if !traceID.IsValid() {
+			if traceID.IsEmpty() {
 				traceID = generateTraceID(random)
 			}
-			if !parentID.IsValid() {
+			if parentID.IsEmpty() {
 				parentID = generateSpanID(random)
 			}
 		}

@@ -36,7 +36,7 @@ func NewSpanID(bytes [8]byte) SpanID {
 
 // HexString returns hex representation of the ID.
 func (sid SpanID) HexString() string {
-	if !sid.IsValid() {
+	if sid.IsEmpty() {
 		return ""
 	}
 	return hex.EncodeToString(sid.id[:])
@@ -44,7 +44,7 @@ func (sid SpanID) HexString() string {
 
 // Size returns the size of the data to serialize.
 func (sid *SpanID) Size() int {
-	if !sid.IsValid() {
+	if sid.IsEmpty() {
 		return 0
 	}
 	return spanIDSize
@@ -56,8 +56,8 @@ func (sid SpanID) Equal(that SpanID) bool {
 }
 
 // IsValid returns true if id contains at least one non-zero byte.
-func (sid SpanID) IsValid() bool {
-	return sid.id != [8]byte{}
+func (sid SpanID) IsEmpty() bool {
+	return sid.id == [8]byte{}
 }
 
 // Bytes returns the byte array representation of the SpanID.
@@ -67,7 +67,7 @@ func (sid SpanID) Bytes() [8]byte {
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
 func (sid *SpanID) MarshalTo(data []byte) (n int, err error) {
-	if !sid.IsValid() {
+	if sid.IsEmpty() {
 		return 0, nil
 	}
 	return marshalBytes(data, sid.id[:])
@@ -90,7 +90,7 @@ func (sid *SpanID) Unmarshal(data []byte) error {
 
 // MarshalJSON converts SpanID into a hex string enclosed in quotes.
 func (sid SpanID) MarshalJSON() ([]byte, error) {
-	if !sid.IsValid() {
+	if sid.IsEmpty() {
 		return []byte(`""`), nil
 	}
 	return marshalJSON(sid.id[:])
