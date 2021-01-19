@@ -26,11 +26,12 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/metric/controller/push"
-	"go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -48,11 +49,11 @@ func initProvider() func() {
 		otelAgentAddr = "0.0.0.0:55680"
 	}
 
-	exp, err := otlp.NewExporter(
-		otlp.WithInsecure(),
-		otlp.WithAddress(otelAgentAddr),
-		otlp.WithGRPCDialOption(grpc.WithBlock()), // useful for testing
-	)
+	exp, err := otlp.NewExporter(ctx, otlpgrpc.NewDriver(
+		otlpgrpc.WithInsecure(),
+		otlpgrpc.WithEndpoint(otelAgentAddr),
+		otlpgrpc.WithDialOption(grpc.WithBlock()), // useful for testing
+	))
 	handleErr(err, "failed to create exporter")
 
 	res, err := resource.New(ctx,
@@ -70,24 +71,23 @@ func initProvider() func() {
 		sdktrace.WithSpanProcessor(bsp),
 	)
 
-	pusher := push.New(
-		basic.New(
+	pusher := controller.New(
+		processor.New(
 			simple.NewWithExactDistribution(),
 			exp,
 		),
-		exp,
-		push.WithPeriod(7*time.Second),
+		controller.WithCollectPeriod(7*time.Second),
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetMeterProvider(pusher.MeterProvider())
-	pusher.Start()
+	pusher.Start(context.Background())
 
 	return func() {
 		handleErr(tracerProvider.Shutdown(ctx), "failed to shutdown provider")
-		pusher.Stop() // pushes any last exports to the receiver
+		pusher.Stop(context.Background()) // pushes any last exports to the receiver
 		handleErr(exp.Shutdown(ctx), "failed to stop exporter")
 	}
 }
