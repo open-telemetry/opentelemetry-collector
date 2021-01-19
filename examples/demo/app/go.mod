@@ -6,9 +6,9 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	go.opentelemetry.io/otel v0.15.0
+	go.opentelemetry.io/otel v0.16.0
 	go.opentelemetry.io/otel/exporters/otlp v0.14.0
-	go.opentelemetry.io/otel/sdk v0.15.0
+	go.opentelemetry.io/otel/sdk v0.16.0
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211 // indirect
 	golang.org/x/text v0.3.3 // indirect
