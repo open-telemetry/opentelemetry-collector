@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
@@ -77,9 +78,9 @@ func TestScrape(t *testing.T) {
 			assert.Equal(t, 3, metrics.Len())
 
 			// expect a single datapoint for 1m, 5m & 15m load metrics
-			assertMetricHasSingleDatapoint(t, metrics.At(0), loadAvg1MDescriptor)
-			assertMetricHasSingleDatapoint(t, metrics.At(1), loadAvg5mDescriptor)
-			assertMetricHasSingleDatapoint(t, metrics.At(2), loadAvg15mDescriptor)
+			assertMetricHasSingleDatapoint(t, metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m.New())
+			assertMetricHasSingleDatapoint(t, metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m.New())
+			assertMetricHasSingleDatapoint(t, metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m.New())
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})

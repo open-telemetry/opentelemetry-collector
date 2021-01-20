@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 - Remove deprecated `queued_retry` processor
+- Remove deprecated configs from `resource` processor: `type` (set "opencensus.type" key in "attributes.upsert" map instead) and `labels` (use "attributes.upsert" instead).
 
 ## v0.18.0 Beta
 
