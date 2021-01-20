@@ -17,7 +17,6 @@ Supported processors (sorted alphabetically):
 - [Batch Processor](batchprocessor/README.md)
 - [Filter Processor](filterprocessor/README.md)
 - [Memory Limiter Processor](memorylimiter/README.md)
-- [Queued Retry Processor](queuedprocessor/README.md)
 - [Resource Processor](resourceprocessor/README.md)
 - [Probabilistic Sampling Processor](samplingprocessor/probabilisticsamplerprocessor/README.md)
 - [Span Processor](spanprocessor/README.md)

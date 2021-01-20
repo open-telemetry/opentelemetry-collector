@@ -13,7 +13,6 @@ processors:
       - key: key1
         value: 123
         action: insert
-  queued_retry:
   batch:
 
 extensions:
@@ -26,6 +25,6 @@ service:
   pipelines:
     traces:
       receivers: [jaeger]
-      processors: [attributes, batch, queued_retry]
+      processors: [attributes, batch]
       exporters: [opencensus]
 

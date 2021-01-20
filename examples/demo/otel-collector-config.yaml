@@ -25,7 +25,6 @@ exporters:
 
 processors:
   batch:
-  queued_retry:
 
 extensions:
   health_check:
@@ -39,7 +38,7 @@ service:
   pipelines:
     traces:
       receivers: [opencensus]
-      processors: [batch, queued_retry]
+      processors: [batch]
       exporters: [logging, zipkin, jaeger]
     metrics:
       receivers: [opencensus]

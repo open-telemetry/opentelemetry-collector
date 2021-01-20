@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
@@ -65,7 +64,6 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	var views []*view.View
 	views = append(views, obsreport.Configure(level)...)
 	views = append(views, processor.MetricViews()...)
-	views = append(views, queuedprocessor.MetricViews()...)
 	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, processMetricsViews.Views()...)

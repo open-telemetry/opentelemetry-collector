@@ -2,10 +2,12 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+- Remove deprecated `queued_retry` processor
+
 ## v0.18.0 Beta
 
 ## 🛑 Breaking changes 🛑
-
 - Rename host metrics according to metrics spec and rename `swap` scraper to `paging` (#2311)
 
 ## 💡 Enhancements 💡
