@@ -18,13 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const (
@@ -56,10 +53,10 @@ func createDefaultConfig() configmodels.Processor {
 
 func createTraceProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
-	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
+	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -72,10 +69,10 @@ func createTraceProcessor(
 
 func createMetricsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
-	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
+	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -88,10 +85,10 @@ func createMetricsProcessor(
 
 func createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
-	attrProc, err := createAttrProcessor(cfg.(*Config), params.Logger)
+	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +99,7 @@ func createLogsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createAttrProcessor(cfg *Config, logger *zap.Logger) (*processorhelper.AttrProc, error) {
-	handleDeprecatedFields(cfg, logger)
+func createAttrProcessor(cfg *Config) (*processorhelper.AttrProc, error) {
 	if len(cfg.AttributesActions) == 0 {
 		return nil, fmt.Errorf("error creating \"%q\" processor due to missing required field \"attributes\"", cfg.Name())
 	}
@@ -112,30 +108,4 @@ func createAttrProcessor(cfg *Config, logger *zap.Logger) (*processorhelper.Attr
 		return nil, fmt.Errorf("error creating \"%q\" processor: %w", cfg.Name(), err)
 	}
 	return attrProc, nil
-}
-
-// handleDeprecatedFields converts deprecated ResourceType and Labels fields into Attributes.Upsert
-func handleDeprecatedFields(cfg *Config, logger *zap.Logger) {
-
-	// Upsert value from deprecated ResourceType config to resource attributes with "opencensus.resourcetype" key
-	if cfg.ResourceType != "" {
-		logger.Warn("[DEPRECATED] \"type\" field is deprecated and will be removed in future release. " +
-			"Please set the value to \"attributes\" with key=opencensus.resourcetype and action=upsert.")
-		upsertResourceType := processorhelper.ActionKeyValue{
-			Action: processorhelper.UPSERT,
-			Key:    conventions.OCAttributeResourceType,
-			Value:  cfg.ResourceType,
-		}
-		cfg.AttributesActions = append(cfg.AttributesActions, upsertResourceType)
-	}
-
-	// Upsert values from deprecated Labels config to resource attributes
-	if len(cfg.Labels) > 0 {
-		logger.Warn("[DEPRECATED] \"labels\" field is deprecated and will be removed in future release. " +
-			"Please use \"attributes\" field instead.")
-		for k, v := range cfg.Labels {
-			action := processorhelper.ActionKeyValue{Action: processorhelper.UPSERT, Key: k, Value: v}
-			cfg.AttributesActions = append(cfg.AttributesActions, action)
-		}
-	}
 }
