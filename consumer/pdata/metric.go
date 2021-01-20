@@ -40,18 +40,18 @@ type Metrics struct {
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
-// NewMetricData creates a new MetricData.
+// NewMetrics creates a new Metrics.
 func NewMetrics() Metrics {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
 	return Metrics{&orig}
 }
 
-// MetricDataFromOtlp creates the internal MetricData representation from the OTLP.
+// MetricsFromOtlp creates the internal Metrics representation from the OTLP.
 func MetricsFromOtlp(orig []*otlpmetrics.ResourceMetrics) Metrics {
 	return Metrics{&orig}
 }
 
-// MetricDataToOtlp converts the internal MetricData to the OTLP.
+// MetricsToOtlp converts the internal Metrics to the OTLP.
 func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
 	return *md.orig
 }

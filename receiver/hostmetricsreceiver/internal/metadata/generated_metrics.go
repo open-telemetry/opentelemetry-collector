@@ -24,7 +24,8 @@ import (
 // Type is the component type name.
 const Type configmodels.Type = "hostmetricsreceiver"
 
-type metricIntf interface {
+// MetricIntf is an interface to generically interact with generated metric.
+type MetricIntf interface {
 	Name() string
 	New() pdata.Metric
 	Init(metric pdata.Metric)
@@ -54,37 +55,76 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	SystemCPUTime     metricIntf
-	SystemMemoryUsage metricIntf
+	SystemCPULoadAverage15m MetricIntf
+	SystemCPULoadAverage1m  MetricIntf
+	SystemCPULoadAverage5m  MetricIntf
+	SystemCPUTime           MetricIntf
+	SystemMemoryUsage       MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
+		"system.cpu.load_average.15m",
+		"system.cpu.load_average.1m",
+		"system.cpu.load_average.5m",
 		"system.cpu.time",
 		"system.memory.usage",
 	}
 }
 
-var metricsByName = map[string]metricIntf{
-	"system.cpu.time":     Metrics.SystemCPUTime,
-	"system.memory.usage": Metrics.SystemMemoryUsage,
+var metricsByName = map[string]MetricIntf{
+	"system.cpu.load_average.15m": Metrics.SystemCPULoadAverage15m,
+	"system.cpu.load_average.1m":  Metrics.SystemCPULoadAverage1m,
+	"system.cpu.load_average.5m":  Metrics.SystemCPULoadAverage5m,
+	"system.cpu.time":             Metrics.SystemCPUTime,
+	"system.memory.usage":         Metrics.SystemMemoryUsage,
 }
 
-func (m *metricStruct) ByName(n string) metricIntf {
+func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
-		Metrics.SystemCPUTime.Name():     Metrics.SystemCPUTime.New,
-		Metrics.SystemMemoryUsage.Name(): Metrics.SystemMemoryUsage.New,
+		Metrics.SystemCPULoadAverage15m.Name(): Metrics.SystemCPULoadAverage15m.New,
+		Metrics.SystemCPULoadAverage1m.Name():  Metrics.SystemCPULoadAverage1m.New,
+		Metrics.SystemCPULoadAverage5m.Name():  Metrics.SystemCPULoadAverage5m.New,
+		Metrics.SystemCPUTime.Name():           Metrics.SystemCPUTime.New,
+		Metrics.SystemMemoryUsage.Name():       Metrics.SystemMemoryUsage.New,
 	}
 }
 
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
+	&metricImpl{
+		"system.cpu.load_average.15m",
+		func(metric pdata.Metric) {
+			metric.SetName("system.cpu.load_average.15m")
+			metric.SetDescription("Average CPU Load over 15 minutes.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		},
+	},
+	&metricImpl{
+		"system.cpu.load_average.1m",
+		func(metric pdata.Metric) {
+			metric.SetName("system.cpu.load_average.1m")
+			metric.SetDescription("Average CPU Load over 1 minute.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		},
+	},
+	&metricImpl{
+		"system.cpu.load_average.5m",
+		func(metric pdata.Metric) {
+			metric.SetName("system.cpu.load_average.5m")
+			metric.SetDescription("Average CPU Load over 5 minutes.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		},
+	},
 	&metricImpl{
 		"system.cpu.time",
 		func(metric pdata.Metric) {

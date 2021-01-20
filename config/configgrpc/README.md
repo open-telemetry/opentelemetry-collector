@@ -29,7 +29,7 @@ README](../configtls/README.md).
 Example:
 
 ```yaml
-exporter:
+exporters:
   otlp:
     endpoint: otelcol2:55690
     headers:

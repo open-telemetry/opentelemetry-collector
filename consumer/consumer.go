@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// MetricsConsumer is the new metrics consumer interface that receives pdata.MetricData, processes it
+// MetricsConsumer is the new metrics consumer interface that receives pdata.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type MetricsConsumer interface {
 	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
