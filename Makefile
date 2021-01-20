@@ -25,15 +25,14 @@ TOOLS_MOD_DIR := ./internal/tools
 
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
+
+BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
+GIT_SHA=$(shell git rev-parse --short HEAD)
+BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
+VERSION=$(shell git describe --match "v[0-9]*" HEAD)
+BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
-
-GIT_SHA=$(shell git rev-parse --short HEAD)
-BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
-BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
-ifdef VERSION
-BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
-endif
 BUILD_X3=-X $(BUILD_INFO_IMPORT_PATH).BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
