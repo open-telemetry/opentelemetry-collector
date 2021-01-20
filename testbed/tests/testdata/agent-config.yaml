@@ -14,14 +14,15 @@ exporters:
     loglevel: info
 
 processors:
-  queued_retry:
+  batch:
 
 service:
   pipelines:
     traces:
       receivers: [jaeger]
-      processors: [queued_retry]
+      processors: [batch]
       exporters: [opencensus,logging]
     metrics:
       receivers: [opencensus]
+      processors: [batch]
       exporters: [opencensus,logging]

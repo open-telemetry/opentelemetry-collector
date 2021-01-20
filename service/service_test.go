@@ -557,8 +557,8 @@ func TestSetFlag(t *testing.T) {
 		}
 		sort.Strings(processors)
 		// batch/foo is not added to the pipeline
-		assert.Equal(t, []string{"attributes", "batch", "batch/foo", "queued_retry"}, processors)
-		assert.Equal(t, []string{"attributes", "batch", "queued_retry"}, cfg.Service.Pipelines["traces"].Processors)
+		assert.Equal(t, []string{"attributes", "batch", "batch/foo"}, processors)
+		assert.Equal(t, []string{"attributes", "batch"}, cfg.Service.Pipelines["traces"].Processors)
 	})
 	t.Run("ok", func(t *testing.T) {
 		app, err := New(params)
@@ -581,7 +581,7 @@ func TestSetFlag(t *testing.T) {
 		err = config.ValidateConfig(cfg, zap.NewNop())
 		require.NoError(t, err)
 
-		assert.Equal(t, 3, len(cfg.Processors))
+		assert.Equal(t, 2, len(cfg.Processors))
 		batch := cfg.Processors["batch"].(*batchprocessor.Config)
 		assert.Equal(t, time.Second*2, batch.Timeout)
 		jaeger := cfg.Receivers["jaeger"].(*jaegerreceiver.Config)

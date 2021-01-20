@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/filterprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
-	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/processor/resourceprocessor"
 	"go.opentelemetry.io/collector/processor/samplingprocessor/probabilisticsamplerprocessor"
 	"go.opentelemetry.io/collector/processor/spanprocessor"
@@ -101,7 +100,6 @@ func Components() (
 	processors, err := component.MakeProcessorFactoryMap(
 		attributesprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
-		queuedprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiter.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
