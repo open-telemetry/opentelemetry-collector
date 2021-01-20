@@ -10,16 +10,13 @@ receivers:
     protocols:
       grpc:
       http:
-
   opencensus:
-
   jaeger:
     protocols:
       grpc:
       thrift_binary:
       thrift_compact:
       thrift_http:
-
   zipkin:
 
   # Collect own metrics
@@ -39,14 +36,11 @@ exporters:
     logLevel: debug
 
 service:
-
   pipelines:
-
     traces:
       receivers: [otlp, opencensus, jaeger, zipkin]
       processors: [batch]
       exporters: [logging]
-
     metrics:
       receivers: [otlp, opencensus, prometheus]
       processors: [batch]

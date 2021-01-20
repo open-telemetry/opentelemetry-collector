@@ -26,7 +26,7 @@ services:
       - "8888:8888"   # Prometheus metrics exposed by the collector
       - "8889:8889"   # Prometheus exporter metrics
       - "13133:13133" # health_check extension
-      - "55678"       # OpenCensus receiver
+      - "4317"        # OTLP gRPC receiver
       - "55670:55679" # zpages extension
     depends_on:
       - jaeger-all-in-one
@@ -39,10 +39,13 @@ services:
     volumes:
       - ./otel-agent-config.yaml:/etc/otel-agent-config.yaml
     ports:
-      - "1777:1777"   # pprof extension
       - "8887:8888"   # Prometheus metrics exposed by the agent
-      - "14268"       # Jaeger receiver
+      - "14250"       # Jaeger grpc receiver
+      - "14268"       # Jaeger http thrift receiver
       - "55678"       # OpenCensus receiver
+      - "4317"        # OTLP gRPC receiver
+      - "9411"        # Zipkin receiver
+      - "1777:1777"   # pprof extension
       - "55679:55679" # zpages extension
       - "13133"       # health_check
     depends_on:
