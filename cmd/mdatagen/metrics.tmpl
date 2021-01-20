@@ -24,7 +24,8 @@ import (
 // Type is the component type name.
 const Type configmodels.Type = "{{ .Name }}"
 
-type metricIntf interface {
+// MetricIntf is an interface to generically interact with generated metric.
+type MetricIntf interface {
 	Name() string
 	New() pdata.Metric
 	Init(metric pdata.Metric)
@@ -55,7 +56,7 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 
 type metricStruct struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} metricIntf
+	{{ $name.Render }} MetricIntf
 	{{- end }}
 }
 
@@ -68,13 +69,13 @@ func (m *metricStruct) Names() []string {
     }
 }
 
-var metricsByName = map[string]metricIntf {
+var metricsByName = map[string]MetricIntf {
 {{- range $name, $metric := .Metrics }}
   "{{ $name }}": Metrics.{{ $name.Render }},
 {{- end }}
 }
 
-func (m *metricStruct) ByName(n string) metricIntf {
+func (m *metricStruct) ByName(n string) MetricIntf {
     return metricsByName[n]
 }
 
