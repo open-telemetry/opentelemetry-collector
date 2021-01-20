@@ -83,11 +83,11 @@ testbed-correctness-metrics: otelcol
 
 .PHONY: gotest
 gotest:
-	@$(MAKE) for-all CMD="make test"
+	@$(MAKE) for-all-make CMD="test"
 
 .PHONY: gobenchmark
 gobenchmark:
-	@$(MAKE) for-all CMD="make benchmark"
+	@$(MAKE) for-all-make CMD="benchmark"
 
 .PHONY: gotest-with-cover
 gotest-with-cover:
@@ -98,31 +98,31 @@ gotest-with-cover:
 
 .PHONY: goaddlicense
 goaddlicense:
-	@$(MAKE) for-all CMD="make addlicense"
+	@$(MAKE) for-all-make CMD="addlicense"
 
 .PHONY: gochecklicense
 gochecklicense:
-	@$(MAKE) for-all CMD="make checklicense"
+	@$(MAKE) for-all-make CMD="checklicense"
 
 .PHONY: gomisspell
 gomisspell:
-	@$(MAKE) for-all CMD="make misspell"
+	@$(MAKE) for-all-make CMD="misspell"
 
 .PHONY: gomisspell-correction
 gomisspell-correction:
-	@$(MAKE) for-all CMD="make misspell-correction"
+	@$(MAKE) for-all-make CMD="misspell-correction"
 
 .PHONY: golint
 golint:
-	@$(MAKE) for-all CMD="make lint"
+	@$(MAKE) for-all-make CMD="lint"
 
 .PHONY: goimpi
 goimpi:
-	@$(MAKE) for-all CMD="make impi"
+	@$(MAKE) for-all-make CMD="impi"
 
 .PHONY: gofmt
 gofmt:
-	@$(MAKE) for-all CMD="make fmt"
+	@$(MAKE) for-all-make CMD="fmt"
 
 .PHONY: gotidy
 gotidy:
@@ -167,6 +167,15 @@ for-all:
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \
+	done
+
+.PHONY: for-all-make
+for-all-make:
+	@echo "running 'make $${CMD}' in root"
+	@$(MAKE) $${CMD}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo "running 'make $${CMD}' in $${dir:2}" && \
+	 	$(MAKE) -C $${dir:2} $${CMD} ); \
 	done
 
 .PHONY: check-component
