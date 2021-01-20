@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cloudprovider
+package vendorconventions
 
 // OpenTelemetry semantic convention values for AWS-specific resource attributes
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud_provider/aws/README.md
