@@ -26,10 +26,4 @@ type Config struct {
 	// AttributesActions specifies the list of actions to be applied on resource attributes.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	AttributesActions []processorhelper.ActionKeyValue `mapstructure:"attributes"`
-
-	// ResourceType field is deprecated. Set "opencensus.type" key in "attributes.upsert" map instead.
-	ResourceType string `mapstructure:"type"`
-
-	// Deprecated: Use "attributes.upsert" instead.
-	Labels map[string]string `mapstructure:"labels"`
 }

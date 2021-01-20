@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -84,34 +83,4 @@ func TestInvalidAttributeActions(t *testing.T) {
 
 	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, nil)
 	assert.Error(t, err)
-}
-
-func TestDeprecatedConfig(t *testing.T) {
-	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "host",
-		Labels: map[string]string{
-			"cloud.zone": "zone-1",
-		},
-	}
-
-	handleDeprecatedFields(cfg, zap.NewNop())
-
-	assert.EqualValues(t, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: "resource",
-			NameVal: "resource",
-		},
-		ResourceType: "host",
-		Labels: map[string]string{
-			"cloud.zone": "zone-1",
-		},
-		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "opencensus.resourcetype", Value: "host", Action: processorhelper.UPSERT},
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
-		},
-	}, cfg)
 }
