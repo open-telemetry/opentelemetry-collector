@@ -208,27 +208,24 @@ delete-tag:
 docker-otelcol:
 	COMPONENT=otelcol $(MAKE) docker-component
 
-.PHONY: binaries
-binaries: otelcol
-
 .PHONY: binaries-all-sys
 binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
 
 .PHONY: binaries-darwin_amd64
 binaries-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcol
 
 .PHONY: binaries-linux_amd64
 binaries-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux   GOARCH=amd64 $(MAKE) otelcol
 
 .PHONY: binaries-linux_arm64
 binaries-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+	GOOS=linux   GOARCH=arm64 $(MAKE) otelcol
 
 .PHONY: binaries-windows_amd64
 binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) binaries
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcol
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
