@@ -503,7 +503,7 @@ func (app *Application) handleServicezRequest(w http.ResponseWriter, r *http.Req
 		ComponentEndpoint: extensionzPath,
 		Link:              true,
 	})
-	internal.WriteHTMLPropertiesTable(w, internal.PropertiesTableData{Name: "Build And Runtime", Properties: version.InfoVar})
+	internal.WriteHTMLPropertiesTable(w, internal.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
 	internal.WriteHTMLFooter(w)
 }
 
