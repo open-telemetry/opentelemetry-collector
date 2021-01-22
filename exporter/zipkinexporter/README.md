@@ -3,7 +3,7 @@
 Exports data to a [Zipkin](https://zipkin.io/) back-end.
 By default, this exporter requires TLS and offers queued retry capabilities.
 
-Supported pipeline types: traces, metrics
+Supported pipeline types: traces
 
 ## Getting Started
 
