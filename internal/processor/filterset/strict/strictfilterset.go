@@ -24,24 +24,20 @@ type FilterSet struct {
 }
 
 // NewFilterSet constructs a FilterSet of exact string matches.
-func NewFilterSet(filters []string) (*FilterSet, error) {
+func NewFilterSet(filters []string) *FilterSet {
 	fs := &FilterSet{
 		filters: make(map[string]struct{}, len(filters)),
 	}
 
-	fs.addFilters(filters)
-	return fs, nil
+	for _, f := range filters {
+		fs.filters[f] = struct{}{}
+	}
+
+	return fs
 }
 
 // Matches returns true if the given string matches any of the FilterSet's filters.
 func (sfs *FilterSet) Matches(toMatch string) bool {
 	_, ok := sfs.filters[toMatch]
 	return ok
-}
-
-// addFilters all the given filters.
-func (sfs *FilterSet) addFilters(filters []string) {
-	for _, f := range filters {
-		sfs.filters[f] = struct{}{}
-	}
 }
