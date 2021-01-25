@@ -354,7 +354,7 @@ func (es ${structName}) Resize(newLen int) {
 	}
 
 	// Add extra empty elements to the array.
-	empty := otlpcommon.AnyValue{}
+	empty := ${originName}{}
 	for i := oldLen; i < newLen; i++ {
 		*es.orig = append(*es.orig, empty)
 	}
