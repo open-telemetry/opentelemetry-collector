@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
@@ -139,10 +140,10 @@ func TestScrape(t *testing.T) {
 
 			idx := 0
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+0), networkPacketsDescriptor, test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), networkDroppedPacketsDescriptor, test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), networkErrorsDescriptor, test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), networkIODescriptor, test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+0), metadata.Metrics.SystemNetworkPackets.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), metadata.Metrics.SystemNetworkDropped.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), metadata.Metrics.SystemNetworkErrors.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), metadata.Metrics.SystemNetworkIo.New(), test.expectedStartTime)
 				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
 				idx += 4
 			}
@@ -159,14 +160,14 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pd
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, deviceLabelName)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, directionLabelName, transmitDirectionLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, directionLabelName, receiveDirectionLabelValue)
+	internal.AssertIntSumMetricLabelExists(t, metric, 0, "device")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "direction", "transmit")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "direction", "receive")
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, networkConnectionsDescriptor, metric)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, protocolLabelName, tcpProtocolLabelValue)
-	internal.AssertIntSumMetricLabelExists(t, metric, 0, stateLabelName)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "protocol", "tcp")
+	internal.AssertIntSumMetricLabelExists(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.IntSum().DataPoints().Len())
 }

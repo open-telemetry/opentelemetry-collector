@@ -69,6 +69,11 @@ type metricStruct struct {
 	SystemFilesystemInodesUsage MetricIntf
 	SystemFilesystemUsage       MetricIntf
 	SystemMemoryUsage           MetricIntf
+	SystemNetworkConnections    MetricIntf
+	SystemNetworkDropped        MetricIntf
+	SystemNetworkErrors         MetricIntf
+	SystemNetworkIo             MetricIntf
+	SystemNetworkPackets        MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -88,6 +93,11 @@ func (m *metricStruct) Names() []string {
 		"system.filesystem.inodes.usage",
 		"system.filesystem.usage",
 		"system.memory.usage",
+		"system.network.connections",
+		"system.network.dropped",
+		"system.network.errors",
+		"system.network.io",
+		"system.network.packets",
 	}
 }
 
@@ -106,6 +116,11 @@ var metricsByName = map[string]MetricIntf{
 	"system.filesystem.inodes.usage": Metrics.SystemFilesystemInodesUsage,
 	"system.filesystem.usage":        Metrics.SystemFilesystemUsage,
 	"system.memory.usage":            Metrics.SystemMemoryUsage,
+	"system.network.connections":     Metrics.SystemNetworkConnections,
+	"system.network.dropped":         Metrics.SystemNetworkDropped,
+	"system.network.errors":          Metrics.SystemNetworkErrors,
+	"system.network.io":              Metrics.SystemNetworkIo,
+	"system.network.packets":         Metrics.SystemNetworkPackets,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -128,6 +143,11 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.New,
 		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.New,
 		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.New,
+		Metrics.SystemNetworkConnections.Name():    Metrics.SystemNetworkConnections.New,
+		Metrics.SystemNetworkDropped.Name():        Metrics.SystemNetworkDropped.New,
+		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.New,
+		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.New,
+		Metrics.SystemNetworkPackets.Name():        Metrics.SystemNetworkPackets.New,
 	}
 }
 
@@ -282,6 +302,61 @@ var Metrics = &metricStruct{
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
+	&metricImpl{
+		"system.network.connections",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.connections")
+			metric.SetDescription("The number of connections.")
+			metric.SetUnit("{connections}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.dropped",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.dropped")
+			metric.SetDescription("The number of packets dropped.")
+			metric.SetUnit("{packets}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.errors",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.errors")
+			metric.SetDescription("The number of errors encountered.")
+			metric.SetUnit("{errors}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.io",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.io")
+			metric.SetDescription("The number of bytes transmitted and received.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.packets",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.packets")
+			metric.SetDescription("The number of packets transferred.")
+			metric.SetUnit("{packets}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
 }
 
 // M contains a set of methods for each metric that help with
@@ -310,6 +385,14 @@ var Labels = struct {
 	FilesystemType string
 	// MemState (Breakdown of memory usage by type.)
 	MemState string
+	// NetworkDevice (Name of the network interface.)
+	NetworkDevice string
+	// NetworkDirection (Direction of flow of bytes/opertations (receive or transmit).)
+	NetworkDirection string
+	// NetworkProtocol (Network protocol, e.g. TCP or UDP.)
+	NetworkProtocol string
+	// NetworkState (State of the network connection.)
+	NetworkState string
 }{
 	"cpu",
 	"state",
@@ -320,6 +403,10 @@ var Labels = struct {
 	"mountpoint",
 	"state",
 	"type",
+	"state",
+	"device",
+	"direction",
+	"protocol",
 	"state",
 }
 
@@ -385,4 +472,20 @@ var LabelMemState = struct {
 	"slab_reclaimable",
 	"slab_unreclaimable",
 	"used",
+}
+
+// LabelNetworkDirection are the possible values that the label "network.direction" can have.
+var LabelNetworkDirection = struct {
+	Receive  string
+	Transmit string
+}{
+	"receive",
+	"transmit",
+}
+
+// LabelNetworkProtocol are the possible values that the label "network.protocol" can have.
+var LabelNetworkProtocol = struct {
+	Tcp string
+}{
+	"tcp",
 }
