@@ -319,6 +319,8 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 		}
 		return true
 	}
+
+	// TODO: handle MAP data type
 	return false
 }
 
