@@ -264,6 +264,24 @@ func TestAttributeValueEqual(t *testing.T) {
 
 	av1 = NewAttributeValueBool(false)
 	assert.False(t, av1.Equal(av2))
+
+	av1 = NewAttributeValueArray()
+	av1.ArrayVal().Append(NewAttributeValueInt(123))
+	assert.False(t, av1.Equal(av2))
+	assert.False(t, av2.Equal(av1))
+
+	av2 = NewAttributeValueArray()
+	av2.ArrayVal().Append(NewAttributeValueDouble(123))
+	assert.False(t, av1.Equal(av2))
+
+	NewAttributeValueInt(123).CopyTo(av2.ArrayVal().At(0))
+	assert.True(t, av1.Equal(av2))
+
+	av1.ArrayVal().Append(av1)
+	av2.ArrayVal().Append(av1)
+	assert.False(t, av1.Equal(av2))
+
+	assert.True(t, av1.Equal(av1))
 }
 
 func TestNilAttributeMap(t *testing.T) {

@@ -280,6 +280,10 @@ func (a AttributeValue) CopyTo(dest AttributeValue) {
 
 // Equal checks for equality, it returns true if the objects are equal otherwise false.
 func (a AttributeValue) Equal(av AttributeValue) bool {
+	if a.orig == av.orig {
+		return true
+	}
+
 	if a.orig.Value == nil || av.orig.Value == nil {
 		return a.orig.Value == av.orig.Value
 	}
@@ -293,8 +297,27 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 		return v.IntValue == av.orig.GetIntValue()
 	case *otlpcommon.AnyValue_DoubleValue:
 		return v.DoubleValue == av.orig.GetDoubleValue()
+	case *otlpcommon.AnyValue_ArrayValue:
+		vv := v.ArrayValue.GetValues()
+		avv := av.orig.GetArrayValue().GetValues()
+		if len(vv) != len(avv) {
+			return false
+		}
+
+		for i, val := range avv {
+			av := newAttributeValue(&vv[i])
+
+			switch av.orig.Value.(type) {
+			case *otlpcommon.AnyValue_ArrayValue, *otlpcommon.AnyValue_KvlistValue:
+				return false
+			}
+
+			if !av.Equal(newAttributeValue(&val)) {
+				return false
+			}
+		}
+		return true
 	}
-	// TODO: handle MAP and ARRAY data types.
 	return false
 }
 
