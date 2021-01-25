@@ -74,6 +74,9 @@ type metricStruct struct {
 	SystemNetworkErrors         MetricIntf
 	SystemNetworkIo             MetricIntf
 	SystemNetworkPackets        MetricIntf
+	SystemPagingFaults          MetricIntf
+	SystemPagingOperations      MetricIntf
+	SystemPagingUsage           MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -98,6 +101,9 @@ func (m *metricStruct) Names() []string {
 		"system.network.errors",
 		"system.network.io",
 		"system.network.packets",
+		"system.paging.faults",
+		"system.paging.operations",
+		"system.paging.usage",
 	}
 }
 
@@ -121,6 +127,9 @@ var metricsByName = map[string]MetricIntf{
 	"system.network.errors":          Metrics.SystemNetworkErrors,
 	"system.network.io":              Metrics.SystemNetworkIo,
 	"system.network.packets":         Metrics.SystemNetworkPackets,
+	"system.paging.faults":           Metrics.SystemPagingFaults,
+	"system.paging.operations":       Metrics.SystemPagingOperations,
+	"system.paging.usage":            Metrics.SystemPagingUsage,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -148,6 +157,9 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.New,
 		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.New,
 		Metrics.SystemNetworkPackets.Name():        Metrics.SystemNetworkPackets.New,
+		Metrics.SystemPagingFaults.Name():          Metrics.SystemPagingFaults.New,
+		Metrics.SystemPagingOperations.Name():      Metrics.SystemPagingOperations.New,
+		Metrics.SystemPagingUsage.Name():           Metrics.SystemPagingUsage.New,
 	}
 }
 
@@ -357,6 +369,39 @@ var Metrics = &metricStruct{
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
+	&metricImpl{
+		"system.paging.faults",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.faults")
+			metric.SetDescription("The number of page faults.")
+			metric.SetUnit("{faults}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.paging.operations",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.operations")
+			metric.SetDescription("The number of paging operations.")
+			metric.SetUnit("{operations}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.paging.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.usage")
+			metric.SetDescription("Swap (unix) or pagefile (windows) usage.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
 }
 
 // M contains a set of methods for each metric that help with
@@ -393,6 +438,14 @@ var Labels = struct {
 	NetworkProtocol string
 	// NetworkState (State of the network connection.)
 	NetworkState string
+	// PagingDevice (Name of the page file.)
+	PagingDevice string
+	// PagingDirection (Page In or Page Out.)
+	PagingDirection string
+	// PagingState (Breakdown of paging usage by type.)
+	PagingState string
+	// PagingType (Type of fault.)
+	PagingType string
 }{
 	"cpu",
 	"state",
@@ -408,6 +461,10 @@ var Labels = struct {
 	"direction",
 	"protocol",
 	"state",
+	"device",
+	"direction",
+	"state",
+	"type",
 }
 
 // L contains the possible metric labels that can be used. L is an alias for
@@ -488,4 +545,33 @@ var LabelNetworkProtocol = struct {
 	Tcp string
 }{
 	"tcp",
+}
+
+// LabelPagingDirection are the possible values that the label "paging.direction" can have.
+var LabelPagingDirection = struct {
+	PageIn  string
+	PageOut string
+}{
+	"page_in",
+	"page_out",
+}
+
+// LabelPagingState are the possible values that the label "paging.state" can have.
+var LabelPagingState = struct {
+	Cached string
+	Free   string
+	Used   string
+}{
+	"cached",
+	"free",
+	"used",
+}
+
+// LabelPagingType are the possible values that the label "paging.type" can have.
+var LabelPagingType = struct {
+	Major string
+	Minor string
+}{
+	"major",
+	"minor",
 }

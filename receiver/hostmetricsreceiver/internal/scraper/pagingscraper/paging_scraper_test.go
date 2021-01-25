@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
@@ -89,7 +90,7 @@ func TestScrape(t *testing.T) {
 }
 
 func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, pagingUsageDescriptor, hostPagingUsageMetric)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingUsage.New(), hostPagingUsageMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
 	if hostPagingUsageMetric.IntSum().DataPoints().Len() == 0 {
@@ -104,21 +105,21 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	}
 
 	assert.GreaterOrEqual(t, hostPagingUsageMetric.IntSum().DataPoints().Len(), expectedDataPoints)
-	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 0, stateLabelName, usedLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 1, stateLabelName, freeLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 0, "state", "used")
+	internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 1, "state", "free")
 	// on non-windows, also expect a cached state label
 	if runtime.GOOS != "windows" {
-		internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 2, stateLabelName, cachedLabelValue)
+		internal.AssertIntSumMetricLabelHasValue(t, hostPagingUsageMetric, 2, "state", "cached")
 	}
 	// on windows, also expect the page file device name label
 	if runtime.GOOS == "windows" {
-		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 0, deviceLabelName)
-		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 1, deviceLabelName)
+		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 0, "device")
+		internal.AssertIntSumMetricLabelExists(t, hostPagingUsageMetric, 1, "device")
 	}
 }
 
 func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
-	internal.AssertDescriptorEqual(t, pagingOperationsDescriptor, pagingMetric)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingOperations.New(), pagingMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, pagingMetric, startTime)
 	}
@@ -130,25 +131,25 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 	}
 	assert.Equal(t, expectedDataPoints, pagingMetric.IntSum().DataPoints().Len())
 
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 0, typeLabelName, majorTypeLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 0, directionLabelName, inDirectionLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 1, typeLabelName, majorTypeLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 1, directionLabelName, outDirectionLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 0, "type", "major")
+	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 0, "direction", "page_in")
+	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 1, "type", "major")
+	internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 1, "direction", "page_out")
 	if runtime.GOOS != "windows" {
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 2, typeLabelName, minorTypeLabelValue)
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 2, directionLabelName, inDirectionLabelValue)
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 3, typeLabelName, minorTypeLabelValue)
-		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 3, directionLabelName, outDirectionLabelValue)
+		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 2, "type", "minor")
+		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 2, "direction", "page_in")
+		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 3, "type", "minor")
+		internal.AssertIntSumMetricLabelHasValue(t, pagingMetric, 3, "direction", "page_out")
 	}
 }
 
 func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
-	internal.AssertDescriptorEqual(t, pagingFaultsDescriptor, pageFaultsMetric)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingFaults.New(), pageFaultsMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)
 	}
 
 	assert.Equal(t, 2, pageFaultsMetric.IntSum().DataPoints().Len())
-	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 0, typeLabelName, majorTypeLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 1, typeLabelName, minorTypeLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 0, "type", "major")
+	internal.AssertIntSumMetricLabelHasValue(t, pageFaultsMetric, 1, "type", "minor")
 }

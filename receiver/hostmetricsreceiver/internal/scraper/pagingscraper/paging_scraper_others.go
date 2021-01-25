@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -93,18 +94,18 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 }
 
 func initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, vmem *mem.VirtualMemoryStat) {
-	pagingUsageDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(3)
-	initializePagingUsageDataPoint(idps.At(0), now, usedLabelValue, int64(vmem.SwapTotal-vmem.SwapFree-vmem.SwapCached))
-	initializePagingUsageDataPoint(idps.At(1), now, freeLabelValue, int64(vmem.SwapFree))
-	initializePagingUsageDataPoint(idps.At(2), now, cachedLabelValue, int64(vmem.SwapCached))
+	initializePagingUsageDataPoint(idps.At(0), now, metadata.LabelPagingState.Used, int64(vmem.SwapTotal-vmem.SwapFree-vmem.SwapCached))
+	initializePagingUsageDataPoint(idps.At(1), now, metadata.LabelPagingState.Free, int64(vmem.SwapFree))
+	initializePagingUsageDataPoint(idps.At(2), now, metadata.LabelPagingState.Cached, int64(vmem.SwapCached))
 }
 
 func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
@@ -124,36 +125,36 @@ func (s *scraper) scrapeAndAppendPagingMetrics(metrics pdata.MetricSlice) error 
 }
 
 func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
-	pagingOperationsDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemPagingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(4)
-	initializePagingOperationsDataPoint(idps.At(0), startTime, now, majorTypeLabelValue, inDirectionLabelValue, int64(swap.Sin))
-	initializePagingOperationsDataPoint(idps.At(1), startTime, now, majorTypeLabelValue, outDirectionLabelValue, int64(swap.Sout))
-	initializePagingOperationsDataPoint(idps.At(2), startTime, now, minorTypeLabelValue, inDirectionLabelValue, int64(swap.PgIn))
-	initializePagingOperationsDataPoint(idps.At(3), startTime, now, minorTypeLabelValue, outDirectionLabelValue, int64(swap.PgOut))
+	initializePagingOperationsDataPoint(idps.At(0), startTime, now, metadata.LabelPagingType.Major, metadata.LabelPagingDirection.PageIn, int64(swap.Sin))
+	initializePagingOperationsDataPoint(idps.At(1), startTime, now, metadata.LabelPagingType.Major, metadata.LabelPagingDirection.PageOut, int64(swap.Sout))
+	initializePagingOperationsDataPoint(idps.At(2), startTime, now, metadata.LabelPagingType.Minor, metadata.LabelPagingDirection.PageIn, int64(swap.PgIn))
+	initializePagingOperationsDataPoint(idps.At(3), startTime, now, metadata.LabelPagingType.Minor, metadata.LabelPagingDirection.PageOut, int64(swap.PgOut))
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(typeLabelName, typeLabel)
-	labelsMap.Insert(directionLabelName, directionLabel)
+	labelsMap.Insert(metadata.Labels.PagingType, typeLabel)
+	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
 
 func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
-	pagingFaultsDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemPagingFaults.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2)
-	initializePageFaultDataPoint(idps.At(0), startTime, now, majorTypeLabelValue, int64(swap.PgMajFault))
-	initializePageFaultDataPoint(idps.At(1), startTime, now, minorTypeLabelValue, int64(swap.PgFault-swap.PgMajFault))
+	initializePageFaultDataPoint(idps.At(0), startTime, now, metadata.LabelPagingType.Major, int64(swap.PgMajFault))
+	initializePageFaultDataPoint(idps.At(1), startTime, now, metadata.LabelPagingType.Minor, int64(swap.PgFault-swap.PgMajFault))
 }
 
 func initializePageFaultDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, value int64) {
-	dataPoint.LabelsMap().Insert(typeLabelName, typeLabel)
+	dataPoint.LabelsMap().Insert(metadata.Labels.PagingType, typeLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)

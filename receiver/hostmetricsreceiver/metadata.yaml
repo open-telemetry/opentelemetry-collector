@@ -62,6 +62,24 @@ labels:
     value: state
     description: State of the network connection.
 
+  paging.device:
+    value: device
+    description: Name of the page file.
+
+  paging.direction:
+    value: direction
+    description: Page In or Page Out.
+    enum: [page_in, page_out]
+
+  paging.state:
+    value: state
+    description: Breakdown of paging usage by type.
+    enum: [cached, free, used]
+
+  paging.type:
+    value: type
+    description: Type of fault.
+    enum: [major, minor]
 
 metrics:
   system.cpu.time:
@@ -212,4 +230,26 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
+  system.paging.usage:
+    description: Swap (unix) or pagefile (windows) usage.
+    unit: By
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
 
+  system.paging.operations:
+    description: The number of paging operations.
+    unit: "{operations}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.paging.faults:
+    description: The number of page faults.
+    unit: "{faults}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
