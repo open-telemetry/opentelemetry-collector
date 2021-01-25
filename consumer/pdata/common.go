@@ -305,6 +305,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 		}
 
 		for i, val := range avv {
+			val := val
 			av := newAttributeValue(&vv[i])
 
 			switch av.orig.Value.(type) {
