@@ -20,6 +20,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const systemSpecificMetricsLen = 2
@@ -30,7 +31,7 @@ func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startT
 }
 
 func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
-	diskWeightedIOTimeDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemDiskWeightedIoTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(len(ioCounters))
@@ -43,15 +44,15 @@ func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdat
 }
 
 func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
-	diskMergedDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemDiskMerged.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCounters))
 
 	idx := 0
 	for device, ioCounter := range ioCounters {
-		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, readDirectionLabelValue, int64(ioCounter.MergedReadCount))
-		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, writeDirectionLabelValue, int64(ioCounter.MergedWriteCount))
+		initializeInt64DataPoint(idps.At(idx+0), startTime, now, device, metadata.LabelDiskDirection.Read, int64(ioCounter.MergedReadCount))
+		initializeInt64DataPoint(idps.At(idx+1), startTime, now, device, metadata.LabelDiskDirection.Write, int64(ioCounter.MergedWriteCount))
 		idx += 2
 	}
 }

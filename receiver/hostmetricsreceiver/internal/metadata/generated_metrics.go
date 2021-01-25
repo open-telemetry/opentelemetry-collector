@@ -59,6 +59,13 @@ type metricStruct struct {
 	SystemCPULoadAverage1m      MetricIntf
 	SystemCPULoadAverage5m      MetricIntf
 	SystemCPUTime               MetricIntf
+	SystemDiskIo                MetricIntf
+	SystemDiskIoTime            MetricIntf
+	SystemDiskMerged            MetricIntf
+	SystemDiskOperationTime     MetricIntf
+	SystemDiskOperations        MetricIntf
+	SystemDiskPendingOperations MetricIntf
+	SystemDiskWeightedIoTime    MetricIntf
 	SystemFilesystemInodesUsage MetricIntf
 	SystemFilesystemUsage       MetricIntf
 	SystemMemoryUsage           MetricIntf
@@ -71,6 +78,13 @@ func (m *metricStruct) Names() []string {
 		"system.cpu.load_average.1m",
 		"system.cpu.load_average.5m",
 		"system.cpu.time",
+		"system.disk.io",
+		"system.disk.io_time",
+		"system.disk.merged",
+		"system.disk.operation_time",
+		"system.disk.operations",
+		"system.disk.pending_operations",
+		"system.disk.weighted_io_time",
 		"system.filesystem.inodes.usage",
 		"system.filesystem.usage",
 		"system.memory.usage",
@@ -82,6 +96,13 @@ var metricsByName = map[string]MetricIntf{
 	"system.cpu.load_average.1m":     Metrics.SystemCPULoadAverage1m,
 	"system.cpu.load_average.5m":     Metrics.SystemCPULoadAverage5m,
 	"system.cpu.time":                Metrics.SystemCPUTime,
+	"system.disk.io":                 Metrics.SystemDiskIo,
+	"system.disk.io_time":            Metrics.SystemDiskIoTime,
+	"system.disk.merged":             Metrics.SystemDiskMerged,
+	"system.disk.operation_time":     Metrics.SystemDiskOperationTime,
+	"system.disk.operations":         Metrics.SystemDiskOperations,
+	"system.disk.pending_operations": Metrics.SystemDiskPendingOperations,
+	"system.disk.weighted_io_time":   Metrics.SystemDiskWeightedIoTime,
 	"system.filesystem.inodes.usage": Metrics.SystemFilesystemInodesUsage,
 	"system.filesystem.usage":        Metrics.SystemFilesystemUsage,
 	"system.memory.usage":            Metrics.SystemMemoryUsage,
@@ -97,6 +118,13 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.New,
 		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.New,
 		Metrics.SystemCPUTime.Name():               Metrics.SystemCPUTime.New,
+		Metrics.SystemDiskIo.Name():                Metrics.SystemDiskIo.New,
+		Metrics.SystemDiskIoTime.Name():            Metrics.SystemDiskIoTime.New,
+		Metrics.SystemDiskMerged.Name():            Metrics.SystemDiskMerged.New,
+		Metrics.SystemDiskOperationTime.Name():     Metrics.SystemDiskOperationTime.New,
+		Metrics.SystemDiskOperations.Name():        Metrics.SystemDiskOperations.New,
+		Metrics.SystemDiskPendingOperations.Name(): Metrics.SystemDiskPendingOperations.New,
+		Metrics.SystemDiskWeightedIoTime.Name():    Metrics.SystemDiskWeightedIoTime.New,
 		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.New,
 		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.New,
 		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.New,
@@ -138,6 +166,83 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("system.cpu.time")
 			metric.SetDescription("Total CPU seconds broken down by different states.")
+			metric.SetUnit("s")
+			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+			metric.DoubleSum().SetIsMonotonic(true)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.io",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.io")
+			metric.SetDescription("Disk bytes transferred.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.io_time",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.io_time")
+			metric.SetDescription("Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.")
+			metric.SetUnit("s")
+			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+			metric.DoubleSum().SetIsMonotonic(true)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.merged",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.merged")
+			metric.SetDescription("The number of disk reads merged into single physical disk access operations.")
+			metric.SetUnit("{operations}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.operation_time",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.operation_time")
+			metric.SetDescription("Time spent in disk operations.")
+			metric.SetUnit("s")
+			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+			metric.DoubleSum().SetIsMonotonic(true)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.operations",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.operations")
+			metric.SetDescription("Disk operations count.")
+			metric.SetUnit("{operations}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.pending_operations",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.pending_operations")
+			metric.SetDescription("The queue size of pending I/O operations.")
+			metric.SetUnit("{operations}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.disk.weighted_io_time",
+		func(metric pdata.Metric) {
+			metric.SetName("system.disk.weighted_io_time")
+			metric.SetDescription("Time disk spent activated multiplied by the queue length.")
 			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 			metric.DoubleSum().SetIsMonotonic(true)
@@ -189,6 +294,10 @@ var Labels = struct {
 	Cpu string
 	// CPUState (Breakdown of CPU usage by type.)
 	CPUState string
+	// DiskDevice (Name of the disk.)
+	DiskDevice string
+	// DiskDirection (Direction of flow of bytes/opertations (read or write).)
+	DiskDirection string
 	// FilesystemDevice (Identifier of the filesystem.)
 	FilesystemDevice string
 	// FilesystemMode (Mountpoint mode such "ro", "rw", etc.)
@@ -204,6 +313,8 @@ var Labels = struct {
 }{
 	"cpu",
 	"state",
+	"device",
+	"direction",
 	"device",
 	"mode",
 	"mountpoint",
@@ -235,6 +346,15 @@ var LabelCPUState = struct {
 	"system",
 	"user",
 	"wait",
+}
+
+// LabelDiskDirection are the possible values that the label "disk.direction" can have.
+var LabelDiskDirection = struct {
+	Read  string
+	Write string
+}{
+	"read",
+	"write",
 }
 
 // LabelFilesystemState are the possible values that the label "filesystem.state" can have.
