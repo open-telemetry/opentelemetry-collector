@@ -38,3 +38,9 @@ s+opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library =
 
 s+Status \(.*\);+Status \1\
   [ (gogoproto.nullable) = false ];+g
+
+s+repeated IntExemplar exemplars = \(.*\);+repeated IntExemplar exemplars = \1\
+  [ (gogoproto.nullable) = false ];+g
+
+s+repeated DoubleExemplar exemplars = \(.*\);+repeated DoubleExemplar exemplars = \1\
+  [ (gogoproto.nullable) = false ];+g

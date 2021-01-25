@@ -442,7 +442,7 @@ func generateOtlpDoubleHistogramMetric() *otlpmetrics.Metric {
 				Sum:               15,
 				BucketCounts:      []uint64{0, 1},
 				ExplicitBounds:    []float64{1},
-				Exemplars: []*otlpmetrics.DoubleExemplar{
+				Exemplars: []otlpmetrics.DoubleExemplar{
 					{
 						FilteredLabels: generateOtlpMetricAttachment(),
 						TimeUnixNano:   uint64(TestMetricExemplarTimestamp),
@@ -500,7 +500,7 @@ func generateOtlpIntHistogramMetric() *otlpmetrics.Metric {
 				Sum:               15,
 				BucketCounts:      []uint64{0, 1},
 				ExplicitBounds:    []float64{1},
-				Exemplars: []*otlpmetrics.IntExemplar{
+				Exemplars: []otlpmetrics.IntExemplar{
 					{
 						FilteredLabels: generateOtlpMetricAttachment(),
 						TimeUnixNano:   uint64(TestMetricExemplarTimestamp),

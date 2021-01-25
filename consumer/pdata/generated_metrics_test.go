@@ -1578,7 +1578,7 @@ func TestValueAtQuantile_Value(t *testing.T) {
 func TestIntExemplarSlice(t *testing.T) {
 	es := NewIntExemplarSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newIntExemplarSlice(&[]*otlpmetrics.IntExemplar{})
+	es = newIntExemplarSlice(&[]otlpmetrics.IntExemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
@@ -1679,12 +1679,12 @@ func TestIntExemplarSlice_Append(t *testing.T) {
 
 	emptyVal := NewIntExemplar()
 	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	assert.EqualValues(t, emptyVal, es.At(7))
 
 	value := NewIntExemplar()
 	fillTestIntExemplar(value)
 	es.Append(value)
-	assert.EqualValues(t, value.orig, es.At(8).orig)
+	assert.EqualValues(t, value, es.At(8))
 
 	assert.Equal(t, 9, es.Len())
 }
@@ -1722,7 +1722,7 @@ func TestIntExemplar_FilteredLabels(t *testing.T) {
 func TestDoubleExemplarSlice(t *testing.T) {
 	es := NewDoubleExemplarSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newDoubleExemplarSlice(&[]*otlpmetrics.DoubleExemplar{})
+	es = newDoubleExemplarSlice(&[]otlpmetrics.DoubleExemplar{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.Resize(7)
@@ -1823,12 +1823,12 @@ func TestDoubleExemplarSlice_Append(t *testing.T) {
 
 	emptyVal := NewDoubleExemplar()
 	es.Append(emptyVal)
-	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
+	assert.EqualValues(t, emptyVal, es.At(7))
 
 	value := NewDoubleExemplar()
 	fillTestDoubleExemplar(value)
 	es.Append(value)
-	assert.EqualValues(t, value.orig, es.At(8).orig)
+	assert.EqualValues(t, value, es.At(8))
 
 	assert.Equal(t, 9, es.Len())
 }
