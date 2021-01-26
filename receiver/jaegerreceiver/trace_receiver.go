@@ -43,6 +43,7 @@ import (
 	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -434,6 +435,8 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	if c, ok := client.FromHTTP(r); ok {
 		ctx = client.NewContext(ctx, c)
 	}
+	md := toMetadata(r.Header)
+	ctx = metadata.NewIncomingContext(ctx, md)
 
 	ctx = obsreport.ReceiverContext(ctx, jr.instanceName, collectorHTTPTransport)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, jr.instanceName, collectorHTTPTransport)
@@ -452,6 +455,14 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusAccepted)
 	}
 	obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, numSpans, err)
+}
+
+func toMetadata(header http.Header) metadata.MD {
+	md := metadata.MD{}
+	for k, v := range header {
+		md.Append(k, v...)
+	}
+	return md
 }
 
 func (jr *jReceiver) startCollector(host component.Host) error {
