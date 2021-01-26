@@ -343,3 +343,24 @@ func matchDoubleHistogram(t *testing.T, metricName string) bool {
 	assert.NoError(t, err)
 	return matched
 }
+
+func BenchmarkMatchMetric(b *testing.B) {
+	matcher, err := NewMatcher(`MetricName == 'my.metric'`)
+	require.NoError(b, err)
+
+	m := pdata.NewMetric()
+	m.SetName("my.metric")
+	m.SetDataType(pdata.MetricDataTypeIntHistogram)
+	dps := m.IntHistogram().DataPoints()
+	pt := pdata.NewIntHistogramDataPoint()
+	dps.Append(pt)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		matched, err := matcher.MatchMetric(m)
+		if err != nil || !matched {
+			b.Fail()
+		}
+	}
+}
