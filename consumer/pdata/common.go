@@ -308,8 +308,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 			val := val
 			av := newAttributeValue(&vv[i])
 
-			switch av.orig.Value.(type) {
-			case *otlpcommon.AnyValue_ArrayValue, *otlpcommon.AnyValue_KvlistValue:
+			if avType := av.Type(); avType == AttributeValueARRAY || avType == AttributeValueMAP {
 				return false
 			}
 
