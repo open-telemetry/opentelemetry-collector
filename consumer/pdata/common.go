@@ -308,6 +308,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 			val := val
 			av := newAttributeValue(&vv[i])
 
+			// According to the specification, array values must be scalar.
 			if avType := av.Type(); avType == AttributeValueARRAY || avType == AttributeValueMAP {
 				return false
 			}
