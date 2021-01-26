@@ -237,11 +237,12 @@ func Test${structName}_Append(t *testing.T) {
 
 	emptyVal := New${elementName}()
 	es.Append(emptyVal)
-	assert.EqualValues(t, es.At(7).orig, emptyVal.orig)
+	assert.EqualValues(t, emptyVal.orig, es.At(7).orig)
 
-	emptyVal2 := New${elementName}()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, es.At(8).orig, emptyVal2.orig)
+	value := New${elementName}()
+	fillTest${elementName}(value)
+	es.Append(value)
+	assert.EqualValues(t, value.orig, es.At(8).orig)
 
 	assert.Equal(t, 9, es.Len())
 }`
@@ -472,11 +473,12 @@ func Test${structName}_Append(t *testing.T) {
 
 	emptyVal := New${elementName}()
 	es.Append(emptyVal)
-	assert.EqualValues(t, *(es.At(7)).orig, *emptyVal.orig)
+	assert.EqualValues(t, emptyVal, es.At(7))
 
-	emptyVal2 := New${elementName}()
-	es.Append(emptyVal2)
-	assert.EqualValues(t, *(es.At(8)).orig, *emptyVal2.orig)
+	value := New${elementName}()
+	fillTest${elementName}(value)
+	es.Append(value)
+	assert.EqualValues(t, value, es.At(8))
 
 	assert.Equal(t, 9, es.Len())
 }`
