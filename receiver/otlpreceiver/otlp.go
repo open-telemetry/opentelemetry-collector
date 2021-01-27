@@ -189,18 +189,7 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 		return componenterror.ErrNilNextConsumer
 	}
 	r.traceReceiver = trace.New(r.cfg.Name(), tc)
-	if r.serverGRPC != nil {
-		collectortrace.RegisterTraceServiceServer(r.serverGRPC, r.traceReceiver)
-	}
-	if r.gatewayMux != nil {
-		err := collectortrace.RegisterTraceServiceHandlerServer(ctx, r.gatewayMux, r.traceReceiver)
-		if err != nil {
-			return err
-		}
-		// Also register an alias handler. This fixes bug https://github.com/open-telemetry/opentelemetry-collector/issues/1968
-		return collectortrace.RegisterTraceServiceHandlerServerAlias(ctx, r.gatewayMux, r.traceReceiver)
-	}
-	return nil
+	return RegisterTraceReceiver(ctx, r.traceReceiver, r.serverGRPC, r.gatewayMux)
 }
 
 func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
@@ -208,13 +197,7 @@ func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.
 		return componenterror.ErrNilNextConsumer
 	}
 	r.metricsReceiver = metrics.New(r.cfg.Name(), mc)
-	if r.serverGRPC != nil {
-		collectormetrics.RegisterMetricsServiceServer(r.serverGRPC, r.metricsReceiver)
-	}
-	if r.gatewayMux != nil {
-		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, r.gatewayMux, r.metricsReceiver)
-	}
-	return nil
+	return RegisterMetricsReceiver(ctx, r.metricsReceiver, r.serverGRPC, r.gatewayMux)
 }
 
 func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
@@ -222,11 +205,43 @@ func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Log
 		return componenterror.ErrNilNextConsumer
 	}
 	r.logReceiver = logs.New(r.cfg.Name(), tc)
-	if r.serverGRPC != nil {
-		collectorlog.RegisterLogsServiceServer(r.serverGRPC, r.logReceiver)
+	return RegisterLogsReceiver(ctx, r.logReceiver, r.serverGRPC, r.gatewayMux)
+}
+
+// RegisterTraceReceiver registers the trace receiver with a gRPC server and/or grpc-gateway mux, if non-nil.
+func RegisterTraceReceiver(ctx context.Context, receiver *trace.Receiver, serverGRPC *grpc.Server, gatewayMux *gatewayruntime.ServeMux) error {
+	if serverGRPC != nil {
+		collectortrace.RegisterTraceServiceServer(serverGRPC, receiver)
 	}
-	if r.gatewayMux != nil {
-		return collectorlog.RegisterLogsServiceHandlerServer(ctx, r.gatewayMux, r.logReceiver)
+	if gatewayMux != nil {
+		err := collectortrace.RegisterTraceServiceHandlerServer(ctx, gatewayMux, receiver)
+		if err != nil {
+			return err
+		}
+		// Also register an alias handler. This fixes bug https://github.com/open-telemetry/opentelemetry-collector/issues/1968
+		return collectortrace.RegisterTraceServiceHandlerServerAlias(ctx, gatewayMux, receiver)
+	}
+	return nil
+}
+
+// RegisterMetricsReceiver registers the metrics receiver with a gRPC server and/or grpc-gateway mux, if non-nil.
+func RegisterMetricsReceiver(ctx context.Context, receiver *metrics.Receiver, serverGRPC *grpc.Server, gatewayMux *gatewayruntime.ServeMux) error {
+	if serverGRPC != nil {
+		collectormetrics.RegisterMetricsServiceServer(serverGRPC, receiver)
+	}
+	if gatewayMux != nil {
+		return collectormetrics.RegisterMetricsServiceHandlerServer(ctx, gatewayMux, receiver)
+	}
+	return nil
+}
+
+// RegisterLogsReceiver registers the logs receiver with a gRPC server and/or grpc-gateway mux, if non-nil.
+func RegisterLogsReceiver(ctx context.Context, receiver *logs.Receiver, serverGRPC *grpc.Server, gatewayMux *gatewayruntime.ServeMux) error {
+	if serverGRPC != nil {
+		collectorlog.RegisterLogsServiceServer(serverGRPC, receiver)
+	}
+	if gatewayMux != nil {
+		return collectorlog.RegisterLogsServiceHandlerServer(ctx, gatewayMux, receiver)
 	}
 	return nil
 }
