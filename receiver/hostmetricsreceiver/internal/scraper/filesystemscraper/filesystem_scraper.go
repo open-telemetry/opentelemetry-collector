@@ -117,7 +117,7 @@ func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.
 	labelsMap.Insert(metadata.Labels.FilesystemDevice, partition.Device)
 	labelsMap.Insert(metadata.Labels.FilesystemType, partition.Fstype)
 	labelsMap.Insert(metadata.Labels.FilesystemMode, getMountMode(partition.Opts))
-	labelsMap.Insert(metadata.Labels.FilesystemMountpount, partition.Mountpoint)
+	labelsMap.Insert(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
 	labelsMap.Insert(metadata.Labels.FilesystemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)

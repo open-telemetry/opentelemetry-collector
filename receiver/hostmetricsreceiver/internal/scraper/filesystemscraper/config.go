@@ -94,12 +94,12 @@ func (cfg *Config) createFilter() (*fsFilter, error) {
 		return nil, err
 	}
 
-	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Labels.FilesystemMountpount)
+	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Labels.FilesystemMountpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Labels.FilesystemMountpount)
+	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Labels.FilesystemMountpoint)
 	if err != nil {
 		return nil, err
 	}

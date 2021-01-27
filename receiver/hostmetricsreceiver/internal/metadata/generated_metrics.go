@@ -148,7 +148,7 @@ var Metrics = &metricStruct{
 		"system.filesystem.inodes.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("system.filesystem.inodes.usage")
-			metric.SetDescription("FileSystem iNodes used.")
+			metric.SetDescription("FileSystem inodes used.")
 			metric.SetUnit("{inodes}")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(false)
@@ -193,8 +193,8 @@ var Labels = struct {
 	FilesystemDevice string
 	// FilesystemMode (Mountpoint mode such "ro", "rw", etc.)
 	FilesystemMode string
-	// FilesystemMountpount (Mountpoint path.)
-	FilesystemMountpount string
+	// FilesystemMountpoint (Mountpoint path.)
+	FilesystemMountpoint string
 	// FilesystemState (Breakdown of filesystem usage by type.)
 	FilesystemState string
 	// FilesystemType (Filesystem type, such as, "ext4", "tmpfs", etc.)

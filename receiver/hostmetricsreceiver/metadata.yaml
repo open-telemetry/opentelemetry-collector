@@ -22,7 +22,7 @@ labels:
     value: mode
     description: Mountpoint mode such "ro", "rw", etc.
 
-  filesystem.mountpount:
+  filesystem.mountpoint:
     value: mountpoint
     description: Mountpoint path.
 
@@ -81,7 +81,7 @@ metrics:
       monotonic: false
 
   system.filesystem.inodes.usage:
-    description: FileSystem iNodes used.
+    description: FileSystem inodes used.
     unit: "{inodes}"
     data:
       type: int sum
