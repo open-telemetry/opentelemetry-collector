@@ -81,7 +81,7 @@ Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/ope
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 
 Thanks to all the people who already contributed!
 

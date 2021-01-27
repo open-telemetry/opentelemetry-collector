@@ -15,7 +15,7 @@
 package conventions
 
 // OpenTelemetry semantic convention values for AWS-specific resource attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud_provider/aws/README.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/README.md
 const (
 	AttributeAWSECSContainerARN = "aws.ecs.container.arn"
 	AttributeAWSECSClusterARN   = "aws.ecs.cluster.arn"
@@ -29,7 +29,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention values for Resource attribute "aws.ecs.launchtype" values.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud_provider/aws/ecs.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/ecs.md
 const (
 	AttributeAWSECSLaunchTypeEC2     = "ec2"
 	AttributeAWSECSLaunchTypeFargate = "fargate"

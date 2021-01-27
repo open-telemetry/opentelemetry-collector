@@ -36,7 +36,7 @@ Reporting bugs is an important contribution. Please make sure to include:
 ### Before you start
 
 Please read project contribution
-[guide](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md)
+[guide](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md)
 for general practices for OpenTelemetry project.
 
 Select a good issue from the links below (ordered by difficulty/complexity):
@@ -86,7 +86,7 @@ Remember to always work in a branch of your local copy, as you might otherwise
 have to contend with conflicts in master.
 
 Please also see [GitHub
-workflow](https://github.com/open-telemetry/community/blob/master/CONTRIBUTING.md#github-workflow)
+workflow](https://github.com/open-telemetry/community/blob/main/CONTRIBUTING.md#github-workflow)
 section of general project contributing guide.
 
 ## Required Tools

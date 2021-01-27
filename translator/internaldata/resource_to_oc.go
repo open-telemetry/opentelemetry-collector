@@ -39,23 +39,23 @@ type ocInferredResourceType struct {
 // NOTE: defined in the priority order (first match wins)
 var labelPresenceToResourceType = []ocInferredResourceType{
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/container.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/container.md
 		labelKeyPresent: conventions.AttributeContainerName,
 		resourceType:    resourcekeys.ContainerType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/k8s.md#pod
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#pod
 		labelKeyPresent: conventions.AttributeK8sPod,
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/host.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/host.md
 		labelKeyPresent: conventions.AttributeHostName,
 		resourceType:    resourcekeys.HostType,
 	},
 	{
-		// See https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
 		labelKeyPresent: conventions.AttributeCloudProvider,
 		resourceType:    resourcekeys.CloudType,
 	},

@@ -59,7 +59,7 @@ const (
 )
 
 // OpenTracingSpanKind are possible values for TagSpanKind and match the OpenTracing
-// conventions: https://github.com/opentracing/specification/blob/master/semantic_conventions.md
+// conventions: https://github.com/opentracing/specification/blob/main/semantic_conventions.md
 // These values are used for representing span kinds that have no
 // equivalents in OpenCensus format. They are stored as values of TagSpanKind
 type OpenTracingSpanKind string
@@ -298,7 +298,7 @@ func jsonArrayToAttributeArray(jArray []interface{}, dest pdata.AnyValueArray) {
 }
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#status
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#status
 func StatusCodeFromHTTP(httpStatusCode int) pdata.StatusCode {
 	if httpStatusCode >= 100 && httpStatusCode < 399 {
 		return pdata.StatusCodeUnset

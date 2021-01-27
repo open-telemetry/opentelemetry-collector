@@ -15,7 +15,7 @@
 package conventions
 
 // OpenTelemetry Semantic Convention values for Resource attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions/README.md
 const (
 	AttributeCloudAccount               = "cloud.account.id"
 	AttributeCloudProvider              = "cloud.provider"
@@ -73,7 +73,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention values for Resource attribute "telemetry.sdk.language" values.
-// See: https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification/resource/semantic_conventions/README.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions/README.md
 const (
 	AttributeSDKLangValueCPP    = "cpp"
 	AttributeSDKLangValueDotNET = "dotnet"
@@ -88,7 +88,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention values for Resource attribute "cloud.provider" values.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
 const (
 	AttributeCloudProviderAWS   = "aws"
 	AttributeCloudProviderAzure = "azure"
@@ -96,7 +96,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention values for Resource attribute "cloud.infrastructure_service" values.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/cloud.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
 const (
 	AttributeCloudProviderAWSEC2                  = "aws_ec2"
 	AttributeCloudProviderAWSECS                  = "aws_ecs"
@@ -175,7 +175,7 @@ func GetResourceSemanticConventionAttributeNames() []string {
 }
 
 // OpenTelemetry Semantic Convention values for general Span attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md
 const (
 	AttributeComponent    = "component"
 	AttributeEnduserID    = "enduser.id"
@@ -199,7 +199,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for HTTP related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md
 const (
 	AttributeHTTPClientIP                          = "http.client_ip"
 	AttributeHTTPFlavor                            = "http.flavor"
@@ -222,7 +222,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for database related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
 const (
 	AttributeDBConnectionString = "db.connection_string"
 
@@ -241,7 +241,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for gRPC related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/rpc.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
 const (
 	AttributeMessageCompressedSize   = "message.compressed_size"
 	AttributeMessageID               = "message.id"
@@ -256,7 +256,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for FaaS related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/faas.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/faas.md
 const (
 	AttributeFaaSCron               = "faas.cron"
 	AttributeFaaSDocumentCollection = "faas.document.collection"
@@ -274,7 +274,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for messaging system related attributes
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/messaging.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/messaging.md
 const (
 	AttributeMessagingConversationID        = "messaging.conversation_id"
 	AttributeMessagingDestination           = "messaging.destination"
@@ -291,7 +291,7 @@ const (
 )
 
 // OpenTelemetry Semantic Convention attribute names for exceptions
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/exceptions.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/exceptions.md
 const (
 	AttributeExceptionEventName  = "exception"
 	AttributeExceptionMessage    = "exception.message"

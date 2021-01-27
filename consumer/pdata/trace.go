@@ -124,7 +124,7 @@ const (
 )
 
 // DeprecatedStatusCode is the deprecated status code used previously.
-// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-status
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 // Deprecated: use StatusCode instead.
 type DeprecatedStatusCode otlptrace.Status_DeprecatedStatusCode
 
@@ -153,7 +153,7 @@ func (sc DeprecatedStatusCode) String() string {
 }
 
 // StatusCode mirrors the codes defined at
-// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-status
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 type StatusCode otlptrace.Status_StatusCode
 
 const (
