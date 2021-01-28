@@ -449,7 +449,7 @@ func (es SpanSlice) Append(e Span) {
 }
 
 // Span represents a single operation within a trace.
-// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37
+// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto#L37
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.

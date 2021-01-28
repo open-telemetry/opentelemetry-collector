@@ -1,7 +1,7 @@
 # OTLP gRPC Exporter
 
 Exports data via gRPC using [OTLP](
-https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format. By default, this exporter requires TLS and offers queued retry capabilities.
 
 :warning: OTLP metrics and logs formats are currently marked as "Alpha" and may change in

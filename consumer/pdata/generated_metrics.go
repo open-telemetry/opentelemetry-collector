@@ -448,7 +448,7 @@ func (es MetricSlice) Append(e Metric) {
 }
 
 // Metric represents one metric as a collection of datapoints.
-// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto
+// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.

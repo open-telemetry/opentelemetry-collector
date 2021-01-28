@@ -89,7 +89,7 @@ var spanSlice = &sliceOfPtrs{
 var span = &messageValueStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
-		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/trace/v1/trace.proto#L37",
+		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto#L37",
 	originFullName: "otlptrace.Span",
 	fields: []baseField{
 		traceIDField,

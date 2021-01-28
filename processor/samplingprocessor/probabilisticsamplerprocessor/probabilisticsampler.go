@@ -131,7 +131,7 @@ func (tsp *tracesamplerprocessor) Shutdown(context.Context) error {
 // parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to
 // decide if the span should be sampled or not. The usage of the tag follows the
 // OpenTracing semantic tags:
-// https://github.com/opentracing/specification/blob/master/semantic_conventions.md#span-tags-table
+// https://github.com/opentracing/specification/blob/main/semantic_conventions.md#span-tags-table
 func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
 	attribMap := span.Attributes()
 	if attribMap.Len() <= 0 {

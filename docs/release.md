@@ -16,9 +16,9 @@ Note: You’ll need to be an approver for both the repos in order to be able to 
 
 1. Prepare Core for release. Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top.
 
-    <!-- markdown-link-check-disable-line --> Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector-contrib/compare/${last_release}...master. Submit a PR with the changes and get the PR approved and merged.
+    <!-- markdown-link-check-disable-line --> Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector-contrib/compare/${last_release}...main. Submit a PR with the changes and get the PR approved and merged.
 
-1. Make sure the current master branch build successfully passes (Core and Contrib). For Contrib also check that the spawn-stability-tests-job triggered by the main build-publish job also passes. Check that the corresponding "-dev" images exist in Dockerhub (Core and Contrib).
+1. Make sure the current main branch build successfully passes (Core and Contrib). For Contrib also check that the spawn-stability-tests-job triggered by the main build-publish job also passes. Check that the corresponding "-dev" images exist in Dockerhub (Core and Contrib).
 
 1. Create a branch named release/<release-series> (e.g. release/v0.4.x) in Core from the changelog update commit and push to origin (not your fork). Wait for the release branch builds to pass successfully.
 
