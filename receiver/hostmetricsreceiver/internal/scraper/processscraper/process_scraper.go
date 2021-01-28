@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -88,7 +87,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
 
-	var errs []error
+	var errs consumererror.ScrapeErrors
 
 	metadata, err := s.getProcessMetadata()
 	if err != nil {
@@ -96,7 +95,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 			return rms, err
 		}
 
-		errs = append(errs, err)
+		errs.AddRegular(err)
 	}
 
 	rms.Resize(len(metadata))
@@ -111,19 +110,19 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		now := internal.TimeToUnixNano(time.Now())
 
 		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs = append(errs, consumererror.NewPartialScrapeError(fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err), cpuMetricsLen))
+			errs.Addf(cpuMetricsLen, "error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err)
 		}
 
 		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
-			errs = append(errs, consumererror.NewPartialScrapeError(fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err), memoryMetricsLen))
+			errs.Addf(memoryMetricsLen, "error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err)
 		}
 
 		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs = append(errs, consumererror.NewPartialScrapeError(fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err), diskMetricsLen))
+			errs.Addf(diskMetricsLen, "error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err)
 		}
 	}
 
-	return rms, scraperhelper.CombineScrapeErrors(errs)
+	return rms, errs.Combine()
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
@@ -136,7 +135,8 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		return nil, err
 	}
 
-	var errs []error
+	var errs consumererror.ScrapeErrors
+
 	metadata := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
@@ -144,7 +144,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		executable, err := getProcessExecutable(handle)
 		if err != nil {
-			errs = append(errs, consumererror.NewPartialScrapeError(fmt.Errorf("error reading process name for pid %v: %w", pid, err), 1))
+			errs.Addf(1, "error reading process name for pid %v: %w", pid, err)
 			continue
 		}
 
@@ -156,12 +156,12 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		command, err := getProcessCommand(handle)
 		if err != nil {
-			errs = append(errs, consumererror.NewPartialScrapeError(fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err), 0))
+			errs.Addf(0, "error reading command for process %q (pid %v): %w", executable.name, pid, err)
 		}
 
 		username, err := handle.Username()
 		if err != nil {
-			errs = append(errs, consumererror.NewPartialScrapeError(fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err), 0))
+			errs.Addf(0, "error reading username for process %q (pid %v): %w", executable.name, pid, err)
 		}
 
 		md := &processMetadata{
@@ -175,7 +175,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		metadata = append(metadata, md)
 	}
 
-	return metadata, scraperhelper.CombineScrapeErrors(errs)
+	return metadata, errs.Combine()
 }
 
 func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {
