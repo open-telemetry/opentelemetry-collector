@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -102,7 +103,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
-	fileSystemUsageDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemFilesystemUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(fileSystemStatesLen * len(deviceUsages))
@@ -113,11 +114,11 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUni
 
 func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, partition disk.PartitionStat, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(deviceLabelName, partition.Device)
-	labelsMap.Insert(typeLabelName, partition.Fstype)
-	labelsMap.Insert(mountModeLabelName, getMountMode(partition.Opts))
-	labelsMap.Insert(mountPointLabelName, partition.Mountpoint)
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.FilesystemDevice, partition.Device)
+	labelsMap.Insert(metadata.Labels.FilesystemType, partition.Fstype)
+	labelsMap.Insert(metadata.Labels.FilesystemMode, getMountMode(partition.Opts))
+	labelsMap.Insert(metadata.Labels.FilesystemMountpoint, partition.Mountpoint)
+	labelsMap.Insert(metadata.Labels.FilesystemState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }

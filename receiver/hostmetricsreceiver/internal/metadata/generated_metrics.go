@@ -55,11 +55,13 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	SystemCPULoadAverage15m MetricIntf
-	SystemCPULoadAverage1m  MetricIntf
-	SystemCPULoadAverage5m  MetricIntf
-	SystemCPUTime           MetricIntf
-	SystemMemoryUsage       MetricIntf
+	SystemCPULoadAverage15m     MetricIntf
+	SystemCPULoadAverage1m      MetricIntf
+	SystemCPULoadAverage5m      MetricIntf
+	SystemCPUTime               MetricIntf
+	SystemFilesystemInodesUsage MetricIntf
+	SystemFilesystemUsage       MetricIntf
+	SystemMemoryUsage           MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -69,16 +71,20 @@ func (m *metricStruct) Names() []string {
 		"system.cpu.load_average.1m",
 		"system.cpu.load_average.5m",
 		"system.cpu.time",
+		"system.filesystem.inodes.usage",
+		"system.filesystem.usage",
 		"system.memory.usage",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"system.cpu.load_average.15m": Metrics.SystemCPULoadAverage15m,
-	"system.cpu.load_average.1m":  Metrics.SystemCPULoadAverage1m,
-	"system.cpu.load_average.5m":  Metrics.SystemCPULoadAverage5m,
-	"system.cpu.time":             Metrics.SystemCPUTime,
-	"system.memory.usage":         Metrics.SystemMemoryUsage,
+	"system.cpu.load_average.15m":    Metrics.SystemCPULoadAverage15m,
+	"system.cpu.load_average.1m":     Metrics.SystemCPULoadAverage1m,
+	"system.cpu.load_average.5m":     Metrics.SystemCPULoadAverage5m,
+	"system.cpu.time":                Metrics.SystemCPUTime,
+	"system.filesystem.inodes.usage": Metrics.SystemFilesystemInodesUsage,
+	"system.filesystem.usage":        Metrics.SystemFilesystemUsage,
+	"system.memory.usage":            Metrics.SystemMemoryUsage,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -87,11 +93,13 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
-		Metrics.SystemCPULoadAverage15m.Name(): Metrics.SystemCPULoadAverage15m.New,
-		Metrics.SystemCPULoadAverage1m.Name():  Metrics.SystemCPULoadAverage1m.New,
-		Metrics.SystemCPULoadAverage5m.Name():  Metrics.SystemCPULoadAverage5m.New,
-		Metrics.SystemCPUTime.Name():           Metrics.SystemCPUTime.New,
-		Metrics.SystemMemoryUsage.Name():       Metrics.SystemMemoryUsage.New,
+		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.New,
+		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.New,
+		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.New,
+		Metrics.SystemCPUTime.Name():               Metrics.SystemCPUTime.New,
+		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.New,
+		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.New,
+		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.New,
 	}
 }
 
@@ -137,6 +145,28 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
+		"system.filesystem.inodes.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.filesystem.inodes.usage")
+			metric.SetDescription("FileSystem inodes used.")
+			metric.SetUnit("{inodes}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.filesystem.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.filesystem.usage")
+			metric.SetDescription("Filesystem bytes used.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
 		"system.memory.usage",
 		func(metric pdata.Metric) {
 			metric.SetName("system.memory.usage")
@@ -159,11 +189,26 @@ var Labels = struct {
 	Cpu string
 	// CPUState (Breakdown of CPU usage by type.)
 	CPUState string
+	// FilesystemDevice (Identifier of the filesystem.)
+	FilesystemDevice string
+	// FilesystemMode (Mountpoint mode such "ro", "rw", etc.)
+	FilesystemMode string
+	// FilesystemMountpoint (Mountpoint path.)
+	FilesystemMountpoint string
+	// FilesystemState (Breakdown of filesystem usage by type.)
+	FilesystemState string
+	// FilesystemType (Filesystem type, such as, "ext4", "tmpfs", etc.)
+	FilesystemType string
 	// MemState (Breakdown of memory usage by type.)
 	MemState string
 }{
 	"cpu",
 	"state",
+	"device",
+	"mode",
+	"mountpoint",
+	"state",
+	"type",
 	"state",
 }
 
@@ -190,6 +235,17 @@ var LabelCPUState = struct {
 	"system",
 	"user",
 	"wait",
+}
+
+// LabelFilesystemState are the possible values that the label "filesystem.state" can have.
+var LabelFilesystemState = struct {
+	Free     string
+	Reserved string
+	Used     string
+}{
+	"free",
+	"reserved",
+	"used",
 }
 
 // LabelMemState are the possible values that the label "mem.state" can have.

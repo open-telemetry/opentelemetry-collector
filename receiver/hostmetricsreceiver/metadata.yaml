@@ -14,6 +14,27 @@ labels:
     description: Breakdown of memory usage by type.
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
+  filesystem.device:
+    value: device
+    description: Identifier of the filesystem.
+
+  filesystem.mode:
+    value: mode
+    description: Mountpoint mode such "ro", "rw", etc.
+
+  filesystem.mountpoint:
+    value: mountpoint
+    description: Mountpoint path.
+
+  filesystem.state:
+    value: state
+    description: Breakdown of filesystem usage by type.
+    enum: [free, reserved, used]
+
+  filesystem.type:
+    value: type
+    description: Filesystem type, such as, "ext4", "tmpfs", etc.
+
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
@@ -50,3 +71,19 @@ metrics:
     unit: 1
     data:
       type: double gauge
+
+  system.filesystem.usage:
+    description: Filesystem bytes used.
+    unit: By
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  system.filesystem.inodes.usage:
+    description: FileSystem inodes used.
+    unit: "{inodes}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
