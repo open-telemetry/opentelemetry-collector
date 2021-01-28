@@ -108,9 +108,13 @@ jobs:
       - name: Lint
         run: make -j4 gochecklicense goimpi golint gomisspell
       - name: Gen Metadata
-        run: make genmdata
-      - name: Check generated metadata
-        run: git diff --exit-code || (echo 'Generated code is out of date, please run "make genmdata" and commit the changes in this PR.' && exit 1)
+        run: |
+          make genmdata
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make genmdata" and commit the changes in this PR.' && exit 1)
+      - name: Gen Pdata
+        run: |
+          make genpdata
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make genpdata" and commit the changes in this PR.' && exit 1)
   cross-compile:
     runs-on: ubuntu-latest
     needs: [setup-environment]
