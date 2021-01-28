@@ -6,7 +6,7 @@ receivers or exporters.
 
 ## Client Configuration
 
-[Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/README.md)
+[Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
 leverage client configuration.
 
 Note that client configuration supports TLS configuration, however
@@ -33,7 +33,7 @@ exporter:
 
 ## Server Configuration
 
-[Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/README.md)
+[Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md)
 leverage server configuration.
 
 - [`cors_allowed_origins`](https://github.com/rs/cors): An empty list means

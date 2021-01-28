@@ -17,7 +17,7 @@
   <a href="https://circleci.com/gh/open-telemetry/opentelemetry-collector">
     <img alt="Build Status" src="https://img.shields.io/circleci/build/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
   </a>
-  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/master/">
+  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
   </a>
   <a href="https://github.com/open-telemetry/opentelemetry-collector/releases">

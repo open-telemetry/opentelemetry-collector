@@ -84,7 +84,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [master, << pipeline.git.branch >>]
+            equal: [main, << pipeline.git.branch >>]
           steps:
             - run:
                 name: Generate GitHub Issue
@@ -218,7 +218,7 @@ workflows:
             - rpm-package
           filters:
             branches:
-              only: master
+              only: main
             tags:
               ignore: /.*/
       - build-package:

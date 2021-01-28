@@ -39,7 +39,7 @@ See below for examples.
 
 ## Client Configuration
 
-[Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/README.md)
+[Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
 leverage client configuration.
 
 Note that client configuration supports TLS configuration, however
@@ -74,7 +74,7 @@ exporters:
 
 ## Server Configuration
 
-[Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/master/receiver/README.md)
+[Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md)
 leverage server configuration.
 
 Beyond TLS configuration, the following setting can optionally be configured

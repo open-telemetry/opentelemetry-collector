@@ -64,7 +64,7 @@ Generally, when designing a test for new exporter and receiver components, devel
   * `GenConfigYAMLStr()` - Generate a config string to place in exporter part of collector config so that it can send data to this receiver.
   * `ProtocolName()` - Return protocol name to use in collector config pipeline.
 
-* `Testing` - This part may vary from what kind of testing developers would like to do. In existing implementation, we can refer to [End-to-End testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/tests/e2e_test.go), [Metrics testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/tests/metric_test.go), [Traces testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/tests/trace_test.go) and [Correctness testing](https://github.com/EdZou/opentelemetry-collector/blob/master/testbed/correctness/correctness_test.go). For instance, if developers would like to design a trace test for a new exporter and receiver:
+* `Testing` - This part may vary from what kind of testing developers would like to do. In existing implementation, we can refer to [End-to-End testing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/testbed/tests/e2e_test.go), [Metrics testing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/testbed/tests/metric_test.go), [Traces testing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/testbed/tests/trace_test.go), [Correctness Traces testing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/testbed/correctness/traces/correctness_test.go), and [Correctness Metrics testing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/testbed/correctness/metrics/metrics_correctness_test.go). For instance, if developers would like to design a trace test for a new exporter and receiver:
 
   * ```go
     func TestTrace10kSPS(t *testing.T) {
@@ -122,7 +122,7 @@ Here providing some examples of how to run and get the results of testing.
 
 ![collector-contrib tests result](./CCRepo_result.png)
 
-2. Under [Collector/testbed/](https://github.com/EdZou/opentelemetry-collector/tree/master/testbed) repo, here taking correctness tests as an example, by running:
+2. Under [Collector/testbed/](https://github.com/open-telemetry/opentelemetry-collector/tree/main/testbed) repo, here taking correctness tests as an example, by running:
 
 ```
   cd correctness

@@ -1,7 +1,7 @@
 name: build-and-test
 on:
   push:
-    branches: [master]
+    branches: [ main ]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
@@ -33,7 +33,7 @@ jobs:
       - name: Run Unit tests
         run: go test ./...
       - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'ref/head/master' }}
+        if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |
           go run cmd/issuegenerator/main.go $TEST_RESULTS
   setup-environment:
@@ -203,7 +203,7 @@ jobs:
           name: test-results
           path: test_results.tar
       - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'ref/head/master' }}
+        if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |
           go run cmd/issuegenerator/main.go $TEST_RESULTS
   correctness:
@@ -237,7 +237,7 @@ jobs:
       - name: Loadtest
         run: make testbed-correctness
       - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'ref/head/master' }}
+        if: ${{ failure() && github.ref == 'ref/head/main' }}
         run: |
           go run cmd/issuegenerator/main.go $TEST_RESULTS
   build-package:
@@ -345,7 +345,7 @@ jobs:
   publish-dev:
     runs-on: ubuntu-latest
     needs: [build-package, windows-msi]
-    if: (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')) && github.repository == 'open-telemetry/opentelemetry-collector'
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && github.repository == 'open-telemetry/opentelemetry-collector'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
