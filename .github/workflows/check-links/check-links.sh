@@ -20,15 +20,15 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_DIR="$( cd "${SCRIPT_DIR}/../../../" && pwd )"
 GITHUB_REF=${GITHUB_REF:-}
 
-diff_files="$( git diff HEAD origin/master --name-only )"
+diff_files="$( git diff HEAD origin/main --name-only )"
 check_all_files=1
-if [[ "$GITHUB_REF" = "ref/heads/master" ]] || [[ -n "$( echo "$diff_files" | grep ".github/workflows/check-links" )" ]]; then
+if [[ "$GITHUB_REF" = "ref/heads/main" ]] || [[ -n "$( echo "$diff_files" | grep ".github/workflows/check-links" )" ]]; then
     check_all_files=0
 fi
 
 nfailed=0
 
-# check all docs in master/tags or new/modified docs in PR
+# check all docs in main/tags or new/modified docs in PR
 for md in $(find "$REPO_DIR" -name "*.md" | sort); do
     if [[ $check_all_files ]] || [[ -n "$( echo "$diff_files" | grep "^${md/#$REPO_DIR\//}" )" ]]; then
         node $SCRIPT_DIR/markdown-link-check -c ${SCRIPT_DIR}/config.json -v "$md" || (( nfailed += $? ))

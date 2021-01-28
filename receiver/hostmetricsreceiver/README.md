@@ -89,7 +89,7 @@ process:
 
 If you are only interested in a subset of metrics from a particular source,
 it is recommended you use this receiver with the
-[Filter Processor](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor/filterprocessor).
+[Filter Processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/filterprocessor).
 
 ### Different Frequencies
 
