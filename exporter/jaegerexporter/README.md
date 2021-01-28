@@ -3,7 +3,7 @@
 Exports data via gRPC to [Jaeger](https://www.jaegertracing.io/) destinations.
 By default, this exporter requires TLS and offers queued retry capabilities. A
 Jaeger Thrift HTTP exporter is available in the [contrib
-repository](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/exporter/jaegerthrifthttpexporter).
+repository](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/jaegerthrifthttpexporter).
 
 Supported pipeline types: traces
 

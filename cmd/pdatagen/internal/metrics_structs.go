@@ -105,7 +105,7 @@ var metricSlice = &sliceOfPtrs{
 var metric = &messageValueStruct{
 	structName: "Metric",
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
-		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/master/opentelemetry/proto/metrics/v1/metrics.proto",
+		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto",
 	originFullName: "otlpmetrics.Metric",
 	fields: []baseField{
 		nameField,

@@ -1,7 +1,7 @@
 # OTLP Receiver
 
 Receives data via gRPC or HTTP using [OTLP](
-https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md)
+https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
 
 Supported pipeline types: traces, metrics, logs
