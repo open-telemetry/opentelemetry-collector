@@ -160,6 +160,16 @@ func (bp *batchProcessor) processItem(item interface{}) {
 				}()
 			}
 		}
+		if td, ok := item.(pdata.Metrics); ok {
+			itemCount := bp.batch.itemCount()
+			if itemCount+uint32(td.MetricCount()) > bp.sendBatchMaxSize {
+				tdRemainSize := splitMetrics(int(bp.sendBatchSize-itemCount), td)
+				item = tdRemainSize
+				go func() {
+					bp.newItem <- td
+				}()
+			}
+		}
 	}
 
 	bp.batch.add(item)
