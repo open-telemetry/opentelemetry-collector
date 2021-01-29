@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
@@ -99,14 +100,14 @@ func TestScrape(t *testing.T) {
 }
 
 func assertProcessesCountMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, processesCountDescriptor, metric)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCount.New(), metric)
 	assert.Equal(t, 2, metric.IntSum().DataPoints().Len())
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, statusLabelName, runningStatusLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, statusLabelName, blockedStatusLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 0, "status", "running")
+	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "status", "blocked")
 }
 
 func assertProcessesCreatedMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, processesCreatedDescriptor, metric)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemProcessesCreated.New(), metric)
 	assert.Equal(t, 1, metric.IntSum().DataPoints().Len())
 	assert.Equal(t, 0, metric.IntSum().DataPoints().At(0).LabelsMap().Len())
 }

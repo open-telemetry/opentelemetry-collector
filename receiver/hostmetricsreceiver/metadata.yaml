@@ -81,6 +81,11 @@ labels:
     description: Type of fault.
     enum: [major, minor]
 
+  processes.status:
+    value: status
+    description: Breakdown status of the processes.
+    enum: [blocked, running]
+
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
@@ -253,3 +258,19 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+
+  system.processes.created:
+    description: Total number of created processes.
+    unit: "{processes}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.processes.count:
+    description: Total number of processes in each state.
+    unit: "{processes}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false

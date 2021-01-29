@@ -77,6 +77,8 @@ type metricStruct struct {
 	SystemPagingFaults          MetricIntf
 	SystemPagingOperations      MetricIntf
 	SystemPagingUsage           MetricIntf
+	SystemProcessesCount        MetricIntf
+	SystemProcessesCreated      MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -104,6 +106,8 @@ func (m *metricStruct) Names() []string {
 		"system.paging.faults",
 		"system.paging.operations",
 		"system.paging.usage",
+		"system.processes.count",
+		"system.processes.created",
 	}
 }
 
@@ -130,6 +134,8 @@ var metricsByName = map[string]MetricIntf{
 	"system.paging.faults":           Metrics.SystemPagingFaults,
 	"system.paging.operations":       Metrics.SystemPagingOperations,
 	"system.paging.usage":            Metrics.SystemPagingUsage,
+	"system.processes.count":         Metrics.SystemProcessesCount,
+	"system.processes.created":       Metrics.SystemProcessesCreated,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -160,6 +166,8 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 		Metrics.SystemPagingFaults.Name():          Metrics.SystemPagingFaults.New,
 		Metrics.SystemPagingOperations.Name():      Metrics.SystemPagingOperations.New,
 		Metrics.SystemPagingUsage.Name():           Metrics.SystemPagingUsage.New,
+		Metrics.SystemProcessesCount.Name():        Metrics.SystemProcessesCount.New,
+		Metrics.SystemProcessesCreated.Name():      Metrics.SystemProcessesCreated.New,
 	}
 }
 
@@ -402,6 +410,28 @@ var Metrics = &metricStruct{
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
+	&metricImpl{
+		"system.processes.count",
+		func(metric pdata.Metric) {
+			metric.SetName("system.processes.count")
+			metric.SetDescription("Total number of processes in each state.")
+			metric.SetUnit("{processes}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.processes.created",
+		func(metric pdata.Metric) {
+			metric.SetName("system.processes.created")
+			metric.SetDescription("Total number of created processes.")
+			metric.SetUnit("{processes}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
 }
 
 // M contains a set of methods for each metric that help with
@@ -446,6 +476,8 @@ var Labels = struct {
 	PagingState string
 	// PagingType (Type of fault.)
 	PagingType string
+	// ProcessesStatus (Breakdown status of the processes.)
+	ProcessesStatus string
 }{
 	"cpu",
 	"state",
@@ -465,6 +497,7 @@ var Labels = struct {
 	"direction",
 	"state",
 	"type",
+	"status",
 }
 
 // L contains the possible metric labels that can be used. L is an alias for
@@ -574,4 +607,13 @@ var LabelPagingType = struct {
 }{
 	"major",
 	"minor",
+}
+
+// LabelProcessesStatus are the possible values that the label "processes.status" can have.
+var LabelProcessesStatus = struct {
+	Blocked string
+	Running string
+}{
+	"blocked",
+	"running",
 }
