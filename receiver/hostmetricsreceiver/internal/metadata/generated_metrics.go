@@ -55,6 +55,10 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
+	ProcessCPUTime              MetricIntf
+	ProcessDiskIo               MetricIntf
+	ProcessMemoryPhysicalUsage  MetricIntf
+	ProcessMemoryVirtualUsage   MetricIntf
 	SystemCPULoadAverage15m     MetricIntf
 	SystemCPULoadAverage1m      MetricIntf
 	SystemCPULoadAverage5m      MetricIntf
@@ -84,6 +88,10 @@ type metricStruct struct {
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
+		"process.cpu.time",
+		"process.disk.io",
+		"process.memory.physical_usage",
+		"process.memory.virtual_usage",
 		"system.cpu.load_average.15m",
 		"system.cpu.load_average.1m",
 		"system.cpu.load_average.5m",
@@ -112,6 +120,10 @@ func (m *metricStruct) Names() []string {
 }
 
 var metricsByName = map[string]MetricIntf{
+	"process.cpu.time":               Metrics.ProcessCPUTime,
+	"process.disk.io":                Metrics.ProcessDiskIo,
+	"process.memory.physical_usage":  Metrics.ProcessMemoryPhysicalUsage,
+	"process.memory.virtual_usage":   Metrics.ProcessMemoryVirtualUsage,
 	"system.cpu.load_average.15m":    Metrics.SystemCPULoadAverage15m,
 	"system.cpu.load_average.1m":     Metrics.SystemCPULoadAverage1m,
 	"system.cpu.load_average.5m":     Metrics.SystemCPULoadAverage5m,
@@ -144,6 +156,10 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
+		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.New,
+		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.New,
+		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.New,
+		Metrics.ProcessMemoryVirtualUsage.Name():   Metrics.ProcessMemoryVirtualUsage.New,
 		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.New,
 		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.New,
 		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.New,
@@ -174,6 +190,50 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
+	&metricImpl{
+		"process.cpu.time",
+		func(metric pdata.Metric) {
+			metric.SetName("process.cpu.time")
+			metric.SetDescription("Total CPU seconds broken down by different states.")
+			metric.SetUnit("s")
+			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+			metric.DoubleSum().SetIsMonotonic(true)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.disk.io",
+		func(metric pdata.Metric) {
+			metric.SetName("process.disk.io")
+			metric.SetDescription("Disk bytes transferred.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.memory.physical_usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.memory.physical_usage")
+			metric.SetDescription("The amount of physical memory in use.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.memory.virtual_usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.memory.virtual_usage")
+			metric.SetDescription("Virtual memory size.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
 	&metricImpl{
 		"system.cpu.load_average.15m",
 		func(metric pdata.Metric) {
@@ -476,6 +536,10 @@ var Labels = struct {
 	PagingState string
 	// PagingType (Type of fault.)
 	PagingType string
+	// ProcessDirection (Direction of flow of bytes (read or write).)
+	ProcessDirection string
+	// ProcessState (Breakdown of CPU usage by type.)
+	ProcessState string
 	// ProcessesStatus (Breakdown status of the processes.)
 	ProcessesStatus string
 }{
@@ -497,6 +561,8 @@ var Labels = struct {
 	"direction",
 	"state",
 	"type",
+	"direction",
+	"state",
 	"status",
 }
 
@@ -607,6 +673,26 @@ var LabelPagingType = struct {
 }{
 	"major",
 	"minor",
+}
+
+// LabelProcessDirection are the possible values that the label "process.direction" can have.
+var LabelProcessDirection = struct {
+	Read  string
+	Write string
+}{
+	"read",
+	"write",
+}
+
+// LabelProcessState are the possible values that the label "process.state" can have.
+var LabelProcessState = struct {
+	System string
+	User   string
+	Wait   string
+}{
+	"system",
+	"user",
+	"wait",
 }
 
 // LabelProcessesStatus are the possible values that the label "processes.status" can have.
