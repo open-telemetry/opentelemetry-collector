@@ -124,12 +124,6 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - lint:
-          requires:
-            - setup-environment
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - cross-compile:
           requires:
             - setup-environment
@@ -177,7 +171,6 @@ workflows:
             - cross-compile
             - correctness
             - correctness-metrics
-            - lint
             - loadtest
             - test
             - coverage
@@ -190,7 +183,6 @@ workflows:
             - cross-compile
             - correctness
             - correctness-metrics
-            - lint
             - loadtest
             - test
             - coverage
@@ -208,7 +200,6 @@ workflows:
             - cross-compile
             - correctness
             - correctness-metrics
-            - lint
             - loadtest
             - test
             - coverage
@@ -256,20 +247,6 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: go/bin
-
-  lint:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Lint
-          command: make -j4 gochecklicense goimpi golint gomisspell
-      - run:
-          name: Gen Metadata
-          command: make genmdata
-      - run:
-          name: Check generated metadata
-          command: git diff --exit-code || (echo 'Generated code is out of date, please run "make genmdata" and commit the changes in this PR.' && exit 1)
 
   cross-compile:
     executor: golang
