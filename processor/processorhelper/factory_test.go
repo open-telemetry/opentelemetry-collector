@@ -19,7 +19,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"

@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"

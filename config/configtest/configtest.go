@@ -17,13 +17,13 @@ package configtest
 import (
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/viper"
 )
 
 // NewViperFromYamlFile creates a viper instance that reads the given fileName as yaml config
@@ -31,7 +31,7 @@ import (
 // Example usage for testing can be found in configtest_test.go
 func NewViperFromYamlFile(t *testing.T, fileName string) *viper.Viper {
 	// Read yaml config from file
-	v := config.NewViper()
+	v := viper.NewViper()
 	v.SetConfigFile(fileName)
 	require.NoErrorf(t, v.ReadInConfig(), "unable to read the file %v", fileName)
 

@@ -19,11 +19,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/viper"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
@@ -93,7 +93,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 	cfg.Scrapers = map[string]internal.Config{}
 
-	scrapersViperSection, err := config.ViperSubExact(componentViperSection, scrapersKey)
+	scrapersViperSection, err := componentViperSection.SubExact(scrapersKey)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 		}
 
 		collectorCfg := factory.CreateDefaultConfig()
-		collectorViperSection, err := config.ViperSubExact(scrapersViperSection, key)
+		collectorViperSection, err := scrapersViperSection.SubExact(key)
 		if err != nil {
 			return err
 		}

@@ -30,7 +30,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -142,7 +142,7 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 func New(params Parameters) (*Application, error) {
 	app := &Application{
 		info:         params.ApplicationStartInfo,
-		v:            config.NewViper(),
+		v:            viper.NewViper(),
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}

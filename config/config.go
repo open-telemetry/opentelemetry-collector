@@ -25,11 +25,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/viper"
 )
 
 // These are errors that can be returned by Load(). Note that error codes are not part
@@ -52,11 +52,6 @@ const (
 	errMissingReceivers
 	errMissingExporters
 	errUnmarshalTopLevelStructureError
-)
-
-const (
-	// ViperDelimiter is used as the default key delimiter in the default viper instance
-	ViperDelimiter = "::"
 )
 
 type configError struct {
@@ -115,12 +110,6 @@ type deprecatedUnmarshaler interface {
 
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
-
-// Creates a new Viper instance with a different key-delimitor "::" instead of the
-// default ".". This way configs can have keys that contain ".".
-func NewViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter(ViperDelimiter))
-}
 
 // Load loads a Config from Viper.
 // After loading the config, need to check if it is valid by calling `ValidateConfig`.
@@ -751,29 +740,8 @@ func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{})
 	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
-// Copied from the Viper but changed to use the same delimiter
-// and return error if the sub is not a map.
-// See https://github.com/spf13/viper/issues/871
-func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
-	data := v.Get(key)
-	if data == nil {
-		return NewViper(), nil
-	}
-
-	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := NewViper()
-		// Cannot return error because the subv is empty.
-		_ = subv.MergeConfigMap(cast.ToStringMap(data))
-		return subv, nil
-	}
-	return nil, &configError{
-		code: errInvalidSubConfig,
-		msg:  fmt.Sprintf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind()),
-	}
-}
-
 func viperFromStringMap(data map[string]interface{}) *viper.Viper {
-	v := NewViper()
+	v := viper.NewViper()
 	// Cannot return error because the subv is empty.
 	_ = v.MergeConfigMap(cast.ToStringMap(data))
 	return v

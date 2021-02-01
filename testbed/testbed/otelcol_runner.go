@@ -20,7 +20,7 @@ import (
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -82,7 +82,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 		return configCleanup, err
 	}
 	ipp.logger = logger
-	v := config.NewViper()
+	v := viper.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := config.Load(v, ipp.factories)

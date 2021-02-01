@@ -17,7 +17,7 @@ package extensionhelper
 import (
 	"context"
 
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"

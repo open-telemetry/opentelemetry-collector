@@ -21,9 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/viper"
 )
 
 const (
@@ -53,7 +52,7 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 			return err
 		}
 	}
-	viperFlags := config.NewViper()
+	viperFlags := viper.NewViper()
 	viperFlags.SetConfigType(setFlagFileType)
 	if err := viperFlags.ReadConfig(b); err != nil {
 		return fmt.Errorf("failed to read set flag config: %v", err)
@@ -78,7 +77,7 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 
 	rootKeys := map[string]struct{}{}
 	for _, k := range viperFlags.AllKeys() {
-		keys := strings.Split(k, config.ViperDelimiter)
+		keys := strings.Split(k, viper.ViperDelimiter)
 		if len(keys) > 0 {
 			rootKeys[keys[0]] = struct{}{}
 		}

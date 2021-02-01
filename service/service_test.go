@@ -31,7 +31,7 @@ import (
 
 	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"

@@ -17,9 +17,8 @@ package component
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/viper"
 )
 
 // Component is either a receiver, exporter, processor or extension.

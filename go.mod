@@ -7,6 +7,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/Shopify/sarama v1.27.2
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
+	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
@@ -28,7 +29,7 @@ require (
 	github.com/jaegertracing/jaeger v1.21.0
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/mitchellh/mapstructure v1.3.2 // indirect
+	github.com/mitchellh/mapstructure v1.3.2
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
