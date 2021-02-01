@@ -48,6 +48,8 @@ const (
 	AttributeK8sJob                     = "k8s.job.name"
 	AttributeK8sJobUID                  = "k8s.job.uid"
 	AttributeK8sNamespace               = "k8s.namespace.name"
+	AttributeK8sNodeName                = "k8s.node.name"
+	AttributeK8sNodeUID                 = "k8s.node.uid"
 	AttributeK8sPod                     = "k8s.pod.name"
 	AttributeK8sPodUID                  = "k8s.pod.uid"
 	AttributeK8sReplicaSet              = "k8s.replicaset.name"
@@ -149,6 +151,8 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeK8sJob,
 		AttributeK8sJobUID,
 		AttributeK8sNamespace,
+		AttributeK8sNodeName,
+		AttributeK8sNodeUID,
 		AttributeK8sPod,
 		AttributeK8sPodUID,
 		AttributeK8sReplicaSet,
