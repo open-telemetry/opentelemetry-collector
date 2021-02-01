@@ -115,17 +115,17 @@ func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice
 	if len(ioCounters) > 0 {
 		startIdx := metrics.Len()
 		metrics.Resize(startIdx + networkMetricsLen)
-		initializeNetworkPacketsMetric(metrics.At(startIdx+0), metadata.Metrics.SystemNetworkPackets.New(), startTime, now, ioCounters)
-		initializeNetworkDroppedPacketsMetric(metrics.At(startIdx+1), metadata.Metrics.SystemNetworkDropped.New(), startTime, now, ioCounters)
-		initializeNetworkErrorsMetric(metrics.At(startIdx+2), metadata.Metrics.SystemNetworkErrors.New(), startTime, now, ioCounters)
-		initializeNetworkIOMetric(metrics.At(startIdx+3), metadata.Metrics.SystemNetworkIo.New(), startTime, now, ioCounters)
+		initializeNetworkPacketsMetric(metrics.At(startIdx+0), metadata.Metrics.SystemNetworkPackets, startTime, now, ioCounters)
+		initializeNetworkDroppedPacketsMetric(metrics.At(startIdx+1), metadata.Metrics.SystemNetworkDropped, startTime, now, ioCounters)
+		initializeNetworkErrorsMetric(metrics.At(startIdx+2), metadata.Metrics.SystemNetworkErrors, startTime, now, ioCounters)
+		initializeNetworkIOMetric(metrics.At(startIdx+3), metadata.Metrics.SystemNetworkIo, startTime, now, ioCounters)
 	}
 
 	return nil
 }
 
-func initializeNetworkPacketsMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
@@ -135,8 +135,8 @@ func initializeNetworkPacketsMetric(metric pdata.Metric, metricDescriptor pdata.
 	}
 }
 
-func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
@@ -146,8 +146,8 @@ func initializeNetworkDroppedPacketsMetric(metric pdata.Metric, metricDescriptor
 	}
 }
 
-func initializeNetworkErrorsMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkErrorsMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
@@ -157,8 +157,8 @@ func initializeNetworkErrorsMetric(metric pdata.Metric, metricDescriptor pdata.M
 	}
 }
 
-func initializeNetworkIOMetric(metric pdata.Metric, metricDescriptor pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
-	metricDescriptor.CopyTo(metric)
+func initializeNetworkIOMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, startTime, now pdata.TimestampUnixNano, ioCountersSlice []net.IOCountersStat) {
+	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(ioCountersSlice))
