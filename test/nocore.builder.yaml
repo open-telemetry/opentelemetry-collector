@@ -1,0 +1,14 @@
+dist:
+  module: github.com/open-telemetry/opentelemetry-collector-builder/test/nocore
+  otelcol_version: 0.19.0
+  include_core: false
+
+receivers:
+  - import: go.opentelemetry.io/collector/receiver/jaegerreceiver
+    core: true
+exporters:
+  - import: go.opentelemetry.io/collector/exporter/loggingexporter
+    core: true
+extensions:
+  - import: go.opentelemetry.io/collector/extension/healthcheckextension
+    core: true

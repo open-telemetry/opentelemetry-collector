@@ -1,0 +1,25 @@
+extensions:
+  health_check:
+
+receivers:
+  jaeger:
+    protocols:
+      grpc:
+      thrift_http:
+      thrift_compact:
+      thrift_binary:
+
+processors:
+
+exporters:
+  logging:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers:
+        - jaeger
+      processors: []
+      exporters:
+        - logging

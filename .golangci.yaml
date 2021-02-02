@@ -1,0 +1,18 @@
+# all available settings of specific linters
+linters-settings:
+  goheader:
+    template-path: header.txt
+  goimports:
+    local-prefixes: github.com/open-telemetry/opentelemetry-collector-builder
+  maligned:
+    suggest-new: true
+  misspell:
+    locale: US
+
+linters:
+  enable:
+    - goheader
+    - goimports
+    - maligned
+    - misspell
+    - gosec
