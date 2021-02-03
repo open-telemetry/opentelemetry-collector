@@ -123,7 +123,8 @@ func TestMetrics(t *testing.T) {
                       }
                     ],
                     "time_unix_nano": 1597266546570840817,
-                    "value": 9000000
+                    "value": 9000000,
+                    "exemplars": null
                   }
                 ]
               }
@@ -142,7 +143,8 @@ func TestMetrics(t *testing.T) {
                       }
                     ],
                     "time_unix_nano": 1597266546570840817,
-                    "value": 50
+                    "value": 50,
+                    "exemplars": null
                   },
                   {
                     "labels": [
@@ -156,7 +158,8 @@ func TestMetrics(t *testing.T) {
                       }
                     ],
                     "time_unix_nano": 1597266546570840817,
-                    "value": 5
+                    "value": 5,
+                    "exemplars": null
                   }
                 ]
               }
@@ -175,7 +178,8 @@ func TestMetrics(t *testing.T) {
                       }
                     ],
                     "time_unix_nano": 1597266546570840817,
-                    "value": 30.5
+                    "value": 30.5,
+                    "exemplars": null
                   }
                 ]
               }
@@ -194,7 +198,8 @@ func TestMetrics(t *testing.T) {
                       }
                     ],
                     "time_unix_nano": 1597266546570840817,
-                    "value": 100.6
+                    "value": 100.6,
+                    "exemplars": null
                   }
                 ]
               }
@@ -217,7 +222,8 @@ func TestMetrics(t *testing.T) {
                       }
                     ],
                     "time_unix_nano": 1597266546570840817,
-                    "value": 40000
+                    "value": 40000,
+                    "exemplars": null
                   }
                 ]
               }
@@ -230,7 +236,8 @@ func TestMetrics(t *testing.T) {
                 "data_points": [
                   {
                     "labels": [],
-                    "time_unix_nano": 1597266546570840817
+                    "time_unix_nano": 1597266546570840817,
+                    "exemplars": null
                   }
                 ]
               }
@@ -243,7 +250,8 @@ func TestMetrics(t *testing.T) {
                 "data_points": [
                   {
                     "labels": [],
-                    "time_unix_nano": 1597266546570840817
+                    "time_unix_nano": 1597266546570840817,
+                    "exemplars": null
                   }
                 ]
               }

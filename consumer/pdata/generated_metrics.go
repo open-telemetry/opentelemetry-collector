@@ -2138,17 +2138,17 @@ func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
 type IntExemplarSlice struct {
 	// orig points to the slice otlpmetrics.IntExemplar field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
-	orig *[]*otlpmetrics.IntExemplar
+	orig *[]otlpmetrics.IntExemplar
 }
 
-func newIntExemplarSlice(orig *[]*otlpmetrics.IntExemplar) IntExemplarSlice {
+func newIntExemplarSlice(orig *[]otlpmetrics.IntExemplar) IntExemplarSlice {
 	return IntExemplarSlice{orig}
 }
 
 // NewIntExemplarSlice creates a IntExemplarSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
 func NewIntExemplarSlice() IntExemplarSlice {
-	orig := []*otlpmetrics.IntExemplar(nil)
+	orig := []otlpmetrics.IntExemplar(nil)
 	return IntExemplarSlice{&orig}
 }
 
@@ -2167,7 +2167,7 @@ func (es IntExemplarSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es IntExemplarSlice) At(ix int) IntExemplar {
-	return newIntExemplar((*es.orig)[ix])
+	return newIntExemplar(&(*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2188,18 +2188,13 @@ func (es IntExemplarSlice) CopyTo(dest IntExemplarSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newIntExemplar((*es.orig)[i]).CopyTo(newIntExemplar((*dest.orig)[i]))
-		}
-		return
+	} else {
+		(*dest.orig) = make([]otlpmetrics.IntExemplar, srcLen)
 	}
-	origs := make([]otlpmetrics.IntExemplar, srcLen)
-	wrappers := make([]*otlpmetrics.IntExemplar, srcLen)
+
 	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newIntExemplar((*es.orig)[i]).CopyTo(newIntExemplar(wrappers[i]))
+		newIntExemplar(&(*es.orig)[i]).CopyTo(newIntExemplar(&(*dest.orig)[i]))
 	}
-	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -2222,15 +2217,15 @@ func (es IntExemplarSlice) Resize(newLen int) {
 	}
 
 	if newLen > oldCap {
-		newOrig := make([]*otlpmetrics.IntExemplar, oldLen, newLen)
+		newOrig := make([]otlpmetrics.IntExemplar, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
 
 	// Add extra empty elements to the array.
-	extraOrigs := make([]otlpmetrics.IntExemplar, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
+	empty := otlpmetrics.IntExemplar{}
+	for i := oldLen; i < newLen; i++ {
+		*es.orig = append(*es.orig, empty)
 	}
 }
 
@@ -2239,7 +2234,7 @@ func (es IntExemplarSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es IntExemplarSlice) Append(e IntExemplar) {
-	*es.orig = append(*es.orig, e.orig)
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // IntExemplar is a sample input int measurement.
@@ -2319,17 +2314,17 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 type DoubleExemplarSlice struct {
 	// orig points to the slice otlpmetrics.DoubleExemplar field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
-	orig *[]*otlpmetrics.DoubleExemplar
+	orig *[]otlpmetrics.DoubleExemplar
 }
 
-func newDoubleExemplarSlice(orig *[]*otlpmetrics.DoubleExemplar) DoubleExemplarSlice {
+func newDoubleExemplarSlice(orig *[]otlpmetrics.DoubleExemplar) DoubleExemplarSlice {
 	return DoubleExemplarSlice{orig}
 }
 
 // NewDoubleExemplarSlice creates a DoubleExemplarSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
 func NewDoubleExemplarSlice() DoubleExemplarSlice {
-	orig := []*otlpmetrics.DoubleExemplar(nil)
+	orig := []otlpmetrics.DoubleExemplar(nil)
 	return DoubleExemplarSlice{&orig}
 }
 
@@ -2348,7 +2343,7 @@ func (es DoubleExemplarSlice) Len() int {
 //     ... // Do something with the element
 // }
 func (es DoubleExemplarSlice) At(ix int) DoubleExemplar {
-	return newDoubleExemplar((*es.orig)[ix])
+	return newDoubleExemplar(&(*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2369,18 +2364,13 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newDoubleExemplar((*es.orig)[i]).CopyTo(newDoubleExemplar((*dest.orig)[i]))
-		}
-		return
+	} else {
+		(*dest.orig) = make([]otlpmetrics.DoubleExemplar, srcLen)
 	}
-	origs := make([]otlpmetrics.DoubleExemplar, srcLen)
-	wrappers := make([]*otlpmetrics.DoubleExemplar, srcLen)
+
 	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newDoubleExemplar((*es.orig)[i]).CopyTo(newDoubleExemplar(wrappers[i]))
+		newDoubleExemplar(&(*es.orig)[i]).CopyTo(newDoubleExemplar(&(*dest.orig)[i]))
 	}
-	*dest.orig = wrappers
 }
 
 // Resize is an operation that resizes the slice:
@@ -2403,15 +2393,15 @@ func (es DoubleExemplarSlice) Resize(newLen int) {
 	}
 
 	if newLen > oldCap {
-		newOrig := make([]*otlpmetrics.DoubleExemplar, oldLen, newLen)
+		newOrig := make([]otlpmetrics.DoubleExemplar, oldLen, newLen)
 		copy(newOrig, *es.orig)
 		*es.orig = newOrig
 	}
 
 	// Add extra empty elements to the array.
-	extraOrigs := make([]otlpmetrics.DoubleExemplar, newLen-oldLen)
-	for i := range extraOrigs {
-		*es.orig = append(*es.orig, &extraOrigs[i])
+	empty := otlpmetrics.DoubleExemplar{}
+	for i := oldLen; i < newLen; i++ {
+		*es.orig = append(*es.orig, empty)
 	}
 }
 
@@ -2420,7 +2410,7 @@ func (es DoubleExemplarSlice) Resize(newLen int) {
 // could still be referenced so do not reuse it after passing it to this
 // method.
 func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
-	*es.orig = append(*es.orig, e.orig)
+	*es.orig = append(*es.orig, *e.orig)
 }
 
 // DoubleExemplar is a sample input double measurement.

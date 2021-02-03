@@ -340,7 +340,7 @@ var quantileValues = &messageValueStruct{
 	},
 }
 
-var intExemplarSlice = &sliceOfPtrs{
+var intExemplarSlice = &sliceOfValues{
 	structName: "IntExemplarSlice",
 	element:    intExemplar,
 }
@@ -363,7 +363,7 @@ var intExemplar = &messageValueStruct{
 	},
 }
 
-var doubleExemplarSlice = &sliceOfPtrs{
+var doubleExemplarSlice = &sliceOfValues{
 	structName: "DoubleExemplarSlice",
 	element:    doubleExemplar,
 }
