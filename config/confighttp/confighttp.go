@@ -22,6 +22,7 @@ import (
 
 	"github.com/rs/cors"
 
+	"go.opentelemetry.io/collector/config/configoauth2"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
 )
@@ -48,6 +49,9 @@ type HTTPClientSettings struct {
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
+
+	// OAuth2 Client Credentials Configuration
+	OAuth2ClientCredentials *configoauth2.OAuth2ClientCredentials `mapstructure:"oauth2,omitempty"`
 }
 
 func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
@@ -67,10 +71,18 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
+
 	if len(hcs.Headers) > 0 {
 		clientTransport = &headerRoundTripper{
 			transport: transport,
 			headers:   hcs.Headers,
+		}
+	}
+
+	if hcs.OAuth2ClientCredentials != nil {
+		clientTransport, err = hcs.OAuth2ClientCredentials.RoundTripper(clientTransport)
+		if err != nil {
+			return nil, err
 		}
 	}
 

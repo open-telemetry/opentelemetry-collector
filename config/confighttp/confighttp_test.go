@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configoauth2"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -398,6 +399,7 @@ func TestHttpHeaders(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -424,4 +426,69 @@ func TestHttpHeaders(t *testing.T) {
 			client.Do(req)
 		})
 	}
+}
+
+func TestOAuth2SettingsIncomplete(t *testing.T) {
+	setting := HTTPClientSettings{
+		Endpoint:   "https://some-server/v1/endpoint",
+		TLSSetting: configtls.TLSClientSetting{},
+		OAuth2ClientCredentials: &configoauth2.OAuth2ClientCredentials{
+			ClientID: "testclientid",
+			TokenURL: fmt.Sprintf("%s/v1/token", "https://some-server/v1/token"),
+			Scopes:   []string{"test.resource.read"},
+		},
+	}
+	client, err := setting.ToClient()
+	assert.Error(t, err)
+	assert.Nil(t, client)
+}
+
+func TestOauth2SettingsWithHeaders(t *testing.T) {
+	mux := http.NewServeMux()
+	server := httptest.NewUnstartedServer(mux)
+	serverURL, _ := url.Parse(server.URL)
+
+	token := "someauthtesttoken"
+	testHeaders := map[string]string{
+		"header1": "value1",
+	}
+
+	mux.HandleFunc("/v1/token", func(writer http.ResponseWriter, request *http.Request) {
+		_, _ = writer.Write([]byte(token))
+		writer.WriteHeader(http.StatusOK)
+	})
+
+	mux.HandleFunc("/v1/endpoint", func(writer http.ResponseWriter, request *http.Request) {
+		for k, v := range testHeaders {
+			assert.Equal(t, request.Header.Get(k), v)
+		}
+		assert.Equal(t, request.Header.Get("Authorization"), fmt.Sprintf("Bearer %s", token))
+		writer.WriteHeader(200)
+	})
+
+	setting := HTTPClientSettings{
+		Endpoint:        fmt.Sprintf("%s/v1/endpoint", serverURL.String()),
+		TLSSetting:      configtls.TLSClientSetting{},
+		ReadBufferSize:  0,
+		WriteBufferSize: 0,
+		Timeout:         0,
+		Headers:         testHeaders,
+		OAuth2ClientCredentials: &configoauth2.OAuth2ClientCredentials{
+			ClientID:     "testclientid",
+			ClientSecret: "testclientsecert",
+			TokenURL:     fmt.Sprintf("%s/v1/token", serverURL.String()),
+			Scopes:       []string{"test.resource.read"},
+		},
+	}
+
+	server.Start()
+	defer server.Close()
+
+	client, err := setting.ToClient()
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	req, err := http.NewRequest("GET", setting.Endpoint, nil)
+	assert.NoError(t, err)
+	_, _ = client.Do(req)
 }
