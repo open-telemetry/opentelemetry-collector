@@ -18,6 +18,8 @@ package componenterror
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
@@ -36,5 +38,27 @@ var (
 // CombineErrors converts a list of errors into one error.
 // Deprecated: use consumererror.CombineErrors instead.
 func CombineErrors(errs []error) error {
-	return consumererror.CombineErrors(errs)
+	numErrors := len(errs)
+	if numErrors == 0 {
+		// No errors
+		return nil
+	}
+
+	if numErrors == 1 {
+		return errs[0]
+	}
+
+	errMsgs := make([]string, 0, numErrors)
+	permanent := false
+	for _, err := range errs {
+		if !permanent && consumererror.IsPermanent(err) {
+			permanent = true
+		}
+		errMsgs = append(errMsgs, err.Error())
+	}
+	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
+	if permanent {
+		err = consumererror.Permanent(err)
+	}
+	return err
 }
