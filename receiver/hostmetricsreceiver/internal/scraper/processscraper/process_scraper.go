@@ -91,11 +91,12 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 
 	metadata, err := s.getProcessMetadata()
 	if err != nil {
-		if !consumererror.IsPartialScrapeError(err) {
+		partialErr, isPartial := err.(consumererror.PartialScrapeError)
+		if !isPartial {
 			return rms, err
 		}
 
-		errs.AddRegular(err)
+		errs.Add(partialErr.Failed, partialErr)
 	}
 
 	rms.Resize(len(metadata))
