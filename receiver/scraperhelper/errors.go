@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -35,7 +34,7 @@ func CombineScrapeErrors(errs []error) error {
 	}
 
 	if !partialScrapeErr {
-		return componenterror.CombineErrors(errs)
+		return consumererror.CombineErrors(errs)
 	}
 
 	errMsgs := make([]string, 0, len(errs))

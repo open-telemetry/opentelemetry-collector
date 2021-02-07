@@ -17,8 +17,8 @@ package processor
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -46,7 +46,7 @@ func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.M
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 // NewTracesFanOutConnector wraps multiple trace consumers in a single one.
@@ -70,7 +70,7 @@ func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Trac
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 // NewLogsFanOutConnector wraps multiple log consumers in a single one.
@@ -94,5 +94,5 @@ func (fc logsFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) er
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
