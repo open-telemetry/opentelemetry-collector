@@ -93,9 +93,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 
 	err = errors.Combine()
 	if err != nil && len(usages) == 0 {
-		partialErr := err.(consumererror.PartialScrapeError)
-		partialErr.Failed = metricsLen
-		err = partialErr
+		err = consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	return metrics, err

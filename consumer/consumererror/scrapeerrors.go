@@ -16,25 +16,24 @@ package consumererror
 
 import (
 	"fmt"
-	"strings"
 )
 
 // ScrapeErrors contains multiple PartialScrapeErrors and can also contain generic errors.
 type ScrapeErrors struct {
-	errs            []error
-	scrapeErrsCount int
+	errs              []error
+	failedScrapeCount int
 }
 
 // Add adds a PartialScrapeError with the provided failed count and error.
 func (s *ScrapeErrors) Add(failed int, err error) {
 	s.errs = append(s.errs, NewPartialScrapeError(err, failed))
-	s.scrapeErrsCount++
+	s.failedScrapeCount += failed
 }
 
 // Addf adds a PartialScrapeError with the provided failed count and arguments to format an error.
 func (s *ScrapeErrors) Addf(failed int, format string, a ...interface{}) {
 	s.errs = append(s.errs, NewPartialScrapeError(fmt.Errorf(format, a...), failed))
-	s.scrapeErrsCount++
+	s.failedScrapeCount += failed
 }
 
 // Add adds a regular generic error.
@@ -50,26 +49,9 @@ func (s *ScrapeErrors) AddRegularf(format string, a ...interface{}) {
 // Combine converts a slice of errors into one error.
 // It will return a PartialScrapeError if at least one error in the slice is a PartialScrapeError.
 func (s *ScrapeErrors) Combine() error {
-	if s.scrapeErrsCount == 0 {
+	if s.failedScrapeCount == 0 {
 		return CombineErrors(s.errs)
 	}
 
-	errMsgs := make([]string, 0, len(s.errs))
-	failedScrapeCount := 0
-	for _, err := range s.errs {
-		if partialError, isPartial := err.(PartialScrapeError); isPartial {
-			failedScrapeCount += partialError.Failed
-		}
-
-		errMsgs = append(errMsgs, err.Error())
-	}
-
-	var err error
-	if len(s.errs) == 1 {
-		err = s.errs[0]
-	} else {
-		err = fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
-	}
-
-	return NewPartialScrapeError(err, failedScrapeCount)
+	return NewPartialScrapeError(CombineErrors(s.errs), s.failedScrapeCount)
 }
