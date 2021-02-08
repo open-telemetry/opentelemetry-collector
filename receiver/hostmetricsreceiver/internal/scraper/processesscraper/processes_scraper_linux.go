@@ -20,6 +20,7 @@ import (
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
 const unixSystemSpecificMetricsLen = 1
@@ -30,7 +31,7 @@ func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIn
 }
 
 func initializeProcessesCreatedMetric(metric pdata.Metric, now pdata.TimestampUnixNano, misc *load.MiscStat) {
-	processesCreatedDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemProcessesCreated.Init(metric)
 
 	ddps := metric.IntSum().DataPoints()
 	ddps.Resize(1)

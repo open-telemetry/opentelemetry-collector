@@ -55,6 +55,10 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
+	ProcessCPUTime              MetricIntf
+	ProcessDiskIo               MetricIntf
+	ProcessMemoryPhysicalUsage  MetricIntf
+	ProcessMemoryVirtualUsage   MetricIntf
 	SystemCPULoadAverage15m     MetricIntf
 	SystemCPULoadAverage1m      MetricIntf
 	SystemCPULoadAverage5m      MetricIntf
@@ -69,11 +73,25 @@ type metricStruct struct {
 	SystemFilesystemInodesUsage MetricIntf
 	SystemFilesystemUsage       MetricIntf
 	SystemMemoryUsage           MetricIntf
+	SystemNetworkConnections    MetricIntf
+	SystemNetworkDropped        MetricIntf
+	SystemNetworkErrors         MetricIntf
+	SystemNetworkIo             MetricIntf
+	SystemNetworkPackets        MetricIntf
+	SystemPagingFaults          MetricIntf
+	SystemPagingOperations      MetricIntf
+	SystemPagingUsage           MetricIntf
+	SystemProcessesCount        MetricIntf
+	SystemProcessesCreated      MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
+		"process.cpu.time",
+		"process.disk.io",
+		"process.memory.physical_usage",
+		"process.memory.virtual_usage",
 		"system.cpu.load_average.15m",
 		"system.cpu.load_average.1m",
 		"system.cpu.load_average.5m",
@@ -88,10 +106,24 @@ func (m *metricStruct) Names() []string {
 		"system.filesystem.inodes.usage",
 		"system.filesystem.usage",
 		"system.memory.usage",
+		"system.network.connections",
+		"system.network.dropped",
+		"system.network.errors",
+		"system.network.io",
+		"system.network.packets",
+		"system.paging.faults",
+		"system.paging.operations",
+		"system.paging.usage",
+		"system.processes.count",
+		"system.processes.created",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
+	"process.cpu.time":               Metrics.ProcessCPUTime,
+	"process.disk.io":                Metrics.ProcessDiskIo,
+	"process.memory.physical_usage":  Metrics.ProcessMemoryPhysicalUsage,
+	"process.memory.virtual_usage":   Metrics.ProcessMemoryVirtualUsage,
 	"system.cpu.load_average.15m":    Metrics.SystemCPULoadAverage15m,
 	"system.cpu.load_average.1m":     Metrics.SystemCPULoadAverage1m,
 	"system.cpu.load_average.5m":     Metrics.SystemCPULoadAverage5m,
@@ -106,6 +138,16 @@ var metricsByName = map[string]MetricIntf{
 	"system.filesystem.inodes.usage": Metrics.SystemFilesystemInodesUsage,
 	"system.filesystem.usage":        Metrics.SystemFilesystemUsage,
 	"system.memory.usage":            Metrics.SystemMemoryUsage,
+	"system.network.connections":     Metrics.SystemNetworkConnections,
+	"system.network.dropped":         Metrics.SystemNetworkDropped,
+	"system.network.errors":          Metrics.SystemNetworkErrors,
+	"system.network.io":              Metrics.SystemNetworkIo,
+	"system.network.packets":         Metrics.SystemNetworkPackets,
+	"system.paging.faults":           Metrics.SystemPagingFaults,
+	"system.paging.operations":       Metrics.SystemPagingOperations,
+	"system.paging.usage":            Metrics.SystemPagingUsage,
+	"system.processes.count":         Metrics.SystemProcessesCount,
+	"system.processes.created":       Metrics.SystemProcessesCreated,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -114,6 +156,10 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
+		Metrics.ProcessCPUTime.Name():              Metrics.ProcessCPUTime.New,
+		Metrics.ProcessDiskIo.Name():               Metrics.ProcessDiskIo.New,
+		Metrics.ProcessMemoryPhysicalUsage.Name():  Metrics.ProcessMemoryPhysicalUsage.New,
+		Metrics.ProcessMemoryVirtualUsage.Name():   Metrics.ProcessMemoryVirtualUsage.New,
 		Metrics.SystemCPULoadAverage15m.Name():     Metrics.SystemCPULoadAverage15m.New,
 		Metrics.SystemCPULoadAverage1m.Name():      Metrics.SystemCPULoadAverage1m.New,
 		Metrics.SystemCPULoadAverage5m.Name():      Metrics.SystemCPULoadAverage5m.New,
@@ -128,12 +174,66 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 		Metrics.SystemFilesystemInodesUsage.Name(): Metrics.SystemFilesystemInodesUsage.New,
 		Metrics.SystemFilesystemUsage.Name():       Metrics.SystemFilesystemUsage.New,
 		Metrics.SystemMemoryUsage.Name():           Metrics.SystemMemoryUsage.New,
+		Metrics.SystemNetworkConnections.Name():    Metrics.SystemNetworkConnections.New,
+		Metrics.SystemNetworkDropped.Name():        Metrics.SystemNetworkDropped.New,
+		Metrics.SystemNetworkErrors.Name():         Metrics.SystemNetworkErrors.New,
+		Metrics.SystemNetworkIo.Name():             Metrics.SystemNetworkIo.New,
+		Metrics.SystemNetworkPackets.Name():        Metrics.SystemNetworkPackets.New,
+		Metrics.SystemPagingFaults.Name():          Metrics.SystemPagingFaults.New,
+		Metrics.SystemPagingOperations.Name():      Metrics.SystemPagingOperations.New,
+		Metrics.SystemPagingUsage.Name():           Metrics.SystemPagingUsage.New,
+		Metrics.SystemProcessesCount.Name():        Metrics.SystemProcessesCount.New,
+		Metrics.SystemProcessesCreated.Name():      Metrics.SystemProcessesCreated.New,
 	}
 }
 
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
 var Metrics = &metricStruct{
+	&metricImpl{
+		"process.cpu.time",
+		func(metric pdata.Metric) {
+			metric.SetName("process.cpu.time")
+			metric.SetDescription("Total CPU seconds broken down by different states.")
+			metric.SetUnit("s")
+			metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+			metric.DoubleSum().SetIsMonotonic(true)
+			metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.disk.io",
+		func(metric pdata.Metric) {
+			metric.SetName("process.disk.io")
+			metric.SetDescription("Disk bytes transferred.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.memory.physical_usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.memory.physical_usage")
+			metric.SetDescription("The amount of physical memory in use.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"process.memory.virtual_usage",
+		func(metric pdata.Metric) {
+			metric.SetName("process.memory.virtual_usage")
+			metric.SetDescription("Virtual memory size.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
 	&metricImpl{
 		"system.cpu.load_average.15m",
 		func(metric pdata.Metric) {
@@ -282,6 +382,116 @@ var Metrics = &metricStruct{
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		},
 	},
+	&metricImpl{
+		"system.network.connections",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.connections")
+			metric.SetDescription("The number of connections.")
+			metric.SetUnit("{connections}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.dropped",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.dropped")
+			metric.SetDescription("The number of packets dropped.")
+			metric.SetUnit("{packets}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.errors",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.errors")
+			metric.SetDescription("The number of errors encountered.")
+			metric.SetUnit("{errors}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.io",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.io")
+			metric.SetDescription("The number of bytes transmitted and received.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.network.packets",
+		func(metric pdata.Metric) {
+			metric.SetName("system.network.packets")
+			metric.SetDescription("The number of packets transferred.")
+			metric.SetUnit("{packets}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.paging.faults",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.faults")
+			metric.SetDescription("The number of page faults.")
+			metric.SetUnit("{faults}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.paging.operations",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.operations")
+			metric.SetDescription("The number of paging operations.")
+			metric.SetUnit("{operations}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.paging.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("system.paging.usage")
+			metric.SetDescription("Swap (unix) or pagefile (windows) usage.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.processes.count",
+		func(metric pdata.Metric) {
+			metric.SetName("system.processes.count")
+			metric.SetDescription("Total number of processes in each state.")
+			metric.SetUnit("{processes}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(false)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"system.processes.created",
+		func(metric pdata.Metric) {
+			metric.SetName("system.processes.created")
+			metric.SetDescription("Total number of created processes.")
+			metric.SetUnit("{processes}")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		},
+	},
 }
 
 // M contains a set of methods for each metric that help with
@@ -310,6 +520,28 @@ var Labels = struct {
 	FilesystemType string
 	// MemState (Breakdown of memory usage by type.)
 	MemState string
+	// NetworkDevice (Name of the network interface.)
+	NetworkDevice string
+	// NetworkDirection (Direction of flow of bytes/opertations (receive or transmit).)
+	NetworkDirection string
+	// NetworkProtocol (Network protocol, e.g. TCP or UDP.)
+	NetworkProtocol string
+	// NetworkState (State of the network connection.)
+	NetworkState string
+	// PagingDevice (Name of the page file.)
+	PagingDevice string
+	// PagingDirection (Page In or Page Out.)
+	PagingDirection string
+	// PagingState (Breakdown of paging usage by type.)
+	PagingState string
+	// PagingType (Type of fault.)
+	PagingType string
+	// ProcessDirection (Direction of flow of bytes (read or write).)
+	ProcessDirection string
+	// ProcessState (Breakdown of CPU usage by type.)
+	ProcessState string
+	// ProcessesStatus (Breakdown status of the processes.)
+	ProcessesStatus string
 }{
 	"cpu",
 	"state",
@@ -321,6 +553,17 @@ var Labels = struct {
 	"state",
 	"type",
 	"state",
+	"device",
+	"direction",
+	"protocol",
+	"state",
+	"device",
+	"direction",
+	"state",
+	"type",
+	"direction",
+	"state",
+	"status",
 }
 
 // L contains the possible metric labels that can be used. L is an alias for
@@ -385,4 +628,78 @@ var LabelMemState = struct {
 	"slab_reclaimable",
 	"slab_unreclaimable",
 	"used",
+}
+
+// LabelNetworkDirection are the possible values that the label "network.direction" can have.
+var LabelNetworkDirection = struct {
+	Receive  string
+	Transmit string
+}{
+	"receive",
+	"transmit",
+}
+
+// LabelNetworkProtocol are the possible values that the label "network.protocol" can have.
+var LabelNetworkProtocol = struct {
+	Tcp string
+}{
+	"tcp",
+}
+
+// LabelPagingDirection are the possible values that the label "paging.direction" can have.
+var LabelPagingDirection = struct {
+	PageIn  string
+	PageOut string
+}{
+	"page_in",
+	"page_out",
+}
+
+// LabelPagingState are the possible values that the label "paging.state" can have.
+var LabelPagingState = struct {
+	Cached string
+	Free   string
+	Used   string
+}{
+	"cached",
+	"free",
+	"used",
+}
+
+// LabelPagingType are the possible values that the label "paging.type" can have.
+var LabelPagingType = struct {
+	Major string
+	Minor string
+}{
+	"major",
+	"minor",
+}
+
+// LabelProcessDirection are the possible values that the label "process.direction" can have.
+var LabelProcessDirection = struct {
+	Read  string
+	Write string
+}{
+	"read",
+	"write",
+}
+
+// LabelProcessState are the possible values that the label "process.state" can have.
+var LabelProcessState = struct {
+	System string
+	User   string
+	Wait   string
+}{
+	"system",
+	"user",
+	"wait",
+}
+
+// LabelProcessesStatus are the possible values that the label "processes.status" can have.
+var LabelProcessesStatus = struct {
+	Blocked string
+	Running string
+}{
+	"blocked",
+	"running",
 }

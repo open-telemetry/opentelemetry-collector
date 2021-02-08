@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -72,8 +73,8 @@ func TestScrape(t *testing.T) {
 	require.Greater(t, resourceMetrics.Len(), 1)
 	assertProcessResourceAttributesExist(t, resourceMetrics)
 	assertCPUTimeMetricValid(t, resourceMetrics, expectedStartTime)
-	assertMemoryUsageMetricValid(t, physicalMemoryUsageDescriptor, resourceMetrics)
-	assertMemoryUsageMetricValid(t, virtualMemoryUsageDescriptor, resourceMetrics)
+	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryPhysicalUsage.New(), resourceMetrics)
+	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryVirtualUsage.New(), resourceMetrics)
 	assertDiskIOMetricValid(t, resourceMetrics, expectedStartTime)
 	assertSameTimeStampForAllMetricsWithinResource(t, resourceMetrics)
 }
@@ -91,15 +92,15 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 }
 
 func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
-	cpuTimeMetric := getMetric(t, cpuTimeDescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, cpuTimeDescriptor, cpuTimeMetric)
+	cpuTimeMetric := getMetric(t, metadata.Metrics.ProcessCPUTime.New(), resourceMetrics)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessCPUTime.New(), cpuTimeMetric)
 	if startTime != 0 {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 0, stateLabelName, userStateLabelValue)
-	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 1, stateLabelName, systemStateLabelValue)
+	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 0, "state", "user")
+	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 1, "state", "system")
 	if runtime.GOOS == "linux" {
-		internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 2, stateLabelName, waitStateLabelValue)
+		internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 2, "state", "wait")
 	}
 }
 
@@ -109,13 +110,13 @@ func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.Metric, resourc
 }
 
 func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
-	diskIOMetric := getMetric(t, diskIODescriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, diskIODescriptor, diskIOMetric)
+	diskIOMetric := getMetric(t, metadata.Metrics.ProcessDiskIo.New(), resourceMetrics)
+	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessDiskIo.New(), diskIOMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 0, directionLabelName, readDirectionLabelValue)
-	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 1, directionLabelName, writeDirectionLabelValue)
+	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 0, "direction", "read")
+	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 1, "direction", "write")
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
