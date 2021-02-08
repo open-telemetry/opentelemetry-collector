@@ -49,7 +49,14 @@ func (s *ScrapeErrors) AddRegularf(format string, a ...interface{}) {
 // Combine converts a slice of errors into one error.
 // It will return a PartialScrapeError if at least one error in the slice is a PartialScrapeError.
 func (s *ScrapeErrors) Combine() error {
-	if s.failedScrapeCount == 0 {
+	partialScrapeErr := false
+	for _, err := range s.errs {
+		if IsPartialScrapeError(err) {
+			partialScrapeErr = true
+		}
+	}
+
+	if !partialScrapeErr {
 		return CombineErrors(s.errs)
 	}
 
