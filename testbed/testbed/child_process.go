@@ -425,6 +425,10 @@ func (cp *ChildProcess) fetchCPUUsage() {
 	// Calculate elapsed and process CPU time deltas in seconds
 	deltaElapsedTime := now.Sub(cp.lastElapsedTime).Seconds()
 	deltaCPUTime := times.Total() - cp.lastProcessTimes.Total()
+	if deltaCPUTime < 0 {
+		// We sometimes get negative difference when the process is terminated.
+		deltaCPUTime = 0
+	}
 
 	cp.lastProcessTimes = times
 	cp.lastElapsedTime = now
