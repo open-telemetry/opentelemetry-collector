@@ -25,17 +25,23 @@ func splitMetrics(size int, toSplit pdata.Metrics) pdata.Metrics {
 	}
 	copiedMetrics := 0
 	result := pdata.NewMetrics()
+	result.ResourceMetrics().Resize(toSplit.ResourceMetrics().Len())
 	rms := toSplit.ResourceMetrics()
-	for i := rms.Len() - 1; i >= 0; i-- {
-		rm := rms.At(i)
-		destRs := pdata.NewResourceMetrics()
-		rm.Resource().CopyTo(destRs.Resource())
-		result.ResourceMetrics().Append(destRs)
 
+	rmsCount := 0
+	for i := rms.Len() - 1; i >= 0; i-- {
+		rmsCount++
+		rm := rms.At(i)
+		destRs := result.ResourceMetrics().At(result.ResourceMetrics().Len() - 1 - i)
+		rm.Resource().CopyTo(destRs.Resource())
+
+		destRs.InstrumentationLibraryMetrics().Resize(rm.InstrumentationLibraryMetrics().Len())
+
+		ilmCount := 0
 		for j := rm.InstrumentationLibraryMetrics().Len() - 1; j >= 0; j-- {
+			ilmCount++
 			instMetrics := rm.InstrumentationLibraryMetrics().At(j)
-			destInstMetrics := pdata.NewInstrumentationLibraryMetrics()
-			destRs.InstrumentationLibraryMetrics().Append(destInstMetrics)
+			destInstMetrics := destRs.InstrumentationLibraryMetrics().At(destRs.InstrumentationLibraryMetrics().Len() - 1 - j)
 			instMetrics.InstrumentationLibrary().CopyTo(destInstMetrics.InstrumentationLibrary())
 
 			if size-copiedMetrics >= instMetrics.Metrics().Len() {
@@ -54,12 +60,15 @@ func splitMetrics(size int, toSplit pdata.Metrics) pdata.Metrics {
 				rm.InstrumentationLibraryMetrics().Resize(rm.InstrumentationLibraryMetrics().Len() - 1)
 			}
 			if copiedMetrics == size {
+				result.ResourceMetrics().Resize(rmsCount)
 				return result
 			}
 		}
+		destRs.InstrumentationLibraryMetrics().Resize(ilmCount)
 		if rm.InstrumentationLibraryMetrics().Len() == 0 {
 			rms.Resize(rms.Len() - 1)
 		}
 	}
+	result.ResourceMetrics().Resize(rmsCount)
 	return result
 }
