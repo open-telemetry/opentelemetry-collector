@@ -26,11 +26,13 @@ func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
 	copiedSpans := 0
 	result := pdata.NewTraces()
 	rss := toSplit.ResourceSpans()
+	result.ResourceSpans().Resize(rss.Len())
+	rssCount := 0
 	for i := rss.Len() - 1; i >= 0; i-- {
+		rssCount++
 		rs := rss.At(i)
-		destRs := pdata.NewResourceSpans()
+		destRs := result.ResourceSpans().At(result.ResourceSpans().Len() - 1 - i)
 		rs.Resource().CopyTo(destRs.Resource())
-		result.ResourceSpans().Append(destRs)
 
 		for j := rs.InstrumentationLibrarySpans().Len() - 1; j >= 0; j-- {
 			instSpans := rs.InstrumentationLibrarySpans().At(j)
@@ -54,6 +56,7 @@ func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
 				rs.InstrumentationLibrarySpans().Resize(rs.InstrumentationLibrarySpans().Len() - 1)
 			}
 			if copiedSpans == size {
+				result.ResourceSpans().Resize(rssCount)
 				return result
 			}
 		}
@@ -61,5 +64,6 @@ func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
 			rss.Resize(rss.Len() - 1)
 		}
 	}
+	result.ResourceSpans().Resize(rssCount)
 	return result
 }
