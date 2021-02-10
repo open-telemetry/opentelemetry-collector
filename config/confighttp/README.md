@@ -36,9 +36,12 @@ exporter:
 [Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md)
 leverage server configuration.
 
-- [`cors_allowed_origins`](https://github.com/rs/cors): An empty list means
-  that CORS is not enabled at all. A wildcard can be used to match any origin
-  or one or more characters of an origin.
+- [`cors_allowed_origins`](https://github.com/rs/cors): An empty list here and
+  in `cors_allowed_headers` means that CORS is not enabled at all. 
+  A wildcard can be used to match any origin or one or more characters of an origin.
+- [`cors_allowed_headers`](https://github.com/rs/cors): An empty list here and 
+  in `cors_allowed_origins` means that CORS is not enabled at all. 
+  A wildcard can be used to match any header or one or more characters in the header.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls_settings`](../configtls/README.md)
 
@@ -50,6 +53,8 @@ receivers:
     cors_allowed_origins:
     - https://foo.bar.com
     - https://*.test.com
+    cors_allowed_headers:
+    - ExampleHeader
     endpoint: 0.0.0.0:55690
     protocols:
       http:
