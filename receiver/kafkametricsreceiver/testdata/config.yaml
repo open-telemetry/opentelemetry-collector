@@ -1,0 +1,28 @@
+receivers:
+  kafkametrics:
+    brokers: 10.10.10.10:9092
+    protocol_version: 2.0.0
+    scrapers:
+      - brokers
+      - topics
+      - consumers
+    auth:
+      tls:
+        ca_file: ca.pem
+        cert_file: cert.pem
+        key_file: key.pem
+    topic_match: test_*
+    group_match: test_*
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ kafkametrics ]
+      processors: [ exampleprocessor ]
+      exporters: [ exampleexporter ]
