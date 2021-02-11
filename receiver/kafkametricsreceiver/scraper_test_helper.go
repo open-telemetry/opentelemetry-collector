@@ -19,15 +19,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const (
-	testTopic          = "test_topic"
-	testPartition      = 1
-	testGroup          = "test_group"
-	testConsumerClient = "test_consume_client"
-	testBroker         = "test_broker"
-	testReplica        = 2
-)
-
 var newSaramaClient = sarama.NewClient
 var newClusterAdmin = sarama.NewClusterAdmin
 
@@ -54,7 +45,6 @@ func (s *mockSaramaClient) Close() error {
 	return nil
 }
 
-
 func getMockClient() *mockSaramaClient {
 	client := new(mockSaramaClient)
 	return client
@@ -64,7 +54,6 @@ type mockClusterAdmin struct {
 	mock.Mock
 	sarama.ClusterAdmin
 }
-
 
 func getMockClusterAdmin() *mockClusterAdmin {
 	clusterAdmin := new(mockClusterAdmin)
