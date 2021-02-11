@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -316,37 +317,93 @@ func TestHttpReception(t *testing.T) {
 }
 
 func TestHttpCors(t *testing.T) {
-	hss := &HTTPServerSettings{
-		Endpoint:    "localhost:0",
-		CorsOrigins: []string{"allowed-*.com"},
+	tests := []struct {
+		name             string
+		CorsOrigins      []string
+		CorsHeaders      []string
+		allowedWorks     bool
+		disallowedWorks  bool
+		extraHeaderWorks bool
+	}{
+		{
+			name:             "noCORS",
+			allowedWorks:     false,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
+			name:             "OriginCORS",
+			CorsOrigins:      []string{"allowed-*.com"},
+			CorsHeaders:      []string{},
+			allowedWorks:     true,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
+			name:             "HeaderCORS",
+			CorsOrigins:      []string{"allowed-*.com"},
+			CorsHeaders:      []string{"ExtraHeader"},
+			allowedWorks:     true,
+			disallowedWorks:  false,
+			extraHeaderWorks: true,
+		},
 	}
 
-	ln, err := hss.ToListener()
-	assert.NoError(t, err)
-	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	go func() {
-		_ = s.Serve(ln)
-	}()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hss := &HTTPServerSettings{
+				Endpoint:    "localhost:0",
+				CorsOrigins: tt.CorsOrigins,
+				CorsHeaders: tt.CorsHeaders,
+			}
 
-	// TODO: make starting server deterministic
-	// Wait for the servers to start
-	<-time.After(10 * time.Millisecond)
+			ln, err := hss.ToListener()
+			assert.NoError(t, err)
+			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			go func() {
+				_ = s.Serve(ln)
+			}()
 
-	url := fmt.Sprintf("http://%s", ln.Addr().String())
+			// TODO: make starting server deterministic
+			// Wait for the servers to start
+			<-time.After(10 * time.Millisecond)
 
-	// Verify allowed domain gets responses that allow CORS.
-	verifyCorsResp(t, url, "allowed-origin.com", 200, true)
+			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
-	// Verify disallowed domain gets responses that disallow CORS.
-	verifyCorsResp(t, url, "disallowed-origin.com", 200, false)
+			// Verify allowed domain gets responses that allow CORS.
+			verifyCorsResp(t, url, "allowed-origin.com", false, 200, tt.allowedWorks)
 
+			// Verify allowed domain and extra headers gets responses that allow CORS.
+			verifyCorsResp(t, url, "allowed-origin.com", true, 200, tt.extraHeaderWorks)
+
+			// Verify disallowed domain gets responses that disallow CORS.
+			verifyCorsResp(t, url, "disallowed-origin.com", false, 200, tt.disallowedWorks)
+
+			require.NoError(t, s.Close())
+		})
+	}
+}
+
+func TestHttpCorsInvalidSettings(t *testing.T) {
+	hss := &HTTPServerSettings{
+		Endpoint:    "localhost:0",
+		CorsHeaders: []string{"some-header"},
+	}
+
+	// This effectively does not enable CORS but should also not cause an error
+	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), WithLogger(zap.NewNop()))
+	require.NotNil(t, s)
 	require.NoError(t, s.Close())
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
+	if extraHeader {
+		req.Header.Set("ExtraHeader", "foo")
+		req.Header.Set("Access-Control-Request-Headers", "ExtraHeader")
+	}
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	resp, err := http.DefaultClient.Do(req)

@@ -185,6 +185,7 @@ func TestLoadConfig(t *testing.T) {
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint:    "0.0.0.0:55681",
+					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
 					CorsHeaders: []string{"ExampleHeader"},
 				},
 			},

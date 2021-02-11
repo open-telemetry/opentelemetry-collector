@@ -143,6 +143,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 		r.serverHTTP = r.cfg.HTTP.ToServer(
 			r.gatewayMux,
 			confighttp.WithErrorHandler(errorHandler),
+			confighttp.WithLogger(r.logger),
 		)
 		err = r.startHTTPServer(r.cfg.HTTP, host)
 		if err != nil {

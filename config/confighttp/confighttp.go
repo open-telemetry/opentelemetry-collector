@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
@@ -111,14 +112,14 @@ type HTTPServerSettings struct {
 
 	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
 	// for the OTLP receiver. See github.com/rs/cors
-	// An empty CorsOrigins and CorsHeaders means that CORS is not enabled at all.
-	// A wildcard (*) can be used to match any origin or one or more characters of an origin.
+	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
+	// used to match any origin or one or more characters of an origin.
 	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
 
 	// CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter
 	// for the OTLP receiver. See github.com/rs/cors
-	// An empty CorsOrigins and CorsHeaders means that CORS is not enabled at all.
-	// A wildcard (*) can be used to match any header or one or more characters of a header.
+	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins
+	// A wildcard (*) can be used to match any header.
 	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
 }
 
@@ -143,9 +144,17 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
 	errorHandler middleware.ErrorHandler
+	logger       *zap.Logger
 }
 
 type ToServerOption func(opts *toServerOptions)
+
+// WithLogger allows to specify optional logger used during initialization.
+func WithLogger(logger *zap.Logger) ToServerOption {
+	return func(opts *toServerOptions) {
+		opts.logger = logger
+	}
+}
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
 // when there is a failure inside middleware.HTTPContentDecompressor.
@@ -160,10 +169,14 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, opts ...ToServerOp
 	for _, o := range opts {
 		o(serverOpts)
 	}
-	if len(hss.CorsOrigins) > 0 || len(hss.CorsHeaders) > 0 {
+	if len(hss.CorsOrigins) > 0 {
 		co := cors.Options{AllowedOrigins: hss.CorsOrigins, AllowedHeaders: hss.CorsHeaders}
 		handler = cors.New(co).Handler(handler)
+	} else if len(hss.CorsHeaders) > 0 && serverOpts.logger != nil {
+		serverOpts.logger.Warn(
+			"CORS needs to be enabled via `cors_allowed_origins` for `cors_allowed_headers` to have an effect")
 	}
+
 	handler = middleware.HTTPContentDecompressor(
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),
