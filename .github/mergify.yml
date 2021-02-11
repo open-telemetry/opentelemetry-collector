@@ -1,7 +1,7 @@
 pull_request_rules:
   - name: remove outdated reviews
     conditions:
-      - base=master
+      - base=main
     actions:
       dismiss_reviews: {}
 
