@@ -42,12 +42,12 @@ func Execute() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if err := cfg.Validate(); err != nil {
-				cfg.Logger.Error(err, "invalid configuration: %w", err)
+				cfg.Logger.Error(err, "invalid configuration")
 				return nil
 			}
 
 			if err := cfg.ParseModules(); err != nil {
-				cfg.Logger.Error(err, "invalid module configuration: %w", err)
+				cfg.Logger.Error(err, "invalid module configuration")
 				return nil
 			}
 
