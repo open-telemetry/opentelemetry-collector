@@ -63,23 +63,25 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Headers: map[string]string{
-					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-					"header1":                "234",
-					"another":                "somevalue",
-				},
 				Endpoint: "https://1.2.3.4:1234",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
-						CAFile:   "/var/lib/mycert.pem",
-						CertFile: "certfile",
-						KeyFile:  "keyfile",
+				HTTPTransportSettings: confighttp.HTTPTransportSettings{
+					Headers: map[string]string{
+						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
+						"header1":                "234",
+						"another":                "somevalue",
 					},
-					Insecure: true,
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "/var/lib/mycert.pem",
+							CertFile: "certfile",
+							KeyFile:  "keyfile",
+						},
+						Insecure: true,
+					},
+					ReadBufferSize:  123,
+					WriteBufferSize: 345,
+					Timeout:         time.Second * 10,
 				},
-				ReadBufferSize:  123,
-				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
 			},
 		})
 }

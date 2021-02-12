@@ -53,9 +53,11 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: defaultTimeout,
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
+			HTTPTransportSettings: confighttp.HTTPTransportSettings{
+				Timeout: defaultTimeout,
+				// We almost read 0 bytes, so no need to tune ReadBufferSize.
+				WriteBufferSize: 512 * 1024,
+			},
 		},
 		Format:             defaultFormat,
 		DefaultServiceName: defaultServiceName,

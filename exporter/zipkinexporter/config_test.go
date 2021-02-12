@@ -69,9 +69,11 @@ func TestLoadConfig(t *testing.T) {
 			QueueSize:    10,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint:        "https://somedest:1234/api/v2/spans",
-			WriteBufferSize: 524288,
-			Timeout:         5 * time.Second,
+			Endpoint: "https://somedest:1234/api/v2/spans",
+			HTTPTransportSettings: confighttp.HTTPTransportSettings{
+				WriteBufferSize: 524288,
+				Timeout:         5 * time.Second,
+			},
 		},
 		Format:             "proto",
 		DefaultServiceName: "test_name",

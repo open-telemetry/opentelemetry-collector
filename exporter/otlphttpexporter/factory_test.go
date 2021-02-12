@@ -79,8 +79,10 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						Insecure: false,
+					HTTPTransportSettings: confighttp.HTTPTransportSettings{
+						TLSSetting: configtls.TLSClientSetting{
+							Insecure: false,
+						},
 					},
 				},
 			},
@@ -90,9 +92,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
-					Headers: map[string]string{
-						"hdr1": "val1",
-						"hdr2": "val2",
+					HTTPTransportSettings: confighttp.HTTPTransportSettings{
+						Headers: map[string]string{
+							"hdr1": "val1",
+							"hdr2": "val2",
+						},
 					},
 				},
 			},
@@ -102,9 +106,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
-							CAFile: "testdata/test_cert.pem",
+					HTTPTransportSettings: confighttp.HTTPTransportSettings{
+						TLSSetting: configtls.TLSClientSetting{
+							TLSSetting: configtls.TLSSetting{
+								CAFile: "testdata/test_cert.pem",
+							},
 						},
 					},
 				},
@@ -115,9 +121,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			config: Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
-							CAFile: "nosuchfile",
+					HTTPTransportSettings: confighttp.HTTPTransportSettings{
+						TLSSetting: configtls.TLSClientSetting{
+							TLSSetting: configtls.TLSSetting{
+								CAFile: "nosuchfile",
+							},
 						},
 					},
 				},

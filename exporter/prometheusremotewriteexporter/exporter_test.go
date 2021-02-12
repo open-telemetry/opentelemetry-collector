@@ -681,9 +681,11 @@ func Test_PushMetrics(t *testing.T) {
 				Namespace: "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://some.url:9411/api/prom/push",
-					// We almost read 0 bytes, so no need to tune ReadBufferSize.
-					ReadBufferSize:  0,
-					WriteBufferSize: 512 * 1024,
+					HTTPTransportSettings: confighttp.HTTPTransportSettings{
+						// We almost read 0 bytes, so no need to tune ReadBufferSize.
+						ReadBufferSize:  0,
+						WriteBufferSize: 512 * 1024,
+					},
 				},
 			}
 			assert.NotNil(t, config)

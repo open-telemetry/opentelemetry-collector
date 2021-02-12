@@ -70,18 +70,20 @@ func Test_loadConfig(t *testing.T) {
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
-						CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
+				HTTPTransportSettings: confighttp.HTTPTransportSettings{
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
+						},
+						Insecure: false,
 					},
-					Insecure: false,
+					ReadBufferSize:  0,
+					WriteBufferSize: 512 * 1024,
+					Timeout:         5 * time.Second,
+					Headers: map[string]string{
+						"prometheus-remote-write-version": "0.1.0",
+						"x-scope-orgid":                   "234"},
 				},
-				ReadBufferSize:  0,
-				WriteBufferSize: 512 * 1024,
-				Timeout:         5 * time.Second,
-				Headers: map[string]string{
-					"prometheus-remote-write-version": "0.1.0",
-					"x-scope-orgid":                   "234"},
 			},
 		})
 }

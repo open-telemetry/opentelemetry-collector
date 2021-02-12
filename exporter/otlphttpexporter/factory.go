@@ -51,10 +51,12 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]string{},
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
+			HTTPTransportSettings: confighttp.HTTPTransportSettings{
+				Timeout: 30 * time.Second,
+				Headers: map[string]string{},
+				// We almost read 0 bytes, so no need to tune ReadBufferSize.
+				WriteBufferSize: 512 * 1024,
+			},
 		},
 	}
 }
