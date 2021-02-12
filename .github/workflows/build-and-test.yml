@@ -52,31 +52,31 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go Modules
+        id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
           path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Restore tools binaries
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
+      - name: Download dependencies
+        if: steps.module-cache.outputs.cache-hit != 'true'
+        run: go mod download
+      - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
-      - name: Install tools
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
+      - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Split Loadtest Jobs
         id: splitloadtest
         run: ./.github/workflows/scripts/setup_load_tests.sh
-      - name: Upload Tool Binaries
-        uses: actions/upload-artifact@v1
-        with:
-          name: tool-binaries
-          path: /home/runner/go/bin
+
   lint:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -98,13 +98,14 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Lint
         run: make -j4 gochecklicense goimpi golint gomisspell
       - name: Gen Metadata
@@ -136,13 +137,14 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Build Collector for All Architectures
         run: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|xargs make
       - name: Create Collector Binaries Archive
@@ -176,13 +178,14 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install fluentbit
         if: ${{ contains(matrix.test, 'Log10kDPS') }}
         run: |
@@ -231,13 +234,14 @@ jobs:
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Loadtest
         run: make testbed-correctness
       - name: GitHub Issue Generator
@@ -271,13 +275,14 @@ jobs:
           ruby-version: '2.6'
       - name: Install fpm
         run: gem install --no-document fpm -v 1.11.0
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Download Collector Binaries
         uses: actions/download-artifact@v1
         with:
@@ -362,13 +367,14 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -421,13 +427,14 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-      - name: Download Tool Binaries
-        uses: actions/download-artifact@v1
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
         with:
-          name: tool-binaries
           path: /home/runner/go/bin
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
