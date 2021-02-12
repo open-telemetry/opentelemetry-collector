@@ -131,3 +131,6 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    - text: "G101:"
+      linters:
+        - gosec

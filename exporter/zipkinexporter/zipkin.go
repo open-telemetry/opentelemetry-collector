@@ -17,12 +17,15 @@ package zipkinexporter
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/trace/zipkin"
@@ -40,6 +43,8 @@ type zipkinExporter struct {
 	client     *http.Client
 	serializer zipkinreporter.SpanSerializer
 }
+
+const TokenPlaceholder = "$TOKEN"
 
 func createZipkinExporter(cfg *Config) (*zipkinExporter, error) {
 	client, err := cfg.HTTPClientSettings.ToClient()
@@ -76,7 +81,17 @@ func (ze *zipkinExporter) pushTraceData(ctx context.Context, td pdata.Traces) (i
 		return td.SpanCount(), consumererror.Permanent(fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", ze.url, bytes.NewReader(body))
+	url := ze.url
+	if strings.Contains(ze.url, TokenPlaceholder) {
+		c, ok := client.FromContext(ctx)
+		if ok {
+			url = strings.Replace(ze.url, TokenPlaceholder, c.Token, 1)
+		} else {
+			return 0, errors.New("error during fetching client from context")
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	if err != nil {
 		return td.SpanCount(), fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
 	}

@@ -17,6 +17,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"testing"
@@ -30,7 +31,7 @@ func TestClientContext(t *testing.T) {
 		"1.1.1.1", "127.0.0.1", "1111", "ip",
 	}
 	for _, ip := range ips {
-		ctx := NewContext(context.Background(), &Client{ip})
+		ctx := NewContext(context.Background(), &Client{ip, ""})
 		c, ok := FromContext(ctx)
 		assert.True(t, ok)
 		assert.NotNil(t, c)
@@ -53,8 +54,22 @@ func TestParsingGRPC(t *testing.T) {
 }
 
 func TestParsingHTTP(t *testing.T) {
-	client, ok := FromHTTP(&http.Request{RemoteAddr: "192.168.1.2"})
+	h := http.Header{}
+	h.Set(AuthTokenHeader, "abc")
+
+	client, ok := FromHTTP(&http.Request{RemoteAddr: "192.168.1.2", Header: h})
 	assert.True(t, ok)
 	assert.NotNil(t, client)
 	assert.Equal(t, client.IP, "192.168.1.2")
+	assert.Equal(t, "abc", client.Token)
+	assert.Equal(t, "192.168.1.2", client.IP)
+}
+
+func TestExtractingFromURI(t *testing.T) {
+	token := "ZaVnCaaaaV0aaaZ8s_abcdefghijklmnopqrstuv111111111111222222222223333333444444444445555555555666666666677777777888888889999999999911111aaaaabbb=="
+	extractedToken := tokenFromURI(fmt.Sprintf("https://some-endpoint/example.com/receiver/v1/trace/%s", token))
+	assert.Equal(t, token, extractedToken)
+
+	extractedToken = tokenFromURI("https://some-endpoint/example.com/receiver/v1/trace/tooshort")
+	assert.Equal(t, "", extractedToken)
 }

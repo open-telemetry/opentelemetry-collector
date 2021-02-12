@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -113,6 +114,97 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	}
 	// the last batch has the remaining size
 	assert.Equal(t, (requestCount*spansPerRequest)%int(cfg.SendBatchSize), sink.AllTraces()[len(sink.AllTraces())-1].SpanCount())
+}
+
+func TestBatchProcessorSpansWithDifferentTokens(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 128
+	cfg.SendBatchMaxSize = 128
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelBasic)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	requestCount := 50
+	spansPerRequest := 100
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		tokenName := fmt.Sprintf("TOKEN%v", requestNum+1)
+		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+		}
+		ctx := client.NewContext(context.Background(), &client.Client{IP: "", Token: tokenName})
+		assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+	}
+
+	// Added to test logic that check for empty resources.
+	td := testdata.GenerateTraceDataEmpty()
+	batcher.ConsumeTraces(context.Background(), td)
+
+	// wait for all spans to be reported
+	for {
+		if sink.SpansCount() == requestCount*spansPerRequest {
+			break
+		}
+		<-time.After(cfg.Timeout)
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	for i := 0; i < len(sink.AllTraces()); i++ {
+		assert.Equal(t, spansPerRequest, sink.AllTraces()[i].SpanCount())
+	}
+}
+
+func TestBatchProcessorMergingSpansWithTheSameTokens(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	cfg.SendBatchSize = 128
+	cfg.SendBatchMaxSize = 128
+	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	batcher := newBatchTracesProcessor(creationParams, sink, cfg, configtelemetry.LevelBasic)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	requestCount := 100
+	spansPerRequest := 50
+	numberOrRequestsWithTheSameToken := 5
+	for requestNum := 0; requestNum < requestCount/numberOrRequestsWithTheSameToken; requestNum++ {
+		tokenName := fmt.Sprintf("TOKEN%v", requestNum+1)
+		for sameTokenRequestNum := 0; sameTokenRequestNum < numberOrRequestsWithTheSameToken; sameTokenRequestNum++ {
+			td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
+			spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+			for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+				spans.At(spanIndex).SetName(getTestSpanName(requestNum*numberOrRequestsWithTheSameToken+sameTokenRequestNum, spanIndex))
+			}
+			ctx := client.NewContext(context.Background(), &client.Client{IP: "", Token: tokenName})
+			assert.NoError(t, batcher.ConsumeTraces(ctx, td))
+		}
+	}
+
+	// Added to test logic that check for empty resources.
+	td := testdata.GenerateTraceDataEmpty()
+	batcher.ConsumeTraces(context.Background(), td)
+
+	// wait for all spans to be reported
+	for {
+		if sink.SpansCount() == requestCount*spansPerRequest {
+			break
+		}
+		<-time.After(cfg.Timeout)
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	require.Equal(t, requestCount*spansPerRequest, sink.SpansCount())
+	numberOfFullBatches := spansPerRequest * numberOrRequestsWithTheSameToken / int(cfg.SendBatchMaxSize)
+	for i := 0; i < len(sink.AllTraces()); i = i + numberOfFullBatches + 1 {
+		for j := 0; j < numberOfFullBatches; j++ {
+			assert.Equal(t, int(cfg.SendBatchMaxSize), sink.AllTraces()[i+j].SpanCount())
+		}
+		assert.Equal(t, spansPerRequest*numberOrRequestsWithTheSameToken%int(cfg.SendBatchMaxSize), sink.AllTraces()[i+numberOfFullBatches].SpanCount())
+	}
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {

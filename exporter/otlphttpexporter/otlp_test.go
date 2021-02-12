@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -130,6 +132,18 @@ func TestTraceRoundTrip(t *testing.T) {
 			assert.EqualValues(t, td, allTraces[0])
 		})
 	}
+}
+
+func TestTraceUrlToken(t *testing.T) {
+	const TokenValue = "my_token"
+	const TokenPlaceholder = "$TOKEN"
+	const url = "https://some/url/"
+	exp := startTraceExporter(t, url+TokenPlaceholder, url+TokenPlaceholder)
+	td := testdata.GenerateTraceDataOneSpan()
+	ctx := client.NewContext(context.Background(), &client.Client{IP: "", Token: TokenValue})
+	err := exp.ConsumeTraces(ctx, td)
+	assert.Error(t, err)
+	assert.True(t, strings.Contains(err.Error(), url+TokenValue))
 }
 
 func TestMetricsError(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
@@ -73,6 +74,11 @@ type batch interface {
 	add(item interface{})
 }
 
+type itemWithContext struct {
+	ctx  context.Context
+	item interface{}
+}
+
 var _ consumer.TracesConsumer = (*batchProcessor)(nil)
 var _ consumer.MetricsConsumer = (*batchProcessor)(nil)
 var _ consumer.LogsConsumer = (*batchProcessor)(nil)
@@ -112,7 +118,17 @@ func (bp *batchProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
+func getTokenFromContext(ctx context.Context) string {
+	c, ok := client.FromContext(ctx)
+	if ok {
+		return c.Token
+	}
+	return ""
+}
+
 func (bp *batchProcessor) startProcessingCycle() {
+	currentContext := context.Background()
+	currentToken := ""
 	bp.timer = time.NewTimer(bp.timeout)
 	for {
 		select {
@@ -120,8 +136,9 @@ func (bp *batchProcessor) startProcessingCycle() {
 		DONE:
 			for {
 				select {
-				case item := <-bp.newItem:
-					bp.processItem(item)
+				case itemAndCtxFromChannel := <-bp.newItem:
+					itemAndContext := itemAndCtxFromChannel.(itemWithContext)
+					currentToken, currentContext = bp.processItemIfTokenUnchanged(currentContext, itemAndContext, currentToken)
 				default:
 					break DONE
 				}
@@ -130,41 +147,55 @@ func (bp *batchProcessor) startProcessingCycle() {
 			if bp.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
-				bp.sendItems(statTimeoutTriggerSend)
+				bp.sendItems(currentContext, statTimeoutTriggerSend)
 			}
 			close(bp.done)
 			return
-		case item := <-bp.newItem:
-			if item == nil {
+		case itemAndCtxFromChannel := <-bp.newItem:
+			itemAndContext := itemAndCtxFromChannel.(itemWithContext)
+			if itemAndContext.item == nil {
 				continue
 			}
-			bp.processItem(item)
+			currentToken, currentContext = bp.processItemIfTokenUnchanged(currentContext, itemAndContext, currentToken)
 		case <-bp.timer.C:
 			if bp.batch.itemCount() > 0 {
-				bp.sendItems(statTimeoutTriggerSend)
+				bp.sendItems(currentContext, statTimeoutTriggerSend)
 			}
 			bp.resetTimer()
 		}
 	}
 }
 
-func (bp *batchProcessor) processItem(item interface{}) {
+func (bp *batchProcessor) processItemIfTokenUnchanged(currentContext context.Context, itemAndContext itemWithContext, currentToken string) (string, context.Context) {
+	newToken := getTokenFromContext(itemAndContext.ctx)
+	if currentToken != newToken && currentToken != "" {
+		bp.timer.Stop()
+		bp.sendItems(currentContext, statBatchSizeTriggerSend)
+		bp.resetTimer()
+	}
+	currentToken = newToken
+	currentContext = itemAndContext.ctx
+	bp.processItem(itemAndContext)
+	return currentToken, currentContext
+}
+
+func (bp *batchProcessor) processItem(itemAndContext itemWithContext) {
 	if bp.sendBatchMaxSize > 0 {
-		if td, ok := item.(pdata.Traces); ok {
+		if td, ok := itemAndContext.item.(pdata.Traces); ok {
 			itemCount := bp.batch.itemCount()
 			if itemCount+uint32(td.SpanCount()) > bp.sendBatchMaxSize {
 				tdRemainSize := splitTrace(int(bp.sendBatchSize-itemCount), td)
-				item = tdRemainSize
+				itemAndContext.item = tdRemainSize
 				go func() {
-					bp.newItem <- td
+					bp.newItem <- itemWithContext{itemAndContext.ctx, td}
 				}()
 			}
 		}
-		if td, ok := item.(pdata.Metrics); ok {
+		if td, ok := itemAndContext.item.(pdata.Metrics); ok {
 			itemCount := bp.batch.itemCount()
 			if itemCount+uint32(td.MetricCount()) > bp.sendBatchMaxSize {
 				tdRemainSize := splitMetrics(int(bp.sendBatchSize-itemCount), td)
-				item = tdRemainSize
+				itemAndContext.item = tdRemainSize
 				go func() {
 					bp.newItem <- td
 				}()
@@ -172,10 +203,10 @@ func (bp *batchProcessor) processItem(item interface{}) {
 		}
 	}
 
-	bp.batch.add(item)
+	bp.batch.add(itemAndContext.item)
 	if bp.batch.itemCount() >= bp.sendBatchSize {
 		bp.timer.Stop()
-		bp.sendItems(statBatchSizeTriggerSend)
+		bp.sendItems(itemAndContext.ctx, statBatchSizeTriggerSend)
 		bp.resetTimer()
 	}
 }
@@ -184,37 +215,38 @@ func (bp *batchProcessor) resetTimer() {
 	bp.timer.Reset(bp.timeout)
 }
 
-func (bp *batchProcessor) sendItems(measure *stats.Int64Measure) {
+func (bp *batchProcessor) sendItems(ctx context.Context, measure *stats.Int64Measure) {
 	// Add that it came form the trace pipeline?
 	statsTags := []tag.Mutator{tag.Insert(processor.TagProcessorNameKey, bp.name)}
-	_ = stats.RecordWithTags(context.Background(), statsTags, measure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
+	_ = stats.RecordWithTags(ctx, statsTags, measure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
 
 	if bp.telemetryLevel == configtelemetry.LevelDetailed {
-		_ = stats.RecordWithTags(context.Background(), statsTags, statBatchSendSizeBytes.M(int64(bp.batch.size())))
+		_ = stats.RecordWithTags(ctx, statsTags, statBatchSendSizeBytes.M(int64(bp.batch.size())))
 	}
 
-	if err := bp.batch.export(context.Background()); err != nil {
+	if err := bp.batch.export(ctx); err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
 	}
 	bp.batch.reset()
 }
 
 // ConsumeTraces implements TracesProcessor
-func (bp *batchProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	bp.newItem <- td
+func (bp *batchProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	ctx.Value("Token")
+	bp.newItem <- itemWithContext{ctx, td}
 	return nil
 }
 
 // ConsumeTraces implements MetricsProcessor
-func (bp *batchProcessor) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (bp *batchProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	// First thing is convert into a different internal format
-	bp.newItem <- md
+	bp.newItem <- itemWithContext{ctx, md}
 	return nil
 }
 
 // ConsumeLogs implements LogsProcessor
-func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	bp.newItem <- ld
+func (bp *batchProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	bp.newItem <- itemWithContext{ctx, ld}
 	return nil
 }
 
