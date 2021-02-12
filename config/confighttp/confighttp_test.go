@@ -430,7 +430,7 @@ func TestHttpHeaders(t *testing.T) {
 
 func TestOAuth2SettingsIncomplete(t *testing.T) {
 	setting := HTTPClientSettings{
-		Endpoint:   "https://some-server/v1/endpoint",
+		Endpoint:   "https://example.com/v1/endpoint",
 		TLSSetting: configtls.TLSClientSetting{},
 		OAuth2ClientCredentials: &configoauth2.OAuth2ClientCredentials{
 			ClientID: "testclientid",
@@ -443,7 +443,7 @@ func TestOAuth2SettingsIncomplete(t *testing.T) {
 	assert.Nil(t, client)
 }
 
-func TestOauth2SettingsWithHeaders(t *testing.T) {
+func TestOAuth2SettingsWithHeaders(t *testing.T) {
 	mux := http.NewServeMux()
 	server := httptest.NewUnstartedServer(mux)
 	serverURL, _ := url.Parse(server.URL)
