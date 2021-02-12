@@ -116,10 +116,6 @@ workflows:
   version: 2
   build-and-test:
     jobs:
-      - windows-test:
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup-environment:
           filters:
             tags:
@@ -174,7 +170,6 @@ workflows:
             - loadtest
             - test
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -186,7 +181,6 @@ workflows:
             - loadtest
             - test
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -203,7 +197,6 @@ workflows:
             - loadtest
             - test
             - coverage
-            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -381,26 +374,6 @@ jobs:
       - publish_docker_images:
           repo: opentelemetry-collector-dev
           tag: ${CIRCLE_SHA1}
-
-  windows-test:
-    executor:
-      name: win/default
-      shell: powershell.exe
-    environment:
-      GOPATH=~/go
-    steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Upgrade golang
-          command: |
-            choco upgrade golang --version=1.15
-            refreshenv
-      - run:
-          name: Unit tests
-          command: go test ./...
-      - save_module_cache
-      - github_issue_generator
 
   windows-msi:
     executor:
