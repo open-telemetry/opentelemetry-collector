@@ -21,8 +21,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -71,7 +71,7 @@ func (exts Extensions) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func (exts Extensions) NotifyPipelineReady() error {
@@ -99,7 +99,7 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func (exts Extensions) ToMap() map[configmodels.Extension]component.ServiceExtension {

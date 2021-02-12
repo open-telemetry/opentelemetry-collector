@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
@@ -50,7 +50,7 @@ func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 			messages = append(messages, Message{Value: bts})
 		}
 	}
-	return messages, componenterror.CombineErrors(errs)
+	return messages, consumererror.CombineErrors(errs)
 }
 
 func (j jaegerMarshaller) Encoding() string {

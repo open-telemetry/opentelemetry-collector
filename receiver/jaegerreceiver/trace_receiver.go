@@ -49,6 +49,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
@@ -233,7 +234,7 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 			jr.grpc.Stop()
 			jr.grpc = nil
 		}
-		err = componenterror.CombineErrors(errs)
+		err = consumererror.CombineErrors(errs)
 	})
 
 	return err

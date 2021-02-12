@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenterror_test
+package consumererror
 
 import (
 	"fmt"
 	"testing"
-
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func TestCombineErrors(t *testing.T) {
@@ -50,20 +47,20 @@ func TestCombineErrors(t *testing.T) {
 			errors: []error{
 				fmt.Errorf("foo"),
 				fmt.Errorf("bar"),
-				consumererror.Permanent(fmt.Errorf("permanent"))},
+				Permanent(fmt.Errorf("permanent"))},
 			expected: "Permanent error: [foo; bar; Permanent error: permanent]",
 		},
 	}
 
 	for _, tc := range testCases {
-		got := componenterror.CombineErrors(tc.errors)
+		got := CombineErrors(tc.errors)
 		if (got == nil) != tc.expectNil {
 			t.Errorf("CombineErrors(%v) == nil? Got: %t. Want: %t", tc.errors, got == nil, tc.expectNil)
 		}
 		if got != nil && tc.expected != got.Error() {
 			t.Errorf("CombineErrors(%v) = %q. Want: %q", tc.errors, got, tc.expected)
 		}
-		if tc.expectedPermanent && !consumererror.IsPermanent(got) {
+		if tc.expectedPermanent && !IsPermanent(got) {
 			t.Errorf("CombineErrors(%v) = %q. Want: consumererror.permanent", tc.errors, got)
 		}
 	}

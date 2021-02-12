@@ -22,10 +22,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -61,7 +61,7 @@ func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 // StartAll starts all receivers.

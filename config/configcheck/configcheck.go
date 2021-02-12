@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // The regular expression for valid config field tag.
@@ -56,7 +56,7 @@ func ValidateConfigFromFactories(factories component.Factories) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 // ValidateConfig enforces that given configuration object is following the patterns
@@ -109,7 +109,7 @@ func validateConfigDataType(t reflect.Type) error {
 		// reflect.UnsafePointer.
 	}
 
-	if err := componenterror.CombineErrors(errs); err != nil {
+	if err := consumererror.CombineErrors(errs); err != nil {
 		return fmt.Errorf(
 			"type %q from package %q has invalid config settings: %v",
 			t.Name(),
