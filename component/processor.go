@@ -68,6 +68,8 @@ type ProcessorCreateParams struct {
 
 	// ApplicationStartInfo can be used by components for informational purposes
 	ApplicationStartInfo ApplicationStartInfo
+
+	Registries *Registries
 }
 
 // ProcessorFactory is factory interface for processors. This is the

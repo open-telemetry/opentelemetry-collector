@@ -51,7 +51,7 @@ func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
 // Receivers is a map of receivers created from receiver configs.
 type Receivers map[configmodels.Receiver]*builtReceiver
 
-// StopAll stops all receivers.
+// ShutdownAll stops all receivers.
 func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 	var errs []error
 	for _, rcv := range rcvs {
@@ -84,6 +84,7 @@ type ReceiversBuilder struct {
 	config         *configmodels.Config
 	builtPipelines BuiltPipelines
 	factories      map[configmodels.Type]component.ReceiverFactory
+	registries     *component.Registries
 }
 
 // NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
@@ -91,13 +92,14 @@ func NewReceiversBuilder(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
+	registries *component.Registries,
 	builtPipelines BuiltPipelines,
 	factories map[configmodels.Type]component.ReceiverFactory,
 ) *ReceiversBuilder {
-	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories}
+	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories, registries}
 }
 
-// BuildProcessors receivers from config.
+// Build receivers from config.
 func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	receivers := make(Receivers)
 
@@ -181,6 +183,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	creationParams := component.ReceiverCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
+		Registries:           rb.registries,
 	}
 
 	switch dataType {

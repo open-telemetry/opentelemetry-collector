@@ -16,6 +16,7 @@ package builder
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,8 @@ import (
 func TestExportersBuilder_Build(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
+
+	registries := &component.Registries{}
 
 	oceFactory := opencensusexporter.NewFactory()
 	factories.Exporters[oceFactory.Type()] = oceFactory
@@ -61,7 +64,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 		},
 	}
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, registries, factories.Exporters).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -90,7 +93,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "trace")
-	exporters, err = NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	exporters, err = NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, registries, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
 	assert.NoError(t, err)
 
@@ -109,6 +112,8 @@ func TestExportersBuilder_Build(t *testing.T) {
 func TestExportersBuilder_BuildLogs(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
+
+	registries := &component.Registries{}
 
 	cfg := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{
@@ -131,7 +136,7 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 		},
 	}
 
-	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, registries, factories.Exporters).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, exporters)
@@ -156,7 +161,7 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
 	delete(cfg.Service.Pipelines, "logs")
-	exporters, err = NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	exporters, err = NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, registries, factories.Exporters).Build()
 	assert.NotNil(t, exporters)
 	assert.Nil(t, err)
 
@@ -225,6 +230,8 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 		bf.Type(): bf,
 	}
 
+	registries := &component.Registries{}
+
 	pipelines := []*configmodels.Pipeline{
 		{
 			Name:      "trace",
@@ -260,11 +267,66 @@ func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
 				},
 			}
 
-			exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, fm).Build()
+			exporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, registries, fm).Build()
 			assert.Error(t, err)
 			assert.Zero(t, len(exporters))
 		})
 	}
+}
+
+func TestRegistriesAddedToExporterCreateParams(t *testing.T) {
+	registries := component.NewRegistries(map[string]*component.Registry{
+		"myregistry": {},
+	})
+
+	expf := mockExporterFactory(func(c context.Context, ecp component.ExporterCreateParams, e configmodels.Exporter) (component.TracesExporter, error) {
+		if ecp.Registries.Get("myregistry") != nil {
+			return &componenttest.ExampleExporterConsumer{}, nil
+		}
+		return nil, errors.New("registry not found")
+	})
+	fm := map[configmodels.Type]component.ExporterFactory{
+		expf.Type(): expf,
+	}
+
+	cfg := &configmodels.Config{
+		Exporters: map[string]configmodels.Exporter{
+			string(expf.Type()): &configmodels.ExporterSettings{
+				TypeVal: expf.Type(),
+			},
+		},
+
+		Service: configmodels.Service{
+			Pipelines: map[string]*configmodels.Pipeline{
+				"traces": {
+					Name:      "trace",
+					InputType: configmodels.TracesDataType,
+					Exporters: []string{string(expf.Type())},
+				},
+			},
+		},
+	}
+
+	_, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, registries, fm).Build()
+	assert.NoError(t, err)
+}
+
+func mockExporterFactory(exp exporterhelper.CreateTraceExporter) component.ExporterFactory {
+	return exporterhelper.NewFactory("tf",
+		func() configmodels.Exporter {
+			return &configmodels.ExporterSettings{}
+		},
+		exporterhelper.WithTraces(exp),
+	)
+}
+
+type TracesExporterWithParams struct {
+	params component.ExporterCreateParams
+}
+
+type ConfigWithParams struct {
+	configmodels.ExporterSettings
+	params component.ExporterCreateParams
 }
 
 func newBadExporterFactory() component.ExporterFactory {

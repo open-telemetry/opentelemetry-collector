@@ -63,6 +63,8 @@ type ReceiverCreateParams struct {
 
 	// ApplicationStartInfo can be used by components for informational purposes
 	ApplicationStartInfo ApplicationStartInfo
+
+	Registries *Registries
 }
 
 // ReceiverFactory can create TracesReceiver and MetricsReceiver. This is the

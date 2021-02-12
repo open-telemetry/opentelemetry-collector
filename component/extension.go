@@ -54,6 +54,8 @@ type ExtensionCreateParams struct {
 
 	// ApplicationStartInfo can be used by components for informational purposes
 	ApplicationStartInfo ApplicationStartInfo
+
+	Registries *Registries
 }
 
 // ExtensionFactory is a factory interface for extensions to the service.

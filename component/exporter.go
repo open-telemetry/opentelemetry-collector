@@ -54,6 +54,8 @@ type ExporterCreateParams struct {
 
 	// ApplicationStartInfo can be used by components for informational purposes
 	ApplicationStartInfo ApplicationStartInfo
+
+	Registries *Registries
 }
 
 // ExporterFactory can create TracesExporter and MetricsExporter. This is the

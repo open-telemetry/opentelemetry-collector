@@ -142,10 +142,11 @@ type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
 
 // ExportersBuilder builds exporters from config.
 type ExportersBuilder struct {
-	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
-	config    *configmodels.Config
-	factories map[configmodels.Type]component.ExporterFactory
+	logger     *zap.Logger
+	appInfo    component.ApplicationStartInfo
+	config     *configmodels.Config
+	registries *component.Registries
+	factories  map[configmodels.Type]component.ExporterFactory
 }
 
 // NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
@@ -153,12 +154,13 @@ func NewExportersBuilder(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
+	registries *component.Registries,
 	factories map[configmodels.Type]component.ExporterFactory,
 ) *ExportersBuilder {
-	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), appInfo, config, factories}
+	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), appInfo, config, registries, factories}
 }
 
-// BuildExporters exporters from config.
+// Build exporters from config.
 func (eb *ExportersBuilder) Build() (Exporters, error) {
 	exporters := make(Exporters)
 
@@ -239,6 +241,7 @@ func (eb *ExportersBuilder) buildExporter(
 	creationParams := component.ExporterCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
+		Registries:           eb.registries,
 	}
 
 	for dataType, requirement := range inputDataTypes {

@@ -78,8 +78,9 @@ type Application struct {
 	builtExtensions builder.Extensions
 	stateChannel    chan State
 
-	factories component.Factories
-	config    *configmodels.Config
+	registries component.Registries
+	factories  component.Factories
+	config     *configmodels.Config
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -144,6 +145,7 @@ func New(params Parameters) (*Application, error) {
 		info:         params.ApplicationStartInfo,
 		v:            config.NewViper(),
 		factories:    params.Factories,
+		registries:   component.Registries{},
 		stateChannel: make(chan State, Closed+1),
 	}
 
@@ -317,7 +319,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 func (app *Application) setupExtensions(ctx context.Context) error {
 	var err error
-	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.info, app.config, app.factories.Extensions).Build()
+	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.info, app.config, &app.registries, app.factories.Extensions).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -331,7 +333,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// First create exporters.
 	var err error
-	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.info, app.config, app.factories.Exporters).Build()
+	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.info, app.config, &app.registries, app.factories.Exporters).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
@@ -344,7 +346,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors).Build()
+	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.info, app.config, &app.registries, app.builtExporters, app.factories.Processors).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
@@ -356,7 +358,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.info, app.config, &app.registries, app.builtPipelines, app.factories.Receivers).Build()
 	if err != nil {
 		return fmt.Errorf("cannot build receivers: %w", err)
 	}

@@ -44,7 +44,7 @@ func (ext *builtExtension) Shutdown(ctx context.Context) error {
 
 var _ component.ServiceExtension = (*builtExtension)(nil)
 
-// Exporters is a map of exporters created from exporter configs.
+// Extensions is a map of exporters created from exporter configs.
 type Extensions map[configmodels.Extension]*builtExtension
 
 // StartAll starts all exporters.
@@ -110,22 +110,24 @@ func (exts Extensions) ToMap() map[configmodels.Extension]component.ServiceExten
 	return result
 }
 
-// ExportersBuilder builds exporters from config.
+// ExtensionsBuilder builds exporters from config.
 type ExtensionsBuilder struct {
-	logger    *zap.Logger
-	appInfo   component.ApplicationStartInfo
-	config    *configmodels.Config
-	factories map[configmodels.Type]component.ExtensionFactory
+	logger     *zap.Logger
+	appInfo    component.ApplicationStartInfo
+	config     *configmodels.Config
+	registries *component.Registries
+	factories  map[configmodels.Type]component.ExtensionFactory
 }
 
-// NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
+// NewExtensionsBuilder creates a new ExtensionsBuilder. Call Build() on the returned value.
 func NewExtensionsBuilder(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
+	registries *component.Registries,
 	factories map[configmodels.Type]component.ExtensionFactory,
 ) *ExtensionsBuilder {
-	return &ExtensionsBuilder{logger.With(zap.String(kindLogKey, kindLogExtension)), appInfo, config, factories}
+	return &ExtensionsBuilder{logger.With(zap.String(kindLogKey, kindLogExtension)), appInfo, config, registries, factories}
 }
 
 // Build extensions from config.
@@ -163,6 +165,7 @@ func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, appInfo componen
 	creationParams := component.ExtensionCreateParams{
 		Logger:               logger,
 		ApplicationStartInfo: appInfo,
+		Registries:           eb.registries,
 	}
 
 	ex, err := factory.CreateExtension(context.Background(), creationParams, cfg)
