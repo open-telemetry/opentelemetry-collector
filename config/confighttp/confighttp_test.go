@@ -434,7 +434,7 @@ func TestOAuth2SettingsIncomplete(t *testing.T) {
 		TLSSetting: configtls.TLSClientSetting{},
 		OAuth2ClientCredentials: &configoauth2.OAuth2ClientCredentials{
 			ClientID: "testclientid",
-			TokenURL: fmt.Sprintf("%s/v1/token", "https://some-server/v1/token"),
+			TokenURL: "https://example.com/v1/token",
 			Scopes:   []string{"test.resource.read"},
 		},
 	}

@@ -33,7 +33,7 @@ func TestOAuth2ClientCredentialsSettings(t *testing.T) {
 			settings: &OAuth2ClientCredentials{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
-				TokenURL:     "https://test-url/v1/token",
+				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError: false,
@@ -42,7 +42,7 @@ func TestOAuth2ClientCredentialsSettings(t *testing.T) {
 			name: "missing_client_id",
 			settings: &OAuth2ClientCredentials{
 				ClientSecret: "testsecret",
-				TokenURL:     "https://test-url/v1/token",
+				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError: true,
@@ -51,7 +51,7 @@ func TestOAuth2ClientCredentialsSettings(t *testing.T) {
 			name: "missing_client_secret",
 			settings: &OAuth2ClientCredentials{
 				ClientID: "testclientid",
-				TokenURL: "https://test-url/v1/token",
+				TokenURL: "https://example.com/v1/token",
 				Scopes:   []string{"resource.read"},
 			},
 			shouldError: true,
@@ -92,7 +92,7 @@ func TestOAuth2ClientRoundTripperReturnsOAuth2RoundTripper(t *testing.T) {
 	creds := &OAuth2ClientCredentials{
 		ClientID:     "testclientid",
 		ClientSecret: "testsecret",
-		TokenURL:     "https://test-url/v1/token",
+		TokenURL:     "https://example.com/v1/token",
 		Scopes:       []string{"resource.read"},
 	}
 
