@@ -30,6 +30,10 @@ type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint"`
 
+	HTTPTransportSettings `mapstructure:",squash"`
+}
+
+type HTTPTransportSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
@@ -42,6 +46,9 @@ type HTTPClientSettings struct {
 	// Timeout parameter configures `http.Client.Timeout`.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 
+	// ResponseHeaderTimeout parameter configures `http.Client.ResponseHeaderTimeout`
+	ResponseHeaderTimeout time.Duration `mapstructure:"response_header_timeout,omitempty"`
+
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
@@ -50,8 +57,8 @@ type HTTPClientSettings struct {
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 }
 
-func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
+func (hts *HTTPTransportSettings) ToClient() (*http.Client, error) {
+	tlsCfg, err := hts.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -59,23 +66,26 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}
-	if hcs.ReadBufferSize > 0 {
-		transport.ReadBufferSize = hcs.ReadBufferSize
+	if hts.ReadBufferSize > 0 {
+		transport.ReadBufferSize = hts.ReadBufferSize
 	}
-	if hcs.WriteBufferSize > 0 {
-		transport.WriteBufferSize = hcs.WriteBufferSize
+	if hts.WriteBufferSize > 0 {
+		transport.WriteBufferSize = hts.WriteBufferSize
+	}
+	if hts.ResponseHeaderTimeout > 0 {
+		transport.ResponseHeaderTimeout = hts.ResponseHeaderTimeout
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
-	if len(hcs.Headers) > 0 {
+	if len(hts.Headers) > 0 {
 		clientTransport = &headerRoundTripper{
 			transport: transport,
-			headers:   hcs.Headers,
+			headers:   hts.Headers,
 		}
 	}
 
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
+	if hts.CustomRoundTripper != nil {
+		clientTransport, err = hts.CustomRoundTripper(clientTransport)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +93,7 @@ func (hcs *HTTPClientSettings) ToClient() (*http.Client, error) {
 
 	return &http.Client{
 		Transport: clientTransport,
-		Timeout:   hcs.Timeout,
+		Timeout:   hts.Timeout,
 	}, nil
 }
 

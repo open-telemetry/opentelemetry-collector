@@ -31,16 +31,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-func TestAllHTTPClientSettings(t *testing.T) {
-	tests := []struct {
-		name        string
-		settings    HTTPClientSettings
+func TestAllHTTPTransportSettings_ToClient(t *testing.T) {
+	tests := map[string]struct {
+		settings    HTTPTransportSettings
 		shouldError bool
 	}{
-		{
-			name: "all_valid_settings",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
+		"all_valid_settings": {
+			settings: HTTPTransportSettings{
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -50,10 +47,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "error_round_tripper_returned",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
+		"error_round_tripper_returned": {
+			settings: HTTPTransportSettings{
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -65,8 +60,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
 			client, err := test.settings.ToClient()
 			if test.shouldError {
 				assert.Error(t, err)
@@ -80,15 +75,14 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	}
 }
 
-func TestHTTPClientSettingsError(t *testing.T) {
-	tests := []struct {
-		settings HTTPClientSettings
+func TestAllHTTPTransportSettings_ToClientError(t *testing.T) {
+	tests := map[string]struct {
+		settings HTTPTransportSettings
 		err      string
 	}{
-		{
+		"can not load unknown CA file": {
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
-			settings: HTTPClientSettings{
-				Endpoint: "",
+			settings: HTTPTransportSettings{
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
@@ -98,10 +92,9 @@ func TestHTTPClientSettingsError(t *testing.T) {
 				},
 			},
 		},
-		{
+		"missing key file for tls client authentication": {
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
-			settings: HTTPClientSettings{
-				Endpoint: "",
+			settings: HTTPTransportSettings{
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
@@ -112,8 +105,8 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.err, func(t *testing.T) {
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
 			_, err := test.settings.ToClient()
 			assert.Regexp(t, test.err, err)
 		})
@@ -296,8 +289,10 @@ func TestHttpReception(t *testing.T) {
 			}
 
 			hcs := &HTTPClientSettings{
-				Endpoint:   prefix + ln.Addr().String(),
-				TLSSetting: *tt.tlsClientCreds,
+				Endpoint: prefix + ln.Addr().String(),
+				HTTPTransportSettings: HTTPTransportSettings{
+					TLSSetting: *tt.tlsClientCreds,
+				},
 			}
 			client, errClient := hcs.ToClient()
 			assert.NoError(t, errClient)
@@ -409,13 +404,15 @@ func TestHttpHeaders(t *testing.T) {
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
 			setting := HTTPClientSettings{
-				Endpoint:        serverURL.String(),
-				TLSSetting:      configtls.TLSClientSetting{},
-				ReadBufferSize:  0,
-				WriteBufferSize: 0,
-				Timeout:         0,
-				Headers: map[string]string{
-					"header1": "value1",
+				Endpoint: serverURL.String(),
+				HTTPTransportSettings: HTTPTransportSettings{
+					TLSSetting:      configtls.TLSClientSetting{},
+					ReadBufferSize:  0,
+					WriteBufferSize: 0,
+					Timeout:         0,
+					Headers: map[string]string{
+						"header1": "value1",
+					},
 				},
 			}
 			client, _ := setting.ToClient()
