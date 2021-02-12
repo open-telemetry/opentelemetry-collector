@@ -60,14 +60,13 @@ func TestScrape(t *testing.T) {
 	// a) read native system processes on Windows (e.g. Registry process)
 	// b) read info on processes that have just terminated
 	//
-	// so validate that we have less processes that were failed to be scraped
-	// than processes that were successfully scraped & some valid data is
-	// returned
+	// so validate that we have at some errors & some valid data
 	if err != nil {
 		require.True(t, consumererror.IsPartialScrapeError(err))
 		noProcessesScraped := resourceMetrics.Len()
 		noProcessesErrored := err.(consumererror.PartialScrapeError).Failed
-		require.Lessf(t, noProcessesErrored, noProcessesScraped, "Failed to scrape metrics - more processes failed to be scraped than were successfully scraped: %v", err)
+		require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+		require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 	}
 
 	require.Greater(t, resourceMetrics.Len(), 1)
