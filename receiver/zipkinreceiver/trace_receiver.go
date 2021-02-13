@@ -27,8 +27,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 
@@ -117,7 +116,7 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 // v1ToTraceSpans parses Zipkin v1 JSON traces and converts them to OpenCensus Proto spans.
 func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pdata.Traces, err error) {
 	if hdr.Get("Content-Type") == "application/x-thrift" {
-		zSpans, err := deserializeThrift(blob)
+		zSpans, err := jaegerzipkin.DeserializeThrift(blob)
 		if err != nil {
 			return pdata.NewTraces(), err
 		}
@@ -125,34 +124,6 @@ func (zr *ZipkinReceiver) v1ToTraceSpans(blob []byte, hdr http.Header) (reqs pda
 		return zipkin.V1ThriftBatchToInternalTraces(zSpans)
 	}
 	return zipkin.V1JSONBatchToInternalTraces(blob, zr.config.ParseStringTags)
-}
-
-// deserializeThrift decodes Thrift bytes to a list of spans.
-// This code comes from jaegertracing/jaeger, ideally we should have imported
-// it but this was creating many conflicts so brought the code to here.
-// https://github.com/jaegertracing/jaeger/blob/6bc0c122bfca8e737a747826ae60a22a306d7019/model/converter/thrift/zipkin/deserialize.go#L36
-func deserializeThrift(b []byte) ([]*zipkincore.Span, error) {
-	buffer := thrift.NewTMemoryBuffer()
-	buffer.Write(b)
-
-	transport := thrift.NewTBinaryProtocolTransport(buffer)
-	_, size, err := transport.ReadListBegin() // Ignore the returned element type
-	if err != nil {
-		return nil, err
-	}
-
-	// We don't depend on the size returned by ReadListBegin to preallocate the array because it
-	// sometimes returns a nil error on bad input and provides an unreasonably large int for size
-	var spans []*zipkincore.Span
-	for i := 0; i < size; i++ {
-		zs := &zipkincore.Span{}
-		if err = zs.Read(transport); err != nil {
-			return nil, err
-		}
-		spans = append(spans, zs)
-	}
-
-	return spans, nil
 }
 
 // v2ToTraceSpans parses Zipkin v2 JSON or Protobuf traces and converts them to OpenCensus Proto spans.
