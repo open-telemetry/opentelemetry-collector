@@ -16,6 +16,7 @@ package consumererror
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,9 @@ func TestPermanent(t *testing.T) {
 	require.False(t, IsPermanent(err))
 
 	err = Permanent(err)
+	require.True(t, IsPermanent(err))
+
+	err = fmt.Errorf("%w", err)
 	require.True(t, IsPermanent(err))
 }
 
