@@ -18,48 +18,29 @@ import (
 	"fmt"
 	"strings"
 
+	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-const sourceFormat = "otlp_trace"
-
 var (
 	defaultProcessID = 0
 )
 
-// TraceDataToOC may be used only by OpenCensus receiver and exporter implementations.
+// ResourceSpansToOC may be used only by OpenCensus receiver and exporter implementations.
+// Deprecated: Use pdata.Traces.
 // TODO: move this function to OpenCensus package.
-func TraceDataToOC(td pdata.Traces) []consumerdata.TraceData {
-	resourceSpans := td.ResourceSpans()
-
-	if resourceSpans.Len() == 0 {
-		return nil
-	}
-
-	ocResourceSpansList := make([]consumerdata.TraceData, 0, resourceSpans.Len())
-
-	for i := 0; i < resourceSpans.Len(); i++ {
-		ocResourceSpansList = append(ocResourceSpansList, resourceSpansToOC(resourceSpans.At(i)))
-	}
-
-	return ocResourceSpansList
-}
-
-func resourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
-	ocTraceData := consumerdata.TraceData{
-		SourceFormat: sourceFormat,
-	}
-	ocTraceData.Node, ocTraceData.Resource = internalResourceToOC(rs.Resource())
+func ResourceSpansToOC(rs pdata.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {
+	node, resource := internalResourceToOC(rs.Resource())
 	ilss := rs.InstrumentationLibrarySpans()
 	if ilss.Len() == 0 {
-		return ocTraceData
+		return node, resource, nil
 	}
 	// Approximate the number of the spans as the number of the spans in the first
 	// instrumentation library info.
@@ -72,8 +53,7 @@ func resourceSpansToOC(rs pdata.ResourceSpans) consumerdata.TraceData {
 			ocSpans = append(ocSpans, spanToOC(spans.At(j)))
 		}
 	}
-	ocTraceData.Spans = ocSpans
-	return ocTraceData
+	return node, resource, ocSpans
 }
 
 func spanToOC(span pdata.Span) *octrace.Span {
