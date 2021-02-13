@@ -18,8 +18,8 @@ README](../configtls/README.md).
 - `headers`: name/value pairs added to the HTTP request headers
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
-- [`reponse_header_timeout`](https://golang.org/pkg/net/http/#Transport)
-- [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
+- [`response_header_timeout`](https://golang.org/pkg/net/http/#Transport)
+ [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 
 Example:
 
