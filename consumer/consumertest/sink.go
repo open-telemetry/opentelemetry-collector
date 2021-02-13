@@ -64,7 +64,9 @@ func (ste *TracesSink) AllTraces() []pdata.Traces {
 	defer ste.mu.Unlock()
 
 	copyTraces := make([]pdata.Traces, len(ste.traces))
-	copy(copyTraces, ste.traces)
+	for i, td := range ste.traces {
+		copyTraces[i] = td.Clone()
+	}
 	return copyTraces
 }
 
@@ -113,7 +115,9 @@ func (sme *MetricsSink) AllMetrics() []pdata.Metrics {
 	defer sme.mu.Unlock()
 
 	copyMetrics := make([]pdata.Metrics, len(sme.metrics))
-	copy(copyMetrics, sme.metrics)
+	for i, md := range sme.metrics {
+		copyMetrics[i] = md.Clone()
+	}
 	return copyMetrics
 }
 
@@ -162,7 +166,9 @@ func (sle *LogsSink) AllLogs() []pdata.Logs {
 	defer sle.mu.Unlock()
 
 	copyLogs := make([]pdata.Logs, len(sle.logs))
-	copy(copyLogs, sle.logs)
+	for i, ld := range sle.logs {
+		copyLogs[i] = ld.Clone()
+	}
 	return copyLogs
 }
 

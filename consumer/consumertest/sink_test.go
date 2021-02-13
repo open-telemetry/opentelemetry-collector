@@ -28,9 +28,9 @@ import (
 
 func TestTracesSink(t *testing.T) {
 	sink := new(TracesSink)
-	td := testdata.GenerateTraceDataOneSpan()
 	want := make([]pdata.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
+		td := testdata.GenerateTraceDataOneSpan()
 		require.NoError(t, sink.ConsumeTraces(context.Background(), td))
 		want = append(want, td)
 	}
@@ -39,6 +39,15 @@ func TestTracesSink(t *testing.T) {
 	sink.Reset()
 	assert.Equal(t, 0, len(sink.AllTraces()))
 	assert.Equal(t, 0, sink.SpansCount())
+}
+
+func TestTracesSink_CopiesData(t *testing.T) {
+	sink := new(TracesSink)
+	require.NoError(t, sink.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan()))
+	allTraces := sink.AllTraces()
+	require.Len(t, allTraces, 1)
+	allTraces[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("testing")
+	assert.NotEqual(t, allTraces, sink.AllTraces())
 }
 
 func TestTracesSink_Error(t *testing.T) {
@@ -52,17 +61,26 @@ func TestTracesSink_Error(t *testing.T) {
 
 func TestMetricsSink(t *testing.T) {
 	sink := new(MetricsSink)
-	md := testdata.GenerateMetricsOneMetric()
 	want := make([]pdata.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
+		md := testdata.GenerateMetricsOneMetric()
 		require.NoError(t, sink.ConsumeMetrics(context.Background(), md))
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllMetrics())
 	assert.Equal(t, len(want), sink.MetricsCount())
 	sink.Reset()
-	assert.Equal(t, 0, len(sink.AllMetrics()))
+	assert.Len(t, sink.AllMetrics(), 0)
 	assert.Equal(t, 0, sink.MetricsCount())
+}
+
+func TestMetricsSink_CopiesData(t *testing.T) {
+	sink := new(MetricsSink)
+	require.NoError(t, sink.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric()))
+	allMetrics := sink.AllMetrics()
+	require.Len(t, allMetrics, 1)
+	allMetrics[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).SetName("testing")
+	assert.NotEqual(t, allMetrics, sink.AllMetrics())
 }
 
 func TestMetricsSink_Error(t *testing.T) {
@@ -76,17 +94,26 @@ func TestMetricsSink_Error(t *testing.T) {
 
 func TestLogsSink(t *testing.T) {
 	sink := new(LogsSink)
-	md := testdata.GenerateLogDataOneLogNoResource()
 	want := make([]pdata.Logs, 0, 7)
 	for i := 0; i < 7; i++ {
+		md := testdata.GenerateLogDataOneLogNoResource()
 		require.NoError(t, sink.ConsumeLogs(context.Background(), md))
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllLogs())
 	assert.Equal(t, len(want), sink.LogRecordsCount())
 	sink.Reset()
-	assert.Equal(t, 0, len(sink.AllLogs()))
+	assert.Len(t, sink.AllLogs(), 0)
 	assert.Equal(t, 0, sink.LogRecordsCount())
+}
+
+func TestLogsSink_CopiesData(t *testing.T) {
+	sink := new(LogsSink)
+	require.NoError(t, sink.ConsumeLogs(context.Background(), testdata.GenerateLogDataOneLogNoResource()))
+	allLogs := sink.AllLogs()
+	require.Len(t, allLogs, 1)
+	allLogs[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).SetName("testing")
+	assert.NotEqual(t, allLogs, sink.AllLogs())
 }
 
 func TestLogsSink_Error(t *testing.T) {
