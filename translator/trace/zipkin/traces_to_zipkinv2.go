@@ -347,5 +347,5 @@ func convertTraceID(t pdata.TraceID) zipkinmodel.TraceID {
 }
 
 func convertSpanID(s pdata.SpanID) zipkinmodel.ID {
-	return zipkinmodel.ID(tracetranslator.BytesToUInt64SpanID(s.Bytes()))
+	return zipkinmodel.ID(tracetranslator.SpanIDToUInt64(s))
 }
