@@ -26,13 +26,6 @@ import (
 
 // Some of the keys used to represent OTLP constructs as tags or annotations in other formats.
 const (
-	AnnotationDescriptionKey = "description"
-
-	MessageEventIDKey               = "message.id"
-	MessageEventTypeKey             = "message.type"
-	MessageEventCompressedSizeKey   = "message.compressed_size"
-	MessageEventUncompressedSizeKey = "message.uncompressed_size"
-
 	TagMessage = "message"
 
 	TagSpanKind = "span.kind"
