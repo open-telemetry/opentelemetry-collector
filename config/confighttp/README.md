@@ -19,16 +19,22 @@ README](../configtls/README.md).
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
+- [`oauth2`](../configclientauth/README.md): OAuth2 client credentials configuration 
 
 Example:
 
 ```yaml
 exporter:
-  otlp:
-    endpoint: otelcol2:55690
+  otlphttp:
+    endpoint: https://server.com/v1/endpoint
     headers:
       test1: "value1"
       "test 2": "value 2"
+    oauth2:
+      client_id: someclientidentifier
+      client_secret: someclientsecret
+      token_url: https://autz.server.com/oauth2/default/v1/token
+      scopes: ["some.resource.read"]
 ```
 
 ## Server Configuration

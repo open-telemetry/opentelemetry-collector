@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configclientauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -204,7 +205,7 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	if gcs.PerRPCAuth != nil {
 		if strings.EqualFold(gcs.PerRPCAuth.AuthType, PerRPCAuthTypeBearer) {
 			sToken := gcs.PerRPCAuth.BearerToken
-			token := BearerToken(sToken)
+			token := configclientauth.BearerToken(sToken)
 			opts = append(opts, grpc.WithPerRPCCredentials(token))
 		} else {
 			return nil, fmt.Errorf("unsupported per-RPC auth type %q", gcs.PerRPCAuth.AuthType)

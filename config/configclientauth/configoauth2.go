@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configoauth2
+package configclientauth
 
 import (
 	"context"
@@ -21,6 +21,8 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+	"google.golang.org/grpc/credentials"
+	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
 
 var (
@@ -29,8 +31,8 @@ var (
 	errNoClientSecretProvided = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
 )
 
-// OAuth2ClientCredentials stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup
-type OAuth2ClientCredentials struct {
+// OAuth2ClientSettings stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup
+type OAuth2ClientSettings struct {
 	// ClientID is the application's ID.
 	ClientID string `mapstructure:"client_id"`
 
@@ -42,28 +44,47 @@ type OAuth2ClientCredentials struct {
 	TokenURL string `mapstructure:"token_url"`
 
 	// Scope specifies optional requested permissions.
-	Scopes []string `mapstructure:"scopes"`
+	Scopes []string `mapstructure:"scopes,omitempty"`
 }
 
-func (c *OAuth2ClientCredentials) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+// buildOAuth2ClientCredentials maps OAuth2ClientSettings to a build oauth2.clientcredentials.Config
+func buildOAuth2ClientCredentials(c *OAuth2ClientSettings) (clientcredentials.Config, error) {
 	if c.ClientID == "" {
-		return nil, errNoClientIDProvided
+		return clientcredentials.Config{}, errNoClientIDProvided
 	}
 	if c.ClientSecret == "" {
-		return nil, errNoClientSecretProvided
+		return clientcredentials.Config{}, errNoClientSecretProvided
 	}
 	if c.TokenURL == "" {
-		return nil, errNoTokenURLProvided
+		return clientcredentials.Config{}, errNoTokenURLProvided
 	}
-	config := clientcredentials.Config{
+	return clientcredentials.Config{
 		ClientID:     c.ClientID,
 		ClientSecret: c.ClientSecret,
 		TokenURL:     c.TokenURL,
 		Scopes:       c.Scopes,
-	}
+	}, nil
+}
 
+// OAuth2RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
+// also auto refreshes OAuth tokens as needed.
+func OAuth2RoundTripper(c *OAuth2ClientSettings, base http.RoundTripper) (http.RoundTripper, error) {
+	cc, err := buildOAuth2ClientCredentials(c)
+	if err != nil {
+		return nil, err
+	}
 	return &oauth2.Transport{
-		Source: config.TokenSource(context.Background()),
+		Source: cc.TokenSource(context.Background()),
 		Base:   base,
 	}, nil
+}
+
+// OAuth2ClientCredentialsPerRPCCredentials returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
+// oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
+func OAuth2ClientCredentialsPerRPCCredentials(c *OAuth2ClientSettings) (credentials.PerRPCCredentials, error) {
+	cc, err := buildOAuth2ClientCredentials(c)
+	if err != nil {
+		return nil, err
+	}
+	return grpcOAuth.TokenSource{TokenSource: cc.TokenSource(context.Background())}, nil
 }

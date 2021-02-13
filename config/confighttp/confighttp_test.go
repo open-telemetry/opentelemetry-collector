@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config/configoauth2"
+	"go.opentelemetry.io/collector/config/configclientauth"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -432,7 +432,7 @@ func TestOAuth2SettingsIncomplete(t *testing.T) {
 	setting := HTTPClientSettings{
 		Endpoint:   "https://example.com/v1/endpoint",
 		TLSSetting: configtls.TLSClientSetting{},
-		OAuth2ClientCredentials: &configoauth2.OAuth2ClientCredentials{
+		OAuth2Settings: &configclientauth.OAuth2ClientSettings{
 			ClientID: "testclientid",
 			TokenURL: "https://example.com/v1/token",
 			Scopes:   []string{"test.resource.read"},
@@ -473,7 +473,7 @@ func TestOAuth2SettingsWithHeaders(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		Headers:         testHeaders,
-		OAuth2ClientCredentials: &configoauth2.OAuth2ClientCredentials{
+		OAuth2Settings: &configclientauth.OAuth2ClientSettings{
 			ClientID:     "testclientid",
 			ClientSecret: "testclientsecert",
 			TokenURL:     fmt.Sprintf("%s/v1/token", serverURL.String()),
