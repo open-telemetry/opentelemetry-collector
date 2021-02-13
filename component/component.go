@@ -41,7 +41,8 @@ type Component interface {
 	//
 	// If there are any background operations running by the component they must be aborted as soon as possible.
 	// Remember that if you started any long-running background operation from the Start() method that operation
-	// must be also cancelled.
+	// must be also cancelled. If there are any buffer in the component, it should be cleared and the data sent
+	// immediately to the next component.
 	Shutdown(ctx context.Context) error
 }
 
