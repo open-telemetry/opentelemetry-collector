@@ -29,6 +29,10 @@ Collector architecture and functionality.
 - Extensions
   - SHOULD NOT expose sensitive health or telemetry data
 
+> For more information about securing the OpenTelemetry Collector, see
+> [this](https://medium.com/opentelemetry/securing-your-opentelemetry-collector-1a4f9fa5bd6f)
+> blog post.
+
 ### Component Developers
 
 - Configuration
@@ -107,10 +111,10 @@ Unused receivers and exporters SHOULD be disabled to minimize the attack vector
 of the Collector.
 
 Receivers and Exporters MAY expose buffer, queue, payload, and/or worker
-settings via configuration parameters. If these settings are available, care
-should be taken before modifying the default values. Improperly setting these
-values may expose the Collector to additional attack vectors including resource
-exhaustion.
+settings via configuration parameters. If these settings are available,
+end-users should proceed with caution before modifying the default values.
+Improperly setting these values may expose the Collector to additional attack
+vectors including resource exhaustion.
 
 > It is possible that a receiver MAY require the Collector run in a privileged
 > mode in order to operate, which could be a security concern, but today this
