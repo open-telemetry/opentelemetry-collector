@@ -20,8 +20,6 @@ import (
 )
 
 // CombineErrors converts a list of errors into one error.
-//
-// TODO: deprecate componenterror.CombineErrors in favor of this function.
 func CombineErrors(errs []error) error {
 	numErrors := len(errs)
 	if numErrors == 0 {
