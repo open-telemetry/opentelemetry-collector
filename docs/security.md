@@ -193,6 +193,6 @@ permissions in order to perform service discovery. For example, the
 
 Extensions may also be used to run subprocesses. This can be useful when
 collection mechanisms that cannot natively be run by the Collector (e.g.
-FluentBit). Subprocesses expose a completely separate attack vendor that would
+FluentBit). Subprocesses expose a completely separate attack vector that would
 depend on the subprocess itself. In general, care should be taken before
 running any subprocesses alongside the Collector.
