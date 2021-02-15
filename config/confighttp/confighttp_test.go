@@ -27,7 +27,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -391,7 +390,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
-	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), WithLogger(zap.NewNop()))
+	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	require.NotNil(t, s)
 	require.NoError(t, s.Close())
 }
