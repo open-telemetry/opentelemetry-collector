@@ -65,9 +65,8 @@
 // * Data loss should be recorded only when the component itself remove the data
 // from the pipeline. Legacy metrics for receivers used "dropped" in their names
 // but these could be non-zero under normal operations and reflected no actual
-// data loss when components like the "queued_retry" are used. New metrics
-// were renamed to avoid this misunderstanding. Here are the general
-// recommendations to report data loss:
+// data loss when exporters with "sending_queue" are used. New metrics were renamed
+// to avoid this misunderstanding. Here are the general recommendations to report data loss:
 //
 // 		* Receivers reporting errors to clients typically result in the client
 //		  re-sending the same data so it is more correct to report "receive errors",
