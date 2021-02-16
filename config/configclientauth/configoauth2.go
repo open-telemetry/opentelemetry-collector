@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	errNoClientIDProvided     = errors.New("no ClientID provided in OAuth Client Credentials configuration")
+	errNoClientIDProvided     = errors.New("no ClientID provided in the OAuth2 exporter configuration")
 	errNoTokenURLProvided     = errors.New("no TokenURL provided in OAuth Client Credentials configuration")
 	errNoClientSecretProvided = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
 )
