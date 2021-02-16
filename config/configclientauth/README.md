@@ -1,4 +1,4 @@
-# Client Authorization Settings
+# Authentication Settings for Exporters
 
 This module provides HTTP/GRPC client types to be configured to perform authorization for requests using the following 
 
