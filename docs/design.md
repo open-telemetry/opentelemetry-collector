@@ -142,7 +142,7 @@ When the Collector loads this config the result will look like this:
 
 ![Processors](images/design-processors.png)
 
-Note that each “batch” processor is an independent instance, although both are configured the same way, i.e. each have a size of 50.
+Note that each “batch” processor is an independent instance, although both are configured the same way, i.e. each have a send_batch_size of 10000.
 
 ## <a name="opentelemetry-agent"></a>Running as an Agent
 
