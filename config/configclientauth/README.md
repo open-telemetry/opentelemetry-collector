@@ -17,7 +17,7 @@ The client manages the token auto refresh
 ### OAuth2 Client Credentials Configuration
 
 - [`client_id`](https://tools.ietf.org/html/rfc6749#section-2.2): The unique identifier issued by authorization server to the registered client.
-- `client_secret`: Registered clients secret.
+- `client_secret`: Registered client's secret.
 - [`token_url`](https://tools.ietf.org/html/rfc6749#section-3.2): endpoint which is used by the client to obtain an access token by
   presenting its authorization grant or refresh token
 - `scopes`: optional list of requested resource permissions
@@ -49,5 +49,4 @@ exporters:
       type: bearer
       bearer_token: somelonglivedbearertoken
 ```
-
 
