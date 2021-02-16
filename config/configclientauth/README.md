@@ -1,6 +1,6 @@
-# Authentication Settings for Exporters
+# AuthX Settings for Exporters
 
-This module provides HTTP/GRPC client types to be configured to perform authorization for requests using the following 
+This module provides HTTP/GRPC client types to be configured to perform authorization/authentication for requests using the following.
 
 ## OAuth2 Client Credentials. (HTTP/gRPC)
 
@@ -15,6 +15,11 @@ When enabled as a part of an HTTP/gRPC exporter configuration, the corresponding
 The client manages the token auto refresh
 
 ### OAuth2 Client Credentials Configuration
+
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
 
 - [`client_id`](https://tools.ietf.org/html/rfc6749#section-2.2): The unique identifier issued by authorization server to the registered client.
 - `client_secret`: Registered client's secret.
@@ -38,7 +43,12 @@ exporters:
 ## Bearer Token (gRPC)
 
 This is to be used when a Bearer token needs to be attached every RPC directly. No token refresh will be 
-done in this case. 
+done in this case.
+
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
 
 ### Bearer Token settings 
 ```yaml
