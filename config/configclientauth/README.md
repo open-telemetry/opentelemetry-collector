@@ -8,7 +8,7 @@ OAuth2 Client Credentials library exposes a [variety of settings](https://pkg.go
 and implements the OAuth2.0 ["client credentials"](https://tools.ietf.org/html/rfc6749#section-1.3.4)
 token flow, also known as the ["two-legged OAuth 2.0" or machine to machine authorization](https://tools.ietf.org/html/rfc6749#section-4.4).
 
-This should be used when the client is acting on its own behalf.
+This should be used when the client (exporter) is acting on its own behalf.
 
 
 When enabled as a part of HTTP/gRPC Client Configuration, the corresponding Client with OAuth2 supported authorization transport is returned.
@@ -49,6 +49,5 @@ exporters:
       type: bearer
       bearer_token: somelonglivedbearertoken
 ```
-
 
 
