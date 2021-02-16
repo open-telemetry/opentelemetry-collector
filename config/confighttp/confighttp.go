@@ -50,7 +50,7 @@ type HTTPClientSettings struct {
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
-	// OAuth2 Client Credentials Configuration
+	// OAuth2Settings to use when performing client authentication against a remote endpoint
 	OAuth2Settings *configclientauth.OAuth2ClientSettings `mapstructure:"oauth2,omitempty"`
 }
 
