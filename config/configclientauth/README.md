@@ -11,7 +11,7 @@ token flow, also known as the ["two-legged OAuth 2.0" or machine to machine auth
 This should be used when the client (exporter) is acting on its own behalf.
 
 
-When enabled as a part of HTTP/gRPC Client Configuration, the corresponding Client with OAuth2 supported authorization transport is returned.
+When enabled as a part of an HTTP/gRPC exporter configuration, the corresponding Client with OAuth2 supported authorization transport is returned.
 The client manages the token auto refresh
 
 ### OAuth2 Client Credentials Configuration
@@ -49,4 +49,3 @@ exporters:
       type: bearer
       bearer_token: somelonglivedbearertoken
 ```
-
