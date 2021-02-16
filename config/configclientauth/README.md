@@ -19,7 +19,7 @@ The client manages the token auto refresh
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
 > which contains recommendations on securing sensitive information such as the
-> API key required by this configuration.
+> client id/secret required by this configuration.
 
 - [`client_id`](https://tools.ietf.org/html/rfc6749#section-2.2): The unique identifier issued by authorization server to the registered client.
 - `client_secret`: Registered client's secret.
@@ -48,7 +48,7 @@ done in this case.
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
 > which contains recommendations on securing sensitive information such as the
-> API key required by this configuration.
+> bearer token required by this configuration.
 
 ### Bearer Token settings 
 ```yaml
