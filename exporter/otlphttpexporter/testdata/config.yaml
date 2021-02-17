@@ -28,6 +28,7 @@ exporters:
       "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
       header1: 234
       another: "somevalue"
+    compression: gzip
 
 service:
   pipelines:
