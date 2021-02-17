@@ -37,7 +37,8 @@ type Component interface {
 	// Create a new context from the context.Background() for long-running operations.
 	Start(ctx context.Context, host Host) error
 
-	// Shutdown is invoked during service shutdown.
+	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component accept data in
+	// any way, it should not accept it anymore.
 	//
 	// If there are any background operations running by the component they must be aborted as soon as possible.
 	// Remember that if you started any long-running background operation from the Start() method that operation
