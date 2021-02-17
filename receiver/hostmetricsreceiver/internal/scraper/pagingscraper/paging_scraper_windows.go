@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
+	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -110,23 +111,23 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 }
 
 func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
-	pagingUsageDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2 * len(pageFiles))
 
 	idx := 0
 	for _, pageFile := range pageFiles {
-		initializePagingUsageDataPoint(idps.At(idx+0), now, pageFile.name, usedLabelValue, int64(pageFile.usedPages*s.pageSize))
-		initializePagingUsageDataPoint(idps.At(idx+1), now, pageFile.name, freeLabelValue, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
+		initializePagingUsageDataPoint(idps.At(idx+0), now, pageFile.name, metadata.LabelPagingState.Used, int64(pageFile.usedPages*s.pageSize))
+		initializePagingUsageDataPoint(idps.At(idx+1), now, pageFile.name, metadata.LabelPagingState.Free, int64((pageFile.totalPages-pageFile.usedPages)*s.pageSize))
 		idx += 2
 	}
 }
 
 func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(deviceLabelName, deviceLabel)
-	labelsMap.Insert(stateLabelName, stateLabel)
+	labelsMap.Insert(metadata.Labels.PagingDevice, deviceLabel)
+	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)
 }
@@ -159,18 +160,18 @@ func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlic
 }
 
 func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, memoryCounterValues *perfcounters.CounterValues) {
-	pagingOperationsDescriptor.CopyTo(metric)
+	metadata.Metrics.SystemPagingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
 	idps.Resize(2)
-	initializePagingOperationsDataPoint(idps.At(0), startTime, now, inDirectionLabelValue, memoryCounterValues.Values[pageReadsPerSec])
-	initializePagingOperationsDataPoint(idps.At(1), startTime, now, outDirectionLabelValue, memoryCounterValues.Values[pageWritesPerSec])
+	initializePagingOperationsDataPoint(idps.At(0), startTime, now, metadata.LabelPagingDirection.PageIn, memoryCounterValues.Values[pageReadsPerSec])
+	initializePagingOperationsDataPoint(idps.At(1), startTime, now, metadata.LabelPagingDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
 }
 
 func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
-	labelsMap.Insert(typeLabelName, majorTypeLabelValue)
-	labelsMap.Insert(directionLabelName, directionLabel)
+	labelsMap.Insert(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
+	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(value)

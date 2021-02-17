@@ -1,0 +1,73 @@
+{
+    "resourceMetrics": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "k8s.deployment.name",
+                        "value": {
+                            "stringValue": "frontend"
+                        }
+                    },
+                    {
+                        "key": "k8s.namespace.name",
+                        "value": {
+                            "stringValue": "default"
+                        }
+                    },
+                    {
+                        "key": "k8s.cluster.name",
+                        "value": {
+                            "stringValue": ""
+                        }
+                    },
+                    {
+                        "key": "k8s.deployment.uid",
+                        "value": {
+                            "stringValue": "2d61452e-f21c-4743-bedf-cd6183d660cf"
+                        }
+                    },
+                    {
+                        "key": "opencensus.resourcetype",
+                        "value": {
+                            "stringValue": "k8s"
+                        }
+                    }
+                ]
+            },
+            "instrumentationLibraryMetrics": [
+                {
+                    "instrumentationLibrary": {},
+                    "metrics": [
+                        {
+                            "name": "k8s.deployment.desired",
+                            "description": "Number of desired pods in this deployment",
+                            "unit": "1",
+                            "intGauge": {
+                                "dataPoints": [
+                                    {
+                                        "timeUnixNano": "1612819531934424200",
+                                        "value": "1"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "k8s.deployment.available",
+                            "description": "Total number of available pods (ready for at least minReadySeconds) targeted by this deployment",
+                            "unit": "1",
+                            "intGauge": {
+                                "dataPoints": [
+                                    {
+                                        "timeUnixNano": "1612819531934424200",
+                                        "value": "1"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

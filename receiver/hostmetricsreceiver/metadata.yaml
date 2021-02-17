@@ -44,7 +44,91 @@ labels:
     value: type
     description: Filesystem type, such as, "ext4", "tmpfs", etc.
 
+  network.device:
+    value: device
+    description: Name of the network interface.
+
+  network.direction:
+    value: direction
+    description: Direction of flow of bytes/opertations (receive or transmit).
+    enum: [receive, transmit]
+
+  network.protocol:
+    value: protocol
+    description: Network protocol, e.g. TCP or UDP.
+    enum: [tcp]
+
+  network.state:
+    value: state
+    description: State of the network connection.
+
+  paging.device:
+    value: device
+    description: Name of the page file.
+
+  paging.direction:
+    value: direction
+    description: Page In or Page Out.
+    enum: [page_in, page_out]
+
+  paging.state:
+    value: state
+    description: Breakdown of paging usage by type.
+    enum: [cached, free, used]
+
+  paging.type:
+    value: type
+    description: Type of fault.
+    enum: [major, minor]
+
+  process.direction:
+    value: direction
+    description: Direction of flow of bytes (read or write).
+    enum: [read, write]
+
+  process.state:
+    value: state
+    description: Breakdown of CPU usage by type.
+    enum: [system, user, wait]
+
+  processes.status:
+    value: status
+    description: Breakdown status of the processes.
+    enum: [blocked, running]
+
 metrics:
+  process.cpu.time:
+    description: Total CPU seconds broken down by different states.
+    unit: s
+    data:
+      type: double sum
+      aggregation: cumulative
+      monotonic: true
+
+  process.memory.physical_usage:
+    description: The amount of physical memory in use.
+    unit: By
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.virtual_usage:
+    description: Virtual memory size.
+    unit: By
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  process.disk.io:
+    description: Disk bytes transferred.
+    unit: By
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
     unit: s
@@ -148,6 +232,86 @@ metrics:
   system.filesystem.inodes.usage:
     description: FileSystem inodes used.
     unit: "{inodes}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  system.network.packets:
+    description: The number of packets transferred.
+    unit: "{packets}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.network.dropped:
+    description: The number of packets dropped.
+    unit: "{packets}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.network.errors:
+    description: The number of errors encountered.
+    unit: "{errors}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.network.io:
+    description: The number of bytes transmitted and received.
+    unit: "By"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.network.connections:
+    description: The number of connections.
+    unit: "{connections}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  system.paging.usage:
+    description: Swap (unix) or pagefile (windows) usage.
+    unit: By
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: false
+
+  system.paging.operations:
+    description: The number of paging operations.
+    unit: "{operations}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.paging.faults:
+    description: The number of page faults.
+    unit: "{faults}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.processes.created:
+    description: Total number of created processes.
+    unit: "{processes}"
+    data:
+      type: int sum
+      aggregation: cumulative
+      monotonic: true
+
+  system.processes.count:
+    description: Total number of processes in each state.
+    unit: "{processes}"
     data:
       type: int sum
       aggregation: cumulative

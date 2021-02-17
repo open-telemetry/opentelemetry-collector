@@ -1,27 +1,37 @@
 # Contributing Guide
 
-We'd love your help!
+We'd love your help! Please join our weekly [SIG
+meeting](https://github.com/open-telemetry/community#special-interest-groups).
 
 ## How to structure PRs to get expedient reviews?
 
-We recommend that any PR (unless it is trivial) to be smaller than 500 lines (excluding go mod/sum changes) in order to help reviewers to do a thorough and reasonably fast reviews.
+We recommend that any PR (unless it is trivial) to be smaller than 500 lines
+(excluding go mod/sum changes) in order to help reviewers to do a thorough and
+reasonably fast reviews.
 
 ### When adding a new component
 
-Consider submitting different PRs for (more details about adding new components [here](#adding-new-components)) :
+Consider submitting different PRs for (more details about adding new components
+[here](#adding-new-components)) :
 
 * First PR should include the overall structure of the new component:
-  * Readme, configuration, and factory implementation usually using the helper factory structs.
-  * This PR is usually trivial to review, so the size limit does not apply to it.
-* Second PR should include the concrete implementation of the component.
-If the size of this PR is larger than the recommended size consider splitting it in multiple PRs.
-* Last PR should enable the new component and add it to the `otelcontribcol` binary by updating the `components.go` file.
-The component must be enabled only after sufficient testing, and there is enough confidence in the stability and quality of the component.
+  * Readme, configuration, and factory implementation usually using the helper
+    factory structs.
+  * This PR is usually trivial to review, so the size limit does not apply to
+    it.
+* Second PR should include the concrete implementation of the component. If the
+  size of this PR is larger than the recommended size consider splitting it in
+  multiple PRs.
+* Last PR should enable the new component and add it to the `otelcontribcol`
+  binary by updating the `components.go` file. The component must be enabled
+  only after sufficient testing, and there is enough confidence in the
+  stability and quality of the component.
 
 ### Refactoring Work
 
-Any refactoring work must be split in its own PR that does not include any behavior changes.
-It is important to do this to avoid hidden changes in large and trivial refactoring PRs.
+Any refactoring work must be split in its own PR that does not include any
+behavior changes. It is important to do this to avoid hidden changes in large
+and trivial refactoring PRs.
 
 ## Report a bug or requesting feature
 
@@ -63,7 +73,7 @@ Follow the instructions below to create your PR.
 In the interest of keeping this repository clean and manageable, you should
 work from a fork. To create a fork, click the 'Fork' button at the top of the
 repository, then clone the fork locally using `git clone
-git@github.com:USERNAME/opentelemetry-service.git`.
+git@github.com:USERNAME/opentelemetry-collector.git`.
 
 You should also add this repository as an "upstream" repo to your local copy,
 in order to keep it up to date. You can add this as a remote like so:
@@ -74,7 +84,8 @@ Verify that the upstream exists:
 
 `git remote -v`
 
-To update your fork, fetch the upstream repo's branches and commits, then merge your `main` with upstream's `main`:
+To update your fork, fetch the upstream repo's branches and commits, then merge
+your `main` with upstream's `main`:
 
 ```
 git fetch upstream
@@ -110,7 +121,7 @@ Add your fork as an origin:
 
 ```shell
 $ cd $(go env GOPATH)/src/go.opentelemetry.io/collector
-$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-service.git
+$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
 ```
 
 Run tests, fmt and lint:
@@ -120,7 +131,8 @@ $ make install-tools # Only first time.
 $ make
 ```
 
-*Note:* the default build target requires tools that are installed at `$(go env GOPATH)/bin`, ensure that `$(go env GOPATH)/bin` is included in your `PATH`.
+*Note:* the default build target requires tools that are installed at `$(go env
+GOPATH)/bin`, ensure that `$(go env GOPATH)/bin` is included in your `PATH`.
 
 ## Creating a PR
 

@@ -15,25 +15,33 @@
 package consumererror
 
 import (
-	"errors"
 	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"strings"
 )
 
-func TestPermanent(t *testing.T) {
-	err := errors.New("testError")
-	require.False(t, IsPermanent(err))
+// CombineErrors converts a list of errors into one error.
+func CombineErrors(errs []error) error {
+	numErrors := len(errs)
+	if numErrors == 0 {
+		// No errors
+		return nil
+	}
 
-	err = Permanent(err)
-	require.True(t, IsPermanent(err))
+	if numErrors == 1 {
+		return errs[0]
+	}
 
-	err = fmt.Errorf("%w", err)
-	require.True(t, IsPermanent(err))
-}
-
-func TestIsPermanent_NilError(t *testing.T) {
-	var err error
-	require.False(t, IsPermanent(err))
+	errMsgs := make([]string, 0, numErrors)
+	permanent := false
+	for _, err := range errs {
+		if !permanent && IsPermanent(err) {
+			permanent = true
+		}
+		errMsgs = append(errMsgs, err.Error())
+	}
+	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
+	if permanent {
+		err = Permanent(err)
+	}
+	return err
 }

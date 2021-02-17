@@ -430,7 +430,7 @@ func Test_hash(t *testing.T) {
 	// collisions, but, of course it is possible that they happen, a different random source
 	// should avoid that.
 	r := rand.New(rand.NewSource(1))
-	fullKey := tracetranslator.UInt64ToByteTraceID(r.Uint64(), r.Uint64())
+	fullKey := tracetranslator.UInt64ToTraceID(r.Uint64(), r.Uint64()).Bytes()
 	seen := make(map[uint32]bool)
 	for i := 1; i <= len(fullKey); i++ {
 		key := fullKey[:i]

@@ -17,11 +17,16 @@
 // error type/instance.
 package consumererror
 
+import "errors"
+
 // permanent is an error that will be always returned if its source
 // receives the same inputs.
 type permanent struct {
 	err error
 }
+
+// permanentError exists to test errors for "IsPermanent"
+var permanentError = &permanent{}
 
 // Permanent wraps an error to indicate that it is a permanent error, i.e.: an
 // error that will be always returned if its source receives the same inputs.
@@ -38,8 +43,7 @@ func (p permanent) Error() string {
 // that its sources receives the same input.
 func IsPermanent(err error) bool {
 	if err != nil {
-		_, isPermanent := err.(permanent)
-		return isPermanent
+		return errors.As(err, permanentError)
 	}
 	return false
 }

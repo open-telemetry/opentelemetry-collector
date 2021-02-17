@@ -34,11 +34,11 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/builder"
@@ -395,7 +395,7 @@ func (app *Application) shutdownPipelines(ctx context.Context) error {
 		errs = append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func (app *Application) shutdownExtensions(ctx context.Context) error {
@@ -470,7 +470,7 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	app.stateChannel <- Closed
 	close(app.stateChannel)
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 // Run starts the collector according to the command and configuration

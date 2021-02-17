@@ -4,7 +4,7 @@
   <strong>
     <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/community#special-interest-groups">Getting Involved<a/>
+    <a href="CONTRIBUTING.md">Getting Involved<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch<a/>
   </strong>
@@ -28,8 +28,6 @@
 
 <p align="center">
   <strong>
-    <a href="CONTRIBUTING.md">Contributing<a/>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/vision.md">Vision<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/design.md">Design<a/>
@@ -37,6 +35,8 @@
     <a href="docs/monitoring.md">Monitoring<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/performance.md">Performance<a/>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="docs/security.md">Security<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/roadmap.md">Roadmap<a/>
   </strong>
@@ -73,6 +73,7 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 

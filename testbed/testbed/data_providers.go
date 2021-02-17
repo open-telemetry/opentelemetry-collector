@@ -20,12 +20,20 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 	"go.uber.org/atomic"
 
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	otlplogscol "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlpmetricscol "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
+	otlptracecol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
@@ -307,4 +315,98 @@ func populateSpansMap(resourceSpansList []*otlptrace.ResourceSpans) map[string]*
 
 func traceIDAndSpanIDToString(traceID pdata.TraceID, spanID pdata.SpanID) string {
 	return fmt.Sprintf("%s-%s", traceID.HexString(), spanID.HexString())
+}
+
+// FileDataProvider in an implementation of the DataProvider for use in performance tests.
+// The data to send is loaded from a file. The file should contain one JSON-encoded
+// Export*ServiceRequest Protobuf message. The file can be recorded using the "file"
+// exporter (note: "file" exporter writes one JSON message per line, FileDataProvider
+// expects just a single JSON message in the entire file).
+type FileDataProvider struct {
+	batchesGenerated   *atomic.Uint64
+	dataItemsGenerated *atomic.Uint64
+	message            proto.Message
+	ItemsPerBatch      int
+}
+
+// NewFileDataProvider creates an instance of FileDataProvider which generates test data
+// loaded from a file.
+func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*FileDataProvider, error) {
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var message proto.Message
+	var dataPointCount int
+
+	// Load the message from the file and count the data points.
+
+	switch dataType {
+	case configmodels.TracesDataType:
+		var msg otlptracecol.ExportTraceServiceRequest
+		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
+			return nil, err
+		}
+		message = &msg
+
+		md := pdata.TracesFromOtlp(msg.ResourceSpans)
+		dataPointCount = md.SpanCount()
+
+	case configmodels.MetricsDataType:
+		var msg otlpmetricscol.ExportMetricsServiceRequest
+		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
+			return nil, err
+		}
+		message = &msg
+
+		md := pdata.MetricsFromOtlp(msg.ResourceMetrics)
+		_, dataPointCount = md.MetricAndDataPointCount()
+
+	case configmodels.LogsDataType:
+		var msg otlplogscol.ExportLogsServiceRequest
+		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
+			return nil, err
+		}
+		message = &msg
+
+		md := pdata.LogsFromInternalRep(internal.LogsFromOtlp(msg.ResourceLogs))
+		dataPointCount = md.LogRecordCount()
+	}
+
+	return &FileDataProvider{
+		message:       message,
+		ItemsPerBatch: dataPointCount,
+	}, nil
+}
+
+func (dp *FileDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.Uint64, dataItemsGenerated *atomic.Uint64) {
+	dp.batchesGenerated = batchesGenerated
+	dp.dataItemsGenerated = dataItemsGenerated
+}
+
+// Marshaler configuration used for marhsaling Protobuf to JSON. Use default config.
+var protobufJSONUnmarshaler = &jsonpb.Unmarshaler{}
+
+func (dp *FileDataProvider) GenerateTraces() (pdata.Traces, bool) {
+	// TODO: implement similar to GenerateMetrics.
+	return pdata.NewTraces(), true
+}
+
+func (dp *FileDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
+	md := pdata.MetricsFromOtlp(dp.message.(*otlpmetricscol.ExportMetricsServiceRequest).ResourceMetrics)
+	dp.batchesGenerated.Inc()
+	_, dataPointCount := md.MetricAndDataPointCount()
+	dp.dataItemsGenerated.Add(uint64(dataPointCount))
+	return md, false
+}
+
+func (dp *FileDataProvider) GetGeneratedSpan(pdata.TraceID, pdata.SpanID) *otlptrace.Span {
+	// Nothing to do. This function is only used by data providers used in correctness tests for traces.
+	return nil
+}
+
+func (dp *FileDataProvider) GenerateLogs() (pdata.Logs, bool) {
+	// TODO: implement similar to GenerateMetrics.
+	return pdata.NewLogs(), true
 }

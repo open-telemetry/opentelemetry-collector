@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v0.20.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Rename `samplingprocessor/probabilisticsamplerprocessor` to `probabilisticsamplerprocessor` (#2392)
+
+## 💡 Enhancements 💡
+
+- `hostmetrics` receiver: Refactor to use metrics metadata utilities (#2405, #2406, #2421)
+- Add k8s.node semantic conventions (#2425)
+
 ## v0.19.0 Beta
 
 ## 🛑 Breaking changes 🛑

@@ -20,8 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// UInt64ToByteTraceID takes a two uint64 representation of a TraceID and
-// converts it to a []byte representation.
+// UInt64ToTraceID converts the pair of uint64 representation of a TraceID to pdata.TraceID.
 func UInt64ToTraceID(high, low uint64) pdata.TraceID {
 	traceID := [16]byte{}
 	binary.BigEndian.PutUint64(traceID[:8], high)
@@ -29,79 +28,21 @@ func UInt64ToTraceID(high, low uint64) pdata.TraceID {
 	return pdata.NewTraceID(traceID)
 }
 
-// UInt64ToByteTraceID takes a two uint64 representation of a TraceID and
-// converts it to a []byte representation.
-func UInt64ToByteTraceID(high, low uint64) [16]byte {
-	traceID := [16]byte{}
-	binary.BigEndian.PutUint64(traceID[:8], high)
-	binary.BigEndian.PutUint64(traceID[8:], low)
-	return traceID
-}
-
-// Int64ToByteTraceID takes a two int64 representation of a TraceID and
-// converts it to a []byte representation.
-func Int64ToTraceID(high, low int64) pdata.TraceID {
-	return UInt64ToTraceID(uint64(high), uint64(low))
-}
-
-// Int64ToByteTraceID takes a two int64 representation of a TraceID and
-// converts it to a []byte representation.
-func Int64ToByteTraceID(high, low int64) [16]byte {
-	return UInt64ToByteTraceID(uint64(high), uint64(low))
-}
-
-// BytesToUInt64TraceID takes a []byte representation of a TraceID and
-// converts it to a two uint64 representation.
-func BytesToUInt64TraceID(traceID [16]byte) (uint64, uint64) {
-	return binary.BigEndian.Uint64(traceID[:8]), binary.BigEndian.Uint64(traceID[8:])
-}
-
-// BytesToInt64TraceID takes a []byte representation of a TraceID and
-// converts it to a two int64 representation.
-func BytesToInt64TraceID(traceID [16]byte) (int64, int64) {
-	traceIDHigh, traceIDLow := BytesToUInt64TraceID(traceID)
-	return int64(traceIDHigh), int64(traceIDLow)
-}
-
-// TraceIDToUInt64Pair takes a pdata.TraceID and converts it to a pair of uint64 representation.
+// TraceIDToUInt64Pair converts the pdata.TraceID to a pair of uint64 representation.
 func TraceIDToUInt64Pair(traceID pdata.TraceID) (uint64, uint64) {
-	return BytesToUInt64TraceID(traceID.Bytes())
+	bytes := traceID.Bytes()
+	return binary.BigEndian.Uint64(bytes[:8]), binary.BigEndian.Uint64(bytes[8:])
 }
 
-// UInt64ToByteSpanID takes a uint64 representation of a SpanID and
-// converts it to a []byte representation.
-func UInt64ToByteSpanID(id uint64) [8]byte {
+// UInt64ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
+func UInt64ToSpanID(id uint64) pdata.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return spanID
+	return pdata.NewSpanID(spanID)
 }
 
-// UInt64ToSpanID takes a uint64 representation of a SpanID and
-// converts it to a pdata.SpanID representation.
-func UInt64ToSpanID(id uint64) pdata.SpanID {
-	return pdata.NewSpanID(UInt64ToByteSpanID(id))
-}
-
-// Int64ToByteSpanID takes a int64 representation of a SpanID and
-// converts it to a []byte representation.
-func Int64ToByteSpanID(id int64) [8]byte {
-	return UInt64ToByteSpanID(uint64(id))
-}
-
-// Int64ToByteSpanID takes a int64 representation of a SpanID and
-// converts it to a []byte representation.
-func Int64ToSpanID(id int64) pdata.SpanID {
-	return UInt64ToSpanID(uint64(id))
-}
-
-// BytesToUInt64SpanID takes a []byte representation of a SpanID and
-// converts it to a uint64 representation.
-func BytesToUInt64SpanID(b [8]byte) uint64 {
-	return binary.BigEndian.Uint64(b[:])
-}
-
-// BytesToInt64SpanID takes a []byte representation of a SpanID and
-// converts it to a int64 representation.
-func BytesToInt64SpanID(b [8]byte) int64 {
-	return int64(BytesToUInt64SpanID(b))
+// SpanIDToUInt64 converts the pdata.SpanID to uint64 representation.
+func SpanIDToUInt64(spanID pdata.SpanID) uint64 {
+	bytes := spanID.Bytes()
+	return binary.BigEndian.Uint64(bytes[:])
 }

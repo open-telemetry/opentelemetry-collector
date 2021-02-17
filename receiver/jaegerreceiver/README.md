@@ -77,7 +77,7 @@ receivers:
     protocols:
       grpc:
     remote_sampling:
-      fetch_endpoint: "jaeger-collector:1234"
+      host_endpoint: "jaeger-collector:1234"
 ```
 
 Remote sampling can also be directly served by the collector by providing a

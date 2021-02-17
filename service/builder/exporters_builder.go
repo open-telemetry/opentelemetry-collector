@@ -21,9 +21,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -43,7 +43,7 @@ func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error
 		}
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.CombineErrors(errors)
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
@@ -56,7 +56,7 @@ func (bexp *builtExporter) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.CombineErrors(errors)
 }
 
 func (bexp *builtExporter) getTraceExporter() component.TracesExporter {
@@ -109,7 +109,7 @@ func (exps Exporters) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {

@@ -356,7 +356,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		}
 
 		link.SetTraceID(tracetranslator.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
-		link.SetSpanID(pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(ref.SpanID))))
+		link.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(ref.SpanID)))
 		i++
 	}
 
