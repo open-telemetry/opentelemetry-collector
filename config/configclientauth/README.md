@@ -1,6 +1,6 @@
-# AuthX Settings for Exporters
+# Authentication for Exporters
 
-This module provides helpers for HTTP/gRPC exporters, allowing them to be configured to perform authentication/authorization of outgoing requests.
+This module provides helpers for HTTP/gRPC exporters, allowing them to be configured to perform authentication of outgoing requests.
 
 ## OAuth2 Client Credentials. (HTTP/gRPC)
 
