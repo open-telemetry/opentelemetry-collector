@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestScrapeErrorsAdd(t *testing.T) {
+func TestScrapeErrorsAddPartial(t *testing.T) {
 	err1 := errors.New("err 1")
 	err2 := errors.New("err 2")
 	expected := []error{
@@ -31,47 +31,19 @@ func TestScrapeErrorsAdd(t *testing.T) {
 	}
 
 	var errs ScrapeErrors
-	errs.Add(1, err1)
-	errs.Add(10, err2)
+	errs.AddPartial(1, err1)
+	errs.AddPartial(10, err2)
 	assert.Equal(t, expected, errs.errs)
 }
 
-func TestScrapeErrorsAddf(t *testing.T) {
-	err1 := errors.New("err 10")
-	err2 := errors.New("err 20")
-	expected := []error{
-		PartialScrapeError{error: fmt.Errorf("err: %s", err1), Failed: 20},
-		PartialScrapeError{error: fmt.Errorf("err %s: %w", "2", err2), Failed: 2},
-	}
-
-	var errs ScrapeErrors
-	errs.Addf(20, "err: %s", err1)
-	errs.Addf(2, "err %s: %w", "2", err2)
-	assert.Equal(t, expected, errs.errs)
-}
-
-func TestScrapeErrorsAddRegular(t *testing.T) {
+func TestScrapeErrorsAdd(t *testing.T) {
 	err1 := errors.New("err a")
 	err2 := errors.New("err b")
 	expected := []error{err1, err2}
 
 	var errs ScrapeErrors
-	errs.AddRegular(err1)
-	errs.AddRegular(err2)
-	assert.Equal(t, expected, errs.errs)
-}
-
-func TestScrapeErrorsAddRegularf(t *testing.T) {
-	err1 := errors.New("err aa")
-	err2 := errors.New("err bb")
-	expected := []error{
-		fmt.Errorf("err: %s", err1),
-		fmt.Errorf("err %s: %w", "bb", err2),
-	}
-
-	var errs ScrapeErrors
-	errs.AddRegularf("err: %s", err1)
-	errs.AddRegularf("err %s: %w", "bb", err2)
+	errs.Add(err1)
+	errs.Add(err2)
 	assert.Equal(t, expected, errs.errs)
 }
 
@@ -93,8 +65,8 @@ func TestScrapeErrorsCombine(t *testing.T) {
 		{
 			errs: func() ScrapeErrors {
 				var errs ScrapeErrors
-				errs.Add(10, errors.New("bad scrapes"))
-				errs.Addf(1, "err: %s", errors.New("bad scrape"))
+				errs.AddPartial(10, errors.New("bad scrapes"))
+				errs.AddPartial(1, fmt.Errorf("err: %s", errors.New("bad scrape")))
 				return errs
 			},
 			expectedErr:         "[bad scrapes; err: bad scrape]",
@@ -104,8 +76,8 @@ func TestScrapeErrorsCombine(t *testing.T) {
 		{
 			errs: func() ScrapeErrors {
 				var errs ScrapeErrors
-				errs.AddRegular(errors.New("bad regular"))
-				errs.AddRegularf("err: %s", errors.New("bad reg"))
+				errs.Add(errors.New("bad regular"))
+				errs.Add(fmt.Errorf("err: %s", errors.New("bad reg")))
 				return errs
 			},
 			expectedErr: "[bad regular; err: bad reg]",
@@ -113,10 +85,10 @@ func TestScrapeErrorsCombine(t *testing.T) {
 		{
 			errs: func() ScrapeErrors {
 				var errs ScrapeErrors
-				errs.Add(2, errors.New("bad two scrapes"))
-				errs.Addf(10, "%d scrapes failed: %s", 10, errors.New("bad things happened"))
-				errs.AddRegular(errors.New("bad event"))
-				errs.AddRegularf("event: %s", errors.New("something happened"))
+				errs.AddPartial(2, errors.New("bad two scrapes"))
+				errs.AddPartial(10, fmt.Errorf("%d scrapes failed: %s", 10, errors.New("bad things happened")))
+				errs.Add(errors.New("bad event"))
+				errs.Add(fmt.Errorf("event: %s", errors.New("something happened")))
 				return errs
 			},
 			expectedErr:         "[bad two scrapes; 10 scrapes failed: bad things happened; bad event; event: something happened]",

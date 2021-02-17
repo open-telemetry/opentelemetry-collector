@@ -78,7 +78,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		}
 		usage, usageErr := s.usage(partition.Mountpoint)
 		if usageErr != nil {
-			errors.Add(0, usageErr)
+			errors.AddPartial(0, usageErr)
 			continue
 		}
 

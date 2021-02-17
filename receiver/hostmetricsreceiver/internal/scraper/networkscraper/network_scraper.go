@@ -88,12 +88,12 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 
 	err := s.scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
 	if err != nil {
-		errors.Add(networkMetricsLen, err)
+		errors.AddPartial(networkMetricsLen, err)
 	}
 
 	err = s.scrapeAndAppendNetworkConnectionsMetric(metrics)
 	if err != nil {
-		errors.Add(connectionsMetricsLen, err)
+		errors.AddPartial(connectionsMetricsLen, err)
 	}
 
 	return metrics, errors.Combine()

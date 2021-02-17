@@ -85,12 +85,12 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 
 	err := s.scrapeAndAppendPagingUsageMetric(metrics)
 	if err != nil {
-		errors.Add(pagingUsageMetricsLen, err)
+		errors.AddPartial(pagingUsageMetricsLen, err)
 	}
 
 	err = s.scrapeAndAppendPagingOperationsMetric(metrics)
 	if err != nil {
-		errors.Add(pagingMetricsLen, err)
+		errors.AddPartial(pagingMetricsLen, err)
 	}
 
 	return metrics, errors.Combine()

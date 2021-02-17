@@ -266,7 +266,7 @@ func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) 
 		if err != nil {
 			partialErr, isPartial := err.(consumererror.PartialScrapeError)
 			if isPartial {
-				errs.Add(partialErr.Failed, partialErr)
+				errs.AddPartial(partialErr.Failed, partialErr)
 			}
 
 			continue

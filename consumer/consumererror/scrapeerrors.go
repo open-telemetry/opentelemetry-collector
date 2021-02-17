@@ -14,10 +14,6 @@
 
 package consumererror
 
-import (
-	"fmt"
-)
-
 // ScrapeErrors contains multiple PartialScrapeErrors and can also contain generic errors.
 type ScrapeErrors struct {
 	errs              []error
@@ -25,25 +21,14 @@ type ScrapeErrors struct {
 }
 
 // Add adds a PartialScrapeError with the provided failed count and error.
-func (s *ScrapeErrors) Add(failed int, err error) {
+func (s *ScrapeErrors) AddPartial(failed int, err error) {
 	s.errs = append(s.errs, NewPartialScrapeError(err, failed))
 	s.failedScrapeCount += failed
 }
 
-// Addf adds a PartialScrapeError with the provided failed count and arguments to format an error.
-func (s *ScrapeErrors) Addf(failed int, format string, a ...interface{}) {
-	s.errs = append(s.errs, NewPartialScrapeError(fmt.Errorf(format, a...), failed))
-	s.failedScrapeCount += failed
-}
-
-// Add adds a regular generic error.
-func (s *ScrapeErrors) AddRegular(err error) {
+// Add adds a regular error.
+func (s *ScrapeErrors) Add(err error) {
 	s.errs = append(s.errs, err)
-}
-
-// Add adds a regular generic error from the provided format specifier.
-func (s *ScrapeErrors) AddRegularf(format string, a ...interface{}) {
-	s.errs = append(s.errs, fmt.Errorf(format, a...))
 }
 
 // Combine converts a slice of errors into one error.

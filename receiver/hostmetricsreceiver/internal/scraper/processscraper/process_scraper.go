@@ -96,7 +96,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 			return rms, err
 		}
 
-		errs.Add(partialErr.Failed, partialErr)
+		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
 	rms.Resize(len(metadata))
@@ -111,15 +111,15 @@ func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) 
 		now := internal.TimeToUnixNano(time.Now())
 
 		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs.Addf(cpuMetricsLen, "error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err)
+			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
-			errs.Addf(memoryMetricsLen, "error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err)
+			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
-			errs.Addf(diskMetricsLen, "error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err)
+			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 	}
 
@@ -145,7 +145,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		executable, err := getProcessExecutable(handle)
 		if err != nil {
-			errs.Addf(1, "error reading process name for pid %v: %w", pid, err)
+			errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
 			continue
 		}
 
@@ -157,12 +157,12 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		command, err := getProcessCommand(handle)
 		if err != nil {
-			errs.Addf(0, "error reading command for process %q (pid %v): %w", executable.name, pid, err)
+			errs.AddPartial(0, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
 		username, err := handle.Username()
 		if err != nil {
-			errs.Addf(0, "error reading username for process %q (pid %v): %w", executable.name, pid, err)
+			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
 		md := &processMetadata{
