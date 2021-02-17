@@ -261,7 +261,7 @@ func traceIDToJaegerProto(traceID pdata.TraceID) (model.TraceID, error) {
 }
 
 func spanIDToJaegerProto(spanID pdata.SpanID) (model.SpanID, error) {
-	uSpanID := tracetranslator.BytesToUInt64SpanID(spanID.Bytes())
+	uSpanID := tracetranslator.SpanIDToUInt64(spanID)
 	if uSpanID == 0 {
 		return model.SpanID(0), errZeroSpanID
 	}

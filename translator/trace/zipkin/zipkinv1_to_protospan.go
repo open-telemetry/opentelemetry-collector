@@ -415,7 +415,7 @@ func hexTraceIDToOCTraceID(hex string) ([]byte, error) {
 		return nil, errHexTraceIDZero
 	}
 
-	tidBytes := tracetranslator.UInt64ToByteTraceID(high, low)
+	tidBytes := tracetranslator.UInt64ToTraceID(high, low).Bytes()
 	return tidBytes[:], nil
 }
 
@@ -434,7 +434,7 @@ func hexIDToOCID(hex string) ([]byte, error) {
 		return nil, errHexIDZero
 	}
 
-	idBytes := tracetranslator.UInt64ToByteSpanID(idValue)
+	idBytes := tracetranslator.UInt64ToSpanID(idValue).Bytes()
 	return idBytes[:], nil
 }
 
