@@ -33,16 +33,19 @@ func mockNewClusterAdmin([]string, *sarama.Config) (sarama.ClusterAdmin, error) 
 type mockSaramaClient struct {
 	mock.Mock
 	sarama.Client
+
+	close  func() error
+	closed func() bool
 }
 
 func (s *mockSaramaClient) Closed() bool {
 	s.Called()
-	return false
+	return s.closed()
 }
 
 func (s *mockSaramaClient) Close() error {
 	s.Called()
-	return nil
+	return s.close()
 }
 
 func getMockClient() *mockSaramaClient {

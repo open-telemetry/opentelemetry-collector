@@ -2,12 +2,13 @@ receivers:
   otlp:
     protocols:
       grpc:
-  opencensus:
-  jaeger:
-    protocols:
-      grpc:
-      thrift_http:
-  zipkin:
+  kafkametrics:
+    protocol_version: 2.0.0
+    scrapers:
+      - brokers
+      - topics
+      - consumers
+    brokers: "35.193.145.20:9092"
 
 exporters:
   otlp:
@@ -30,10 +31,10 @@ service:
   extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
-      receivers: [otlp, opencensus, jaeger, zipkin]
+      receivers: [ otlp ]
       processors: [batch]
       exporters: [otlp, logging]
     metrics:
-      receivers: [otlp, opencensus]
+      receivers: [ otlp, kafkametrics ]
       processors: [batch]
       exporters: [otlp, logging]

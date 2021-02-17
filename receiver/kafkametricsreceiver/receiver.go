@@ -35,7 +35,7 @@ var (
 	}
 )
 
-func newMetricsReceiver(
+var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
 	params component.ReceiverCreateParams,

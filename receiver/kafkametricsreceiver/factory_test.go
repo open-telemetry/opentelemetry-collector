@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -31,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetricsReceiver_errors(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
@@ -40,4 +41,19 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	r, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
 	assert.Error(t, err)
 	assert.Nil(t, r)
+}
+
+func TestCreateMetricsReceiver(t *testing.T) {
+	prev := newMetricsReceiver
+	newMetricsReceiver = func(ctx context.Context, config Config, params component.ReceiverCreateParams, consumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+		return nil, nil
+	}
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Brokers = []string{"invalid:9092"}
+	cfg.ProtocolVersion = "2.0.0"
+	cfg.Scrapers = []string{"topics"}
+	_, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, nil)
+	newMetricsReceiver = prev
+	assert.Nil(t, err)
 }
