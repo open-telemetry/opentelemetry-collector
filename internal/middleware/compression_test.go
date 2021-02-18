@@ -31,6 +31,67 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 )
 
+func TestHTTPClientCompression(t *testing.T) {
+	testBody := []byte("uncompressed_text")
+	compressedBody, _ := compressGzip(testBody)
+
+	tests := []struct {
+		name     string
+		encoding string
+		reqBody  []byte
+	}{
+		{
+			name:     "NoCompression",
+			encoding: "",
+			reqBody:  testBody,
+		},
+		{
+			name:     "ValidGzip",
+			encoding: "gzip",
+			reqBody:  compressedBody.Bytes(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := ioutil.ReadAll(r.Body)
+				require.NoError(t, err, "failed to read request body: %v", err)
+				assert.EqualValues(t, tt.reqBody, body)
+				w.WriteHeader(200)
+			})
+
+			addr := testutil.GetAvailableLocalAddress(t)
+			ln, err := net.Listen("tcp", addr)
+			require.NoError(t, err, "failed to create listener: %v", err)
+			srv := &http.Server{
+				Handler: handler,
+			}
+			go func() {
+				_ = srv.Serve(ln)
+			}()
+			// Wait for the servers to start
+			<-time.After(10 * time.Millisecond)
+
+			serverURL := fmt.Sprintf("http://%s", ln.Addr().String())
+			reqBody := bytes.NewBuffer(testBody)
+
+			req, err := http.NewRequest("GET", serverURL, reqBody)
+			require.NoError(t, err, "failed to create request to test handler")
+
+			client := http.Client{}
+			if tt.encoding == "gzip" {
+				client.Transport = NewCompressRoundTripper(http.DefaultTransport)
+			}
+			res, err := client.Do(req)
+			require.NoError(t, err)
+
+			ioutil.ReadAll(res.Body)
+			require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+			require.NoError(t, srv.Close())
+		})
+	}
+}
+
 func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
 	tests := []struct {

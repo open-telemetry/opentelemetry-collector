@@ -186,17 +186,18 @@ func (jr *JaegerDataReceiver) ProtocolName() string {
 	return "jaeger"
 }
 
-// baseOTLPDataReceiver implements the OTLP format receiver.
-type baseOTLPDataReceiver struct {
+// BaseOTLPDataReceiver implements the OTLP format receiver.
+type BaseOTLPDataReceiver struct {
 	DataReceiverBase
 	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
 	exporterType    string
 	traceReceiver   component.TracesReceiver
 	metricsReceiver component.MetricsReceiver
 	logReceiver     component.LogsReceiver
+	compression     string
 }
 
-func (bor *baseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
+func (bor *BaseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(bor.exporterType)
@@ -228,7 +229,12 @@ func (bor *baseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.M
 	return bor.logReceiver.Start(context.Background(), bor)
 }
 
-func (bor *baseOTLPDataReceiver) Stop() error {
+func (bor *BaseOTLPDataReceiver) WithCompression(compression string) *BaseOTLPDataReceiver {
+	bor.compression = compression
+	return bor
+}
+
+func (bor *BaseOTLPDataReceiver) Stop() error {
 	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
 		return err
 	}
@@ -238,28 +244,35 @@ func (bor *baseOTLPDataReceiver) Stop() error {
 	return bor.logReceiver.Shutdown(context.Background())
 }
 
-func (bor *baseOTLPDataReceiver) ProtocolName() string {
+func (bor *BaseOTLPDataReceiver) ProtocolName() string {
 	return bor.exporterType
 }
 
-func (bor *baseOTLPDataReceiver) GenConfigYAMLStr() string {
+func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	addr := fmt.Sprintf("localhost:%d", bor.Port)
 	if bor.exporterType == "otlphttp" {
 		addr = "http://" + addr
 	}
 	// Note that this generates an exporter config for agent.
-	return fmt.Sprintf(`
+	str := fmt.Sprintf(`
   %s:
     endpoint: "%s"
     insecure: true`, bor.exporterType, addr)
+
+	if bor.compression != "" {
+		str += fmt.Sprintf(`
+    compression: "%s"`, bor.compression)
+	}
+
+	return str
 }
 
 const DefaultOTLPPort = 55680
 
 // NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPDataReceiver(port int) DataReceiver {
-	return &baseOTLPDataReceiver{
+func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
+	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
 		exporterType:     "otlp",
 	}
@@ -267,8 +280,8 @@ func NewOTLPDataReceiver(port int) DataReceiver {
 
 // NewOTLPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPHTTPDataReceiver(port int) DataReceiver {
-	return &baseOTLPDataReceiver{
+func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
+	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
 		exporterType:     "otlphttp",
 	}
