@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -91,7 +91,7 @@ func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) (in
 
 func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, error) {
 	request := &otlplogs.ExportLogsServiceRequest{
-		ResourceLogs: internal.LogsToOtlp(logs.InternalRep()),
+		ResourceLogs: data.LogsToOtlp(logs.InternalRep()),
 	}
 	err := e.w.exportLogs(ctx, request)
 

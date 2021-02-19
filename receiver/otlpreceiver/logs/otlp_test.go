@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data"
 	collectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplog "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
@@ -73,7 +72,7 @@ func TestExport(t *testing.T) {
 
 	// Keep log data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := pdata.LogsFromInternalRep(internal.LogsFromOtlp(resourceLogs)).Clone()
+	traceData := pdata.LogsFromInternalRep(data.LogsFromOtlp(resourceLogs)).Clone()
 
 	req := &collectorlog.ExportLogsServiceRequest{
 		ResourceLogs: resourceLogs,

@@ -15,7 +15,7 @@
 package pdata
 
 import (
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data"
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
@@ -41,15 +41,15 @@ func NewLogs() Logs {
 // LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should
 // not be used outside this module. This is intended to be used only by OTLP exporter and
 // File exporter, which legitimately need to work with OTLP Protobuf structs.
-func LogsFromInternalRep(logs internal.OtlpLogsWrapper) Logs {
+func LogsFromInternalRep(logs data.InternalLogsWrapper) Logs {
 	return Logs{logs.Orig}
 }
 
 // InternalRep returns internal representation of the logs. Should not be used outside
 // this module. This is intended to be used only by OTLP exporter and File exporter,
 // which legitimately need to work with OTLP Protobuf structs.
-func (ld Logs) InternalRep() internal.OtlpLogsWrapper {
-	return internal.OtlpLogsWrapper{Orig: ld.orig}
+func (ld Logs) InternalRep() data.InternalLogsWrapper {
+	return data.InternalLogsWrapper{Orig: ld.orig}
 }
 
 // ToOtlpProtoBytes returns the internal Logs to OTLP Collector ExportTraceServiceRequest

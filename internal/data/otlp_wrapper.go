@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package data
 
 import otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 
-// OtlpLogsWrapper is an intermediary struct that is declared in an internal package
+// InternalLogsWrapper is an intermediary struct that is declared in an internal package
 // as a way to prevent certain functions of pdata.Logs data type to be callable by
 // any code outside of this module.
-type OtlpLogsWrapper struct {
+type InternalLogsWrapper struct {
 	Orig *[]*otlplogs.ResourceLogs
 }
 
-func LogsToOtlp(l OtlpLogsWrapper) []*otlplogs.ResourceLogs {
+func LogsToOtlp(l InternalLogsWrapper) []*otlplogs.ResourceLogs {
 	return *l.Orig
 }
 
-func LogsFromOtlp(logs []*otlplogs.ResourceLogs) OtlpLogsWrapper {
-	return OtlpLogsWrapper{Orig: &logs}
+func LogsFromOtlp(logs []*otlplogs.ResourceLogs) InternalLogsWrapper {
+	return InternalLogsWrapper{Orig: &logs}
 }

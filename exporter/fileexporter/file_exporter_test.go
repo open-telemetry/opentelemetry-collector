@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data"
 	collectorlogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -119,7 +119,7 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld))))
+	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(data.LogsFromOtlp(ld))))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
@@ -210,7 +210,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			exporter := &fileExporter{file: mf}
 			require.NotNil(t, exporter)
 
-			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld))))
+			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(data.LogsFromOtlp(ld))))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}

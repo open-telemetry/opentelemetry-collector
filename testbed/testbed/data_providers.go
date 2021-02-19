@@ -30,7 +30,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal"
+	"go.opentelemetry.io/collector/internal/data"
 	otlplogscol "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpmetricscol "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -370,7 +370,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 		}
 		message = &msg
 
-		md := pdata.LogsFromInternalRep(internal.LogsFromOtlp(msg.ResourceLogs))
+		md := pdata.LogsFromInternalRep(data.LogsFromOtlp(msg.ResourceLogs))
 		dataPointCount = md.LogRecordCount()
 	}
 
