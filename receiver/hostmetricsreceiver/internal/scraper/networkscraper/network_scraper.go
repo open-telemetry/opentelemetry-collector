@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -85,19 +84,19 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	var errors []error
+	var errors consumererror.ScrapeErrors
 
 	err := s.scrapeAndAppendNetworkCounterMetrics(metrics, s.startTime)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(networkMetricsLen, err)
 	}
 
 	err = s.scrapeAndAppendNetworkConnectionsMetric(metrics)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(connectionsMetricsLen, err)
 	}
 
-	return metrics, scraperhelper.CombineScrapeErrors(errors)
+	return metrics, errors.Combine()
 }
 
 func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice, startTime pdata.TimestampUnixNano) error {
@@ -106,7 +105,7 @@ func (s *scraper) scrapeAndAppendNetworkCounterMetrics(metrics pdata.MetricSlice
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, networkMetricsLen)
+		return err
 	}
 
 	// filter network interfaces by name
@@ -182,7 +181,7 @@ func (s *scraper) scrapeAndAppendNetworkConnectionsMetric(metrics pdata.MetricSl
 
 	connections, err := s.connections("tcp")
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, connectionsMetricsLen)
+		return err
 	}
 
 	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)

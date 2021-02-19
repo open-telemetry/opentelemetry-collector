@@ -260,17 +260,19 @@ func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) 
 	ilms.Resize(1)
 	ilm := ilms.At(0)
 
-	var errs []error
+	var errs consumererror.ScrapeErrors
 	for _, scraper := range mms.scrapers {
 		metrics, err := scraper.Scrape(ctx, receiverName)
 		if err != nil {
-			errs = append(errs, err)
-			if !consumererror.IsPartialScrapeError(err) {
-				continue
+			partialErr, isPartial := err.(consumererror.PartialScrapeError)
+			if isPartial {
+				errs.AddPartial(partialErr.Failed, partialErr)
 			}
+
+			continue
 		}
 
 		metrics.MoveAndAppendTo(ilm.Metrics())
 	}
-	return rms, CombineScrapeErrors(errs)
+	return rms, errs.Combine()
 }

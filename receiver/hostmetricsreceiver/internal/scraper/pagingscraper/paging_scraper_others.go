@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -65,26 +64,26 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	var errors []error
+	var errors consumererror.ScrapeErrors
 
 	err := s.scrapeAndAppendPagingUsageMetric(metrics)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(pagingUsageMetricsLen, err)
 	}
 
 	err = s.scrapeAndAppendPagingMetrics(metrics)
 	if err != nil {
-		errors = append(errors, err)
+		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	return metrics, scraperhelper.CombineScrapeErrors(errors)
+	return metrics, errors.Combine()
 }
 
 func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) error {
 	now := internal.TimeToUnixNano(time.Now())
 	vmem, err := s.virtualMemory()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, pagingUsageMetricsLen)
+		return err
 	}
 
 	idx := metrics.Len()
@@ -114,7 +113,7 @@ func (s *scraper) scrapeAndAppendPagingMetrics(metrics pdata.MetricSlice) error 
 	now := internal.TimeToUnixNano(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {
-		return consumererror.NewPartialScrapeError(err, pagingMetricsLen)
+		return err
 	}
 
 	idx := metrics.Len()

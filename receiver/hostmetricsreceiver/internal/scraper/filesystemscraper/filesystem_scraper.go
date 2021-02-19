@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -71,7 +70,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	var errors []error
+	var errors consumererror.ScrapeErrors
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
 		if !s.fsFilter.includePartition(partition) {
@@ -79,7 +78,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		}
 		usage, usageErr := s.usage(partition.Mountpoint)
 		if usageErr != nil {
-			errors = append(errors, consumererror.NewPartialScrapeError(usageErr, 0))
+			errors.AddPartial(0, usageErr)
 			continue
 		}
 
@@ -92,11 +91,9 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		appendSystemSpecificMetrics(metrics, 1, now, usages)
 	}
 
-	err = scraperhelper.CombineScrapeErrors(errors)
+	err = errors.Combine()
 	if err != nil && len(usages) == 0 {
-		partialErr := err.(consumererror.PartialScrapeError)
-		partialErr.Failed = metricsLen
-		err = partialErr
+		err = consumererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	return metrics, err
