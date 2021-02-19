@@ -22,7 +22,6 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -43,18 +42,18 @@ func TestOCToMetrics(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		oc       consumerdata.MetricsData
+		oc       MetricsData
 		internal pdata.Metrics
 	}{
 		{
 			name:     "empty",
-			oc:       consumerdata.MetricsData{},
+			oc:       MetricsData{},
 			internal: testdata.GenerateMetricsEmpty(),
 		},
 
 		{
 			name: "one-empty-resource-metrics",
-			oc: consumerdata.MetricsData{
+			oc: MetricsData{
 				Node:     &occommon.Node{},
 				Resource: &ocresource.Resource{},
 			},
@@ -87,7 +86,7 @@ func TestOCToMetrics(t *testing.T) {
 
 		{
 			name: "one-metric-one-summary",
-			oc: consumerdata.MetricsData{
+			oc: MetricsData{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
 					generateOCTestMetricInt(),
@@ -123,7 +122,7 @@ func TestOCToMetrics(t *testing.T) {
 
 		{
 			name: "sample-metric",
-			oc: consumerdata.MetricsData{
+			oc: MetricsData{
 				Resource: generateOCTestResource(),
 				Metrics: []*ocmetrics.Metric{
 					generateOCTestMetricInt(),
@@ -142,7 +141,7 @@ func TestOCToMetrics(t *testing.T) {
 			got := OCToMetrics(test.oc)
 			assert.EqualValues(t, test.internal, got)
 
-			ocslice := []consumerdata.MetricsData{
+			ocslice := []MetricsData{
 				test.oc,
 				test.oc,
 			}
@@ -187,7 +186,7 @@ func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 }
 
 func BenchmarkMetricIntOCToMetrics(b *testing.B) {
-	ocMetric := consumerdata.MetricsData{
+	ocMetric := MetricsData{
 		Resource: generateOCTestResource(),
 		Metrics: []*ocmetrics.Metric{
 			generateOCTestMetricInt(),
@@ -203,7 +202,7 @@ func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 }
 
 func BenchmarkMetricDoubleOCToMetrics(b *testing.B) {
-	ocMetric := consumerdata.MetricsData{
+	ocMetric := MetricsData{
 		Resource: generateOCTestResource(),
 		Metrics: []*ocmetrics.Metric{
 			generateOCTestMetricDouble(),
@@ -219,7 +218,7 @@ func BenchmarkMetricDoubleOCToMetrics(b *testing.B) {
 }
 
 func BenchmarkMetricHistogramOCToMetrics(b *testing.B) {
-	ocMetric := consumerdata.MetricsData{
+	ocMetric := MetricsData{
 		Resource: generateOCTestResource(),
 		Metrics: []*ocmetrics.Metric{
 			generateOCTestMetricDoubleHistogram(),

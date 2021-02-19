@@ -31,7 +31,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -176,7 +175,7 @@ func (tr *transaction) Commit() error {
 
 	numPoints := 0
 	if len(metrics) > 0 {
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(internaldata.MetricsData{
 			Node:     tr.node,
 			Resource: tr.resource,
 			Metrics:  metrics,
