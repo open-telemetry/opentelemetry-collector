@@ -170,7 +170,7 @@ func (tr *transaction) Commit() error {
 		adjustStartTime(tr.metricBuilder.startTime, metrics)
 	} else {
 		// AdjustMetrics - jobsMap has to be non-nil in this case.
-		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetricsData()
+		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
 		metrics, _ = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 	}
 

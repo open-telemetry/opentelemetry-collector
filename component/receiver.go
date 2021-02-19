@@ -32,8 +32,7 @@ type Receiver interface {
 // Its purpose is to translate data from the wild into internal trace format.
 // TracesReceiver feeds a consumer.TracesConsumer with data.
 //
-// For example it could be Zipkin data source which translates
-// Zipkin spans into consumerdata.TraceData.
+// For example it could be Zipkin data source which translates Zipkin spans into pdata.Traces.
 type TracesReceiver interface {
 	Receiver
 }
@@ -42,8 +41,7 @@ type TracesReceiver interface {
 // Its purpose is to translate data from the wild into internal metrics format.
 // MetricsReceiver feeds a consumer.MetricsConsumer with data.
 //
-// For example it could be Prometheus data source which translates
-// Prometheus metrics into consumerdata.MetricsData.
+// For example it could be Prometheus data source which translates Prometheus metrics into pdata.Metrics.
 type MetricsReceiver interface {
 	Receiver
 }

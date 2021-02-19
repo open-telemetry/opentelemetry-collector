@@ -110,7 +110,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //
 // Example:
 //
-//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan consumerdata.TraceData) {
+//    func (r *receiver) ClientConnect(ctx context.Context, rcvChan <-chan pdata.Traces) {
 //        longLivedCtx := obsreport.ReceiverContext(ctx, r.config.Name(), r.transport, "")
 //        for {
 //            // Since the context outlives the individual receive operations call obsreport using
@@ -124,7 +124,7 @@ type StartReceiveOption func(*StartReceiveOptions)
 //            td, ok := <-rcvChan
 //            var err error
 //            if ok {
-//                err = r.nextConsumer.ConsumeTraceData(ctx, td)
+//                err = r.nextConsumer.ConsumeTraces(ctx, td)
 //            }
 //            obsreport.EndTraceDataReceiveOp(
 //                ctx,

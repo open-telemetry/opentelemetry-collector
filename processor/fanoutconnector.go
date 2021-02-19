@@ -38,7 +38,7 @@ type metricsFanOutConnector []consumer.MetricsConsumer
 
 var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
 
-// ConsumeMetricsData exports the MetricsData to all consumers wrapped by the current one.
+// ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
 func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
 	for _, mc := range mfc {

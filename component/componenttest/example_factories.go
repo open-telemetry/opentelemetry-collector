@@ -287,7 +287,7 @@ func (f *ExampleExporterFactory) CustomUnmarshaler() component.CustomUnmarshaler
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
+// CreateTracesExporter creates a trace exporter based on this config.
 func (f *ExampleExporterFactory) CreateTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
@@ -330,13 +330,13 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 	return nil
 }
 
-// ConsumeTraceData receives consumerdata.TraceData for processing by the TracesConsumer.
+// ConsumeTraces receives pdata.Traces for processing by the TracesConsumer.
 func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
-// ConsumeMetricsData receives consumerdata.MetricsData for processing by the MetricsConsumer.
+// ConsumeMetrics receives pdata.Metrics for processing by the MetricsConsumer.
 func (exp *ExampleExporterConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil

@@ -22,8 +22,6 @@ import (
 // This file defines in-memory data structures to represent traces (spans).
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
-// This is the newer version of consumerdata.Traces, but uses more efficient
-// in-memory representation.
 type Traces struct {
 	orig *[]*otlptrace.ResourceSpans
 }

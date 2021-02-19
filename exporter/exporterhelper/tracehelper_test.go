@@ -101,7 +101,7 @@ func TestTraceExporter_Default_ReturnError(t *testing.T) {
 	require.NotNil(t, te)
 
 	err = te.ConsumeTraces(context.Background(), td)
-	require.Equalf(t, want, err, "ConsumeTraceData returns: Want %v Got %v", want, err)
+	require.Equal(t, want, err)
 }
 
 func TestTraceExporter_WithRecordMetrics(t *testing.T) {
