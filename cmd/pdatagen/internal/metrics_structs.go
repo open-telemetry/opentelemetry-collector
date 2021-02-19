@@ -235,7 +235,7 @@ var intDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.IntDataPoint",
 	fields: []baseField{
 		labelsField,
-		startTimeField,
+		startTimestampField,
 		timeField,
 		valueInt64Field,
 		intExemplarsField,
@@ -253,7 +253,7 @@ var doubleDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.DoubleDataPoint",
 	fields: []baseField{
 		labelsField,
-		startTimeField,
+		startTimestampField,
 		timeField,
 		valueFloat64Field,
 		doubleExemplarsField,
@@ -271,7 +271,7 @@ var intHistogramDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.IntHistogramDataPoint",
 	fields: []baseField{
 		labelsField,
-		startTimeField,
+		startTimestampField,
 		timeField,
 		countField,
 		intSumField,
@@ -292,7 +292,7 @@ var doubleHistogramDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.DoubleHistogramDataPoint",
 	fields: []baseField{
 		labelsField,
-		startTimeField,
+		startTimestampField,
 		timeField,
 		countField,
 		doubleSumField,
@@ -313,7 +313,7 @@ var doubleSummaryDataPoint = &messageValueStruct{
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint",
 	fields: []baseField{
 		labelsField,
-		startTimeField,
+		startTimestampField,
 		timeField,
 		countField,
 		doubleSumField,

@@ -532,8 +532,8 @@ func generateTraceDataOneSpanNoResource() pdata.Traces {
 		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
-	span.SetStartTime(testSpanStartTimestamp)
-	span.SetEndTime(testSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetKind(pdata.SpanKindCLIENT)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
@@ -717,8 +717,8 @@ func generateTraceDataTwoSpansChildParent() pdata.Traces {
 	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetKind(pdata.SpanKindSERVER)
 	span.SetTraceID(spans.At(0).TraceID())
-	span.SetStartTime(spans.At(0).StartTime())
-	span.SetEndTime(spans.At(0).EndTime())
+	span.SetStartTimestamp(spans.At(0).StartTimestamp())
+	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(pdata.StatusCodeError)
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		tracetranslator.TagHTTPStatusCode: pdata.NewAttributeValueInt(404),
@@ -769,8 +769,8 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetName("operationC")
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetTraceID(spans.At(0).TraceID())
-	span.SetStartTime(spans.At(0).EndTime())
-	span.SetEndTime(spans.At(0).EndTime() + 1000000)
+	span.SetStartTimestamp(spans.At(0).EndTimestamp())
+	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
 	span.SetKind(pdata.SpanKindCONSUMER)
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
@@ -847,8 +847,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	span1.SetTraceID(tracetranslator.UInt64ToTraceID(0, 0))
 	span1.SetSpanID(tracetranslator.UInt64ToSpanID(0))
 	span1.SetName("operation1")
-	span1.SetStartTime(testSpanStartTimestamp)
-	span1.SetEndTime(testSpanEndTimestamp)
+	span1.SetStartTimestamp(testSpanStartTimestamp)
+	span1.SetEndTimestamp(testSpanEndTimestamp)
 
 	rs0ils1 := rs0.InstrumentationLibrarySpans().At(1)
 	rs0ils1.InstrumentationLibrary().SetName("library2")
@@ -858,8 +858,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	span2.SetTraceID(span1.TraceID())
 	span2.SetSpanID(span1.SpanID())
 	span2.SetName("operation2")
-	span2.SetStartTime(testSpanStartTimestamp)
-	span2.SetEndTime(testSpanEndTimestamp)
+	span2.SetStartTimestamp(testSpanStartTimestamp)
+	span2.SetEndTimestamp(testSpanEndTimestamp)
 
 	return td
 }

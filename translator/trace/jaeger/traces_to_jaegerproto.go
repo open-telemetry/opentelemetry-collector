@@ -175,7 +175,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	startTime := span.StartTime().ToTime()
+	startTime := span.StartTimestamp().ToTime()
 
 	return &model.Span{
 		TraceID:       traceID,
@@ -183,7 +183,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		OperationName: span.Name(),
 		References:    jReferences,
 		StartTime:     startTime,
-		Duration:      span.EndTime().ToTime().Sub(startTime),
+		Duration:      span.EndTimestamp().ToTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil

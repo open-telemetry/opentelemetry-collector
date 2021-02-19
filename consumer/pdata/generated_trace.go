@@ -555,31 +555,31 @@ func (ms Span) SetKind(v SpanKind) {
 	(*ms.orig).Kind = otlptrace.Span_SpanKind(v)
 }
 
-// StartTime returns the starttime associated with this Span.
+// StartTimestamp returns the starttimestamp associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) StartTime() Timestamp {
+func (ms Span) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this Span.
+// SetStartTimestamp replaces the starttimestamp associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetStartTime(v Timestamp) {
+func (ms Span) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
-// EndTime returns the endtime associated with this Span.
+// EndTimestamp returns the endtimestamp associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) EndTime() Timestamp {
+func (ms Span) EndTimestamp() Timestamp {
 	return Timestamp((*ms.orig).EndTimeUnixNano)
 }
 
-// SetEndTime replaces the endtime associated with this Span.
+// SetEndTimestamp replaces the endtimestamp associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetEndTime(v Timestamp) {
+func (ms Span) SetEndTimestamp(v Timestamp) {
 	(*ms.orig).EndTimeUnixNano = uint64(v)
 }
 
@@ -661,8 +661,8 @@ func (ms Span) CopyTo(dest Span) {
 	dest.SetParentSpanID(ms.ParentSpanID())
 	dest.SetName(ms.Name())
 	dest.SetKind(ms.Kind())
-	dest.SetStartTime(ms.StartTime())
-	dest.SetEndTime(ms.EndTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
+	dest.SetEndTimestamp(ms.EndTimestamp())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 	ms.Events().CopyTo(dest.Events())

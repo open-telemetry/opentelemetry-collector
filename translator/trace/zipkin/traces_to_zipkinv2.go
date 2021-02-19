@@ -121,9 +121,9 @@ func spanToZipkinSpan(
 
 	zs.Sampled = &sampled
 	zs.Name = span.Name()
-	zs.Timestamp = span.StartTime().ToTime()
-	if span.EndTime() != 0 {
-		zs.Duration = time.Duration(span.EndTime() - span.StartTime())
+	zs.Timestamp = span.StartTimestamp().ToTime()
+	if span.EndTimestamp() != 0 {
+		zs.Duration = time.Duration(span.EndTimestamp() - span.StartTimestamp())
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
 	if span.Kind() == pdata.SpanKindINTERNAL {

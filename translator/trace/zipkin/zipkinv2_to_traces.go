@@ -136,8 +136,8 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 	dest.SetName(zspan.Name)
 	startNano := zspan.Timestamp.UnixNano()
-	dest.SetStartTime(pdata.Timestamp(startNano))
-	dest.SetEndTime(pdata.Timestamp(startNano + zspan.Duration.Nanoseconds()))
+	dest.SetStartTimestamp(pdata.Timestamp(startNano))
+	dest.SetEndTimestamp(pdata.Timestamp(startNano + zspan.Duration.Nanoseconds()))
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())

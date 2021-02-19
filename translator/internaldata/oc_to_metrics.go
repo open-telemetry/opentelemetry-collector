@@ -279,7 +279,7 @@ func fillIntDataPoint(ocMetric *ocmetrics.Metric, dps pdata.IntDataPointSlice) {
 			dp := dps.At(pos)
 			pos++
 
-			dp.SetStartTime(startTimestamp)
+			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetInt64Value())
@@ -307,7 +307,7 @@ func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSl
 			dp := dps.At(pos)
 			pos++
 
-			dp.SetStartTime(startTimestamp)
+			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			dp.SetValue(point.GetDoubleValue())
@@ -335,7 +335,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleHi
 			dp := dps.At(pos)
 			pos++
 
-			dp.SetStartTime(startTimestamp)
+			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			distributionValue := point.GetDistributionValue()
@@ -367,7 +367,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleSumm
 			dp := dps.At(pos)
 			pos++
 
-			dp.SetStartTime(startTimestamp)
+			dp.SetStartTimestamp(startTimestamp)
 			dp.SetTimestamp(pdata.TimestampToUnixNano(point.GetTimestamp()))
 			setLabelsMap(ocLabelsKeys, timeseries.LabelValues, dp.LabelsMap())
 			summaryValue := point.GetSummaryValue()

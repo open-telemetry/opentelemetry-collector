@@ -105,8 +105,8 @@ var span = &messageValueStruct{
 			defaultVal:      "SpanKindUNSPECIFIED",
 			testVal:         "SpanKindSERVER",
 		},
-		startTimeField,
-		endTimeField,
+		startTimestampField,
+		endTimestampField,
 		attributes,
 		droppedAttributesCount,
 		&sliceField{

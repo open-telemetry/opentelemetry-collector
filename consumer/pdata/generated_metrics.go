@@ -991,17 +991,17 @@ func (ms IntDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this IntDataPoint.
+// StartTimestamp returns the starttimestamp associated with this IntDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms IntDataPoint) StartTime() Timestamp {
+func (ms IntDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this IntDataPoint.
+// SetStartTimestamp replaces the starttimestamp associated with this IntDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms IntDataPoint) SetStartTime(v Timestamp) {
+func (ms IntDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1043,7 +1043,7 @@ func (ms IntDataPoint) Exemplars() IntExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -1192,17 +1192,17 @@ func (ms DoubleDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this DoubleDataPoint.
+// StartTimestamp returns the starttimestamp associated with this DoubleDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleDataPoint) StartTime() Timestamp {
+func (ms DoubleDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this DoubleDataPoint.
+// SetStartTimestamp replaces the starttimestamp associated with this DoubleDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleDataPoint) SetStartTime(v Timestamp) {
+func (ms DoubleDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1244,7 +1244,7 @@ func (ms DoubleDataPoint) Exemplars() DoubleExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -1393,17 +1393,17 @@ func (ms IntHistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this IntHistogramDataPoint.
+// StartTimestamp returns the starttimestamp associated with this IntHistogramDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms IntHistogramDataPoint) StartTime() Timestamp {
+func (ms IntHistogramDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this IntHistogramDataPoint.
+// SetStartTimestamp replaces the starttimestamp associated with this IntHistogramDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms IntHistogramDataPoint) SetStartTime(v Timestamp) {
+func (ms IntHistogramDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1487,7 +1487,7 @@ func (ms IntHistogramDataPoint) Exemplars() IntExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
@@ -1639,17 +1639,17 @@ func (ms DoubleHistogramDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this DoubleHistogramDataPoint.
+// StartTimestamp returns the starttimestamp associated with this DoubleHistogramDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleHistogramDataPoint) StartTime() Timestamp {
+func (ms DoubleHistogramDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this DoubleHistogramDataPoint.
+// SetStartTimestamp replaces the starttimestamp associated with this DoubleHistogramDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleHistogramDataPoint) SetStartTime(v Timestamp) {
+func (ms DoubleHistogramDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1733,7 +1733,7 @@ func (ms DoubleHistogramDataPoint) Exemplars() DoubleExemplarSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleHistogramDataPoint) CopyTo(dest DoubleHistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
@@ -1885,17 +1885,17 @@ func (ms DoubleSummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this DoubleSummaryDataPoint.
+// StartTimestamp returns the starttimestamp associated with this DoubleSummaryDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleSummaryDataPoint) StartTime() Timestamp {
+func (ms DoubleSummaryDataPoint) StartTimestamp() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this DoubleSummaryDataPoint.
+// SetStartTimestamp replaces the starttimestamp associated with this DoubleSummaryDataPoint.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms DoubleSummaryDataPoint) SetStartTime(v Timestamp) {
+func (ms DoubleSummaryDataPoint) SetStartTimestamp(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
@@ -1951,7 +1951,7 @@ func (ms DoubleSummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleSummaryDataPoint) CopyTo(dest DoubleSummaryDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
-	dest.SetStartTime(ms.StartTime())
+	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
