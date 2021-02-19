@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -136,31 +136,20 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	td := consumerdata.TraceData{
-		Node:         lastNonNilNode,
-		Resource:     resource,
-		Spans:        recv.Spans,
-		SourceFormat: "oc_trace",
-	}
-
+	td := internaldata.OCToTraces(lastNonNilNode, resource, recv.Spans)
 	err := ocr.sendToNextConsumer(longLivedRPCCtx, td)
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, tracedata consumerdata.TraceData) error {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, td pdata.Traces) error {
 	ctx := obsreport.StartTraceDataReceiveOp(
 		longLivedRPCCtx,
 		ocr.instanceName,
 		receiverTransport,
 		obsreport.WithLongLivedCtx())
 
-	var err error
-	numSpans := len(tracedata.Spans)
-	if numSpans != 0 {
-		err = ocr.nextConsumer.ConsumeTraces(ctx, internaldata.OCToTraceData(tracedata))
-	}
-
-	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, numSpans, err)
+	err := ocr.nextConsumer.ConsumeTraces(ctx, td)
+	obsreport.EndTraceDataReceiveOp(ctx, receiverDataFormat, td.SpanCount(), err)
 
 	return err
 }

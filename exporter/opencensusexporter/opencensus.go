@@ -158,19 +158,18 @@ func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) (int, e
 		}
 	}
 
-	octds := internaldata.TraceDataToOC(td)
-	for _, octd := range octds {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		node, resource, spans := internaldata.ResourceSpansToOC(rss.At(i))
 		// This is a hack because OC protocol expects a Node for the initial message.
-		node := octd.Node
 		if node == nil {
 			node = &commonpb.Node{}
 		}
-		resource := octd.Resource
 		if resource == nil {
 			resource = &resourcepb.Resource{}
 		}
 		req := &agenttracepb.ExportTraceServiceRequest{
-			Spans:    octd.Spans,
+			Spans:    spans,
 			Resource: resource,
 			Node:     node,
 		}

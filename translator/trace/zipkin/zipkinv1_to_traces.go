@@ -28,7 +28,7 @@ func V1JSONBatchToInternalTraces(blob []byte, parseStringTags bool) (pdata.Trace
 	}
 
 	for _, td := range ocTraces {
-		tmp := internaldata.OCToTraceData(td)
+		tmp := internaldata.OCToTraces(td.Node, td.Resource, td.Spans)
 		tmp.ResourceSpans().MoveAndAppendTo(traces.ResourceSpans())
 	}
 	return traces, nil

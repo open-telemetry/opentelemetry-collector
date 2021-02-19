@@ -150,9 +150,10 @@ func TestExportMultiplexing(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
 	for _, td := range spanSink.AllTraces() {
-		octds := internaldata.TraceDataToOC(td)
-		for _, octd := range octds {
-			resultsMapping[nodeToKey(octd.Node)] = append(resultsMapping[nodeToKey(octd.Node)], octd.Spans...)
+		rss := td.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			node, _, spans := internaldata.ResourceSpansToOC(rss.At(i))
+			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], spans...)
 		}
 	}
 
@@ -307,9 +308,10 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
 	for _, td := range spanSink.AllTraces() {
-		octds := internaldata.TraceDataToOC(td)
-		for _, octd := range octds {
-			resultsMapping[nodeToKey(octd.Node)] = append(resultsMapping[nodeToKey(octd.Node)], octd.Spans...)
+		rss := td.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			node, _, spans := internaldata.ResourceSpansToOC(rss.At(i))
+			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], spans...)
 		}
 	}
 
