@@ -43,7 +43,7 @@ const (
 // scraper for Process Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -81,7 +81,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 	return nil
 }
 
@@ -178,7 +178,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, scraperhelper.CombineScrapeErrors(errs)
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {
+func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdat
 	return nil
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, times *cpu.TimesStat) {
+func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat) {
 	metadata.Metrics.ProcessCPUTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
@@ -198,7 +198,7 @@ func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp
 	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
 }
 
-func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.TimestampUnixNano, handle processHandle) error {
+func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
@@ -211,7 +211,7 @@ func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Time
 	return nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.TimestampUnixNano, usage int64) {
+func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64) {
 	metricIntf.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -219,12 +219,12 @@ func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.Metric
 	initializeMemoryUsageDataPoint(idps.At(0), now, usage)
 }
 
-func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, usage int64) {
+func initializeMemoryUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, usage int64) {
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetValue(usage)
 }
 
-func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata.TimestampUnixNano, handle processHandle) error {
+func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
 	io, err := handle.IOCounters()
 	if err != nil {
 		return err
@@ -236,7 +236,7 @@ func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata
 	return nil
 }
 
-func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, io *process.IOCountersStat) {
+func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp, io *process.IOCountersStat) {
 	metadata.Metrics.ProcessDiskIo.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -245,7 +245,7 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampU
 	initializeDiskIODataPoint(idps.At(1), startTime, now, int64(io.WriteBytes), metadata.LabelProcessDirection.Write)
 }
 
-func initializeDiskIODataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, value int64, directionLabel string) {
+func initializeDiskIODataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessDirection, directionLabel)
 	dataPoint.SetStartTime(startTime)

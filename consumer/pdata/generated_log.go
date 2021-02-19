@@ -474,14 +474,14 @@ func NewLogRecord() LogRecord {
 // Timestamp returns the timestamp associated with this LogRecord.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms LogRecord) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms LogRecord) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this LogRecord.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms LogRecord) SetTimestamp(v TimestampUnixNano) {
+func (ms LogRecord) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 

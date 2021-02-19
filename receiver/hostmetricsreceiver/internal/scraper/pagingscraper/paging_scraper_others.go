@@ -39,7 +39,7 @@ const (
 // scraper for Paging Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 
 	// for mocking
 	bootTime      func() (uint64, error)
@@ -58,7 +58,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 	return nil
 }
 
@@ -93,7 +93,7 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 	return nil
 }
 
-func initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, vmem *mem.VirtualMemoryStat) {
+func initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, vmem *mem.VirtualMemoryStat) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -103,7 +103,7 @@ func initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNan
 	initializePagingUsageDataPoint(idps.At(2), now, metadata.LabelPagingState.Cached, int64(vmem.SwapCached))
 }
 
-func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, stateLabel string, value int64) {
+func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
 	dataPoint.SetTimestamp(now)
@@ -124,7 +124,7 @@ func (s *scraper) scrapeAndAppendPagingMetrics(metrics pdata.MetricSlice) error 
 	return nil
 }
 
-func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
+func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, swap *mem.SwapMemoryStat) {
 	metadata.Metrics.SystemPagingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -135,7 +135,7 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 	initializePagingOperationsDataPoint(idps.At(3), startTime, now, metadata.LabelPagingType.Minor, metadata.LabelPagingDirection.PageOut, int64(swap.PgOut))
 }
 
-func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, directionLabel string, value int64) {
+func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, typeLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingType, typeLabel)
 	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)
@@ -144,7 +144,7 @@ func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime
 	dataPoint.SetValue(value)
 }
 
-func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, swap *mem.SwapMemoryStat) {
+func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, swap *mem.SwapMemoryStat) {
 	metadata.Metrics.SystemPagingFaults.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -153,7 +153,7 @@ func initializePageFaultsMetric(metric pdata.Metric, startTime, now pdata.Timest
 	initializePageFaultDataPoint(idps.At(1), startTime, now, metadata.LabelPagingType.Minor, int64(swap.PgFault-swap.PgMajFault))
 }
 
-func initializePageFaultDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, typeLabel string, value int64) {
+func initializePageFaultDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, typeLabel string, value int64) {
 	dataPoint.LabelsMap().Insert(metadata.Labels.PagingType, typeLabel)
 	dataPoint.SetStartTime(startTime)
 	dataPoint.SetTimestamp(now)

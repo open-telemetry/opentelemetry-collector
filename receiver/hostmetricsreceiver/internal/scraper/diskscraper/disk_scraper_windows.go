@@ -52,7 +52,7 @@ const (
 // scraper for Disk Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -91,7 +91,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 
 	return s.perfCounterScraper.Initialize(logicalDisk)
 }
@@ -131,7 +131,7 @@ func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskIo.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -142,7 +142,7 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampU
 	}
 }
 
-func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -153,7 +153,7 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 	}
 }
 
-func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskIoTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
@@ -164,7 +164,7 @@ func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timest
 	}
 }
 
-func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskOperationTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
@@ -175,7 +175,7 @@ func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata
 	}
 }
 
-func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskPendingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -185,7 +185,7 @@ func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timest
 	}
 }
 
-func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
+func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, deviceLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
 	if directionLabel != "" {
@@ -196,7 +196,7 @@ func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata
 	dataPoint.SetValue(value)
 }
 
-func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value float64) {
+func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.Timestamp, deviceLabel string, directionLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
 	if directionLabel != "" {
@@ -207,7 +207,7 @@ func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now p
 	dataPoint.SetValue(value)
 }
 
-func initializeDiskPendingDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, value int64) {
+func initializeDiskPendingDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, deviceLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
 	dataPoint.SetTimestamp(now)

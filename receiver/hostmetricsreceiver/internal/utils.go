@@ -20,6 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TimeToUnixNano(t time.Time) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(uint64(t.UnixNano()))
+func TimeToUnixNano(t time.Time) pdata.Timestamp {
+	return pdata.Timestamp(uint64(t.UnixNano()))
 }

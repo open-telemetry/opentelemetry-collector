@@ -24,13 +24,13 @@ import (
 
 var (
 	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pdata.TimestampUnixNano(TestSpanStartTime.UnixNano())
+	TestSpanStartTimestamp = pdata.Timestamp(TestSpanStartTime.UnixNano())
 
 	TestSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestSpanEventTimestamp = pdata.TimestampUnixNano(TestSpanEventTime.UnixNano())
+	TestSpanEventTimestamp = pdata.Timestamp(TestSpanEventTime.UnixNano())
 
 	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pdata.TimestampUnixNano(TestSpanEndTime.UnixNano())
+	TestSpanEndTimestamp = pdata.Timestamp(TestSpanEndTime.UnixNano())
 )
 
 func GenerateTraceDataEmpty() pdata.Traces {

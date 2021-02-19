@@ -23,13 +23,13 @@ import (
 
 var (
 	TestMetricStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestMetricStartTimestamp = pdata.TimestampUnixNano(TestMetricStartTime.UnixNano())
+	TestMetricStartTimestamp = pdata.Timestamp(TestMetricStartTime.UnixNano())
 
 	TestMetricExemplarTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestMetricExemplarTimestamp = pdata.TimestampUnixNano(TestMetricExemplarTime.UnixNano())
+	TestMetricExemplarTimestamp = pdata.Timestamp(TestMetricExemplarTime.UnixNano())
 
 	TestMetricTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestMetricTimestamp = pdata.TimestampUnixNano(TestMetricTime.UnixNano())
+	TestMetricTimestamp = pdata.Timestamp(TestMetricTime.UnixNano())
 )
 
 const (

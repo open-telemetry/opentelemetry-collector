@@ -558,28 +558,28 @@ func (ms Span) SetKind(v SpanKind) {
 // StartTime returns the starttime associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms Span) StartTime() Timestamp {
+	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetStartTime(v TimestampUnixNano) {
+func (ms Span) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
 // EndTime returns the endtime associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) EndTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).EndTimeUnixNano)
+func (ms Span) EndTime() Timestamp {
+	return Timestamp((*ms.orig).EndTimeUnixNano)
 }
 
 // SetEndTime replaces the endtime associated with this Span.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms Span) SetEndTime(v TimestampUnixNano) {
+func (ms Span) SetEndTime(v Timestamp) {
 	(*ms.orig).EndTimeUnixNano = uint64(v)
 }
 
@@ -812,14 +812,14 @@ func NewSpanEvent() SpanEvent {
 // Timestamp returns the timestamp associated with this SpanEvent.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms SpanEvent) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms SpanEvent) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
 //
 // Important: This causes a runtime error if IsNil() returns "true".
-func (ms SpanEvent) SetTimestamp(v TimestampUnixNano) {
+func (ms SpanEvent) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 

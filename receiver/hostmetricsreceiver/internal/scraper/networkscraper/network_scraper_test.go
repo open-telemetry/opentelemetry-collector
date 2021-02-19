@@ -39,7 +39,7 @@ func TestScrape(t *testing.T) {
 		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
 		connectionsFunc      func(string) ([]net.ConnectionStat, error)
 		expectNetworkMetrics bool
-		expectedStartTime    pdata.TimestampUnixNano
+		expectedStartTime    pdata.Timestamp
 		newErrRegex          string
 		initializationErr    string
 		expectedErr          string
@@ -154,7 +154,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)

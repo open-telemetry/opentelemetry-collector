@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Rename pdata.TimestampUnixNano to Timestamp, move helpers on the type itself #2514
+
 ## v0.20.0 Beta
 
 ## 🛑 Breaking changes 🛑

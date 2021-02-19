@@ -72,7 +72,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricIntf, now pdata.TimestampUnixNano, value float64) {
+func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricIntf, now pdata.Timestamp, value float64) {
 	metricDescriptor.Init(metric)
 	idps := metric.DoubleGauge().DataPoints()
 	idps.Resize(1)

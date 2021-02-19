@@ -20,33 +20,45 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TimestampToUnixNano(ts *timestamppb.Timestamp) (t TimestampUnixNano) {
+// Timestamp is a time specified as UNIX Epoch time in nanoseconds since
+// 00:00:00 UTC on 1 January 1970.
+type Timestamp uint64
+
+// TimestampFromTime returns a new Timestamp converted from time.Time.
+func TimestampFromTime(t time.Time) Timestamp {
+	// 0 is a special case and want to make sure we return zero timestamp.
+	if t.IsZero() {
+		return 0
+	}
+	return Timestamp(uint64(t.UnixNano()))
+}
+
+// ToTime converts this Timestamp to time.Time.
+func (tun Timestamp) ToTime() time.Time {
+	// 0 is a special case and want to make sure we return a time that IsZero() returns true.
+	if tun == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, int64(tun)).UTC()
+}
+
+func (tun Timestamp) String() string {
+	return time.Unix(0, int64(tun)).String()
+}
+
+// TODO Remove everything below.
+
+func TimestampToUnixNano(ts *timestamppb.Timestamp) (t Timestamp) {
 	if ts == nil {
 		return
 	}
-	return TimestampUnixNano(uint64(ts.AsTime().UnixNano()))
+	return Timestamp(uint64(ts.AsTime().UnixNano()))
 }
 
-func UnixNanoToTimestamp(u TimestampUnixNano) *timestamppb.Timestamp {
+func UnixNanoToTimestamp(u Timestamp) *timestamppb.Timestamp {
 	// 0 is a special case and want to make sure we return nil.
 	if u == 0 {
 		return nil
 	}
-	return timestamppb.New(UnixNanoToTime(u))
-}
-
-func UnixNanoToTime(u TimestampUnixNano) time.Time {
-	// 0 is a special case and want to make sure we return a time that IsZero() returns true.
-	if u == 0 {
-		return time.Time{}
-	}
-	return time.Unix(0, int64(u)).UTC()
-}
-
-func TimeToUnixNano(t time.Time) TimestampUnixNano {
-	// 0 is a special case and want to make sure we return zero timestamp to support inverse function for UnixNanoToTime
-	if t.IsZero() {
-		return 0
-	}
-	return TimestampUnixNano(uint64(t.UnixNano()))
+	return timestamppb.New(u.ToTime())
 }

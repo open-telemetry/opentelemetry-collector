@@ -45,7 +45,7 @@ const (
 // scraper for Paging Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime pdata.Timestamp
 
 	pageSize uint64
 
@@ -74,7 +74,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 
 	return s.perfCounterScraper.Initialize(memory)
 }
@@ -110,7 +110,7 @@ func (s *scraper) scrapeAndAppendPagingUsageMetric(metrics pdata.MetricSlice) er
 	return nil
 }
 
-func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, pageFiles []*pageFileData) {
+func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Timestamp, pageFiles []*pageFileData) {
 	metadata.Metrics.SystemPagingUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -124,7 +124,7 @@ func (s *scraper) initializePagingUsageMetric(metric pdata.Metric, now pdata.Tim
 	}
 }
 
-func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, stateLabel string, value int64) {
+func initializePagingUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, deviceLabel string, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingDevice, deviceLabel)
 	labelsMap.Insert(metadata.Labels.PagingState, stateLabel)
@@ -159,7 +159,7 @@ func (s *scraper) scrapeAndAppendPagingOperationsMetric(metrics pdata.MetricSlic
 	return nil
 }
 
-func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, memoryCounterValues *perfcounters.CounterValues) {
+func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
 	metadata.Metrics.SystemPagingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -168,7 +168,7 @@ func initializePagingOperationsMetric(metric pdata.Metric, startTime, now pdata.
 	initializePagingOperationsDataPoint(idps.At(1), startTime, now, metadata.LabelPagingDirection.PageOut, memoryCounterValues.Values[pageWritesPerSec])
 }
 
-func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, directionLabel string, value int64) {
+func initializePagingOperationsDataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.Timestamp, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.PagingType, metadata.LabelPagingType.Major)
 	labelsMap.Insert(metadata.Labels.PagingDirection, directionLabel)

@@ -479,7 +479,7 @@ func intExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue
 	}
 }
 
-func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata.TimestampUnixNano) *ocmetrics.DistributionValue_Exemplar {
+func exemplarToOC(filteredLabels pdata.StringMap, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
 	var labels map[string]string
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())

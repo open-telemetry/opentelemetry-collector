@@ -102,7 +102,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, err
 }
 
-func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUnixNano, deviceUsages []*deviceUsage) {
+func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {
 	metadata.Metrics.SystemFilesystemUsage.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -112,7 +112,7 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.TimestampUni
 	}
 }
 
-func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, partition disk.PartitionStat, stateLabel string, value int64) {
+func initializeFileSystemUsageDataPoint(dataPoint pdata.IntDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.FilesystemDevice, partition.Device)
 	labelsMap.Insert(metadata.Labels.FilesystemType, partition.Fstype)

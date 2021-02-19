@@ -33,7 +33,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		bootTimeFunc      func() (uint64, error)
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime pdata.Timestamp
 		initializationErr string
 	}
 
@@ -118,7 +118,7 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	}
 }
 
-func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingOperations.New(), pagingMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, pagingMetric, startTime)
@@ -143,7 +143,7 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 	}
 }
 
-func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingFaults.New(), pageFaultsMetric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)

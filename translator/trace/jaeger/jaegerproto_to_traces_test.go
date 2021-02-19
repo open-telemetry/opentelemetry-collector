@@ -34,11 +34,11 @@ import (
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
 var (
 	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321000, time.UTC)
-	testSpanStartTimestamp = pdata.TimestampUnixNano(testSpanStartTime.UnixNano())
+	testSpanStartTimestamp = pdata.Timestamp(testSpanStartTime.UnixNano())
 	testSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123000, time.UTC)
-	testSpanEventTimestamp = pdata.TimestampUnixNano(testSpanEventTime.UnixNano())
+	testSpanEventTimestamp = pdata.Timestamp(testSpanEventTime.UnixNano())
 	testSpanEndTime        = time.Date(2020, 2, 11, 20, 26, 13, 789000, time.UTC)
-	testSpanEndTimestamp   = pdata.TimestampUnixNano(testSpanEndTime.UnixNano())
+	testSpanEndTimestamp   = pdata.Timestamp(testSpanEndTime.UnixNano())
 )
 
 func TestGetStatusCodeValFromAttr(t *testing.T) {
