@@ -17,6 +17,8 @@
 package processesscraper
 
 import (
+	"time"
+
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -24,6 +26,6 @@ import (
 
 const unixSystemSpecificMetricsLen = 0
 
-func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.TimestampUnixNano, misc *load.MiscStat) error {
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now time.Time, misc *load.MiscStat) error {
 	return nil
 }

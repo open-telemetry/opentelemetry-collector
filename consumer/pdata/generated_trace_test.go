@@ -19,6 +19,7 @@ package pdata
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -463,16 +464,16 @@ func TestSpan_Kind(t *testing.T) {
 
 func TestSpan_StartTime(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
-	testValStartTime := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, time.Unix(0, 0).UTC(), ms.StartTime())
+	testValStartTime := time.Unix(0, 1234567890).UTC()
 	ms.SetStartTime(testValStartTime)
 	assert.EqualValues(t, testValStartTime, ms.StartTime())
 }
 
 func TestSpan_EndTime(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.EndTime())
-	testValEndTime := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, time.Unix(0, 0).UTC(), ms.EndTime())
+	testValEndTime := time.Unix(0, 1234567890).UTC()
 	ms.SetEndTime(testValEndTime)
 	assert.EqualValues(t, testValEndTime, ms.EndTime())
 }
@@ -651,12 +652,12 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestSpanEvent(), ms)
 }
 
-func TestSpanEvent_Timestamp(t *testing.T) {
+func TestSpanEvent_Time(t *testing.T) {
 	ms := NewSpanEvent()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
-	testValTimestamp := TimestampUnixNano(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
+	assert.EqualValues(t, time.Unix(0, 0).UTC(), ms.Time())
+	testValTime := time.Unix(0, 1234567890).UTC()
+	ms.SetTime(testValTime)
+	assert.EqualValues(t, testValTime, ms.Time())
 }
 
 func TestSpanEvent_Name(t *testing.T) {
@@ -939,8 +940,8 @@ func fillTestSpan(tv Span) {
 	tv.SetParentSpanID(NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
 	tv.SetKind(SpanKindSERVER)
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetEndTime(TimestampUnixNano(1234567890))
+	tv.SetStartTime(time.Unix(0, 1234567890).UTC())
+	tv.SetEndTime(time.Unix(0, 1234567890).UTC())
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 	fillTestSpanEventSlice(tv.Events())
@@ -970,7 +971,7 @@ func generateTestSpanEvent() SpanEvent {
 }
 
 func fillTestSpanEvent(tv SpanEvent) {
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
+	tv.SetTime(time.Unix(0, 1234567890).UTC())
 	tv.SetName("test_name")
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))

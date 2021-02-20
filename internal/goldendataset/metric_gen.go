@@ -16,6 +16,7 @@ package goldendataset
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -46,9 +47,9 @@ type MetricCfg struct {
 	// The base value for each point
 	PtVal int
 	// The start time for each point
-	StartTime uint64
+	StartTime time.Time
 	// The duration of the steps between each generated point starting at StartTime
-	StepSize uint64
+	StepSize time.Duration
 }
 
 // DefaultCfg produces a MetricCfg with default values. These should be good enough to produce sane
@@ -64,7 +65,7 @@ func DefaultCfg() MetricCfg {
 		NumResourceAttrs:     1,
 		NumResourceMetrics:   1,
 		PtVal:                1,
-		StartTime:            940000000000000000,
+		StartTime:            time.Unix(0, 940000000000000000).UTC(),
 		StepSize:             42,
 	}
 }
@@ -164,8 +165,8 @@ func populateIntPoints(cfg MetricCfg, pts pdata.IntDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
-		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
+		pt.SetStartTime(cfg.StartTime)
+		pt.SetTime(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(int64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
@@ -175,8 +176,8 @@ func populateDoublePoints(cfg MetricCfg, pts pdata.DoubleDataPointSlice) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
-		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
+		pt.SetStartTime(cfg.StartTime)
+		pt.SetTime(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		pt.SetValue(float64(cfg.PtVal + i))
 		populatePtLabels(cfg, pt.LabelsMap())
 	}
@@ -187,9 +188,8 @@ func populateDoubleHistogram(cfg MetricCfg, dh pdata.DoubleHistogram) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
-		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
-		pt.SetTimestamp(ts)
+		pt.SetStartTime(cfg.StartTime)
+		pt.SetTime(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		populatePtLabels(cfg, pt.LabelsMap())
 		setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 		addDoubleHistogramVal(pt, 1)
@@ -224,9 +224,8 @@ func populateIntHistogram(cfg MetricCfg, dh pdata.IntHistogram) {
 	pts.Resize(cfg.NumPtsPerMetric)
 	for i := 0; i < cfg.NumPtsPerMetric; i++ {
 		pt := pts.At(i)
-		pt.SetStartTime(pdata.TimestampUnixNano(cfg.StartTime))
-		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
-		pt.SetTimestamp(ts)
+		pt.SetStartTime(cfg.StartTime)
+		pt.SetTime(getTimestamp(cfg.StartTime, cfg.StepSize, i))
 		populatePtLabels(cfg, pt.LabelsMap())
 		setIntHistogramBounds(pt, 1, 2, 3, 4, 5)
 		addIntHistogramVal(pt, 1)
@@ -264,6 +263,6 @@ func populatePtLabels(cfg MetricCfg, lm pdata.StringMap) {
 	}
 }
 
-func getTimestamp(startTime uint64, stepSize uint64, i int) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(startTime + (stepSize * uint64(i+1)))
+func getTimestamp(startTime time.Time, stepSize time.Duration, i int) time.Time {
+	return startTime.Add(time.Duration(i+1) * stepSize)
 }

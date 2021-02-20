@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 
@@ -156,7 +157,7 @@ func jThriftLogsToSpanEvents(logs []*jaeger.Log, dest pdata.SpanEventSlice) {
 	for i, log := range logs {
 		event := dest.At(i)
 
-		event.SetTimestamp(microsecondsToUnixNano(log.Timestamp))
+		event.SetTime(microsecondsToUnixNano(log.Timestamp))
 		if len(log.Fields) == 0 {
 			continue
 		}
@@ -195,7 +196,7 @@ func jThriftReferencesToSpanLinks(refs []*jaeger.SpanRef, excludeParentID int64,
 	}
 }
 
-// microsecondsToUnixNano converts epoch microseconds to pdata.TimestampUnixNano
-func microsecondsToUnixNano(ms int64) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(uint64(ms) * 1000)
+// microsecondsToUnixNano converts epoch microseconds to time.Time
+func microsecondsToUnixNano(us int64) time.Time {
+	return time.Unix(0, us*1000).UTC()
 }

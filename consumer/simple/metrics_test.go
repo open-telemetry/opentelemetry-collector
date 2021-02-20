@@ -467,7 +467,7 @@ func BenchmarkSimpleMetrics(b *testing.B) {
 
 func BenchmarkPdataMetrics(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		tsNano := pdata.TimestampUnixNano(time.Now().UnixNano())
+		now := time.Now()
 
 		m := pdata.NewMetrics()
 
@@ -507,7 +507,7 @@ func BenchmarkPdataMetrics(b *testing.B) {
 				labels.Insert("app", "myapp")
 				labels.Insert("version", "1.0")
 				dp.SetValue(5)
-				dp.SetTimestamp(tsNano)
+				dp.SetTime(now)
 			}
 			{
 				dp := dps.At(1)
@@ -517,7 +517,7 @@ func BenchmarkPdataMetrics(b *testing.B) {
 				labels.Insert("app", "myapp")
 				labels.Insert("version", "1.0")
 				dp.SetValue(5)
-				dp.SetTimestamp(tsNano)
+				dp.SetTime(now)
 			}
 		}
 	}

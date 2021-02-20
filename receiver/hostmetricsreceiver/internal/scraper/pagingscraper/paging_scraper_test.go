@@ -19,6 +19,7 @@ import (
 	"errors"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		bootTimeFunc      func() (uint64, error)
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime time.Time
 		initializationErr string
 	}
 
@@ -44,7 +45,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:              "Validate Start Time",
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
-			expectedStartTime: 100 * 1e9,
+			expectedStartTime: time.Unix(100, 0).UTC(),
 		},
 		{
 			name:              "Boot Time Error",
@@ -118,9 +119,9 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 	}
 }
 
-func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime time.Time) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingOperations.New(), pagingMetric)
-	if startTime != 0 {
+	if !startTime.IsZero() {
 		internal.AssertIntSumMetricStartTimeEquals(t, pagingMetric, startTime)
 	}
 
@@ -143,9 +144,9 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 	}
 }
 
-func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime time.Time) {
 	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingFaults.New(), pageFaultsMetric)
-	if startTime != 0 {
+	if !startTime.IsZero() {
 		internal.AssertIntSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)
 	}
 

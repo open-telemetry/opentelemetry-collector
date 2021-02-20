@@ -17,6 +17,8 @@
 package processesscraper
 
 import (
+	"time"
+
 	"github.com/shirou/gopsutil/load"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -25,16 +27,16 @@ import (
 
 const unixSystemSpecificMetricsLen = 1
 
-func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.TimestampUnixNano, misc *load.MiscStat) error {
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now time.Time, misc *load.MiscStat) error {
 	initializeProcessesCreatedMetric(metrics.At(startIndex), now, misc)
 	return nil
 }
 
-func initializeProcessesCreatedMetric(metric pdata.Metric, now pdata.TimestampUnixNano, misc *load.MiscStat) {
+func initializeProcessesCreatedMetric(metric pdata.Metric, now time.Time, misc *load.MiscStat) {
 	metadata.Metrics.SystemProcessesCreated.Init(metric)
 
 	ddps := metric.IntSum().DataPoints()
 	ddps.Resize(1)
-	ddps.At(0).SetTimestamp(now)
+	ddps.At(0).SetTime(now)
 	ddps.At(0).SetValue(int64(misc.ProcsCreated))
 }

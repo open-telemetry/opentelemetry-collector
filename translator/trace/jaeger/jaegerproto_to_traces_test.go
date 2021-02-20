@@ -33,12 +33,9 @@ import (
 
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
 var (
-	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321000, time.UTC)
-	testSpanStartTimestamp = pdata.TimestampUnixNano(testSpanStartTime.UnixNano())
-	testSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123000, time.UTC)
-	testSpanEventTimestamp = pdata.TimestampUnixNano(testSpanEventTime.UnixNano())
-	testSpanEndTime        = time.Date(2020, 2, 11, 20, 26, 13, 789000, time.UTC)
-	testSpanEndTimestamp   = pdata.TimestampUnixNano(testSpanEndTime.UnixNano())
+	testSpanStartTime = time.Date(2020, 2, 11, 20, 26, 12, 321000, time.UTC)
+	testSpanEventTime = time.Date(2020, 2, 11, 20, 26, 13, 123000, time.UTC)
+	testSpanEndTime   = time.Date(2020, 2, 11, 20, 26, 13, 789000, time.UTC)
 )
 
 func TestGetStatusCodeValFromAttr(t *testing.T) {
@@ -532,13 +529,13 @@ func generateTraceDataOneSpanNoResource() pdata.Traces {
 		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
-	span.SetStartTime(testSpanStartTimestamp)
-	span.SetEndTime(testSpanEndTimestamp)
+	span.SetStartTime(testSpanStartTime)
+	span.SetEndTime(testSpanEndTime)
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
+	span.Events().At(0).SetTime(testSpanEventTime)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).SetName("event-with-attr")
-	span.Events().At(1).SetTimestamp(testSpanEventTimestamp)
+	span.Events().At(1).SetTime(testSpanEventTime)
 	span.Events().At(1).SetDroppedAttributesCount(0)
 	span.Events().At(1).SetName("")
 	span.Events().At(1).Attributes().InsertInt("attr-int", 123)
@@ -770,7 +767,7 @@ func generateTraceDataTwoSpansWithFollower() pdata.Traces {
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTime(spans.At(0).EndTime())
-	span.SetEndTime(spans.At(0).EndTime() + 1000000)
+	span.SetEndTime(spans.At(0).EndTime().Add(1000000 * time.Nanosecond))
 	span.SetKind(pdata.SpanKindCONSUMER)
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
@@ -847,8 +844,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	span1.SetTraceID(tracetranslator.UInt64ToTraceID(0, 0))
 	span1.SetSpanID(tracetranslator.UInt64ToSpanID(0))
 	span1.SetName("operation1")
-	span1.SetStartTime(testSpanStartTimestamp)
-	span1.SetEndTime(testSpanEndTimestamp)
+	span1.SetStartTime(testSpanStartTime)
+	span1.SetEndTime(testSpanEndTime)
 
 	rs0ils1 := rs0.InstrumentationLibrarySpans().At(1)
 	rs0ils1.InstrumentationLibrary().SetName("library2")
@@ -858,8 +855,8 @@ func generateTraceDataTwoSpansFromTwoLibraries() pdata.Traces {
 	span2.SetTraceID(span1.TraceID())
 	span2.SetSpanID(span1.SpanID())
 	span2.SetName("operation2")
-	span2.SetStartTime(testSpanStartTimestamp)
-	span2.SetEndTime(testSpanEndTimestamp)
+	span2.SetStartTime(testSpanStartTime)
+	span2.SetEndTime(testSpanEndTime)
 
 	return td
 }

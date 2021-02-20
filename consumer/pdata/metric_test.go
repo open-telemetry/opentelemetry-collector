@@ -16,6 +16,7 @@ package pdata
 
 import (
 	"testing"
+	"time"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -28,9 +29,9 @@ import (
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 )
 
-const (
-	startTime = uint64(12578940000000012345)
-	endTime   = uint64(12578940000000054321)
+var (
+	startTime = time.Unix(4578940000, 12345).UTC()
+	endTime   = time.Unix(4578940000, 54321).UTC()
 )
 
 func TestCopyData(t *testing.T) {
@@ -384,12 +385,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, 2, int64DataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, int64DataPoints.At(0).StartTime())
-	assert.EqualValues(t, endTime, int64DataPoints.At(0).Timestamp())
+	assert.EqualValues(t, endTime, int64DataPoints.At(0).Time())
 	assert.EqualValues(t, 123, int64DataPoints.At(0).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), int64DataPoints.At(0).LabelsMap())
 	// Second point
 	assert.EqualValues(t, startTime, int64DataPoints.At(1).StartTime())
-	assert.EqualValues(t, endTime, int64DataPoints.At(1).Timestamp())
+	assert.EqualValues(t, endTime, int64DataPoints.At(1).Time())
 	assert.EqualValues(t, 456, int64DataPoints.At(1).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), int64DataPoints.At(1).LabelsMap())
 
@@ -405,12 +406,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, 2, doubleDataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, doubleDataPoints.At(0).StartTime())
-	assert.EqualValues(t, endTime, doubleDataPoints.At(0).Timestamp())
+	assert.EqualValues(t, endTime, doubleDataPoints.At(0).Time())
 	assert.EqualValues(t, 123.1, doubleDataPoints.At(0).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), doubleDataPoints.At(0).LabelsMap())
 	// Second point
 	assert.EqualValues(t, startTime, doubleDataPoints.At(1).StartTime())
-	assert.EqualValues(t, endTime, doubleDataPoints.At(1).Timestamp())
+	assert.EqualValues(t, endTime, doubleDataPoints.At(1).Time())
 	assert.EqualValues(t, 456.1, doubleDataPoints.At(1).Value())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), doubleDataPoints.At(1).LabelsMap())
 
@@ -426,13 +427,13 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTime())
-	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
+	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Time())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key0": "value0"}), histogramDataPoints.At(0).LabelsMap())
 	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).BucketCounts())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTime())
-	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
+	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Time())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds())
 	assert.EqualValues(t, NewStringMap().InitFromMap(map[string]string{"key1": "value1"}), histogramDataPoints.At(1).LabelsMap())
 	assert.EqualValues(t, []uint64{10, 1}, histogramDataPoints.At(1).BucketCounts())
@@ -493,10 +494,10 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 	igd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, igd.DataPoints().Len())
 	int64DataPoints := igd.DataPoints()
-	int64DataPoints.At(0).SetStartTime(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, int64DataPoints.At(0).StartTime())
-	int64DataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
-	assert.EqualValues(t, endTime+1, int64DataPoints.At(0).Timestamp())
+	int64DataPoints.At(0).SetStartTime(startTime.Add(1 * time.Second))
+	assert.EqualValues(t, startTime.Add(1*time.Second), int64DataPoints.At(0).StartTime())
+	int64DataPoints.At(0).SetTime(endTime.Add(2 * time.Second))
+	assert.EqualValues(t, endTime.Add(2*time.Second), int64DataPoints.At(0).Time())
 	int64DataPoints.At(0).SetValue(124)
 	assert.EqualValues(t, 124, int64DataPoints.At(0).Value())
 	int64DataPoints.At(0).LabelsMap().Delete("key0")
@@ -525,8 +526,8 @@ func TestOtlpToFromInternalIntGaugeMutating(t *testing.T) {
 													Value: "v",
 												},
 											},
-											StartTimeUnixNano: startTime + 1,
-											TimeUnixNano:      endTime + 1,
+											StartTimeUnixNano: uint64(startTime.Add(1 * time.Second).UnixNano()),
+											TimeUnixNano:      uint64(endTime.Add(2 * time.Second).UnixNano()),
 											Value:             124,
 										},
 									},
@@ -569,10 +570,10 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 	dsd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, dsd.DataPoints().Len())
 	doubleDataPoints := dsd.DataPoints()
-	doubleDataPoints.At(0).SetStartTime(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, doubleDataPoints.At(0).StartTime())
-	doubleDataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
-	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
+	doubleDataPoints.At(0).SetStartTime(startTime.Add(1 * time.Second))
+	assert.EqualValues(t, startTime.Add(1*time.Second), doubleDataPoints.At(0).StartTime())
+	doubleDataPoints.At(0).SetTime(endTime.Add(2 * time.Second))
+	assert.EqualValues(t, endTime.Add(2*time.Second), doubleDataPoints.At(0).Time())
 	doubleDataPoints.At(0).SetValue(124.1)
 	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).Value())
 	doubleDataPoints.At(0).LabelsMap().Delete("key0")
@@ -602,8 +603,8 @@ func TestOtlpToFromInternalDoubleSumMutating(t *testing.T) {
 													Value: "v",
 												},
 											},
-											StartTimeUnixNano: startTime + 1,
-											TimeUnixNano:      endTime + 1,
+											StartTimeUnixNano: uint64(startTime.Add(1 * time.Second).UnixNano()),
+											TimeUnixNano:      uint64(endTime.Add(2 * time.Second).UnixNano()),
 											Value:             124.1,
 										},
 									},
@@ -646,10 +647,10 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	dhd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, dhd.DataPoints().Len())
 	histogramDataPoints := dhd.DataPoints()
-	histogramDataPoints.At(0).SetStartTime(TimestampUnixNano(startTime + 1))
-	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTime())
-	histogramDataPoints.At(0).SetTimestamp(TimestampUnixNano(endTime + 1))
-	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
+	histogramDataPoints.At(0).SetStartTime(startTime.Add(1 * time.Second))
+	assert.EqualValues(t, startTime.Add(1*time.Second), histogramDataPoints.At(0).StartTime())
+	histogramDataPoints.At(0).SetTime(endTime.Add(2 * time.Second))
+	assert.EqualValues(t, endTime.Add(2*time.Second), histogramDataPoints.At(0).Time())
 	histogramDataPoints.At(0).LabelsMap().Delete("key0")
 	histogramDataPoints.At(0).LabelsMap().Upsert("k", "v")
 	assert.EqualValues(t, newLabels, histogramDataPoints.At(0).LabelsMap())
@@ -679,8 +680,8 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 													Value: "v",
 												},
 											},
-											StartTimeUnixNano: startTime + 1,
-											TimeUnixNano:      endTime + 1,
+											StartTimeUnixNano: uint64(startTime.Add(1 * time.Second).UnixNano()),
+											TimeUnixNano:      uint64(endTime.Add(2 * time.Second).UnixNano()),
 											BucketCounts:      []uint64{21, 32},
 											ExplicitBounds:    []float64{1},
 										},
@@ -891,8 +892,8 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 								Value: "value0",
 							},
 						},
-						StartTimeUnixNano: startTime,
-						TimeUnixNano:      endTime,
+						StartTimeUnixNano: uint64(startTime.UnixNano()),
+						TimeUnixNano:      uint64(endTime.UnixNano()),
 						Value:             123,
 					},
 					{
@@ -902,8 +903,8 @@ func generateTestProtoIntGaugeMetric() *otlpmetrics.Metric {
 								Value: "value1",
 							},
 						},
-						StartTimeUnixNano: startTime,
-						TimeUnixNano:      endTime,
+						StartTimeUnixNano: uint64(startTime.UnixNano()),
+						TimeUnixNano:      uint64(endTime.UnixNano()),
 						Value:             456,
 					},
 				},
@@ -927,8 +928,8 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 								Value: "value0",
 							},
 						},
-						StartTimeUnixNano: startTime,
-						TimeUnixNano:      endTime,
+						StartTimeUnixNano: uint64(startTime.UnixNano()),
+						TimeUnixNano:      uint64(endTime.UnixNano()),
 						Value:             123.1,
 					},
 					{
@@ -938,8 +939,8 @@ func generateTestProtoDoubleSumMetric() *otlpmetrics.Metric {
 								Value: "value1",
 							},
 						},
-						StartTimeUnixNano: startTime,
-						TimeUnixNano:      endTime,
+						StartTimeUnixNano: uint64(startTime.UnixNano()),
+						TimeUnixNano:      uint64(endTime.UnixNano()),
 						Value:             456.1,
 					},
 				},
@@ -964,8 +965,8 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 								Value: "value0",
 							},
 						},
-						StartTimeUnixNano: startTime,
-						TimeUnixNano:      endTime,
+						StartTimeUnixNano: uint64(startTime.UnixNano()),
+						TimeUnixNano:      uint64(endTime.UnixNano()),
 						BucketCounts:      []uint64{10, 15, 1},
 						ExplicitBounds:    []float64{1, 2},
 					},
@@ -976,8 +977,8 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 								Value: "value1",
 							},
 						},
-						StartTimeUnixNano: startTime,
-						TimeUnixNano:      endTime,
+						StartTimeUnixNano: uint64(startTime.UnixNano()),
+						TimeUnixNano:      uint64(endTime.UnixNano()),
 						BucketCounts:      []uint64{10, 1},
 						ExplicitBounds:    []float64{1},
 					},

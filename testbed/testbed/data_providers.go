@@ -105,8 +105,8 @@ func (dp *PerfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 		for k, v := range dp.options.Attributes {
 			attrs.UpsertString(k, v)
 		}
-		span.SetStartTime(pdata.TimestampUnixNano(uint64(startTime.UnixNano())))
-		span.SetEndTime(pdata.TimestampUnixNano(uint64(endTime.UnixNano())))
+		span.SetStartTime(startTime)
+		span.SetEndTime(endTime)
 	}
 	return traceData, false
 }
@@ -155,7 +155,7 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 		dps.Resize(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
 			dataPoint := dps.At(j)
-			dataPoint.SetStartTime(pdata.TimestampUnixNano(uint64(time.Now().UnixNano())))
+			dataPoint.SetStartTime(time.Now())
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetValue(int64(value))
 			dataPoint.LabelsMap().InitFromMap(map[string]string{
@@ -186,7 +186,7 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logRecords := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	logRecords.Resize(dp.options.ItemsPerBatch)
 
-	now := pdata.TimestampUnixNano(time.Now().UnixNano())
+	now := time.Now()
 
 	batchIndex := dp.batchesGenerated.Inc()
 
@@ -198,7 +198,7 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 		record.SetName("load_generator_" + strconv.Itoa(i))
 		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
 		record.SetFlags(uint32(2))
-		record.SetTimestamp(now)
+		record.SetTime(now)
 
 		attrs := record.Attributes()
 		attrs.UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))

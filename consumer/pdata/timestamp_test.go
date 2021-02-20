@@ -23,20 +23,19 @@ import (
 )
 
 func TestUnixNanosConverters(t *testing.T) {
-	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
-	tun := TimestampUnixNano(t1.UnixNano())
-
-	assert.EqualValues(t, uint64(1585012403000000789), tun)
-	tp := UnixNanoToTimestamp(tun)
-	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 1585012403, Nanos: 789}, tp)
-	assert.EqualValues(t, tun, TimestampToUnixNano(tp))
-	assert.EqualValues(t, tun, TimeToUnixNano(t1))
-	assert.EqualValues(t, t1, UnixNanoToTime(TimeToUnixNano(t1)))
+	ts := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
+	event := NewSpanEvent()
+	event.SetTime(ts)
+	assert.EqualValues(t, uint64(1585012403000000789), event.orig.TimeUnixNano)
+	assert.EqualValues(t, ts, event.Time())
+	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 1585012403, Nanos: 789}, timestamppb.New(event.Time()))
 }
 
 func TestZeroTimestamps(t *testing.T) {
-	assert.Zero(t, TimestampToUnixNano(nil))
-	assert.Nil(t, UnixNanoToTimestamp(0))
-	assert.True(t, UnixNanoToTime(0).IsZero())
-	assert.Zero(t, TimeToUnixNano(time.Time{}))
+	ts := time.Date(1970, 01, 1, 0, 0, 0, 0, time.UTC)
+	event := NewSpanEvent()
+	event.SetTime(ts)
+	assert.EqualValues(t, uint64(0), event.orig.TimeUnixNano)
+	assert.EqualValues(t, ts, event.Time())
+	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 0, Nanos: 0}, timestamppb.New(event.Time()))
 }

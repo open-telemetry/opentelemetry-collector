@@ -24,7 +24,6 @@ import (
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -213,9 +212,9 @@ func TestInternalToOC(t *testing.T) {
 	ocNode := &occommon.Node{}
 	ocResource1 := &ocresource.Resource{Labels: map[string]string{"resource-attr": "resource-attr-val-1"}}
 
-	startTime := timestamppb.New(testdata.TestSpanStartTime)
-	eventTime := timestamppb.New(testdata.TestSpanEventTime)
-	endTime := timestamppb.New(testdata.TestSpanEndTime)
+	startTime := timeAsTimestampPb(testdata.TestSpanStartTime)
+	eventTime := timeAsTimestampPb(testdata.TestSpanEventTime)
+	endTime := timeAsTimestampPb(testdata.TestSpanEndTime)
 
 	ocSpan1 := &octrace.Span{
 		Name:      &octrace.TruncatableString{Value: "operationA"},

@@ -72,31 +72,19 @@ var instrumentationLibraryField = &messageValueField{
 	returnMessage:   instrumentationLibrary,
 }
 
-var startTimeField = &primitiveTypedField{
+var startTimeField = &timestampField{
 	fieldName:       "StartTime",
 	originFieldName: "StartTimeUnixNano",
-	returnType:      "TimestampUnixNano",
-	rawType:         "uint64",
-	defaultVal:      "TimestampUnixNano(0)",
-	testVal:         "TimestampUnixNano(1234567890)",
 }
 
-var timeField = &primitiveTypedField{
-	fieldName:       "Timestamp",
+var timeField = &timestampField{
+	fieldName:       "Time",
 	originFieldName: "TimeUnixNano",
-	returnType:      "TimestampUnixNano",
-	rawType:         "uint64",
-	defaultVal:      "TimestampUnixNano(0)",
-	testVal:         "TimestampUnixNano(1234567890)",
 }
 
-var endTimeField = &primitiveTypedField{
+var endTimeField = &timestampField{
 	fieldName:       "EndTime",
 	originFieldName: "EndTimeUnixNano",
-	returnType:      "TimestampUnixNano",
-	rawType:         "uint64",
-	defaultVal:      "TimestampUnixNano(0)",
-	testVal:         "TimestampUnixNano(1234567890)",
 }
 
 var attributes = &sliceField{

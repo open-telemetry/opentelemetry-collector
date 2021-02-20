@@ -17,6 +17,8 @@
 package processscraper
 
 import (
+	"time"
+
 	"github.com/shirou/gopsutil/cpu"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -24,7 +26,7 @@ import (
 
 const cpuStatesLen = 0
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now time.Time, cpuTime *cpu.TimesStat) {
 }
 
 func getProcessExecutable(processHandle) (*executableMetadata, error) {

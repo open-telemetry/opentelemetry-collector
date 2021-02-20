@@ -16,6 +16,7 @@ package logstest
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -24,7 +25,7 @@ import (
 
 func TestLogs(t *testing.T) {
 	logs := Logs(Log{
-		Timestamp: 1,
+		Timestamp: time.Unix(923232214, 213),
 		Body:      pdata.NewAttributeValueString("asdf"),
 		Attributes: map[string]pdata.AttributeValue{
 			"a": pdata.NewAttributeValueString("b"),

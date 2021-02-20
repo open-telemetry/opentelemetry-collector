@@ -16,6 +16,7 @@ package internal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,14 +64,14 @@ func AssertDoubleSumMetricLabelExists(t *testing.T, metric pdata.Metric, index i
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 }
 
-func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime time.Time) {
 	idps := metric.IntSum().DataPoints()
 	for i := 0; i < idps.Len(); i++ {
 		require.Equal(t, startTime, idps.At(i).StartTime())
 	}
 }
 
-func AssertDoubleSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func AssertDoubleSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime time.Time) {
 	ddps := metric.DoubleSum().DataPoints()
 	for i := 0; i < ddps.Len(); i++ {
 		require.Equal(t, startTime, ddps.At(i).StartTime())
@@ -82,7 +83,7 @@ func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pdata.MetricSlice) {
 }
 
 func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, startIdx, endIdx int) {
-	var ts pdata.TimestampUnixNano
+	var ts time.Time
 	for i := startIdx; i < endIdx; i++ {
 		metric := metrics.At(i)
 
@@ -90,20 +91,20 @@ func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, star
 		if dt == pdata.MetricDataTypeIntSum {
 			idps := metric.IntSum().DataPoints()
 			for j := 0; j < idps.Len(); j++ {
-				if ts == 0 {
-					ts = idps.At(j).Timestamp()
+				if ts.IsZero() {
+					ts = idps.At(j).Time()
 				}
-				require.Equalf(t, ts, idps.At(j).Timestamp(), "metrics contained different end timestamp values")
+				require.Equalf(t, ts, idps.At(j).Time(), "metrics contained different end timestamp values")
 			}
 		}
 
 		if dt == pdata.MetricDataTypeDoubleSum {
 			ddps := metric.DoubleSum().DataPoints()
 			for j := 0; j < ddps.Len(); j++ {
-				if ts == 0 {
-					ts = ddps.At(j).Timestamp()
+				if ts.IsZero() {
+					ts = ddps.At(j).Time()
 				}
-				require.Equalf(t, ts, ddps.At(j).Timestamp(), "metrics contained different end timestamp values")
+				require.Equalf(t, ts, ddps.At(j).Time(), "metrics contained different end timestamp values")
 			}
 		}
 	}

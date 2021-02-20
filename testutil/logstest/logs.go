@@ -15,11 +15,13 @@
 package logstest
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type Log struct {
-	Timestamp  int64
+	Timestamp  time.Time
 	Body       pdata.AttributeValue
 	Attributes map[string]pdata.AttributeValue
 }
@@ -43,7 +45,7 @@ func Logs(recs ...Log) pdata.Logs {
 	for i := range recs {
 		l := logSlice.At(i)
 		recs[i].Body.CopyTo(l.Body())
-		l.SetTimestamp(pdata.TimestampUnixNano(recs[i].Timestamp))
+		l.SetTime(recs[i].Timestamp)
 		l.Attributes().InitFromMap(recs[i].Attributes)
 		l.Attributes().Sort()
 	}

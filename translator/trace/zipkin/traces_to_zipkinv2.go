@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
@@ -121,9 +120,9 @@ func spanToZipkinSpan(
 
 	zs.Sampled = &sampled
 	zs.Name = span.Name()
-	zs.Timestamp = pdata.UnixNanoToTime(span.StartTime())
-	if span.EndTime() != 0 {
-		zs.Duration = time.Duration(span.EndTime() - span.StartTime())
+	zs.Timestamp = span.StartTime()
+	if span.EndTime().UnixNano() != 0 {
+		zs.Duration = span.EndTime().Sub(span.StartTime())
 	}
 	zs.Kind = spanKindToZipkinKind(span.Kind())
 	if span.Kind() == pdata.SpanKindINTERNAL {
@@ -176,7 +175,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 			event := events.At(i)
 			if event.Attributes().Len() == 0 && event.DroppedAttributesCount() == 0 {
 				zAnnos[i] = zipkinmodel.Annotation{
-					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
+					Timestamp: event.Time(),
 					Value:     event.Name(),
 				}
 			} else {
@@ -185,7 +184,7 @@ func spanEventsToZipkinAnnotations(events pdata.SpanEventSlice, zs *zipkinmodel.
 					return err
 				}
 				zAnnos[i] = zipkinmodel.Annotation{
-					Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
+					Timestamp: event.Time(),
 					Value: fmt.Sprintf(tracetranslator.SpanEventDataFormat, event.Name(), jsonStr,
 						event.DroppedAttributesCount()),
 				}

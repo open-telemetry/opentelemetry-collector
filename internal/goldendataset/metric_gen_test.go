@@ -16,6 +16,7 @@ package goldendataset
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -53,8 +54,8 @@ func TestGenDefault(t *testing.T) {
 	ptLabels, _ := pt.LabelsMap().Get("pt-label-key-0")
 	require.Equal(t, "pt-label-val-0", ptLabels)
 
-	require.EqualValues(t, 940000000000000000, pt.StartTime())
-	require.EqualValues(t, 940000000000000042, pt.Timestamp())
+	require.EqualValues(t, time.Unix(940000000, 0).UTC(), pt.StartTime())
+	require.EqualValues(t, time.Unix(940000000, 42).UTC(), pt.Time())
 	require.EqualValues(t, 1, pt.Value())
 }
 

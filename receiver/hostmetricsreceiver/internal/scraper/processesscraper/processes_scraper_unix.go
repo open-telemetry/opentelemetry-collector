@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
@@ -33,7 +32,7 @@ const (
 )
 
 func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, miscFunc getMiscStats) error {
-	now := internal.TimeToUnixNano(time.Now())
+	now := time.Now()
 	misc, err := miscFunc()
 	if err != nil {
 		return consumererror.NewPartialScrapeError(err, unixMetricsLen)
@@ -45,7 +44,7 @@ func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex 
 	return nil
 }
 
-func initializeProcessesCountMetric(metric pdata.Metric, now pdata.TimestampUnixNano, misc *load.MiscStat) {
+func initializeProcessesCountMetric(metric pdata.Metric, now time.Time, misc *load.MiscStat) {
 	metadata.Metrics.SystemProcessesCount.Init(metric)
 
 	ddps := metric.IntSum().DataPoints()
@@ -54,9 +53,9 @@ func initializeProcessesCountMetric(metric pdata.Metric, now pdata.TimestampUnix
 	initializeProcessesCountDataPoint(ddps.At(1), now, metadata.LabelProcessesStatus.Blocked, int64(misc.ProcsBlocked))
 }
 
-func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, statusLabel string, value int64) {
+func initializeProcessesCountDataPoint(dataPoint pdata.IntDataPoint, now time.Time, statusLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessesStatus, statusLabel)
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTime(now)
 	dataPoint.SetValue(value)
 }

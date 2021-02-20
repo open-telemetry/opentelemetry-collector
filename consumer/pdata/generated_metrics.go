@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"time"
+
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
 
@@ -932,23 +934,23 @@ func (ms IntDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this IntDataPoint.
-func (ms IntDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms IntDataPoint) StartTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).StartTimeUnixNano)).UTC()
 }
 
 // SetStartTime replaces the starttime associated with this IntDataPoint.
-func (ms IntDataPoint) SetStartTime(v TimestampUnixNano) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+func (ms IntDataPoint) SetStartTime(v time.Time) {
+	(*ms.orig).StartTimeUnixNano = uint64(v.UnixNano())
 }
 
-// Timestamp returns the timestamp associated with this IntDataPoint.
-func (ms IntDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this IntDataPoint.
+func (ms IntDataPoint) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this IntDataPoint.
-func (ms IntDataPoint) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this IntDataPoint.
+func (ms IntDataPoint) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Value returns the value associated with this IntDataPoint.
@@ -970,7 +972,7 @@ func (ms IntDataPoint) Exemplars() IntExemplarSlice {
 func (ms IntDataPoint) CopyTo(dest IntDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetValue(ms.Value())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 }
@@ -1117,23 +1119,23 @@ func (ms DoubleDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms DoubleDataPoint) StartTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).StartTimeUnixNano)).UTC()
 }
 
 // SetStartTime replaces the starttime associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+func (ms DoubleDataPoint) SetStartTime(v time.Time) {
+	(*ms.orig).StartTimeUnixNano = uint64(v.UnixNano())
 }
 
-// Timestamp returns the timestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this DoubleDataPoint.
+func (ms DoubleDataPoint) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this DoubleDataPoint.
+func (ms DoubleDataPoint) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Value returns the value associated with this DoubleDataPoint.
@@ -1155,7 +1157,7 @@ func (ms DoubleDataPoint) Exemplars() DoubleExemplarSlice {
 func (ms DoubleDataPoint) CopyTo(dest DoubleDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetValue(ms.Value())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 }
@@ -1302,23 +1304,23 @@ func (ms IntHistogramDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms IntHistogramDataPoint) StartTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).StartTimeUnixNano)).UTC()
 }
 
 // SetStartTime replaces the starttime associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) SetStartTime(v TimestampUnixNano) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+func (ms IntHistogramDataPoint) SetStartTime(v time.Time) {
+	(*ms.orig).StartTimeUnixNano = uint64(v.UnixNano())
 }
 
-// Timestamp returns the timestamp associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this IntHistogramDataPoint.
+func (ms IntHistogramDataPoint) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this IntHistogramDataPoint.
+func (ms IntHistogramDataPoint) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Count returns the count associated with this IntHistogramDataPoint.
@@ -1370,7 +1372,7 @@ func (ms IntHistogramDataPoint) Exemplars() IntExemplarSlice {
 func (ms IntHistogramDataPoint) CopyTo(dest IntHistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	dest.SetBucketCounts(ms.BucketCounts())
@@ -1520,23 +1522,23 @@ func (ms DoubleHistogramDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms DoubleHistogramDataPoint) StartTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).StartTimeUnixNano)).UTC()
 }
 
 // SetStartTime replaces the starttime associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetStartTime(v TimestampUnixNano) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+func (ms DoubleHistogramDataPoint) SetStartTime(v time.Time) {
+	(*ms.orig).StartTimeUnixNano = uint64(v.UnixNano())
 }
 
-// Timestamp returns the timestamp associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this DoubleHistogramDataPoint.
+func (ms DoubleHistogramDataPoint) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this DoubleHistogramDataPoint.
+func (ms DoubleHistogramDataPoint) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Count returns the count associated with this DoubleHistogramDataPoint.
@@ -1588,7 +1590,7 @@ func (ms DoubleHistogramDataPoint) Exemplars() DoubleExemplarSlice {
 func (ms DoubleHistogramDataPoint) CopyTo(dest DoubleHistogramDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	dest.SetBucketCounts(ms.BucketCounts())
@@ -1738,23 +1740,23 @@ func (ms DoubleSummaryDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms DoubleSummaryDataPoint) StartTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).StartTimeUnixNano)).UTC()
 }
 
 // SetStartTime replaces the starttime associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetStartTime(v TimestampUnixNano) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+func (ms DoubleSummaryDataPoint) SetStartTime(v time.Time) {
+	(*ms.orig).StartTimeUnixNano = uint64(v.UnixNano())
 }
 
-// Timestamp returns the timestamp associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this DoubleSummaryDataPoint.
+func (ms DoubleSummaryDataPoint) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this DoubleSummaryDataPoint.
+func (ms DoubleSummaryDataPoint) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Count returns the count associated with this DoubleSummaryDataPoint.
@@ -1786,7 +1788,7 @@ func (ms DoubleSummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 func (ms DoubleSummaryDataPoint) CopyTo(dest DoubleSummaryDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
@@ -2088,14 +2090,14 @@ func NewIntExemplar() IntExemplar {
 	return newIntExemplar(&otlpmetrics.IntExemplar{})
 }
 
-// Timestamp returns the timestamp associated with this IntExemplar.
-func (ms IntExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this IntExemplar.
+func (ms IntExemplar) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this IntExemplar.
-func (ms IntExemplar) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this IntExemplar.
+func (ms IntExemplar) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Value returns the value associated with this IntExemplar.
@@ -2115,7 +2117,7 @@ func (ms IntExemplar) FilteredLabels() StringMap {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms IntExemplar) CopyTo(dest IntExemplar) {
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetValue(ms.Value())
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
 }
@@ -2254,14 +2256,14 @@ func NewDoubleExemplar() DoubleExemplar {
 	return newDoubleExemplar(&otlpmetrics.DoubleExemplar{})
 }
 
-// Timestamp returns the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this DoubleExemplar.
+func (ms DoubleExemplar) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this DoubleExemplar.
+func (ms DoubleExemplar) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Value returns the value associated with this DoubleExemplar.
@@ -2281,7 +2283,7 @@ func (ms DoubleExemplar) FilteredLabels() StringMap {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms DoubleExemplar) CopyTo(dest DoubleExemplar) {
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetValue(ms.Value())
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
 }

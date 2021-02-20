@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 )
 
@@ -58,7 +57,7 @@ func (s *scraper) shutdown(ctx context.Context) error {
 func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := internal.TimeToUnixNano(time.Now())
+	now := time.Now()
 	avgLoadValues, err := s.load()
 	if err != nil {
 		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
@@ -72,11 +71,11 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricIntf, now pdata.TimestampUnixNano, value float64) {
+func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricIntf, now time.Time, value float64) {
 	metricDescriptor.Init(metric)
 	idps := metric.DoubleGauge().DataPoints()
 	idps.Resize(1)
 	dp := idps.At(0)
-	dp.SetTimestamp(now)
+	dp.SetTime(now)
 	dp.SetValue(value)
 }

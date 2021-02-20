@@ -19,6 +19,7 @@ package pdata
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -413,12 +414,12 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestLogRecord(), ms)
 }
 
-func TestLogRecord_Timestamp(t *testing.T) {
+func TestLogRecord_Time(t *testing.T) {
 	ms := NewLogRecord()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
-	testValTimestamp := TimestampUnixNano(1234567890)
-	ms.SetTimestamp(testValTimestamp)
-	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
+	assert.EqualValues(t, time.Unix(0, 0).UTC(), ms.Time())
+	testValTime := time.Unix(0, 1234567890).UTC()
+	ms.SetTime(testValTime)
+	assert.EqualValues(t, testValTime, ms.Time())
 }
 
 func TestLogRecord_TraceID(t *testing.T) {
@@ -559,7 +560,7 @@ func generateTestLogRecord() LogRecord {
 }
 
 func fillTestLogRecord(tv LogRecord) {
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
+	tv.SetTime(time.Unix(0, 1234567890).UTC())
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	tv.SetFlags(uint32(0x01))

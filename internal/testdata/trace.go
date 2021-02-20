@@ -24,13 +24,13 @@ import (
 
 var (
 	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pdata.TimestampUnixNano(TestSpanStartTime.UnixNano())
+	TestSpanStartTimestamp = uint64(TestSpanStartTime.UnixNano())
 
 	TestSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestSpanEventTimestamp = pdata.TimestampUnixNano(TestSpanEventTime.UnixNano())
+	TestSpanEventTimestamp = uint64(TestSpanEventTime.UnixNano())
 
 	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pdata.TimestampUnixNano(TestSpanEndTime.UnixNano())
+	TestSpanEndTimestamp = uint64(TestSpanEndTime.UnixNano())
 )
 
 func GenerateTraceDataEmpty() pdata.Traces {
@@ -217,18 +217,18 @@ func generateTraceOtlpTwoSpansSameResourceOneDifferent() []*otlptrace.ResourceSp
 
 func fillSpanOne(span pdata.Span) {
 	span.SetName("operationA")
-	span.SetStartTime(TestSpanStartTimestamp)
-	span.SetEndTime(TestSpanEndTimestamp)
+	span.SetStartTime(TestSpanStartTime)
+	span.SetEndTime(TestSpanEndTime)
 	span.SetDroppedAttributesCount(1)
 	evs := span.Events()
 	evs.Resize(2)
 	ev0 := evs.At(0)
-	ev0.SetTimestamp(TestSpanEventTimestamp)
+	ev0.SetTime(TestSpanEventTime)
 	ev0.SetName("event-with-attr")
 	initSpanEventAttributes(ev0.Attributes())
 	ev0.SetDroppedAttributesCount(2)
 	ev1 := evs.At(1)
-	ev1.SetTimestamp(TestSpanEventTimestamp)
+	ev1.SetTime(TestSpanEventTime)
 	ev1.SetName("event")
 	ev1.SetDroppedAttributesCount(2)
 	span.SetDroppedEventsCount(1)
@@ -240,19 +240,19 @@ func fillSpanOne(span pdata.Span) {
 func generateOtlpSpanOne() *otlptrace.Span {
 	return &otlptrace.Span{
 		Name:                   "operationA",
-		StartTimeUnixNano:      uint64(TestSpanStartTimestamp),
-		EndTimeUnixNano:        uint64(TestSpanEndTimestamp),
+		StartTimeUnixNano:      TestSpanStartTimestamp,
+		EndTimeUnixNano:        TestSpanEndTimestamp,
 		DroppedAttributesCount: 1,
 		Events: []*otlptrace.Span_Event{
 			{
 				Name:                   "event-with-attr",
-				TimeUnixNano:           uint64(TestSpanEventTimestamp),
+				TimeUnixNano:           TestSpanEventTimestamp,
 				Attributes:             generateOtlpSpanEventAttributes(),
 				DroppedAttributesCount: 2,
 			},
 			{
 				Name:                   "event",
-				TimeUnixNano:           uint64(TestSpanEventTimestamp),
+				TimeUnixNano:           TestSpanEventTimestamp,
 				DroppedAttributesCount: 2,
 			},
 		},
@@ -267,8 +267,8 @@ func generateOtlpSpanOne() *otlptrace.Span {
 
 func fillSpanTwo(span pdata.Span) {
 	span.SetName("operationB")
-	span.SetStartTime(TestSpanStartTimestamp)
-	span.SetEndTime(TestSpanEndTimestamp)
+	span.SetStartTime(TestSpanStartTime)
+	span.SetEndTime(TestSpanEndTime)
 	span.Links().Resize(2)
 	initSpanLinkAttributes(span.Links().At(0).Attributes())
 	span.Links().At(0).SetDroppedAttributesCount(4)
@@ -279,8 +279,8 @@ func fillSpanTwo(span pdata.Span) {
 func generateOtlpSpanTwo() *otlptrace.Span {
 	return &otlptrace.Span{
 		Name:              "operationB",
-		StartTimeUnixNano: uint64(TestSpanStartTimestamp),
-		EndTimeUnixNano:   uint64(TestSpanEndTimestamp),
+		StartTimeUnixNano: TestSpanStartTimestamp,
+		EndTimeUnixNano:   TestSpanEndTimestamp,
 		Links: []*otlptrace.Span_Link{
 			{
 				Attributes:             generateOtlpSpanLinkAttributes(),
@@ -296,8 +296,8 @@ func generateOtlpSpanTwo() *otlptrace.Span {
 
 func fillSpanThree(span pdata.Span) {
 	span.SetName("operationC")
-	span.SetStartTime(TestSpanStartTimestamp)
-	span.SetEndTime(TestSpanEndTimestamp)
+	span.SetStartTime(TestSpanStartTime)
+	span.SetEndTime(TestSpanEndTime)
 	initSpanAttributes(span.Attributes())
 	span.SetDroppedAttributesCount(5)
 }
@@ -305,8 +305,8 @@ func fillSpanThree(span pdata.Span) {
 func generateOtlpSpanThree() *otlptrace.Span {
 	return &otlptrace.Span{
 		Name:                   "operationC",
-		StartTimeUnixNano:      uint64(TestSpanStartTimestamp),
-		EndTimeUnixNano:        uint64(TestSpanEndTimestamp),
+		StartTimeUnixNano:      TestSpanStartTimestamp,
+		EndTimeUnixNano:        TestSpanEndTimestamp,
 		Attributes:             generateOtlpSpanAttributes(),
 		DroppedAttributesCount: 5,
 	}

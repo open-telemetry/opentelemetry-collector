@@ -22,7 +22,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -684,7 +683,7 @@ func (f *FluentBitFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs)
 
 func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
 	rec := map[string]string{
-		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
+		"time": lr.Time().Format("02/01/2006:15:04:05Z"),
 	}
 	rec["log"] = lr.Body().StringVal()
 

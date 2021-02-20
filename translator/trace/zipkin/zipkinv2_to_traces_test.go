@@ -129,8 +129,8 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(1596911098294000000)
-	span.SetEndTime(1596911098295000000)
+	span.SetStartTime(time.Unix(1596911098, 294000000).UTC())
+	span.SetEndTime(time.Unix(1596911098, 295000000).UTC())
 	span.Attributes().InitEmptyWithCapacity(0)
 	return td
 }
@@ -157,8 +157,8 @@ func generateTraceSingleSpanErrorStatus() pdata.Traces {
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetName("MinimalData")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(1596911098294000000)
-	span.SetEndTime(1596911098295000000)
+	span.SetStartTime(time.Unix(1596911098, 294000000).UTC())
+	span.SetEndTime(time.Unix(1596911098, 295000000).UTC())
 	span.Attributes().InitEmptyWithCapacity(0)
 	span.Status().SetCode(pdata.StatusCodeError)
 	return td

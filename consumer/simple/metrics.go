@@ -229,8 +229,6 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		panic(fmt.Errorf("mismatched metric data types for metric %q: %q vs %q", metric.Name(), metric.DataType(), typ))
 	}
 
-	tsNano := pdata.TimestampUnixNano(mb.Timestamp.UnixNano())
-
 	switch typ {
 	case pdata.MetricDataTypeIntGauge:
 		m := metric.IntGauge()
@@ -238,7 +236,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp := pdata.NewIntDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(int64))
-		dp.SetTimestamp(tsNano)
+		dp.SetTime(mb.Timestamp)
 		dps.Append(dp)
 
 	case pdata.MetricDataTypeIntSum:
@@ -247,7 +245,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp := pdata.NewIntDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(int64))
-		dp.SetTimestamp(tsNano)
+		dp.SetTime(mb.Timestamp)
 		dps.Append(dp)
 
 	case pdata.MetricDataTypeDoubleGauge:
@@ -256,7 +254,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp := pdata.NewDoubleDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(float64))
-		dp.SetTimestamp(tsNano)
+		dp.SetTime(mb.Timestamp)
 		dps.Append(dp)
 
 	case pdata.MetricDataTypeDoubleSum:
@@ -265,7 +263,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp := pdata.NewDoubleDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		dp.SetValue(val.(float64))
-		dp.SetTimestamp(tsNano)
+		dp.SetTime(mb.Timestamp)
 		dps.Append(dp)
 
 	case pdata.MetricDataTypeIntHistogram:
@@ -274,7 +272,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp := pdata.NewIntHistogramDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		val.(pdata.IntHistogramDataPoint).CopyTo(dp)
-		dp.SetTimestamp(tsNano)
+		dp.SetTime(mb.Timestamp)
 		dps.Append(dp)
 
 	case pdata.MetricDataTypeDoubleHistogram:
@@ -283,7 +281,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp := pdata.NewDoubleHistogramDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
 		val.(pdata.DoubleHistogramDataPoint).CopyTo(dp)
-		dp.SetTimestamp(tsNano)
+		dp.SetTime(mb.Timestamp)
 		dps.Append(dp)
 
 	default:

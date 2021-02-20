@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
@@ -39,7 +40,7 @@ func TestMessageEventConversion(t *testing.T) {
 
 	expected := logstest.Logs(
 		logstest.Log{
-			Timestamp: 1593031012000000000,
+			Timestamp: time.Unix(1593031012, 0).UTC(),
 			Body:      pdata.NewAttributeValueString("..."),
 			Attributes: map[string]pdata.AttributeValue{
 				"container_id":   pdata.NewAttributeValueString("b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d"),
@@ -104,7 +105,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 	le.Attributes().Sort()
 	require.EqualValues(t, logstest.Logs(
 		logstest.Log{
-			Timestamp: 5000000000000,
+			Timestamp: time.Unix(5000, 0).UTC(),
 			Body:      pdata.NewAttributeValueNull(),
 			Attributes: map[string]pdata.AttributeValue{
 				"a":          pdata.NewAttributeValueDouble(5.0),

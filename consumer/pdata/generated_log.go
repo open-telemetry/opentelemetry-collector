@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/internal/data"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
@@ -463,14 +465,14 @@ func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
 }
 
-// Timestamp returns the timestamp associated with this LogRecord.
-func (ms LogRecord) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this LogRecord.
+func (ms LogRecord) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this LogRecord.
-func (ms LogRecord) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this LogRecord.
+func (ms LogRecord) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // TraceID returns the traceid associated with this LogRecord.
@@ -555,7 +557,7 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms LogRecord) CopyTo(dest LogRecord) {
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	dest.SetFlags(ms.Flags())

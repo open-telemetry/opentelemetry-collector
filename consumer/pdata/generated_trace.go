@@ -18,6 +18,8 @@
 package pdata
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/internal/data"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
@@ -524,23 +526,23 @@ func (ms Span) SetKind(v SpanKind) {
 }
 
 // StartTime returns the starttime associated with this Span.
-func (ms Span) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms Span) StartTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).StartTimeUnixNano)).UTC()
 }
 
 // SetStartTime replaces the starttime associated with this Span.
-func (ms Span) SetStartTime(v TimestampUnixNano) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+func (ms Span) SetStartTime(v time.Time) {
+	(*ms.orig).StartTimeUnixNano = uint64(v.UnixNano())
 }
 
 // EndTime returns the endtime associated with this Span.
-func (ms Span) EndTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).EndTimeUnixNano)
+func (ms Span) EndTime() time.Time {
+	return time.Unix(0, int64((*ms.orig).EndTimeUnixNano)).UTC()
 }
 
 // SetEndTime replaces the endtime associated with this Span.
-func (ms Span) SetEndTime(v TimestampUnixNano) {
-	(*ms.orig).EndTimeUnixNano = uint64(v)
+func (ms Span) SetEndTime(v time.Time) {
+	(*ms.orig).EndTimeUnixNano = uint64(v.UnixNano())
 }
 
 // Attributes returns the Attributes associated with this Span.
@@ -749,14 +751,14 @@ func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
-// Timestamp returns the timestamp associated with this SpanEvent.
-func (ms SpanEvent) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+// Time returns the time associated with this SpanEvent.
+func (ms SpanEvent) Time() time.Time {
+	return time.Unix(0, int64((*ms.orig).TimeUnixNano)).UTC()
 }
 
-// SetTimestamp replaces the timestamp associated with this SpanEvent.
-func (ms SpanEvent) SetTimestamp(v TimestampUnixNano) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+// SetTime replaces the time associated with this SpanEvent.
+func (ms SpanEvent) SetTime(v time.Time) {
+	(*ms.orig).TimeUnixNano = uint64(v.UnixNano())
 }
 
 // Name returns the name associated with this SpanEvent.
@@ -786,7 +788,7 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
-	dest.SetTimestamp(ms.Timestamp())
+	dest.SetTime(ms.Time())
 	dest.SetName(ms.Name())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())

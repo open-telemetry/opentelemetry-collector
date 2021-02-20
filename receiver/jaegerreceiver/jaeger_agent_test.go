@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
@@ -231,8 +232,8 @@ func generateTraceData() pdata.Traces {
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
 	span.SetTraceID(pdata.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0}))
-	span.SetStartTime(1581452772000000000)
-	span.SetEndTime(1581452773000000000)
+	span.SetStartTime(time.Unix(1581452772, 0).UTC())
+	span.SetEndTime(time.Unix(1581452773, 0).UTC())
 	return td
 }
 

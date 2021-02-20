@@ -22,7 +22,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -153,7 +152,7 @@ func TestMetricsToOC_InvalidDataType(t *testing.T) {
 }
 
 func generateOCTestData() consumerdata.MetricsData {
-	ts := timestamppb.New(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
+	ts := timeAsTimestampPb(time.Date(2020, 2, 11, 20, 26, 0, 0, time.UTC))
 
 	return consumerdata.MetricsData{
 		Node: &occommon.Node{

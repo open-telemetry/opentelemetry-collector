@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
-	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
 )
@@ -52,7 +51,7 @@ const (
 // scraper for Disk Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime time.Time
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -91,7 +90,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime * 1e9)
+	s.startTime = time.Unix(int64(bootTime), 0).UTC()
 
 	return s.perfCounterScraper.Initialize(logicalDisk)
 }
@@ -99,7 +98,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := internal.TimeToUnixNano(time.Now())
+	now := time.Now()
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
@@ -131,7 +130,7 @@ func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 	return metrics, nil
 }
 
-func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskIOMetric(metric pdata.Metric, startTime, now time.Time, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskIo.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -142,7 +141,7 @@ func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.TimestampU
 	}
 }
 
-func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now time.Time, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -153,18 +152,19 @@ func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Ti
 	}
 }
 
-func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now time.Time, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskIoTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
 	ddps.Resize(len(logicalDiskCounterValues))
 	for idx, logicalDiskCounter := range logicalDiskCounterValues {
 		// disk active time = system boot time - disk idle time
-		initializeDoubleDataPoint(ddps.At(idx), startTime, now, logicalDiskCounter.InstanceName, "", float64(now-startTime)/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7)
+		// TODO: Investigate if instead of float64(now.Sub(startTime).Nanoseconds())/1e9 can use now.Sub(startTime).Seconds (nanos are preserved as well).
+		initializeDoubleDataPoint(ddps.At(idx), startTime, now, logicalDiskCounter.InstanceName, "", float64(now.Sub(startTime).Nanoseconds())/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7)
 	}
 }
 
-func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now time.Time, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskOperationTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
@@ -175,7 +175,7 @@ func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata
 	}
 }
 
-func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.TimestampUnixNano, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func initializeDiskPendingOperationsMetric(metric pdata.Metric, now time.Time, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	metadata.Metrics.SystemDiskPendingOperations.Init(metric)
 
 	idps := metric.IntSum().DataPoints()
@@ -185,31 +185,31 @@ func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timest
 	}
 }
 
-func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value int64) {
+func initializeInt64DataPoint(dataPoint pdata.IntDataPoint, startTime, now time.Time, deviceLabel string, directionLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
 	if directionLabel != "" {
 		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
 	}
 	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTime(now)
 	dataPoint.SetValue(value)
 }
 
-func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, deviceLabel string, directionLabel string, value float64) {
+func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now time.Time, deviceLabel string, directionLabel string, value float64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
 	if directionLabel != "" {
 		labelsMap.Insert(metadata.Labels.DiskDirection, directionLabel)
 	}
 	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTime(now)
 	dataPoint.SetValue(value)
 }
 
-func initializeDiskPendingDataPoint(dataPoint pdata.IntDataPoint, now pdata.TimestampUnixNano, deviceLabel string, value int64) {
+func initializeDiskPendingDataPoint(dataPoint pdata.IntDataPoint, now time.Time, deviceLabel string, value int64) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.DiskDevice, deviceLabel)
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTime(now)
 	dataPoint.SetValue(value)
 }

@@ -56,7 +56,7 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
-	testVal${fieldName} := ${testValue}
+	testVal${fieldName} := ${testVal}
 	ms.Set${fieldName}(testVal${fieldName})
 	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
 }`
@@ -74,6 +74,16 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 const accessorsPrimitiveWithoutSetterTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ${returnType}((*ms.orig).${originFieldName})
+}`
+
+const accessorsTimestampTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() time.Time {
+	return time.Unix(0, int64((*ms.orig).${originFieldName})).UTC()
+}
+
+// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${fieldName}(v time.Time) {
+	(*ms.orig).${originFieldName} = uint64(v.UnixNano())
 }`
 
 type baseField interface {
@@ -222,7 +232,7 @@ func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *strings.Build
 			return pf.defaultVal
 		case "fieldName":
 			return pf.fieldName
-		case "testValue":
+		case "testVal":
 			return pf.testVal
 		default:
 			panic(name)
@@ -287,7 +297,7 @@ func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *strings
 			return ptf.defaultVal
 		case "fieldName":
 			return ptf.fieldName
-		case "testValue":
+		case "testVal":
 			return ptf.testVal
 		default:
 			panic(name)
@@ -304,6 +314,56 @@ func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
 }
 
 var _ baseField = (*primitiveTypedField)(nil)
+
+// Types that has defined a custom type (e.g. "type TimestampUnixNano uint64")
+type timestampField struct {
+	fieldName       string
+	originFieldName string
+}
+
+func (ptf *timestampField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsTimestampTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return ptf.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(ptf.fieldName)
+		case "originFieldName":
+			return ptf.originFieldName
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (ptf *timestampField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return "time.Unix(0, 0).UTC()"
+		case "fieldName":
+			return ptf.fieldName
+		case "testVal":
+			return "time.Unix(0, 1234567890).UTC()"
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (ptf *timestampField) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\ttv.Set" + ptf.fieldName + "(time.Unix(0, 1234567890).UTC())")
+}
+
+func (ptf *timestampField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
+}
+
+var _ baseField = (*timestampField)(nil)
 
 // oneofField is used in case where the proto defines an "oneof".
 type oneofField struct {

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ func TestScrape(t *testing.T) {
 		name              string
 		bootTimeFunc      func() (uint64, error)
 		timesFunc         func(bool) ([]cpu.TimesStat, error)
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime time.Time
 		initializationErr string
 		expectedErr       string
 	}
@@ -48,7 +49,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:              "Validate Start Time",
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
-			expectedStartTime: 100 * 1e9,
+			expectedStartTime: time.Unix(100, 0).UTC(),
 		},
 		{
 			name:              "Boot Time Error",
@@ -106,9 +107,9 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime time.Time) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
-	if startTime != 0 {
+	if !startTime.IsZero() {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.DoubleSum().DataPoints().Len(), 4*runtime.NumCPU())

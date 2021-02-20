@@ -17,6 +17,8 @@
 package processscraper
 
 import (
+	"time"
+
 	"github.com/shirou/gopsutil/cpu"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -25,17 +27,17 @@ import (
 
 const cpuStatesLen = 3
 
-func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now pdata.TimestampUnixNano, cpuTime *cpu.TimesStat) {
+func appendCPUTimeStateDataPoints(ddps pdata.DoubleDataPointSlice, startTime, now time.Time, cpuTime *cpu.TimesStat) {
 	initializeCPUTimeDataPoint(ddps.At(0), startTime, now, cpuTime.User, metadata.LabelProcessState.User)
 	initializeCPUTimeDataPoint(ddps.At(1), startTime, now, cpuTime.System, metadata.LabelProcessState.System)
 	initializeCPUTimeDataPoint(ddps.At(2), startTime, now, cpuTime.Iowait, metadata.LabelProcessState.Wait)
 }
 
-func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now pdata.TimestampUnixNano, value float64, stateLabel string) {
+func initializeCPUTimeDataPoint(dataPoint pdata.DoubleDataPoint, startTime, now time.Time, value float64, stateLabel string) {
 	labelsMap := dataPoint.LabelsMap()
 	labelsMap.Insert(metadata.Labels.ProcessState, stateLabel)
 	dataPoint.SetStartTime(startTime)
-	dataPoint.SetTimestamp(now)
+	dataPoint.SetTime(now)
 	dataPoint.SetValue(value)
 }
 

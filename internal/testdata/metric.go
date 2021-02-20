@@ -23,13 +23,13 @@ import (
 
 var (
 	TestMetricStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestMetricStartTimestamp = pdata.TimestampUnixNano(TestMetricStartTime.UnixNano())
+	TestMetricStartTimestamp = uint64(TestMetricStartTime.UnixNano())
 
 	TestMetricExemplarTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestMetricExemplarTimestamp = pdata.TimestampUnixNano(TestMetricExemplarTime.UnixNano())
+	TestMetricExemplarTimestamp = uint64(TestMetricExemplarTime.UnixNano())
 
 	TestMetricTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestMetricTimestamp = pdata.TimestampUnixNano(TestMetricTime.UnixNano())
+	TestMetricTimestamp = uint64(TestMetricTime.UnixNano())
 )
 
 const (
@@ -316,13 +316,13 @@ func initCounterIntMetric(im pdata.Metric) {
 	idps.Resize(2)
 	idp0 := idps.At(0)
 	initMetricLabels1(idp0.LabelsMap())
-	idp0.SetStartTime(TestMetricStartTimestamp)
-	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetStartTime(TestMetricStartTime)
+	idp0.SetTime(TestMetricTime)
 	idp0.SetValue(123)
 	idp1 := idps.At(1)
 	initMetricLabels2(idp1.LabelsMap())
-	idp1.SetStartTime(TestMetricStartTimestamp)
-	idp1.SetTimestamp(TestMetricTimestamp)
+	idp1.SetStartTime(TestMetricStartTime)
+	idp1.SetTime(TestMetricTime)
 	idp1.SetValue(456)
 }
 
@@ -333,8 +333,8 @@ func initGaugeIntMetricOneDataPoint(im pdata.Metric) {
 	idps.Resize(1)
 	idp0 := idps.At(0)
 	initMetricLabels1(idp0.LabelsMap())
-	idp0.SetStartTime(TestMetricStartTimestamp)
-	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetStartTime(TestMetricStartTime)
+	idp0.SetTime(TestMetricTime)
 	idp0.SetValue(123)
 }
 
@@ -344,14 +344,14 @@ func generateOtlpCounterIntMetric() *otlpmetrics.Metric {
 		[]*otlpmetrics.IntDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels1(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Value:             123,
 			},
 			{
 				Labels:            generateOtlpMetricLabels2(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Value:             456,
 			},
 		}
@@ -365,14 +365,14 @@ func initSumDoubleMetric(dm pdata.Metric) {
 	ddps.Resize(2)
 	ddp0 := ddps.At(0)
 	initMetricLabels12(ddp0.LabelsMap())
-	ddp0.SetStartTime(TestMetricStartTimestamp)
-	ddp0.SetTimestamp(TestMetricTimestamp)
+	ddp0.SetStartTime(TestMetricStartTime)
+	ddp0.SetTime(TestMetricTime)
 	ddp0.SetValue(1.23)
 
 	ddp1 := ddps.At(1)
 	initMetricLabels13(ddp1.LabelsMap())
-	ddp1.SetStartTime(TestMetricStartTimestamp)
-	ddp1.SetTimestamp(TestMetricTimestamp)
+	ddp1.SetStartTime(TestMetricStartTime)
+	ddp1.SetTime(TestMetricTime)
 	ddp1.SetValue(4.56)
 }
 
@@ -382,14 +382,14 @@ func generateOtlpSumDoubleMetric() *otlpmetrics.Metric {
 		[]*otlpmetrics.DoubleDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels12(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Value:             1.23,
 			},
 			{
 				Labels:            generateOtlpMetricLabels13(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Value:             4.56,
 			},
 		}
@@ -403,21 +403,21 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	hdps.Resize(2)
 	hdp0 := hdps.At(0)
 	initMetricLabels13(hdp0.LabelsMap())
-	hdp0.SetStartTime(TestMetricStartTimestamp)
-	hdp0.SetTimestamp(TestMetricTimestamp)
+	hdp0.SetStartTime(TestMetricStartTime)
+	hdp0.SetTime(TestMetricTime)
 	hdp0.SetCount(1)
 	hdp0.SetSum(15)
 	hdp1 := hdps.At(1)
 	initMetricLabels2(hdp1.LabelsMap())
-	hdp1.SetStartTime(TestMetricStartTimestamp)
-	hdp1.SetTimestamp(TestMetricTimestamp)
+	hdp1.SetStartTime(TestMetricStartTime)
+	hdp1.SetTime(TestMetricTime)
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
 	hdp1.SetBucketCounts([]uint64{0, 1})
 	exemplars := hdp1.Exemplars()
 	exemplars.Resize(1)
 	exemplar := exemplars.At(0)
-	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
+	exemplar.SetTime(TestMetricExemplarTime)
 	exemplar.SetValue(15)
 	initMetricAttachment(exemplar.FilteredLabels())
 	hdp1.SetExplicitBounds([]float64{1})
@@ -429,15 +429,15 @@ func generateOtlpDoubleHistogramMetric() *otlpmetrics.Metric {
 		[]*otlpmetrics.DoubleHistogramDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels13(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Count:             1,
 				Sum:               15,
 			},
 			{
 				Labels:            generateOtlpMetricLabels2(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Count:             1,
 				Sum:               15,
 				BucketCounts:      []uint64{0, 1},
@@ -445,7 +445,7 @@ func generateOtlpDoubleHistogramMetric() *otlpmetrics.Metric {
 				Exemplars: []otlpmetrics.DoubleExemplar{
 					{
 						FilteredLabels: generateOtlpMetricAttachment(),
-						TimeUnixNano:   uint64(TestMetricExemplarTimestamp),
+						TimeUnixNano:   TestMetricExemplarTimestamp,
 						Value:          15,
 					},
 				},
@@ -461,21 +461,21 @@ func initIntHistogramMetric(hm pdata.Metric) {
 	hdps.Resize(2)
 	hdp0 := hdps.At(0)
 	initMetricLabels13(hdp0.LabelsMap())
-	hdp0.SetStartTime(TestMetricStartTimestamp)
-	hdp0.SetTimestamp(TestMetricTimestamp)
+	hdp0.SetStartTime(TestMetricStartTime)
+	hdp0.SetTime(TestMetricTime)
 	hdp0.SetCount(1)
 	hdp0.SetSum(15)
 	hdp1 := hdps.At(1)
 	initMetricLabels2(hdp1.LabelsMap())
-	hdp1.SetStartTime(TestMetricStartTimestamp)
-	hdp1.SetTimestamp(TestMetricTimestamp)
+	hdp1.SetStartTime(TestMetricStartTime)
+	hdp1.SetTime(TestMetricTime)
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
 	hdp1.SetBucketCounts([]uint64{0, 1})
 	exemplars := hdp1.Exemplars()
 	exemplars.Resize(1)
 	exemplar := exemplars.At(0)
-	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
+	exemplar.SetTime(TestMetricExemplarTime)
 	exemplar.SetValue(15)
 	initMetricAttachment(exemplar.FilteredLabels())
 	hdp1.SetExplicitBounds([]float64{1})
@@ -487,15 +487,15 @@ func generateOtlpIntHistogramMetric() *otlpmetrics.Metric {
 		[]*otlpmetrics.IntHistogramDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels13(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Count:             1,
 				Sum:               15,
 			},
 			{
 				Labels:            generateOtlpMetricLabels2(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Count:             1,
 				Sum:               15,
 				BucketCounts:      []uint64{0, 1},
@@ -503,7 +503,7 @@ func generateOtlpIntHistogramMetric() *otlpmetrics.Metric {
 				Exemplars: []otlpmetrics.IntExemplar{
 					{
 						FilteredLabels: generateOtlpMetricAttachment(),
-						TimeUnixNano:   uint64(TestMetricExemplarTimestamp),
+						TimeUnixNano:   TestMetricExemplarTimestamp,
 						Value:          15,
 					},
 				},
@@ -519,14 +519,14 @@ func initDoubleSummaryMetric(sm pdata.Metric) {
 	sdps.Resize(2)
 	sdp0 := sdps.At(0)
 	initMetricLabels13(sdp0.LabelsMap())
-	sdp0.SetStartTime(TestMetricStartTimestamp)
-	sdp0.SetTimestamp(TestMetricTimestamp)
+	sdp0.SetStartTime(TestMetricStartTime)
+	sdp0.SetTime(TestMetricTime)
 	sdp0.SetCount(1)
 	sdp0.SetSum(15)
 	sdp1 := sdps.At(1)
 	initMetricLabels2(sdp1.LabelsMap())
-	sdp1.SetStartTime(TestMetricStartTimestamp)
-	sdp1.SetTimestamp(TestMetricTimestamp)
+	sdp1.SetStartTime(TestMetricStartTime)
+	sdp1.SetTime(TestMetricTime)
 	sdp1.SetCount(1)
 	sdp1.SetSum(15)
 
@@ -544,15 +544,15 @@ func generateOTLPDoubleSummaryMetric() *otlpmetrics.Metric {
 		[]*otlpmetrics.DoubleSummaryDataPoint{
 			{
 				Labels:            generateOtlpMetricLabels13(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Count:             1,
 				Sum:               15,
 			},
 			{
 				Labels:            generateOtlpMetricLabels2(),
-				StartTimeUnixNano: uint64(TestMetricStartTimestamp),
-				TimeUnixNano:      uint64(TestMetricTimestamp),
+				StartTimeUnixNano: TestMetricStartTimestamp,
+				TimeUnixNano:      TestMetricTimestamp,
 				Count:             1,
 				Sum:               15,
 				QuantileValues: []*otlpmetrics.DoubleSummaryDataPoint_ValueAtQuantile{

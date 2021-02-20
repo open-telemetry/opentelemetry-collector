@@ -17,11 +17,14 @@ package internal
 var logFile = &File{
 	Name: "log",
 	imports: []string{
+		`"time"`,
+		``,
 		`otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"`,
 		`otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"`,
 	},
 	testImports: []string{
 		`"testing"`,
+		`"time"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
@@ -85,13 +88,9 @@ var logRecord = &messageValueStruct{
 	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
 	originFullName: "otlplogs.LogRecord",
 	fields: []baseField{
-		&primitiveTypedField{
-			fieldName:       "Timestamp",
+		&timestampField{
+			fieldName:       "Time",
 			originFieldName: "TimeUnixNano",
-			returnType:      "TimestampUnixNano",
-			rawType:         "uint64",
-			defaultVal:      "TimestampUnixNano(0)",
-			testVal:         "TimestampUnixNano(1234567890)",
 		},
 		traceIDField,
 		spanIDField,

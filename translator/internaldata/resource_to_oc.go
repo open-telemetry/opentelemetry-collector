@@ -21,7 +21,6 @@ import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -100,7 +99,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			if err != nil {
 				return
 			}
-			ts := timestamppb.New(t)
+			ts := timeAsTimestampPb(t)
 			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val

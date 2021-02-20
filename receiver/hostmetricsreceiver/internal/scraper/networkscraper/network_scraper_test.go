@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/net"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func TestScrape(t *testing.T) {
 		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
 		connectionsFunc      func(string) ([]net.ConnectionStat, error)
 		expectNetworkMetrics bool
-		expectedStartTime    pdata.TimestampUnixNano
+		expectedStartTime    time.Time
 		newErrRegex          string
 		initializationErr    string
 		expectedErr          string
@@ -55,7 +56,7 @@ func TestScrape(t *testing.T) {
 			name:                 "Validate Start Time",
 			bootTimeFunc:         func() (uint64, error) { return 100, nil },
 			expectNetworkMetrics: true,
-			expectedStartTime:    100 * 1e9,
+			expectedStartTime:    time.Unix(100, 0).UTC(),
 		},
 		{
 			name:                 "Include Filter that matches nothing",
@@ -154,9 +155,9 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime time.Time) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
-	if startTime != 0 {
+	if !startTime.IsZero() {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 2)

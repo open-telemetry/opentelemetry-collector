@@ -16,6 +16,7 @@ package processesscraper
 
 import (
 	"context"
+	"time"
 
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
@@ -27,7 +28,7 @@ import (
 // scraper for Processes Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.TimestampUnixNano
+	startTime time.Time
 
 	// for mocking gopsutil load.Misc
 	misc getMiscStats
@@ -46,7 +47,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.TimestampUnixNano(bootTime)
+	s.startTime = time.Unix(int64(bootTime), 0).UTC()
 	return nil
 }
 

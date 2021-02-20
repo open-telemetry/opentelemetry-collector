@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/process"
@@ -46,7 +47,7 @@ func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	const bootTime = 100
-	const expectedStartTime = 100 * 1e9
+	expectedStartTime := time.Unix(100, 0).UTC()
 
 	scraper, err := newProcessScraper(&Config{})
 	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
@@ -90,10 +91,10 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 	}
 }
 
-func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime time.Time) {
 	cpuTimeMetric := getMetric(t, metadata.Metrics.ProcessCPUTime.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessCPUTime.New(), cpuTimeMetric)
-	if startTime != 0 {
+	if !startTime.IsZero() {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
 	internal.AssertDoubleSumMetricLabelHasValue(t, cpuTimeMetric, 0, "state", "user")
@@ -108,10 +109,10 @@ func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.Metric, resourc
 	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric)
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime time.Time) {
 	diskIOMetric := getMetric(t, metadata.Metrics.ProcessDiskIo.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessDiskIo.New(), diskIOMetric)
-	if startTime != 0 {
+	if !startTime.IsZero() {
 		internal.AssertIntSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
 	internal.AssertIntSumMetricLabelHasValue(t, diskIOMetric, 0, "direction", "read")

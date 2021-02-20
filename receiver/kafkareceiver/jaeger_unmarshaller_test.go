@@ -17,6 +17,7 @@ package kafkareceiver
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
@@ -32,8 +33,8 @@ func TestUnmarshallJaeger(t *testing.T) {
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("foo")
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTime(pdata.TimestampUnixNano(10))
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTime(pdata.TimestampUnixNano(20))
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetStartTime(time.Unix(0, 10).UTC())
+	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetEndTime(time.Unix(0, 20).UTC())
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)

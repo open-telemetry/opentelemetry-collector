@@ -17,6 +17,7 @@ package jaeger
 import (
 	"encoding/binary"
 	"testing"
+	"time"
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
@@ -148,9 +149,9 @@ func generateThriftProcess() *jaeger.Process {
 }
 
 func generateThriftSpan() *jaeger.Span {
-	spanStartTs := unixNanoToMicroseconds(testSpanStartTimestamp)
-	spanEndTs := unixNanoToMicroseconds(testSpanEndTimestamp)
-	eventTs := unixNanoToMicroseconds(testSpanEventTimestamp)
+	spanStartTs := unixNanoToMicroseconds(testSpanStartTime)
+	spanEndTs := unixNanoToMicroseconds(testSpanEndTime)
+	eventTs := unixNanoToMicroseconds(testSpanEventTime)
 	intAttrVal := int64(123)
 	eventName := "event-with-attr"
 	eventStrAttrVal := "span-event-attr-val"
@@ -213,8 +214,8 @@ func generateThriftSpan() *jaeger.Span {
 }
 
 func generateThriftChildSpan() *jaeger.Span {
-	spanStartTs := unixNanoToMicroseconds(testSpanStartTimestamp)
-	spanEndTs := unixNanoToMicroseconds(testSpanEndTimestamp)
+	spanStartTs := unixNanoToMicroseconds(testSpanStartTime)
+	spanEndTs := unixNanoToMicroseconds(testSpanEndTime)
 	notFoundAttrVal := int64(404)
 	kind := string(tracetranslator.OpenTracingSpanKindServer)
 
@@ -251,7 +252,7 @@ func generateThriftFollowerSpan() *jaeger.Span {
 		TraceIdLow:    int64(binary.BigEndian.Uint64([]byte{0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
 		SpanId:        int64(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})),
 		OperationName: "operationC",
-		StartTime:     unixNanoToMicroseconds(testSpanEndTimestamp),
+		StartTime:     unixNanoToMicroseconds(testSpanEndTime),
 		Duration:      1000,
 		Tags: []*jaeger.Tag{
 			{
@@ -281,8 +282,8 @@ func generateThriftFollowerSpan() *jaeger.Span {
 	}
 }
 
-func unixNanoToMicroseconds(ns pdata.TimestampUnixNano) int64 {
-	return int64(ns / 1000)
+func unixNanoToMicroseconds(t time.Time) int64 {
+	return t.UnixNano() / 1e3
 }
 
 func BenchmarkThriftBatchToInternalTraces(b *testing.B) {

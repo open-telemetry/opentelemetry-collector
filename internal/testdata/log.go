@@ -25,7 +25,7 @@ import (
 
 var (
 	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestLogTimestamp = pdata.TimestampUnixNano(TestLogTime.UnixNano())
+	TestLogTimestamp = uint64(TestLogTime.UnixNano())
 )
 
 func GenerateLogDataEmpty() pdata.Logs {
@@ -208,7 +208,7 @@ func generateLogOtlpTwoLogsSameResourceOneDifferent() []*otlplogs.ResourceLogs {
 
 func fillLogOne(log pdata.LogRecord) {
 	log.SetName("logA")
-	log.SetTimestamp(TestLogTimestamp)
+	log.SetTime(TestLogTime)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
@@ -225,7 +225,7 @@ func fillLogOne(log pdata.LogRecord) {
 func generateOtlpLogOne() *otlplogs.LogRecord {
 	return &otlplogs.LogRecord{
 		Name:                   "logA",
-		TimeUnixNano:           uint64(TestLogTimestamp),
+		TimeUnixNano:           TestLogTimestamp,
 		DroppedAttributesCount: 1,
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
@@ -247,7 +247,7 @@ func generateOtlpLogOne() *otlplogs.LogRecord {
 
 func fillLogTwo(log pdata.LogRecord) {
 	log.SetName("logB")
-	log.SetTimestamp(TestLogTimestamp)
+	log.SetTime(TestLogTime)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
 	log.SetSeverityText("Info")
@@ -262,7 +262,7 @@ func fillLogTwo(log pdata.LogRecord) {
 func generateOtlpLogTwo() *otlplogs.LogRecord {
 	return &otlplogs.LogRecord{
 		Name:                   "logB",
-		TimeUnixNano:           uint64(TestLogTimestamp),
+		TimeUnixNano:           TestLogTimestamp,
 		DroppedAttributesCount: 1,
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO,
 		SeverityText:           "Info",
@@ -282,7 +282,7 @@ func generateOtlpLogTwo() *otlplogs.LogRecord {
 
 func fillLogThree(log pdata.LogRecord) {
 	log.SetName("logC")
-	log.SetTimestamp(TestLogTimestamp)
+	log.SetTime(TestLogTime)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberWARN)
 	log.SetSeverityText("Warning")
@@ -293,7 +293,7 @@ func fillLogThree(log pdata.LogRecord) {
 func generateOtlpLogThree() *otlplogs.LogRecord {
 	return &otlplogs.LogRecord{
 		Name:                   "logC",
-		TimeUnixNano:           uint64(TestLogTimestamp),
+		TimeUnixNano:           TestLogTimestamp,
 		DroppedAttributesCount: 1,
 		SeverityNumber:         otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN,
 		SeverityText:           "Warning",
