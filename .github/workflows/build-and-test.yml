@@ -76,7 +76,6 @@ jobs:
       - name: Split Loadtest Jobs
         id: splitloadtest
         run: ./.github/workflows/scripts/setup_load_tests.sh
-
   lint:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -116,6 +115,47 @@ jobs:
         run: |
           make genpdata
           git diff --exit-code || (echo 'Generated code is out of date, please run "make genpdata" and commit the changes in this PR.' && exit 1)
+  unittest:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Cache Go Modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: /home/runner/go/pkg/mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-tool-binaries
+        with:
+          path: /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+      - name: Run Unit Tests
+        run: |
+          mkdir -p test-results/junit
+          trap "go-junit-report -set-exit-code < test-results/junit/unittests.out > test-results/junit/unittests.xml" EXIT
+          # some hostmetrics scraping tests require access to /proc.
+          sudo make gotest | tee test-results/junit/unittests.out
+      - name: Upload Unit Test Results
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: unittests-results
+          path: test-results/junit/unittests.xml
   cross-compile:
     runs-on: ubuntu-latest
     needs: [setup-environment]
