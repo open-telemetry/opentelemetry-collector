@@ -23,13 +23,15 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - name: Cache Go Modules
+      - name: Cache Go
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: \Users\runneradmin\go\pkg\mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+          path: |
+            \Users\runneradmin\go\pkg\mod
+            %LocalAppData%\go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod', '**/go.sum') }}
       - name: Run Unit tests
         run: go test ./...
       - name: GitHub Issue Generator
@@ -51,17 +53,21 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Cache Go Modules
+      - name: Cache Go
         id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
-      - name: Download dependencies
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install dependencies
         if: steps.module-cache.outputs.cache-hit != 'true'
-        run: go mod download
+        run: |
+          make gomoddownload
+          make gotestinstall
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -90,13 +96,16 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Cache Go Modules
+      - name: Cache Go
+        id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -129,13 +138,16 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Cache Go Modules
+      - name: Cache Go
+        id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -170,13 +182,16 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Cache Go Modules
+      - name: Cache Go
+        id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -211,13 +226,16 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Cache Go Modules
+      - name: Cache Go
+        id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -267,13 +285,16 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      - name: Cache Go Modules
+      - name: Cache Go
+        id: module-cache
         uses: actions/cache@v2
         env:
           cache-name: cache-go-modules
         with:
-          path: /home/runner/go/pkg/mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
+          path: |
+            /home/runner/go/pkg/mod
+            /home/runner/.cache/go-build
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -365,13 +386,6 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/
-      - name: Cache Go Modules
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-go-modules
-        with:
-          path: \Users\runneradmin\go\pkg\mod
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod') }}
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
