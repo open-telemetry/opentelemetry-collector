@@ -159,15 +159,11 @@ func NewResourceLogs() ResourceLogs {
 }
 
 // Resource returns the resource associated with this ResourceLogs.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceLogs) Resource() Resource {
 	return newResource(&(*ms.orig).Resource)
 }
 
 // InstrumentationLibraryLogs returns the InstrumentationLibraryLogs associated with this ResourceLogs.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSlice {
 	return newInstrumentationLibraryLogsSlice(&(*ms.orig).InstrumentationLibraryLogs)
 }
@@ -315,15 +311,11 @@ func NewInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryLogs) InstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
 }
 
 // Logs returns the Logs associated with this InstrumentationLibraryLogs.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms InstrumentationLibraryLogs) Logs() LogSlice {
 	return newLogSlice(&(*ms.orig).Logs)
 }
@@ -472,127 +464,91 @@ func NewLogRecord() LogRecord {
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Timestamp() TimestampUnixNano {
 	return TimestampUnixNano((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetTimestamp(v TimestampUnixNano) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
 // TraceID returns the traceid associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) TraceID() TraceID {
 	return TraceID((*ms.orig).TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetTraceID(v TraceID) {
 	(*ms.orig).TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SpanID() SpanID {
 	return SpanID((*ms.orig).SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetSpanID(v SpanID) {
 	(*ms.orig).SpanId = data.SpanID(v)
 }
 
 // Flags returns the flags associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Flags() uint32 {
 	return uint32((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetFlags(v uint32) {
 	(*ms.orig).Flags = uint32(v)
 }
 
 // SeverityText returns the severitytext associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SeverityText() string {
 	return (*ms.orig).SeverityText
 }
 
 // SetSeverityText replaces the severitytext associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetSeverityText(v string) {
 	(*ms.orig).SeverityText = v
 }
 
 // SeverityNumber returns the severitynumber associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SeverityNumber() SeverityNumber {
 	return SeverityNumber((*ms.orig).SeverityNumber)
 }
 
 // SetSeverityNumber replaces the severitynumber associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
 	(*ms.orig).SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
 // Name returns the name associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Name() string {
 	return (*ms.orig).Name
 }
 
 // SetName replaces the name associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetName(v string) {
 	(*ms.orig).Name = v
 }
 
 // Body returns the body associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Body() AttributeValue {
 	return newAttributeValue(&(*ms.orig).Body)
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) DroppedAttributesCount() uint32 {
 	return (*ms.orig).DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this LogRecord.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 	(*ms.orig).DroppedAttributesCount = v
 }

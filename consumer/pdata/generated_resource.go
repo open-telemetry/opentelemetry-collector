@@ -44,8 +44,6 @@ func NewResource() Resource {
 }
 
 // Attributes returns the Attributes associated with this Resource.
-//
-// Important: This causes a runtime error if IsNil() returns "true".
 func (ms Resource) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
