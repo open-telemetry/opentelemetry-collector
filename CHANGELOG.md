@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove deprecated function `IsValid` from trace/span ID (#2522)
+
 ## v0.20.0 Beta
 
 ## 🛑 Breaking changes 🛑
