@@ -42,7 +42,6 @@ func (s *brokerScraper) shutdown(context.Context) error {
 }
 
 func (s *brokerScraper) scrape(context.Context) (pdata.MetricSlice, error) {
-	// TODO
 	brokers := s.client.Brokers()
 	metrics := pdata.NewMetricSlice()
 	allMetrics := initializeBrokerMetrics(&metrics)

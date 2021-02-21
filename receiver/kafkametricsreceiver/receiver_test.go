@@ -39,13 +39,11 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	c.Scrapers = []string{"topics", "brokers", "consumers", "cpu"}
+	c.Scrapers = []string{"brokers", "cpu"}
 	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error) {
 		return nil, nil
 	}
-	allScrapers["topics"] = mockScraper
 	allScrapers["brokers"] = mockScraper
-	allScrapers["consumers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, nil)
 	assert.Nil(t, r)
 	expectedError := fmt.Errorf("no scraper found for key: cpu")

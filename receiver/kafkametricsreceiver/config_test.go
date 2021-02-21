@@ -55,6 +55,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		ClientID: defaultClientID,
-		Scrapers: []string{"brokers", "topics", "consumers"},
+		Scrapers: []string{"brokers"},
 	}, r)
 }

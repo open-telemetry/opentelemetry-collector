@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
+// Config represents user settings for kafkametrics receiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 

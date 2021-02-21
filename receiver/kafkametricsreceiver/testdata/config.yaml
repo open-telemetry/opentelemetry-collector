@@ -4,8 +4,6 @@ receivers:
     protocol_version: 2.0.0
     scrapers:
       - brokers
-      - topics
-      - consumers
     auth:
       tls:
         ca_file: ca.pem

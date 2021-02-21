@@ -29,9 +29,7 @@ import (
 
 var (
 	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error){
-		"topics":    createTopicsScraper,
-		"brokers":   createBrokerScraper,
-		"consumers": createConsumerScraper,
+		"brokers": createBrokerScraper,
 	}
 )
 
