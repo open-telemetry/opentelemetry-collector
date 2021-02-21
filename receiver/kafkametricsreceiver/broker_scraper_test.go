@@ -60,6 +60,25 @@ func TestBrokerShutdown_closed(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
+
+func TestBrokerScraper_gets_brokers(t *testing.T) {
+	client := getMockClient()
+	r := sarama.NewBroker(testBroker)
+	testBrokers := make([]*sarama.Broker, 1)
+	testBrokers[0] = r
+	client.Mock.On("Brokers").Return(testBrokers)
+	scraper := brokerScraper{
+		client: client,
+		logger: zap.NewNop(),
+		config: Config{},
+	}
+	ms, err := scraper.scrape(context.Background())
+	client.AssertExpectations(t)
+	assert.Nil(t, err)
+	m := ms.At(0)
+	assert.Equal(t, m.IntGauge().DataPoints().At(0).Value(), int64(len(testBrokers)))
+}
+
 func TestBrokerScraper_Name(t *testing.T) {
 	s := brokerScraper{}
 	assert.Equal(t, s.Name(), "brokers")
@@ -84,12 +103,25 @@ func TestBrokerScraper_createBrokerScraper_handles_client_error(t *testing.T) {
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {
+	client := getMockClient()
+	r := sarama.NewBroker(testBroker)
+	testBrokers := make([]*sarama.Broker, 1)
+	testBrokers[0] = r
+	client.Mock.On("Brokers").Return(testBrokers)
 	bs := brokerScraper{
-		client: getMockClient(),
+		client: client,
 		logger: zap.NewNop(),
 		config: Config{},
 	}
 	ms, err := bs.scrape(context.Background())
+	assert.Nil(t, err)
+	assert.NotNil(t, ms)
+}
+
+func TestBrokersScraper_createBrokerScraper(t *testing.T) {
+	sc := sarama.NewConfig()
+	newSaramaClient = mockNewSaramaClient
+	ms, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
 	assert.Nil(t, err)
 	assert.NotNil(t, ms)
 }

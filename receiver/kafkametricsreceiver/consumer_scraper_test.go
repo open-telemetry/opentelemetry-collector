@@ -17,6 +17,7 @@ package kafkametricsreceiver
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -92,11 +93,48 @@ func TestConsumerScraper_createScraper_handles_cluserAdmin_error(t *testing.T) {
 }
 
 func TestConsumerScraper_scrape(t *testing.T) {
+	filter := regexp.MustCompile(defaultGroupMatch)
 	bs := consumerScraper{
 		client: getMockClient(),
 		logger: zap.NewNop(),
+		clusterAdmin: getMockClusterAdmin(),
+		topicFilter: filter,
+		groupFilter: filter,
 	}
 	ms, err := bs.scrape(context.Background())
 	assert.Nil(t, err)
 	assert.NotNil(t, ms)
 }
+
+func TestConsumerScraper_scrape_gets_all_metrics(t *testing.T) {
+	client := getMockClient()
+	clusterAdmin := getMockClusterAdmin()
+	config := createDefaultConfig().(*Config)
+	match := regexp.MustCompile(config.TopicMatch)
+	scraper := consumerScraper{
+		client:       client,
+		logger:       zap.NewNop(),
+		groupFilter:  match,
+		topicFilter:  match,
+		clusterAdmin: clusterAdmin,
+	}
+	ms, err := scraper.scrape(context.Background())
+	assert.Nil(t, err)
+	assert.Equal(t, ms.Len(), 5)
+	gm := ms.At(0)
+	assert.Equal(t, gm.Name(), groupMembersName)
+	assert.Equal(t, gm.IntGauge().DataPoints().At(0).Value(), int64(1), "group members must match test value")
+	co := ms.At(1)
+	assert.Equal(t, co.Name(), consumerOffsetName)
+	assert.Equal(t, co.IntGauge().DataPoints().At(0).Value(), int64(1), "consumer offset must match test value")
+	cl := ms.At(2)
+	assert.Equal(t, cl.Name(), consumerLagName)
+	assert.Equal(t, cl.IntGauge().DataPoints().At(0).Value(), int64(0), "consumer lag must match test value")
+	ls := ms.At(3)
+	assert.Equal(t, ls.Name(), lagSumName)
+	assert.Equal(t, ls.IntGauge().DataPoints().At(0).Value(), int64(0), "lag sum must match test value")
+	os := ms.At(4)
+	assert.Equal(t, os.Name(), offsetSumName)
+	assert.Equal(t, os.IntGauge().DataPoints().At(0).Value(), int64(1), "offset sum must match test value")
+}
+

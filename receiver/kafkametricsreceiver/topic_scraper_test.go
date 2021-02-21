@@ -17,6 +17,7 @@ package kafkametricsreceiver
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -47,14 +48,9 @@ func TestTopicScraper_createScraper_handles_client_error(t *testing.T) {
 	assert.Nil(t, ms)
 }
 
+
 func TestBrokerScraper_shutdown(t *testing.T) {
 	client := getMockClient()
-	client.closed = func() bool {
-		return false
-	}
-	client.close = func() error {
-		return nil
-	}
 	client.Mock.
 		On("Close").Return(nil).
 		On("Closed").Return(false)
@@ -79,13 +75,32 @@ func TestBrokerScraper_shutdown_closed(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
+
 func TestTopicScraper_scrape(t *testing.T) {
-	bs := topicScraper{
-		client: getMockClient(),
-		logger: zap.NewNop(),
-		config: Config{},
+	client := getMockClient()
+	config := createDefaultConfig().(*Config)
+	match := regexp.MustCompile(config.TopicMatch)
+	scraper := topicScraper{
+		client:      client,
+		logger:      zap.NewNop(),
+		topicFilter: match,
 	}
-	ms, err := bs.scrape(context.Background())
+	ms, err := scraper.scrape(context.Background())
 	assert.Nil(t, err)
-	assert.NotNil(t, ms)
+	assert.Equal(t, ms.Len(), 5)
+	pm := ms.At(0)
+	assert.Equal(t, pm.Name(), partitionsName)
+	assert.Equal(t, pm.IntGauge().DataPoints().At(0).Value(), int64(1), "number of partitions must match test value")
+	cm := ms.At(1)
+	assert.Equal(t, cm.Name(), currentOffsetName)
+	assert.Equal(t, cm.IntGauge().DataPoints().At(0).Value(), int64(1), "current offset must match test value")
+	om := ms.At(2)
+	assert.Equal(t, om.Name(), oldestOffsetName)
+	assert.Equal(t, om.IntGauge().DataPoints().At(0).Value(), int64(1), "oldest offset must match test value")
+	rm := ms.At(3)
+	assert.Equal(t, rm.Name(), replicasName)
+	assert.Equal(t, rm.IntGauge().DataPoints().At(0).Value(), int64(1), "number of replicas should match test value")
+	im := ms.At(4)
+	assert.Equal(t, im.Name(), replicasInSyncName)
+	assert.Equal(t, im.IntGauge().DataPoints().At(0).Value(), int64(1), "replicas in sync must test value")
 }

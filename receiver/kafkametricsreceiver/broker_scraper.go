@@ -43,7 +43,11 @@ func (s *brokerScraper) shutdown(context.Context) error {
 
 func (s *brokerScraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	// TODO
-	return pdata.MetricSlice{}, nil
+	brokers := s.client.Brokers()
+	metrics := pdata.NewMetricSlice()
+	allMetrics := initializeBrokerMetrics(&metrics)
+	addBrokersToMetric(int64(len(brokers)), allMetrics.brokers)
+	return metrics, nil
 }
 
 func createBrokerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.MetricsScraper, error) {

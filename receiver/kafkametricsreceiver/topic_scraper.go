@@ -45,8 +45,69 @@ func (s *topicScraper) shutdown(context.Context) error {
 }
 
 func (s *topicScraper) scrape(context.Context) (pdata.MetricSlice, error) {
-	// TODO
-	return pdata.MetricSlice{}, nil
+	topics, err := s.client.Topics()
+	metrics := pdata.NewMetricSlice()
+	if err != nil {
+		s.logger.Error("Topics Scraper: Failed to refresh topics. Error: ", zap.Error(err))
+		return metrics, err
+	}
+
+	allMetrics := initializeTopicMetrics(&metrics)
+	partitionsMetric := allMetrics.partitions
+	currentOffsetMetric := allMetrics.currentOffset
+	oldestOffsetMetric := allMetrics.oldestOffset
+	replicasMetric := allMetrics.replicas
+	replicasInSyncMetric := allMetrics.replicasInSync
+
+	var matchedTopics []string
+	for _, t := range topics {
+		if s.topicFilter.MatchString(t) {
+			matchedTopics = append(matchedTopics, t)
+		}
+	}
+	partitionsMetric.IntGauge().DataPoints().Resize(len(matchedTopics))
+
+	for topicIdx, topic := range matchedTopics {
+		partitions, err := s.client.Partitions(topic)
+
+		if err != nil {
+			s.logger.Error("topics scraper: failed to get topic partitions", zap.String("Topic", topic), zap.Error(err))
+			continue
+		}
+		addPartitionsToMetric(topic, int64(len(partitions)), partitionsMetric, topicIdx)
+
+		for _, partition := range partitions {
+			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
+			if err != nil {
+				s.logger.Error("topics scraper: failed to get current offset", zap.String("topic ", topic), zap.String("partition ", string(partition)), zap.Error(err))
+			} else {
+				addPartitionDPToMetric(topic, partition, currentOffset, currentOffsetMetric)
+			}
+
+			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
+			if err != nil {
+				s.logger.Error("topics scraper: failed to get oldest offset", zap.String("topic ", topic), zap.String("partition ", string(partition)), zap.Error(err))
+			} else {
+				addPartitionDPToMetric(topic, partition, oldestOffset, oldestOffsetMetric)
+			}
+
+			replicas, err := s.client.Replicas(topic, partition)
+			if err != nil {
+				s.logger.Error("topics scraper: failed to get replicas", zap.String("topic ", topic), zap.String("partition ", string(partition)), zap.Error(err))
+			} else {
+				addPartitionDPToMetric(topic, partition, int64(len(replicas)), replicasMetric)
+			}
+
+			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
+			if err != nil {
+				s.logger.Error("topics scraper: failed to get in-sync replicas", zap.String("topic ", topic), zap.String("partition ", string(partition)), zap.Error(err))
+
+			} else {
+				addPartitionDPToMetric(topic, partition, int64(len(replicasInSync)), replicasInSyncMetric)
+			}
+		}
+	}
+	return metrics, nil
 }
 
 func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.MetricsScraper, error) {
