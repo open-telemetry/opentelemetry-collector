@@ -60,7 +60,6 @@ func TestBrokerShutdown_closed(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
-
 func TestBrokerScraper_gets_brokers(t *testing.T) {
 	client := getMockClient()
 	r := sarama.NewBroker(testBroker)

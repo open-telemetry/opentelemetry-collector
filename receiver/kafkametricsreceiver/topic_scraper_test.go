@@ -48,7 +48,6 @@ func TestTopicScraper_createScraper_handles_client_error(t *testing.T) {
 	assert.Nil(t, ms)
 }
 
-
 func TestBrokerScraper_shutdown(t *testing.T) {
 	client := getMockClient()
 	client.Mock.
@@ -74,7 +73,6 @@ func TestBrokerScraper_shutdown_closed(t *testing.T) {
 	_ = scraper.shutdown(context.Background())
 	client.AssertExpectations(t)
 }
-
 
 func TestTopicScraper_scrape(t *testing.T) {
 	client := getMockClient()

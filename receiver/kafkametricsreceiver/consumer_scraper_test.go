@@ -95,11 +95,11 @@ func TestConsumerScraper_createScraper_handles_cluserAdmin_error(t *testing.T) {
 func TestConsumerScraper_scrape(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
 	bs := consumerScraper{
-		client: getMockClient(),
-		logger: zap.NewNop(),
+		client:       getMockClient(),
+		logger:       zap.NewNop(),
 		clusterAdmin: getMockClusterAdmin(),
-		topicFilter: filter,
-		groupFilter: filter,
+		topicFilter:  filter,
+		groupFilter:  filter,
 	}
 	ms, err := bs.scrape(context.Background())
 	assert.Nil(t, err)
@@ -137,4 +137,3 @@ func TestConsumerScraper_scrape_gets_all_metrics(t *testing.T) {
 	assert.Equal(t, os.Name(), offsetSumName)
 	assert.Equal(t, os.IntGauge().DataPoints().At(0).Value(), int64(1), "offset sum must match test value")
 }
-

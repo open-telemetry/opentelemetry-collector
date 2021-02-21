@@ -43,8 +43,8 @@ type mockSaramaClient struct {
 	mock.Mock
 	sarama.Client
 
-	close  func() error
-	closed func() bool
+	close          func() error
+	closed         func() bool
 	brokers        func() []*sarama.Broker
 	partitions     func(string) ([]int32, error)
 	getOffset      func(string, int32, int64) (int64, error)
