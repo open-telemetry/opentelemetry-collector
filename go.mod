@@ -5,7 +5,7 @@ go 1.14
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
-	github.com/Shopify/sarama v1.27.2
+	github.com/Shopify/sarama v1.28.0
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
