@@ -42,7 +42,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
-	"go.opentelemetry.io/collector/receiver/kafkametricsreceiver"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
 	"go.opentelemetry.io/collector/receiver/opencensusreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -77,7 +76,6 @@ func Components() (
 		otlpreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		kafkareceiver.NewFactory(),
-		kafkametricsreceiver.NewFactory(),
 	)
 	if err != nil {
 		errs = append(errs, err)

@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -65,4 +66,16 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
+}
+
+func TestNewReceiver(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.Scrapers = []string{"brokers"}
+	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error) {
+		return nil, nil
+	}
+	allScrapers["brokers"] = mockScraper
+	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, consumertest.NewMetricsNop())
+	assert.Nil(t, err)
+	assert.NotNil(t, r)
 }

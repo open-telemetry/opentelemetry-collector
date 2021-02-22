@@ -28,9 +28,7 @@ import (
 )
 
 var (
-	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error){
-		"brokers": createBrokerScraper,
-	}
+	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error){}
 )
 
 var newMetricsReceiver = func(
