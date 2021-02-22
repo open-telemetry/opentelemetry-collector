@@ -5,6 +5,11 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove deprecated function `IsValid` from trace/span ID (#2522)
+- Remove accessors for deprecated status code (#2521)
+
+## 🧰 Bug fixes 🧰
+
+- `otlp` receiver: Sets the correct deprecated status code before sending data to the pipeline (#2521)
 
 ## v0.20.0 Beta
 
