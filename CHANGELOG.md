@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- All time related accessors return time.Time instead of `pdata.TimestampUnixNanos` (#2517)
+- `pdata` Methods called Timestamp renamed to Time (#2517)
+- Remove `pdata.TimestampUnixNanos` and helpers (#2517)
+
+## 🧰 Bug fixes 🧰
+
+- Fix bug around IsZero, this function should return true if the time is January 1, year 1, 00:00:00 UTC not epoch (#2517)
+
 ## v0.21.0 Beta
 
 ## 🛑 Breaking changes 🛑
