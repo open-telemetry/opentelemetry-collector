@@ -39,6 +39,10 @@ leverage server configuration.
 - [`cors_allowed_origins`](https://github.com/rs/cors): An empty list means
   that CORS is not enabled at all. A wildcard can be used to match any origin
   or one or more characters of an origin.
+- [`cors_allowed_headers`](https://github.com/rs/cors): When CORS is enabled,
+  can be used to specify an optional list of allowed headers. By default, it includes `Accept`, 
+  `Content-Type`, `X-Requested-With`. `Origin` is also always
+  added to the list. A wildcard (`*`) can be used to match any header.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls_settings`](../configtls/README.md)
 
@@ -50,6 +54,8 @@ receivers:
     cors_allowed_origins:
     - https://foo.bar.com
     - https://*.test.com
+    cors_allowed_headers:
+    - ExampleHeader
     endpoint: 0.0.0.0:55690
     protocols:
       http:

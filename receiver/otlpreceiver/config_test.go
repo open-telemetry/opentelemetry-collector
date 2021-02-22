@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 9)
+	assert.Equal(t, len(cfg.Receivers), 10)
 
 	assert.Equal(t, cfg.Receivers["otlp"], factory.CreateDefaultConfig())
 
@@ -172,6 +172,21 @@ func TestLoadConfig(t *testing.T) {
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint:    "0.0.0.0:55681",
 					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+				},
+			},
+		})
+
+	assert.Equal(t, cfg.Receivers["otlp/corsheader"],
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "otlp/corsheader",
+			},
+			Protocols: Protocols{
+				HTTP: &confighttp.HTTPServerSettings{
+					Endpoint:    "0.0.0.0:55681",
+					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+					CorsHeaders: []string{"ExampleHeader"},
 				},
 			},
 		})
