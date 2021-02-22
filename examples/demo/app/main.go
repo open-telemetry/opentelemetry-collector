@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -83,12 +84,12 @@ func initProvider() func() {
 	// set global propagator to tracecontext (the default is no-op).
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 	otel.SetTracerProvider(tracerProvider)
-	otel.SetMeterProvider(cont.MeterProvider())
-	cont.Start(context.Background())
+	global.SetMeterProvider(cont.MeterProvider())
+	handleErr(cont.Start(context.Background()), "failed to start metric controller")
 
 	return func() {
 		handleErr(tracerProvider.Shutdown(ctx), "failed to shutdown provider")
-		cont.Stop(context.Background()) // pushes any last exports to the receiver
+		handleErr(cont.Stop(context.Background()), "failed to stop metrics controller") // pushes any last exports to the receiver
 		handleErr(exp.Shutdown(ctx), "failed to stop exporter")
 	}
 }
@@ -104,7 +105,7 @@ func main() {
 	defer shutdown()
 
 	tracer := otel.Tracer("test-tracer")
-	meter := otel.Meter("test-meter")
+	meter := global.Meter("test-meter")
 
 	// labels represent additional key-value descriptors that can be bound to a
 	// metric observer or recorder.
