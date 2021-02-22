@@ -21,3 +21,4 @@ ignore:
   - "**/*/metadata/generated_metrics.go"
   - "internal/data/protogen/**/*"
   - "testbed/**/*"
+  - "**/*/third_party"
