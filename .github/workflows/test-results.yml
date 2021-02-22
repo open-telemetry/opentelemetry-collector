@@ -1,0 +1,53 @@
+name: upload-tests
+
+on:
+  workflow_run:
+    workflows: ["build-and-test"]
+    types:
+      - completed
+
+jobs:
+  unit-test-results:
+    name: Unit Test Results from Fork
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/github-script@v3.1.0
+        with:
+          script: |
+            var artifacts = await github.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: ${{ github.event.workflow_run.id }},
+            });
+            for (const artifact of artifacts.data.artifacts) {
+               var download = await github.actions.downloadArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip',
+               });
+               var fs = require('fs');
+               fs.writeFileSync(`${{github.workspace}}/artifact-${artifact.id}.zip`, Buffer.from(download.data));
+            }
+      - name: Extract Artifacts
+        run: |
+          for file in artifact-*.zip
+          do
+            if [ -e "$file" ]
+            then
+              dir="${file/%.zip/}"
+              mkdir -p "$dir"
+              unzip -d "$dir" "$file"
+            fi
+          done
+
+      - name: Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1.9
+        with:
+          commit: ${{ github.event.workflow_run.head_sha }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: "**/*.xml"
