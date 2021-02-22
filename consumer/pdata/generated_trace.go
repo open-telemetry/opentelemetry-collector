@@ -1011,16 +1011,6 @@ func (ms SpanStatus) Code() StatusCode {
 	return StatusCode((*ms.orig).Code)
 }
 
-// DeprecatedCode returns the deprecatedcode associated with this SpanStatus.
-func (ms SpanStatus) DeprecatedCode() DeprecatedStatusCode {
-	return DeprecatedStatusCode((*ms.orig).DeprecatedCode)
-}
-
-// SetDeprecatedCode replaces the deprecatedcode associated with this SpanStatus.
-func (ms SpanStatus) SetDeprecatedCode(v DeprecatedStatusCode) {
-	(*ms.orig).DeprecatedCode = otlptrace.Status_DeprecatedStatusCode(v)
-}
-
 // Message returns the message associated with this SpanStatus.
 func (ms SpanStatus) Message() string {
 	return (*ms.orig).Message
@@ -1034,6 +1024,5 @@ func (ms SpanStatus) SetMessage(v string) {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms SpanStatus) CopyTo(dest SpanStatus) {
 	dest.SetCode(ms.Code())
-	dest.SetDeprecatedCode(ms.DeprecatedCode())
 	dest.SetMessage(ms.Message())
 }

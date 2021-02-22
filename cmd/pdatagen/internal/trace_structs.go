@@ -196,14 +196,6 @@ var spanStatus = &messageValueStruct{
 			// to OTLP spec https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231
 			manualSetter: true,
 		},
-		&primitiveTypedField{
-			fieldName:       "DeprecatedCode",
-			originFieldName: "DeprecatedCode",
-			returnType:      "DeprecatedStatusCode",
-			rawType:         "otlptrace.Status_DeprecatedStatusCode",
-			defaultVal:      "DeprecatedStatusCode(0)",
-			testVal:         "DeprecatedStatusCode(1)",
-		},
 		&primitiveField{
 			fieldName:       "Message",
 			originFieldName: "Message",

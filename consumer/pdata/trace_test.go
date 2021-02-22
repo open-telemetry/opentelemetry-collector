@@ -128,24 +128,21 @@ func TestSpanStatusCode(t *testing.T) {
 	//
 	//   if code==STATUS_CODE_UNSET then `deprecated_code` MUST be
 	//   set to DEPRECATED_STATUS_CODE_OK.
-	status.SetDeprecatedCode(DeprecatedStatusCodeUnknownError)
-	assert.EqualValues(t, DeprecatedStatusCodeUnknownError, status.DeprecatedCode())
+	status.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
 	status.SetCode(StatusCodeUnset)
-	assert.EqualValues(t, DeprecatedStatusCodeOk, status.DeprecatedCode())
+	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_OK, status.orig.DeprecatedCode)
 
 	//   if code==STATUS_CODE_OK then `deprecated_code` MUST be
 	//   set to DEPRECATED_STATUS_CODE_OK.
-	status.SetDeprecatedCode(DeprecatedStatusCodeUnknownError)
-	assert.EqualValues(t, DeprecatedStatusCodeUnknownError, status.DeprecatedCode())
+	status.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
 	status.SetCode(StatusCodeOk)
-	assert.EqualValues(t, DeprecatedStatusCodeOk, status.DeprecatedCode())
+	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_OK, status.orig.DeprecatedCode)
 
 	//   if code==STATUS_CODE_ERROR then `deprecated_code` MUST be
 	//   set to DEPRECATED_STATUS_CODE_UNKNOWN_ERROR.
-	status.SetDeprecatedCode(DeprecatedStatusCodeOk)
-	assert.EqualValues(t, DeprecatedStatusCodeOk, status.DeprecatedCode())
+	status.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_OK
 	status.SetCode(StatusCodeError)
-	assert.EqualValues(t, DeprecatedStatusCodeUnknownError, status.DeprecatedCode())
+	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR, status.orig.DeprecatedCode)
 }
 
 func TestToFromOtlp(t *testing.T) {

@@ -121,35 +121,6 @@ const (
 	SpanKindCONSUMER    = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
-// DeprecatedStatusCode is the deprecated status code used previously.
-// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-// Deprecated: use StatusCode instead.
-type DeprecatedStatusCode otlptrace.Status_DeprecatedStatusCode
-
-const (
-	DeprecatedStatusCodeOk                 = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_OK)
-	DeprecatedStatusCodeCancelled          = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_CANCELLED)
-	DeprecatedStatusCodeUnknownError       = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR)
-	DeprecatedStatusCodeInvalidArgument    = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_INVALID_ARGUMENT)
-	DeprecatedStatusCodeDeadlineExceeded   = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_DEADLINE_EXCEEDED)
-	DeprecatedStatusCodeNotFound           = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_NOT_FOUND)
-	DeprecatedStatusCodeAlreadyExists      = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_ALREADY_EXISTS)
-	DeprecatedStatusCodePermissionDenied   = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_PERMISSION_DENIED)
-	DeprecatedStatusCodeResourceExhausted  = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_RESOURCE_EXHAUSTED)
-	DeprecatedStatusCodeFailedPrecondition = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_FAILED_PRECONDITION)
-	DeprecatedStatusCodeAborted            = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_ABORTED)
-	DeprecatedStatusCodeOutOfRange         = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_OUT_OF_RANGE)
-	DeprecatedStatusCodeUnimplemented      = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_UNIMPLEMENTED)
-	DeprecatedStatusCodeInternalError      = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_INTERNAL_ERROR)
-	DeprecatedStatusCodeUnavailable        = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_UNAVAILABLE)
-	DeprecatedStatusCodeDataLoss           = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_DATA_LOSS)
-	DeprecatedStatusCodeUnauthenticated    = DeprecatedStatusCode(otlptrace.Status_DEPRECATED_STATUS_CODE_UNAUTHENTICATED)
-)
-
-func (sc DeprecatedStatusCode) String() string {
-	return otlptrace.Status_DeprecatedStatusCode(sc).String()
-}
-
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 type StatusCode otlptrace.Status_StatusCode
@@ -166,21 +137,12 @@ func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).St
 func (ms SpanStatus) SetCode(v StatusCode) {
 	ms.orig.Code = otlptrace.Status_StatusCode(v)
 
-	// According to OTLP spec we also need to set the deprecated_code field.
-	// See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231
-	//
-	//   if code==STATUS_CODE_UNSET then `deprecated_code` MUST be
-	//   set to DEPRECATED_STATUS_CODE_OK.
-	//
-	//   if code==STATUS_CODE_OK then `deprecated_code` MUST be
-	//   set to DEPRECATED_STATUS_CODE_OK.
-	//
-	//   if code==STATUS_CODE_ERROR then `deprecated_code` MUST be
-	//   set to DEPRECATED_STATUS_CODE_UNKNOWN_ERROR.
+	// According to OTLP spec we also need to set the deprecated_code field as we are a new sender:
+	// See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L239
 	switch v {
 	case StatusCodeUnset, StatusCodeOk:
-		ms.SetDeprecatedCode(DeprecatedStatusCodeOk)
+		ms.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_OK
 	case StatusCodeError:
-		ms.SetDeprecatedCode(DeprecatedStatusCodeUnknownError)
+		ms.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
 	}
 }
