@@ -87,13 +87,12 @@ service:
 
 When multiple exporters are configured to send the same data (e.g. by configuring multiple
 exporters for the same pipeline) the exporters will have a shared access to the data.
-Exporters get access to this shared data when `ConsumeTraceData`/`ConsumeMetricsData`
-function is called. Exporters MUST NOT modify the `TraceData`/`MetricsData` argument of
+Exporters get access to this shared data when `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs`
+function is called. Exporters MUST NOT modify the `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` argument of
 these functions. If the exporter needs to modify the data while performing the exporting
 the exporter can clone the data and perform the modification on the clone or use a
-copy-on-write approach for individual sub-parts of `TraceData`/`MetricsData` argument.
-Any approach that does not mutate the original `TraceData`/`MetricsData` argument
-(including referenced data, such as `Node`, `Resource`, `Spans`, etc) is allowed.
+copy-on-write approach for individual sub-parts of `pdata.Traces`/`pdata.Metrics`/`pdata.Logs`.
+Any approach that does not mutate the original `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` is allowed.
 
 ## Proxy Support
 

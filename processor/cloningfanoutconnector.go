@@ -78,7 +78,7 @@ type tracesCloningFanOutConnector []consumer.TracesConsumer
 
 var _ consumer.TracesConsumer = (*tracesCloningFanOutConnector)(nil)
 
-// ConsumeTraceData exports the span data to all trace consumers wrapped by the current one.
+// ConsumeTraces exports the span data to all trace consumers wrapped by the current one.
 func (tfc tracesCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 

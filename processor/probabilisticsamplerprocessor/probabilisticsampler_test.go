@@ -150,10 +150,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 				return
 			}
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
-				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
-					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
-					return
-				}
+				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			_, sampled := assertSampledData(t, sink.AllTraces(), testSvcName)
 			actualPercentageSamplingPercentage := float32(sampled) / float32(tt.numBatches*tt.numTracesPerBatch) * 100.0
@@ -213,10 +210,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 			}
 
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, tt.resourceSpanPerTrace) {
-				if err := tsp.ConsumeTraces(context.Background(), td); err != nil {
-					t.Errorf("tracesamplerprocessor.ConsumeTraceData() error = %v", err)
-					return
-				}
+				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpansCount())
 				sink.Reset()
 			}
@@ -440,7 +434,7 @@ func Test_hash(t *testing.T) {
 	}
 }
 
-// genRandomTestData generates a slice of consumerdata.TraceData with the numBatches elements which one with
+// genRandomTestData generates a slice of pdata.Traces with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
 // serviceName.
 func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []pdata.Traces) {
