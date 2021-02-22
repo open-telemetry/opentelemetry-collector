@@ -186,7 +186,7 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Build Collector for All Architectures
-        run: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|xargs make
+        run: make -j4 binaries-all-sys
       - name: Create Collector Binaries Archive
         run: tar -cvf bin.tar ./bin
       - name: Upload Collector Binaries
