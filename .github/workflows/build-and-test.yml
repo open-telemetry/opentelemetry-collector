@@ -104,7 +104,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Lint
         run: make -j4 gochecklicense goimpi golint gomisspell
       - name: Gen Metadata
@@ -143,7 +143,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Run Unit Tests
         run: |
           mkdir -p test-results/junit
@@ -184,7 +184,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Build Collector for All Architectures
         run: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|xargs make
       - name: Create Collector Binaries Archive
@@ -225,7 +225,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Install fluentbit
         if: ${{ contains(matrix.test, 'Log10kDPS') }}
         run: |
@@ -281,7 +281,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Loadtest
         run: make testbed-correctness
       - name: GitHub Issue Generator
@@ -322,7 +322,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Download Collector Binaries
         uses: actions/download-artifact@v1
         with:
@@ -414,7 +414,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
@@ -474,7 +474,7 @@ jobs:
           cache-name: cache-tool-binaries
         with:
           path: /home/runner/go/bin
-          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Download Binaries
         uses: actions/download-artifact@v1
         with:
