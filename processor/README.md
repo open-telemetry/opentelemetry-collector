@@ -49,7 +49,7 @@ processor documentation for more information.
 
 The ownership of the `pdata.Traces`, `pdata.Metrics` and `pdata.Logs` data in a pipeline
 is passed as the data travels through the pipeline. The data is created by the receiver
-and then the ownership is passed to the first processor when `ConsumeTraces`/`ConsumeMetrics`
+and then the ownership is passed to the first processor when `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs`
 function is called.
 
 Note: the receiver may be attached to multiple pipelines, in which case the same data
