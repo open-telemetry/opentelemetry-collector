@@ -39,12 +39,6 @@ func (t SpanID) HexString() string {
 	return data.SpanID(t).HexString()
 }
 
-// IsValid returns true if id contains at leas one non-zero byte.
-// Deprecated: use !IsEmpty() instead.
-func (t SpanID) IsValid() bool {
-	return !data.SpanID(t).IsEmpty()
-}
-
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (t SpanID) IsEmpty() bool {
 	return data.SpanID(t).IsEmpty()
