@@ -79,3 +79,15 @@ func TestNewReceiver(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 }
+
+func TestNewReceiver_handles_scraper_error(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.Scrapers = []string{"brokers"}
+	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error) {
+		return nil, fmt.Errorf("fail")
+	}
+	allScrapers["brokers"] = mockScraper
+	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, consumertest.NewMetricsNop())
+	assert.NotNil(t, err)
+	assert.Nil(t, r)
+}
