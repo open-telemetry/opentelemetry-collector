@@ -19,24 +19,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestUnixNanosConverters(t *testing.T) {
 	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
-	tun := TimestampUnixNano(t1.UnixNano())
+	tun := Timestamp(t1.UnixNano())
 
 	assert.EqualValues(t, uint64(1585012403000000789), tun)
-	tp := UnixNanoToTimestamp(tun)
-	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 1585012403, Nanos: 789}, tp)
-	assert.EqualValues(t, tun, TimestampToUnixNano(tp))
-	assert.EqualValues(t, tun, TimeToUnixNano(t1))
-	assert.EqualValues(t, t1, UnixNanoToTime(TimeToUnixNano(t1)))
+	assert.EqualValues(t, tun, TimestampFromTime(t1))
+	assert.EqualValues(t, t1, TimestampFromTime(t1).AsTime())
 }
 
-func TestZeroTimestamps(t *testing.T) {
-	assert.Zero(t, TimestampToUnixNano(nil))
-	assert.Nil(t, UnixNanoToTimestamp(0))
-	assert.True(t, UnixNanoToTime(0).IsZero())
-	assert.Zero(t, TimeToUnixNano(time.Time{}))
+func TestZeroTimestamp(t *testing.T) {
+	assert.Equal(t, time.Unix(0, 0).UTC(), Timestamp(0).AsTime())
+	assert.Zero(t, TimestampFromTime(time.Unix(0, 0).UTC()))
 }

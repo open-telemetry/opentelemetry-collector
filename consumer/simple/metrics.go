@@ -229,7 +229,7 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		panic(fmt.Errorf("mismatched metric data types for metric %q: %q vs %q", metric.Name(), metric.DataType(), typ))
 	}
 
-	tsNano := pdata.TimestampUnixNano(mb.Timestamp.UnixNano())
+	tsNano := pdata.TimestampFromTime(mb.Timestamp)
 
 	switch typ {
 	case pdata.MetricDataTypeIntGauge:

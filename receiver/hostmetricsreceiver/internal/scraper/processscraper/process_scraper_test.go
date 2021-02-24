@@ -90,7 +90,7 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 	}
 }
 
-func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
 	cpuTimeMetric := getMetric(t, metadata.Metrics.ProcessCPUTime.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessCPUTime.New(), cpuTimeMetric)
 	if startTime != 0 {
@@ -108,7 +108,7 @@ func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.Metric, resourc
 	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric)
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.TimestampUnixNano) {
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
 	diskIOMetric := getMetric(t, metadata.Metrics.ProcessDiskIo.New(), resourceMetrics)
 	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessDiskIo.New(), diskIOMetric)
 	if startTime != 0 {

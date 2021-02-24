@@ -195,7 +195,7 @@ func jThriftReferencesToSpanLinks(refs []*jaeger.SpanRef, excludeParentID int64,
 	}
 }
 
-// microsecondsToUnixNano converts epoch microseconds to pdata.TimestampUnixNano
-func microsecondsToUnixNano(ms int64) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(uint64(ms) * 1000)
+// microsecondsToUnixNano converts epoch microseconds to pdata.Timestamp
+func microsecondsToUnixNano(ms int64) pdata.Timestamp {
+	return pdata.Timestamp(uint64(ms) * 1000)
 }

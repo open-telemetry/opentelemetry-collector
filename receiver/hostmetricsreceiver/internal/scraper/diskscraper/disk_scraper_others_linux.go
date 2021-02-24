@@ -25,12 +25,12 @@ import (
 
 const systemSpecificMetricsLen = 2
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	initializeDiskWeightedIOTimeMetric(metrics.At(startIdx+0), startTime, now, ioCounters)
 	initializeDiskMergedMetric(metrics.At(startIdx+1), startTime, now, ioCounters)
 }
 
-func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	metadata.Metrics.SystemDiskWeightedIoTime.Init(metric)
 
 	ddps := metric.DoubleSum().DataPoints()
@@ -43,7 +43,7 @@ func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdat
 	}
 }
 
-func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	metadata.Metrics.SystemDiskMerged.Init(metric)
 
 	idps := metric.IntSum().DataPoints()

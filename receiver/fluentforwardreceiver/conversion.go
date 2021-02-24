@@ -131,7 +131,7 @@ func decodeTimestampToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 		return msgp.WrapError(err, "Time")
 	}
 
-	lr.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+	lr.SetTimestamp(pdata.TimestampFromTime(ts))
 	return nil
 }
 

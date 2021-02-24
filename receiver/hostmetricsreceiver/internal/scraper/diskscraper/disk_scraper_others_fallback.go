@@ -24,5 +24,5 @@ import (
 
 const systemSpecificMetricsLen = 0
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.TimestampUnixNano, ioCounters map[string]disk.IOCountersStat) {
+func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startIdx int, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 }

@@ -36,7 +36,7 @@ func TestScrape(t *testing.T) {
 		name              string
 		bootTimeFunc      func() (uint64, error)
 		timesFunc         func(bool) ([]cpu.TimesStat, error)
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime pdata.Timestamp
 		initializationErr string
 		expectedErr       string
 	}
@@ -106,7 +106,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, descriptor, metric)
 	if startTime != 0 {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)

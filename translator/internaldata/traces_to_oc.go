@@ -87,8 +87,8 @@ func spanToOC(span pdata.Span) *octrace.Span {
 		ParentSpanId:            spanIDToOC(span.ParentSpanID()),
 		Name:                    stringToTruncatableString(span.Name()),
 		Kind:                    spanKindToOC(span.Kind()),
-		StartTime:               pdata.UnixNanoToTimestamp(span.StartTime()),
-		EndTime:                 pdata.UnixNanoToTimestamp(span.EndTime()),
+		StartTime:               timestampAsTimestampPb(span.StartTime()),
+		EndTime:                 timestampAsTimestampPb(span.EndTime()),
 		Attributes:              attributes,
 		TimeEvents:              eventsToOC(span.Events(), span.DroppedEventsCount()),
 		Links:                   linksToOC(span.Links(), span.DroppedLinksCount()),
@@ -295,7 +295,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
-				Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
+				Time: timestampAsTimestampPb(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
@@ -310,7 +310,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	ocAttributes := attributesMapToOCSpanAttributes(attrs, event.DroppedAttributesCount())
 	return &octrace.Span_TimeEvent{
-		Time: pdata.UnixNanoToTimestamp(event.Timestamp()),
+		Time: timestampAsTimestampPb(event.Timestamp()),
 		Value: &octrace.Span_TimeEvent_Annotation_{
 			Annotation: &octrace.Span_TimeEvent_Annotation{
 				Description: stringToTruncatableString(event.Name()),
