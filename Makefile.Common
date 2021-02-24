@@ -27,7 +27,6 @@ all-license-srcs:
 
 .PHONY: test
 test:
-	@echo "running go unit test ./... in `pwd`"
 	@echo $(ALL_PKGS) | xargs -n 10 $(GOTEST) $(GOTEST_OPT)
 
 .PHONY: benchmark

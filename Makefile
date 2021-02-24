@@ -80,6 +80,14 @@ testbed-list-correctness-metrics:
 testbed-correctness-metrics: otelcol
 	cd ./testbed/correctness/metrics && ./runtests.sh
 
+.PHONY: gomoddownload
+gomoddownload:
+	@$(MAKE) for-all CMD="go mod download"
+
+.PHONY: gotestinstall
+gotestinstall:
+	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
+
 .PHONY: gotest
 gotest:
 	@$(MAKE) for-all CMD="make test"
