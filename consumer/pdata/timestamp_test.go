@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -38,4 +39,29 @@ func TestZeroTimestamps(t *testing.T) {
 	assert.EqualValues(t, uint64(0), event.orig.TimeUnixNano)
 	assert.EqualValues(t, ts, event.Time())
 	assert.EqualValues(t, &timestamppb.Timestamp{Seconds: 0, Nanos: 0}, timestamppb.New(event.Time()))
+}
+
+func BenchmarkGetTime(b *testing.B) {
+	ts := time.Date(2021, 02, 23, 0, 0, 0, 0, time.UTC)
+	event := NewSpanEvent()
+	event.SetTime(ts)
+	var eventTime time.Time
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		eventTime = event.Time()
+	}
+	require.EqualValues(b, eventTime, ts)
+}
+
+func BenchmarkSetTime(b *testing.B) {
+	ts := time.Date(2021, 02, 23, 0, 0, 0, 0, time.UTC)
+	event := NewSpanEvent()
+	event.SetTime(ts)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		event.SetTime(ts)
+	}
+	require.EqualValues(b, event.Time(), ts)
 }
