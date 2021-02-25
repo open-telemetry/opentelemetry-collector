@@ -43,7 +43,7 @@ func getNonSpanAttributes() map[string]struct{} {
 	attrs[tracetranslator.TagInstrumentationVersion] = struct{}{}
 	attrs[conventions.OCAttributeProcessStartTime] = struct{}{}
 	attrs[conventions.OCAttributeExporterVersion] = struct{}{}
-	attrs[conventions.OCAttributeProcessID] = struct{}{}
+	attrs[conventions.AttributeProcessID] = struct{}{}
 	attrs[conventions.OCAttributeResourceType] = struct{}{}
 	return attrs
 }
