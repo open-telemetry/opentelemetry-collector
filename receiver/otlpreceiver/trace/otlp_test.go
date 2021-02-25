@@ -16,6 +16,7 @@ package trace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"testing"
@@ -109,10 +110,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	traceSink := new(consumertest.TracesSink)
-	traceSink.SetConsumeError(fmt.Errorf("error"))
-
-	port, doneFn := otlpReceiverOnGRPCServer(t, traceSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewTracesErr(errors.New("my error")))
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -136,7 +134,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	}
 
 	resp, err := traceClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = error")
+	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Nil(t, resp)
 }
 

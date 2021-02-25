@@ -65,7 +65,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	// Make one processor return error
-	processors[1].(*consumertest.TracesSink).SetConsumeError(errors.New("my_error"))
+	processors[1] = consumertest.NewTracesErr(errors.New("my error"))
 
 	tfc := NewTracesFanOutConnector(processors)
 	td := testdata.GenerateTraceDataOneSpan()
@@ -73,14 +73,9 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	var wantSpansCount = 0
 	for i := 0; i < 2; i++ {
 		wantSpansCount += td.SpanCount()
-		err := tfc.ConsumeTraces(context.Background(), td)
-		if err == nil {
-			t.Errorf("Wanted error got nil")
-			return
-		}
+		assert.Error(t, tfc.ConsumeTraces(context.Background(), td))
 	}
 
-	assert.Equal(t, 0, processors[1].(*consumertest.TracesSink).SpansCount())
 	assert.Equal(t, wantSpansCount, processors[0].(*consumertest.TracesSink).SpansCount())
 	assert.Equal(t, wantSpansCount, processors[2].(*consumertest.TracesSink).SpansCount())
 }
@@ -124,7 +119,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	// Make one processor return error
-	processors[1].(*consumertest.MetricsSink).SetConsumeError(errors.New("my_error"))
+	processors[1] = consumertest.NewMetricsErr(errors.New("my error"))
 
 	mfc := NewMetricsFanOutConnector(processors)
 	md := testdata.GenerateMetricsOneMetric()
@@ -132,14 +127,9 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += md.MetricCount()
-		err := mfc.ConsumeMetrics(context.Background(), md)
-		if err == nil {
-			t.Errorf("Wanted error got nil")
-			return
-		}
+		assert.Error(t, mfc.ConsumeMetrics(context.Background(), md))
 	}
 
-	assert.Equal(t, 0, processors[1].(*consumertest.MetricsSink).MetricsCount())
 	assert.Equal(t, wantMetricsCount, processors[0].(*consumertest.MetricsSink).MetricsCount())
 	assert.Equal(t, wantMetricsCount, processors[2].(*consumertest.MetricsSink).MetricsCount())
 }
@@ -183,7 +173,7 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 	}
 
 	// Make one processor return error
-	processors[1].(*consumertest.LogsSink).SetConsumeError(errors.New("my_error"))
+	processors[1] = consumertest.NewLogsErr(errors.New("my error"))
 
 	lfc := NewLogsFanOutConnector(processors)
 	ld := testdata.GenerateLogDataOneLog()
@@ -191,14 +181,9 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 	var wantMetricsCount = 0
 	for i := 0; i < 2; i++ {
 		wantMetricsCount += ld.LogRecordCount()
-		err := lfc.ConsumeLogs(context.Background(), ld)
-		if err == nil {
-			t.Errorf("Wanted error got nil")
-			return
-		}
+		assert.Error(t, lfc.ConsumeLogs(context.Background(), ld))
 	}
 
-	assert.Equal(t, 0, processors[1].(*consumertest.LogsSink).LogRecordsCount())
 	assert.Equal(t, wantMetricsCount, processors[0].(*consumertest.LogsSink).LogRecordsCount())
 	assert.Equal(t, wantMetricsCount, processors[2].(*consumertest.LogsSink).LogRecordsCount())
 }

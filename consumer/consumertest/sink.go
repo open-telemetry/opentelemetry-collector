@@ -28,6 +28,7 @@ type baseErrorConsumer struct {
 }
 
 // SetConsumeError sets an error that will be returned by the Consume function.
+// TODO: Remove this when all calls are switched to the new ErrConsumer.
 func (bec *baseErrorConsumer) SetConsumeError(err error) {
 	bec.mu.Lock()
 	defer bec.mu.Unlock()

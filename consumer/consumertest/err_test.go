@@ -16,6 +16,7 @@ package consumertest
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,20 +25,23 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestTracesNop(t *testing.T) {
-	nt := NewTracesNop()
+func TestTracesErr(t *testing.T) {
+	err := errors.New("my error")
+	nt := NewTracesErr(err)
 	require.NotNil(t, nt)
-	assert.NoError(t, nt.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.Equal(t, err, nt.ConsumeTraces(context.Background(), pdata.NewTraces()))
 }
 
-func TestMetricsNop(t *testing.T) {
-	nm := NewMetricsNop()
+func TestMetricsErr(t *testing.T) {
+	err := errors.New("my error")
+	nm := NewMetricsErr(err)
 	require.NotNil(t, nm)
-	assert.NoError(t, nm.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, err, nm.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
 }
 
-func TestLogsNop(t *testing.T) {
-	nl := NewLogsNop()
+func TestLogsErr(t *testing.T) {
+	err := errors.New("my error")
+	nl := NewLogsErr(err)
 	require.NotNil(t, nl)
-	assert.NoError(t, nl.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.Equal(t, err, nl.ConsumeLogs(context.Background(), pdata.NewLogs()))
 }

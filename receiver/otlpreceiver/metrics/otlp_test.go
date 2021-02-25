@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"testing"
@@ -139,10 +140,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 func TestExport_ErrorConsumer(t *testing.T) {
 	// given
 
-	metricSink := new(consumertest.MetricsSink)
-	metricSink.SetConsumeError(fmt.Errorf("error"))
-
-	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
+	port, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewMetricsErr(errors.New("my error")))
 	defer doneFn()
 
 	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
@@ -179,7 +177,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 		},
 	}}
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = error")
+	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Nil(t, resp)
 }
 
