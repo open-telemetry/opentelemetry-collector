@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `consumerdata.TraceData` (#2551)
+
 ## v0.21.0 Beta
 
 ## 🛑 Breaking changes 🛑
