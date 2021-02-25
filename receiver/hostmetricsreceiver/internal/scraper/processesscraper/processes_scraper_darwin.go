@@ -24,6 +24,6 @@ import (
 
 const unixSystemSpecificMetricsLen = 0
 
-func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.TimestampUnixNano, misc *load.MiscStat) error {
+func appendUnixSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startIndex int, now pdata.Timestamp, misc *load.MiscStat) error {
 	return nil
 }

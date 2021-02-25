@@ -463,16 +463,16 @@ func TestSpan_Kind(t *testing.T) {
 
 func TestSpan_StartTime(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.StartTime())
-	testValStartTime := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, Timestamp(0), ms.StartTime())
+	testValStartTime := Timestamp(1234567890)
 	ms.SetStartTime(testValStartTime)
 	assert.EqualValues(t, testValStartTime, ms.StartTime())
 }
 
 func TestSpan_EndTime(t *testing.T) {
 	ms := NewSpan()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.EndTime())
-	testValEndTime := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, Timestamp(0), ms.EndTime())
+	testValEndTime := Timestamp(1234567890)
 	ms.SetEndTime(testValEndTime)
 	assert.EqualValues(t, testValEndTime, ms.EndTime())
 }
@@ -653,8 +653,8 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 
 func TestSpanEvent_Timestamp(t *testing.T) {
 	ms := NewSpanEvent()
-	assert.EqualValues(t, TimestampUnixNano(0), ms.Timestamp())
-	testValTimestamp := TimestampUnixNano(1234567890)
+	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
+	testValTimestamp := Timestamp(1234567890)
 	ms.SetTimestamp(testValTimestamp)
 	assert.EqualValues(t, testValTimestamp, ms.Timestamp())
 }
@@ -939,8 +939,8 @@ func fillTestSpan(tv Span) {
 	tv.SetParentSpanID(NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetName("test_name")
 	tv.SetKind(SpanKindSERVER)
-	tv.SetStartTime(TimestampUnixNano(1234567890))
-	tv.SetEndTime(TimestampUnixNano(1234567890))
+	tv.SetStartTime(Timestamp(1234567890))
+	tv.SetEndTime(Timestamp(1234567890))
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 	fillTestSpanEventSlice(tv.Events())
@@ -970,7 +970,7 @@ func generateTestSpanEvent() SpanEvent {
 }
 
 func fillTestSpanEvent(tv SpanEvent) {
-	tv.SetTimestamp(TimestampUnixNano(1234567890))
+	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetName("test_name")
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))

@@ -175,7 +175,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		return nil, fmt.Errorf("error converting span links to Jaeger references: %w", err)
 	}
 
-	startTime := pdata.UnixNanoToTime(span.StartTime())
+	startTime := span.StartTime().AsTime()
 
 	return &model.Span{
 		TraceID:       traceID,
@@ -183,7 +183,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 		OperationName: span.Name(),
 		References:    jReferences,
 		StartTime:     startTime,
-		Duration:      pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Duration:      span.EndTime().AsTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
 	}, nil
@@ -345,7 +345,7 @@ func spanEventsToJaegerProtoLogs(events pdata.SpanEventSlice) []model.Log {
 		}
 		fields = appendTagsFromAttributes(fields, event.Attributes())
 		logs = append(logs, model.Log{
-			Timestamp: pdata.UnixNanoToTime(event.Timestamp()),
+			Timestamp: event.Timestamp().AsTime(),
 			Fields:    fields,
 		})
 	}

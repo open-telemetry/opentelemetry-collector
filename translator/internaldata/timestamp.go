@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package internaldata
 
 import (
-	"time"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TimeToUnixNano(t time.Time) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(uint64(t.UnixNano()))
+// timestampAsTimestampPb converts a pdata.Timestamp to a protobuf known type Timestamp.
+func timestampAsTimestampPb(ts pdata.Timestamp) *timestamppb.Timestamp {
+	if ts == 0 {
+		return nil
+	}
+	return timestamppb.New(ts.AsTime())
 }

@@ -19,18 +19,9 @@ package pdata
 
 import (
 	"sort"
-	"time"
 
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 )
-
-// TimestampUnixNano is a time specified as UNIX Epoch time in nanoseconds since
-// 00:00:00 UTC on 1 January 1970.
-type TimestampUnixNano uint64
-
-func (ts TimestampUnixNano) String() string {
-	return time.Unix(0, int64(ts)).String()
-}
 
 // AttributeValueType specifies the type of AttributeValue.
 type AttributeValueType int

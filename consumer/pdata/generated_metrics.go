@@ -932,22 +932,22 @@ func (ms IntDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this IntDataPoint.
-func (ms IntDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms IntDataPoint) StartTime() Timestamp {
+	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this IntDataPoint.
-func (ms IntDataPoint) SetStartTime(v TimestampUnixNano) {
+func (ms IntDataPoint) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this IntDataPoint.
-func (ms IntDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms IntDataPoint) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this IntDataPoint.
-func (ms IntDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (ms IntDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
@@ -1117,22 +1117,22 @@ func (ms DoubleDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms DoubleDataPoint) StartTime() Timestamp {
+	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetStartTime(v TimestampUnixNano) {
+func (ms DoubleDataPoint) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms DoubleDataPoint) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (ms DoubleDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
@@ -1302,22 +1302,22 @@ func (ms IntHistogramDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms IntHistogramDataPoint) StartTime() Timestamp {
+	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) SetStartTime(v TimestampUnixNano) {
+func (ms IntHistogramDataPoint) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms IntHistogramDataPoint) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this IntHistogramDataPoint.
-func (ms IntHistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (ms IntHistogramDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
@@ -1520,22 +1520,22 @@ func (ms DoubleHistogramDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms DoubleHistogramDataPoint) StartTime() Timestamp {
+	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetStartTime(v TimestampUnixNano) {
+func (ms DoubleHistogramDataPoint) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms DoubleHistogramDataPoint) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleHistogramDataPoint.
-func (ms DoubleHistogramDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (ms DoubleHistogramDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
@@ -1738,22 +1738,22 @@ func (ms DoubleSummaryDataPoint) LabelsMap() StringMap {
 }
 
 // StartTime returns the starttime associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) StartTime() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).StartTimeUnixNano)
+func (ms DoubleSummaryDataPoint) StartTime() Timestamp {
+	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
 // SetStartTime replaces the starttime associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetStartTime(v TimestampUnixNano) {
+func (ms DoubleSummaryDataPoint) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms DoubleSummaryDataPoint) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetTimestamp(v TimestampUnixNano) {
+func (ms DoubleSummaryDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
@@ -2089,12 +2089,12 @@ func NewIntExemplar() IntExemplar {
 }
 
 // Timestamp returns the timestamp associated with this IntExemplar.
-func (ms IntExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms IntExemplar) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this IntExemplar.
-func (ms IntExemplar) SetTimestamp(v TimestampUnixNano) {
+func (ms IntExemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
@@ -2255,12 +2255,12 @@ func NewDoubleExemplar() DoubleExemplar {
 }
 
 // Timestamp returns the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) Timestamp() TimestampUnixNano {
-	return TimestampUnixNano((*ms.orig).TimeUnixNano)
+func (ms DoubleExemplar) Timestamp() Timestamp {
+	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) SetTimestamp(v TimestampUnixNano) {
+func (ms DoubleExemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 

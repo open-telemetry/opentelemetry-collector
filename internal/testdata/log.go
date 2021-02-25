@@ -25,7 +25,7 @@ import (
 
 var (
 	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestLogTimestamp = pdata.TimestampUnixNano(TestLogTime.UnixNano())
+	TestLogTimestamp = pdata.TimestampFromTime(TestLogTime)
 )
 
 func GenerateLogDataEmpty() pdata.Logs {

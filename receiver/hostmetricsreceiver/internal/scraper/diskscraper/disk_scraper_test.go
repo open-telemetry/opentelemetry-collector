@@ -38,7 +38,7 @@ func TestScrape(t *testing.T) {
 		newErrRegex       string
 		initializationErr string
 		expectMetrics     bool
-		expectedStartTime pdata.TimestampUnixNano
+		expectedStartTime pdata.Timestamp
 	}
 
 	testCases := []testCase{
@@ -121,7 +121,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, startTime pdata.TimestampUnixNano) {
+func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
 	if startTime != 0 {
 		internal.AssertIntSumMetricStartTimeEquals(t, metric, startTime)
@@ -134,7 +134,7 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 	internal.AssertIntSumMetricLabelHasValue(t, metric, 1, "direction", "write")
 }
 
-func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.TimestampUnixNano) {
+func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
 	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
 	if startTime != 0 {
 		internal.AssertDoubleSumMetricStartTimeEquals(t, metric, startTime)

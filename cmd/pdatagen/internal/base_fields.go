@@ -240,7 +240,7 @@ func (pf *primitiveField) generateCopyToValue(sb *strings.Builder) {
 
 var _ baseField = (*primitiveField)(nil)
 
-// Types that has defined a custom type (e.g. "type TimestampUnixNano uint64")
+// Types that has defined a custom type (e.g. "type Timestamp uint64")
 type primitiveTypedField struct {
 	fieldName       string
 	originFieldName string

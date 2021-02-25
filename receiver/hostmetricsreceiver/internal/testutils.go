@@ -63,14 +63,14 @@ func AssertDoubleSumMetricLabelExists(t *testing.T, metric pdata.Metric, index i
 	assert.Truef(t, ok, "Missing label %q in metric %q", labelName, metric.Name())
 }
 
-func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func AssertIntSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	idps := metric.IntSum().DataPoints()
 	for i := 0; i < idps.Len(); i++ {
 		require.Equal(t, startTime, idps.At(i).StartTime())
 	}
 }
 
-func AssertDoubleSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.TimestampUnixNano) {
+func AssertDoubleSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	ddps := metric.DoubleSum().DataPoints()
 	for i := 0; i < ddps.Len(); i++ {
 		require.Equal(t, startTime, ddps.At(i).StartTime())
@@ -82,7 +82,7 @@ func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pdata.MetricSlice) {
 }
 
 func AssertSameTimeStampForMetrics(t *testing.T, metrics pdata.MetricSlice, startIdx, endIdx int) {
-	var ts pdata.TimestampUnixNano
+	var ts pdata.Timestamp
 	for i := startIdx; i < endIdx; i++ {
 		metric := metrics.At(i)
 
