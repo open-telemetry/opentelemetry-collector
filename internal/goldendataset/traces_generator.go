@@ -17,24 +17,25 @@ package goldendataset
 import (
 	"fmt"
 	"io"
+	"math/rand"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
 
-// GenerateResourceSpans generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
+// GenerateTraces generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
 // parameters defined in the parameters file specified by the tracePairsFile parameter. The pairs to generate
-// spans for for defined in the file specified by the spanPairsFile parameter. The random parameter injects the
-// random number generator to use in generating IDs and other random values.
+// spans for for defined in the file specified by the spanPairsFile parameter.
 // The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
-func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
-	random io.Reader) ([]*otlptrace.ResourceSpans, error) {
+func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces, error) {
+	random := io.Reader(rand.New(rand.NewSource(42)))
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {
 		return nil, err
 	}
 	pairsTotal := len(pairsData) - 1
-	spans := make([]*otlptrace.ResourceSpans, pairsTotal)
+	traces := make([]pdata.Traces, pairsTotal)
 	for index, values := range pairsData {
 		if index == 0 {
 			continue
@@ -44,22 +45,22 @@ func GenerateResourceSpans(tracePairsFile string, spanPairsFile string,
 			InstrumentationLibrary: PICTInputInstrumentationLibrary(values[TracesColumnInstrumentationLibrary]),
 			Spans:                  PICTInputSpans(values[TracesColumnSpans]),
 		}
-		rscSpan, spanErr := GenerateResourceSpan(tracingInputs, spanPairsFile, random)
+		rscSpan, spanErr := generateResourceSpan(tracingInputs, spanPairsFile, random)
 		if spanErr != nil {
 			err = spanErr
 		}
-		spans[index-1] = rscSpan
+		traces[index-1] = pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{rscSpan})
 	}
-	return spans, err
+	return traces, err
 }
 
-// GenerateResourceSpan generates a single OTLP ResourceSpans populated based on the provided inputs. They are:
+// generateResourceSpan generates a single OTLP ResourceSpans populated based on the provided inputs. They are:
 //   tracingInputs - the pairwise combination of field value variations for this ResourceSpans
 //   spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
 //   random - the random number generator to use in generating ID values
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
-func GenerateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
+func generateResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
 	random io.Reader) (*otlptrace.ResourceSpans, error) {
 	libSpans, err := generateLibrarySpansArray(tracingInputs, spanPairsFile, random)
 	return &otlptrace.ResourceSpans{

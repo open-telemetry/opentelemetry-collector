@@ -231,12 +231,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			rSpans := make([]*otlptrace.ResourceSpans, 1)
-			rSpans[0] = &otlptrace.ResourceSpans{
-				Resource:                    goldendataset.GenerateResource(test),
-				InstrumentationLibrarySpans: nil,
-			}
-			traces := pdata.TracesFromOtlp(rSpans)
+			traces := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{{Resource: goldendataset.GenerateResource(test)}})
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
