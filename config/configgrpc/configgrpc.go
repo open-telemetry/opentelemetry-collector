@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -40,11 +41,18 @@ const (
 	PerRPCAuthTypeBearer = "bearer"
 )
 
+type ClientDialOptionHandler func() grpc.DialOption
+
 var (
 	// Map of opentelemetry compression types to grpc registered compression types
 	grpcCompressionKeyMap = map[string]string{
 		CompressionGzip: gzip.Name,
 	}
+)
+
+var (
+	clientOptionHandlerList = make([]ClientDialOptionHandler, 0)
+	mu                      sync.Mutex
 )
 
 // Allowed balancer names to be set in grpclb_policy to discover the servers
@@ -98,6 +106,9 @@ type GRPCClientSettings struct {
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
+
+	// UseGlobalInterceptors defines config if the global client interceptors need to be used
+	SkipGlobalClientOption bool `mapstructure:"skip_global_client_option"`
 }
 
 type KeepaliveServerConfig struct {
@@ -219,6 +230,17 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 
+	if !gcs.SkipGlobalClientOption {
+		mu.Lock()
+		for _, handler := range clientOptionHandlerList {
+			opt := handler()
+			if opt != nil {
+				opts = append(opts, opt)
+			}
+		}
+		mu.Unlock()
+	}
+
 	return opts, nil
 }
 
@@ -310,4 +332,12 @@ func GetGRPCCompressionKey(compressionType string) string {
 		return encodingKey
 	}
 	return CompressionUnsupported
+}
+
+func RegisterClientDialOptionHandlers(handlers ...ClientDialOptionHandler) {
+	mu.Lock()
+	defer mu.Unlock()
+	for _, handler := range handlers {
+		clientOptionHandlerList = append(clientOptionHandlerList, handler)
+	}
 }
