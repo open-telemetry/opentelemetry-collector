@@ -39,7 +39,7 @@ func GenerateMetricDatas(metricPairsFile string) ([]pdata.Metrics, error) {
 		}
 		cfg := pictToCfg(metricInputs)
 		cfg.MetricNamePrefix = fmt.Sprintf("pict_%d_", i)
-		md := MetricDataFromCfg(cfg)
+		md := MetricsFromCfg(cfg)
 		out = append(out, md)
 	}
 	return out, nil

@@ -203,5 +203,5 @@ func testData(prefix string, size int, mdType pdata.MetricDataType) pdata.Metric
 		NumResourceAttrs:     size,
 		NumResourceMetrics:   size,
 	}
-	return goldendataset.MetricDataFromCfg(c)
+	return goldendataset.MetricsFromCfg(c)
 }

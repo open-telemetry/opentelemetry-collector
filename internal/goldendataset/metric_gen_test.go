@@ -23,7 +23,7 @@ import (
 )
 
 func TestGenDefault(t *testing.T) {
-	md := DefaultMetricData()
+	md := MetricsFromCfg(DefaultCfg())
 	mCount, ptCount := md.MetricAndDataPointCount()
 	require.Equal(t, 1, mCount)
 	require.Equal(t, 1, ptCount)
@@ -106,7 +106,7 @@ func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
 	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	cfg.PtVal = 2
-	md := MetricDataFromCfg(cfg)
+	md := MetricsFromCfg(cfg)
 	pts := getMetric(md).DoubleHistogram().DataPoints()
 	pt := pts.At(0)
 	buckets := pt.BucketCounts()
@@ -117,7 +117,7 @@ func TestGenDoubleHistogram(t *testing.T) {
 func TestGenDoubleGauge(t *testing.T) {
 	cfg := DefaultCfg()
 	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
-	md := MetricDataFromCfg(cfg)
+	md := MetricsFromCfg(cfg)
 	metric := getMetric(md)
 	pts := metric.DoubleGauge().DataPoints()
 	require.Equal(t, 1, pts.Len())

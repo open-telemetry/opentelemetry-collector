@@ -488,7 +488,7 @@ func pdm(prefix string, size int) pdata.Metrics {
 		NumResourceAttrs:     size,
 		NumResourceMetrics:   size,
 	}
-	return goldendataset.MetricDataFromCfg(c)
+	return goldendataset.MetricsFromCfg(c)
 }
 
 func TestMetricIndexSingle(t *testing.T) {
