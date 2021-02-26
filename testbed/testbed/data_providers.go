@@ -16,7 +16,6 @@ package testbed
 
 import (
 	"encoding/binary"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,7 +32,6 @@ import (
 	otlplogscol "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpmetricscol "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptracecol "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 )
 
@@ -46,8 +44,6 @@ type DataProvider interface {
 	GenerateTraces() (pdata.Traces, bool)
 	// GenerateMetrics returns an internal MetricData instance with an OTLP ResourceMetrics slice of test data.
 	GenerateMetrics() (pdata.Metrics, bool)
-	// GetGeneratedSpan returns the generated Span matching the provided traceId and spanId or else nil if no match found.
-	GetGeneratedSpan(traceID pdata.TraceID, spanID pdata.SpanID) *otlptrace.Span
 	// GenerateLogs returns the internal pdata.Logs format
 	GenerateLogs() (pdata.Logs, bool)
 }
@@ -166,11 +162,6 @@ func (dp *PerfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	return md, false
 }
 
-func (dp *PerfTestDataProvider) GetGeneratedSpan(pdata.TraceID, pdata.SpanID) *otlptrace.Span {
-	// function not supported for this data provider
-	return nil
-}
-
 func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().Resize(1)
@@ -220,7 +211,6 @@ type GoldenDataProvider struct {
 
 	tracesGenerated []pdata.Traces
 	tracesIndex     int
-	spansMap        map[string]*otlptrace.Span
 
 	metricPairsFile  string
 	metricsGenerated []pdata.Metrics
@@ -282,35 +272,6 @@ func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 
 func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 	return pdata.NewLogs(), true
-}
-
-func (dp *GoldenDataProvider) GetGeneratedSpan(traceID pdata.TraceID, spanID pdata.SpanID) *otlptrace.Span {
-	if dp.spansMap == nil {
-		var resourceSpansList []*otlptrace.ResourceSpans
-		for _, td := range dp.tracesGenerated {
-			resourceSpansList = append(resourceSpansList, internal.TracesToOtlp(td.InternalRep()).ResourceSpans...)
-		}
-		dp.spansMap = populateSpansMap(resourceSpansList)
-	}
-	key := traceIDAndSpanIDToString(traceID, spanID)
-	return dp.spansMap[key]
-}
-
-func populateSpansMap(resourceSpansList []*otlptrace.ResourceSpans) map[string]*otlptrace.Span {
-	spansMap := make(map[string]*otlptrace.Span)
-	for _, resourceSpans := range resourceSpansList {
-		for _, libSpans := range resourceSpans.InstrumentationLibrarySpans {
-			for _, span := range libSpans.Spans {
-				key := traceIDAndSpanIDToString(pdata.TraceID(span.TraceId), pdata.SpanID(span.SpanId))
-				spansMap[key] = span
-			}
-		}
-	}
-	return spansMap
-}
-
-func traceIDAndSpanIDToString(traceID pdata.TraceID, spanID pdata.SpanID) string {
-	return fmt.Sprintf("%s-%s", traceID.HexString(), spanID.HexString())
 }
 
 // FileDataProvider in an implementation of the DataProvider for use in performance tests.
@@ -395,11 +356,6 @@ func (dp *FileDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 	_, dataPointCount := md.MetricAndDataPointCount()
 	dp.dataItemsGenerated.Add(uint64(dataPointCount))
 	return md, false
-}
-
-func (dp *FileDataProvider) GetGeneratedSpan(pdata.TraceID, pdata.SpanID) *otlptrace.Span {
-	// Nothing to do. This function is only used by data providers used in correctness tests for traces.
-	return nil
 }
 
 func (dp *FileDataProvider) GenerateLogs() (pdata.Logs, bool) {
