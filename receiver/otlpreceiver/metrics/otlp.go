@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/shutdownhelper"
 )
 
 const (
@@ -32,6 +33,7 @@ const (
 type Receiver struct {
 	instanceName string
 	nextConsumer consumer.MetricsConsumer
+	helper       shutdownhelper.Helper
 }
 
 // New creates a new Receiver reference.
@@ -39,6 +41,7 @@ func New(instanceName string, nextConsumer consumer.MetricsConsumer) *Receiver {
 	r := &Receiver{
 		instanceName: instanceName,
 		nextConsumer: nextConsumer,
+		helper:       shutdownhelper.NewHelper(),
 	}
 	return r
 }
@@ -48,7 +51,17 @@ const (
 	receiverTransport = "grpc"
 )
 
+func (r *Receiver) Shutdown(ctx context.Context) error {
+	return r.helper.Shutdown(ctx)
+}
+
 func (r *Receiver) Export(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
+	// Protect Export from being interrupted by Shutdown().
+	if err := r.helper.BeginOperation(); err != nil {
+		return nil, err
+	}
+	defer r.helper.EndOperation()
+
 	receiverCtx := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 
 	md := pdata.MetricsFromOtlp(req.ResourceMetrics)

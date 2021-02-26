@@ -168,7 +168,7 @@ func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *otlpReceiver) Shutdown(context.Context) error {
+func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	r.stopOnce.Do(func() {
 		err = nil
@@ -179,6 +179,27 @@ func (r *otlpReceiver) Shutdown(context.Context) error {
 
 		if r.serverGRPC != nil {
 			r.serverGRPC.Stop()
+		}
+
+		if r.traceReceiver != nil {
+			err2 := r.traceReceiver.Shutdown(ctx)
+			if err == nil && err2 != nil {
+				err = err2
+			}
+		}
+
+		if r.metricsReceiver != nil {
+			err2 := r.metricsReceiver.Shutdown(ctx)
+			if err == nil && err2 != nil {
+				err = err2
+			}
+		}
+
+		if r.logReceiver != nil {
+			err2 := r.logReceiver.Shutdown(ctx)
+			if err == nil && err2 != nil {
+				err = err2
+			}
 		}
 	})
 	return err
