@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -93,11 +92,4 @@ func TestIntHistogram(t *testing.T) {
 	actual := goldendataset.MetricDataFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 3)
-}
-
-func TestPDMToPDRM(t *testing.T) {
-	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rms := pdmToPDRM([]pdata.Metrics{md})
-	require.Len(t, rms, 2)
 }

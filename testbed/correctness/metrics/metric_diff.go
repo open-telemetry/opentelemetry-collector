@@ -34,17 +34,6 @@ func (mf MetricDiff) String() string {
 	return fmt.Sprintf("{msg='%v' expected=[%v] actual=[%v]}\n", mf.Msg, mf.ExpectedValue, mf.ActualValue)
 }
 
-func pdmToPDRM(pdm []pdata.Metrics) (out []pdata.ResourceMetrics) {
-	for _, md := range pdm {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			rm := rms.At(i)
-			out = append(out, rm)
-		}
-	}
-	return out
-}
-
 func diffRMSlices(sent []pdata.ResourceMetrics, recd []pdata.ResourceMetrics) []*MetricDiff {
 	var diffs []*MetricDiff
 	if len(sent) != len(recd) {
