@@ -19,9 +19,9 @@ exposed for this helper exporter are documented [here](factory.go).
 These settings modify the behavior when a payload is exported.
 
 - `resource_to_telemetry_conversion`
-  - `enabled` (default = false): If `enabled` is `true`, all the resource
+  - `enabled` (default = `false`): If `enabled` is `true`, all the resource
     attributes will be converted to metric labels.
-- `timeout` (default = 5s): Time to wait per individual attempt to export data
+- `timeout` (default = `5s`): Time to wait per individual attempt to export data
   to a backend. If the backend accepts the data or returns an error before the
   configured `timeout` then the `timeout` setting is ignored. This setting is
   completely independent of `max_elapsed_time` under `retry_on_failure.`
@@ -32,10 +32,10 @@ These settings modify in-memory queuing. It is recommended to keep queuing
 enabled so data is not lost during export in case of error or timeout.
 
 - `sending_queue`
-  - `enabled` (default = true)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches;
+  - `enabled` (default = `true`)
+  - `num_consumers` (default = `10`): Number of consumers that dequeue batches;
     ignored if `enabled` is `false`.
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory
+  - `queue_size` (default = `5000`): Maximum number of batches kept in memory
     before data; ignored if `enabled` is `false`.
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage.
@@ -51,13 +51,13 @@ concern for the configured destination, disabling retry may be desirable.
 > non-exported data is retried.
 
 - `retry_on_failure`
-  - `enabled` (default = true)
-  - `initial_interval` (default = 5s): Time to wait after the first failure
+  - `enabled` (default = `true`)
+  - `initial_interval` (default = `5s`): Time to wait after the first failure
     (which includes a `timeout`) before retrying; ignored if `enabled` is
     `false`.
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if
+  - `max_interval` (default = `30s`): Is the upper bound on backoff; ignored if
     `enabled` is `false`.
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent
+  - `max_elapsed_time` (default = `120s`): Is the maximum amount of time spent
     trying to export data; ignored if `enabled` is `false`. The setting is only
     checked during a retry backoff operation which means the total time between
     first attempting to send data to a destination and the time at which
