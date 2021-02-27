@@ -11,9 +11,8 @@ independent capabilities including:
 
 ## Configuration
 
-The following configuration options can be modified:
-
-The full list of settings exposed for this helper exporter are documented [here](factory.go).
+The below configuration options can be modified. The full list of settings
+exposed for this helper exporter are documented [here](factory.go).
 
 ### Export Settings
 
@@ -80,6 +79,7 @@ time at which retry stops retrying may be more than `max_elapsed_time`.
 <summary>
 Example
 </summary>
+
 For example, let's assume a configured destination is completely unavailable
 for three minutes and that `max_elapsed_time` is changed to `30s`. For
 demonstration purposes, let's use the `max_interval` for the backoff every
