@@ -36,6 +36,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect
 	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.18.0
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
 	github.com/rs/cors v1.7.0

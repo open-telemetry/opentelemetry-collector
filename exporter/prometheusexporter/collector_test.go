@@ -19,140 +19,84 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestMetricWithNoLabels(t *testing.T) {
-	dp := pdata.NewIntDataPoint()
-	dp.SetValue(42)
+type mockAccumulator struct {
+	metrics []pdata.Metric
+}
 
+func (a *mockAccumulator) Accumulate(rm pdata.ResourceMetrics) (n int) {
+	return 0
+}
+func (a *mockAccumulator) Collect() []pdata.Metric {
+
+	return a.metrics
+}
+
+func TestConvertInvalidDataType(t *testing.T) {
 	metric := pdata.NewMetric()
-	metric.SetName("test_metric")
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	metric.IntGauge().DataPoints().Append(dp)
-	metric.SetDescription("test description")
-
-	c := newCollector(&Config{}, zap.NewNop())
-
-	lk := collectLabelKeys(metric)
-	c.accumulateMetric(metric)
-
-	signature := metricSignature(c.config.Namespace, metric, lk.keys)
-	v := c.registeredMetrics[signature]
-	require.NotNil(t, v)
-
-	require.Equal(t, 42.0, v.value)
-}
-
-func TestAccumulateDeltaAggregation(t *testing.T) {
-	tests := []struct {
-		name   string
-		metric func(time.Time) pdata.Metric
-	}{
-		{
-			name: "IntSum",
-			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewIntDataPoint()
-				dp.SetValue(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntSum)
-				metric.IntSum().DataPoints().Append(dp)
-				metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-
-				return
-			},
+	metric.SetDataType(-100)
+	c := collector{
+		accumulator: &mockAccumulator{
+			[]pdata.Metric{metric},
 		},
-		{
-			name: "DoubleSum",
-			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleDataPoint()
-				dp.SetValue(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-				metric.DoubleSum().DataPoints().Append(dp)
-				metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-
-				return
-			},
-		},
-		{
-			name: "IntHistogram",
-			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewIntHistogramDataPoint()
-				dp.SetBucketCounts([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{1.2, 10.0})
-				dp.SetSum(42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-				metric.IntHistogram().DataPoints().Append(dp)
-				metric.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-
-				return
-			},
-		},
-		{
-			name: "DoubleHistogram",
-			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleHistogramDataPoint()
-				dp.SetBucketCounts([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.SetExplicitBounds([]float64{3.5, 10.0})
-				dp.SetSum(42.42)
-				dp.LabelsMap().Insert("label_1", "1")
-				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimestampFromTime(ts))
-
-				metric = pdata.NewMetric()
-				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				metric.DoubleHistogram().DataPoints().Append(dp)
-				metric.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-				metric.SetDescription("test description")
-
-				return
-			},
-		},
+		logger: zap.NewNop(),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := newCollector(&Config{
-				Namespace: "test-space",
-			}, zap.NewNop())
-			m := tt.metric(time.Now())
+	_, err := c.convertMetric(metric)
+	require.Equal(t, errUnknownMetricType, err)
 
-			c.accumulateMetric(m)
+	ch := make(chan prometheus.Metric, 1)
+	go func() {
+		c.Collect(ch)
+		close(ch)
+	}()
 
-			lk := collectLabelKeys(m)
-			labelValues := []string{"1", "2"}
-			signature := metricSignature(c.config.Namespace, m, append(lk.keys, labelValues...))
-			v := c.registeredMetrics[signature]
-
-			require.Nil(t, v)
-		})
+	j := 0
+	for range ch {
+		require.Fail(t, "Expected no reported metrics")
+		j++
 	}
 }
 
-func TestAccumulateMetrics(t *testing.T) {
+func TestConvertInvalidMetric(t *testing.T) {
+	for _, mType := range []pdata.MetricDataType{
+		pdata.MetricDataTypeDoubleHistogram,
+		pdata.MetricDataTypeIntHistogram,
+		pdata.MetricDataTypeDoubleSum,
+		pdata.MetricDataTypeIntSum,
+		pdata.MetricDataTypeDoubleGauge,
+		pdata.MetricDataTypeIntGauge,
+	} {
+		metric := pdata.NewMetric()
+		metric.SetDataType(mType)
+		switch metric.DataType() {
+		case pdata.MetricDataTypeIntGauge:
+			metric.IntGauge().DataPoints().Append(pdata.NewIntDataPoint())
+		case pdata.MetricDataTypeIntSum:
+			metric.IntSum().DataPoints().Append(pdata.NewIntDataPoint())
+		case pdata.MetricDataTypeDoubleGauge:
+			metric.DoubleGauge().DataPoints().Append(pdata.NewDoubleDataPoint())
+		case pdata.MetricDataTypeDoubleSum:
+			metric.DoubleSum().DataPoints().Append(pdata.NewDoubleDataPoint())
+		case pdata.MetricDataTypeIntHistogram:
+			metric.IntHistogram().DataPoints().Append(pdata.NewIntHistogramDataPoint())
+		case pdata.MetricDataTypeDoubleHistogram:
+			metric.DoubleHistogram().DataPoints().Append(pdata.NewDoubleHistogramDataPoint())
+		}
+		c := collector{}
+
+		_, err := c.convertMetric(metric)
+		require.Error(t, err)
+	}
+}
+
+func TestCollectMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
 		metric     func(time.Time) pdata.Metric
@@ -290,46 +234,63 @@ func TestAccumulateMetrics(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := newCollector(&Config{
-				Namespace: "test-space",
-			}, zap.NewNop())
-			ts1 := time.Now().Add(-2 * time.Second)
-			ts2 := time.Now().Add(-1 * time.Second)
-			m1 := tt.metric(ts1)
-			m2 := tt.metric(ts2)
-
-			c.accumulateMetric(m2)
-			c.accumulateMetric(m1)
-
-			lk := collectLabelKeys(m2)
-			labelValues := []string{"1", "2"}
-			signature := metricSignature(c.config.Namespace, m2, append(lk.keys, labelValues...))
-			v := c.registeredMetrics[signature]
-
-			require.NotNil(t, v)
-			require.Equal(t, tt.metricType, v.metricType)
-			require.Equal(t, "1", v.labelValues[0])
-			require.Equal(t, "2", v.labelValues[1])
-			require.False(t, v.isHistogram)
-			require.Equal(t, v.timestamp.Unix(), ts2.Unix())
-			require.Greater(t, v.updated.Unix(), v.timestamp.Unix())
-			require.Equal(t, tt.value, v.value)
-
-			ch := make(chan prometheus.Metric, 1)
-			go func() {
-				c.Collect(ch)
-				close(ch)
-			}()
-
-			n := 0
-			for m := range ch {
-				n++
-				require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-				require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+		for _, sendTimestamp := range []bool{true, false} {
+			name := tt.name
+			if sendTimestamp {
+				name += "/WithTimestamp"
 			}
-			require.Equal(t, 1, n)
-		})
+			t.Run(name, func(t *testing.T) {
+				ts := time.Now()
+				metric := tt.metric(ts)
+				c := collector{
+					namespace: "test_space",
+					accumulator: &mockAccumulator{
+						[]pdata.Metric{metric},
+					},
+					sendTimestamps: sendTimestamp,
+					logger:         zap.NewNop(),
+				}
+
+				ch := make(chan prometheus.Metric, 1)
+				go func() {
+					c.Collect(ch)
+					close(ch)
+				}()
+
+				j := 0
+				for m := range ch {
+					j++
+					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+
+					pbMetric := io_prometheus_client.Metric{}
+					m.Write(&pbMetric)
+
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					for _, l := range pbMetric.Label {
+						require.Equal(t, labelsKeys[*l.Name], *l.Value)
+					}
+
+					if sendTimestamp {
+						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+					} else {
+						require.Nil(t, pbMetric.TimestampMs)
+					}
+
+					switch tt.metricType {
+					case prometheus.CounterValue:
+						require.Equal(t, tt.value, *pbMetric.Counter.Value)
+						require.Nil(t, pbMetric.Gauge)
+						require.Nil(t, pbMetric.Histogram)
+					case prometheus.GaugeValue:
+						require.Equal(t, tt.value, *pbMetric.Gauge.Value)
+						require.Nil(t, pbMetric.Counter)
+						require.Nil(t, pbMetric.Histogram)
+					}
+				}
+				require.Equal(t, 1, j)
+			})
+		}
 	}
 }
 
@@ -401,49 +362,62 @@ func TestAccumulateHistograms(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := newCollector(&Config{
-				Namespace: "test-space",
-			}, zap.NewNop())
-			ts1 := time.Now().Add(-2 * time.Second)
-			ts2 := time.Now().Add(-1 * time.Second)
-			m1 := tt.metric(ts1)
-			m2 := tt.metric(ts2)
-
-			c.accumulateMetric(m2)
-			c.accumulateMetric(m1)
-
-			lk := collectLabelKeys(m2)
-			labelValues := []string{"1", "2"}
-			signature := metricSignature(c.config.Namespace, m2, append(lk.keys, labelValues...))
-			v := c.registeredMetrics[signature]
-
-			require.NotNil(t, v)
-			require.Equal(t, "1", v.labelValues[0])
-			require.Equal(t, "2", v.labelValues[1])
-			require.True(t, v.isHistogram)
-			require.Equal(t, v.timestamp.Unix(), ts2.Unix())
-			require.Greater(t, v.updated.Unix(), v.timestamp.Unix())
-			require.Equal(t, tt.histogramCount, v.histogramCount)
-			require.Equal(t, tt.histogramSum, v.histogramSum)
-			require.Equal(t, len(tt.histogramPoints), len(v.histogramPoints))
-			for b, p := range tt.histogramPoints {
-				require.Equal(t, p, v.histogramPoints[b])
+		for _, sendTimestamp := range []bool{true, false} {
+			name := tt.name
+			if sendTimestamp {
+				name += "/WithTimestamp"
 			}
+			t.Run(name, func(t *testing.T) {
+				ts := time.Now()
+				metric := tt.metric(ts)
+				c := collector{
+					accumulator: &mockAccumulator{
+						[]pdata.Metric{metric},
+					},
+					sendTimestamps: sendTimestamp,
+					logger:         zap.NewNop(),
+				}
 
-			ch := make(chan prometheus.Metric, 1)
-			go func() {
-				c.Collect(ch)
-				close(ch)
-			}()
+				ch := make(chan prometheus.Metric, 1)
+				go func() {
+					c.Collect(ch)
+					close(ch)
+				}()
 
-			n := 0
-			for m := range ch {
-				n++
-				require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-				require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
-			}
-			require.Equal(t, 1, n)
-		})
+				n := 0
+				for m := range ch {
+					n++
+					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
+					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+
+					pbMetric := io_prometheus_client.Metric{}
+					m.Write(&pbMetric)
+
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					for _, l := range pbMetric.Label {
+						require.Equal(t, labelsKeys[*l.Name], *l.Value)
+					}
+
+					if sendTimestamp {
+						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+					} else {
+						require.Nil(t, pbMetric.TimestampMs)
+					}
+
+					require.Nil(t, pbMetric.Gauge)
+					require.Nil(t, pbMetric.Counter)
+
+					h := *pbMetric.Histogram
+					require.Equal(t, tt.histogramCount, h.GetSampleCount())
+					require.Equal(t, tt.histogramSum, h.GetSampleSum())
+					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
+
+					for _, b := range h.Bucket {
+						require.Equal(t, tt.histogramPoints[(*b).GetUpperBound()], b.GetCumulativeCount())
+					}
+				}
+				require.Equal(t, 1, n)
+			})
+		}
 	}
 }

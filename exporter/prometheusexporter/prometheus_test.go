@@ -156,11 +156,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	// Expired metrics should be removed during first scrape
-	config.MetricExpiration = 1 * time.Millisecond
+	exp.(*prometheusExporter).collector.accumulator.(*LastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
-
-	_, err = http.Get("http://localhost:7777/metrics")
-	require.NoError(t, err, "Failed to perform a scrape")
 
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
@@ -235,11 +232,8 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	// Expired metrics should be removed during first scrape
-	config.MetricExpiration = 1 * time.Millisecond
+	exp.(*prometheusExporter).collector.accumulator.(*LastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
-
-	_, err = http.Get("http://localhost:7777/metrics")
-	require.NoError(t, err, "Failed to perform a scrape")
 
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")

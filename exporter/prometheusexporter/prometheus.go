@@ -94,9 +94,7 @@ func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	n := 0
 	rmetrics := md.ResourceMetrics()
 	for i := 0; i < rmetrics.Len(); i++ {
-		rs := rmetrics.At(i)
-
-		n += pe.collector.processMetrics(rs)
+		n += pe.collector.processMetrics(rmetrics.At(i))
 	}
 	pe.obsrep.EndMetricsExportOp(ctx, n, nil)
 

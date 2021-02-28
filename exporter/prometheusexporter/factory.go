@@ -53,5 +53,6 @@ func createMetricsExporter(
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
+
 	return newPrometheusExporter(pcfg, params.Logger)
 }
