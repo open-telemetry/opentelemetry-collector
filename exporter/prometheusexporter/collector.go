@@ -113,7 +113,7 @@ func (c *collector) accumulateIntGauge(metric pdata.Metric, lk *labelKeys, desc 
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		ts := pdata.UnixNanoToTime(ip.Timestamp())
+		ts := ip.Timestamp().AsTime()
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
@@ -142,7 +142,7 @@ func (c *collector) accumulateDoubleGauge(metric pdata.Metric, lk *labelKeys, de
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		ts := pdata.UnixNanoToTime(ip.Timestamp())
+		ts := ip.Timestamp().AsTime()
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
@@ -178,7 +178,7 @@ func (c *collector) accumulateIntSum(metric pdata.Metric, lk *labelKeys, desc *p
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		ts := pdata.UnixNanoToTime(ip.Timestamp())
+		ts := ip.Timestamp().AsTime()
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
@@ -221,7 +221,7 @@ func (c *collector) accumulateDoubleSum(metric pdata.Metric, lk *labelKeys, desc
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		ts := pdata.UnixNanoToTime(ip.Timestamp())
+		ts := ip.Timestamp().AsTime()
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
@@ -263,7 +263,7 @@ func (c *collector) accumulateIntHistogram(metric pdata.Metric, lk *labelKeys, d
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		ts := pdata.UnixNanoToTime(ip.Timestamp())
+		ts := ip.Timestamp().AsTime()
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 
@@ -325,7 +325,7 @@ func (c *collector) accumulateDoubleHistogram(metric pdata.Metric, lk *labelKeys
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		ts := pdata.UnixNanoToTime(ip.Timestamp())
+		ts := ip.Timestamp().AsTime()
 		labelValues := collectLabelValues(ip.LabelsMap(), lk)
 		signature := metricSignature(c.config.Namespace, metric, append(lk.keys, labelValues...))
 

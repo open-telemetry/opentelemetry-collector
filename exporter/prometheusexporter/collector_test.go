@@ -59,7 +59,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -77,7 +77,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -98,7 +98,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetSum(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -119,7 +119,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetSum(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -168,7 +168,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -188,7 +188,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -208,7 +208,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -230,7 +230,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -252,7 +252,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetValue(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -274,7 +274,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetValue(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -358,7 +358,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetSum(42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
@@ -386,7 +386,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				dp.SetSum(42.42)
 				dp.LabelsMap().Insert("label_1", "1")
 				dp.LabelsMap().Insert("label_2", "2")
-				dp.SetTimestamp(pdata.TimeToUnixNano(ts))
+				dp.SetTimestamp(pdata.TimestampFromTime(ts))
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
