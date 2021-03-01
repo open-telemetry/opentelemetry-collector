@@ -26,7 +26,7 @@ import (
 )
 
 func TestInvalidDataType(t *testing.T) {
-	a := NewAccumulator(zap.NewNop(), 1*time.Hour).(*LastValueAccumulator)
+	a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 	metric := pdata.NewMetric()
 	metric.SetDataType(-100)
 	n := a.addMetric(metric, pdata.NewInstrumentationLibrary())
@@ -130,11 +130,11 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			resourceMetrics.InstrumentationLibraryMetrics().Append(ilm)
 			ilm.Metrics().Append(m)
 
-			a := NewAccumulator(zap.NewNop(), 1*time.Hour).(*LastValueAccumulator)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
-			signature := metricSignature(ilm.InstrumentationLibrary().Name(), m, pdata.NewStringMap())
+			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), m, pdata.NewStringMap())
 			v, ok := a.registeredMetrics.Load(signature)
 			require.False(t, ok)
 			require.Nil(t, v)
@@ -327,7 +327,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			ilm.Metrics().Append(m2)
 			ilm.Metrics().Append(m1)
 
-			a := NewAccumulator(zap.NewNop(), 1*time.Hour).(*LastValueAccumulator)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 
 			// 2 metric arrived
 			n := a.Accumulate(resourceMetrics)
@@ -335,7 +335,7 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			m2Labels, _, m2Value, m2Temporality, m2IsMonotonic := getMerticProperties(m2)
 
-			signature := metricSignature(ilm.InstrumentationLibrary().Name(), m2, m2Labels)
+			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), m2, m2Labels)
 			m, ok := a.registeredMetrics.Load(signature)
 			require.True(t, ok)
 

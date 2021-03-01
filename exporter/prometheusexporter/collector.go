@@ -25,7 +25,7 @@ import (
 )
 
 type collector struct {
-	accumulator Accumulator
+	accumulator accumulator
 	logger      *zap.Logger
 
 	sendTimestamps bool
@@ -35,7 +35,7 @@ type collector struct {
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
-		accumulator:    NewAccumulator(logger, config.MetricExpiration),
+		accumulator:    newAccumulator(logger, config.MetricExpiration),
 		logger:         logger,
 		namespace:      sanitize(config.Namespace),
 		sendTimestamps: config.SendTimestamps,
