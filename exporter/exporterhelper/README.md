@@ -30,6 +30,8 @@ These settings modify the behavior when a payload is exported.
 
 These settings modify in-memory queuing. It is recommended to keep queuing
 enabled so data is not lost during export in case of error or timeout.
+Note the larger the queue the more memory is required. In general,
+the default settings should not be modified.
 
 - `sending_queue`
   - `enabled` (default = `true`)
