@@ -3,7 +3,7 @@
 This is a helper exporter that other exporters can depend on. It offers several
 independent capabilities including:
 
-- Export settings
+- Generic export settings, like `timeout`
 - In-memory queuing
 - Ability to retry an export operation
 
