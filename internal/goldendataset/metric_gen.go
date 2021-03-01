@@ -23,7 +23,7 @@ import (
 // Simple utilities for generating metrics for testing
 
 // MetricCfg holds parameters for generating dummy metrics for testing. Set values on this struct to generate
-// metrics with the corresponding number/type of attributes and pass into MetricDataFromCfg to generate metrics.
+// metrics with the corresponding number/type of attributes and pass into MetricsFromCfg to generate metrics.
 type MetricCfg struct {
 	// The type of metric to generate
 	MetricDescriptorType pdata.MetricDataType
@@ -69,25 +69,21 @@ func DefaultCfg() MetricCfg {
 	}
 }
 
-// DefaultMetricData produces MetricData with a default config.
-func DefaultMetricData() pdata.Metrics {
-	return MetricDataFromCfg(DefaultCfg())
-}
-
-// MetricDataFromCfg produces MetricData with the passed-in config.
-func MetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
-	return newMetricGenerator().genMetricDataFromCfg(cfg)
+// MetricsFromCfg produces pdata.Metrics with the passed-in config.
+func MetricsFromCfg(cfg MetricCfg) pdata.Metrics {
+	mg := newMetricGenerator()
+	return mg.genMetricFromCfg(cfg)
 }
 
 type metricGenerator struct {
 	metricID int
 }
 
-func newMetricGenerator() *metricGenerator {
-	return &metricGenerator{}
+func newMetricGenerator() metricGenerator {
+	return metricGenerator{}
 }
 
-func (g *metricGenerator) genMetricDataFromCfg(cfg MetricCfg) pdata.Metrics {
+func (g *metricGenerator) genMetricFromCfg(cfg MetricCfg) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rms.Resize(cfg.NumResourceMetrics)

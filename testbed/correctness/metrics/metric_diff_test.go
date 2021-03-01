@@ -24,8 +24,8 @@ import (
 )
 
 func TestSameMetrics(t *testing.T) {
-	expected := goldendataset.DefaultMetricData()
-	actual := goldendataset.DefaultMetricData()
+	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
+	actual := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	diffs := diffMetricData(expected, actual)
 	assert.Nil(t, diffs)
 }
@@ -44,28 +44,28 @@ func toSlice(s pdata.ResourceMetricsSlice) (out []pdata.ResourceMetrics) {
 }
 
 func TestDifferentValues(t *testing.T) {
-	expected := goldendataset.DefaultMetricData()
+	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
 	cfg.PtVal = 2
-	actual := goldendataset.MetricDataFromCfg(cfg)
+	actual := goldendataset.MetricsFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 1)
 }
 
 func TestDifferentNumPts(t *testing.T) {
-	expected := goldendataset.DefaultMetricData()
+	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
 	cfg.NumPtsPerMetric = 2
-	actual := goldendataset.MetricDataFromCfg(cfg)
+	actual := goldendataset.MetricsFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 1)
 }
 
 func TestDifferentPtTypes(t *testing.T) {
-	expected := goldendataset.DefaultMetricData()
+	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
 	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleGauge
-	actual := goldendataset.MetricDataFromCfg(cfg)
+	actual := goldendataset.MetricsFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 1)
 }
@@ -73,11 +73,11 @@ func TestDifferentPtTypes(t *testing.T) {
 func TestDoubleHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
 	cfg1.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
-	expected := goldendataset.MetricDataFromCfg(cfg1)
+	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
 	cfg2.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
 	cfg2.PtVal = 2
-	actual := goldendataset.MetricDataFromCfg(cfg2)
+	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 3)
 }
@@ -85,11 +85,11 @@ func TestDoubleHistogram(t *testing.T) {
 func TestIntHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
 	cfg1.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
-	expected := goldendataset.MetricDataFromCfg(cfg1)
+	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
 	cfg2.MetricDescriptorType = pdata.MetricDataTypeIntHistogram
 	cfg2.PtVal = 2
-	actual := goldendataset.MetricDataFromCfg(cfg2)
+	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 3)
 }
