@@ -168,17 +168,17 @@ func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *otlpReceiver) Shutdown(context.Context) error {
+func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	r.stopOnce.Do(func() {
 		err = nil
 
 		if r.serverHTTP != nil {
-			err = r.serverHTTP.Close()
+			err = r.serverHTTP.Shutdown(ctx)
 		}
 
 		if r.serverGRPC != nil {
-			r.serverGRPC.Stop()
+			r.serverGRPC.GracefulStop()
 		}
 	})
 	return err
