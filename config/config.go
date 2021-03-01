@@ -251,9 +251,9 @@ func errorDuplicateName(component string, fullName string) error {
 	}
 }
 
-func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type]component.ExtensionFactory) (configmodels.Extensions, error) {
+func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type]component.ExtensionFactory) (map[string]configmodels.Extension, error) {
 	// Prepare resulting map.
-	extensions := make(configmodels.Extensions)
+	extensions := make(map[string]configmodels.Extension)
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
@@ -298,11 +298,10 @@ func loadService(rawService serviceSettings) (configmodels.Service, error) {
 	var ret configmodels.Service
 	ret.Extensions = rawService.Extensions
 
+	var err error
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
-	pipelines, err := loadPipelines(rawService.Pipelines)
-	ret.Pipelines = pipelines
-
+	ret.Pipelines, err = loadPipelines(rawService.Pipelines)
 	return ret, err
 }
 
@@ -323,9 +322,9 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	return receiverCfg, nil
 }
 
-func loadReceivers(recvs map[string]interface{}, factories map[configmodels.Type]component.ReceiverFactory) (configmodels.Receivers, error) {
+func loadReceivers(recvs map[string]interface{}, factories map[configmodels.Type]component.ReceiverFactory) (map[string]configmodels.Receiver, error) {
 	// Prepare resulting map
-	receivers := make(configmodels.Receivers)
+	receivers := make(map[string]configmodels.Receiver)
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
@@ -360,9 +359,9 @@ func loadReceivers(recvs map[string]interface{}, factories map[configmodels.Type
 	return receivers, nil
 }
 
-func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]component.ExporterFactory) (configmodels.Exporters, error) {
+func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]component.ExporterFactory) (map[string]configmodels.Exporter, error) {
 	// Prepare resulting map
-	exporters := make(configmodels.Exporters)
+	exporters := make(map[string]configmodels.Exporter)
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
@@ -403,9 +402,9 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 	return exporters, nil
 }
 
-func loadProcessors(procs map[string]interface{}, factories map[configmodels.Type]component.ProcessorFactory) (configmodels.Processors, error) {
+func loadProcessors(procs map[string]interface{}, factories map[configmodels.Type]component.ProcessorFactory) (map[string]configmodels.Processor, error) {
 	// Prepare resulting map.
-	processors := make(configmodels.Processors)
+	processors := make(map[string]configmodels.Processor)
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
@@ -446,9 +445,9 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 	return processors, nil
 }
 
-func loadPipelines(pipelinesConfig map[string]pipelineSettings) (configmodels.Pipelines, error) {
+func loadPipelines(pipelinesConfig map[string]pipelineSettings) (map[string]*configmodels.Pipeline, error) {
 	// Prepare resulting map.
-	pipelines := make(configmodels.Pipelines)
+	pipelines := make(map[string]*configmodels.Pipeline)
 
 	// Iterate over input map and create a config for each.
 	for key, rawPipeline := range pipelinesConfig {
@@ -476,7 +475,7 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (configmodels.Pi
 		pipelineCfg.Processors = rawPipeline.Processors
 		pipelineCfg.Exporters = rawPipeline.Exporters
 
-		if pipelines[fullName] != nil {
+		if _, ok := pipelines[fullName]; ok {
 			return nil, errorDuplicateName(pipelinesKeyName, fullName)
 		}
 

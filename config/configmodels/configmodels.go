@@ -14,7 +14,7 @@
 
 // Package configmodels defines the data models for entities. This file defines the
 // models for configuration format. The defined entities are:
-// Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
+// Config (the top-level structure), Receiver, Exporter, Processor, Extension, Service.
 package configmodels
 
 /*
@@ -33,10 +33,15 @@ the corresponding common settings struct (the easiest approach is to embed the c
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
-	Receivers
-	Exporters
-	Processors
-	Extensions
+	// Receivers is a map of names to Receiver.
+	Receivers map[string]Receiver
+	// Exporters is a map of names to Exporter.
+	Exporters map[string]Exporter
+	// Processors is a map of names to Processor.
+	Processors map[string]Processor
+	// Extensions is a map of names to Extension.
+	Extensions map[string]Extension
+	// Service defines the configurable components of the service.
 	Service
 }
 
@@ -56,25 +61,16 @@ type Receiver interface {
 	NamedEntity
 }
 
-// Receivers is a map of names to Receivers.
-type Receivers map[string]Receiver
-
 // Exporter is the configuration of an exporter.
 type Exporter interface {
 	NamedEntity
 }
-
-// Exporters is a map of names to Exporters.
-type Exporters map[string]Exporter
 
 // Processor is the configuration of a processor. Specific processors must implement this
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
 type Processor interface {
 	NamedEntity
 }
-
-// Processors is a map of names to Processors.
-type Processors map[string]Processor
 
 // DataType is the data type that is supported for collection. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
@@ -102,9 +98,6 @@ type Pipeline struct {
 	Exporters  []string `mapstructure:"exporters"`
 }
 
-// Pipelines is a map of names to Pipelines.
-type Pipelines map[string]*Pipeline
-
 // Extension is the configuration of a service extension. Specific extensions
 // must implement this interface and will typically embed ExtensionSettings
 // struct or a struct that extends it.
@@ -112,16 +105,13 @@ type Extension interface {
 	NamedEntity
 }
 
-// Extensions is a map of names to extensions.
-type Extensions map[string]Extension
-
 // Service defines the configurable components of the service.
 type Service struct {
 	// Extensions is the ordered list of extensions configured for the service.
 	Extensions []string `mapstructure:"extensions"`
 
 	// Pipelines is the set of data pipelines configured for the service.
-	Pipelines Pipelines `mapstructure:"pipelines"`
+	Pipelines map[string]*Pipeline `mapstructure:"pipelines"`
 }
 
 // Below are common setting structs for Receivers, Exporters and Processors.
