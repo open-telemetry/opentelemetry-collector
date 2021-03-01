@@ -15,71 +15,92 @@
 package prometheusexporter
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"net"
+	"net/http"
+	"strings"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	// TODO: once this repository has been transferred to the
-	// official census-ecosystem location, update this import path.
-	"github.com/orijtech/prometheus-go-metrics-exporter"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/obsreport"
 )
-
-var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 type prometheusExporter struct {
 	name         string
-	exporter     *prometheus.Exporter
+	endpoint     string
 	shutdownFunc func() error
+	handler      http.Handler
+	collector    *collector
+	registry     *prometheus.Registry
+	obsrep       *obsreport.ExporterObsReport
+}
+
+var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
+
+func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExporter, error) {
+	addr := strings.TrimSpace(config.Endpoint)
+	if strings.TrimSpace(config.Endpoint) == "" {
+		return nil, errBlankPrometheusAddress
+	}
+
+	obsrep := obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), config.Name())
+
+	collector := newCollector(config, logger)
+	registry := prometheus.NewRegistry()
+	_ = registry.Register(collector)
+
+	return &prometheusExporter{
+		name:         config.Name(),
+		endpoint:     addr,
+		collector:    collector,
+		registry:     registry,
+		shutdownFunc: func() error { return nil },
+		obsrep:       obsrep,
+		handler: promhttp.HandlerFor(
+			registry,
+			promhttp.HandlerOpts{
+				ErrorHandling: promhttp.ContinueOnError,
+			},
+		),
+	}, nil
 }
 
 func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
+	ln, err := net.Listen("tcp", pe.endpoint)
+	if err != nil {
+		return err
+	}
+
+	pe.shutdownFunc = ln.Close
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", pe.handler)
+	srv := &http.Server{Handler: mux}
+	go func() {
+		_ = srv.Serve(ln)
+	}()
+
 	return nil
 }
 
 func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	ocmds := internaldata.MetricsToOC(md)
-	for _, ocmd := range ocmds {
-		merged := make(map[string]*metricspb.Metric)
-		for _, metric := range ocmd.Metrics {
-			merge(merged, metric)
-		}
-		for _, metric := range merged {
-			_ = pe.exporter.ExportMetric(ctx, ocmd.Node, ocmd.Resource, metric)
-		}
+	pe.obsrep.StartMetricsExportOp(ctx)
+	n := 0
+	rmetrics := md.ResourceMetrics()
+	for i := 0; i < rmetrics.Len(); i++ {
+		n += pe.collector.processMetrics(rmetrics.At(i))
 	}
+	pe.obsrep.EndMetricsExportOp(ctx, n, nil)
+
 	return nil
 }
 
-// The underlying exporter overwrites timeseries when there are conflicting metric signatures.
-// Therefore, we need to merge timeseries that share a metric signature into a single metric before sending.
-func merge(m map[string]*metricspb.Metric, metric *metricspb.Metric) {
-	key := metricSignature(metric)
-	current, ok := m[key]
-	if !ok {
-		m[key] = metric
-		return
-	}
-	current.Timeseries = append(current.Timeseries, metric.Timeseries...)
-}
-
-// Unique identifier of a given promtheus metric
-// Assumes label keys are always in the same order
-func metricSignature(metric *metricspb.Metric) string {
-	var buf bytes.Buffer
-	buf.WriteString(metric.GetMetricDescriptor().GetName())
-	labelKeys := metric.GetMetricDescriptor().GetLabelKeys()
-	for _, labelKey := range labelKeys {
-		buf.WriteString("-" + labelKey.Key)
-	}
-	return buf.String()
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (pe *prometheusExporter) Shutdown(context.Context) error {
+func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
 	return pe.shutdownFunc()
 }

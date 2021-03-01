@@ -16,6 +16,7 @@ The following settings can be optionally configured:
 - `namespace` (no default): if set, exports metrics under the provided value.
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying
   metric sample in the response.
+- `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
 
 Example:
 
@@ -28,4 +29,5 @@ exporters:
       label1: value1
       "another label": spaced value
     send_timestamps: true
+    metric_expiration: 180m
 ```

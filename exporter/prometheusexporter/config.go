@@ -15,6 +15,8 @@
 package prometheusexporter
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -35,4 +37,7 @@ type Config struct {
 
 	// SendTimestamps will send the underlying scrape timestamp with the export
 	SendTimestamps bool `mapstructure:"send_timestamps"`
+
+	// MetricExpiration defines how long metrics are kept without updates
+	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
 }

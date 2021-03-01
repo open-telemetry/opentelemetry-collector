@@ -17,6 +17,7 @@ package prometheusexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
-			SendTimestamps: true,
+			SendTimestamps:   true,
+			MetricExpiration: 60 * time.Minute,
 		})
 }
