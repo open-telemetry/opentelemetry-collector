@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 func TestScrape_Errors(t *testing.T) {
@@ -110,10 +110,10 @@ func TestScrape_Errors(t *testing.T) {
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
-				isPartial := consumererror.IsPartialScrapeError(err)
+				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, test.expectedErrCount, err.(consumererror.PartialScrapeError).Failed)
+					assert.Equal(t, test.expectedErrCount, err.(scrapererror.PartialScrapeError).Failed)
 				}
 
 				return

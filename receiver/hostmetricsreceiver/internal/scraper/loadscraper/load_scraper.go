@@ -22,9 +22,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const metricsLen = 3
@@ -60,7 +60,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	now := pdata.TimestampFromTime(time.Now())
 	avgLoadValues, err := s.load()
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	metrics.Resize(metricsLen)

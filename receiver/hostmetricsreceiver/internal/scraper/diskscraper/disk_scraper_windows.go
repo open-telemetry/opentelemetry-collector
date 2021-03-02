@@ -22,11 +22,11 @@ import (
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -102,12 +102,12 @@ func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	logicalDiskObject, err := counters.GetObject(logicalDisk)
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -115,7 +115,7 @@ func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 
 	logicalDiskCounterValues, err := logicalDiskObject.GetValues(readsPerSec, writesPerSec, readBytesPerSec, writeBytesPerSec, idleTime, avgDiskSecsPerRead, avgDiskSecsPerWrite, queueLength)
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if len(logicalDiskCounterValues) > 0 {

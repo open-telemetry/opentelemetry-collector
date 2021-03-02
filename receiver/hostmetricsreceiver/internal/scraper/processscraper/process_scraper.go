@@ -24,10 +24,10 @@ import (
 	"github.com/shirou/gopsutil/process"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -86,11 +86,11 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
 	rms := pdata.NewResourceMetricsSlice()
 
-	var errs consumererror.ScrapeErrors
+	var errs scrapererror.ScrapeErrors
 
 	metadata, err := s.getProcessMetadata()
 	if err != nil {
-		partialErr, isPartial := err.(consumererror.PartialScrapeError)
+		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
 			return rms, err
 		}
@@ -135,7 +135,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		return nil, err
 	}
 
-	var errs consumererror.ScrapeErrors
+	var errs scrapererror.ScrapeErrors
 
 	metadata := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {

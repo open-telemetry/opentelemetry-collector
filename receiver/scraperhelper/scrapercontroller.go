@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // ScraperControllerSettings defines common settings for a scraper controller
@@ -204,7 +205,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 		if err != nil {
 			sc.logger.Error("Error scraping metrics", zap.Error(err))
 
-			if !consumererror.IsPartialScrapeError(err) {
+			if !scrapererror.IsPartialScrapeError(err) {
 				continue
 			}
 		}
@@ -260,11 +261,11 @@ func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) 
 	ilms.Resize(1)
 	ilm := ilms.At(0)
 
-	var errs consumererror.ScrapeErrors
+	var errs scrapererror.ScrapeErrors
 	for _, scraper := range mms.scrapers {
 		metrics, err := scraper.Scrape(ctx, receiverName)
 		if err != nil {
-			partialErr, isPartial := err.(consumererror.PartialScrapeError)
+			partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 			if isPartial {
 				errs.AddPartial(partialErr.Failed, partialErr)
 			}

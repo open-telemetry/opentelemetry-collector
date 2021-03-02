@@ -20,9 +20,9 @@ import (
 
 	"github.com/shirou/gopsutil/mem"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const metricsLen = 1
@@ -47,7 +47,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	now := pdata.TimestampFromTime(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	metrics.Resize(metricsLen)

@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 type testInitialize struct {
@@ -387,7 +388,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 	expectedScraped := int64(sink.MetricsCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
-		if partialError, isPartial := expectedErr.(consumererror.PartialScrapeError); isPartial {
+		if partialError, isPartial := expectedErr.(scrapererror.PartialScrapeError); isPartial {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)
