@@ -343,7 +343,7 @@ func (b badExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 	return &configmodels.ExtensionSettings{}
 }
 
-func (b badExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.ServiceExtension, error) {
+func (b badExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.Extension, error) {
 	return nil, nil
 }
 

@@ -61,7 +61,7 @@ func (ews *ErrorWaitingHost) GetFactory(_ component.Kind, _ configmodels.Type) c
 	return nil
 }
 
-func (ews *ErrorWaitingHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (ews *ErrorWaitingHost) GetExtensions() map[configmodels.Extension]component.Extension {
 	return nil
 }
 

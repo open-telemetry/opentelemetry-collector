@@ -217,7 +217,7 @@ func (app *Application) GetFactory(kind component.Kind, componentType configmode
 	return nil
 }
 
-func (app *Application) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (app *Application) GetExtensions() map[configmodels.Extension]component.Extension {
 	return app.builtExtensions.ToMap()
 }
 

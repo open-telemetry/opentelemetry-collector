@@ -473,7 +473,7 @@ func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 }
 
 // CreateExtension creates an Extension based on this config.
-func (f *ExampleExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.ServiceExtension, error) {
+func (f *ExampleExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.Extension, error) {
 	if f.FailCreation {
 		return nil, fmt.Errorf("cannot create %q extension type", f.Type())
 	}

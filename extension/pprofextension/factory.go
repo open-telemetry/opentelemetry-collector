@@ -47,7 +47,7 @@ func createDefaultConfig() configmodels.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
 	if config.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
