@@ -39,7 +39,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -111,7 +110,7 @@ type testData struct {
 	pages        []mockPrometheusResponse
 	node         *commonpb.Node
 	resource     *resourcepb.Resource
-	validateFunc func(t *testing.T, td *testData, result []consumerdata.MetricsData)
+	validateFunc func(t *testing.T, td *testData, result []internaldata.MetricsData)
 }
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
@@ -167,7 +166,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
-func verifyNumScrapeResults(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
+func verifyNumScrapeResults(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	want := 0
 	for _, p := range td.pages {
 		if p.code == 200 {
@@ -248,7 +247,7 @@ rpc_duration_seconds_sum 5002
 rpc_duration_seconds_count 1001
 `
 
-func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
+func verifyTarget1(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
 	// m1 shall only have a gauge
@@ -282,7 +281,7 @@ func verifyTarget1(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &consumerdata.MetricsData{
+	want2 := &internaldata.MetricsData{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -475,7 +474,7 @@ http_requests_total{method="post",code="400"} 59
 http_requests_total{method="post",code="500"} 5
 `
 
-func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
+func verifyTarget2(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
 	// m1 shall only have a gauge
@@ -508,7 +507,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &consumerdata.MetricsData{
+	want2 := &internaldata.MetricsData{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -565,7 +564,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	// its start timestamp shall be from the 2nd run
 	ts3 := m3.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want3 := &consumerdata.MetricsData{
+	want3 := &internaldata.MetricsData{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -631,7 +630,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	m4 := mds[3]
 	ts4 := m4.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want4 := &consumerdata.MetricsData{
+	want4 := &internaldata.MetricsData{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -658,7 +657,7 @@ func verifyTarget2(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	// its start timestamp shall be from the 3rd run
 	ts5 := m5.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want5 := &consumerdata.MetricsData{
+	want5 := &internaldata.MetricsData{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -793,7 +792,7 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
+func verifyTarget3(t *testing.T, td *testData, mds []internaldata.MetricsData) {
 	verifyNumScrapeResults(t, td, mds)
 	m1 := mds[0]
 	// m1 shall only have a gauge
@@ -825,7 +824,7 @@ func verifyTarget3(t *testing.T, td *testData, mds []consumerdata.MetricsData) {
 	m2 := mds[1]
 	ts2 := m2.Metrics[0].Timeseries[0].Points[0].Timestamp
 
-	want2 := &consumerdata.MetricsData{
+	want2 := &internaldata.MetricsData{
 		Node:     td.node,
 		Resource: td.resource,
 		Metrics: []*metricspb.Metric{
@@ -1025,7 +1024,7 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 
 const numStartTimeMetricPageTimeseries = 6
 
-func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []consumerdata.MetricsData) {
+func verifyStartTimeMetricPage(t *testing.T, _ *testData, mds []internaldata.MetricsData) {
 	numTimeseries := 0
 	for _, cmd := range mds {
 		for _, metric := range cmd.Metrics {
@@ -1074,13 +1073,13 @@ func testEndToEnd(t *testing.T, targets []*testData, useStartTimeMetric bool) {
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]consumerdata.MetricsData)
+	results := make(map[string][]internaldata.MetricsData)
 	for _, m := range metrics {
 		ocmds := internaldata.MetricsToOC(m)
 		for _, ocmd := range ocmds {
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
-				result = make([]consumerdata.MetricsData, 0)
+				result = make([]internaldata.MetricsData, 0)
 			}
 			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}
@@ -1161,13 +1160,13 @@ func testEndToEndRegex(t *testing.T, targets []*testData, useStartTimeMetric boo
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
-	results := make(map[string][]consumerdata.MetricsData)
+	results := make(map[string][]internaldata.MetricsData)
 	for _, m := range metrics {
 		ocmds := internaldata.MetricsToOC(m)
 		for _, ocmd := range ocmds {
 			result, ok := results[ocmd.Node.ServiceInfo.Name]
 			if !ok {
-				result = make([]consumerdata.MetricsData, 0)
+				result = make([]internaldata.MetricsData, 0)
 			}
 			results[ocmd.Node.ServiceInfo.Name] = append(result, ocmd)
 		}

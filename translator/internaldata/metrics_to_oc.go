@@ -20,7 +20,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -34,14 +33,14 @@ type labelKeys struct {
 
 // MetricsToOC may be used only by OpenCensus receiver and exporter implementations.
 // TODO: move this function to OpenCensus package.
-func MetricsToOC(md pdata.Metrics) []consumerdata.MetricsData {
+func MetricsToOC(md pdata.Metrics) []MetricsData {
 	resourceMetrics := md.ResourceMetrics()
 
 	if resourceMetrics.Len() == 0 {
 		return nil
 	}
 
-	ocResourceMetricsList := make([]consumerdata.MetricsData, 0, resourceMetrics.Len())
+	ocResourceMetricsList := make([]MetricsData, 0, resourceMetrics.Len())
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		ocResourceMetricsList = append(ocResourceMetricsList, resourceMetricsToOC(resourceMetrics.At(i)))
 	}
@@ -49,8 +48,8 @@ func MetricsToOC(md pdata.Metrics) []consumerdata.MetricsData {
 	return ocResourceMetricsList
 }
 
-func resourceMetricsToOC(rm pdata.ResourceMetrics) consumerdata.MetricsData {
-	ocMetricsData := consumerdata.MetricsData{}
+func resourceMetricsToOC(rm pdata.ResourceMetrics) MetricsData {
+	ocMetricsData := MetricsData{}
 	ocMetricsData.Node, ocMetricsData.Resource = internalResourceToOC(rm.Resource())
 	ilms := rm.InstrumentationLibraryMetrics()
 	if ilms.Len() == 0 {

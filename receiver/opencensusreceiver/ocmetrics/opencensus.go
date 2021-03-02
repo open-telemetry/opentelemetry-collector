@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -117,7 +116,7 @@ func (ocr *Receiver) processReceivedMsg(
 		resource = recv.Resource
 	}
 
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Node:     lastNonNilNode,
 		Resource: resource,
 		Metrics:  recv.Metrics,
@@ -127,7 +126,7 @@ func (ocr *Receiver) processReceivedMsg(
 	return lastNonNilNode, resource, err
 }
 
-func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md consumerdata.MetricsData) error {
+func (ocr *Receiver) sendToNextConsumer(longLivedRPCCtx context.Context, md internaldata.MetricsData) error {
 	ctx := obsreport.StartMetricsReceiveOp(
 		longLivedRPCCtx,
 		ocr.instanceName,
