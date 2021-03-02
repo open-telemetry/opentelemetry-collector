@@ -108,6 +108,8 @@ func (bp *batchProcessor) Start(context.Context, component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (bp *batchProcessor) Shutdown(context.Context) error {
 	bp.cancel()
+
+	// Wait until current batch is drained.
 	<-bp.done
 	return nil
 }
@@ -132,6 +134,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 				// make it cancellable using the context that Shutdown gets as a parameter
 				bp.sendItems(statTimeoutTriggerSend)
 			}
+			// Indicate that we finished draining.
 			close(bp.done)
 			return
 		case item := <-bp.newItem:

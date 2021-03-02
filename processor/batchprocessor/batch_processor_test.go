@@ -689,3 +689,8 @@ func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
 	}
 	return logsReceivedByName
 }
+
+func TestShutdown(t *testing.T) {
+	factory := NewFactory()
+	componenttest.VerifyProcessorShutdown(t, factory, factory.CreateDefaultConfig())
+}
