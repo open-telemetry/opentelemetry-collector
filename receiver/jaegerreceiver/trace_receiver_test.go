@@ -529,12 +529,10 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	}
 	exp, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewTracesNop())
 	require.NoError(t, err)
-	host := &componenttest.ErrorWaitingHost{}
-	err = exp.Start(context.Background(), host)
+	err = exp.Start(context.Background(), newAssertNoErrorHost(t))
 	require.NoError(t, err)
 	defer exp.Shutdown(context.Background())
-	_, err = host.WaitForFatalError(200 * time.Millisecond)
-	require.NoError(t, err)
+	<-time.After(200 * time.Millisecond)
 
 	resp, err := http.Get(fmt.Sprintf("http://%s?service=bar", hostEndpoint))
 	require.NoError(t, err)
@@ -586,4 +584,22 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 		return fmt.Errorf("failed to upload traces; HTTP status code: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// assertNoErrorHost implements a component.Host that asserts that there were no errors.
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		Host: componenttest.NewNopHost(),
+		T:    t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
 }
