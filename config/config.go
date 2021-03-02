@@ -18,11 +18,9 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
@@ -113,9 +111,6 @@ type deprecatedUnmarshaler interface {
 	CustomUnmarshaler() component.CustomUnmarshaler
 }
 
-// typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
-const typeAndNameSeparator = "/"
-
 // Creates a new Viper instance with a different key-delimitor "::" instead of the
 // default ".". This way configs can have keys that contain ".".
 func NewViper() *viper.Viper {
@@ -184,45 +179,6 @@ func Load(
 	return &config, nil
 }
 
-// DecodeTypeAndName decodes a key in type[/name] format into type and fullName.
-// fullName is the key normalized such that type and name components have spaces trimmed.
-// The "type" part must be present, the forward slash and "name" are optional. typeStr
-// will be non-empty if err is nil.
-func DecodeTypeAndName(key string) (typeStr configmodels.Type, fullName string, err error) {
-	items := strings.SplitN(key, typeAndNameSeparator, 2)
-
-	if len(items) >= 1 {
-		typeStr = configmodels.Type(strings.TrimSpace(items[0]))
-	}
-
-	if len(items) == 0 || typeStr == "" {
-		err = errors.New("type/name key must have the type part")
-		return
-	}
-
-	var nameSuffix string
-	if len(items) > 1 {
-		// "name" part is present.
-		nameSuffix = strings.TrimSpace(items[1])
-		if nameSuffix == "" {
-			err = errors.New("name part must be specified after " + typeAndNameSeparator + " in type/name key")
-			return
-		}
-	} else {
-		nameSuffix = ""
-	}
-
-	// Create normalized fullName.
-	if nameSuffix == "" {
-		fullName = string(typeStr)
-	} else {
-		fullName = string(typeStr) + typeAndNameSeparator + nameSuffix
-	}
-
-	err = nil
-	return
-}
-
 func errorInvalidTypeAndNameKey(component, key string, err error) error {
 	return &configError{
 		code: errInvalidTypeAndNameKey,
@@ -230,10 +186,10 @@ func errorInvalidTypeAndNameKey(component, key string, err error) error {
 	}
 }
 
-func errorUnknownType(component string, typeStr configmodels.Type, fullName string) error {
+func errorUnknownType(component string, typeStr string, fullName string) error {
 	return &configError{
 		code: errUnknownType,
-		msg:  fmt.Sprintf("unknown %s type %q for %s", component, typeStr, fullName),
+		msg:  fmt.Sprintf("unknown %s type %s for %s", component, typeStr, fullName),
 	}
 }
 
@@ -261,34 +217,33 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := DecodeTypeAndName(key)
+		tn, err := configmodels.ParseNamedEntity(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(extensionsKeyName, key, err)
 		}
 
 		// Find extension factory based on "type" that we read from config source.
-		factory := factories[typeStr]
+		factory := factories[tn.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(extensionsKeyName, typeStr, fullName)
+			return nil, errorUnknownType(extensionsKeyName, string(tn.Type()), tn.FullName())
 		}
 
 		// Create the default config for this extension
 		extensionCfg := factory.CreateDefaultConfig()
-		extensionCfg.SetName(fullName)
 		expandEnvLoadedConfig(extensionCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
 		if err := unm(componentConfig, extensionCfg); err != nil {
-			return nil, errorUnmarshalError(extensionsKeyName, fullName, err)
+			return nil, errorUnmarshalError(extensionsKeyName, tn.FullName(), err)
 		}
 
-		if extensions[fullName] != nil {
-			return nil, errorDuplicateName(extensionsKeyName, fullName)
+		if _, ok := extensions[tn]; ok {
+			return nil, errorDuplicateName(extensionsKeyName, tn.FullName())
 		}
 
-		extensions[fullName] = extensionCfg
+		extensions[tn] = extensionCfg
 	}
 
 	return extensions, nil
@@ -296,31 +251,36 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 
 func loadService(rawService serviceSettings) (configmodels.Service, error) {
 	var ret configmodels.Service
-	ret.Extensions = rawService.Extensions
+
+	var err error
+	if ret.Extensions, err = stringsToNamedComponents("service::extensions", rawService.Extensions); err != nil {
+		return configmodels.Service{}, err
+	}
+	for _, extFullName := range rawService.Extensions {
+		tn, err := configmodels.ParseNamedEntity(extFullName)
+		if err != nil {
+			return ret, errorInvalidTypeAndNameKey("service::extensions", extFullName, err)
+		}
+		ret.Extensions = append(ret.Extensions, tn)
+	}
 
 	// Process the pipelines first so in case of error on them it can be properly
 	// reported.
-	pipelines, err := loadPipelines(rawService.Pipelines)
-	ret.Pipelines = pipelines
-
+	ret.Pipelines, err = loadPipelines(rawService.Pipelines)
 	return ret, err
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactory) (configmodels.Receiver, error) {
+func LoadReceiver(componentConfig *viper.Viper, factory component.ReceiverFactory) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
-	receiverCfg.SetName(fullName)
 	expandEnvLoadedConfig(receiverCfg)
 
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
 	unm := unmarshaler(factory)
-	if err := unm(componentConfig, receiverCfg); err != nil {
-		return nil, errorUnmarshalError(receiversKeyName, fullName, err)
-	}
 
-	return receiverCfg, nil
+	return receiverCfg, unm(componentConfig, receiverCfg)
 }
 
 func loadReceivers(recvs map[string]interface{}, factories map[configmodels.Type]component.ReceiverFactory) (configmodels.Receivers, error) {
@@ -333,28 +293,26 @@ func loadReceivers(recvs map[string]interface{}, factories map[configmodels.Type
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := DecodeTypeAndName(key)
+		tn, err := configmodels.ParseNamedEntity(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(receiversKeyName, key, err)
 		}
 
 		// Find receiver factory based on "type" that we read from config source
-		factory := factories[typeStr]
+		factory := factories[tn.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(receiversKeyName, typeStr, fullName)
+			return nil, errorUnknownType(receiversKeyName, string(tn.Type()), tn.FullName())
 		}
 
-		receiverCfg, err := LoadReceiver(componentConfig, typeStr, fullName, factory)
-
+		receiverCfg, err := LoadReceiver(componentConfig, factory)
 		if err != nil {
-			// LoadReceiver already wraps the error.
-			return nil, err
+			return nil, errorUnmarshalError(receiversKeyName, tn.FullName(), err)
 		}
 
-		if receivers[receiverCfg.Name()] != nil {
-			return nil, errorDuplicateName(receiversKeyName, fullName)
+		if _, ok := receivers[tn]; ok {
+			return nil, errorDuplicateName(receiversKeyName, tn.FullName())
 		}
-		receivers[receiverCfg.Name()] = receiverCfg
+		receivers[tn] = receiverCfg
 	}
 
 	return receivers, nil
@@ -370,34 +328,33 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := DecodeTypeAndName(key)
+		tn, err := configmodels.ParseNamedEntity(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(exportersKeyName, key, err)
 		}
 
 		// Find exporter factory based on "type" that we read from config source
-		factory := factories[typeStr]
+		factory := factories[tn.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(exportersKeyName, typeStr, fullName)
+			return nil, errorUnknownType(exportersKeyName, string(tn.Type()), tn.FullName())
 		}
 
 		// Create the default config for this exporter
 		exporterCfg := factory.CreateDefaultConfig()
-		exporterCfg.SetName(fullName)
 		expandEnvLoadedConfig(exporterCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
 		if err := unm(componentConfig, exporterCfg); err != nil {
-			return nil, errorUnmarshalError(exportersKeyName, fullName, err)
+			return nil, errorUnmarshalError(exportersKeyName, tn.FullName(), err)
 		}
 
-		if exporters[fullName] != nil {
-			return nil, errorDuplicateName(exportersKeyName, fullName)
+		if _, ok := exporters[tn]; ok {
+			return nil, errorDuplicateName(exportersKeyName, tn.FullName())
 		}
 
-		exporters[fullName] = exporterCfg
+		exporters[tn] = exporterCfg
 	}
 
 	return exporters, nil
@@ -413,34 +370,33 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
-		typeStr, fullName, err := DecodeTypeAndName(key)
+		tn, err := configmodels.ParseNamedEntity(key)
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(processorsKeyName, key, err)
 		}
 
 		// Find processor factory based on "type" that we read from config source.
-		factory := factories[typeStr]
+		factory := factories[tn.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(processorsKeyName, typeStr, fullName)
+			return nil, errorUnknownType(processorsKeyName, string(tn.Type()), tn.FullName())
 		}
 
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
-		processorCfg.SetName(fullName)
 		expandEnvLoadedConfig(processorCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
 		if err := unm(componentConfig, processorCfg); err != nil {
-			return nil, errorUnmarshalError(processorsKeyName, fullName, err)
+			return nil, errorUnmarshalError(processorsKeyName, tn.FullName(), err)
 		}
 
-		if processors[fullName] != nil {
-			return nil, errorDuplicateName(processorsKeyName, fullName)
+		if _, ok := processors[tn]; ok {
+			return nil, errorDuplicateName(processorsKeyName, tn.FullName())
 		}
 
-		processors[fullName] = processorCfg
+		processors[tn] = processorCfg
 	}
 
 	return processors, nil
@@ -453,7 +409,8 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (configmodels.Pi
 	// Iterate over input map and create a config for each.
 	for key, rawPipeline := range pipelinesConfig {
 		// Decode the key into type and name components.
-		typeStr, fullName, err := DecodeTypeAndName(key)
+		typeStr, nameStr, err := configmodels.DecodeTypeAndName(key)
+		fullName := typeStr + "/" + nameStr
 		if err != nil {
 			return nil, errorInvalidTypeAndNameKey(pipelinesKeyName, key, err)
 		}
@@ -472,9 +429,15 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (configmodels.Pi
 		}
 
 		pipelineCfg.Name = fullName
-		pipelineCfg.Receivers = rawPipeline.Receivers
-		pipelineCfg.Processors = rawPipeline.Processors
-		pipelineCfg.Exporters = rawPipeline.Exporters
+		if pipelineCfg.Receivers, err = stringsToNamedComponents("service::pipelines::"+fullName+"::receivers", rawPipeline.Receivers); err != nil {
+			return nil, err
+		}
+		if pipelineCfg.Processors, err = stringsToNamedComponents("service::pipelines::"+fullName+"::processors", rawPipeline.Processors); err != nil {
+			return nil, err
+		}
+		if pipelineCfg.Exporters, err = stringsToNamedComponents("service::pipelines::"+fullName+"::exporters", rawPipeline.Exporters); err != nil {
+			return nil, err
+		}
 
 		if pipelines[fullName] != nil {
 			return nil, errorDuplicateName(pipelinesKeyName, fullName)
@@ -777,4 +740,16 @@ func viperFromStringMap(data map[string]interface{}) *viper.Viper {
 	// Cannot return error because the subv is empty.
 	_ = v.MergeConfigMap(cast.ToStringMap(data))
 	return v
+}
+
+func stringsToNamedComponents(configComp string, components []string) ([]configmodels.NamedEntity, error) {
+	ret := make([]configmodels.NamedComponent, 0, len(components))
+	for _, fullName := range components {
+		nc, err := configmodels.ParseNamedEntity(fullName)
+		if err != nil {
+			return nil, errorInvalidTypeAndNameKey(configComp, fullName, err)
+		}
+		ret = append(ret, nc)
+	}
+	return ret, nil
 }

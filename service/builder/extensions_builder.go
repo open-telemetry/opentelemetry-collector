@@ -138,8 +138,13 @@ func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 			return nil, fmt.Errorf("extension %q is not configured", extName)
 		}
 
-		componentLogger := eb.logger.With(zap.String(typeLogKey, string(extCfg.Type())), zap.String(nameLogKey, extCfg.Name()))
-		ext, err := eb.buildExtension(componentLogger, eb.appInfo, extCfg)
+		componentLogger := eb.logger.With(zap.String(typeLogKey, string(extName.Type())), zap.String(nameLogKey, extCfg.Name()))
+		factory := eb.factories[extName.Type()]
+		if factory == nil {
+			return nil, fmt.Errorf("extension factory for type %q is not configured", extName.Type())
+		}
+
+		ext, err := eb.buildExtension(componentLogger, eb.appInfo, extCfg, factory)
 		if err != nil {
 			return nil, err
 		}
@@ -150,12 +155,7 @@ func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 	return extensions, nil
 }
 
-func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.ApplicationStartInfo, cfg configmodels.Extension) (*builtExtension, error) {
-	factory := eb.factories[cfg.Type()]
-	if factory == nil {
-		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.Type())
-	}
-
+func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.ApplicationStartInfo, cfg configmodels.Extension, factory component.ExtensionFactory) (*builtExtension, error) {
 	ext := &builtExtension{
 		logger: logger,
 	}

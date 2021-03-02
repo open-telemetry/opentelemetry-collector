@@ -17,6 +17,11 @@
 // Config (the top-level structure), Receivers, Exporters, Processors, Pipelines.
 package configmodels
 
+import (
+	"errors"
+	"strings"
+)
+
 /*
 Receivers, Exporters and Processors typically have common configuration settings, however
 sometimes specific implementations will have extra configuration settings.
@@ -40,41 +45,78 @@ type Config struct {
 	Service
 }
 
+// typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
+const typeAndNameSeparator = "/"
+
 // Type is the component type as it is used in the config.
 type Type string
 
 // NamedEntity is a configuration entity that has a type and a name.
-type NamedEntity interface {
-	Type() Type
-	Name() string
-	SetName(name string)
+type NamedEntity struct {
+	typeVal Type
+	nameVal string
+}
+
+// NewNamedEntity returns a new NamedEntity with the given type and name.
+func NewNamedEntity(typeVal Type, nameVal string) NamedEntity {
+	return NamedEntity{typeVal: typeVal, nameVal: nameVal}
+}
+
+// ParseNamedEntity parses the NamedEntity from a full name "type/name" format.
+func ParseNamedEntity(fullName string) (NamedEntity, error) {
+	tVal, nVal, err := DecodeTypeAndName(fullName)
+	if err != nil {
+		return NamedEntity{}, err
+	}
+	return NewNamedEntity(Type(tVal), nVal), nil
+}
+
+func (nc NamedEntity) Type() Type {
+	return nc.typeVal
+}
+
+func (nc NamedEntity) Name() string {
+	return nc.nameVal
+}
+
+func (nc NamedEntity) FullName() string {
+	if nc.nameVal == "" {
+		return string(nc.typeVal)
+	}
+	return string(nc.typeVal) + typeAndNameSeparator + nc.nameVal
 }
 
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
 type Receiver interface {
-	NamedEntity
 }
 
 // Receivers is a map of names to Receivers.
-type Receivers map[string]Receiver
+type Receivers map[NamedEntity]Receiver
 
 // Exporter is the configuration of an exporter.
 type Exporter interface {
-	NamedEntity
 }
 
 // Exporters is a map of names to Exporters.
-type Exporters map[string]Exporter
+type Exporters map[NamedEntity]Exporter
 
 // Processor is the configuration of a processor. Specific processors must implement this
 // interface and will typically embed ProcessorSettings struct or a struct that extends it.
 type Processor interface {
-	NamedEntity
 }
 
 // Processors is a map of names to Processors.
-type Processors map[string]Processor
+type Processors map[NamedEntity]Processor
+
+// Extension is the configuration of a service extension. Specific extensions
+// must implement this interface and will typically embed ExtensionSettings
+// struct or a struct that extends it.
+type Extension interface {
+}
+
+// Extensions is a map of names to extensions.
+type Extensions map[NamedEntity]Extension
 
 // DataType is the data type that is supported for collection. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
@@ -97,28 +139,18 @@ const (
 type Pipeline struct {
 	Name       string   `mapstructure:"-"`
 	InputType  DataType `mapstructure:"-"`
-	Receivers  []string `mapstructure:"receivers"`
-	Processors []string `mapstructure:"processors"`
-	Exporters  []string `mapstructure:"exporters"`
+	Receivers  []NamedEntity
+	Processors []NamedEntity
+	Exporters  []NamedEntity
 }
 
 // Pipelines is a map of names to Pipelines.
 type Pipelines map[string]*Pipeline
 
-// Extension is the configuration of a service extension. Specific extensions
-// must implement this interface and will typically embed ExtensionSettings
-// struct or a struct that extends it.
-type Extension interface {
-	NamedEntity
-}
-
-// Extensions is a map of names to extensions.
-type Extensions map[string]Extension
-
 // Service defines the configurable components of the service.
 type Service struct {
 	// Extensions is the ordered list of extensions configured for the service.
-	Extensions []string `mapstructure:"extensions"`
+	Extensions []NamedEntity
 
 	// Pipelines is the set of data pipelines configured for the service.
 	Pipelines Pipelines `mapstructure:"pipelines"`
@@ -221,3 +253,24 @@ func (ext *ExtensionSettings) Type() Type {
 }
 
 var _ Extension = (*ExtensionSettings)(nil)
+
+// DecodeTypeAndName decodes the type and name from a full name "type/name" format.
+func DecodeTypeAndName(fullName string) (string, string, error) {
+	items := strings.SplitN(fullName, typeAndNameSeparator, 2)
+	if len(items) == 0 || items[0] == "" {
+		return "", "", errors.New("type/name format must have the type part")
+	}
+
+	var nameVal string
+	if len(items) > 1 {
+		// "name" part is present.
+		nameVal = strings.TrimSpace(items[1])
+		if nameVal == "" {
+			return "", "", errors.New("empty name, consider to remove " + typeAndNameSeparator + " suffix")
+		}
+	} else {
+		nameVal = ""
+	}
+
+	return strings.TrimSpace(items[0]), nameVal, nil
+}

@@ -167,9 +167,13 @@ func (eb *ExportersBuilder) Build() (Exporters, error) {
 	exporterInputDataTypes := eb.calcExportersRequiredDataTypes()
 
 	// BuildExporters exporters based on configuration and required input data types.
-	for _, cfg := range eb.config.Exporters {
-		componentLogger := eb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
-		exp, err := eb.buildExporter(context.Background(), componentLogger, eb.appInfo, cfg, exporterInputDataTypes)
+	for nc, cfg := range eb.config.Exporters {
+		componentLogger := eb.logger.With(zap.String(typeLogKey, string(nc.Type())), zap.String(nameLogKey, nc.Name()))
+		factory := eb.factories[nc.Type()]
+		if factory == nil {
+			return nil, fmt.Errorf("exporter factory not found for type: %s", nc.Type())
+		}
+		exp, err := eb.buildExporter(context.Background(), componentLogger, eb.appInfo, cfg, factory, exporterInputDataTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -218,13 +222,9 @@ func (eb *ExportersBuilder) buildExporter(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config configmodels.Exporter,
+	factory component.ExporterFactory,
 	exportersInputDataTypes exportersRequiredDataTypes,
 ) (*builtExporter, error) {
-	factory := eb.factories[config.Type()]
-	if factory == nil {
-		return nil, fmt.Errorf("exporter factory not found for type: %s", config.Type())
-	}
-
 	exporter := &builtExporter{
 		logger:        logger,
 		expByDataType: make(map[configmodels.DataType]component.Exporter, 3),

@@ -146,14 +146,13 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	for i := len(pipelineCfg.Processors) - 1; i >= 0; i-- {
 		procName := pipelineCfg.Processors[i]
 		procCfg := pb.config.Processors[procName]
-
-		factory := pb.factories[procCfg.Type()]
+		factory := pb.factories[procName.Type()]
 
 		// This processor must point to the next consumer and then
 		// it becomes the next for the previous one (previous in the pipeline,
 		// which we will build in the next loop iteration).
 		var err error
-		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogsProcessor), zap.String(typeLogKey, string(procCfg.Type())), zap.String(nameLogKey, procCfg.Name()))
+		componentLogger := pb.logger.With(zap.String(kindLogKey, kindLogsProcessor), zap.String(typeLogKey, string(procName.Type())), zap.String(nameLogKey, procName.Name()))
 		creationParams := component.ProcessorCreateParams{
 			Logger:               componentLogger,
 			ApplicationStartInfo: pb.appInfo,
@@ -198,7 +197,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 		// Check if the factory really created the processor.
 		if tc == nil && mc == nil && lc == nil {
-			return nil, fmt.Errorf("factory for %q produced a nil processor", procCfg.Name())
+			return nil, fmt.Errorf("factory for %q produced a nil processor", procName.Name())
 		}
 	}
 
@@ -219,7 +218,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.
-func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*builtExporter {
+func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []configmodels.NamedEntity) []*builtExporter {
 	var result []*builtExporter
 	for _, name := range exporterNames {
 		exporter := pb.exporters[pb.config.Exporters[name]]
@@ -229,7 +228,7 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TracesConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []configmodels.NamedEntity) consumer.TracesConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	var exporters []consumer.TracesConsumer
@@ -241,7 +240,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	return processor.NewTracesFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []configmodels.NamedEntity) consumer.MetricsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	var exporters []consumer.MetricsConsumer
@@ -253,7 +252,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 	return processor.NewMetricsFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
+func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []configmodels.NamedEntity) consumer.LogsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	exporters := make([]consumer.LogsConsumer, len(builtExporters))

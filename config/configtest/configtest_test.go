@@ -34,7 +34,8 @@ func TestLoadConfigFile(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(cfg.Extensions))
-	assert.Equal(t, "some string", cfg.Extensions["exampleextension/1"].(*componenttest.ExampleExtensionCfg).ExtraSetting)
+	assert.Equal(t, "some string",
+		cfg.Extensions[configmodels.NewNamedEntity("exampleextension", "1")].(*componenttest.ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
@@ -55,7 +56,7 @@ func TestLoadConfigFile(t *testing.T) {
 			},
 			ExtraSetting: "some string",
 		},
-		cfg.Receivers["examplereceiver"],
+		cfg.Receivers[configmodels.NewNamedEntity("examplereceiver", "")],
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
@@ -69,7 +70,7 @@ func TestLoadConfigFile(t *testing.T) {
 			},
 			ExtraSetting: "some string",
 		},
-		cfg.Receivers["examplereceiver/myreceiver"],
+		cfg.Receivers[configmodels.NewNamedEntity("examplereceiver", "myreceiver")],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
@@ -83,7 +84,7 @@ func TestLoadConfigFile(t *testing.T) {
 			},
 			ExtraSetting: "some export string",
 		},
-		cfg.Exporters["exampleexporter"],
+		cfg.Exporters[configmodels.NewNamedEntity("exampleexporter", "")],
 		"Did not load exporter config correctly")
 
 	assert.Equal(t,
@@ -94,7 +95,7 @@ func TestLoadConfigFile(t *testing.T) {
 			},
 			ExtraSetting: "some export string 2",
 		},
-		cfg.Exporters["exampleexporter/myexporter"],
+		cfg.Exporters[configmodels.NewNamedEntity("exampleexporter", "myexporter")],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
@@ -108,7 +109,7 @@ func TestLoadConfigFile(t *testing.T) {
 			},
 			ExtraSetting: "some export string",
 		},
-		cfg.Processors["exampleprocessor"],
+		cfg.Processors[configmodels.NewNamedEntity("exampleprocessor", "")],
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
@@ -118,9 +119,9 @@ func TestLoadConfigFile(t *testing.T) {
 		&configmodels.Pipeline{
 			Name:       "traces",
 			InputType:  configmodels.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
-			Processors: []string{"exampleprocessor"},
-			Exporters:  []string{"exampleexporter"},
+			Receivers:  []configmodels.NamedComponent{configmodels.NewNamedEntity("examplereceiver", "")},
+			Processors: []configmodels.NamedComponent{configmodels.NewNamedEntity("exampleprocessor", "")},
+			Exporters:  []configmodels.NamedComponent{configmodels.NewNamedEntity("exampleexporter", "")},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
