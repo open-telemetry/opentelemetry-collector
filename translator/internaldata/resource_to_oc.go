@@ -104,7 +104,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val
-		case conventions.OCAttributeProcessID:
+		case conventions.AttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {
 				pid = defaultProcessID

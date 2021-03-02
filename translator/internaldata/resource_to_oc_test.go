@@ -231,12 +231,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			rSpans := make([]*otlptrace.ResourceSpans, 1)
-			rSpans[0] = &otlptrace.ResourceSpans{
-				Resource:                    goldendataset.GenerateResource(test),
-				InstrumentationLibrarySpans: nil,
-			}
-			traces := pdata.TracesFromOtlp(rSpans)
+			traces := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{{Resource: goldendataset.GenerateResource(test)}})
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
@@ -249,7 +244,12 @@ func TestResourceToOCAndBack(t *testing.T) {
 				assert.True(t, ok)
 				switch v.Type() {
 				case pdata.AttributeValueINT:
-					assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+					// conventions.AttributeProcessID is special because we preserve the type for this.
+					if k == conventions.AttributeProcessID {
+						assert.Equal(t, v.IntVal(), a.IntVal())
+					} else {
+						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+					}
 				case pdata.AttributeValueMAP, pdata.AttributeValueARRAY:
 					assert.Equal(t, a, a)
 				default:

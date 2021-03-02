@@ -17,9 +17,7 @@ package testbed
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
-	"math/rand"
 	"os"
 	"strconv"
 	"time"
@@ -216,12 +214,12 @@ func (dp *PerfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 type GoldenDataProvider struct {
 	tracePairsFile     string
 	spanPairsFile      string
-	random             io.Reader
 	batchesGenerated   *atomic.Uint64
 	dataItemsGenerated *atomic.Uint64
-	resourceSpans      []*otlptrace.ResourceSpans
-	spansIndex         int
-	spansMap           map[string]*otlptrace.Span
+
+	tracesGenerated []pdata.Traces
+	tracesIndex     int
+	spansMap        map[string]*otlptrace.Span
 
 	metricPairsFile  string
 	metricsGenerated []pdata.Metrics
@@ -230,13 +228,11 @@ type GoldenDataProvider struct {
 
 // NewGoldenDataProvider creates a new instance of GoldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
-// The supplied randomSeed is used to initialize the random number generator used in generating tracing IDs.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string, randomSeed int64) *GoldenDataProvider {
+func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string) *GoldenDataProvider {
 	return &GoldenDataProvider{
 		tracePairsFile:  tracePairsFile,
 		spanPairsFile:   spanPairsFile,
 		metricPairsFile: metricPairsFile,
-		random:          io.Reader(rand.New(rand.NewSource(randomSeed))),
 	}
 }
 
@@ -246,27 +242,22 @@ func (dp *GoldenDataProvider) SetLoadGeneratorCounters(batchesGenerated *atomic.
 }
 
 func (dp *GoldenDataProvider) GenerateTraces() (pdata.Traces, bool) {
-	if dp.resourceSpans == nil {
+	if dp.tracesGenerated == nil {
 		var err error
-		dp.resourceSpans, err = goldendataset.GenerateResourceSpans(dp.tracePairsFile, dp.spanPairsFile, dp.random)
+		dp.tracesGenerated, err = goldendataset.GenerateTraces(dp.tracePairsFile, dp.spanPairsFile)
 		if err != nil {
 			log.Printf("cannot generate traces: %s", err)
-			dp.resourceSpans = make([]*otlptrace.ResourceSpans, 0)
+			dp.tracesGenerated = nil
 		}
 	}
 	dp.batchesGenerated.Inc()
-	if dp.spansIndex >= len(dp.resourceSpans) {
-		return pdata.TracesFromOtlp(make([]*otlptrace.ResourceSpans, 0)), true
+	if dp.tracesIndex >= len(dp.tracesGenerated) {
+		return pdata.NewTraces(), true
 	}
-	resourceSpans := make([]*otlptrace.ResourceSpans, 1)
-	resourceSpans[0] = dp.resourceSpans[dp.spansIndex]
-	dp.spansIndex++
-	spanCount := uint64(0)
-	for _, libSpans := range resourceSpans[0].InstrumentationLibrarySpans {
-		spanCount += uint64(len(libSpans.Spans))
-	}
-	dp.dataItemsGenerated.Add(spanCount)
-	return pdata.TracesFromOtlp(resourceSpans), false
+	td := dp.tracesGenerated[dp.tracesIndex]
+	dp.tracesIndex++
+	dp.dataItemsGenerated.Add(uint64(td.SpanCount()))
+	return td, false
 }
 
 func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
@@ -277,8 +268,8 @@ func (dp *GoldenDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			log.Printf("cannot generate metrics: %s", err)
 		}
 	}
-	numMetricsGenerated := len(dp.metricsGenerated)
-	if dp.metricsIndex == numMetricsGenerated {
+	dp.batchesGenerated.Inc()
+	if dp.metricsIndex == len(dp.metricsGenerated) {
 		return pdata.Metrics{}, true
 	}
 	pdm := dp.metricsGenerated[dp.metricsIndex]
@@ -294,7 +285,11 @@ func (dp *GoldenDataProvider) GenerateLogs() (pdata.Logs, bool) {
 
 func (dp *GoldenDataProvider) GetGeneratedSpan(traceID pdata.TraceID, spanID pdata.SpanID) *otlptrace.Span {
 	if dp.spansMap == nil {
-		dp.spansMap = populateSpansMap(dp.resourceSpans)
+		var resourceSpansList []*otlptrace.ResourceSpans
+		for _, td := range dp.tracesGenerated {
+			resourceSpansList = append(resourceSpansList, pdata.TracesToOtlp(td)...)
+		}
+		dp.spansMap = populateSpansMap(resourceSpansList)
 	}
 	key := traceIDAndSpanIDToString(traceID, spanID)
 	return dp.spansMap[key]

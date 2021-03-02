@@ -275,10 +275,10 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
 	ocMessageEventAttrs := []string{
-		conventions.OCTimeEventMessageEventType,
-		conventions.OCTimeEventMessageEventID,
-		conventions.OCTimeEventMessageEventUSize,
-		conventions.OCTimeEventMessageEventCSize,
+		conventions.AttributeMessageType,
+		conventions.AttributeMessageID,
+		conventions.AttributeMessageUncompressedSize,
+		conventions.AttributeMessageCompressedSize,
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
@@ -292,16 +292,16 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
-			ocMessageEventType := ocMessageEventAttrValues[conventions.OCTimeEventMessageEventType]
+			ocMessageEventType := ocMessageEventAttrValues[conventions.AttributeMessageType]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
 				Time: timestampAsTimestampPb(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
-						Id:               uint64(ocMessageEventAttrValues[conventions.OCTimeEventMessageEventID].IntVal()),
-						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.OCTimeEventMessageEventUSize].IntVal()),
-						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.OCTimeEventMessageEventCSize].IntVal()),
+						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessageID].IntVal()),
+						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessageUncompressedSize].IntVal()),
+						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessageCompressedSize].IntVal()),
 					},
 				},
 			}

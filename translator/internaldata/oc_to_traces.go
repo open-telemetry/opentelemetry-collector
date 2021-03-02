@@ -328,6 +328,7 @@ func ocEventsToInternal(ocEvents *octrace.Span_TimeEvents, dest pdata.Span) {
 			}
 
 		case *octrace.Span_TimeEvent_MessageEvent_:
+			event.SetName("message")
 			ocMessageEventToInternalAttrs(teValue.MessageEvent, event.Attributes())
 			// No dropped attributes for this case.
 			event.SetDroppedAttributesCount(0)
@@ -380,10 +381,10 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	dest.UpsertString(conventions.OCTimeEventMessageEventType, msgEvent.Type.String())
-	dest.UpsertInt(conventions.OCTimeEventMessageEventID, int64(msgEvent.Id))
-	dest.UpsertInt(conventions.OCTimeEventMessageEventUSize, int64(msgEvent.UncompressedSize))
-	dest.UpsertInt(conventions.OCTimeEventMessageEventCSize, int64(msgEvent.CompressedSize))
+	dest.UpsertString(conventions.AttributeMessageType, msgEvent.Type.String())
+	dest.UpsertInt(conventions.AttributeMessageID, int64(msgEvent.Id))
+	dest.UpsertInt(conventions.AttributeMessageUncompressedSize, int64(msgEvent.UncompressedSize))
+	dest.UpsertInt(conventions.AttributeMessageCompressedSize, int64(msgEvent.CompressedSize))
 }
 
 func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata.Span) {
