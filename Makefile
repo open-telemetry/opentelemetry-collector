@@ -1,6 +1,6 @@
 include ./Makefile.Common
 
-# This is the code that we want to run checklicense, staticcheck, etc.
+# This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
@@ -147,7 +147,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
 	cd cmd/mdatagen && go install ./
 
 .PHONY: otelcol
