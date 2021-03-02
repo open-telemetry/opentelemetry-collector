@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove `consumerdata.TraceData` (#2551)
+- Remove custom OpenCensus sematic conventions that have equivalent in otel (#2552)
 
 ## v0.21.0 Beta
 
