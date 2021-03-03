@@ -121,7 +121,7 @@ func newGrpcSender(config *Config) (*grpcSender, error) {
 	var clientConn *grpc.ClientConn
 	var endpoint *url.URL
 	if endpoint, err = url.Parse(config.GRPCClientSettings.Endpoint); err != nil {
-		return nil, err
+		return nil, errors.New("endpoint must be a valid URL")
 	}
 	if clientConn, err = grpc.Dial(endpoint.Host, dialOpts...); err != nil {
 		return nil, err
