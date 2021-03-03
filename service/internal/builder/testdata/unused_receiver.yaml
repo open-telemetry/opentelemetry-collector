@@ -1,6 +1,6 @@
 receivers:
   examplereceiver:
-  multireceiver:
+  examplereceiver/2:
 processors:
 exporters:
   exampleexporter:

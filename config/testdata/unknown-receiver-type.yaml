@@ -8,7 +8,7 @@ service:
   pipelines:
     traces:
       receivers:
-        - multireceiver
+        - examplereceiver
       exporters:
         - exampleexporter
       processors:

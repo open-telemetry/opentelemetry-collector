@@ -7,6 +7,6 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [multireceiver]
+      receivers: [examplereceiver]
       exporters: [exampleexporter]
       processors: [exampleprocessor]

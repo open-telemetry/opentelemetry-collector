@@ -1,13 +1,12 @@
 receivers:
   examplereceiver:
-    tests
 exporters:
   exampleexporter:
+    extra: "not present in the service pipeline"
 processors:
   exampleprocessor:
 service:
   pipelines:
     traces:
       receivers: [examplereceiver]
-      exporters: [exampleexporter]
       processors: [exampleprocessor]
