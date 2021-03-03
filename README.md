@@ -4,7 +4,7 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 
 ## TL;DR
 ```console
-$ go get github.com/open-telemetry/opentelemetry-collector-builder
+$ GO111MODULE=on go get github.com/open-telemetry/opentelemetry-collector-builder
 $ cat > ~/.otelcol-builder.yaml <<EOF
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.20.0"
