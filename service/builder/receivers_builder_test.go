@@ -99,11 +99,11 @@ func testReceivers(
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 	assert.NoError(t, err)
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 
 	assert.NoError(t, err)
 	require.NotNil(t, receivers)
@@ -199,16 +199,16 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 			cfg := createExampleConfig(dataType)
 
 			// Build the pipeline
-			allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+			allExporters, err := NewExportersBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters).Build()
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
 			}
 
 			assert.NoError(t, err)
-			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+			pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 			assert.NoError(t, err)
-			receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+			receivers, err := NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 
 			assert.NoError(t, err)
 			require.NotNil(t, receivers)
@@ -271,11 +271,11 @@ func TestReceiversBuilder_DataTypeError(t *testing.T) {
 	receiver.(*componenttest.ExampleReceiver).FailTraceCreation = true
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 	assert.NoError(t, err)
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 
 	// This should fail because "examplereceiver" is attached to "traces" pipeline
 	// which is a configuration error.
@@ -331,9 +331,9 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	require.Nil(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 	assert.NoError(t, err)
 
 	// First test only trace receivers by removing the metrics pipeline.
@@ -343,7 +343,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	delete(cfg.Service.Pipelines, "logs")
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
 
@@ -352,7 +352,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	cfg.Service.Pipelines["metrics"] = metricsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	receivers, err = NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+	receivers, err = NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
 
@@ -361,7 +361,7 @@ func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
 	cfg.Service.Pipelines["logs"] = logsPipeline
 	require.Equal(t, 1, len(cfg.Service.Pipelines))
 
-	receivers, err = NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+	receivers, err = NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 	assert.Error(t, err)
 	assert.Zero(t, len(receivers))
 }
@@ -374,11 +374,11 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := NewExportersBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, factories.Exporters).Build()
+	allExporters, err := NewExportersBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters).Build()
 	assert.NoError(t, err)
-	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
+	pipelineProcessors, err := NewPipelinesBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors).Build()
 	assert.NoError(t, err)
-	receivers, err := NewReceiversBuilder(zap.NewNop(), componenttest.TestApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
+	receivers, err := NewReceiversBuilder(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers).Build()
 	assert.NoError(t, err)
 	assert.NotNil(t, receivers)
 

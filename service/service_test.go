@@ -59,7 +59,7 @@ func TestApplication_Start(t *testing.T) {
 		return nil
 	}
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: componenttest.TestApplicationStartInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: component.DefaultApplicationStartInfo(), LoggingOptions: []zap.Option{zap.Hooks(hook)}})
 	require.NoError(t, err)
 	assert.Equal(t, app.rootCmd, app.Command())
 
@@ -119,7 +119,7 @@ func TestApplication_ReportError(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: componenttest.TestApplicationStartInfo()})
+	app, err := New(Parameters{Factories: factories, ApplicationStartInfo: component.DefaultApplicationStartInfo()})
 	require.NoError(t, err)
 
 	app.rootCmd.SetArgs([]string{"--config=testdata/otelcol-config-minimal.yaml"})
@@ -143,7 +143,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	params := Parameters{
-		ApplicationStartInfo: componenttest.TestApplicationStartInfo(),
+		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
 		ConfigFactory: func(_ *viper.Viper, _ *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
