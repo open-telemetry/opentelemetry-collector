@@ -35,10 +35,10 @@ func (nh *nopHost) GetFactory(_ component.Kind, _ configmodels.Type) component.F
 	return nil
 }
 
-func (nh *nopHost) GetExtensions() map[configmodels.Extension]component.Extension {
+func (nh *nopHost) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+func (nh *nopHost) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
 	return nil
 }

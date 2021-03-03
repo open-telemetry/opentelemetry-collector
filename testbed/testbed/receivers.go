@@ -72,11 +72,11 @@ func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ configmodels.Type) co
 }
 
 // Return map of extensions. Only enabled and created extensions will be returned.
-func (mb *DataReceiverBase) GetExtensions() map[configmodels.Extension]component.Extension {
+func (mb *DataReceiverBase) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	return nil
 }
 
-func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+func (mb *DataReceiverBase) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
 	return nil
 }
 
