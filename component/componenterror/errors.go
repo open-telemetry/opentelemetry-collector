@@ -18,8 +18,6 @@ package componenterror
 
 import (
 	"errors"
-
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 var (
@@ -32,9 +30,3 @@ var (
 	// ErrNilNextConsumer indicates an error on nil next consumer.
 	ErrNilNextConsumer = errors.New("nil nextConsumer")
 )
-
-// CombineErrors converts a list of errors into one error.
-// Deprecated: use consumererror.CombineErrors instead.
-func CombineErrors(errs []error) error {
-	return consumererror.CombineErrors(errs)
-}
