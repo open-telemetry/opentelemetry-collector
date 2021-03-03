@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func TestResourceProcessor(t *testing.T) {
+func TestHelpers(t *testing.T) {
 	op1 := "op1"
 	op2 := "op2"
 	k1k2 := []string{"k1", "k2"}
@@ -51,9 +51,9 @@ func TestResourceProcessor(t *testing.T) {
 		{Value: "v20", HasValue: true},
 	}
 
-	ts1Ms := &timestamppb.Timestamp{Seconds: 0, Nanos: 1000000}
-	ts3Ms := &timestamppb.Timestamp{Seconds: 0, Nanos: 3000000}
-	ts5Ms := &timestamppb.Timestamp{Seconds: 0, Nanos: 5000000}
+	ts1Ms := timestamppb.New(t1Ms)
+	ts3Ms := timestamppb.New(t3Ms)
+	ts5Ms := timestamppb.New(t5Ms)
 
 	d44 := &metricspb.Point_DoubleValue{DoubleValue: 44}
 	d65 := &metricspb.Point_DoubleValue{DoubleValue: 65}
@@ -76,8 +76,8 @@ func TestResourceProcessor(t *testing.T) {
 
 	summ := &metricspb.Point_SummaryValue{
 		SummaryValue: &metricspb.SummaryValue{
-			Sum:   &wrapperspb.DoubleValue{Value: 40},
-			Count: &wrapperspb.Int64Value{Value: 10},
+			Sum:   wrapperspb.Double(40),
+			Count: wrapperspb.Int64(10),
 			Snapshot: &metricspb.SummaryValue_Snapshot{
 				PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
 					{Percentile: 10, Value: 1},
@@ -176,5 +176,5 @@ func TestResourceProcessor(t *testing.T) {
 			},
 		},
 	}
-	assert.Equalf(t, want, got, "got %v, want %v", got, want)
+	assert.Equal(t, want, got)
 }
