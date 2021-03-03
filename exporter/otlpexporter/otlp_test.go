@@ -200,7 +200,7 @@ func TestSendTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
-		Endpoint: ln.Addr().String(),
+		Endpoint: "http://" + ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
@@ -272,7 +272,7 @@ func TestSendMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
-		Endpoint: ln.Addr().String(),
+		Endpoint: "http://" + ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
@@ -344,7 +344,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
-		Endpoint: ln.Addr().String(),
+		Endpoint: "http://" + ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
@@ -404,7 +404,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
-		Endpoint: ln.Addr().String(),
+		Endpoint: "http://" + ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
@@ -481,7 +481,7 @@ func TestSendLogData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
-		Endpoint: ln.Addr().String(),
+		Endpoint: "http://" + ln.Addr().String(),
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},

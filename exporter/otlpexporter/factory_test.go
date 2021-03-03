@@ -46,7 +46,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
@@ -55,7 +55,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateTraceExporter(t *testing.T) {
-	endpoint := testutil.GetAvailableLocalAddress(t)
+	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
 		name     string
@@ -189,7 +189,7 @@ func TestCreateTraceExporter(t *testing.T) {
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
