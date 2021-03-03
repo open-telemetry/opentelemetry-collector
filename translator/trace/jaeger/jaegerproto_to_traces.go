@@ -185,12 +185,12 @@ func jSpanToInternal(span *model.Span) (pdata.Span, instrumentationLibrary) {
 	}
 
 	il := instrumentationLibrary{}
-	if libraryName, ok := attrs.Get(tracetranslator.TagInstrumentationName); ok {
+	if libraryName, ok := attrs.Get(conventions.InstrumentationLibraryName); ok {
 		il.name = libraryName.StringVal()
-		attrs.Delete(tracetranslator.TagInstrumentationName)
-		if libraryVersion, ok := attrs.Get(tracetranslator.TagInstrumentationVersion); ok {
+		attrs.Delete(conventions.InstrumentationLibraryName)
+		if libraryVersion, ok := attrs.Get(conventions.InstrumentationLibraryVersion); ok {
 			il.version = libraryVersion.StringVal()
-			attrs.Delete(tracetranslator.TagInstrumentationVersion)
+			attrs.Delete(conventions.InstrumentationLibraryVersion)
 		}
 	}
 
