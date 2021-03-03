@@ -16,6 +16,7 @@
 package configgrpc
 
 import (
+	"crypto/x509"
 	"fmt"
 	"net"
 	"strings"
@@ -181,6 +182,13 @@ func (gcs *GRPCClientSettings) ToDialOptions() ([]grpc.DialOption, error) {
 	tlsDialOption := grpc.WithInsecure()
 	if tlsCfg != nil {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
+	} else if strings.HasPrefix(strings.ToLower(gcs.Endpoint), "https://") {
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certPool, "")
+		tlsDialOption = grpc.WithTransportCredentials(creds)
 	}
 	opts = append(opts, tlsDialOption)
 

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -118,7 +119,11 @@ func newGrpcSender(config *Config) (*grpcSender, error) {
 	}
 
 	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.Dial(config.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
+	var endpoint *url.URL
+	if endpoint, err = url.Parse(config.GRPCClientSettings.Endpoint); err != nil {
+		return nil, err
+	}
+	if clientConn, err = grpc.Dial(endpoint.Host, dialOpts...); err != nil {
 		return nil, err
 	}
 
