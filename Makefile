@@ -133,6 +133,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && go install github.com/google/go-licenses
 	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
 	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
@@ -153,13 +154,21 @@ otelcol-unstable:
 	go generate ./...
 	$(MAKE) build-binary-internal-unstable
 
+.PHONY: otelcol-licenses
+otelcol-licenses: cmd/otelcol/third-party
+
+cmd/otelcol/third-party:
+	@echo creating third_party directory with licenses + reciprical source
+	cd ./cmd/otelcol && go-licenses save . --save_path=third-party
+	chmod +w $(find ./cmd/otelcol/third-party -type d)
+
 .PHONY: run
 run:
 	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
-	GOOS=linux $(MAKE) $(COMPONENT)
+	GOOS=linux $(MAKE) $(COMPONENT) $(COMPONENT)-licenses
 	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)

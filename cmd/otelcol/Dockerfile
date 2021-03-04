@@ -6,6 +6,10 @@ COPY otelcol /
 # Note that this shouldn't be necessary, but in some cases the file seems to be
 # copied with the execute bit lost (see #1317)
 RUN chmod 755 /otelcol
+COPY third-party/ /third-party/
+
+
+
 
 FROM scratch
 
@@ -14,6 +18,7 @@ USER ${USER_UID}
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=otelcol /otelcol /
+COPY --from=otelcol /third-party/ /third-party/
 COPY config.yaml /etc/otel/config.yaml
 ENTRYPOINT ["/otelcol"]
 CMD ["--config", "/etc/otel/config.yaml"]

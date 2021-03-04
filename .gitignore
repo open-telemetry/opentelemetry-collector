@@ -26,3 +26,6 @@ coverage.html
 # Wix
 *.wixobj
 *.wixpdb
+
+# Third-Party license drops
+cmd/otelcol/third-party
