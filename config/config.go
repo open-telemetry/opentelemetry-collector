@@ -105,14 +105,6 @@ type pipelineSettings struct {
 	Exporters  []string `mapstructure:"exporters"`
 }
 
-// deprecatedUnmarshaler is the old/deprecated way to provide custom unmarshaler.
-type deprecatedUnmarshaler interface {
-	// CustomUnmarshaler returns a custom unmarshaler for the configuration or nil if
-	// there is no need for custom unmarshaling. This is typically used if viper.UnmarshalExact()
-	// is not sufficient to unmarshal correctly.
-	CustomUnmarshaler() component.CustomUnmarshaler
-}
-
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
@@ -736,14 +728,6 @@ func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
 	if fu, ok := factory.(component.ConfigUnmarshaler); ok {
 		return fu.Unmarshal
 	}
-
-	if du, ok := factory.(deprecatedUnmarshaler); ok {
-		cu := du.CustomUnmarshaler()
-		if cu != nil {
-			return cu
-		}
-	}
-
 	return defaultUnmarshaler
 }
 

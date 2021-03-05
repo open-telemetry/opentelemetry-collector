@@ -73,11 +73,6 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CustomUnmarshaler implements the deprecated way to provide custom unmarshalers.
-func (f *ExampleReceiverFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
 // CreateTraceReceiver creates a trace receiver based on this config.
 func (f *ExampleReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
@@ -280,11 +275,9 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CustomUnmarshaler implements the deprecated way to provide custom unmarshalers.
-func (f *ExampleExporterFactory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(componentViperSection *viper.Viper, intoCfg interface{}) error {
-		return componentViperSection.UnmarshalExact(intoCfg)
-	}
+// Unmarshal implements the custom unmarshalers.
+func (f *ExampleExporterFactory) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
 // CreateTracesExporter creates a trace exporter based on this config.
