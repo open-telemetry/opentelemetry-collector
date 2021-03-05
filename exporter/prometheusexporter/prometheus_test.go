@@ -80,7 +80,7 @@ func TestPrometheusExporter(t *testing.T) {
 			}
 
 			assert.NotNil(t, exp)
-			err = exp.Start(context.Background(), &componenttest.NopHost{})
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
 
 			if tt.wantStartErr != "" {
 				require.Error(t, err)
@@ -118,7 +118,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	assert.NotNil(t, exp)
 
-	require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
 	md := internaldata.OCToMetrics(internaldata.MetricsData{Metrics: metricBuilder(128, "metric_1_")})
@@ -193,7 +193,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	})
 
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(context.Background(), &componenttest.NopHost{}))
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Should accumulate multiple metrics
 
