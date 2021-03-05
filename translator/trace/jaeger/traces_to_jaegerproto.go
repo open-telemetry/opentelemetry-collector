@@ -427,7 +427,7 @@ func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model
 	keyValues := make([]model.KeyValue, 0)
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   tracetranslator.TagInstrumentationName,
+			Key:   conventions.InstrumentationLibraryName,
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -435,7 +435,7 @@ func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   tracetranslator.TagInstrumentationVersion,
+			Key:   conventions.InstrumentationLibraryVersion,
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}

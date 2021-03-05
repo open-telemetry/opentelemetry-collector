@@ -27,7 +27,7 @@ import (
 func TestNewNopHost(t *testing.T) {
 	nh := NewNopHost()
 	require.NotNil(t, nh)
-	require.IsType(t, &NopHost{}, nh)
+	require.IsType(t, &nopHost{}, nh)
 
 	nh.ReportFatalError(errors.New("TestError"))
 	assert.Nil(t, nh.GetExporters())

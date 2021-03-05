@@ -78,3 +78,22 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 	assert.Equal(t, 3, ava.ArrayVal().Len())
 	assert.Equal(t, "[foo, 42, [bar]]", attributeValueToString(ava))
 }
+
+func TestNestedMapSerializesCorrectly(t *testing.T) {
+	ava := pdata.NewAttributeValueMap()
+	av := ava.MapVal()
+	av.Insert("foo", pdata.NewAttributeValueString("test"))
+
+	ava2 := pdata.NewAttributeValueMap()
+	av2 := ava2.MapVal()
+	av2.InsertInt("bar", 13)
+	av.Insert("zoo", ava2)
+
+	expected := `{
+     -> foo: STRING(test)
+     -> zoo: MAP({"bar":13})
+}`
+
+	assert.Equal(t, 2, ava.MapVal().Len())
+	assert.Equal(t, expected, attributeValueToString(ava))
+}

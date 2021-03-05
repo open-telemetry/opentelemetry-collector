@@ -39,10 +39,8 @@ const (
 	TagZipkinCensusMsg     = "census.status_description"
 	TagZipkinOpenCensusMsg = "opencensus.status_description"
 
-	TagW3CTraceState          = "w3c.tracestate"
-	TagServiceNameSource      = "otlp.service.name.source"
-	TagInstrumentationName    = "otlp.instrumentation.library.name"
-	TagInstrumentationVersion = "otlp.instrumentation.library.version"
+	TagW3CTraceState     = "w3c.tracestate"
+	TagServiceNameSource = "otlp.service.name.source"
 )
 
 // Constants used for signifying batch-level attribute values where not supplied by OTLP data but required

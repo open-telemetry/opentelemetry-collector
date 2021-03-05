@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
+var okStatus = trace.Status{Code: trace.StatusCodeOK}
+
 var defaultExporterCfg = &configmodels.ExporterSettings{
 	TypeVal: "test",
 	NameVal: "test",

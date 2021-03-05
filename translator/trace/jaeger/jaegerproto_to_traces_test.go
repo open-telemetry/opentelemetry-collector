@@ -274,11 +274,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation2",
 				Tags: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagInstrumentationName,
+						Key:   conventions.InstrumentationLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library2",
 					}, {
-						Key:   tracetranslator.TagInstrumentationVersion,
+						Key:   conventions.InstrumentationLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -291,11 +291,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation1",
 				Tags: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagInstrumentationName,
+						Key:   conventions.InstrumentationLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library1",
 					}, {
-						Key:   tracetranslator.TagInstrumentationVersion,
+						Key:   conventions.InstrumentationLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -627,11 +627,11 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 	span := generateProtoSpan()
 	span.Tags = append([]model.KeyValue{
 		{
-			Key:   tracetranslator.TagInstrumentationName,
+			Key:   conventions.InstrumentationLibraryName,
 			VType: model.ValueType_STRING,
 			VStr:  libraryName,
 		}, {
-			Key:   tracetranslator.TagInstrumentationVersion,
+			Key:   conventions.InstrumentationLibraryVersion,
 			VType: model.ValueType_STRING,
 			VStr:  "0.42.0",
 		},
