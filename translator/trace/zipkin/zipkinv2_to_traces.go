@@ -31,22 +31,20 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-var nonSpanAttributes = getNonSpanAttributes()
-
-func getNonSpanAttributes() map[string]struct{} {
+var nonSpanAttributes = func() map[string]struct{} {
 	attrs := make(map[string]struct{})
 	for _, key := range conventions.GetResourceSemanticConventionAttributeNames() {
 		attrs[key] = struct{}{}
 	}
 	attrs[tracetranslator.TagServiceNameSource] = struct{}{}
-	attrs[tracetranslator.TagInstrumentationName] = struct{}{}
-	attrs[tracetranslator.TagInstrumentationVersion] = struct{}{}
+	attrs[conventions.InstrumentationLibraryName] = struct{}{}
+	attrs[conventions.InstrumentationLibraryVersion] = struct{}{}
 	attrs[conventions.OCAttributeProcessStartTime] = struct{}{}
 	attrs[conventions.OCAttributeExporterVersion] = struct{}{}
 	attrs[conventions.AttributeProcessID] = struct{}{}
 	attrs[conventions.OCAttributeResourceType] = struct{}{}
 	return attrs
-}
+}()
 
 // Custom Sort on
 type byOTLPTypes []*zipkinmodel.SpanModel
@@ -384,8 +382,8 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 	delete(tags, tracetranslator.TagServiceNameSource)
 
-	for key := range getNonSpanAttributes() {
-		if key == tracetranslator.TagInstrumentationName || key == tracetranslator.TagInstrumentationVersion {
+	for key := range nonSpanAttributes {
+		if key == conventions.InstrumentationLibraryName || key == conventions.InstrumentationLibraryVersion {
 			continue
 		}
 		if value, ok := tags[key]; ok {
@@ -399,13 +397,13 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 	if instrLibName == "" {
 		return
 	}
-	if value, ok := tags[tracetranslator.TagInstrumentationName]; ok {
+	if value, ok := tags[conventions.InstrumentationLibraryName]; ok {
 		library.SetName(value)
-		delete(tags, tracetranslator.TagInstrumentationName)
+		delete(tags, conventions.InstrumentationLibraryName)
 	}
-	if value, ok := tags[tracetranslator.TagInstrumentationVersion]; ok {
+	if value, ok := tags[conventions.InstrumentationLibraryVersion]; ok {
 		library.SetVersion(value)
-		delete(tags, tracetranslator.TagInstrumentationVersion)
+		delete(tags, conventions.InstrumentationLibraryVersion)
 	}
 }
 
@@ -428,5 +426,5 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || len(zspan.Tags) == 0 {
 		return ""
 	}
-	return zspan.Tags[tracetranslator.TagInstrumentationName]
+	return zspan.Tags[conventions.InstrumentationLibraryName]
 }

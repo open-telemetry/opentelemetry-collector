@@ -12,21 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oterr provides helper functions to create and process
-// OpenTelemetry specific errors
-package componenterror
+package conventions
 
-import (
-	"errors"
-)
-
-var (
-	// ErrAlreadyStarted indicates an error on starting an already-started component.
-	ErrAlreadyStarted = errors.New("already started")
-
-	// ErrAlreadyStopped indicates an error on stoping an already-stopped component.
-	ErrAlreadyStopped = errors.New("already stopped")
-
-	// ErrNilNextConsumer indicates an error on nil next consumer.
-	ErrNilNextConsumer = errors.New("nil nextConsumer")
+// OpenTelemetry Semantic Convention values for standard exporters.
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/jaeger.md
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/zipkin.md
+const (
+	InstrumentationLibraryName    = "otel.library.name"
+	InstrumentationLibraryVersion = "otel.library.version"
 )

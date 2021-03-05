@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type logDataBuffer struct {
@@ -235,7 +236,7 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
 
 		if e.Attributes().Len() == 0 {
-			return
+			continue
 		}
 		b.logEntry("     -> Attributes:")
 		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
@@ -259,7 +260,7 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 		b.logEntry("     -> TraceState: %s", l.TraceState())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
 		if l.Attributes().Len() == 0 {
-			return
+			continue
 		}
 		b.logEntry("     -> Attributes:")
 		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
@@ -280,6 +281,8 @@ func attributeValueToString(av pdata.AttributeValue) string {
 		return strconv.FormatInt(av.IntVal(), 10)
 	case pdata.AttributeValueARRAY:
 		return attributeValueArrayToString(av.ArrayVal())
+	case pdata.AttributeValueMAP:
+		return attributeMapToString(av.MapVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
 	}
@@ -297,6 +300,17 @@ func attributeValueArrayToString(av pdata.AnyValueArray) string {
 	}
 
 	b.WriteByte(']')
+	return b.String()
+}
+
+func attributeMapToString(av pdata.AttributeMap) string {
+	var b strings.Builder
+	b.WriteString("{\n")
+
+	av.Sort().ForEach(func(k string, v pdata.AttributeValue) {
+		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), tracetranslator.AttributeValueToString(v, false))
+	})
+	b.WriteByte('}')
 	return b.String()
 }
 

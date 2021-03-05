@@ -209,10 +209,10 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	})
 	ocs.awaitAsyncProcessing()
 
-	// We should ensure that we wait for more than MaxElapsedTime, but not too much.
+	// We should ensure that we wait for more than 50ms but less than 150ms (50% less and 50% more than max elapsed).
 	waitingTime := time.Since(start)
-	assert.True(t, 100*time.Millisecond < waitingTime)
-	assert.True(t, 5*time.Second > waitingTime)
+	assert.Less(t, 50*time.Millisecond, waitingTime)
+	assert.Less(t, waitingTime, 150*time.Millisecond)
 
 	// In the newMockConcurrentExporter we count requests and items even for failed requests.
 	mockR.checkNumRequests(t, 1)
