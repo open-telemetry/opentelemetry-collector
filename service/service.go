@@ -217,11 +217,11 @@ func (app *Application) GetFactory(kind component.Kind, componentType configmode
 	return nil
 }
 
-func (app *Application) GetExtensions() map[configmodels.Extension]component.Extension {
+func (app *Application) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	return app.builtExtensions.ToMap()
 }
 
-func (app *Application) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+func (app *Application) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
 	return app.builtExporters.ToMapByDataType()
 }
 

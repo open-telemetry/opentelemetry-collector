@@ -112,13 +112,13 @@ func (exps Exporters) ShutdownAll(ctx context.Context) error {
 	return consumererror.CombineErrors(errs)
 }
 
-func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
 
-	exportersMap := make(map[configmodels.DataType]map[configmodels.Exporter]component.Exporter)
+	exportersMap := make(map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter)
 
-	exportersMap[configmodels.TracesDataType] = make(map[configmodels.Exporter]component.Exporter, len(exps))
-	exportersMap[configmodels.MetricsDataType] = make(map[configmodels.Exporter]component.Exporter, len(exps))
-	exportersMap[configmodels.LogsDataType] = make(map[configmodels.Exporter]component.Exporter, len(exps))
+	exportersMap[configmodels.TracesDataType] = make(map[configmodels.NamedEntity]component.Exporter, len(exps))
+	exportersMap[configmodels.MetricsDataType] = make(map[configmodels.NamedEntity]component.Exporter, len(exps))
+	exportersMap[configmodels.LogsDataType] = make(map[configmodels.NamedEntity]component.Exporter, len(exps))
 
 	for cfg, bexp := range exps {
 		for t, exp := range bexp.expByDataType {

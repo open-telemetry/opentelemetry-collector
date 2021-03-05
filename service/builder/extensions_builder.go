@@ -102,8 +102,8 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 	return consumererror.CombineErrors(errs)
 }
 
-func (exts Extensions) ToMap() map[configmodels.Extension]component.Extension {
-	result := make(map[configmodels.Extension]component.Extension, len(exts))
+func (exts Extensions) ToMap() map[configmodels.NamedEntity]component.Extension {
+	result := make(map[configmodels.NamedEntity]component.Extension, len(exts))
 	for k, v := range exts {
 		result[k] = v.extension
 	}
