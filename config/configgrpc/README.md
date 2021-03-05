@@ -25,6 +25,9 @@ README](../configtls/README.md).
   - `timeout`
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
+- [`per_rpc_auth`](https://pkg.go.dev/google.golang.org/grpc#PerRPCCredentials): the credentials to send for every RPC. Note that this isn't about sending the headers only during the initial connection as an `authorization` header under the `headers` would do: this is sent for every RPC performed during an established connection.
+  - `auth_type`: the authentication type, currently only `bearer` is supported
+  - `bearer_token`: the bearer token to use for each RPC call.
 
 Example:
 

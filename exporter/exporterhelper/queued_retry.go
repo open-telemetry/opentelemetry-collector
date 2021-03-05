@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/jaegertracing/jaeger/pkg/queue"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -217,6 +217,7 @@ func (rs *retrySender) send(req request) (int, error) {
 		Multiplier:          backoff.DefaultMultiplier,
 		MaxInterval:         rs.cfg.MaxInterval,
 		MaxElapsedTime:      rs.cfg.MaxElapsedTime,
+		Stop:                backoff.Stop,
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
@@ -250,7 +251,6 @@ func (rs *retrySender) send(req request) (int, error) {
 		}
 
 		backoffDelay := expBackoff.NextBackOff()
-
 		if backoffDelay == backoff.Stop {
 			// throw away the batch
 			err = fmt.Errorf("max elapsed time expired %w", err)

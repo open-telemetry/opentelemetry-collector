@@ -8,6 +8,7 @@
 - Move `consumerdata.MetricsData` to `internaldata.MetricsData` (#2512)
 - Remove custom OpenCensus sematic conventions that have equivalent in otel (#2552)
 - Move ScrapeErrors and PartialScrapeError to `scrapererror` (#2580)
+- Remove deprecated componenterror.CombineErrors (#2598)
 
 ## v0.21.0 Beta
 

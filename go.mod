@@ -9,7 +9,7 @@ require (
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
@@ -40,7 +40,7 @@ require (
 	github.com/prometheus/common v0.18.0
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
 	github.com/rs/cors v1.7.0
-	github.com/shirou/gopsutil v3.20.12-0.20201210134652-afe0c04c5d5a+incompatible
+	github.com/shirou/gopsutil v3.21.2+incompatible
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
@@ -48,14 +48,15 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5
+	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/xdg-go/scram v0.0.0-20180814205039-7eeb5667e42c
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
+	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
 	golang.org/x/text v0.3.5
-	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
+	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.36.0
 	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
 	google.golang.org/protobuf v1.25.0

@@ -19,34 +19,26 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// NopHost mocks a receiver.ReceiverHost for test purposes.
-type NopHost struct {
-}
+// nopHost mocks a receiver.ReceiverHost for test purposes.
+type nopHost struct{}
 
-var _ component.Host = (*NopHost)(nil)
+var nopHostInstance component.Host = &nopHost{}
 
-// NewNopHost returns a new instance of NopHost with proper defaults for most
-// tests.
+// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
 func NewNopHost() component.Host {
-	return &NopHost{}
+	return nopHostInstance
 }
 
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-func (nh *NopHost) ReportFatalError(_ error) {
-	// Do nothing for now.
-}
+func (nh *nopHost) ReportFatalError(_ error) {}
 
-// GetFactory of the specified kind. Returns the factory for a component type.
-func (nh *NopHost) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
+func (nh *nopHost) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
 	return nil
 }
 
-func (nh *NopHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (nh *nopHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
 	return nil
 }
 
-func (nh *NopHost) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+func (nh *nopHost) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return nil
 }

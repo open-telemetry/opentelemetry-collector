@@ -120,7 +120,7 @@ that contains:
       "serviceName": "apip"
     },
     "tags": {
-      "data.http_response_code": "201",
+      "data.http_response_code": "201"
     }
   }
 ]
