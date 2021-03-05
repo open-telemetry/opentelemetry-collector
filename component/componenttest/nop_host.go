@@ -35,7 +35,7 @@ func (nh *nopHost) GetFactory(_ component.Kind, _ configmodels.Type) component.F
 	return nil
 }
 
-func (nh *nopHost) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (nh *nopHost) GetExtensions() map[configmodels.Extension]component.Extension {
 	return nil
 }
 

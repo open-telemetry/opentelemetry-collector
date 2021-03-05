@@ -102,7 +102,7 @@ func (dsb *DataSenderBase) GetFactory(_ component.Kind, _ configmodels.Type) com
 }
 
 // Return map of extensions. Only enabled and created extensions will be returned.
-func (dsb *DataSenderBase) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (dsb *DataSenderBase) GetExtensions() map[configmodels.Extension]component.Extension {
 	return nil
 }
 

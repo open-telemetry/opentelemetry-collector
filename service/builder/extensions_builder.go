@@ -29,7 +29,7 @@ import (
 // a trace and/or a metrics consumer and have a shutdown function.
 type builtExtension struct {
 	logger    *zap.Logger
-	extension component.ServiceExtension
+	extension component.Extension
 }
 
 // Start the receiver.
@@ -42,7 +42,7 @@ func (ext *builtExtension) Shutdown(ctx context.Context) error {
 	return ext.extension.Shutdown(ctx)
 }
 
-var _ component.ServiceExtension = (*builtExtension)(nil)
+var _ component.Extension = (*builtExtension)(nil)
 
 // Exporters is a map of exporters created from exporter configs.
 type Extensions map[configmodels.Extension]*builtExtension
@@ -102,8 +102,8 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 	return consumererror.CombineErrors(errs)
 }
 
-func (exts Extensions) ToMap() map[configmodels.Extension]component.ServiceExtension {
-	result := make(map[configmodels.Extension]component.ServiceExtension, len(exts))
+func (exts Extensions) ToMap() map[configmodels.Extension]component.Extension {
+	result := make(map[configmodels.Extension]component.Extension, len(exts))
 	for k, v := range exts {
 		result[k] = v.extension
 	}

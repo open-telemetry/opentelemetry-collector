@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Rename ServiceExtension to just Extension (#2581)
 - Remove `consumerdata.TraceData` (#2551)
 - Move `consumerdata.MetricsData` to `internaldata.MetricsData` (#2512)
 - Remove custom OpenCensus sematic conventions that have equivalent in otel (#2552)
