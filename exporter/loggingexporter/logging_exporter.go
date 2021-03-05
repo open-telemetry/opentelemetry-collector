@@ -235,7 +235,7 @@ func (b *logDataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
 
 		if e.Attributes().Len() == 0 {
-			return
+			continue
 		}
 		b.logEntry("     -> Attributes:")
 		e.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
@@ -259,7 +259,7 @@ func (b *logDataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 		b.logEntry("     -> TraceState: %s", l.TraceState())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
 		if l.Attributes().Len() == 0 {
-			return
+			continue
 		}
 		b.logEntry("     -> Attributes:")
 		l.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
