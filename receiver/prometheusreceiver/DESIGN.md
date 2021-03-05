@@ -447,7 +447,7 @@ metrics := []*metricspb.Metric{
               },
               Count:   3,
               Sum:     50.0,
-              Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 2}, {Count: 0}},
+              Buckets: []*metricspb.DistributionValue_Bucket{{Count: 1}, {Count: 3}, {Count: 3}},
             }}},
         },
       },
