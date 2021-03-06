@@ -202,11 +202,7 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 		}
 	*/
 
-	counterSuffixLength := len(counterSuffix)
-	nameLength := len(name)
-	hasCounterSuffix := nameLength > counterSuffixLength && name[nameLength-counterSuffixLength:] == counterSuffix
-
-	if b.Len() > 0 && isCounter && !hasCounterSuffix {
+	if b.Len() > 0 && isCounter && !strings.HasSuffix(name, counterSuffix) {
 		b.WriteString(counterSuffix)
 	}
 	return sanitize(b.String())
