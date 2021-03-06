@@ -70,7 +70,7 @@ func defaultConfig() configmodels.Extension {
 	return defaultCfg
 }
 
-func createExtension(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.ServiceExtension, error) {
+func createExtension(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.Extension, error) {
 	return nopExtensionInstance, nil
 }
 

@@ -22,26 +22,26 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// ServiceExtension is the interface for objects hosted by the OpenTelemetry Collector that
+// Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type ServiceExtension interface {
+type Extension interface {
 	Component
 }
 
-// PipelineWatcher is an extra interface for ServiceExtension hosted by the OpenTelemetry
+// PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
 type PipelineWatcher interface {
-	// Ready notifies the ServiceExtension that all pipelines were built and the
+	// Ready notifies the Extension that all pipelines were built and the
 	// receivers were started, i.e.: the service is ready to receive data
 	// (notice that it may already have received data when this method is called).
 	Ready() error
 
-	// NotReady notifies the ServiceExtension that all receivers are about to be stopped,
+	// NotReady notifies the Extension that all receivers are about to be stopped,
 	// i.e.: pipeline receivers will not accept new data.
-	// This is sent before receivers are stopped, so the ServiceExtension can take any
+	// This is sent before receivers are stopped, so the Extension can take any
 	// appropriate action before that happens.
 	NotReady() error
 }
@@ -70,5 +70,5 @@ type ExtensionFactory interface {
 	CreateDefaultConfig() configmodels.Extension
 
 	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg configmodels.Extension) (ServiceExtension, error)
+	CreateExtension(ctx context.Context, params ExtensionCreateParams, cfg configmodels.Extension) (Extension, error)
 }

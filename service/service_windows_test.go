@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/windows/svc"
 
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
@@ -34,7 +34,7 @@ func TestWindowsService_Execute(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	s := NewWindowsService(Parameters{Factories: factories, ApplicationStartInfo: componenttest.TestApplicationStartInfo()})
+	s := NewWindowsService(Parameters{Factories: factories, ApplicationStartInfo: component.DefaultApplicationStartInfo()})
 
 	appDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

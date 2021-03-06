@@ -30,7 +30,7 @@ type FactoryOption func(o *factory)
 type CreateDefaultConfig func() configmodels.Extension
 
 // CreateServiceExtension is the equivalent of component.ExtensionFactory.CreateExtension()
-type CreateServiceExtension func(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.ServiceExtension, error)
+type CreateServiceExtension func(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.Extension, error)
 
 type factory struct {
 	cfgType                configmodels.Type
@@ -83,7 +83,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Extension {
 func (f *factory) CreateExtension(
 	ctx context.Context,
 	params component.ExtensionCreateParams,
-	cfg configmodels.Extension) (component.ServiceExtension, error) {
+	cfg configmodels.Extension) (component.Extension, error) {
 	return f.createServiceExtension(ctx, params, cfg)
 }
 
