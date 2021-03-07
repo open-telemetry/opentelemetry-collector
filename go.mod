@@ -30,6 +30,7 @@ require (
 	github.com/jaegertracing/jaeger v1.22.0
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/mostynb/go-grpc-compression v1.1.6
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5

@@ -16,7 +16,8 @@ configuration. For more information, see [configtls
 README](../configtls/README.md).
 
 - [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md)
-- `compression` (default = gzip): Compression type to use (only gzip is supported today)
+- `compression`: compression to use among `gzip` (default), `lz4`,
+  `snappy` and `ztsd`
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - `headers`: name/value pairs added to the request
 - [`keepalive`](https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters)

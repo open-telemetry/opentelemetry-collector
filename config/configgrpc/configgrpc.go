@@ -21,6 +21,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mostynb/go-grpc-compression/lz4"
+	"github.com/mostynb/go-grpc-compression/snappy"
+	"github.com/mostynb/go-grpc-compression/zstd"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
@@ -36,6 +39,9 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+	CompressionLz4         = "lz4"
+	CompressionSnappy      = "snappy"
+	CompressionZstd        = "zstd"
 
 	PerRPCAuthTypeBearer = "bearer"
 )
@@ -43,7 +49,10 @@ const (
 var (
 	// Map of opentelemetry compression types to grpc registered compression types
 	grpcCompressionKeyMap = map[string]string{
-		CompressionGzip: gzip.Name,
+		CompressionGzip:   gzip.Name,
+		CompressionLz4:    lz4.Name,
+		CompressionSnappy: snappy.Name,
+		CompressionZstd:   zstd.Name,
 	}
 )
 
