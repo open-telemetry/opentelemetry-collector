@@ -103,6 +103,36 @@ func TestCreateTraceExporter(t *testing.T) {
 			},
 		},
 		{
+			name: "Lz4Compression",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint:    endpoint,
+					Compression: configgrpc.CompressionLz4,
+				},
+				NumWorkers: 3,
+			},
+		},
+		{
+			name: "SnappyCompression",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint:    endpoint,
+					Compression: configgrpc.CompressionSnappy,
+				},
+				NumWorkers: 3,
+			},
+		},
+		{
+			name: "ZstdCompression",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint:    endpoint,
+					Compression: configgrpc.CompressionZstd,
+				},
+				NumWorkers: 3,
+			},
+		},
+		{
 			name: "Headers",
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
