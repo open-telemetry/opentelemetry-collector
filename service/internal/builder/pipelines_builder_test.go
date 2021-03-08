@@ -16,6 +16,7 @@ package builder
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,10 +30,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-func TestPipelinesBuilder_Build(t *testing.T) {
+func TestBuildPipelines(t *testing.T) {
 	tests := []struct {
 		name          string
 		pipelineName  string
@@ -57,28 +57,7 @@ func TestPipelinesBuilder_Build(t *testing.T) {
 	}
 }
 
-func createExampleFactories() component.Factories {
-	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
-	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
-	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
-
-	factories := component.Factories{
-		Receivers: map[configmodels.Type]component.ReceiverFactory{
-			exampleReceiverFactory.Type(): exampleReceiverFactory,
-		},
-		Processors: map[configmodels.Type]component.ProcessorFactory{
-			exampleProcessorFactory.Type(): exampleProcessorFactory,
-		},
-		Exporters: map[configmodels.Type]component.ExporterFactory{
-			exampleExporterFactory.Type(): exampleExporterFactory,
-		},
-	}
-
-	return factories
-}
-
 func createExampleConfig(dataType string) *configmodels.Config {
-
 	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
 	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
 	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
@@ -108,9 +87,9 @@ func createExampleConfig(dataType string) *configmodels.Config {
 	return cfg
 }
 
-func TestPipelinesBuilder_BuildVarious(t *testing.T) {
+func TestBuildPipelines_BuildVarious(t *testing.T) {
 
-	factories := createExampleFactories()
+	factories := createTestFactories()
 
 	tests := []struct {
 		dataType   string
@@ -173,9 +152,9 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			// First check that there are no logs in the exporters yet.
 			var exporterConsumers []*componenttest.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				consumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
-				exporterConsumers = append(exporterConsumers, consumer)
-				require.Equal(t, len(consumer.Logs), 0)
+				expConsumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
+				exporterConsumers = append(exporterConsumers, expConsumer)
+				require.Equal(t, len(expConsumer.Logs), 0)
 			}
 
 			// Send one custom data.
@@ -183,12 +162,12 @@ func TestPipelinesBuilder_BuildVarious(t *testing.T) {
 			processor.firstLC.(consumer.LogsConsumer).ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.
-			for _, consumer := range exporterConsumers {
+			for _, expConsumer := range exporterConsumers {
 				// Check that the trace is received by exporter.
-				require.Equal(t, 1, len(consumer.Logs))
+				require.Equal(t, 1, len(expConsumer.Logs))
 
 				// Verify that span is successfully delivered.
-				assert.EqualValues(t, log, consumer.Logs[0])
+				assert.EqualValues(t, log, expConsumer.Logs[0])
 			}
 
 			err = pipelineProcessors.ShutdownProcessors(context.Background())
@@ -235,75 +214,56 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// First check that there are no traces in the exporters yet.
 	var exporterConsumers []*componenttest.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		consumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
-		exporterConsumers = append(exporterConsumers, consumer)
-		require.Equal(t, len(consumer.Traces), 0)
+		expConsumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
+		exporterConsumers = append(exporterConsumers, expConsumer)
+		require.Equal(t, len(expConsumer.Traces), 0)
 	}
 
 	td := testdata.GenerateTraceDataOneSpan()
 	processor.firstTC.(consumer.TracesConsumer).ConsumeTraces(context.Background(), td)
 
 	// Now verify received data.
-	for _, consumer := range exporterConsumers {
+	for _, expConsumer := range exporterConsumers {
 		// Check that the trace is received by exporter.
-		require.Equal(t, 1, len(consumer.Traces))
+		require.Equal(t, 1, len(expConsumer.Traces))
 
 		// Verify that span is successfully delivered.
-		assert.EqualValues(t, td, consumer.Traces[0])
+		assert.EqualValues(t, td, expConsumer.Traces[0])
 	}
 
 	err = pipelineProcessors.ShutdownProcessors(context.Background())
 	assert.NoError(t, err)
 }
 
-func TestProcessorsBuilder_ErrorOnUnsupportedProcessor(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
+func TestBuildPipelines_NotSupportedDataType(t *testing.T) {
+	factories := createTestFactories()
 
-	bf := newBadProcessorFactory()
-	factories.Processors[bf.Type()] = bf
+	tests := []struct {
+		configFile string
+	}{
+		{
+			configFile: "not_supported_processor_logs.yaml",
+		},
+		{
+			configFile: "not_supported_processor_metrics.yaml",
+		},
+		{
+			configFile: "not_supported_processor_traces.yaml",
+		},
+	}
 
-	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_processor_factory.yaml", factories)
-	require.Nil(t, err)
+	for _, test := range tests {
+		t.Run(test.configFile, func(t *testing.T) {
 
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
-	assert.NoError(t, err)
+			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
+			require.Nil(t, err)
 
-	// First test only trace receivers by removing the metrics pipeline.
-	metricsPipeline := cfg.Service.Pipelines["metrics"]
-	logsPipeline := cfg.Service.Pipelines["logs"]
-	delete(cfg.Service.Pipelines, "metrics")
-	delete(cfg.Service.Pipelines, "logs")
-	require.Equal(t, 1, len(cfg.Service.Pipelines))
+			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+			assert.NoError(t, err)
 
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
-	assert.Error(t, err)
-	assert.Zero(t, len(pipelineProcessors))
-
-	// Now test the metric pipeline.
-	delete(cfg.Service.Pipelines, "traces")
-	cfg.Service.Pipelines["metrics"] = metricsPipeline
-	require.Equal(t, 1, len(cfg.Service.Pipelines))
-
-	pipelineProcessors, err = BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
-	assert.Error(t, err)
-	assert.Zero(t, len(pipelineProcessors))
-
-	// Now test the logs pipeline.
-	delete(cfg.Service.Pipelines, "metrics")
-	cfg.Service.Pipelines["logs"] = logsPipeline
-	require.Equal(t, 1, len(cfg.Service.Pipelines))
-
-	pipelineProcessors, err = BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
-	assert.Error(t, err)
-	assert.Zero(t, len(pipelineProcessors))
-}
-
-func newBadProcessorFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory("bf", func() configmodels.Processor {
-		return &configmodels.ProcessorSettings{
-			TypeVal: "bf",
-			NameVal: "bf",
-		}
-	})
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
+			assert.Error(t, err)
+			assert.Zero(t, len(pipelineProcessors))
+		})
+	}
 }

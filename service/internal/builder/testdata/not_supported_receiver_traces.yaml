@@ -8,9 +8,3 @@ service:
     traces:
       receivers: [bf]
       exporters: [exampleexporter]
-    metrics:
-      receivers: [bf]
-      exporters: [exampleexporter]
-    logs:
-      receivers: [bf]
-      exporters: [exampleexporter]

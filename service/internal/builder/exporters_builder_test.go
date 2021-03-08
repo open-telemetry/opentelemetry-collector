@@ -16,6 +16,7 @@ package builder
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,11 +27,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 )
 
-func TestExportersBuilder_Build(t *testing.T) {
+func TestBuildExporters(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -106,7 +107,7 @@ func TestExportersBuilder_Build(t *testing.T) {
 	// TODO: once we have an exporter that supports metrics data type test it too.
 }
 
-func TestExportersBuilder_BuildLogs(t *testing.T) {
+func TestBuildExporters_BuildLogs(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
@@ -170,7 +171,7 @@ func TestExportersBuilder_BuildLogs(t *testing.T) {
 	assert.Nil(t, e1.getLogExporter())
 }
 
-func TestExportersBuilder_StartAll(t *testing.T) {
+func TestBuildExporters_StartAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
 	traceExporter := &componenttest.ExampleExporterConsumer{}
@@ -195,7 +196,7 @@ func TestExportersBuilder_StartAll(t *testing.T) {
 	assert.True(t, logsExporter.ExporterStarted)
 }
 
-func TestExportersBuilder_StopAll(t *testing.T) {
+func TestBuildExporters_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
 	traceExporter := &componenttest.ExampleExporterConsumer{}
@@ -219,56 +220,32 @@ func TestExportersBuilder_StopAll(t *testing.T) {
 	assert.True(t, logsExporter.ExporterShutdown)
 }
 
-func TestExportersBuilder_ErrorOnNilExporter(t *testing.T) {
-	bf := newBadExporterFactory()
-	fm := map[configmodels.Type]component.ExporterFactory{
-		bf.Type(): bf,
-	}
+func TestBuildExporters_NotSupportedDataType(t *testing.T) {
+	factories := createTestFactories()
 
-	pipelines := []*configmodels.Pipeline{
+	tests := []struct {
+		configFile string
+	}{
 		{
-			Name:      "trace",
-			InputType: configmodels.TracesDataType,
-			Exporters: []string{string(bf.Type())},
+			configFile: "not_supported_exporter_logs.yaml",
 		},
 		{
-			Name:      "metrics",
-			InputType: configmodels.MetricsDataType,
-			Exporters: []string{string(bf.Type())},
+			configFile: "not_supported_exporter_metrics.yaml",
 		},
 		{
-			Name:      "logs",
-			InputType: configmodels.LogsDataType,
-			Exporters: []string{string(bf.Type())},
+			configFile: "not_supported_exporter_traces.yaml",
 		},
 	}
 
-	for _, pipeline := range pipelines {
-		t.Run(pipeline.Name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.configFile, func(t *testing.T) {
 
-			cfg := &configmodels.Config{
-				Exporters: map[string]configmodels.Exporter{
-					string(bf.Type()): &configmodels.ExporterSettings{
-						TypeVal: bf.Type(),
-					},
-				},
+			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
+			require.Nil(t, err)
 
-				Service: configmodels.Service{
-					Pipelines: map[string]*configmodels.Pipeline{
-						pipeline.Name: pipeline,
-					},
-				},
-			}
-
-			exporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, fm)
+			exporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
 			assert.Error(t, err)
 			assert.Zero(t, len(exporters))
 		})
 	}
-}
-
-func newBadExporterFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory("bf", func() configmodels.Exporter {
-		return &configmodels.ExporterSettings{}
-	})
 }
