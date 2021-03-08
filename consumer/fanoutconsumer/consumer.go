@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
+// Package fanoutconsumer contains implementations of Traces/Metrics/Logs consumers
+// that fan out the data to multiple other consumers.
+//
+// Cloning connectors create clones of data before fanning out, which ensures each
+// consumer gets their own copy of data and is free to modify it.
+package fanoutconsumer
 
 import (
 	"context"
@@ -22,24 +27,21 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// This file contains implementations of Trace/Metrics connectors
-// that fan out the data to multiple other consumers.
-
-// NewMetricsFanOutConnector wraps multiple metrics consumers in a single one.
-func NewMetricsFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+// NewMetrics wraps multiple metrics consumers in a single one.
+func NewMetrics(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	if len(mcs) == 1 {
 		// Don't wrap if no need to do it.
 		return mcs[0]
 	}
-	return metricsFanOutConnector(mcs)
+	return metricsConsumer(mcs)
 }
 
-type metricsFanOutConnector []consumer.MetricsConsumer
+type metricsConsumer []consumer.MetricsConsumer
 
-var _ consumer.MetricsConsumer = (*metricsFanOutConnector)(nil)
+var _ consumer.MetricsConsumer = (*metricsConsumer)(nil)
 
 // ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
-func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (mfc metricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
 	for _, mc := range mfc {
 		if err := mc.ConsumeMetrics(ctx, md); err != nil {
@@ -49,21 +51,21 @@ func (mfc metricsFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.M
 	return consumererror.CombineErrors(errs)
 }
 
-// NewTracesFanOutConnector wraps multiple trace consumers in a single one.
-func NewTracesFanOutConnector(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
+// NewTraces wraps multiple trace consumers in a single one.
+func NewTraces(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
 		return tcs[0]
 	}
-	return traceFanOutConnector(tcs)
+	return traceConsumer(tcs)
 }
 
-type traceFanOutConnector []consumer.TracesConsumer
+type traceConsumer []consumer.TracesConsumer
 
-var _ consumer.TracesConsumer = (*traceFanOutConnector)(nil)
+var _ consumer.TracesConsumer = (*traceConsumer)(nil)
 
-// ConsumeTraces exports the span data to all trace consumers wrapped by the current one.
-func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
+func (tfc traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 	for _, tc := range tfc {
 		if err := tc.ConsumeTraces(ctx, td); err != nil {
@@ -73,21 +75,21 @@ func (tfc traceFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Trac
 	return consumererror.CombineErrors(errs)
 }
 
-// NewLogsFanOutConnector wraps multiple log consumers in a single one.
-func NewLogsFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
+// NewLogs wraps multiple log consumers in a single one.
+func NewLogs(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	if len(lcs) == 1 {
 		// Don't wrap if no need to do it.
 		return lcs[0]
 	}
-	return logsFanOutConnector(lcs)
+	return logsConsumer(lcs)
 }
 
-type logsFanOutConnector []consumer.LogsConsumer
+type logsConsumer []consumer.LogsConsumer
 
-var _ consumer.LogsConsumer = (*logsFanOutConnector)(nil)
+var _ consumer.LogsConsumer = (*logsConsumer)(nil)
 
-// Consume exports the log data to all consumers wrapped by the current one.
-func (fc logsFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+// ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
+func (fc logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 	for _, tc := range fc {
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {

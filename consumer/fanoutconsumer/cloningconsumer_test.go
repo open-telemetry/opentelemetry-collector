@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
+package fanoutconsumer
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewTracesNop()
-	tfc := NewTracesCloningFanOutConnector([]consumer.TracesConsumer{nop})
+	tfc := NewTracesCloning([]consumer.TracesConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
 
@@ -37,7 +37,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 		processors[i] = new(consumertest.TracesSink)
 	}
 
-	tfc := NewTracesCloningFanOutConnector(processors)
+	tfc := NewTracesCloning(processors)
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 
 	var wantSpansCount = 0
@@ -70,7 +70,7 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 
 func TestMetricsProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewMetricsNop()
-	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
+	mfc := NewMetrics([]consumer.MetricsConsumer{nop})
 	assert.Same(t, nop, mfc)
 }
 
@@ -80,7 +80,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 		processors[i] = new(consumertest.MetricsSink)
 	}
 
-	mfc := NewMetricsCloningFanOutConnector(processors)
+	mfc := NewMetricsCloning(processors)
 	md := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 
 	var wantMetricsCount = 0
@@ -113,7 +113,7 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 
 func TestLogsProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewLogsNop()
-	lfc := NewLogsCloningFanOutConnector([]consumer.LogsConsumer{nop})
+	lfc := NewLogsCloning([]consumer.LogsConsumer{nop})
 	assert.Same(t, nop, lfc)
 }
 
@@ -123,7 +123,7 @@ func TestLogsProcessorCloningMultiplexing(t *testing.T) {
 		processors[i] = new(consumertest.LogsSink)
 	}
 
-	mfc := NewLogsCloningFanOutConnector(processors)
+	mfc := NewLogsCloning(processors)
 	ld := testdata.GenerateLogDataOneLog()
 
 	var wantMetricsCount = 0
