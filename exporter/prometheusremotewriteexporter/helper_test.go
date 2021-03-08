@@ -290,6 +290,12 @@ func Test_getPromMetricName(t *testing.T) {
 			"test_ns_" + validIntSum + counterSuffix,
 		},
 		{
+			"already_has_total_suffix",
+			validMetrics1[suffixedCounter],
+			ns1,
+			"test_ns_" + suffixedCounter,
+		},
+		{
 			"dirty_string",
 			validMetrics2[validIntGaugeDirty],
 			"7" + ns1,
