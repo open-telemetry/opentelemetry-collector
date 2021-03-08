@@ -41,8 +41,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
-	"go.opentelemetry.io/collector/service/builder"
 	"go.opentelemetry.io/collector/service/internal"
+	"go.opentelemetry.io/collector/service/internal/builder"
 )
 
 const (
