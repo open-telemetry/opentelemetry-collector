@@ -21,9 +21,9 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -66,10 +66,10 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return metrics, consumererror.NewPartialScrapeError(err, metricsLen)
+		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	var errors consumererror.ScrapeErrors
+	var errors scrapererror.ScrapeErrors
 	usages := make([]*deviceUsage, 0, len(partitions))
 	for _, partition := range partitions {
 		if !s.fsFilter.includePartition(partition) {
@@ -92,7 +92,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 
 	err = errors.Combine()
 	if err != nil && len(usages) == 0 {
-		err = consumererror.NewPartialScrapeError(err, metricsLen)
+		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	return metrics, err

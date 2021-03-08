@@ -24,10 +24,10 @@ import (
 	"github.com/shirou/gopsutil/host"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/perfcounters"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -80,7 +80,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	var errors consumererror.ScrapeErrors
+	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapeAndAppendPagingUsageMetric(metrics)
 	if err != nil {

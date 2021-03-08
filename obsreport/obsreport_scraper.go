@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -100,7 +100,7 @@ func EndMetricsScrapeOp(
 ) {
 	numErroredMetrics := 0
 	if err != nil {
-		if partialErr, isPartial := err.(consumererror.PartialScrapeError); isPartial {
+		if partialErr, isPartial := err.(scrapererror.PartialScrapeError); isPartial {
 			numErroredMetrics = partialErr.Failed
 		} else {
 			numErroredMetrics = numScrapedMetrics

@@ -8,6 +8,7 @@
 - Remove `consumerdata.TraceData` (#2551)
 - Move `consumerdata.MetricsData` to `internaldata.MetricsData` (#2512)
 - Remove custom OpenCensus sematic conventions that have equivalent in otel (#2552)
+- Move ScrapeErrors and PartialScrapeError to `scrapererror` (#2580)
 - Remove support for deprecated unmarshaler `CustomUnmarshaler`, only `Unmarshal` is supported (#2591)
 - Remove deprecated componenterror.CombineErrors (#2598)
 

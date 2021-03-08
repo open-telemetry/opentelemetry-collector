@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consumererror
+package scrapererror
+
+import (
+	"go.opentelemetry.io/collector/consumer/consumererror"
+)
 
 // ScrapeErrors contains multiple PartialScrapeErrors and can also contain generic errors.
 type ScrapeErrors struct {
@@ -42,8 +46,8 @@ func (s *ScrapeErrors) Combine() error {
 	}
 
 	if !partialScrapeErr {
-		return CombineErrors(s.errs)
+		return consumererror.CombineErrors(s.errs)
 	}
 
-	return NewPartialScrapeError(CombineErrors(s.errs), s.failedScrapeCount)
+	return NewPartialScrapeError(consumererror.CombineErrors(s.errs), s.failedScrapeCount)
 }

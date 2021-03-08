@@ -29,9 +29,9 @@ import (
 	"go.opencensus.io/trace"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 const (
@@ -45,7 +45,7 @@ const (
 
 var (
 	errFake        = errors.New("errFake")
-	partialErrFake = consumererror.NewPartialScrapeError(errFake, 1)
+	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
 )
 
 type receiveTestParams struct {
