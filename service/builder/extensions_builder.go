@@ -110,28 +110,24 @@ func (exts Extensions) ToMap() map[configmodels.NamedEntity]component.Extension 
 	return result
 }
 
-// ExportersBuilder builds exporters from config.
-type ExtensionsBuilder struct {
+// exportersBuilder builds exporters from config.
+type extensionsBuilder struct {
 	logger    *zap.Logger
 	appInfo   component.ApplicationStartInfo
 	config    *configmodels.Config
 	factories map[configmodels.Type]component.ExtensionFactory
 }
 
-// NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
-func NewExtensionsBuilder(
+// BuildExtensions builds Extensions from config.
+func BuildExtensions(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	factories map[configmodels.Type]component.ExtensionFactory,
-) *ExtensionsBuilder {
-	return &ExtensionsBuilder{logger.With(zap.String(kindLogKey, kindLogExtension)), appInfo, config, factories}
-}
+) (Extensions, error) {
+	eb := &extensionsBuilder{logger.With(zap.String(kindLogKey, kindLogExtension)), appInfo, config, factories}
 
-// Build extensions from config.
-func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 	extensions := make(Extensions)
-
 	for _, extName := range eb.config.Service.Extensions {
 		extCfg, exists := eb.config.Extensions[extName]
 		if !exists {
@@ -150,7 +146,7 @@ func (eb *ExtensionsBuilder) Build() (Extensions, error) {
 	return extensions, nil
 }
 
-func (eb *ExtensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.ApplicationStartInfo, cfg configmodels.Extension) (*builtExtension, error) {
+func (eb *extensionsBuilder) buildExtension(logger *zap.Logger, appInfo component.ApplicationStartInfo, cfg configmodels.Extension) (*builtExtension, error) {
 	factory := eb.factories[cfg.Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("extension factory for type %q is not configured", cfg.Type())
