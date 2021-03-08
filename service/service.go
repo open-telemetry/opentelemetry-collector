@@ -317,7 +317,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 func (app *Application) setupExtensions(ctx context.Context) error {
 	var err error
-	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.info, app.config, app.factories.Extensions).Build()
+	app.builtExtensions, err = builder.BuildExtensions(app.logger, app.info, app.config, app.factories.Extensions)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -331,7 +331,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// First create exporters.
 	var err error
-	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.info, app.config, app.factories.Exporters).Build()
+	app.builtExporters, err = builder.BuildExporters(app.logger, app.info, app.config, app.factories.Exporters)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
@@ -344,7 +344,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors).Build()
+	app.builtPipelines, err = builder.BuildPipelines(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors)
 	if err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
@@ -356,7 +356,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.BuildReceivers(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers)
 	if err != nil {
 		return fmt.Errorf("cannot build receivers: %w", err)
 	}

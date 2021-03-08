@@ -140,32 +140,28 @@ type dataTypeRequirements map[configmodels.DataType]dataTypeRequirement
 // Data type requirements for all exporters.
 type exportersRequiredDataTypes map[configmodels.Exporter]dataTypeRequirements
 
-// ExportersBuilder builds exporters from config.
-type ExportersBuilder struct {
+// exportersBuilder builds exporters from config.
+type exportersBuilder struct {
 	logger    *zap.Logger
 	appInfo   component.ApplicationStartInfo
 	config    *configmodels.Config
 	factories map[configmodels.Type]component.ExporterFactory
 }
 
-// NewExportersBuilder creates a new ExportersBuilder. Call BuildExporters() on the returned value.
-func NewExportersBuilder(
+// BuildExporters builds Exporters from config.
+func BuildExporters(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	factories map[configmodels.Type]component.ExporterFactory,
-) *ExportersBuilder {
-	return &ExportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), appInfo, config, factories}
-}
-
-// BuildExporters exporters from config.
-func (eb *ExportersBuilder) Build() (Exporters, error) {
-	exporters := make(Exporters)
+) (Exporters, error) {
+	eb := &exportersBuilder{logger.With(zap.String(kindLogKey, kindLogsExporter)), appInfo, config, factories}
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
 	exporterInputDataTypes := eb.calcExportersRequiredDataTypes()
 
+	exporters := make(Exporters)
 	// BuildExporters exporters based on configuration and required input data types.
 	for _, cfg := range eb.config.Exporters {
 		componentLogger := eb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
@@ -180,7 +176,7 @@ func (eb *ExportersBuilder) Build() (Exporters, error) {
 	return exporters, nil
 }
 
-func (eb *ExportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDataTypes {
+func (eb *exportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDataTypes {
 
 	// Go over all pipelines. The data type of the pipeline defines what data type
 	// each exporter is expected to receive. Collect all required types for each
@@ -213,7 +209,7 @@ func (eb *ExportersBuilder) calcExportersRequiredDataTypes() exportersRequiredDa
 	return result
 }
 
-func (eb *ExportersBuilder) buildExporter(
+func (eb *exportersBuilder) buildExporter(
 	ctx context.Context,
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,

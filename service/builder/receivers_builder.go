@@ -77,8 +77,8 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// ReceiversBuilder builds receivers from config.
-type ReceiversBuilder struct {
+// receiversBuilder builds receivers from config.
+type receiversBuilder struct {
 	logger         *zap.Logger
 	appInfo        component.ApplicationStartInfo
 	config         *configmodels.Config
@@ -86,22 +86,17 @@ type ReceiversBuilder struct {
 	factories      map[configmodels.Type]component.ReceiverFactory
 }
 
-// NewReceiversBuilder creates a new ReceiversBuilder. Call BuildProcessors() on the returned value.
-func NewReceiversBuilder(
+// BuildReceivers builds Receivers from config.
+func BuildReceivers(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	builtPipelines BuiltPipelines,
 	factories map[configmodels.Type]component.ReceiverFactory,
-) *ReceiversBuilder {
-	return &ReceiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories}
-}
+) (Receivers, error) {
+	rb := &receiversBuilder{logger.With(zap.String(kindLogKey, kindLogsReceiver)), appInfo, config, builtPipelines, factories}
 
-// BuildProcessors receivers from config.
-func (rb *ReceiversBuilder) Build() (Receivers, error) {
 	receivers := make(Receivers)
-
-	// BuildProcessors receivers based on configuration.
 	for _, cfg := range rb.config.Receivers {
 		logger := rb.logger.With(zap.String(typeLogKey, string(cfg.Type())), zap.String(nameLogKey, cfg.Name()))
 		rcv, err := rb.buildReceiver(context.Background(), logger, rb.appInfo, cfg)
@@ -130,7 +125,7 @@ func hasReceiver(pipeline *configmodels.Pipeline, receiverName string) bool {
 
 type attachedPipelines map[configmodels.DataType][]*builtPipeline
 
-func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) (attachedPipelines, error) {
+func (rb *receiversBuilder) findPipelinesToAttach(config configmodels.Receiver) (attachedPipelines, error) {
 	// A receiver may be attached to multiple pipelines. Pipelines may consume different
 	// data types. We need to compile the list of pipelines of each type that must be
 	// attached to this receiver according to configuration.
@@ -163,7 +158,7 @@ func (rb *ReceiversBuilder) findPipelinesToAttach(config configmodels.Receiver) 
 	return pipelinesToAttach, nil
 }
 
-func (rb *ReceiversBuilder) attachReceiverToPipelines(
+func (rb *receiversBuilder) attachReceiverToPipelines(
 	ctx context.Context,
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
@@ -237,7 +232,7 @@ func (rb *ReceiversBuilder) attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *ReceiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver) (*builtReceiver, error) {
+func (rb *receiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logger, appInfo component.ApplicationStartInfo, config configmodels.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
 	pipelinesToAttach, err := rb.findPipelinesToAttach(config)
