@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
-	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
@@ -110,9 +110,9 @@ func main() {
 	// labels represent additional key-value descriptors that can be bound to a
 	// metric observer or recorder.
 	// TODO: Use baggage when supported to extact labels from baggage.
-	commonLabels := []label.KeyValue{
-		label.String("method", "repl"),
-		label.String("client", "cli"),
+	commonLabels := []attribute.KeyValue{
+		attribute.String("method", "repl"),
+		attribute.String("client", "cli"),
 	}
 
 	// Recorder metric example
