@@ -1,6 +1,6 @@
 # Attributes Processor
 
-Supported pipeline types: traces
+Supported pipeline types: traces, logs.
 
 The attributes processor modifies attributes of a span. Please refer to
 [config.go](./config.go) for the config spec.
