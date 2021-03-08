@@ -44,8 +44,8 @@ import (
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
-	"go.opentelemetry.io/collector/service/builder"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/testutil"
 )
 
