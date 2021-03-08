@@ -46,16 +46,3 @@ func TestExampleExporterConsumer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, exp.ExporterShutdown)
 }
-
-func TestExampleReceiverProducer(t *testing.T) {
-	rcv := &ExampleReceiverProducer{}
-	host := NewNopHost()
-	assert.False(t, rcv.Started)
-	err := rcv.Start(context.Background(), host)
-	assert.NoError(t, err)
-	assert.True(t, rcv.Started)
-
-	err = rcv.Shutdown(context.Background())
-	assert.NoError(t, err)
-	assert.True(t, rcv.Started)
-}
