@@ -126,22 +126,22 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedSpansKey])
+			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.acceptedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.refusedSpansKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			refusedSpans += rcvdSpans[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.RefusedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.acceptedSpansKey])
+			assert.Equal(t, int64(rcvdSpans[i]), span.Attributes[obsreport.refusedSpansKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 		switch params[i].transport {
 		case "":
-			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
+			assert.NotContains(t, span.Attributes, obsreport.transportKey)
 		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
+			assert.Equal(t, params[i].transport, span.Attributes[obsreport.transportKey])
 		}
 	}
 	obsreporttest.CheckReceiverTracesViews(t, receiver, transport, int64(acceptedSpans), int64(refusedSpans))
@@ -186,22 +186,22 @@ func TestReceiveLogsOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedLogRecords += rcvdLogRecords[i]
-			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsreport.AcceptedLogRecordsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedLogRecordsKey])
+			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsreport.acceptedLogRecordsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.refusedLogRecordsKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			refusedLogRecords += rcvdLogRecords[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedLogRecordsKey])
-			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsreport.RefusedLogRecordsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.acceptedLogRecordsKey])
+			assert.Equal(t, int64(rcvdLogRecords[i]), span.Attributes[obsreport.refusedLogRecordsKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 		switch params[i].transport {
 		case "":
-			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
+			assert.NotContains(t, span.Attributes, obsreport.transportKey)
 		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
+			assert.Equal(t, params[i].transport, span.Attributes[obsreport.transportKey])
 		}
 	}
 	obsreporttest.CheckReceiverLogsViews(t, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords))
@@ -246,22 +246,22 @@ func TestReceiveMetricsOp(t *testing.T) {
 		switch params[i].err {
 		case nil:
 			acceptedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedMetricPointsKey])
+			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.acceptedMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.refusedMetricPointsKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			refusedMetricPoints += rcvdMetricPts[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedMetricPointsKey])
-			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.RefusedMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.acceptedMetricPointsKey])
+			assert.Equal(t, int64(rcvdMetricPts[i]), span.Attributes[obsreport.refusedMetricPointsKey])
 			assert.Equal(t, params[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected param: %v", params[i])
 		}
 		switch params[i].transport {
 		case "":
-			assert.NotContains(t, span.Attributes, obsreport.TransportKey)
+			assert.NotContains(t, span.Attributes, obsreport.transportKey)
 		default:
-			assert.Equal(t, params[i].transport, span.Attributes[obsreport.TransportKey])
+			assert.Equal(t, params[i].transport, span.Attributes[obsreport.transportKey])
 		}
 	}
 
@@ -303,19 +303,19 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		switch errParams[i] {
 		case nil:
 			scrapedMetricPoints += scrapedMetricPts[i]
-			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.ScrapedMetricPointsKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.ErroredMetricPointsKey])
+			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.scrapedMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.erroredMetricPointsKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
 			erroredMetricPoints += scrapedMetricPts[i]
-			assert.Equal(t, int64(0), span.Attributes[obsreport.ScrapedMetricPointsKey])
-			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.ErroredMetricPointsKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.scrapedMetricPointsKey])
+			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.erroredMetricPointsKey])
 			assert.Equal(t, errParams[i].Error(), span.Status.Message)
 		case partialErrFake:
 			scrapedMetricPoints += scrapedMetricPts[i]
 			erroredMetricPoints++
-			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.ScrapedMetricPointsKey])
-			assert.Equal(t, int64(1), span.Attributes[obsreport.ErroredMetricPointsKey])
+			assert.Equal(t, int64(scrapedMetricPts[i]), span.Attributes[obsreport.scrapedMetricPointsKey])
+			assert.Equal(t, int64(1), span.Attributes[obsreport.erroredMetricPointsKey])
 			assert.Equal(t, errParams[i].Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected err param: %v", errParams[i])
@@ -526,15 +526,15 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		assert.Equal(t, parentSpan.SpanContext().TraceID, link.TraceID)
 		assert.Equal(t, parentSpan.SpanContext().SpanID, link.SpanID)
 		assert.Equal(t, "receiver/"+receiver+"/TraceDataReceived", span.Name)
-		assert.Equal(t, transport, span.Attributes[obsreport.TransportKey])
+		assert.Equal(t, transport, span.Attributes[obsreport.transportKey])
 		switch ops[i].err {
 		case nil:
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(0), span.Attributes[obsreport.RefusedSpansKey])
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.acceptedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.refusedSpansKey])
 			assert.Equal(t, trace.Status{Code: trace.StatusCodeOK}, span.Status)
 		case errFake:
-			assert.Equal(t, int64(0), span.Attributes[obsreport.AcceptedSpansKey])
-			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.RefusedSpansKey])
+			assert.Equal(t, int64(0), span.Attributes[obsreport.acceptedSpansKey])
+			assert.Equal(t, int64(ops[i].numSpans), span.Attributes[obsreport.refusedSpansKey])
 			assert.Equal(t, ops[i].err.Error(), span.Status.Message)
 		default:
 			t.Fatalf("unexpected error: %v", ops[i].err)

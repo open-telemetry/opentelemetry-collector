@@ -29,10 +29,10 @@ const (
 	ProcessorKey = "processor"
 
 	// Key used to identify spans dropped by the Collector.
-	DroppedSpansKey = "dropped_spans"
+	droppedSpansKey = "dropped_spans"
 
 	// Key used to identify metric points dropped by the Collector.
-	DroppedMetricPointsKey = "dropped_metric_points"
+	droppedMetricPointsKey = "dropped_metric_points"
 
 	// Key used to identify log records dropped by the Collector.
 	DroppedLogRecordsKey = "dropped_log_records"
@@ -46,35 +46,35 @@ var (
 	// Processor metrics. Any count of data items below is in the internal format
 	// of the collector since processors only deal with internal format.
 	mProcessorAcceptedSpans = stats.Int64(
-		processorPrefix+AcceptedSpansKey,
+		processorPrefix+acceptedSpansKey,
 		"Number of spans successfully pushed into the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorRefusedSpans = stats.Int64(
-		processorPrefix+RefusedSpansKey,
+		processorPrefix+refusedSpansKey,
 		"Number of spans that were rejected by the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorDroppedSpans = stats.Int64(
-		processorPrefix+DroppedSpansKey,
+		processorPrefix+droppedSpansKey,
 		"Number of spans that were dropped.",
 		stats.UnitDimensionless)
 	mProcessorAcceptedMetricPoints = stats.Int64(
-		processorPrefix+AcceptedMetricPointsKey,
+		processorPrefix+acceptedMetricPointsKey,
 		"Number of metric points successfully pushed into the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorRefusedMetricPoints = stats.Int64(
-		processorPrefix+RefusedMetricPointsKey,
+		processorPrefix+refusedMetricPointsKey,
 		"Number of metric points that were rejected by the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorDroppedMetricPoints = stats.Int64(
-		processorPrefix+DroppedMetricPointsKey,
+		processorPrefix+droppedMetricPointsKey,
 		"Number of metric points that were dropped.",
 		stats.UnitDimensionless)
 	mProcessorAcceptedLogRecords = stats.Int64(
-		processorPrefix+AcceptedLogRecordsKey,
+		processorPrefix+acceptedLogRecordsKey,
 		"Number of log records successfully pushed into the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorRefusedLogRecords = stats.Int64(
-		processorPrefix+RefusedLogRecordsKey,
+		processorPrefix+refusedLogRecordsKey,
 		"Number of log records that were rejected by the next component in the pipeline.",
 		stats.UnitDimensionless)
 	mProcessorDroppedLogRecords = stats.Int64(

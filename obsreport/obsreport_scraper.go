@@ -27,31 +27,32 @@ import (
 )
 
 const (
-	// ScraperKey used to identify scrapers in metrics and traces.
-	ScraperKey = "scraper"
+	// scraperKey used to identify scrapers in metrics and traces.
+	scraperKey = "scraper"
 
-	// ScrapedMetricPointsKey used to identify metric points scraped by the
+	// scrapedMetricPointsKey used to identify metric points scraped by the
 	// Collector.
-	ScrapedMetricPointsKey = "scraped_metric_points"
-	// ErroredMetricPointsKey used to identify metric points errored (i.e.
+	scrapedMetricPointsKey = "scraped_metric_points"
+
+	// erroredMetricPointsKey used to identify metric points errored (i.e.
 	// unable to be scraped) by the Collector.
-	ErroredMetricPointsKey = "errored_metric_points"
+	erroredMetricPointsKey = "errored_metric_points"
 )
 
 const (
-	scraperPrefix                 = ScraperKey + nameSep
+	scraperPrefix                 = scraperKey + nameSep
 	scraperMetricsOperationSuffix = nameSep + "MetricsScraped"
 )
 
 var (
-	tagKeyScraper, _ = tag.NewKey(ScraperKey)
+	tagKeyScraper, _ = tag.NewKey(scraperKey)
 
 	mScraperScrapedMetricPoints = stats.Int64(
-		scraperPrefix+ScrapedMetricPointsKey,
+		scraperPrefix+scrapedMetricPointsKey,
 		"Number of metric points successfully scraped.",
 		stats.UnitDimensionless)
 	mScraperErroredMetricPoints = stats.Int64(
-		scraperPrefix+ErroredMetricPointsKey,
+		scraperPrefix+erroredMetricPointsKey,
 		"Number of metric points that were unable to be scraped.",
 		stats.UnitDimensionless)
 )
@@ -120,9 +121,9 @@ func EndMetricsScrapeOp(
 	// end span according to errors
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
-			trace.StringAttribute(FormatKey, string(configmodels.MetricsDataType)),
-			trace.Int64Attribute(ScrapedMetricPointsKey, int64(numScrapedMetrics)),
-			trace.Int64Attribute(ErroredMetricPointsKey, int64(numErroredMetrics)),
+			trace.StringAttribute(formatKey, string(configmodels.MetricsDataType)),
+			trace.Int64Attribute(scrapedMetricPointsKey, int64(numScrapedMetrics)),
+			trace.Int64Attribute(erroredMetricPointsKey, int64(numErroredMetrics)),
 		)
 
 		span.SetStatus(errToStatus(err))

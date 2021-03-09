@@ -27,35 +27,35 @@ import (
 
 const (
 	// Key used to identify receivers in metrics and traces.
-	ReceiverKey = "receiver"
+	receiverKey = "receiver"
 	// Key used to identify the transport used to received the data.
-	TransportKey = "transport"
+	transportKey = "transport"
 	// Key used to identify the format of the data received.
-	FormatKey = "format"
+	formatKey = "format"
 
 	// Key used to identify spans accepted by the Collector.
-	AcceptedSpansKey = "accepted_spans"
+	acceptedSpansKey = "accepted_spans"
 	// Key used to identify spans refused (ie.: not ingested) by the Collector.
-	RefusedSpansKey = "refused_spans"
+	refusedSpansKey = "refused_spans"
 
 	// Key used to identify metric points accepted by the Collector.
-	AcceptedMetricPointsKey = "accepted_metric_points"
+	acceptedMetricPointsKey = "accepted_metric_points"
 	// Key used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
-	RefusedMetricPointsKey = "refused_metric_points"
+	refusedMetricPointsKey = "refused_metric_points"
 
 	// Key used to identify log records accepted by the Collector.
-	AcceptedLogRecordsKey = "accepted_log_records"
+	acceptedLogRecordsKey = "accepted_log_records"
 	// Key used to identify log records refused (ie.: not ingested) by the
 	// Collector.
-	RefusedLogRecordsKey = "refused_log_records"
+	refusedLogRecordsKey = "refused_log_records"
 )
 
 var (
-	tagKeyReceiver, _  = tag.NewKey(ReceiverKey)
-	tagKeyTransport, _ = tag.NewKey(TransportKey)
+	tagKeyReceiver, _  = tag.NewKey(receiverKey)
+	tagKeyTransport, _ = tag.NewKey(transportKey)
 
-	receiverPrefix                  = ReceiverKey + nameSep
+	receiverPrefix                  = receiverKey + nameSep
 	receiveTraceDataOperationSuffix = nameSep + "TraceDataReceived"
 	receiverMetricsOperationSuffix  = nameSep + "MetricsReceived"
 	receiverLogsOperationSuffix     = nameSep + "LogsReceived"
@@ -66,27 +66,27 @@ var (
 	// that result in a different number of elements should be reported in a
 	// separate way.
 	mReceiverAcceptedSpans = stats.Int64(
-		receiverPrefix+AcceptedSpansKey,
+		receiverPrefix+acceptedSpansKey,
 		"Number of spans successfully pushed into the pipeline.",
 		stats.UnitDimensionless)
 	mReceiverRefusedSpans = stats.Int64(
-		receiverPrefix+RefusedSpansKey,
+		receiverPrefix+refusedSpansKey,
 		"Number of spans that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
 	mReceiverAcceptedMetricPoints = stats.Int64(
-		receiverPrefix+AcceptedMetricPointsKey,
+		receiverPrefix+acceptedMetricPointsKey,
 		"Number of metric points successfully pushed into the pipeline.",
 		stats.UnitDimensionless)
 	mReceiverRefusedMetricPoints = stats.Int64(
-		receiverPrefix+RefusedMetricPointsKey,
+		receiverPrefix+refusedMetricPointsKey,
 		"Number of metric points that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
 	mReceiverAcceptedLogRecords = stats.Int64(
-		receiverPrefix+AcceptedLogRecordsKey,
+		receiverPrefix+acceptedLogRecordsKey,
 		"Number of log records successfully pushed into the pipeline.",
 		stats.UnitDimensionless)
 	mReceiverRefusedLogRecords = stats.Int64(
-		receiverPrefix+RefusedLogRecordsKey,
+		receiverPrefix+refusedLogRecordsKey,
 		"Number of log records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
 )
@@ -293,7 +293,7 @@ func traceReceiveOp(
 	}
 
 	if transport != "" {
-		span.AddAttributes(trace.StringAttribute(TransportKey, transport))
+		span.AddAttributes(trace.StringAttribute(transportKey, transport))
 	}
 	return ctx
 }
@@ -340,19 +340,19 @@ func endReceiveOp(
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
 		case configmodels.TracesDataType:
-			acceptedItemsKey = AcceptedSpansKey
-			refusedItemsKey = RefusedSpansKey
+			acceptedItemsKey = acceptedSpansKey
+			refusedItemsKey = refusedSpansKey
 		case configmodels.MetricsDataType:
-			acceptedItemsKey = AcceptedMetricPointsKey
-			refusedItemsKey = RefusedMetricPointsKey
+			acceptedItemsKey = acceptedMetricPointsKey
+			refusedItemsKey = refusedMetricPointsKey
 		case configmodels.LogsDataType:
-			acceptedItemsKey = AcceptedLogRecordsKey
-			refusedItemsKey = RefusedLogRecordsKey
+			acceptedItemsKey = acceptedLogRecordsKey
+			refusedItemsKey = refusedLogRecordsKey
 		}
 
 		span.AddAttributes(
 			trace.StringAttribute(
-				FormatKey, format),
+				formatKey, format),
 			trace.Int64Attribute(
 				acceptedItemsKey, int64(numAccepted)),
 			trace.Int64Attribute(
