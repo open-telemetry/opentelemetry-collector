@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.22.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Rename ServiceExtension to just Extension (#2581)
@@ -11,6 +13,20 @@
 - Move ScrapeErrors and PartialScrapeError to `scrapererror` (#2580)
 - Remove support for deprecated unmarshaler `CustomUnmarshaler`, only `Unmarshal` is supported (#2591)
 - Remove deprecated componenterror.CombineErrors (#2598)
+- Rename `pdata.TimestampUnixNanos` to `pdata.Timestamp` (#2549)
+
+## 💡 Enhancements 💡
+
+- `prometheus` exporter: Re-implement on top of `github.com/prometheus/client_golang/prometheus` and add `metric_expiration` option
+- `logging` exporter: Add support for AttributeMap (#2609)
+- Add semantic conventions for instrumentation library (#2602)
+
+## 🧰 Bug fixes 🧰
+
+- `otlp` receiver: Fix `Shutdown()` bug (#2564)
+- `batch` processor: Fix Shutdown behavior (#2537)
+- `logging` exporter: Fix handling the loop for empty attributes (#2610)
+- `prometheusremotewrite` exporter: Fix counter name check (#2613)
 
 ## v0.21.0 Beta
 
