@@ -1,6 +1,4 @@
 codecov:
-  notify:
-    require_ci_to_pass: yes
   strict_yaml_branch: main  # only use the latest copy on main branch
 
 coverage:
