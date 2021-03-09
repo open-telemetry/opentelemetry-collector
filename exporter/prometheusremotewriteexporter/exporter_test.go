@@ -130,10 +130,9 @@ func Test_Shutdown(t *testing.T) {
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
-	errChan := make(chan error, 5)
 	err := prwe.Shutdown(context.Background())
 	require.NoError(t, err)
-	errChan = make(chan error, 5)
+	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
