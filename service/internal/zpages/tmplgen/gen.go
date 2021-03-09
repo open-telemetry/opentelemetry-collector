@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package tmplgen
 
-//go:generate esc -pkg internal -o resources.go -modtime "0" templates/
+//go:generate esc -pkg tmplgen -o resources.go -modtime "0" ../templates/
 //go:generate addlicense -y "" -c "The OpenTelemetry Authors" resources.go
