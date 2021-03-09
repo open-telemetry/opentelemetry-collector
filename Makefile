@@ -8,6 +8,7 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
 							-not -path './internal/data/protogen/*' \
+							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
 
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.

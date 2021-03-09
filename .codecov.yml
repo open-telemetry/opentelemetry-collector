@@ -18,7 +18,8 @@ coverage:
         target: 95%
 
 ignore:
-  - "**/*/metadata/generated_metrics.go"
+  - "service/internal/zpages/tmplgen/**/*"
+  - "*/**/metadata/generated_metrics.go"
   - "internal/data/protogen/**/*"
   - "testbed/**/*"
-  - "**/*/third_party"
+  - "*/**/third_party/**/*"
