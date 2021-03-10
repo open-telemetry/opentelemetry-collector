@@ -104,6 +104,7 @@ metrics:
       type: double sum
       aggregation: cumulative
       monotonic: true
+    labels: [process.state]
 
   process.memory.physical_usage:
     description: The amount of physical memory in use.
@@ -128,6 +129,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [process.direction]
 
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
@@ -141,11 +143,11 @@ metrics:
   system.memory.usage:
     description: Bytes of memory in use.
     unit: By
-    labels: [mem.state]
     data:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [mem.state]
 
   system.cpu.load_average.1m:
     description: Average CPU Load over 1 minute.
@@ -172,6 +174,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [disk.device, disk.direction]
 
   system.disk.operations:
     description: Disk operations count.
@@ -180,6 +183,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [disk.device, disk.direction]
 
   system.disk.io_time:
     description: Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.
@@ -188,6 +192,7 @@ metrics:
       type: double sum
       aggregation: cumulative
       monotonic: true
+    labels: [disk.device]
 
   system.disk.operation_time:
     description: Time spent in disk operations.
@@ -196,6 +201,7 @@ metrics:
       type: double sum
       aggregation: cumulative
       monotonic: true
+    labels: [disk.device, disk.direction]
 
   system.disk.weighted_io_time:
     description: Time disk spent activated multiplied by the queue length.
@@ -204,6 +210,7 @@ metrics:
       type: double sum
       aggregation: cumulative
       monotonic: true
+    labels: [disk.device]
 
   system.disk.pending_operations:
     description: The queue size of pending I/O operations.
@@ -212,6 +219,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [disk.device]
 
   system.disk.merged:
     description: The number of disk reads merged into single physical disk access operations.
@@ -220,6 +228,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [disk.device, disk.direction]
 
   system.filesystem.usage:
     description: Filesystem bytes used.
@@ -228,6 +237,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [filesystem.device, filesystem.mode, filesystem.mountpoint, filesystem.type, filesystem.state]
 
   system.filesystem.inodes.usage:
     description: FileSystem inodes used.
@@ -236,6 +246,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [filesystem.device, filesystem.mode, filesystem.mountpoint, filesystem.type, filesystem.state]
 
   system.network.packets:
     description: The number of packets transferred.
@@ -244,6 +255,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [network.device, network.direction]
 
   system.network.dropped:
     description: The number of packets dropped.
@@ -252,6 +264,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [network.device, network.direction]
 
   system.network.errors:
     description: The number of errors encountered.
@@ -260,6 +273,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [network.device, network.direction]
 
   system.network.io:
     description: The number of bytes transmitted and received.
@@ -268,6 +282,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [network.device, network.direction]
 
   system.network.connections:
     description: The number of connections.
@@ -276,6 +291,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [network.protocol, network.state]
 
   system.paging.usage:
     description: Swap (unix) or pagefile (windows) usage.
@@ -284,6 +300,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [paging.device, paging.state]
 
   system.paging.operations:
     description: The number of paging operations.
@@ -292,6 +309,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [paging.direction, paging.type]
 
   system.paging.faults:
     description: The number of page faults.
@@ -300,6 +318,7 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: true
+    labels: [paging.type]
 
   system.processes.created:
     description: Total number of created processes.
@@ -316,3 +335,4 @@ metrics:
       type: int sum
       aggregation: cumulative
       monotonic: false
+    labels: [processes.status]
