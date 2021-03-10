@@ -38,7 +38,7 @@ type prometheusExporter struct {
 	handler      http.Handler
 	collector    *collector
 	registry     *prometheus.Registry
-	obsrep       *obsreport.ExporterObsReport
+	obsrep       *obsreport.Exporter
 }
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
@@ -49,7 +49,7 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 		return nil, errBlankPrometheusAddress
 	}
 
-	obsrep := obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), config.Name())
+	obsrep := obsreport.NewExporter(configtelemetry.GetMetricsLevelFlagValue(), config.Name())
 
 	collector := newCollector(config, logger)
 	registry := prometheus.NewRegistry()

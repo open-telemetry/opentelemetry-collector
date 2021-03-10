@@ -95,7 +95,7 @@ func NewMetricsExporter(
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
-			obsrep:     obsreport.NewExporterObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			obsrep:     obsreport.NewExporter(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
 			nextSender: nextSender,
 		}
 	})
@@ -107,7 +107,7 @@ func NewMetricsExporter(
 }
 
 type metricsSenderWithObservability struct {
-	obsrep     *obsreport.ExporterObsReport
+	obsrep     *obsreport.Exporter
 	nextSender requestSender
 }
 
