@@ -301,16 +301,16 @@ processors:
         value: "SELECT * FROM USERS [obfuscated]"
 
 receivers:
-  examplereceiver:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [attributes/insert]
-      exporters: [exampleexporter]
+      exporters: [nop]
 
 

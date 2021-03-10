@@ -1,16 +1,16 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   probabilistic_sampler:
 
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [probabilistic_sampler]
-      exporters: [exampleexporter]
+      exporters: [nop]

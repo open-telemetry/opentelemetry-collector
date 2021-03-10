@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   # The following specifies the values of attribute `db.svc`, `operation`,
@@ -85,11 +85,11 @@ processors:
           - "(?P<operation_website>.*?)$"
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [span/custom]
-      exporters: [exampleexporter]
+      exporters: [nop]

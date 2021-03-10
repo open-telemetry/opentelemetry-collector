@@ -32,7 +32,7 @@ import (
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
 func Test_loadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()

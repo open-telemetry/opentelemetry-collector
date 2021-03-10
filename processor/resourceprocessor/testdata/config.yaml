@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   # The following specifies a resource configuration doing the changes on resource attributes:
@@ -23,19 +23,19 @@ processors:
 
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     logs:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [resource]
-      exporters: [exampleexporter]
+      exporters: [nop]
     metrics:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [resource]
-      exporters: [exampleexporter]
+      exporters: [nop]
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [resource]
-      exporters: [exampleexporter]
+      exporters: [nop]
