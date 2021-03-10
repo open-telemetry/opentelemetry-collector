@@ -1,28 +1,23 @@
 receivers:
-    examplereceiver:
-    examplereceiver/myreceiver:
-        endpoint: "localhost:12345"
-        extra: "some string"
+    nop:
+    nop/myreceiver:
 
 processors:
-    exampleprocessor:
+    nop:
+    nop/myprocessor:
 
 exporters:
-    exampleexporter/myexporter:
-        extra: "some export string 2"
-    exampleexporter:
+    nop:
+    nop/myexporter:
 
 extensions:
-    exampleextension/0:
-    exampleextension/disabled:
-        extra: "not present in the service"
-    exampleextension/1:
-        extra: "some string"
+    nop:
+    nop/myextension:
 
 service:
-    extensions: [exampleextension/0, exampleextension/1]
+    extensions: [nop]
     pipelines:
         traces:
-            receivers: [examplereceiver]
-            processors: [exampleprocessor]
-            exporters: [exampleexporter]
+            receivers: [nop]
+            processors: [nop]
+            exporters: [nop]
