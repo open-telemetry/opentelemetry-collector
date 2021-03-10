@@ -82,7 +82,7 @@ type memoryLimiter struct {
 	logger                 *zap.Logger
 	configMismatchedLogged bool
 
-	obsrep *obsreport.ProcessorObsReport
+	obsrep *obsreport.Processor
 }
 
 // Minimum interval between forced GC when in soft limited mode. We don't want to
@@ -118,7 +118,7 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		readMemStatsFn: runtime.ReadMemStats,
 		procName:       cfg.Name(),
 		logger:         logger,
-		obsrep:         obsreport.NewProcessorObsReport(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+		obsrep:         obsreport.NewProcessor(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
 	}
 
 	ml.startMonitoring()

@@ -551,7 +551,7 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep := obsreport.NewProcessor(configtelemetry.LevelNormal, processor)
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
@@ -568,7 +568,7 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep := obsreport.NewProcessor(configtelemetry.LevelNormal, processor)
 	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
@@ -639,7 +639,7 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := obsreport.NewProcessorObsReport(configtelemetry.LevelNormal, processor)
+	obsrep := obsreport.NewProcessor(configtelemetry.LevelNormal, processor)
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)
