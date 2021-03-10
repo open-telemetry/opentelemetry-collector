@@ -5,17 +5,15 @@ go 1.14
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.3.0
 	github.com/Shopify/sarama v1.28.0
-	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
+	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/antonmedv/expr v1.8.9
 	github.com/apache/thrift v0.13.0
-	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-kit/kit v0.10.0
-	github.com/go-ole/go-ole v1.2.4 // indirect
-	github.com/gogo/googleapis v1.3.0 // indirect
+	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.3
@@ -24,16 +22,10 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
-	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/jaegertracing/jaeger v1.22.0
 	github.com/leoluk/perflib_exporter v0.1.0
-	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/onsi/ginkgo v1.14.1 // indirect
-	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/openzipkin/zipkin-go v0.2.5
-	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/pquerna/cachecontrol v0.0.0-20200819021114-67c6ae64274f // indirect
+	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.18.0
@@ -57,9 +49,8 @@ require (
 	golang.org/x/text v0.3.5
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.36.0
-	google.golang.org/grpc/examples v0.0.0-20200728065043-dfc0c05b2da9 // indirect
+	google.golang.org/grpc/examples v0.0.0-20210309220351-d5b628860d4e // indirect
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/ini.v1 v1.57.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
