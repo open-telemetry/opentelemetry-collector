@@ -31,16 +31,16 @@ import (
 )
 
 const (
-	nameStr     = "__name__"
-	sumStr      = "_sum"
-	countStr    = "_count"
-	bucketStr   = "_bucket"
-	leStr       = "le"
-	quantileStr = "quantile"
-	pInfStr     = "+Inf"
-	totalStr    = "total"
-	delimeter   = "_"
-	keyStr      = "key"
+	nameStr       = "__name__"
+	sumStr        = "_sum"
+	countStr      = "_count"
+	bucketStr     = "_bucket"
+	leStr         = "le"
+	quantileStr   = "quantile"
+	pInfStr       = "+Inf"
+	counterSuffix = "_total"
+	delimiter     = "_"
+	keyStr        = "key"
 )
 
 // ByLabelName enables the usage of sort.Sort() with a slice of labels
@@ -188,13 +188,10 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 	b.WriteString(ns)
 
 	if b.Len() > 0 {
-		b.WriteString(delimeter)
+		b.WriteString(delimiter)
 	}
 	name := metric.GetName()
 	b.WriteString(name)
-
-	// do not add the total suffix if the metric name already ends in "total"
-	isCounter = isCounter && name[len(name)-len(totalStr):] != totalStr
 
 	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
 	// units are different.
@@ -205,9 +202,8 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 		}
 	*/
 
-	if b.Len() > 0 && isCounter {
-		b.WriteString(delimeter)
-		b.WriteString(totalStr)
+	if b.Len() > 0 && isCounter && !strings.HasSuffix(name, counterSuffix) {
+		b.WriteString(counterSuffix)
 	}
 	return sanitize(b.String())
 }
@@ -262,7 +258,7 @@ func sanitize(s string) string {
 	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + delimeter + s
+		s = keyStr + delimiter + s
 	}
 	if s[0] == '_' {
 		s = keyStr + s

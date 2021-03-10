@@ -52,6 +52,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
@@ -156,7 +157,7 @@ func TestJsonHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	sink := new(consumertest.TracesSink)
+	sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 	ocr := newHTTPReceiver(t, addr, sink, nil)
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
@@ -183,7 +184,7 @@ func TestJsonHttp(t *testing.T) {
 	}
 }
 
-func testHTTPJSONRequest(t *testing.T, url string, sink *consumertest.TracesSink, encoding string, expectedErr error) {
+func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.ErrOrSinkConsumer, encoding string, expectedErr error) {
 	var buf *bytes.Buffer
 	var err error
 	switch encoding {
@@ -334,9 +335,8 @@ func TestProtoHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
-	tSink := new(consumertest.TracesSink)
-	mSink := new(consumertest.MetricsSink)
-	ocr := newHTTPReceiver(t, addr, tSink, mSink)
+	tSink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+	ocr := newHTTPReceiver(t, addr, tSink, consumertest.NewMetricsNop())
 
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	defer ocr.Shutdown(context.Background())
@@ -396,7 +396,7 @@ func createHTTPProtobufRequest(
 func testHTTPProtobufRequest(
 	t *testing.T,
 	url string,
-	tSink *consumertest.TracesSink,
+	tSink *internalconsumertest.ErrOrSinkConsumer,
 	encoding string,
 	traceBytes []byte,
 	expectedErr error,
@@ -645,7 +645,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer doneFn()
 
-				sink := new(consumertest.TracesSink)
+				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				ocr := newGRPCReceiver(t, exporter.receiverTag, addr, sink, nil)
 				require.NotNil(t, ocr)

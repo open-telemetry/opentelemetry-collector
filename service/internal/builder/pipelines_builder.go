@@ -78,8 +78,8 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 	return consumererror.CombineErrors(errs)
 }
 
-// PipelinesBuilder builds pipelines from config.
-type PipelinesBuilder struct {
+// pipelinesBuilder builds Pipelines from config.
+type pipelinesBuilder struct {
 	logger    *zap.Logger
 	appInfo   component.ApplicationStartInfo
 	config    *configmodels.Config
@@ -87,22 +87,18 @@ type PipelinesBuilder struct {
 	factories map[configmodels.Type]component.ProcessorFactory
 }
 
-// NewPipelinesBuilder creates a new PipelinesBuilder. Requires exporters to be already
-// built via ExportersBuilder. Call BuildProcessors() on the returned value.
-func NewPipelinesBuilder(
+// BuildPipelines builds pipeline processors from config. Requires exporters to be already
+// built via BuildExporters.
+func BuildPipelines(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
 	config *configmodels.Config,
 	exporters Exporters,
 	factories map[configmodels.Type]component.ProcessorFactory,
-) *PipelinesBuilder {
-	return &PipelinesBuilder{logger, appInfo, config, exporters, factories}
-}
+) (BuiltPipelines, error) {
+	pb := &pipelinesBuilder{logger, appInfo, config, exporters, factories}
 
-// BuildProcessors pipeline processors from config.
-func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 	pipelineProcessors := make(BuiltPipelines)
-
 	for _, pipeline := range pb.config.Service.Pipelines {
 		firstProcessor, err := pb.buildPipeline(context.Background(), pipeline)
 		if err != nil {
@@ -117,7 +113,7 @@ func (pb *PipelinesBuilder) Build() (BuiltPipelines, error) {
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *configmodels.Pipeline) (*builtPipeline, error) {
+func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *configmodels.Pipeline) (*builtPipeline, error) {
 
 	// BuildProcessors the pipeline backwards.
 
@@ -219,7 +215,7 @@ func (pb *PipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 }
 
 // Converts the list of exporter names to a list of corresponding builtExporters.
-func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*builtExporter {
+func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*builtExporter {
 	var result []*builtExporter
 	for _, name := range exporterNames {
 		exporter := pb.exporters[pb.config.Exporters[name]]
@@ -229,7 +225,7 @@ func (pb *PipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TracesConsumer {
+func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TracesConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	var exporters []consumer.TracesConsumer
@@ -241,7 +237,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	return processor.NewTracesFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
+func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	var exporters []consumer.MetricsConsumer
@@ -253,7 +249,7 @@ func (pb *PipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 	return processor.NewMetricsFanOutConnector(exporters)
 }
 
-func (pb *PipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
+func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
 	exporters := make([]consumer.LogsConsumer, len(builtExporters))

@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package zpages
 
 import (
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
+
+	"go.opentelemetry.io/collector/service/internal/zpages/tmplgen"
 )
 
 var (
-	fs                = FS(false)
+	fs                = tmplgen.FS(false)
 	templateFunctions = template.FuncMap{
 		"even":     even,
 		"getKey":   getKey,

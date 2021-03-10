@@ -41,8 +41,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
 	"go.opentelemetry.io/collector/internal/version"
-	"go.opentelemetry.io/collector/service/builder"
-	"go.opentelemetry.io/collector/service/internal"
+	"go.opentelemetry.io/collector/service/internal/builder"
+	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
 const (
@@ -317,7 +317,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 func (app *Application) setupExtensions(ctx context.Context) error {
 	var err error
-	app.builtExtensions, err = builder.NewExtensionsBuilder(app.logger, app.info, app.config, app.factories.Extensions).Build()
+	app.builtExtensions, err = builder.BuildExtensions(app.logger, app.info, app.config, app.factories.Extensions)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExtensions: %w", err)
 	}
@@ -331,7 +331,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// First create exporters.
 	var err error
-	app.builtExporters, err = builder.NewExportersBuilder(app.logger, app.info, app.config, app.factories.Exporters).Build()
+	app.builtExporters, err = builder.BuildExporters(app.logger, app.info, app.config, app.factories.Exporters)
 	if err != nil {
 		return fmt.Errorf("cannot build builtExporters: %w", err)
 	}
@@ -344,7 +344,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 
 	// Create pipelines and their processors and plug exporters to the
 	// end of the pipelines.
-	app.builtPipelines, err = builder.NewPipelinesBuilder(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors).Build()
+	app.builtPipelines, err = builder.BuildPipelines(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors)
 	if err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
@@ -356,7 +356,7 @@ func (app *Application) setupPipelines(ctx context.Context) error {
 	}
 
 	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.NewReceiversBuilder(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers).Build()
+	app.builtReceivers, err = builder.BuildReceivers(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers)
 	if err != nil {
 		return fmt.Errorf("cannot build receivers: %w", err)
 	}
@@ -492,19 +492,19 @@ const (
 func (app *Application) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	internal.WriteHTMLHeader(w, internal.HeaderData{Title: "Service"})
-	internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Service"})
+	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Pipelines",
 		ComponentEndpoint: pipelinezPath,
 		Link:              true,
 	})
-	internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Extensions",
 		ComponentEndpoint: extensionzPath,
 		Link:              true,
 	})
-	internal.WriteHTMLPropertiesTable(w, internal.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
-	internal.WriteHTMLFooter(w)
+	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
+	zpages.WriteHTMLFooter(w)
 }
 
 func (app *Application) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
@@ -513,44 +513,44 @@ func (app *Application) handlePipelinezRequest(w http.ResponseWriter, r *http.Re
 	pipelineName := r.Form.Get(zPipelineName)
 	componentName := r.Form.Get(zComponentName)
 	componentKind := r.Form.Get(zComponentKind)
-	internal.WriteHTMLHeader(w, internal.HeaderData{Title: "Pipelines"})
-	internal.WriteHTMLPipelinesSummaryTable(w, app.getPipelinesSummaryTableData())
+	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Pipelines"})
+	zpages.WriteHTMLPipelinesSummaryTable(w, app.getPipelinesSummaryTableData())
 	if pipelineName != "" && componentName != "" && componentKind != "" {
 		fullName := componentName
 		if componentKind == "processor" {
 			fullName = pipelineName + "/" + componentName
 		}
-		internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 			Name: componentKind + ": " + fullName,
 		})
 		// TODO: Add config + status info.
 	}
-	internal.WriteHTMLFooter(w)
+	zpages.WriteHTMLFooter(w)
 }
 
 func (app *Application) handleExtensionzRequest(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	extensionName := r.Form.Get(zExtensionName)
-	internal.WriteHTMLHeader(w, internal.HeaderData{Title: "Extensions"})
-	internal.WriteHTMLExtensionsSummaryTable(w, app.getExtensionsSummaryTableData())
+	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Extensions"})
+	zpages.WriteHTMLExtensionsSummaryTable(w, getExtensionsSummaryTableData(app))
 	if extensionName != "" {
-		internal.WriteHTMLComponentHeader(w, internal.ComponentHeaderData{
+		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 			Name: extensionName,
 		})
 		// TODO: Add config + status info.
 	}
-	internal.WriteHTMLFooter(w)
+	zpages.WriteHTMLFooter(w)
 }
 
-func (app *Application) getPipelinesSummaryTableData() internal.SummaryPipelinesTableData {
-	data := internal.SummaryPipelinesTableData{
+func (app *Application) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
+	data := zpages.SummaryPipelinesTableData{
 		ComponentEndpoint: pipelinezPath,
 	}
 
-	data.Rows = make([]internal.SummaryPipelinesTableRowData, 0, len(app.builtExtensions))
+	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(app.builtPipelines))
 	for c, p := range app.builtPipelines {
-		row := internal.SummaryPipelinesTableRowData{
+		row := zpages.SummaryPipelinesTableRowData{
 			FullName:            c.Name,
 			InputType:           string(c.InputType),
 			MutatesConsumedData: p.MutatesConsumedData,
@@ -567,14 +567,15 @@ func (app *Application) getPipelinesSummaryTableData() internal.SummaryPipelines
 	return data
 }
 
-func (app *Application) getExtensionsSummaryTableData() internal.SummaryExtensionsTableData {
-	data := internal.SummaryExtensionsTableData{
+func getExtensionsSummaryTableData(host component.Host) zpages.SummaryExtensionsTableData {
+	data := zpages.SummaryExtensionsTableData{
 		ComponentEndpoint: extensionzPath,
 	}
 
-	data.Rows = make([]internal.SummaryExtensionsTableRowData, 0, len(app.builtExtensions))
-	for c := range app.builtExtensions {
-		row := internal.SummaryExtensionsTableRowData{FullName: c.Name()}
+	extensions := host.GetExtensions()
+	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(extensions))
+	for c := range extensions {
+		row := zpages.SummaryExtensionsTableRowData{FullName: c.Name()}
 		data.Rows = append(data.Rows, row)
 	}
 
