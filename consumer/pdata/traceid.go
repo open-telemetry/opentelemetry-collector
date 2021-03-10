@@ -29,6 +29,10 @@ func NewTraceID(bytes [16]byte) TraceID {
 	return TraceID(data.NewTraceID(bytes))
 }
 
+func NewTraceIDWithUnlimitedSize(bytes []byte) TraceID {
+	return TraceID(data.NewTraceIDWithUnlimitedSize(bytes))
+}
+
 // Bytes returns the byte array representation of the TraceID.
 func (t TraceID) Bytes() [16]byte {
 	return data.TraceID(t).Bytes()
