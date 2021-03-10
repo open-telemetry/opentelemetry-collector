@@ -29,6 +29,17 @@
 // the corresponding common settings struct (the easiest approach is to embed the common struct).
 package configmodels
 
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	errMissingExporters        = errors.New("no enabled exporters specified in config")
+	errMissingReceivers        = errors.New("no enabled receivers specified in config")
+	errMissingServicePipelines = errors.New("service must have at least one pipeline")
+)
+
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	Receivers
@@ -36,6 +47,91 @@ type Config struct {
 	Processors
 	Extensions
 	Service
+}
+
+// Validate returns an error if the config is invalid.
+//
+// This function performs basic validation of configuration. There may be more subtle
+// invalid cases that we currently don't check for but which we may want to add in
+// the future (e.g. disallowing receiving and exporting on the same endpoint).
+func (cfg *Config) Validate() error {
+	// Currently there is no default receiver enabled.
+	// The configuration must specify at least one receiver to be valid.
+	if len(cfg.Receivers) == 0 {
+		return errMissingReceivers
+	}
+
+	// Currently there is no default exporter enabled.
+	// The configuration must specify at least one exporter to be valid.
+	if len(cfg.Exporters) == 0 {
+		return errMissingExporters
+	}
+
+	// Check that all enabled extensions in the service are configured
+	if err := cfg.validateServiceExtensions(); err != nil {
+		return err
+	}
+
+	// Check that all pipelines have at least one receiver and one exporter, and they reference
+	// only configured components.
+	return cfg.validateServicePipelines()
+}
+
+func (cfg *Config) validateServiceExtensions() error {
+	// Validate extensions.
+	for _, ref := range cfg.Service.Extensions {
+		// Check that the name referenced in the Service extensions exists in the top-level extensions
+		if cfg.Extensions[ref] == nil {
+			return fmt.Errorf("service references extension %q which does not exist", ref)
+		}
+	}
+
+	return nil
+}
+
+func (cfg *Config) validateServicePipelines() error {
+	// Must have at least one pipeline.
+	if len(cfg.Service.Pipelines) == 0 {
+		return errMissingServicePipelines
+	}
+
+	// Validate pipelines.
+	for _, pipeline := range cfg.Service.Pipelines {
+		// Validate pipeline has at least one receiver.
+		if len(pipeline.Receivers) == 0 {
+			return fmt.Errorf("pipeline %q must have at least one receiver", pipeline.Name)
+		}
+
+		// Validate pipeline receiver name references.
+		for _, ref := range pipeline.Receivers {
+			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers
+			if cfg.Receivers[ref] == nil {
+				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref)
+			}
+		}
+
+		// Validate pipeline processor name references
+		for _, ref := range pipeline.Processors {
+			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
+			if cfg.Processors[ref] == nil {
+				return fmt.Errorf("pipeline %q references processor %q which does not exist", pipeline.Name, ref)
+			}
+		}
+
+		// Validate pipeline has at least one exporter
+		if len(pipeline.Exporters) == 0 {
+			return fmt.Errorf("pipeline %q must have at least one exporter", pipeline.Name)
+		}
+
+		// Validate pipeline exporter name references.
+		for _, ref := range pipeline.Exporters {
+			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters
+			if cfg.Exporters[ref] == nil {
+				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipeline.Name, ref)
+			}
+		}
+	}
+	return nil
 }
 
 // Service defines the configurable components of the service.

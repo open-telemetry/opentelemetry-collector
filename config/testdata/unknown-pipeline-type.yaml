@@ -1,12 +1,13 @@
 receivers:
   examplereceiver:
-exporters:
-  exampleexporter:
 processors:
   exampleprocessor:
+exporters:
+  exampleexporter:
+
 service:
   pipelines:
-    traces:
-      receivers: [nosuchreceiver]
-      exporters: [exampleexporter]
+    wrongdatatype:
+      receivers: [examplereceiver]
       processors: [exampleprocessor]
+      exporters: [exampleexporter]

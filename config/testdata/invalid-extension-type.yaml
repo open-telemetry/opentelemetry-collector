@@ -1,13 +1,14 @@
+extensions:
+  /custom:
 receivers:
   examplereceiver:
-processors:
-  exampleprocessor:
 exporters:
   exampleexporter:
-
+processors:
+  exampleprocessor:
 service:
   pipelines:
-    /metrics:
+    traces:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

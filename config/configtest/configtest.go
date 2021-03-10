@@ -19,7 +19,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -47,5 +46,5 @@ func LoadConfigFile(t *testing.T, fileName string, factories component.Factories
 	if err != nil {
 		return nil, err
 	}
-	return cfg, config.ValidateConfig(cfg, zap.NewNop())
+	return cfg, cfg.Validate()
 }
