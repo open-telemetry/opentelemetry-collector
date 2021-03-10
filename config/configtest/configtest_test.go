@@ -22,105 +22,46 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/confignet"
 )
 
 func TestLoadConfigFile(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	cfg, err := LoadConfigFile(t, "testdata/config.yaml", factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
-	assert.Equal(t, 3, len(cfg.Extensions))
-	assert.Equal(t, "some string", cfg.Extensions["exampleextension/1"].(*componenttest.ExampleExtensionCfg).ExtraSetting)
-
-	// Verify service.
-	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, "exampleextension/0", cfg.Service.Extensions[0])
-	assert.Equal(t, "exampleextension/1", cfg.Service.Extensions[1])
+	require.Len(t, cfg.Extensions, 2)
+	assert.Contains(t, cfg.Extensions, "nop")
+	assert.Contains(t, cfg.Extensions, "nop/myextension")
 
 	// Verify receivers
-	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
-
-	assert.Equal(t,
-		&componenttest.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver",
-			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:1000",
-			},
-			ExtraSetting: "some string",
-		},
-		cfg.Receivers["examplereceiver"],
-		"Did not load receiver config correctly")
-
-	assert.Equal(t,
-		&componenttest.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "examplereceiver",
-				NameVal: "examplereceiver/myreceiver",
-			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:12345",
-			},
-			ExtraSetting: "some string",
-		},
-		cfg.Receivers["examplereceiver/myreceiver"],
-		"Did not load receiver config correctly")
+	require.Len(t, cfg.Receivers, 2)
+	assert.Contains(t, cfg.Receivers, "nop")
+	assert.Contains(t, cfg.Receivers, "nop/myreceiver")
 
 	// Verify exporters
-	assert.Equal(t, 2, len(cfg.Exporters), "Incorrect exporters count")
-
-	assert.Equal(t,
-		&componenttest.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "exampleexporter",
-				TypeVal: "exampleexporter",
-			},
-			ExtraSetting: "some export string",
-		},
-		cfg.Exporters["exampleexporter"],
-		"Did not load exporter config correctly")
-
-	assert.Equal(t,
-		&componenttest.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "exampleexporter/myexporter",
-				TypeVal: "exampleexporter",
-			},
-			ExtraSetting: "some export string 2",
-		},
-		cfg.Exporters["exampleexporter/myexporter"],
-		"Did not load exporter config correctly")
+	assert.Len(t, cfg.Exporters, 2)
+	assert.Contains(t, cfg.Exporters, "nop")
+	assert.Contains(t, cfg.Exporters, "nop/myexporter")
 
 	// Verify Processors
-	assert.Equal(t, 1, len(cfg.Processors), "Incorrect processors count")
+	assert.Len(t, cfg.Processors, 2)
+	assert.Contains(t, cfg.Processors, "nop")
+	assert.Contains(t, cfg.Processors, "nop/myprocessor")
 
-	assert.Equal(t,
-		&componenttest.ExampleProcessorCfg{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "exampleprocessor",
-				NameVal: "exampleprocessor",
-			},
-			ExtraSetting: "some export string",
-		},
-		cfg.Processors["exampleprocessor"],
-		"Did not load processor config correctly")
-
-	// Verify Pipelines
-	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
-
+	// Verify service.
+	require.Len(t, cfg.Service.Extensions, 1)
+	assert.Contains(t, cfg.Service.Extensions, "nop")
+	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
 		&configmodels.Pipeline{
 			Name:       "traces",
 			InputType:  configmodels.TracesDataType,
-			Receivers:  []string{"examplereceiver"},
-			Processors: []string{"exampleprocessor"},
-			Exporters:  []string{"exampleexporter"},
+			Receivers:  []string{"nop"},
+			Processors: []string{"nop"},
+			Exporters:  []string{"nop"},
 		},
 		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
