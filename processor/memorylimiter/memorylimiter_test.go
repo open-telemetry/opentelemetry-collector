@@ -110,7 +110,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
+		obsrep: obsreport.NewProcessor(configtelemetry.LevelNone, ""),
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
@@ -181,7 +181,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
+		obsrep: obsreport.NewProcessor(configtelemetry.LevelNone, ""),
 		logger: zap.NewNop(),
 	}
 	tp, err := processorhelper.NewTraceProcessor(
@@ -252,7 +252,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessorObsReport(configtelemetry.LevelNone, ""),
+		obsrep: obsreport.NewProcessor(configtelemetry.LevelNone, ""),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
