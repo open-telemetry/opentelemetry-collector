@@ -407,58 +407,6 @@ func TestEscapedEnvVars(t *testing.T) {
 		"Did not load pipeline config correctly")
 }
 
-func TestDecodeConfig_MultiProto(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "multiproto-config.yaml"), factories)
-	require.NoError(t, err, "Unable to load config")
-
-	// Verify receivers
-	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
-
-	assert.Equal(t,
-		&componenttest.MultiProtoReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "multireceiver",
-				NameVal: "multireceiver",
-			},
-			Protocols: map[string]componenttest.MultiProtoReceiverOneCfg{
-				"http": {
-					Endpoint:     "example.com:8888",
-					ExtraSetting: "extra string 1",
-				},
-				"tcp": {
-					Endpoint:     "omnition.com:9999",
-					ExtraSetting: "extra string 2",
-				},
-			},
-		},
-		config.Receivers["multireceiver"],
-		"Did not load receiver config correctly")
-
-	assert.Equal(t,
-		&componenttest.MultiProtoReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: "multireceiver",
-				NameVal: "multireceiver/myreceiver",
-			},
-			Protocols: map[string]componenttest.MultiProtoReceiverOneCfg{
-				"http": {
-					Endpoint:     "localhost:12345",
-					ExtraSetting: "some string 1",
-				},
-				"tcp": {
-					Endpoint:     "0.0.0.0:4567",
-					ExtraSetting: "some string 2",
-				},
-			},
-		},
-		config.Receivers["multireceiver/myreceiver"],
-		"Did not load receiver config correctly")
-}
-
 func TestDecodeConfig_Invalid(t *testing.T) {
 
 	var testCases = []struct {
@@ -479,10 +427,12 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "missing-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
 		{name: "missing-processor-type", expected: errInvalidTypeAndNameKey},
 		{name: "missing-pipelines", expected: errMissingPipelines},
-		{name: "pipeline-must-have-exporter", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-exporter2", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-receiver", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-must-have-receiver2", expected: errPipelineMustHaveReceiver},
+		{name: "pipeline-must-have-exporter-logs", expected: errPipelineMustHaveExporter},
+		{name: "pipeline-must-have-exporter-metrics", expected: errPipelineMustHaveExporter},
+		{name: "pipeline-must-have-exporter-traces", expected: errPipelineMustHaveExporter},
+		{name: "pipeline-must-have-receiver-logs", expected: errPipelineMustHaveReceiver},
+		{name: "pipeline-must-have-receiver-metrics", expected: errPipelineMustHaveReceiver},
+		{name: "pipeline-must-have-receiver-traces", expected: errPipelineMustHaveReceiver},
 		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
 		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
 		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},

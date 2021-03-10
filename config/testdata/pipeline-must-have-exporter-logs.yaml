@@ -1,5 +1,5 @@
 receivers:
-  multireceiver:
+  examplereceiver:
 exporters:
   exampleexporter:
     extra: "not present in the service pipeline"
@@ -7,5 +7,6 @@ processors:
   exampleprocessor:
 service:
   pipelines:
-    metrics:
-      receivers: [multireceiver]
+    logs:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]

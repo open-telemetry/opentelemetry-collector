@@ -1,5 +1,5 @@
 receivers:
-  multireceiver:
+  examplereceiver:
 exporters:
   exampleexporter:
 processors:
@@ -7,4 +7,5 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [somereceiver]
+      receivers: [examplereceiver]
+      exporters: [exampleexporter]
