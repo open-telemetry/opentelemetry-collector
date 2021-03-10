@@ -88,17 +88,17 @@ receivers:
         cors_allowed_headers:
           - ExampleHeader
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
       receivers: [otlp/customname]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]
     metrics:
       receivers: [otlp]
-      exporters: [exampleexporter]
+      exporters: [nop]

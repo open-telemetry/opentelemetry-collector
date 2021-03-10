@@ -1,5 +1,5 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     filter/empty:
@@ -37,15 +37,15 @@ processors:
                     - hello_world
 
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         traces:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter/empty]
-            exporters: [exampleexporter]
+            exporters: [nop]
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter/empty]
-            exporters: [exampleexporter]
+            exporters: [nop]

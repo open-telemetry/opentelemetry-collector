@@ -30,7 +30,7 @@ import (
 )
 
 func TestLoadingConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()

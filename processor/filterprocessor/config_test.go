@@ -41,7 +41,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		MetricNames: testDataFilters,
 	}
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
@@ -135,7 +135,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		MetricNames: testDataFilters,
 	}
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
@@ -218,7 +218,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 }
 
 func TestLoadingConfigExpr(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[configmodels.Type(typeStr)] = factory

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenthelper
+package componenthelper_test
 
 import (
 	"context"
@@ -23,47 +23,48 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestDefaultSettings(t *testing.T) {
-	st := DefaultComponentSettings()
+	st := componenthelper.DefaultComponentSettings()
 	require.NotNil(t, st)
-	cp := NewComponent(st)
+	cp := componenthelper.NewComponent(st)
 	require.NoError(t, cp.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, cp.Shutdown(context.Background()))
 }
 
 func TestWithStart(t *testing.T) {
 	startCalled := false
-	st := DefaultComponentSettings()
+	st := componenthelper.DefaultComponentSettings()
 	st.Start = func(context.Context, component.Host) error { startCalled = true; return nil }
-	cp := NewComponent(st)
+	cp := componenthelper.NewComponent(st)
 	assert.NoError(t, cp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.True(t, startCalled)
 }
 
 func TestWithStart_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	st := DefaultComponentSettings()
+	st := componenthelper.DefaultComponentSettings()
 	st.Start = func(context.Context, component.Host) error { return want }
-	cp := NewComponent(st)
+	cp := componenthelper.NewComponent(st)
 	assert.Equal(t, want, cp.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestWithShutdown(t *testing.T) {
 	shutdownCalled := false
-	st := DefaultComponentSettings()
+	st := componenthelper.DefaultComponentSettings()
 	st.Shutdown = func(context.Context) error { shutdownCalled = true; return nil }
-	cp := NewComponent(st)
+	cp := componenthelper.NewComponent(st)
 	assert.NoError(t, cp.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
 func TestWithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	st := DefaultComponentSettings()
+	st := componenthelper.DefaultComponentSettings()
 	st.Shutdown = func(context.Context) error { return want }
-	cp := NewComponent(st)
+	cp := componenthelper.NewComponent(st)
 	assert.Equal(t, want, cp.Shutdown(context.Background()))
 }

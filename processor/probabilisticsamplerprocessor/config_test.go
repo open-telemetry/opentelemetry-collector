@@ -28,7 +28,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigEmpty(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factories.Processors, err = component.MakeProcessorFactoryMap(NewFactory())
 	require.NotNil(t, factories.Processors)

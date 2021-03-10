@@ -29,14 +29,14 @@ receivers:
           target_label: kubernetes_pod_name
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
       receivers: [prometheus]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]

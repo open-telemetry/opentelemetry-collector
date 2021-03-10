@@ -12,36 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fluentforwardreceiver
+package componenttest
 
 import (
-	"path"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configtest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+func TestNewNopExtensionFactory(t *testing.T) {
+	factory := NewNopExtensionFactory()
+	require.NotNil(t, factory)
+	assert.Equal(t, configmodels.Type("nop"), factory.Type())
+	cfg := factory.CreateDefaultConfig()
+	assert.Equal(t, &configmodels.ExtensionSettings{TypeVal: factory.Type()}, cfg)
 
-	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
-
+	traces, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{}, cfg)
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	r0 := cfg.Receivers["fluentforward"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
-
+	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, traces.Shutdown(context.Background()))
 }

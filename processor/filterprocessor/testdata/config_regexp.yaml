@@ -1,5 +1,5 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     filter:
@@ -65,15 +65,15 @@ processors:
                     cachemaxnumentries: 10
 
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         traces:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter]
-            exporters: [exampleexporter]
+            exporters: [nop]
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [filter]
-            exporters: [exampleexporter]
+            exporters: [nop]
