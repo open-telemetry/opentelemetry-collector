@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -34,17 +33,10 @@ type ExampleReceiver struct {
 	ExtraSetting     string            `mapstructure:"extra"`
 	ExtraMapSetting  map[string]string `mapstructure:"extra_map"`
 	ExtraListSetting []string          `mapstructure:"extra_list"`
-
-	// FailTraceCreation causes CreateTracesReceiver to fail. Useful for testing.
-	FailTraceCreation bool `mapstructure:"-"`
-
-	// FailMetricsCreation causes CreateMetricsReceiver to fail. Useful for testing.
-	FailMetricsCreation bool `mapstructure:"-"`
 }
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
-type ExampleReceiverFactory struct {
-}
+type ExampleReceiverFactory struct{}
 
 var _ component.ReceiverFactory = (*ExampleReceiverFactory)(nil)
 
@@ -76,13 +68,8 @@ func (f *ExampleReceiverFactory) CreateTracesReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesReceiver, error) {
-	if cfg.(*ExampleReceiver).FailTraceCreation {
-		return nil, configerror.ErrDataTypeIsNotSupported
-	}
-
 	receiver := f.createReceiver(cfg)
 	receiver.TraceConsumer = nextConsumer
-
 	return receiver, nil
 }
 
@@ -108,13 +95,8 @@ func (f *ExampleReceiverFactory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	if cfg.(*ExampleReceiver).FailMetricsCreation {
-		return nil, configerror.ErrDataTypeIsNotSupported
-	}
-
 	receiver := f.createReceiver(cfg)
 	receiver.MetricsConsumer = nextConsumer
-
 	return receiver, nil
 }
 
