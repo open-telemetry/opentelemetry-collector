@@ -16,6 +16,7 @@ package builder
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 type testCase struct {
@@ -41,7 +41,7 @@ type testCase struct {
 	hasMetrics                bool
 }
 
-func TestReceiversBuilder_Build(t *testing.T) {
+func TestBuildReceivers(t *testing.T) {
 	tests := []testCase{
 		{
 			name:          "one-exporter",
@@ -96,7 +96,7 @@ func testReceivers(
 	attrFactory := attributesprocessor.NewFactory()
 	factories.Processors[attrFactory.Type()] = attrFactory
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Build the pipeline
 	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
@@ -133,15 +133,16 @@ func testReceivers(
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
 
+	td := testdata.GenerateTraceDataOneSpan()
 	if test.hasTraces {
 		traceProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
-		traceProducer.TraceConsumer.ConsumeTraces(context.Background(), testdata.GenerateTraceDataOneSpan())
+		assert.NoError(t, traceProducer.TraceConsumer.ConsumeTraces(context.Background(), td))
 	}
 
-	metrics := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetricsOneMetric()
 	if test.hasMetrics {
 		metricsProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
-		metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), metrics)
+		assert.NoError(t, metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), md))
 	}
 
 	// Now verify received data.
@@ -162,7 +163,7 @@ func testReceivers(
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
-				assert.EqualValues(t, testdata.GenerateTraceDataOneSpan(), traceConsumer.Traces[i])
+				assert.EqualValues(t, td, traceConsumer.Traces[i])
 			}
 		}
 
@@ -170,13 +171,13 @@ func testReceivers(
 		if test.hasMetrics {
 			metricsConsumer := exporter.getMetricExporter().(*componenttest.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
-			assert.EqualValues(t, metrics, metricsConsumer.Metrics[0])
+			assert.EqualValues(t, md, metricsConsumer.Metrics[0])
 		}
 	}
 }
 
-func TestReceiversBuilder_BuildCustom(t *testing.T) {
-	factories := createExampleFactories()
+func TestBuildReceivers_BuildCustom(t *testing.T) {
+	factories := createTestFactories()
 
 	tests := []struct {
 		dataType   string
@@ -257,33 +258,7 @@ func TestReceiversBuilder_BuildCustom(t *testing.T) {
 	}
 }
 
-func TestReceiversBuilder_DataTypeError(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	attrFactory := attributesprocessor.NewFactory()
-	factories.Processors[attrFactory.Type()] = attrFactory
-	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
-	assert.NoError(t, err)
-
-	// Make examplereceiver to "unsupport" trace data type.
-	receiver := cfg.Receivers["examplereceiver"]
-	receiver.(*componenttest.ExampleReceiver).FailTraceCreation = true
-
-	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
-	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
-	assert.NoError(t, err)
-	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
-
-	// This should fail because "examplereceiver" is attached to "traces" pipeline
-	// which is a configuration error.
-	assert.NotNil(t, err)
-	assert.Nil(t, receivers)
-}
-
-func TestReceiversBuilder_StartAll(t *testing.T) {
+func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
@@ -302,7 +277,7 @@ func TestReceiversBuilder_StartAll(t *testing.T) {
 	assert.True(t, receiver.Started)
 }
 
-func TestReceiversBuilder_StopAll(t *testing.T) {
+func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
@@ -320,53 +295,7 @@ func TestReceiversBuilder_StopAll(t *testing.T) {
 	assert.True(t, receiver.Stopped)
 }
 
-func TestReceiversBuilder_ErrorOnNilReceiver(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	bf := newBadReceiverFactory()
-	factories.Receivers[bf.Type()] = bf
-
-	cfg, err := configtest.LoadConfigFile(t, "testdata/bad_receiver_factory.yaml", factories)
-	require.Nil(t, err)
-
-	// Build the pipeline
-	allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
-	assert.NoError(t, err)
-	pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
-	assert.NoError(t, err)
-
-	// First test only trace receivers by removing the metrics pipeline.
-	metricsPipeline := cfg.Service.Pipelines["metrics"]
-	logsPipeline := cfg.Service.Pipelines["logs"]
-	delete(cfg.Service.Pipelines, "metrics")
-	delete(cfg.Service.Pipelines, "logs")
-	require.Equal(t, 1, len(cfg.Service.Pipelines))
-
-	receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
-	assert.Error(t, err)
-	assert.Zero(t, len(receivers))
-
-	// Now test the metric pipeline.
-	delete(cfg.Service.Pipelines, "traces")
-	cfg.Service.Pipelines["metrics"] = metricsPipeline
-	require.Equal(t, 1, len(cfg.Service.Pipelines))
-
-	receivers, err = BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
-	assert.Error(t, err)
-	assert.Zero(t, len(receivers))
-
-	// Now test the metric pipeline.
-	delete(cfg.Service.Pipelines, "metrics")
-	cfg.Service.Pipelines["logs"] = logsPipeline
-	require.Equal(t, 1, len(cfg.Service.Pipelines))
-
-	receivers, err = BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
-	assert.Error(t, err)
-	assert.Zero(t, len(receivers))
-}
-
-func TestReceiversBuilder_Unused(t *testing.T) {
+func TestBuildReceivers_Unused(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -386,11 +315,38 @@ func TestReceiversBuilder_Unused(t *testing.T) {
 	assert.NoError(t, receivers.ShutdownAll(context.Background()))
 }
 
-func newBadReceiverFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory("bf", func() configmodels.Receiver {
-		return &configmodels.ReceiverSettings{
-			TypeVal: "bf",
-			NameVal: "bf",
-		}
-	})
+func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
+	factories := createTestFactories()
+
+	tests := []struct {
+		configFile string
+	}{
+		{
+			configFile: "not_supported_receiver_logs.yaml",
+		},
+		{
+			configFile: "not_supported_receiver_metrics.yaml",
+		},
+		{
+			configFile: "not_supported_receiver_traces.yaml",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.configFile, func(t *testing.T) {
+
+			cfg, err := configtest.LoadConfigFile(t, path.Join("testdata", test.configFile), factories)
+			require.Nil(t, err)
+
+			allExporters, err := BuildExporters(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, factories.Exporters)
+			assert.NoError(t, err)
+
+			pipelineProcessors, err := BuildPipelines(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, allExporters, factories.Processors)
+			assert.NoError(t, err)
+
+			receivers, err := BuildReceivers(zap.NewNop(), component.DefaultApplicationStartInfo(), cfg, pipelineProcessors, factories.Receivers)
+			assert.Error(t, err)
+			assert.Zero(t, len(receivers))
+		})
+	}
 }

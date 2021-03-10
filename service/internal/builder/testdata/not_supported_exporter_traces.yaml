@@ -1,0 +1,10 @@
+receivers:
+  examplereceiver:
+exporters:
+  bf:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      exporters: [bf]
