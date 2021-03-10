@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector
+module github.com/easyops-cn/opentelemetry-collector
 
 go 1.14
 
