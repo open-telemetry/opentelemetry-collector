@@ -29,10 +29,11 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
 func TestBuildExporters(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	oceFactory := opencensusexporter.NewFactory()
@@ -108,12 +109,12 @@ func TestBuildExporters(t *testing.T) {
 }
 
 func TestBuildExporters_BuildLogs(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.Nil(t, err)
 
 	cfg := &configmodels.Config{
 		Exporters: map[string]configmodels.Exporter{
-			"exampleexporter": &componenttest.ExampleExporter{
+			"exampleexporter": &testcomponents.ExampleExporter{
 				ExporterSettings: configmodels.ExporterSettings{
 					NameVal: "exampleexporter",
 					TypeVal: "exampleexporter",
@@ -174,9 +175,9 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 func TestBuildExporters_StartAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
-	traceExporter := &componenttest.ExampleExporterConsumer{}
-	metricExporter := &componenttest.ExampleExporterConsumer{}
-	logsExporter := &componenttest.ExampleExporterConsumer{}
+	traceExporter := &testcomponents.ExampleExporterConsumer{}
+	metricExporter := &testcomponents.ExampleExporterConsumer{}
+	logsExporter := &testcomponents.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[configmodels.DataType]component.Exporter{
@@ -199,9 +200,9 @@ func TestBuildExporters_StartAll(t *testing.T) {
 func TestBuildExporters_StopAll(t *testing.T) {
 	exporters := make(Exporters)
 	expCfg := &configmodels.ExporterSettings{}
-	traceExporter := &componenttest.ExampleExporterConsumer{}
-	metricExporter := &componenttest.ExampleExporterConsumer{}
-	logsExporter := &componenttest.ExampleExporterConsumer{}
+	traceExporter := &testcomponents.ExampleExporterConsumer{}
+	metricExporter := &testcomponents.ExampleExporterConsumer{}
+	logsExporter := &testcomponents.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
 		expByDataType: map[configmodels.DataType]component.Exporter{

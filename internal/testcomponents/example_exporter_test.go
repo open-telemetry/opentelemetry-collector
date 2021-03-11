@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package testcomponents
 
 import (
 	"context"
@@ -20,12 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestExampleExporterConsumer(t *testing.T) {
 	exp := &ExampleExporterConsumer{}
-	host := NewNopHost()
+	host := componenttest.NewNopHost()
 	assert.False(t, exp.ExporterStarted)
 	err := exp.Start(context.Background(), host)
 	assert.NoError(t, err)

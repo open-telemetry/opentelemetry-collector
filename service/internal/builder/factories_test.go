@@ -16,17 +16,17 @@ package builder
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 func createTestFactories() component.Factories {
-	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
-	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
-	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
+	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
+	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
+	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
 	badReceiverFactory := newBadReceiverFactory()
 	badProcessorFactory := newBadProcessorFactory()
 	badExporterFactory := newBadExporterFactory()

@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 )
@@ -90,7 +91,7 @@ func testReceivers(
 	t *testing.T,
 	test testCase,
 ) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	attrFactory := attributesprocessor.NewFactory()
@@ -128,20 +129,20 @@ func testReceivers(
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
+		consumer := exporter.getTraceExporter().(*testcomponents.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
 
 	td := testdata.GenerateTraceDataOneSpan()
 	if test.hasTraces {
-		traceProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
+		traceProducer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
 		assert.NoError(t, traceProducer.TraceConsumer.ConsumeTraces(context.Background(), td))
 	}
 
 	md := testdata.GenerateMetricsOneMetric()
 	if test.hasMetrics {
-		metricsProducer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
+		metricsProducer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
 		assert.NoError(t, metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -159,7 +160,7 @@ func testReceivers(
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
+			traceConsumer := exporter.getTraceExporter().(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -169,7 +170,7 @@ func testReceivers(
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.getMetricExporter().(*componenttest.ExampleExporterConsumer)
+			metricsConsumer := exporter.getMetricExporter().(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.EqualValues(t, md, metricsConsumer.Metrics[0])
 		}
@@ -235,13 +236,13 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 			// First check that there are no traces in the exporters yet.
 			for _, exporter := range exporters {
-				consumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
 			// Send one data.
 			log := pdata.Logs{}
-			producer := receiver.receiver.(*componenttest.ExampleReceiverProducer)
+			producer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
 			producer.LogConsumer.ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.
@@ -250,7 +251,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 				exporter := allExporters[cfg.Exporters[name]]
 
 				// Validate exported data.
-				consumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
+				consumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, 1, len(consumer.Logs))
 				assert.EqualValues(t, log, consumer.Logs[0])
 			}
@@ -262,7 +263,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
-	receiver := &componenttest.ExampleReceiverProducer{}
+	receiver := &testcomponents.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
 		logger:   zap.NewNop(),
@@ -281,7 +282,7 @@ func TestBuildReceivers_StopAll(t *testing.T) {
 	receivers := make(Receivers)
 	rcvCfg := &configmodels.ReceiverSettings{}
 
-	receiver := &componenttest.ExampleReceiverProducer{}
+	receiver := &testcomponents.ExampleReceiverProducer{}
 
 	receivers[rcvCfg] = &builtReceiver{
 		logger:   zap.NewNop(),
@@ -296,7 +297,7 @@ func TestBuildReceivers_StopAll(t *testing.T) {
 }
 
 func TestBuildReceivers_Unused(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	cfg, err := configtest.LoadConfigFile(t, "testdata/unused_receiver.yaml", factories)
