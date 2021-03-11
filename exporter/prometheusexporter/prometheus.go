@@ -49,7 +49,10 @@ func newPrometheusExporter(config *Config, logger *zap.Logger) (*prometheusExpor
 		return nil, errBlankPrometheusAddress
 	}
 
-	obsrep := obsreport.NewExporter(configtelemetry.GetMetricsLevelFlagValue(), config.Name())
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
+		Level:        configtelemetry.GetMetricsLevelFlagValue(),
+		ExporterName: config.Name(),
+	})
 
 	collector := newCollector(config, logger)
 	registry := prometheus.NewRegistry()
