@@ -26,8 +26,8 @@ service discovery. Just like you would write in a YAML configuration file
 before starting Prometheus, such as with:
 
 **Note**: Since the collector configuration supports env variable substitution
-`$` charaters in your prometheus configuration are interpreted as environment
-variables.  If you want to use $ charaters in your prometheus configuration,
+`$` characters in your prometheus configuration are interpreted as environment
+variables.  If you want to use $ characters in your prometheus configuration,
 you must escape them using `$$`.
 
 ```shell
