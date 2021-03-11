@@ -222,10 +222,9 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
-			wrapped := convertTimeseriesToRequest(tsArray)
-			requests = append(requests, wrapped)
+			requests = append(requests, &prompb.WriteRequest{Timeseries: tsArray})
 
-			tsArray = make([]prompb.TimeSeries, 0)
+			tsArray = tsArray[:0]
 			sizeOfCurrentBatch = 0
 		}
 
@@ -234,8 +233,7 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 	}
 
 	if len(tsArray) != 0 {
-		wrapped := convertTimeseriesToRequest(tsArray)
-		requests = append(requests, wrapped)
+		requests = append(requests, &prompb.WriteRequest{Timeseries: tsArray})
 	}
 
 	return requests, nil
@@ -473,13 +471,5 @@ func addSingleDoubleSummaryDataPoint(pt *otlp.DoubleSummaryDataPoint, metric *ot
 		percentileStr := strconv.FormatFloat(qt.GetQuantile(), 'f', -1, 64)
 		qtlabels := createLabelSet(pt.GetLabels(), externalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric)
-	}
-}
-
-func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
-	// the remote_write endpoint only requires the timeseries.
-	// otlp defines it's own way to handle metric metadata
-	return &prompb.WriteRequest{
-		Timeseries: tsArray,
 	}
 }
