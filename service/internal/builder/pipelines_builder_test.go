@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
@@ -58,9 +59,9 @@ func TestBuildPipelines(t *testing.T) {
 }
 
 func createExampleConfig(dataType string) *configmodels.Config {
-	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
-	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
-	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
+	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
+	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
+	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
 
 	cfg := &configmodels.Config{
 		Receivers: map[string]configmodels.Receiver{
@@ -150,9 +151,9 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			// Send Logs via processor and verify that all exporters of the pipeline receive it.
 
 			// First check that there are no logs in the exporters yet.
-			var exporterConsumers []*componenttest.ExampleExporterConsumer
+			var exporterConsumers []*testcomponents.ExampleExporterConsumer
 			for _, exporter := range exporters {
-				expConsumer := exporter.getLogExporter().(*componenttest.ExampleExporterConsumer)
+				expConsumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
 				exporterConsumers = append(exporterConsumers, expConsumer)
 				require.Equal(t, len(expConsumer.Logs), 0)
 			}
@@ -177,7 +178,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 }
 
 func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 	cfg, err := configtest.LoadConfigFile(t, "testdata/pipelines_builder.yaml", factories)
 	// Load the config
@@ -212,9 +213,9 @@ func testPipeline(t *testing.T, pipelineName string, exporterNames []string) {
 	// Send TraceData via processor and verify that all exporters of the pipeline receive it.
 
 	// First check that there are no traces in the exporters yet.
-	var exporterConsumers []*componenttest.ExampleExporterConsumer
+	var exporterConsumers []*testcomponents.ExampleExporterConsumer
 	for _, exporter := range exporters {
-		expConsumer := exporter.getTraceExporter().(*componenttest.ExampleExporterConsumer)
+		expConsumer := exporter.getTraceExporter().(*testcomponents.ExampleExporterConsumer)
 		exporterConsumers = append(exporterConsumers, expConsumer)
 		require.Equal(t, len(expConsumer.Traces), 0)
 	}

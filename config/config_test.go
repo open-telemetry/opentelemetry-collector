@@ -23,13 +23,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
 func TestDecodeConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	// Load the config
@@ -38,7 +38,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(config.Extensions))
-	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*componenttest.ExampleExtensionCfg).ExtraSetting)
+	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
 	assert.Equal(t, 2, len(config.Service.Extensions))
@@ -49,7 +49,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
 
 	assert.Equal(t,
-		&componenttest.ExampleReceiver{
+		&testcomponents.ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "examplereceiver",
 				NameVal: "examplereceiver",
@@ -63,7 +63,7 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
-		&componenttest.ExampleReceiver{
+		&testcomponents.ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "examplereceiver",
 				NameVal: "examplereceiver/myreceiver",
@@ -80,7 +80,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 2, len(config.Exporters), "Incorrect exporters count")
 
 	assert.Equal(t,
-		&componenttest.ExampleExporter{
+		&testcomponents.ExampleExporter{
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
@@ -91,7 +91,7 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load exporter config correctly")
 
 	assert.Equal(t,
-		&componenttest.ExampleExporter{
+		&testcomponents.ExampleExporter{
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter/myexporter",
 				TypeVal: "exampleexporter",
@@ -105,7 +105,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
 
 	assert.Equal(t,
-		&componenttest.ExampleProcessorCfg{
+		&testcomponents.ExampleProcessorCfg{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
@@ -197,7 +197,7 @@ func TestSimpleConfig(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			factories, err := componenttest.ExampleComponents()
+			factories, err := testcomponents.ExampleComponents()
 			assert.NoError(t, err)
 
 			// Load the config
@@ -207,7 +207,7 @@ func TestSimpleConfig(t *testing.T) {
 			// Verify extensions.
 			assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
 			assert.Equalf(t,
-				&componenttest.ExampleExtensionCfg{
+				&testcomponents.ExampleExtensionCfg{
 					ExtensionSettings: configmodels.ExtensionSettings{
 						TypeVal: "exampleextension",
 						NameVal: "exampleextension",
@@ -227,7 +227,7 @@ func TestSimpleConfig(t *testing.T) {
 			assert.Equalf(t, 1, len(config.Receivers), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
-				&componenttest.ExampleReceiver{
+				&testcomponents.ExampleReceiver{
 					ReceiverSettings: configmodels.ReceiverSettings{
 						TypeVal: "examplereceiver",
 						NameVal: "examplereceiver",
@@ -246,7 +246,7 @@ func TestSimpleConfig(t *testing.T) {
 			assert.Equalf(t, 1, len(config.Exporters), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
-				&componenttest.ExampleExporter{
+				&testcomponents.ExampleExporter{
 					ExporterSettings: configmodels.ExporterSettings{
 						NameVal: "exampleexporter",
 						TypeVal: "exampleexporter",
@@ -263,7 +263,7 @@ func TestSimpleConfig(t *testing.T) {
 			assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
-				&componenttest.ExampleProcessorCfg{
+				&testcomponents.ExampleProcessorCfg{
 					ProcessorSettings: configmodels.ProcessorSettings{
 						TypeVal: "exampleprocessor",
 						NameVal: "exampleprocessor",
@@ -299,7 +299,7 @@ func TestEscapedEnvVars(t *testing.T) {
 		assert.NoError(t, os.Unsetenv("RECEIVERS_EXAMPLERECEIVER_EXTRA_MAP_RECV_VALUE_2"))
 	}()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	// Load the config
@@ -309,7 +309,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	// Verify extensions.
 	assert.Equal(t, 1, len(config.Extensions))
 	assert.Equal(t,
-		&componenttest.ExampleExtensionCfg{
+		&testcomponents.ExampleExtensionCfg{
 			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "exampleextension",
 				NameVal: "exampleextension",
@@ -329,7 +329,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t, 1, len(config.Receivers))
 
 	assert.Equal(t,
-		&componenttest.ExampleReceiver{
+		&testcomponents.ExampleReceiver{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "examplereceiver",
 				NameVal: "examplereceiver",
@@ -363,7 +363,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t, 1, len(config.Exporters))
 
 	assert.Equal(t,
-		&componenttest.ExampleExporter{
+		&testcomponents.ExampleExporter{
 			ExporterSettings: configmodels.ExporterSettings{
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
@@ -379,7 +379,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t, 1, len(config.Processors))
 
 	assert.Equal(t,
-		&componenttest.ExampleProcessorCfg{
+		&testcomponents.ExampleProcessorCfg{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
@@ -454,7 +454,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-pipeline-sub-config", expected: errUnmarshalTopLevelStructureError},
 	}
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	for _, test := range testCases {
@@ -478,7 +478,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 }
 
 func TestLoadEmpty(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	_, err = loadConfigFile(t, path.Join(".", "testdata", "empty-config.yaml"), factories)
@@ -486,7 +486,7 @@ func TestLoadEmpty(t *testing.T) {
 }
 
 func TestLoadEmptyAllSections(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
 	_, err = loadConfigFile(t, path.Join(".", "testdata", "empty-all-sections.yaml"), factories)

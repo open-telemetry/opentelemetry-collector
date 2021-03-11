@@ -38,9 +38,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
@@ -221,8 +221,8 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 }
 
 func TestApplication_setupExtensions(t *testing.T) {
-	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{FailCreation: true}
-	exampleExtensionConfig := &componenttest.ExampleExtensionCfg{
+	exampleExtensionFactory := &testcomponents.ExampleExtensionFactory{FailCreation: true}
+	exampleExtensionConfig := &testcomponents.ExampleExtensionCfg{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: exampleExtensionFactory.Type(),
 			NameVal: string(exampleExtensionFactory.Type()),
@@ -349,10 +349,10 @@ func (b badExtensionFactory) CreateExtension(_ context.Context, _ component.Exte
 
 func TestApplication_GetFactory(t *testing.T) {
 	// Create some factories.
-	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
-	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
-	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
-	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{}
+	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
+	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
+	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
+	exampleExtensionFactory := &testcomponents.ExampleExtensionFactory{}
 
 	factories := component.Factories{
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
@@ -398,10 +398,10 @@ func TestApplication_GetFactory(t *testing.T) {
 
 func createExampleApplication(t *testing.T) *Application {
 	// Create some factories.
-	exampleReceiverFactory := &componenttest.ExampleReceiverFactory{}
-	exampleProcessorFactory := &componenttest.ExampleProcessorFactory{}
-	exampleExporterFactory := &componenttest.ExampleExporterFactory{}
-	exampleExtensionFactory := &componenttest.ExampleExtensionFactory{}
+	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
+	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
+	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
+	exampleExtensionFactory := &testcomponents.ExampleExtensionFactory{}
 	factories := component.Factories{
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,

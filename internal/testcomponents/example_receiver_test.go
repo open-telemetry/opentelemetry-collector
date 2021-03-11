@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package testcomponents
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestExampleReceiverProducer(t *testing.T) {
 	rcv := &ExampleReceiverProducer{}
-	host := NewNopHost()
+	host := componenttest.NewNopHost()
 	assert.False(t, rcv.Started)
 	err := rcv.Start(context.Background(), host)
 	assert.NoError(t, err)
