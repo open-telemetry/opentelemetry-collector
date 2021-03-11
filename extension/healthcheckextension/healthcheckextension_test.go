@@ -21,7 +21,6 @@ import (
 	"runtime"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -86,14 +85,8 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
-	// Health check will report port already in use in a goroutine, use the error waiting
-	// host to get it.
-	mh := componenttest.NewErrorWaitingHost()
-	require.NoError(t, hcExt.Start(context.Background(), mh))
-
-	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
-	require.True(t, receivedError)
-	require.Error(t, receivedErr)
+	mh := componenttest.NewAssertNoError(t)
+	require.Error(t, hcExt.Start(context.Background(), mh))
 }
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
@@ -104,17 +97,11 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
-	mh := componenttest.NewErrorWaitingHost()
+	mh := componenttest.NewAssertNoError(t)
 	require.NoError(t, hcExt.Start(context.Background(), mh))
 	defer hcExt.Shutdown(context.Background())
 
-	// Health check will report already in use in a goroutine, use the error waiting
-	// host to get it.
-	require.NoError(t, hcExt.Start(context.Background(), mh))
-
-	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
-	require.True(t, receivedError)
-	require.Error(t, receivedErr)
+	require.Error(t, hcExt.Start(context.Background(), mh))
 }
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {

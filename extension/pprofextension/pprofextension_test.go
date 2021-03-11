@@ -81,7 +81,7 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 	defer pprofExt.Shutdown(context.Background())
 
-	// Try to start it again, it will fail since it is on the same endpoint.
+	// The instance is already active it will fail.
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 

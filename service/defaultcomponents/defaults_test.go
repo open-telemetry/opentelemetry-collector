@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -73,6 +74,10 @@ func TestDefaultComponents(t *testing.T) {
 		v, ok := exts[k]
 		assert.True(t, ok)
 		assert.Equal(t, k, v.Type())
+		cfg := v.CreateDefaultConfig()
+		assert.Equal(t, k, cfg.Type())
+
+		componenttest.VerityExtensionLifecycle(t, v, nil)
 	}
 
 	recvs := factories.Receivers
