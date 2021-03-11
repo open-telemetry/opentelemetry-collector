@@ -1,3 +1,5 @@
+extensions:
+  exampleextension/:
 receivers:
   examplereceiver:
 exporters:
@@ -6,6 +8,7 @@ processors:
   exampleprocessor:
 service:
   pipelines:
-    metrics:
+    traces:
       receivers: [examplereceiver]
-      exporters: [nosuchexporter]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

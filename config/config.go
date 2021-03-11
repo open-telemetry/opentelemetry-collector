@@ -26,7 +26,6 @@ import (
 
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -42,15 +41,6 @@ const (
 	errInvalidTypeAndNameKey
 	errUnknownType
 	errDuplicateName
-	errMissingPipelines
-	errPipelineMustHaveReceiver
-	errPipelineMustHaveExporter
-	errExtensionNotExists
-	errPipelineReceiverNotExists
-	errPipelineProcessorNotExists
-	errPipelineExporterNotExists
-	errMissingReceivers
-	errMissingExporters
 	errUnmarshalTopLevelStructureError
 )
 
@@ -476,171 +466,6 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (configmodels.Pi
 	}
 
 	return pipelines, nil
-}
-
-// ValidateConfig validates config.
-func ValidateConfig(cfg *configmodels.Config, _ *zap.Logger) error {
-	// This function performs basic validation of configuration. There may be more subtle
-	// invalid cases that we currently don't check for but which we may want to add in
-	// the future (e.g. disallowing receiving and exporting on the same endpoint).
-
-	if err := validateReceivers(cfg); err != nil {
-		return err
-	}
-
-	if err := validateExporters(cfg); err != nil {
-		return err
-	}
-
-	if err := validateService(cfg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func validateService(cfg *configmodels.Config) error {
-	if err := validatePipelines(cfg); err != nil {
-		return err
-	}
-
-	return validateServiceExtensions(cfg)
-}
-
-func validateServiceExtensions(cfg *configmodels.Config) error {
-	if len(cfg.Service.Extensions) == 0 {
-		return nil
-	}
-
-	// Validate extensions.
-	for _, ref := range cfg.Service.Extensions {
-		// Check that the name referenced in the Service extensions exists in the top-level extensions
-		if cfg.Extensions[ref] == nil {
-			return &configError{
-				code: errExtensionNotExists,
-				msg:  fmt.Sprintf("Service references extension %q which does not exist", ref),
-			}
-		}
-	}
-
-	return nil
-}
-
-func validatePipelines(cfg *configmodels.Config) error {
-	// Must have at least one pipeline.
-	if len(cfg.Service.Pipelines) == 0 {
-		return &configError{code: errMissingPipelines, msg: "must have at least one pipeline"}
-	}
-
-	// Validate pipelines.
-	for _, pipeline := range cfg.Service.Pipelines {
-		if err := validatePipeline(cfg, pipeline); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func validatePipeline(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
-	if err := validatePipelineReceivers(cfg, pipeline); err != nil {
-		return err
-	}
-
-	if err := validatePipelineExporters(cfg, pipeline); err != nil {
-		return err
-	}
-
-	if err := validatePipelineProcessors(cfg, pipeline); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func validatePipelineReceivers(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
-	if len(pipeline.Receivers) == 0 {
-		return &configError{
-			code: errPipelineMustHaveReceiver,
-			msg:  fmt.Sprintf("pipeline %q must have at least one receiver", pipeline.Name),
-		}
-	}
-
-	// Validate pipeline receiver name references.
-	for _, ref := range pipeline.Receivers {
-		// Check that the name referenced in the pipeline's receivers exists in the top-level receivers
-		if cfg.Receivers[ref] == nil {
-			return &configError{
-				code: errPipelineReceiverNotExists,
-				msg:  fmt.Sprintf("pipeline %q references receiver %q which does not exist", pipeline.Name, ref),
-			}
-		}
-	}
-
-	return nil
-}
-
-func validatePipelineExporters(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
-	if len(pipeline.Exporters) == 0 {
-		return &configError{
-			code: errPipelineMustHaveExporter,
-			msg:  fmt.Sprintf("pipeline %q must have at least one exporter", pipeline.Name),
-		}
-	}
-
-	// Validate pipeline exporter name references.
-	for _, ref := range pipeline.Exporters {
-		// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters
-		if cfg.Exporters[ref] == nil {
-			return &configError{
-				code: errPipelineExporterNotExists,
-				msg:  fmt.Sprintf("pipeline %q references exporter %q which does not exist", pipeline.Name, ref),
-			}
-		}
-	}
-
-	return nil
-}
-
-func validatePipelineProcessors(cfg *configmodels.Config, pipeline *configmodels.Pipeline) error {
-	if len(pipeline.Processors) == 0 {
-		return nil
-	}
-
-	// Validate pipeline processor name references
-	for _, ref := range pipeline.Processors {
-		// Check that the name referenced in the pipeline's processors exists in the top-level processors.
-		if cfg.Processors[ref] == nil {
-			return &configError{
-				code: errPipelineProcessorNotExists,
-				msg:  fmt.Sprintf("pipeline %q references processor %s which does not exist", pipeline.Name, ref),
-			}
-		}
-	}
-
-	return nil
-}
-
-func validateReceivers(cfg *configmodels.Config) error {
-	// Currently there is no default receiver enabled. The configuration must specify at least one enabled receiver to
-	// be valid.
-	if len(cfg.Receivers) == 0 {
-		return &configError{
-			code: errMissingReceivers,
-			msg:  "no enabled receivers specified in config",
-		}
-	}
-	return nil
-}
-
-func validateExporters(cfg *configmodels.Config) error {
-	// There must be at least one enabled exporter to be considered a valid configuration.
-	if len(cfg.Exporters) == 0 {
-		return &configError{
-			code: errMissingExporters,
-			msg:  "no enabled exporters specified in config",
-		}
-	}
-	return nil
 }
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).

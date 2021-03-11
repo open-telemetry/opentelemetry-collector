@@ -89,7 +89,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 	if err != nil {
 		return configCleanup, err
 	}
-	err = config.ValidateConfig(cfg, zap.NewNop())
+	err = cfg.Validate()
 	if err != nil {
 		return configCleanup, err
 	}

@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -414,47 +413,40 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		expected        configErrorCode // expected error (if nil any error is acceptable)
 		expectedMessage string          // string that the error must contain
 	}{
-		{name: "empty-config"},
-		{name: "missing-all-sections"},
-		{name: "missing-exporters", expected: errMissingExporters},
-		{name: "missing-receivers", expected: errMissingReceivers},
-		{name: "missing-processors"},
-		{name: "invalid-extension-name", expected: errExtensionNotExists},
-		{name: "invalid-receiver-name"},
-		{name: "invalid-receiver-reference", expected: errPipelineReceiverNotExists},
-		{name: "missing-extension-type", expected: errInvalidTypeAndNameKey},
-		{name: "missing-receiver-type", expected: errInvalidTypeAndNameKey},
-		{name: "missing-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "missing-processor-type", expected: errInvalidTypeAndNameKey},
-		{name: "missing-pipelines", expected: errMissingPipelines},
-		{name: "pipeline-must-have-exporter-logs", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-exporter-metrics", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-exporter-traces", expected: errPipelineMustHaveExporter},
-		{name: "pipeline-must-have-receiver-logs", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-must-have-receiver-metrics", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-must-have-receiver-traces", expected: errPipelineMustHaveReceiver},
-		{name: "pipeline-exporter-not-exists", expected: errPipelineExporterNotExists},
-		{name: "pipeline-processor-not-exists", expected: errPipelineProcessorNotExists},
+		{name: "invalid-extension-type", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-receiver-type", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-exporter-type", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-processor-type", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-pipeline-type", expected: errInvalidTypeAndNameKey},
+
+		{name: "invalid-extension-name-after-slash", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-receiver-name-after-slash", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-processor-name-after-slash", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-pipeline-name-after-slash", expected: errInvalidTypeAndNameKey},
+
 		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},
 		{name: "unknown-receiver-type", expected: errUnknownType, expectedMessage: "receivers"},
 		{name: "unknown-exporter-type", expected: errUnknownType, expectedMessage: "exporters"},
 		{name: "unknown-processor-type", expected: errUnknownType, expectedMessage: "processors"},
-		{name: "invalid-service-extensions-value", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
-		{name: "invalid-sequence-value", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
-		{name: "invalid-pipeline-type", expected: errUnknownType, expectedMessage: "pipelines"},
-		{name: "invalid-pipeline-type-and-name", expected: errInvalidTypeAndNameKey},
+		{name: "unknown-pipeline-type", expected: errUnknownType, expectedMessage: "pipelines"},
+
 		{name: "duplicate-extension", expected: errDuplicateName, expectedMessage: "extensions"},
 		{name: "duplicate-receiver", expected: errDuplicateName, expectedMessage: "receivers"},
 		{name: "duplicate-exporter", expected: errDuplicateName, expectedMessage: "exporters"},
 		{name: "duplicate-processor", expected: errDuplicateName, expectedMessage: "processors"},
 		{name: "duplicate-pipeline", expected: errDuplicateName, expectedMessage: "pipelines"},
+
 		{name: "invalid-top-level-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "top level"},
 		{name: "invalid-extension-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "extensions"},
-		{name: "invalid-service-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
 		{name: "invalid-receiver-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "receivers"},
 		{name: "invalid-processor-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "processors"},
 		{name: "invalid-exporter-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "exporters"},
+		{name: "invalid-service-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
+		{name: "invalid-service-extensions-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
 		{name: "invalid-pipeline-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
+		{name: "invalid-sequence-value", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
+
 		{name: "invalid-extension-sub-config", expected: errUnmarshalTopLevelStructureError},
 		{name: "invalid-exporter-sub-config", expected: errUnmarshalTopLevelStructureError},
 		{name: "invalid-processor-sub-config", expected: errUnmarshalTopLevelStructureError},
@@ -468,9 +460,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
-			if err == nil {
-				t.Error("expected error but succeeded")
-			} else if test.expected != 0 {
+			require.Error(t, err)
+			if test.expected != 0 {
 				cfgErr, ok := err.(*configError)
 				if !ok {
 					t.Errorf("expected config error code %v but got a different error '%v'", test.expected, err)
@@ -486,25 +477,19 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 	}
 }
 
-func TestLoadEmptyConfig(t *testing.T) {
+func TestLoadEmpty(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	// Open the file for reading.
-	file, err := os.Open(path.Join(".", "testdata", "empty-config.yaml"))
-	require.NoError(t, err)
+	_, err = loadConfigFile(t, path.Join(".", "testdata", "empty-config.yaml"), factories)
+	assert.NoError(t, err)
+}
 
-	defer func() {
-		require.NoError(t, file.Close())
-	}()
+func TestLoadEmptyAllSections(t *testing.T) {
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
 
-	// Read yaml config from file
-	v := NewViper()
-	v.SetConfigType("yaml")
-	require.NoError(t, v.ReadConfig(file))
-
-	// Load the config from viper using the given factories.
-	_, err = Load(v, factories)
+	_, err = loadConfigFile(t, path.Join(".", "testdata", "empty-all-sections.yaml"), factories)
 	assert.NoError(t, err)
 }
 
@@ -515,11 +500,7 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 	require.NoErrorf(t, v.ReadInConfig(), "unable to read the file %v", fileName)
 
 	// Load the config from viper using the given factories.
-	cfg, err := Load(v, factories)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, ValidateConfig(cfg, zap.NewNop())
+	return Load(v, factories)
 }
 
 type nestedConfig struct {

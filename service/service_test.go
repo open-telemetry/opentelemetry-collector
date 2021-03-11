@@ -548,7 +548,7 @@ func TestSetFlag(t *testing.T) {
 		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
-		err = config.ValidateConfig(cfg, zap.NewNop())
+		err = cfg.Validate()
 		require.NoError(t, err)
 
 		var processors []string
@@ -578,7 +578,7 @@ func TestSetFlag(t *testing.T) {
 		cfg, err := FileLoaderConfigFactory(app.v, app.rootCmd, factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
-		err = config.ValidateConfig(cfg, zap.NewNop())
+		err = cfg.Validate()
 		require.NoError(t, err)
 
 		assert.Equal(t, 2, len(cfg.Processors))
@@ -643,7 +643,7 @@ service:
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := config.Load(v, factories)
 	assert.NoError(t, err)
-	err = config.ValidateConfig(cfg, zap.NewNop())
+	err = cfg.Validate()
 	assert.NoError(t, err)
 	return cfg
 }

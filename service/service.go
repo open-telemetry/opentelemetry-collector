@@ -294,7 +294,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
-	err = config.ValidateConfig(cfg, app.logger)
+	err = cfg.Validate()
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}

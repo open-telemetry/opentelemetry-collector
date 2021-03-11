@@ -1,6 +1,7 @@
 receivers:
   examplereceiver:
 exporters:
+  exampleexporter:
   exampleexporter/:
 processors:
   exampleprocessor:

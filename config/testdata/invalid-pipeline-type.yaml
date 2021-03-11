@@ -7,7 +7,7 @@ exporters:
 
 service:
   pipelines:
-    wrongdatatype:
+    /metrics:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

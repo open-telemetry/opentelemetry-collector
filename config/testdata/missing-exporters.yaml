@@ -1,9 +1,0 @@
-receivers:
-  examplereceiver:
-exporters:
-processors:
-  exampleprocessor:
-service:
-  pipelines:
-    traces:
-      receivers: [invalidreceivername]
