@@ -61,11 +61,6 @@ const (
 	Closed
 )
 
-// GetStateChannel returns state channel of the application.
-func (app *Application) GetStateChannel() chan State {
-	return app.stateChannel
-}
-
 // Application represents a collector application
 type Application struct {
 	info            component.ApplicationStartInfo
@@ -89,11 +84,6 @@ type Application struct {
 
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
-}
-
-// Command returns Application's root command.
-func (app *Application) Command() *cobra.Command {
-	return app.rootCmd
 }
 
 // Parameters holds configuration for creating a new Application.
@@ -190,17 +180,27 @@ func New(params Parameters) (*Application, error) {
 	return app, nil
 }
 
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-func (app *Application) ReportFatalError(err error) {
-	app.asyncErrorChannel <- err
+// GetStateChannel returns state channel of the application.
+func (app *Application) GetStateChannel() chan State {
+	return app.stateChannel
+}
+
+// Command returns Application's root command.
+func (app *Application) Command() *cobra.Command {
+	return app.rootCmd
 }
 
 // GetLogger returns logger used by the Application.
 // The logger is initialized after application start.
 func (app *Application) GetLogger() *zap.Logger {
 	return app.logger
+}
+
+// ReportFatalError is used to report to the host that the receiver encountered
+// a fatal error (i.e.: an error that the instance can't recover from) after
+// its start function has already returned.
+func (app *Application) ReportFatalError(err error) {
+	app.asyncErrorChannel <- err
 }
 
 func (app *Application) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
