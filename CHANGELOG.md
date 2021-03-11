@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+- Move fanout consumers to fanoutconsumer package (#2615)
+
+## 💡 Enhancements 💡
+
+## 🧰 Bug fixes 🧰
+
 ## v0.22.0 Beta
 
 ## 🛑 Breaking changes 🛑

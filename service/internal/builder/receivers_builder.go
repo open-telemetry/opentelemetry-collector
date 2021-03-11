@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/consumer/fanoutconsumer"
 )
 
 var errUnusedReceiver = errors.New("receiver defined but not used by any pipeline")
@@ -291,9 +291,9 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TracesConsume
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewTracesCloningFanOutConnector(pipelineConsumers)
+		return fanoutconsumer.NewTracesCloning(pipelineConsumers)
 	}
-	return processor.NewTracesFanOutConnector(pipelineConsumers)
+	return fanoutconsumer.NewTraces(pipelineConsumers)
 }
 
 func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumer {
@@ -316,9 +316,9 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewMetricsCloningFanOutConnector(pipelineConsumers)
+		return fanoutconsumer.NewMetricsCloning(pipelineConsumers)
 	}
-	return processor.NewMetricsFanOutConnector(pipelineConsumers)
+	return fanoutconsumer.NewMetrics(pipelineConsumers)
 }
 
 func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
@@ -341,7 +341,7 @@ func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
 		// TODO: if there are more than 2 pipelines only clone data for pipelines that
 		// declare the intent to mutate the data. Pipelines that do not mutate the data
 		// can consume shared data.
-		return processor.NewLogsCloningFanOutConnector(pipelineConsumers)
+		return fanoutconsumer.NewLogsCloning(pipelineConsumers)
 	}
-	return processor.NewLogsFanOutConnector(pipelineConsumers)
+	return fanoutconsumer.NewLogs(pipelineConsumers)
 }
