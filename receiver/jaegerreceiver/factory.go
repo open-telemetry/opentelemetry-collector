@@ -219,6 +219,14 @@ func createTraceReceiver(
 
 			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
 		}
+
+		if remoteSamplingConfig.ReloadInterval != 0 {
+			if config.CollectorGRPCPort == 0 {
+				return nil, fmt.Errorf("strategy file requires the GRPC protocol to be enabled")
+			}
+
+			config.RemoteSamplingReloadInterval = remoteSamplingConfig.ReloadInterval
+		}
 	}
 
 	if (rCfg.Protocols.GRPC == nil && rCfg.Protocols.ThriftHTTP == nil && rCfg.Protocols.ThriftBinary == nil && rCfg.Protocols.ThriftCompact == nil) ||

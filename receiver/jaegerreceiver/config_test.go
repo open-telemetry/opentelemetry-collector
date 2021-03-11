@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,7 +85,8 @@ func TestLoadConfig(t *testing.T) {
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "jaeger-collector:1234",
 				},
-				StrategyFile: "/etc/strategies.json",
+				StrategyFile:   "/etc/strategies.json",
+				ReloadInterval: 30 * time.Second,
 			},
 		})
 

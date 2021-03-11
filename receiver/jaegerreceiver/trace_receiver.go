@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
@@ -69,6 +70,7 @@ type configuration struct {
 	AgentHTTPPort                int
 	RemoteSamplingClientSettings configgrpc.GRPCClientSettings
 	RemoteSamplingStrategyFile   string
+	RemoteSamplingReloadInterval time.Duration
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -489,6 +491,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		// init and register sampling strategy store
 		ss, gerr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
 			StrategiesFile: jr.config.RemoteSamplingStrategyFile,
+			ReloadInterval: jr.config.RemoteSamplingReloadInterval,
 		}, jr.logger)
 		if gerr != nil {
 			return fmt.Errorf("failed to create collector strategy store: %v", gerr)

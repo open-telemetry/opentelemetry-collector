@@ -90,6 +90,7 @@ receivers:
       grpc:
     remote_sampling:
       strategy_file: "/etc/strategy.json"
+      reload_interval: 30s
 ```
 
 Note: the `grpc` protocol must be enabled for this to work as Jaeger serves its

@@ -15,6 +15,8 @@
 package jaegerreceiver
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -33,8 +35,9 @@ const (
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint                  string `mapstructure:"host_endpoint"`
-	StrategyFile                  string `mapstructure:"strategy_file"`
+	HostEndpoint                  string        `mapstructure:"host_endpoint"`
+	StrategyFile                  string        `mapstructure:"strategy_file"`
+	ReloadInterval                time.Duration `mapstructure:"reload_interval"`
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 }
 

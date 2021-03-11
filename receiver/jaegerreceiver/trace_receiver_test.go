@@ -494,6 +494,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	server, serverAddr := initializeGRPCTestServer(t, func(s *grpc.Server) {
 		ss, serr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
 			StrategiesFile: path.Join(".", "testdata", "strategies.json"),
+			ReloadInterval: 30 * time.Second,
 		}, zap.NewNop())
 		require.NoError(t, serr)
 		api_v2.RegisterSamplingManagerServer(s, collectorSampling.NewGRPCHandler(ss))
