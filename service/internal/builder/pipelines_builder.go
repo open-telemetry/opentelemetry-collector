@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/consumer/fanoutconsumer"
 )
 
 // builtPipeline is a pipeline that is built based on a config.
@@ -234,7 +234,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return processor.NewTracesFanOutConnector(exporters)
+	return fanoutconsumer.NewTraces(exporters)
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
@@ -246,7 +246,7 @@ func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return processor.NewMetricsFanOutConnector(exporters)
+	return fanoutconsumer.NewMetrics(exporters)
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
@@ -258,5 +258,5 @@ func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []stri
 	}
 
 	// Create a junction point that fans out to all exporters.
-	return processor.NewLogsFanOutConnector(exporters)
+	return fanoutconsumer.NewLogs(exporters)
 }

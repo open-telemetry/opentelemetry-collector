@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
+package fanoutconsumer
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewTracesNop()
-	tfc := NewTracesFanOutConnector([]consumer.TracesConsumer{nop})
+	tfc := NewTraces([]consumer.TracesConsumer{nop})
 	assert.Same(t, nop, tfc)
 }
 
@@ -38,7 +38,7 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 		processors[i] = new(consumertest.TracesSink)
 	}
 
-	tfc := NewTracesFanOutConnector(processors)
+	tfc := NewTraces(processors)
 	td := testdata.GenerateTraceDataOneSpan()
 
 	var wantSpansCount = 0
@@ -67,7 +67,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1] = consumertest.NewTracesErr(errors.New("my error"))
 
-	tfc := NewTracesFanOutConnector(processors)
+	tfc := NewTraces(processors)
 	td := testdata.GenerateTraceDataOneSpan()
 
 	var wantSpansCount = 0
@@ -82,7 +82,7 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 
 func TestMetricsProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewMetricsNop()
-	mfc := NewMetricsFanOutConnector([]consumer.MetricsConsumer{nop})
+	mfc := NewMetrics([]consumer.MetricsConsumer{nop})
 	assert.Same(t, nop, mfc)
 }
 
@@ -92,7 +92,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 		processors[i] = new(consumertest.MetricsSink)
 	}
 
-	mfc := NewMetricsFanOutConnector(processors)
+	mfc := NewMetrics(processors)
 	md := testdata.GenerateMetricsOneMetric()
 
 	var wantMetricsCount = 0
@@ -121,7 +121,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1] = consumertest.NewMetricsErr(errors.New("my error"))
 
-	mfc := NewMetricsFanOutConnector(processors)
+	mfc := NewMetrics(processors)
 	md := testdata.GenerateMetricsOneMetric()
 
 	var wantMetricsCount = 0
@@ -136,7 +136,7 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 
 func TestLogsProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewLogsNop()
-	lfc := NewLogsFanOutConnector([]consumer.LogsConsumer{nop})
+	lfc := NewLogs([]consumer.LogsConsumer{nop})
 	assert.Same(t, nop, lfc)
 }
 
@@ -146,7 +146,7 @@ func TestLogsProcessorMultiplexing(t *testing.T) {
 		processors[i] = new(consumertest.LogsSink)
 	}
 
-	lfc := NewLogsFanOutConnector(processors)
+	lfc := NewLogs(processors)
 	ld := testdata.GenerateLogDataOneLog()
 
 	var wantMetricsCount = 0
@@ -175,7 +175,7 @@ func TestLogsProcessorWhenOneErrors(t *testing.T) {
 	// Make one processor return error
 	processors[1] = consumertest.NewLogsErr(errors.New("my error"))
 
-	lfc := NewLogsFanOutConnector(processors)
+	lfc := NewLogs(processors)
 	ld := testdata.GenerateLogDataOneLog()
 
 	var wantMetricsCount = 0

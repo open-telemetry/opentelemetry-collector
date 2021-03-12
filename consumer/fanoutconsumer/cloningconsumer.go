@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processor
+package fanoutconsumer
 
 import (
 	"context"
@@ -22,27 +22,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// This file contains implementations of cloning Trace/Metrics connectors
-// that fan out the data to multiple other consumers. Cloning connectors create
-// clones of data before fanning out, which ensures each consumer gets their
-// own copy of data and is free to modify it.
-
-// NewMetricsCloningFanOutConnector wraps multiple metrics consumers in a single one and clones the data
+// NewMetricsCloning wraps multiple metrics consumers in a single one and clones the data
 // before fanning out.
-func NewMetricsCloningFanOutConnector(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewMetricsCloning(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	if len(mcs) == 1 {
 		// Don't wrap if no need to do it.
 		return mcs[0]
 	}
-	return metricsCloningFanOutConnector(mcs)
+	return metricsCloningConsumer(mcs)
 }
 
-type metricsCloningFanOutConnector []consumer.MetricsConsumer
+type metricsCloningConsumer []consumer.MetricsConsumer
 
-var _ consumer.MetricsConsumer = (*metricsCloningFanOutConnector)(nil)
+var _ consumer.MetricsConsumer = (*metricsCloningConsumer)(nil)
 
-// ConsumeMetrics exports the MetricsData to all consumers wrapped by the current one.
-func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+// ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
+func (mfc metricsCloningConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
@@ -64,22 +59,22 @@ func (mfc metricsCloningFanOutConnector) ConsumeMetrics(ctx context.Context, md 
 	return consumererror.CombineErrors(errs)
 }
 
-// NewTracesCloningFanOutConnector wraps multiple traces consumers in a single one and clones the data
+// NewTracesCloning wraps multiple traces consumers in a single one and clones the data
 // before fanning out.
-func NewTracesCloningFanOutConnector(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
+func NewTracesCloning(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
 		return tcs[0]
 	}
-	return tracesCloningFanOutConnector(tcs)
+	return tracesCloningConsumer(tcs)
 }
 
-type tracesCloningFanOutConnector []consumer.TracesConsumer
+type tracesCloningConsumer []consumer.TracesConsumer
 
-var _ consumer.TracesConsumer = (*tracesCloningFanOutConnector)(nil)
+var _ consumer.TracesConsumer = (*tracesCloningConsumer)(nil)
 
-// ConsumeTraces exports the span data to all trace consumers wrapped by the current one.
-func (tfc tracesCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
+func (tfc tracesCloningConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
@@ -101,21 +96,22 @@ func (tfc tracesCloningFanOutConnector) ConsumeTraces(ctx context.Context, td pd
 	return consumererror.CombineErrors(errs)
 }
 
-// NewLogsCloningFanOutConnector wraps multiple trace consumers in a single one.
-func NewLogsCloningFanOutConnector(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
+// NewLogsCloning wraps multiple trace consumers in a single one and clones the data
+// before fanning out.
+func NewLogsCloning(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	if len(lcs) == 1 {
 		// Don't wrap if no need to do it.
 		return lcs[0]
 	}
-	return logsCloningFanOutConnector(lcs)
+	return logsCloningConsumer(lcs)
 }
 
-type logsCloningFanOutConnector []consumer.LogsConsumer
+type logsCloningConsumer []consumer.LogsConsumer
 
-var _ consumer.LogsConsumer = (*logsCloningFanOutConnector)(nil)
+var _ consumer.LogsConsumer = (*logsCloningConsumer)(nil)
 
-// ConsumeLogs exports the log data to all consumers wrapped by the current one.
-func (lfc logsCloningFanOutConnector) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+// ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
+func (lfc logsCloningConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
 
 	// Fan out to first len-1 consumers.
