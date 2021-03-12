@@ -31,10 +31,10 @@ import (
 // default configuration.
 type GetExtensionConfigFn func() configmodels.Extension
 
-// VerityExtensionLifecycle is used to test if an extension type can handle the typical
+// VerifyExtensionLifecycle is used to test if an extension type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn GetExtensionConfigFn) {
+func VerifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn GetExtensionConfigFn) {
 	ctx := context.Background()
 	host := NewAssertNoError(t)
 	extCreateParams := component.ExtensionCreateParams{
@@ -42,40 +42,18 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
 	}
 
-	var activeExt, builtExt component.Extension
-	defer func() {
-		// If the shutdown happens here there were already some errors on the test.
-		// Ignore errors on this attempt to clean-up.
-		if activeExt != nil {
-			_ = activeExt.Shutdown(ctx)
-		}
-		if builtExt != nil {
-			_ = builtExt.Shutdown(ctx)
-		}
-	}()
-
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
 	}
 
-	for i := 0; i < 2; i++ {
-		var err error
-		builtExt, err = factory.CreateExtension(ctx, extCreateParams, getConfigFn())
-		require.NoError(t, err, "Extension type: %s pass: %d", factory.Type(), i)
+	firstExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	require.NoError(t, err)
+	require.NoError(t, firstExt.Start(ctx, host))
 
-		if activeExt != nil {
-			require.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s pass: %d", factory.Type(), i)
-			activeExt = nil
-		}
+	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	assert.NoError(t, err)
 
-		require.NoError(t, builtExt.Start(ctx, host), "Extension type: %s pass: %d", factory.Type(), i)
-		activeExt = builtExt
-		builtExt = nil
-	}
-
-	// Success path for shutdown.
-	if activeExt != nil {
-		assert.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s", factory.Type())
-		activeExt = nil
-	}
+	assert.NoError(t, firstExt.Shutdown(ctx))
+	assert.NoError(t, secondExt.Start(ctx, host))
+	assert.NoError(t, secondExt.Shutdown(ctx))
 }

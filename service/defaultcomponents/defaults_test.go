@@ -77,7 +77,7 @@ func TestDefaultComponents(t *testing.T) {
 		cfg := v.CreateDefaultConfig()
 		assert.Equal(t, k, cfg.Type())
 
-		componenttest.VerityExtensionLifecycle(t, v, nil)
+		componenttest.VerifyExtensionLifecycle(t, v, nil)
 	}
 
 	recvs := factories.Receivers

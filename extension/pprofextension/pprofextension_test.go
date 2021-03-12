@@ -127,5 +127,5 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 		}
 	}
 
-	componenttest.VerityExtensionLifecycle(t, NewFactory(), getConfigFn)
+	componenttest.VerifyExtensionLifecycle(t, NewFactory(), getConfigFn)
 }
