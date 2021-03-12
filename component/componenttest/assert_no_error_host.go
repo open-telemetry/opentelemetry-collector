@@ -20,12 +20,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // assertNoErrorHost implements a component.Host that asserts that
 // there were no errors.
 type assertNoErrorHost struct {
+	nopHost
 	t *testing.T
 }
 
@@ -40,16 +40,4 @@ func NewAssertNoError(t *testing.T) component.Host {
 
 func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh.t, err)
-}
-
-func (aneh *assertNoErrorHost) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
-	return nil
-}
-
-func (aneh *assertNoErrorHost) GetExtensions() map[configmodels.NamedEntity]component.Extension {
-	return nil
-}
-
-func (aneh *assertNoErrorHost) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
-	return nil
 }
