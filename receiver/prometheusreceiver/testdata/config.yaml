@@ -5,6 +5,7 @@ receivers:
     buffer_count: 45
     use_start_time_metric: true
     start_time_metric_regex: '^(.+_)*process_start_time_seconds$'
+    include_resource_labels: true
     config:
       scrape_configs:
         - job_name: 'demo'

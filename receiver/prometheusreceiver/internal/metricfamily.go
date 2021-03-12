@@ -35,18 +35,19 @@ type MetricFamily interface {
 }
 
 type metricFamily struct {
-	name              string
-	mtype             metricspb.MetricDescriptor_Type
-	mc                MetadataCache
-	droppedTimeseries int
-	labelKeys         map[string]bool
-	labelKeysOrdered  []string
-	metadata          *scrape.MetricMetadata
-	groupOrders       map[string]int
-	groups            map[string]*metricGroup
+	name                  string
+	mtype                 metricspb.MetricDescriptor_Type
+	mc                    MetadataCache
+	droppedTimeseries     int
+	labelKeys             map[string]bool
+	labelKeysOrdered      []string
+	metadata              *scrape.MetricMetadata
+	groupOrders           map[string]int
+	groups                map[string]*metricGroup
+	includeResourceLabels bool
 }
 
-func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
+func newMetricFamily(metricName string, mc MetadataCache, includeResourceLabels bool) MetricFamily {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -65,15 +66,16 @@ func newMetricFamily(metricName string, mc MetadataCache) MetricFamily {
 	}
 
 	return &metricFamily{
-		name:              familyName,
-		mtype:             convToOCAMetricType(metadata.Type),
-		mc:                mc,
-		droppedTimeseries: 0,
-		labelKeys:         make(map[string]bool),
-		labelKeysOrdered:  make([]string, 0),
-		metadata:          &metadata,
-		groupOrders:       make(map[string]int),
-		groups:            make(map[string]*metricGroup),
+		name:                  familyName,
+		mtype:                 convToOCAMetricType(metadata.Type),
+		mc:                    mc,
+		droppedTimeseries:     0,
+		labelKeys:             make(map[string]bool),
+		labelKeysOrdered:      make([]string, 0),
+		metadata:              &metadata,
+		groupOrders:           make(map[string]int),
+		groups:                make(map[string]*metricGroup),
+		includeResourceLabels: includeResourceLabels,
 	}
 }
 
@@ -88,7 +90,7 @@ func (mf *metricFamily) IsSameFamily(metricName string) bool {
 // from the same metric family we will need to keep track of what labels have ever been observed.
 func (mf *metricFamily) updateLabelKeys(ls labels.Labels) {
 	for _, l := range ls {
-		if isUsefulLabel(mf.mtype, l.Name) {
+		if isUsefulLabel(mf.mtype, l.Name, mf.includeResourceLabels) {
 			if _, ok := mf.labelKeys[l.Name]; !ok {
 				mf.labelKeys[l.Name] = true
 				// use insertion sort to maintain order

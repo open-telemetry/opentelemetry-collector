@@ -40,28 +40,30 @@ var noop = &noopAppender{}
 type OcaStore struct {
 	ctx context.Context
 
-	running              int32 // access atomically
-	sink                 consumer.MetricsConsumer
-	mc                   *metadataService
-	jobsMap              *JobsMap
-	useStartTimeMetric   bool
-	startTimeMetricRegex string
-	receiverName         string
+	running               int32 // access atomically
+	sink                  consumer.MetricsConsumer
+	mc                    *metadataService
+	jobsMap               *JobsMap
+	useStartTimeMetric    bool
+	startTimeMetricRegex  string
+	includeResourceLabels bool
+	receiverName          string
 
 	logger *zap.Logger
 }
 
 // NewOcaStore returns an ocaStore instance, which can be acted as prometheus' scrape.Appendable
-func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, receiverName string) *OcaStore {
+func NewOcaStore(ctx context.Context, sink consumer.MetricsConsumer, logger *zap.Logger, jobsMap *JobsMap, useStartTimeMetric bool, startTimeMetricRegex string, includeResourceLabels bool, receiverName string) *OcaStore {
 	return &OcaStore{
-		running:              runningStateInit,
-		ctx:                  ctx,
-		sink:                 sink,
-		logger:               logger,
-		jobsMap:              jobsMap,
-		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: startTimeMetricRegex,
-		receiverName:         receiverName,
+		running:               runningStateInit,
+		ctx:                   ctx,
+		sink:                  sink,
+		logger:                logger,
+		jobsMap:               jobsMap,
+		useStartTimeMetric:    useStartTimeMetric,
+		startTimeMetricRegex:  startTimeMetricRegex,
+		includeResourceLabels: includeResourceLabels,
+		receiverName:          receiverName,
 	}
 }
 
@@ -76,7 +78,7 @@ func (o *OcaStore) SetScrapeManager(scrapeManager *scrape.Manager) {
 func (o *OcaStore) Appender(context.Context) storage.Appender {
 	state := atomic.LoadInt32(&o.running)
 	if state == runningStateReady {
-		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverName, o.mc, o.sink, o.logger)
+		return newTransaction(o.ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.includeResourceLabels, o.receiverName, o.mc, o.sink, o.logger)
 	} else if state == runningStateInit {
 		panic("ScrapeManager is not set")
 	}

@@ -45,35 +45,37 @@ var (
 )
 
 type metricBuilder struct {
-	hasData              bool
-	hasInternalMetric    bool
-	mc                   MetadataCache
-	metrics              []*metricspb.Metric
-	numTimeseries        int
-	droppedTimeseries    int
-	useStartTimeMetric   bool
-	startTimeMetricRegex *regexp.Regexp
-	startTime            float64
-	logger               *zap.Logger
-	currentMf            MetricFamily
+	hasData               bool
+	hasInternalMetric     bool
+	mc                    MetadataCache
+	metrics               []*metricspb.Metric
+	numTimeseries         int
+	droppedTimeseries     int
+	useStartTimeMetric    bool
+	startTimeMetricRegex  *regexp.Regexp
+	includeResourceLabels bool
+	startTime             float64
+	logger                *zap.Logger
+	currentMf             MetricFamily
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into an opencensus data.MetricsData object
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger) *metricBuilder {
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, includeResourceLabels bool, logger *zap.Logger) *metricBuilder {
 	var regex *regexp.Regexp
 	if startTimeMetricRegex != "" {
 		regex, _ = regexp.Compile(startTimeMetricRegex)
 	}
 	return &metricBuilder{
-		mc:                   mc,
-		metrics:              make([]*metricspb.Metric, 0),
-		logger:               logger,
-		numTimeseries:        0,
-		droppedTimeseries:    0,
-		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: regex,
+		mc:                    mc,
+		metrics:               make([]*metricspb.Metric, 0),
+		logger:                logger,
+		numTimeseries:         0,
+		droppedTimeseries:     0,
+		useStartTimeMetric:    useStartTimeMetric,
+		startTimeMetricRegex:  regex,
+		includeResourceLabels: includeResourceLabels,
 	}
 }
 
@@ -125,9 +127,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.includeResourceLabels)
 	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.mc)
+		b.currentMf = newMetricFamily(metricName, b.mc, b.includeResourceLabels)
 	}
 
 	return b.currentMf.Add(metricName, ls, t, v)
@@ -158,14 +160,16 @@ func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 
 // TODO: move the following helper functions to a proper place, as they are not called directly in this go file
 
-func isUsefulLabel(mType metricspb.MetricDescriptor_Type, labelKey string) bool {
+func isUsefulLabel(mType metricspb.MetricDescriptor_Type, labelKey string, includeResourceLabels bool) bool {
 	result := false
 	switch labelKey {
 	case model.MetricNameLabel:
 	case model.InstanceLabel:
+		result = includeResourceLabels
 	case model.SchemeLabel:
 	case model.MetricsPathLabel:
 	case model.JobLabel:
+		result = includeResourceLabels
 	case model.BucketLabel:
 		result = mType != metricspb.MetricDescriptor_GAUGE_DISTRIBUTION &&
 			mType != metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION

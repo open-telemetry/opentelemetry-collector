@@ -97,7 +97,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, true, "", testLogger)
+				b := newMetricBuilder(mc, true, "", false, testLogger)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -120,7 +120,7 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for _, page := range tt.inputs {
-				b := newMetricBuilder(mc, true, startTimeMetricRegex,
+				b := newMetricBuilder(mc, true, startTimeMetricRegex, false,
 					testLogger)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
@@ -1141,7 +1141,7 @@ func Test_metricBuilder_skipped(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger)
+		b := newMetricBuilder(mc, true, "", false, testLogger)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1155,7 +1155,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger)
+		b := newMetricBuilder(mc, true, "", false, testLogger)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1164,7 +1164,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger)
+		b := newMetricBuilder(mc, true, "", false, testLogger)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1178,6 +1178,8 @@ func Test_isUsefulLabel(t *testing.T) {
 		mType    metricspb.MetricDescriptor_Type
 		labelKey string
 	}
+
+	// Test with includeResourceLabels = false
 	tests := []struct {
 		name string
 		args args
@@ -1198,7 +1200,34 @@ func Test_isUsefulLabel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isUsefulLabel(tt.args.mType, tt.args.labelKey); got != tt.want {
+			if got := isUsefulLabel(tt.args.mType, tt.args.labelKey, false); got != tt.want {
+				t.Errorf("isUsefulLabel() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+	// Test with includeResourceLabels = true
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"metricName", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.MetricNameLabel}, false},
+		{"instance", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.InstanceLabel}, true},
+		{"scheme", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.SchemeLabel}, false},
+		{"metricPath", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.MetricsPathLabel}, true},
+		{"job", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.JobLabel}, false},
+		{"bucket", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.BucketLabel}, true},
+		{"bucketForGaugeDistribution", args{metricspb.MetricDescriptor_GAUGE_DISTRIBUTION, model.BucketLabel}, false},
+		{"bucketForCumulativeDistribution", args{metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, model.BucketLabel}, false},
+		{"Quantile", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.QuantileLabel}, true},
+		{"QuantileForSummay", args{metricspb.MetricDescriptor_SUMMARY, model.QuantileLabel}, false},
+		{"other", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, "other"}, true},
+		{"empty", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, ""}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isUsefulLabel(tt.args.mType, tt.args.labelKey, true); got != tt.want {
 				t.Errorf("isUsefulLabel() = %v, want %v", got, tt.want)
 			}
 		})
