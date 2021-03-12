@@ -15,10 +15,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/cmd/schemagen"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/examples/demo/app"
     schedule:
       interval: "weekly"
