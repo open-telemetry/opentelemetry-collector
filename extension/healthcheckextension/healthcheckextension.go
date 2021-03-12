@@ -31,7 +31,7 @@ type healthCheckExtension struct {
 	logger *zap.Logger
 	state  *healthcheck.HealthCheck
 	server http.Server
-	closer chan struct{}
+	stopCh chan struct{}
 }
 
 var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
@@ -49,11 +49,10 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 	// Mount HC handler
 	hc.server.Handler = hc.state.Handler()
-	hc.closer = make(chan struct{})
+	hc.stopCh = make(chan struct{})
 	go func() {
-		defer func() {
-			close(hc.closer)
-		}()
+		defer close(hc.stopCh)
+
 		// The listener ownership goes to the server.
 		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
@@ -65,8 +64,8 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 func (hc *healthCheckExtension) Shutdown(context.Context) error {
 	err := hc.server.Close()
-	if hc.closer != nil {
-		<-hc.closer
+	if hc.stopCh != nil {
+		<-hc.stopCh
 	}
 	return err
 }

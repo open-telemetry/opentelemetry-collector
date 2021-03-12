@@ -41,6 +41,7 @@ type pprofExtension struct {
 	logger *zap.Logger
 	file   *os.File
 	server http.Server
+	stopCh chan struct{}
 }
 
 func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
@@ -73,7 +74,10 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	runtime.SetMutexProfileFraction(p.config.MutexProfileFraction)
 
 	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
+	p.stopCh = make(chan struct{})
 	go func() {
+		defer close(p.stopCh)
+
 		// The listener ownership goes to the server.
 		err := p.server.Serve(ln)
 		atomic.StorePointer(activeInstancePtr, nil)
@@ -101,7 +105,11 @@ func (p *pprofExtension) Shutdown(context.Context) error {
 		pprof.StopCPUProfile()
 		_ = p.file.Close() // ignore the error
 	}
-	return p.server.Close()
+	err := p.server.Close()
+	if p.stopCh != nil {
+		<-p.stopCh
+	}
+	return err
 }
 
 func newServer(config Config, logger *zap.Logger) *pprofExtension {
