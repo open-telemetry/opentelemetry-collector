@@ -1026,6 +1026,48 @@ func Test_metricBuilder_summary(t *testing.T) {
 			},
 		},
 		{
+			name: "no-sum",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("summary_test", 1, "foo", "bar", "quantile", "0.5"),
+						createDataPoint("summary_test", 2, "foo", "bar", "quantile", "0.75"),
+						createDataPoint("summary_test", 5, "foo", "bar", "quantile", "1"),
+						createDataPoint("summary_test_count", 500, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "summary_test",
+							Type:      metricspb.MetricDescriptor_SUMMARY,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								StartTimestamp: timestampFromMs(startTs),
+								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_SummaryValue{
+										SummaryValue: &metricspb.SummaryValue{
+											Sum:   &wrapperspb.DoubleValue{Value: 0.0},
+											Count: &wrapperspb.Int64Value{Value: 500},
+											Snapshot: &metricspb.SummaryValue_Snapshot{
+												PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+													{Percentile: 50.0, Value: 1},
+													{Percentile: 75.0, Value: 2},
+													{Percentile: 100.0, Value: 5},
+												},
+											}}}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "empty-quantiles",
 			inputs: []*testScrapedPage{
 				{
