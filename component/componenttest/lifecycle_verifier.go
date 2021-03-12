@@ -16,8 +16,8 @@ package componenttest
 
 import (
 	"context"
-	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,21 +62,22 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 	for i := 0; i < 2; i++ {
 		var err error
 		builtExt, err = factory.CreateExtension(ctx, extCreateParams, getConfigFn())
-		require.NoError(t, err, "Extension type: %s", factory.Type())
+		require.NoError(t, err, "Extension type: %s pass: %d", factory.Type(), i)
 
 		if activeExt != nil {
-			assert.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s", factory.Type())
+			require.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s pass: %d", factory.Type(), i)
 			activeExt = nil
+
+			// Some resources may be released lazily by the OS or goroutines.
+			time.Sleep(100 * time.Millisecond)
 		}
 
-		require.NoError(t, builtExt.Start(ctx, host), "Extension type: %s", factory.Type())
+		require.NoError(t, builtExt.Start(ctx, host), "Extension type: %s pass: %d", factory.Type(), i)
 		activeExt = builtExt
 		builtExt = nil
-
-		// Give a chance to extension go routines to run.
-		runtime.Gosched()
 	}
 
+	// Success path for shutdown.
 	if activeExt != nil {
 		assert.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s", factory.Type())
 		activeExt = nil
