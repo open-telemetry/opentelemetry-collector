@@ -63,9 +63,7 @@ type traceExporter struct {
 }
 
 func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	exporterCtx := obsreport.ExporterContext(ctx, texp.cfg.Name())
-	req := newTracesRequest(exporterCtx, td, texp.pusher)
-	_, err := texp.sender.send(req)
+	_, err := texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
 	return err
 }
 

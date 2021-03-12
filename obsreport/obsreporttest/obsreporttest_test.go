@@ -82,8 +82,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
-	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
-	ctx := obsrep.StartTracesExportOp(exporterCtx)
+	ctx := obsrep.StartTracesExportOp(context.Background())
 	assert.NotNil(t, ctx)
 
 	obsrep.EndTracesExportOp(ctx, 7, nil)
@@ -97,8 +96,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
-	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
-	ctx := obsrep.StartMetricsExportOp(exporterCtx)
+	ctx := obsrep.StartMetricsExportOp(context.Background())
 	assert.NotNil(t, ctx)
 
 	obsrep.EndMetricsExportOp(ctx, 7, nil)
@@ -112,8 +110,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	defer doneFn()
 
 	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
-	exporterCtx := obsreport.ExporterContext(context.Background(), exporter)
-	ctx := obsrep.StartLogsExportOp(exporterCtx)
+	ctx := obsrep.StartLogsExportOp(context.Background())
 	assert.NotNil(t, ctx)
 	obsrep.EndLogsExportOp(ctx, 7, nil)
 
