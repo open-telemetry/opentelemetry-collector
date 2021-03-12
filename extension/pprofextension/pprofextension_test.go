@@ -16,8 +16,10 @@ package pprofextension
 
 import (
 	"context"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"testing"
 
@@ -25,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -107,4 +110,22 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Shutdown(context.Background()))
+}
+
+func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
+	tmpFile, err := ioutil.TempFile("", "pprof*.yaml")
+	require.NoError(t, err)
+	defer func() {
+		os.Remove(tmpFile.Name())
+	}()
+	require.NoError(t, tmpFile.Close())
+
+	getConfigFn := func() configmodels.Extension {
+		return &Config{
+			Endpoint:   testutil.GetAvailableLocalAddress(t),
+			SaveToFile: tmpFile.Name(),
+		}
+	}
+
+	componenttest.VerityExtensionLifecycle(t, NewFactory(), getConfigFn)
 }
