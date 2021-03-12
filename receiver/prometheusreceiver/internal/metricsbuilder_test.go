@@ -1207,24 +1207,8 @@ func Test_isUsefulLabel(t *testing.T) {
 	}
 
 	// Test with includeResourceLabels = true
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{"metricName", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.MetricNameLabel}, false},
-		{"instance", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.InstanceLabel}, true},
-		{"scheme", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.SchemeLabel}, false},
-		{"metricPath", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.MetricsPathLabel}, true},
-		{"job", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.JobLabel}, false},
-		{"bucket", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.BucketLabel}, true},
-		{"bucketForGaugeDistribution", args{metricspb.MetricDescriptor_GAUGE_DISTRIBUTION, model.BucketLabel}, false},
-		{"bucketForCumulativeDistribution", args{metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, model.BucketLabel}, false},
-		{"Quantile", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, model.QuantileLabel}, true},
-		{"QuantileForSummay", args{metricspb.MetricDescriptor_SUMMARY, model.QuantileLabel}, false},
-		{"other", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, "other"}, true},
-		{"empty", args{metricspb.MetricDescriptor_GAUGE_DOUBLE, ""}, true},
-	}
+	tests[1].want = true
+	tests[4].want = true
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isUsefulLabel(tt.args.mType, tt.args.labelKey, true); got != tt.want {
