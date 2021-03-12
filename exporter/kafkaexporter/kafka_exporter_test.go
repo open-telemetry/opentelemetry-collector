@@ -103,9 +103,8 @@ func TestTraceDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	droppedSpans, err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
+	err := p.traceDataPusher(context.Background(), testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
-	assert.Equal(t, 0, droppedSpans)
 }
 
 func TestTraceDataPusher_err(t *testing.T) {
@@ -123,9 +122,8 @@ func TestTraceDataPusher_err(t *testing.T) {
 		require.NoError(t, p.Close(context.Background()))
 	})
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	err := p.traceDataPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
-	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
 
 func TestTraceDataPusher_marshall_error(t *testing.T) {
@@ -135,10 +133,9 @@ func TestTraceDataPusher_marshall_error(t *testing.T) {
 		logger:     zap.NewNop(),
 	}
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
-	droppedSpans, err := p.traceDataPusher(context.Background(), td)
+	err := p.traceDataPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
-	assert.Equal(t, td.SpanCount(), droppedSpans)
 }
 
 func TestMetricsDataPusher(t *testing.T) {
@@ -153,9 +150,8 @@ func TestMetricsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	dropped, err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
 	require.NoError(t, err)
-	assert.Equal(t, 0, dropped)
 }
 
 func TestMetricsDataPusher_err(t *testing.T) {
@@ -173,9 +169,8 @@ func TestMetricsDataPusher_err(t *testing.T) {
 		require.NoError(t, p.Close(context.Background()))
 	})
 	md := testdata.GenerateMetricsTwoMetrics()
-	dropped, err := p.metricsDataPusher(context.Background(), md)
+	err := p.metricsDataPusher(context.Background(), md)
 	assert.EqualError(t, err, expErr.Error())
-	assert.Equal(t, md.MetricCount(), dropped)
 }
 
 func TestMetricsDataPusher_marshal_error(t *testing.T) {
@@ -185,10 +180,9 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 		logger:     zap.NewNop(),
 	}
 	md := testdata.GenerateMetricsTwoMetrics()
-	dropped, err := p.metricsDataPusher(context.Background(), md)
+	err := p.metricsDataPusher(context.Background(), md)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
-	assert.Equal(t, md.MetricCount(), dropped)
 }
 
 type tracesErrorMarshaller struct {

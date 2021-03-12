@@ -112,30 +112,29 @@ type stateReporter interface {
 func (s *protoGRPCSender) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
-) (droppedSpans int, err error) {
+) error {
 
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
+		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
 	}
 
 	if s.metadata.Len() > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
 	}
 
-	var sentSpans int
 	for _, batch := range batches {
 		_, err = s.client.PostSpans(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
+
 		if err != nil {
 			s.logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
-			return td.SpanCount() - sentSpans, fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
+			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
 		}
-		sentSpans += len(batch.Spans)
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (s *protoGRPCSender) shutdown(context.Context) error {

@@ -137,8 +137,7 @@ func Test_Shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, ok := prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
-			errChan <- ok
+			errChan <- prwe.PushMetrics(context.Background(), testdata.GenerateMetricsEmpty())
 		}()
 	}
 	wg.Wait()
@@ -157,7 +156,7 @@ func Test_export(t *testing.T) {
 	sample2 := getSample(floatVal2, msTime2)
 	ts1 := getTimeSeries(labels, sample1, sample2)
 	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
-		// The following is a handler function that reads the sent httpRequest, unmarshals, and checks if the WriteRequest
+		// The following is a handler function that reads the sent httpRequest, unmarshal, and checks if the WriteRequest
 		// preserves the TimeSeries data correctly
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -486,13 +485,12 @@ func Test_PushMetrics(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                 string
-		md                   *pdata.Metrics
-		reqTestFunc          func(t *testing.T, r *http.Request, expected int)
-		expectedTimeSeries   int
-		httpResponseCode     int
-		numDroppedTimeSeries int
-		returnErr            bool
+		name               string
+		md                 *pdata.Metrics
+		reqTestFunc        func(t *testing.T, r *http.Request, expected int)
+		expectedTimeSeries int
+		httpResponseCode   int
+		returnErr          bool
 	}{
 		{
 			"invalid_type_case",
@@ -500,7 +498,6 @@ func Test_PushMetrics(t *testing.T) {
 			nil,
 			0,
 			http.StatusAccepted,
-			invalidTypeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -509,7 +506,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -518,7 +514,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -527,7 +522,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -536,7 +530,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -545,7 +538,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			12,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -554,7 +546,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			12,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -563,7 +554,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			10,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -572,7 +562,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -581,7 +570,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusAccepted,
-			0,
 			false,
 		},
 		{
@@ -590,7 +578,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusServiceUnavailable,
-			1,
 			true,
 		},
 		{
@@ -599,7 +586,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -608,7 +594,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointIntGaugeBatch.MetricCount(),
 			true,
 		},
 		{
@@ -617,7 +602,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -626,7 +610,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointIntSumBatch.MetricCount(),
 			true,
 		},
 		{
@@ -635,7 +618,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleHistogramBatch.MetricCount(),
 			true,
 		},
 		{
@@ -644,7 +626,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointIntHistogramBatch.MetricCount(),
 			true,
 		},
 		{
@@ -653,7 +634,6 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			0,
 			http.StatusAccepted,
-			nilDataPointDoubleSummaryBatch.MetricCount(),
 			true,
 		},
 	}
@@ -691,8 +671,7 @@ func Test_PushMetrics(t *testing.T) {
 			c := http.DefaultClient
 			prwe, nErr := NewPrwExporter(config.Namespace, serverURL.String(), c, map[string]string{})
 			require.NoError(t, nErr)
-			numDroppedTimeSeries, err := prwe.PushMetrics(context.Background(), *tt.md)
-			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
+			err := prwe.PushMetrics(context.Background(), *tt.md)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return

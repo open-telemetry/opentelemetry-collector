@@ -85,46 +85,46 @@ func newExporter(cfg configmodels.Exporter, logger *zap.Logger) (*exporterImp, e
 	}, nil
 }
 
-func (e *exporterImp) pushTraceData(ctx context.Context, traces pdata.Traces) (int, error) {
+func (e *exporterImp) pushTraceData(ctx context.Context, traces pdata.Traces) error {
 	request, err := traces.ToOtlpProtoBytes()
 	if err != nil {
-		return traces.SpanCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	err = e.export(ctx, e.tracesURL, request)
 	if err != nil {
-		return traces.SpanCount(), err
+		return err
 	}
 
-	return 0, nil
+	return nil
 }
 
-func (e *exporterImp) pushMetricsData(ctx context.Context, metrics pdata.Metrics) (int, error) {
+func (e *exporterImp) pushMetricsData(ctx context.Context, metrics pdata.Metrics) error {
 	request, err := metrics.ToOtlpProtoBytes()
 	if err != nil {
-		return metrics.MetricCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	err = e.export(ctx, e.metricsURL, request)
 	if err != nil {
-		return metrics.MetricCount(), err
+		return err
 	}
 
-	return 0, nil
+	return nil
 }
 
-func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) (int, error) {
+func (e *exporterImp) pushLogData(ctx context.Context, logs pdata.Logs) error {
 	request, err := logs.ToOtlpProtoBytes()
 	if err != nil {
-		return logs.LogRecordCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	err = e.export(ctx, e.logsURL, request)
 	if err != nil {
-		return logs.LogRecordCount(), err
+		return err
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (e *exporterImp) export(ctx context.Context, url string, request []byte) error {

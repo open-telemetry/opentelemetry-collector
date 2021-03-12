@@ -29,7 +29,7 @@ import (
 
 // PushTraces is a helper function that is similar to ConsumeTraces but also
 // returns the number of dropped spans.
-type PushTraces func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error)
+type PushTraces func(ctx context.Context, td pdata.Traces) error
 
 type tracesRequest struct {
 	baseRequest
@@ -49,7 +49,7 @@ func (req *tracesRequest) onPartialError(partialErr consumererror.PartialError) 
 	return newTracesRequest(req.ctx, partialErr.GetTraces(), req.pusher)
 }
 
-func (req *tracesRequest) export(ctx context.Context) (int, error) {
+func (req *tracesRequest) export(ctx context.Context) error {
 	return req.pusher(ctx, req.td)
 }
 
@@ -63,8 +63,7 @@ type traceExporter struct {
 }
 
 func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	_, err := texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
-	return err
+	return texp.sender.send(newTracesRequest(ctx, td, texp.pusher))
 }
 
 // NewTraceExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
@@ -106,14 +105,10 @@ type tracesExporterWithObservability struct {
 	nextSender requestSender
 }
 
-func (tewo *tracesExporterWithObservability) send(req request) (int, error) {
+func (tewo *tracesExporterWithObservability) send(req request) error {
 	req.setContext(tewo.obsrep.StartTracesExportOp(req.context()))
 	// Forward the data to the next consumer (this pusher is the next).
-	droppedSpans, err := tewo.nextSender.send(req)
-
-	// TODO: this is not ideal: it should come from the next function itself.
-	// 	temporarily loading it from internal format. Once full switch is done
-	// 	to new metrics will remove this.
+	err := tewo.nextSender.send(req)
 	tewo.obsrep.EndTracesExportOp(req.context(), req.count(), err)
-	return droppedSpans, err
+	return err
 }

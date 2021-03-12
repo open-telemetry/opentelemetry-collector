@@ -130,21 +130,21 @@ func newQueuedRetrySender(fullName string, qCfg QueueSettings, rCfg RetrySetting
 func (qrs *queuedRetrySender) start() {
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
-		_, _ = qrs.consumerSender.send(req)
+		_ = qrs.consumerSender.send(req)
 	})
 }
 
 // send implements the requestSender interface
-func (qrs *queuedRetrySender) send(req request) (int, error) {
+func (qrs *queuedRetrySender) send(req request) error {
 	if !qrs.cfg.Enabled {
-		n, err := qrs.consumerSender.send(req)
+		err := qrs.consumerSender.send(req)
 		if err != nil {
 			qrs.logger.Error(
 				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
-				zap.Int("dropped_items", n),
+				zap.Int("dropped_items", req.count()),
 			)
 		}
-		return n, err
+		return err
 	}
 
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
@@ -158,11 +158,11 @@ func (qrs *queuedRetrySender) send(req request) (int, error) {
 			zap.Int("dropped_items", req.count()),
 		)
 		span.Annotate(qrs.traceAttributes, "Dropped item, sending_queue is full.")
-		return req.count(), errors.New("sending_queue is full")
+		return errors.New("sending_queue is full")
 	}
 
 	span.Annotate(qrs.traceAttributes, "Enqueued item.")
-	return 0, nil
+	return nil
 }
 
 // shutdown is invoked during service shutdown.
@@ -197,16 +197,16 @@ type retrySender struct {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req request) (int, error) {
+func (rs *retrySender) send(req request) error {
 	if !rs.cfg.Enabled {
-		n, err := rs.nextSender.send(req)
+		err := rs.nextSender.send(req)
 		if err != nil {
 			rs.logger.Error(
 				"Exporting failed. Try enabling retry_on_failure config option.",
 				zap.Error(err),
 			)
 		}
-		return n, err
+		return err
 	}
 
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
@@ -229,10 +229,10 @@ func (rs *retrySender) send(req request) (int, error) {
 				rs.traceAttribute,
 				trace.Int64Attribute("retry_num", retryNum)},
 			"Sending request.")
-		droppedItems, err := rs.nextSender.send(req)
 
+		err := rs.nextSender.send(req)
 		if err == nil {
-			return droppedItems, nil
+			return nil
 		}
 
 		// Immediately drop data on permanent errors.
@@ -240,9 +240,9 @@ func (rs *retrySender) send(req request) (int, error) {
 			rs.logger.Error(
 				"Exporting failed. The error is not retryable. Dropping data.",
 				zap.Error(err),
-				zap.Int("dropped_items", droppedItems),
+				zap.Int("dropped_items", req.count()),
 			)
-			return droppedItems, err
+			return err
 		}
 
 		// If partial error, update data and stats with non exported data.
@@ -257,9 +257,9 @@ func (rs *retrySender) send(req request) (int, error) {
 			rs.logger.Error(
 				"Exporting failed. No more retries left. Dropping data.",
 				zap.Error(err),
-				zap.Int("dropped_items", droppedItems),
+				zap.Int("dropped_items", req.count()),
 			)
-			return req.count(), err
+			return err
 		}
 
 		if throttleErr, isThrottle := err.(*throttleRetry); isThrottle {
@@ -283,9 +283,9 @@ func (rs *retrySender) send(req request) (int, error) {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.context().Done():
-			return req.count(), fmt.Errorf("request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return req.count(), fmt.Errorf("interrupted due to shutdown %w", err)
+			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}
