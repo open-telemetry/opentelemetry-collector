@@ -17,7 +17,6 @@ package componenttest
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,9 +66,6 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		if activeExt != nil {
 			require.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s pass: %d", factory.Type(), i)
 			activeExt = nil
-
-			// Some resources may be released lazily by the OS or goroutines.
-			time.Sleep(100 * time.Millisecond)
 		}
 
 		require.NoError(t, builtExt.Start(ctx, host), "Extension type: %s pass: %d", factory.Type(), i)
