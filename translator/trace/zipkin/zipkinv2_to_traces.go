@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 
@@ -149,6 +150,8 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	}
 
 	err := populateSpanEvents(zspan, dest.Events())
+
+	setTimestampsIfUnset2(dest, attrs)
 	return err
 }
 
@@ -427,4 +430,17 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 		return ""
 	}
 	return zspan.Tags[conventions.InstrumentationLibraryName]
+}
+
+func setTimestampsIfUnset2(span pdata.Span, destAttrs pdata.AttributeMap) {
+	// zipkin allows timestamp to be unset, but opentelemetry-collector expects it to have a value.
+	// unset gets converted to zero somewhere along the way.  If timestamp is unset,
+	// the conversion from this internal format back to zipkin format in zipkin exporter fails
+	if span.StartTime().AsTime().IsZero() {
+		now := pdata.TimestampFromTime(time.Now())
+		span.SetStartTime(now)
+		span.SetEndTime(now)
+
+		destAttrs.InsertBool(StartTimeAbsent,  true)
+	}
 }
