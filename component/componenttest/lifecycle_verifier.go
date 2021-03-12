@@ -72,4 +72,9 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		activeExt = builtExt
 		builtExt = nil
 	}
+
+	if activeExt != nil {
+		assert.NoError(t, activeExt.Shutdown(ctx), "Extension type: %s", factory.Type())
+		activeExt = nil
+	}
 }
