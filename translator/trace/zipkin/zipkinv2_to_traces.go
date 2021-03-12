@@ -436,7 +436,7 @@ func setTimestampsIfUnset2(span pdata.Span, destAttrs pdata.AttributeMap) {
 	// zipkin allows timestamp to be unset, but opentelemetry-collector expects it to have a value.
 	// unset gets converted to zero somewhere along the way.  If timestamp is unset,
 	// the conversion from this internal format back to zipkin format in zipkin exporter fails
-	if span.StartTime().AsTime().IsZero() {
+	if span.StartTime().AsTime().Unix() <= 0 {
 		now := pdata.TimestampFromTime(time.Now())
 		span.SetStartTime(now)
 		span.SetEndTime(now)

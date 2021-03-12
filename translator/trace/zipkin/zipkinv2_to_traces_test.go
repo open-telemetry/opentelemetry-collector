@@ -15,7 +15,6 @@
 package zipkin
 
 import (
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"testing"
 	"time"
 
@@ -174,7 +173,7 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 				pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})),
 			ID: convertSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 		},
-		Name:           "MinimalData",
+		Name:           "NoTimestamps",
 		Kind:           zipkinmodel.Client,
 		Duration:       1000000,
 		Shared:         false,
@@ -183,8 +182,6 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 		Annotations:    nil,
 		Tags:           nil,
 	}
-
-	//testStartTimestamp := pdata.TimestampFromTime(testStart)
 
 	gb, err := V2SpansToInternalTraces(spans, false)
 	if err != nil {
@@ -195,27 +192,11 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 	gs := gb.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 	assert.NotNil(t, gs.StartTime)
 	assert.NotNil(t, gs.EndTime)
-	println("output span starttime")
-	println(gs.StartTime())
 
-	println("test starttime")
-	println(testStart.UnixNano())
-
-	//timediff := gs.StartTime() - testStartTimestamp
 	timediff := gs.StartTime().AsTime().Sub(testStart)
-	println("time diff")
-	println(timediff)
 	assert.True(t, timediff >= 0)
 
-	wantAttributes := &tracepb.Span_Attributes{
-		AttributeMap: map[string]*tracepb.AttributeValue{
-			StartTimeAbsent: {
-				Value: &tracepb.AttributeValue_BoolValue{
-					BoolValue: true,
-				},
-			},
-		},
-	}
-
-	assert.EqualValues(t, gs.Attributes, wantAttributes)
+	wasAbsent, mapContainedKey := gs.Attributes().Get(StartTimeAbsent)
+	assert.True(t, mapContainedKey)
+	assert.True(t, wasAbsent.BoolVal())
 }
