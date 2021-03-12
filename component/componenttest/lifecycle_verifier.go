@@ -17,7 +17,6 @@ package componenttest
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,7 +58,7 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		getConfigFn = factory.CreateDefaultConfig
 	}
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 2; i++ {
 		var err error
 		builtExt, err = factory.CreateExtension(ctx, extCreateParams, getConfigFn())
 		require.NoError(t, err, "Extension type: %s", factory.Type())
@@ -72,8 +71,5 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		require.NoError(t, builtExt.Start(ctx, host), "Extension type: %s", factory.Type())
 		activeExt = builtExt
 		builtExt = nil
-
-		// The component may start go routines, give them a chance to run.
-		time.Sleep(100 * time.Millisecond)
 	}
 }
