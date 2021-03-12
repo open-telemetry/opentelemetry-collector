@@ -121,12 +121,12 @@ type Processor struct {
 	mutators []tag.Mutator
 }
 
-type ProcessorConfig struct {
+type ProcessorSettings struct {
 	Level         configtelemetry.Level
 	ProcessorName string
 }
 
-func NewProcessor(cfg ProcessorConfig) *Processor {
+func NewProcessor(cfg ProcessorSettings) *Processor {
 	return &Processor{
 		level:    cfg.Level,
 		mutators: []tag.Mutator{tag.Upsert(tagKeyProcessor, cfg.ProcessorName, tag.WithTTL(tag.TTLNoPropagation))},
