@@ -17,6 +17,7 @@ package componenttest
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,6 +72,9 @@ func VerityExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 		require.NoError(t, builtExt.Start(ctx, host), "Extension type: %s", factory.Type())
 		activeExt = builtExt
 		builtExt = nil
+
+		// Temporary sleep just to check the affect on CI.
+		time.Sleep(2 * time.Second)
 	}
 
 	if activeExt != nil {
