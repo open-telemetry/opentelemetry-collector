@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlptraces "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
@@ -515,10 +516,7 @@ func TestSendLogData(t *testing.T) {
 
 	// A request with 2 log entries.
 	td = testdata.GenerateLogDataTwoLogsSameResource()
-
-	expectedOTLPReq := &otlplogs.ExportLogsServiceRequest{
-		ResourceLogs: testdata.GenerateLogOtlpSameResourceTwoLogs(),
-	}
+	expectedOTLPReq := internal.LogsToOtlp(td.Clone().InternalRep())
 
 	err = exp.ConsumeLogs(context.Background(), td)
 	assert.NoError(t, err)

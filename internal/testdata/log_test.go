@@ -21,13 +21,13 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
-	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
+	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 )
 
 type logTestCase struct {
 	name string
 	ld   pdata.Logs
-	otlp []*otlplogs.ResourceLogs
+	otlp *otlpcollectorlog.ExportLogsServiceRequest
 }
 
 func generateAllLogTestCases() []logTestCase {
@@ -65,7 +65,7 @@ func generateAllLogTestCases() []logTestCase {
 		{
 			name: "two-records-same-resource",
 			ld:   GenerateLogDataTwoLogsSameResource(),
-			otlp: GenerateLogOtlpSameResourceTwoLogs(),
+			otlp: generateLogOtlpSameResourceTwoLogs(),
 		},
 		{
 			name: "two-records-same-resource-one-different",

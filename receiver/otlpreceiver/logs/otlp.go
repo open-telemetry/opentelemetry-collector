@@ -54,7 +54,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectorlog.ExportLogsServi
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
 
-	ld := pdata.LogsFromInternalRep(internal.LogsFromOtlp(req.ResourceLogs))
+	ld := pdata.LogsFromInternalRep(internal.LogsFromOtlp(req))
 	err := r.sendToNextConsumer(ctxWithReceiverName, ld)
 	if err != nil {
 		return nil, err

@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/data"
+	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/internal/data/protogen/logs/v1"
 )
@@ -33,8 +34,8 @@ func GenerateLogDataEmpty() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpEmpty() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs(nil)
+func generateLogOtlpEmpty() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{}
 }
 
 func GenerateLogDataOneEmptyResourceLogs() pdata.Logs {
@@ -43,9 +44,11 @@ func GenerateLogDataOneEmptyResourceLogs() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpOneEmptyResourceLogs() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{},
+func generateLogOtlpOneEmptyResourceLogs() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{},
+		},
 	}
 }
 
@@ -56,10 +59,12 @@ func GenerateLogDataNoLogRecords() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpNoLogRecords() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{
-			Resource: generateOtlpResource1(),
+func generateLogOtlpNoLogRecords() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				Resource: generateOtlpResource1(),
+			},
 		},
 	}
 }
@@ -72,14 +77,16 @@ func GenerateLogDataOneEmptyLogs() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpOneEmptyLogs() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{
-						{},
+func generateLogOtlpOneEmptyLogs() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{
+							{},
+						},
 					},
 				},
 			},
@@ -97,13 +104,15 @@ func GenerateLogDataOneLogNoResource() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpOneLogNoResource() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{
-						generateOtlpLogOne(),
+func generateLogOtlpOneLogNoResource() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{
+							generateOtlpLogOne(),
+						},
 					},
 				},
 			},
@@ -121,14 +130,16 @@ func GenerateLogDataOneLog() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpOneLog() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{
-						generateOtlpLogOne(),
+func generateLogOtlpOneLog() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{
+							generateOtlpLogOne(),
+						},
 					},
 				},
 			},
@@ -146,16 +157,18 @@ func GenerateLogDataTwoLogsSameResource() pdata.Logs {
 	return ld
 }
 
-// GenerateLogOtlpSameResourceTwologs returns the OTLP representation of the GenerateLogOtlpSameResourceTwologs.
-func GenerateLogOtlpSameResourceTwoLogs() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{
-						generateOtlpLogOne(),
-						generateOtlpLogTwo(),
+// generateLogOtlpSameResourceTwologs returns the OTLP representation of the GenerateLogOtlpSameResourceTwologs.
+func generateLogOtlpSameResourceTwoLogs() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{
+							generateOtlpLogOne(),
+							generateOtlpLogTwo(),
+						},
 					},
 				},
 			},
@@ -180,25 +193,27 @@ func GenerateLogDataTwoLogsSameResourceOneDifferent() pdata.Logs {
 	return ld
 }
 
-func generateLogOtlpTwoLogsSameResourceOneDifferent() []*otlplogs.ResourceLogs {
-	return []*otlplogs.ResourceLogs{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{
-						generateOtlpLogOne(),
-						generateOtlpLogTwo(),
+func generateLogOtlpTwoLogsSameResourceOneDifferent() *otlpcollectorlog.ExportLogsServiceRequest {
+	return &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: []*otlplogs.ResourceLogs{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{
+							generateOtlpLogOne(),
+							generateOtlpLogTwo(),
+						},
 					},
 				},
 			},
-		},
-		{
-			Resource: generateOtlpResource2(),
-			InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
-				{
-					Logs: []*otlplogs.LogRecord{
-						generateOtlpLogThree(),
+			{
+				Resource: generateOtlpResource2(),
+				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+					{
+						Logs: []*otlplogs.LogRecord{
+							generateOtlpLogThree(),
+						},
 					},
 				},
 			},
