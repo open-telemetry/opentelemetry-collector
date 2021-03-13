@@ -71,7 +71,9 @@ func createDefaultConfig() configmodels.Receiver {
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+				TCPAddr: confignet.TCPAddr {
+					Endpoint: defaultHTTPEndpoint,
+				},
 			},
 		},
 	}

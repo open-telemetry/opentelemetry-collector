@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -128,7 +129,9 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPServerSettings{
-				Endpoint: "",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
@@ -139,7 +142,9 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: HTTPServerSettings{
-				Endpoint: "",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
@@ -150,7 +155,9 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPServerSettings{
-				Endpoint: "",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "",
+				},
 				TLSSetting: &configtls.TLSServerSetting{
 					ClientCAFile: "/doesnt/exist",
 				},
@@ -273,7 +280,9 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
-				Endpoint:   "localhost:0",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "localhost:0",
+				},
 				TLSSetting: tt.tlsServerCreds,
 			}
 			ln, err := hss.ToListener()
@@ -317,7 +326,9 @@ func TestHttpReception(t *testing.T) {
 
 func TestHttpCors(t *testing.T) {
 	hss := &HTTPServerSettings{
-		Endpoint:    "localhost:0",
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: "localhost:0",
+		},
 		CorsOrigins: []string{"allowed-*.com"},
 	}
 
@@ -374,7 +385,9 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 
 func ExampleHTTPServerSettings() {
 	settings := HTTPServerSettings{
-		Endpoint: ":443",
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: ":443",
+		},
 	}
 	s := settings.ToServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	l, err := settings.ToListener()

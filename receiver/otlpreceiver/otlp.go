@@ -105,7 +105,7 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 }
 
 func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host component.Host) error {
-	r.logger.Info("Starting HTTP server on endpoint " + cfg.Endpoint)
+	r.logger.Info("Starting HTTP server on endpoint " + cfg.TCPAddr.Endpoint)
 	var hln net.Listener
 	hln, err := r.cfg.HTTP.ToListener()
 	if err != nil {

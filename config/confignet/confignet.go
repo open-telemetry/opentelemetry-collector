@@ -15,7 +15,11 @@
 package confignet
 
 import (
+	"context"
 	"net"
+	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // NetAddr represents a network endpoint address.
@@ -30,14 +34,28 @@ type NetAddr struct {
 	// Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
 	Transport string `mapstructure:"transport"`
+
+	ReusePort bool `mapstructure:"reuseport"`
 }
 
 func (na *NetAddr) Dial() (net.Conn, error) {
-	return net.Dial(na.Transport, na.Endpoint)
+	l := net.Dialer{
+		Control: control,
+	}
+	return l.Dial(na.Transport, na.Endpoint)
 }
 
 func (na *NetAddr) Listen() (net.Listener, error) {
-	return net.Listen(na.Transport, na.Endpoint)
+	l := net.ListenConfig{
+		Control: control,
+	}
+	return l.Listen(context.Background(), na.Transport, na.Endpoint)
+}
+
+func control(_ string, _ string, c syscall.RawConn) error {
+	return c.Control(func(fd uintptr) {
+		unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+	})
 }
 
 // TCPAddr represents a tcp endpoint address.
@@ -51,9 +69,15 @@ type TCPAddr struct {
 }
 
 func (na *TCPAddr) Dial() (net.Conn, error) {
-	return net.Dial("tcp", na.Endpoint)
+	l := net.Dialer{
+		Control: control,
+	}
+	return l.Dial("tcp", na.Endpoint)
 }
 
 func (na *TCPAddr) Listen() (net.Listener, error) {
-	return net.Listen("tcp", na.Endpoint)
+	l := net.ListenConfig{
+		Control: control,
+	}
+	return l.Listen(context.Background(), "tcp", na.Endpoint)
 }

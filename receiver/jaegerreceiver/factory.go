@@ -126,7 +126,9 @@ func createDefaultConfig() configmodels.Receiver {
 				},
 			},
 			ThriftHTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPBindEndpoint,
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: defaultHTTPBindEndpoint,
+				},
 			},
 			ThriftBinary: &ProtocolUDP{
 				Endpoint:        defaultThriftBinaryBindEndpoint,
@@ -171,7 +173,7 @@ func createTraceReceiver(
 
 	if rCfg.Protocols.ThriftHTTP != nil {
 		var err error
-		config.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.Endpoint)
+		config.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.ThriftHTTP.TCPAddr.Endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("unable to extract port for ThriftHTTP: %w", err)
 		}

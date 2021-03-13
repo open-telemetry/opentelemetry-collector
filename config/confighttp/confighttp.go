@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"go.opentelemetry.io/collector/config/confignet"
 
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
@@ -103,8 +104,7 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 }
 
 type HTTPServerSettings struct {
-	// Endpoint configures the listening address for the server.
-	Endpoint string `mapstructure:"endpoint"`
+	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls_settings, omitempty"`
@@ -117,7 +117,7 @@ type HTTPServerSettings struct {
 }
 
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
-	listener, err := net.Listen("tcp", hss.Endpoint)
+	listener, err := hss.TCPAddr.Listen()
 	if err != nil {
 		return nil, err
 	}

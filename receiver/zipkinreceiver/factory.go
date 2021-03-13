@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -50,7 +51,9 @@ func createDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultBindEndpoint,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: defaultBindEndpoint,
+			},
 		},
 		ParseStringTags: false,
 	}
