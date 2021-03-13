@@ -17,11 +17,14 @@
 package defaultcomponents
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -77,7 +80,7 @@ func TestDefaultComponents(t *testing.T) {
 		cfg := v.CreateDefaultConfig()
 		assert.Equal(t, k, cfg.Type())
 
-		componenttest.VerifyExtensionLifecycle(t, v, nil)
+		verifyExtensionLifecycle(t, v, nil)
 	}
 
 	recvs := factories.Receivers
@@ -106,4 +109,36 @@ func TestDefaultComponents(t *testing.T) {
 		assert.Equal(t, k, v.Type())
 		assert.Equal(t, k, v.CreateDefaultConfig().Type())
 	}
+}
+
+// getExtensionConfigFn is used customize the configuration passed to the verification.
+// This is used to change ports or provide values required but not provided by the
+// default configuration.
+type getExtensionConfigFn func() configmodels.Extension
+
+// verifyExtensionLifecycle is used to test if an extension type can handle the typical
+// lifecycle of a component. The getConfigFn parameter only need to be specified if
+// the test can't be done with the default configuration for the component.
+func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
+	ctx := context.Background()
+	host := componenttest.NewAssertNoError(t)
+	extCreateParams := component.ExtensionCreateParams{
+		Logger:               zap.NewNop(),
+		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
+	}
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	firstExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	require.NoError(t, err)
+	require.NoError(t, firstExt.Start(ctx, host))
+
+	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
+	assert.NoError(t, err)
+
+	assert.NoError(t, firstExt.Shutdown(ctx))
+	assert.NoError(t, secondExt.Start(ctx, host))
+	assert.NoError(t, secondExt.Shutdown(ctx))
 }

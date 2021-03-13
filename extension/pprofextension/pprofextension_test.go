@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -120,12 +119,14 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 	}()
 	require.NoError(t, tmpFile.Close())
 
-	getConfigFn := func() configmodels.Extension {
-		return &Config{
-			Endpoint:   testutil.GetAvailableLocalAddress(t),
-			SaveToFile: tmpFile.Name(),
-		}
+	config := Config{
+		Endpoint:   testutil.GetAvailableLocalAddress(t),
+		SaveToFile: tmpFile.Name(),
 	}
 
-	componenttest.VerifyExtensionLifecycle(t, NewFactory(), getConfigFn)
+	pprofExt := newServer(config, zap.NewNop())
+	require.NotNil(t, pprofExt)
+
+	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, pprofExt.Shutdown(context.Background()))
 }
