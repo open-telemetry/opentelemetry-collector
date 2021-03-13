@@ -33,6 +33,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	otlp "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/version"
 )
@@ -101,7 +102,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
 		var errs []error
-		resourceMetrics := pdata.MetricsToOtlp(md)
+		resourceMetrics := internal.MetricsToOtlp(md.InternalRep()).ResourceMetrics
 		for _, resourceMetric := range resourceMetrics {
 			if resourceMetric == nil {
 				continue

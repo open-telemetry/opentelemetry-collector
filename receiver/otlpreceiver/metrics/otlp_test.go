@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	collectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
@@ -54,41 +55,43 @@ func TestExport(t *testing.T) {
 	unixnanos1 := uint64(12578940000000012345)
 	unixnanos2 := uint64(12578940000000054321)
 
-	resourceMetrics := []*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						{
-							Name:        "mymetric",
-							Description: "My metric",
-							Unit:        "ms",
-							Data: &otlpmetrics.Metric_IntSum{
-								IntSum: &otlpmetrics.IntSum{
-									IsMonotonic:            true,
-									AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-									DataPoints: []*otlpmetrics.IntDataPoint{
-										{
-											Labels: []otlpcommon.StringKeyValue{
-												{
-													Key:   "key1",
-													Value: "value1",
+	req := &collectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							{
+								Name:        "mymetric",
+								Description: "My metric",
+								Unit:        "ms",
+								Data: &otlpmetrics.Metric_IntSum{
+									IntSum: &otlpmetrics.IntSum{
+										IsMonotonic:            true,
+										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+										DataPoints: []*otlpmetrics.IntDataPoint{
+											{
+												Labels: []otlpcommon.StringKeyValue{
+													{
+														Key:   "key1",
+														Value: "value1",
+													},
 												},
+												StartTimeUnixNano: unixnanos1,
+												TimeUnixNano:      unixnanos2,
+												Value:             123,
 											},
-											StartTimeUnixNano: unixnanos1,
-											TimeUnixNano:      unixnanos2,
-											Value:             123,
-										},
-										{
-											Labels: []otlpcommon.StringKeyValue{
-												{
-													Key:   "key2",
-													Value: "value2",
+											{
+												Labels: []otlpcommon.StringKeyValue{
+													{
+														Key:   "key2",
+														Value: "value2",
+													},
 												},
+												StartTimeUnixNano: unixnanos1,
+												TimeUnixNano:      unixnanos2,
+												Value:             456,
 											},
-											StartTimeUnixNano: unixnanos1,
-											TimeUnixNano:      unixnanos2,
-											Value:             456,
 										},
 									},
 								},
@@ -102,11 +105,7 @@ func TestExport(t *testing.T) {
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := pdata.MetricsFromOtlp(resourceMetrics).Clone()
-
-	req := &collectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: resourceMetrics,
-	}
+	metricData := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(req)).Clone()
 
 	resp, err := metricsClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export metrics: %v", err)

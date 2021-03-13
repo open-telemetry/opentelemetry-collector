@@ -158,7 +158,7 @@ func (r *mockMetricsReceiver) Export(
 	req *otlpmetrics.ExportMetricsServiceRequest,
 ) (*otlpmetrics.ExportMetricsServiceResponse, error) {
 	atomic.AddInt32(&r.requestCount, 1)
-	_, recordCount := pdata.MetricsFromOtlp(req.ResourceMetrics).MetricAndDataPointCount()
+	_, recordCount := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(req)).MetricAndDataPointCount()
 	atomic.AddInt32(&r.totalItems, int32(recordCount))
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -311,9 +311,7 @@ func TestSendMetrics(t *testing.T) {
 	// A trace with 2 spans.
 	md = testdata.GenerateMetricsTwoMetrics()
 
-	expectedOTLPReq := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: testdata.GenerateMetricsOtlpTwoMetrics(),
-	}
+	expectedOTLPReq := internal.MetricsToOtlp(md.Clone().InternalRep())
 
 	err = exp.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)

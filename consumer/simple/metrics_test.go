@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 )
 
@@ -283,7 +284,8 @@ func TestMetrics(t *testing.T) {
 	mCount, dpCount := metrics.MetricAndDataPointCount()
 	require.Equal(t, 7, mCount)
 	require.Equal(t, 8, dpCount)
-	asJSON, _ := json.MarshalIndent(pdata.MetricsToOtlp(metricstestutil.SortedMetrics(metrics)), "", "  ")
+	req := internal.MetricsToOtlp(metricstestutil.SortedMetrics(metrics).InternalRep())
+	asJSON, _ := json.MarshalIndent(req.ResourceMetrics, "", "  ")
 	require.Equal(t, expected, string(asJSON))
 }
 

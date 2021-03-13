@@ -44,8 +44,7 @@ func TestOTLPMetricsPbMarshaller(t *testing.T) {
 	messages, err := m.Marshal(md)
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	extracted := pdata.NewMetrics()
-	err = extracted.FromOtlpProtoBytes(messages[0].Value)
+	extracted, err := pdata.MetricsFromOtlpProtoBytes(messages[0].Value)
 	require.NoError(t, err)
 	assert.EqualValues(t, md, extracted)
 }

@@ -61,10 +61,10 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lme.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
-	var j collectormetrics.ExportMetricsServiceRequest
-	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
+	j := &collectormetrics.ExportMetricsServiceRequest{}
+	assert.NoError(t, unmarshaler.Unmarshal(mf, j))
 
-	assert.EqualValues(t, pdata.MetricsToOtlp(md), j.ResourceMetrics)
+	assert.EqualValues(t, internal.MetricsToOtlp(md.InternalRep()), j)
 }
 
 func TestFileLogsExporterNoErrors(t *testing.T) {
