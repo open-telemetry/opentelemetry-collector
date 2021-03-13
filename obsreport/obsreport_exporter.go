@@ -83,15 +83,6 @@ var (
 		stats.UnitDimensionless)
 )
 
-// ExporterContext adds the keys used when recording observability metrics to
-// the given context returning the newly created context. This context should
-// be used in related calls to the obsreport functions so metrics are properly
-// recorded.
-func ExporterContext(ctx context.Context, exporterName string) context.Context {
-	ctx, _ = tag.New(ctx, tag.Upsert(tagKeyExporter, exporterName, tag.WithTTL(tag.TTLNoPropagation)))
-	return ctx
-}
-
 type Exporter struct {
 	level        configtelemetry.Level
 	exporterName string
@@ -102,7 +93,7 @@ func NewExporter(level configtelemetry.Level, exporterName string) *Exporter {
 	return &Exporter{
 		level:        level,
 		exporterName: exporterName,
-		mutators:     []tag.Mutator{tag.Upsert(tagKeyProcessor, exporterName, tag.WithTTL(tag.TTLNoPropagation))},
+		mutators:     []tag.Mutator{tag.Upsert(tagKeyExporter, exporterName, tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }
 
@@ -116,7 +107,7 @@ func (eor *Exporter) StartTracesExportOp(ctx context.Context) context.Context {
 // EndTracesExportOp completes the export operation that was started with StartTracesExportOp.
 func (eor *Exporter) EndTracesExportOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	recordMetrics(ctx, numSent, numFailedToSend, mExporterSentSpans, mExporterFailedToSendSpans)
+	eor.recordMetrics(ctx, numSent, numFailedToSend, mExporterSentSpans, mExporterFailedToSendSpans)
 	endSpan(ctx, err, numSent, numFailedToSend, SentSpansKey, FailedToSendSpansKey)
 }
 
@@ -131,7 +122,7 @@ func (eor *Exporter) StartMetricsExportOp(ctx context.Context) context.Context {
 // StartMetricsExportOp.
 func (eor *Exporter) EndMetricsExportOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	recordMetrics(ctx, numSent, numFailedToSend, mExporterSentMetricPoints, mExporterFailedToSendMetricPoints)
+	eor.recordMetrics(ctx, numSent, numFailedToSend, mExporterSentMetricPoints, mExporterFailedToSendMetricPoints)
 	endSpan(ctx, err, numSent, numFailedToSend, SentMetricPointsKey, FailedToSendMetricPointsKey)
 }
 
@@ -145,7 +136,7 @@ func (eor *Exporter) StartLogsExportOp(ctx context.Context) context.Context {
 // EndLogsExportOp completes the export operation that was started with StartLogsExportOp.
 func (eor *Exporter) EndLogsExportOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	recordMetrics(ctx, numSent, numFailedToSend, mExporterSentLogRecords, mExporterFailedToSendLogRecords)
+	eor.recordMetrics(ctx, numSent, numFailedToSend, mExporterSentLogRecords, mExporterFailedToSendLogRecords)
 	endSpan(ctx, err, numSent, numFailedToSend, SentLogRecordsKey, FailedToSendLogRecordsKey)
 }
 
@@ -157,12 +148,14 @@ func (eor *Exporter) startSpan(ctx context.Context, operationSuffix string) cont
 	return ctx
 }
 
-func recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
+func (eor *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
 	if gLevel == configtelemetry.LevelNone {
 		return
 	}
-	stats.Record(
+	// Ignore the error for now. This should not happen.
+	_ = stats.RecordWithTags(
 		ctx,
+		eor.mutators,
 		sentMeasure.M(numSent),
 		failedToSendMeasure.M(numFailedToSend))
 }

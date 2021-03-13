@@ -338,12 +338,11 @@ func TestExportTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
-		ctx := obsrep.StartTracesExportOp(exporterCtx)
+		ctx := obsrep.StartTracesExportOp(parentCtx)
 		assert.NotNil(t, ctx)
 		obsrep.EndTracesExportOp(ctx, numExportedSpans[i], err)
 	}
@@ -386,13 +385,12 @@ func TestExportMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
 
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartMetricsExportOp(exporterCtx)
+		ctx := obsrep.StartMetricsExportOp(parentCtx)
 		assert.NotNil(t, ctx)
 
 		obsrep.EndMetricsExportOp(ctx, toSendMetricPoints[i], err)
@@ -436,13 +434,11 @@ func TestExportLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	exporterCtx := obsreport.ExporterContext(parentCtx, exporter)
 	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
-
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {
-		ctx := obsrep.StartLogsExportOp(exporterCtx)
+		ctx := obsrep.StartLogsExportOp(parentCtx)
 		assert.NotNil(t, ctx)
 
 		obsrep.EndLogsExportOp(ctx, toSendLogRecords[i], err)

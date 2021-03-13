@@ -67,9 +67,7 @@ func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metric
 	if mexp.baseExporter.convertResourceToTelemetry {
 		md = convertResourceToLabels(md)
 	}
-	exporterCtx := obsreport.ExporterContext(ctx, mexp.cfg.Name())
-	req := newMetricsRequest(exporterCtx, md, mexp.pusher)
-	_, err := mexp.sender.send(req)
+	_, err := mexp.sender.send(newMetricsRequest(ctx, md, mexp.pusher))
 	return err
 }
 
