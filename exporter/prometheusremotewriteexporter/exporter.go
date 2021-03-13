@@ -90,13 +90,13 @@ func (prwe *PrwExporter) Shutdown(context.Context) error {
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
 	select {
 	case <-prwe.closeChan:
-		return md.MetricCount(), errors.New("shutdown has been called")
+		return errors.New("shutdown has been called")
 	default:
 		tsMap := map[string]*prompb.TimeSeries{}
 		dropped := 0
@@ -154,10 +154,10 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 		}
 
 		if dropped != 0 {
-			return dropped, consumererror.CombineErrors(errs)
+			return consumererror.CombineErrors(errs)
 		}
 
-		return 0, nil
+		return nil
 	}
 }
 

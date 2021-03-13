@@ -36,14 +36,14 @@ var (
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
-	nopTracesExporter, _ = NewTraceExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) (droppedSpans int, err error) {
-		return 0, nil
+	nopTracesExporter, _ = NewTraceExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, td pdata.Traces) error {
+		return nil
 	})
-	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
-		return 0, nil
+	nopMetricsExporter, _ = NewMetricsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Metrics) error {
+		return nil
 	})
-	nopLogsExporter, _ = NewLogsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error) {
-		return 0, nil
+	nopLogsExporter, _ = NewLogsExporter(defaultCfg, zap.NewNop(), func(ctx context.Context, md pdata.Logs) error {
+		return nil
 	})
 )
 

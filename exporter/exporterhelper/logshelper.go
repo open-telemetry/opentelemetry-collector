@@ -29,7 +29,7 @@ import (
 
 // PushLogs is a helper function that is similar to ConsumeLogs but also returns
 // the number of dropped logs.
-type PushLogs func(ctx context.Context, md pdata.Logs) (droppedTimeSeries int, err error)
+type PushLogs func(ctx context.Context, md pdata.Logs) error
 
 type logsRequest struct {
 	baseRequest
@@ -49,7 +49,7 @@ func (req *logsRequest) onPartialError(partialErr consumererror.PartialError) re
 	return newLogsRequest(req.ctx, partialErr.GetLogs(), req.pusher)
 }
 
-func (req *logsRequest) export(ctx context.Context) (int, error) {
+func (req *logsRequest) export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
@@ -63,8 +63,7 @@ type logsExporter struct {
 }
 
 func (lexp *logsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	_, err := lexp.sender.send(newLogsRequest(ctx, ld, lexp.pusher))
-	return err
+	return lexp.sender.send(newLogsRequest(ctx, ld, lexp.pusher))
 }
 
 // NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
@@ -105,9 +104,9 @@ type logsExporterWithObservability struct {
 	nextSender requestSender
 }
 
-func (lewo *logsExporterWithObservability) send(req request) (int, error) {
+func (lewo *logsExporterWithObservability) send(req request) error {
 	req.setContext(lewo.obsrep.StartLogsExportOp(req.context()))
-	numDroppedLogs, err := lewo.nextSender.send(req)
+	err := lewo.nextSender.send(req)
 	lewo.obsrep.EndLogsExportOp(req.context(), req.count(), err)
-	return numDroppedLogs, err
+	return err
 }

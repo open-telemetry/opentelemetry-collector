@@ -322,12 +322,12 @@ type loggingExporter struct {
 func (s *loggingExporter) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
-) (int, error) {
+) error {
 
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
 	buf := logDataBuffer{}
@@ -365,17 +365,17 @@ func (s *loggingExporter) pushTraceData(
 	}
 	s.logger.Debug(buf.str.String())
 
-	return 0, nil
+	return nil
 }
 
 func (s *loggingExporter) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
-) (int, error) {
+) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
 	buf := logDataBuffer{}
@@ -401,7 +401,7 @@ func (s *loggingExporter) pushMetricsData(
 
 	s.logger.Debug(buf.str.String())
 
-	return 0, nil
+	return nil
 }
 
 // newTraceExporter creates an exporter.TracesExporter that just drops the
@@ -467,11 +467,11 @@ func newLogsExporter(config configmodels.Exporter, level string, logger *zap.Log
 func (s *loggingExporter) pushLogData(
 	_ context.Context,
 	ld pdata.Logs,
-) (int, error) {
+) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !s.debug {
-		return 0, nil
+		return nil
 	}
 
 	buf := logDataBuffer{}
@@ -497,7 +497,7 @@ func (s *loggingExporter) pushLogData(
 
 	s.logger.Debug(buf.str.String())
 
-	return 0, nil
+	return nil
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {

@@ -36,16 +36,16 @@ type kafkaTracesProducer struct {
 	logger     *zap.Logger
 }
 
-func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) (int, error) {
+func (e *kafkaTracesProducer) traceDataPusher(_ context.Context, td pdata.Traces) error {
 	messages, err := e.marshaller.Marshal(td)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 	err = e.producer.SendMessages(producerMessages(messages, e.topic))
 	if err != nil {
-		return td.SpanCount(), err
+		return err
 	}
-	return 0, nil
+	return nil
 }
 
 func (e *kafkaTracesProducer) Close(context.Context) error {
@@ -60,16 +60,16 @@ type kafkaMetricsProducer struct {
 	logger     *zap.Logger
 }
 
-func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) (int, error) {
+func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) error {
 	messages, err := e.marshaller.Marshal(md)
 	if err != nil {
-		return md.MetricCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 	err = e.producer.SendMessages(producerMessages(messages, e.topic))
 	if err != nil {
-		return md.MetricCount(), err
+		return err
 	}
-	return 0, nil
+	return nil
 }
 
 func (e *kafkaMetricsProducer) Close(context.Context) error {

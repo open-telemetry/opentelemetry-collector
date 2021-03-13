@@ -136,12 +136,12 @@ func newMetricsExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
 	return oce, nil
 }
 
-func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) (int, error) {
+func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
 	// Get first available trace Client.
 	tClient, ok := <-oce.tracesClients
 	if !ok {
 		err := errors.New("failed to push traces, OpenCensus exporter was already stopped")
-		return td.SpanCount(), err
+		return err
 	}
 
 	// In any of the metricsClients channel we keep always NumWorkers object (sometimes nil),
@@ -154,7 +154,7 @@ func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) (int, e
 		if err != nil {
 			// Cannot create an RPC, put back nil to keep the number of workers constant.
 			oce.tracesClients <- nil
-			return td.SpanCount(), err
+			return err
 		}
 	}
 
@@ -178,19 +178,19 @@ func (oce *ocExporter) pushTraceData(_ context.Context, td pdata.Traces) (int, e
 			// put back nil to keep the number of workers constant.
 			tClient.cancel()
 			oce.tracesClients <- nil
-			return td.SpanCount(), err
+			return err
 		}
 	}
 	oce.tracesClients <- tClient
-	return 0, nil
+	return nil
 }
 
-func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (int, error) {
+func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
 	// Get first available mClient.
 	mClient, ok := <-oce.metricsClients
 	if !ok {
 		err := errors.New("failed to push metrics, OpenCensus exporter was already stopped")
-		return metricPointCount(md), err
+		return err
 	}
 
 	// In any of the metricsClients channel we keep always NumWorkers object (sometimes nil),
@@ -203,7 +203,7 @@ func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (int
 		if err != nil {
 			// Cannot create an RPC, put back nil to keep the number of workers constant.
 			oce.metricsClients <- nil
-			return metricPointCount(md), err
+			return err
 		}
 	}
 
@@ -228,11 +228,11 @@ func (oce *ocExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (int
 			// put back nil to keep the number of workers constant.
 			mClient.cancel()
 			oce.metricsClients <- nil
-			return metricPointCount(md), err
+			return err
 		}
 	}
 	oce.metricsClients <- mClient
-	return 0, nil
+	return nil
 }
 
 func (oce *ocExporter) createTraceServiceRPC() (*tracesClientWithCancel, error) {
@@ -263,9 +263,4 @@ func (oce *ocExporter) createMetricsServiceRPC() (*metricsClientWithCancel, erro
 		return nil, fmt.Errorf("MetricsServiceClient: %w", err)
 	}
 	return &metricsClientWithCancel{cancel: cancel, msec: metricsClient}, nil
-}
-
-func metricPointCount(md pdata.Metrics) int {
-	_, pc := md.MetricAndDataPointCount()
-	return pc
 }

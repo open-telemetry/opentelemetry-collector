@@ -29,7 +29,7 @@ import (
 
 // PushMetrics is a helper function that is similar to ConsumeMetrics but also returns
 // the number of dropped metrics.
-type PushMetrics func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+type PushMetrics func(ctx context.Context, md pdata.Metrics) error
 
 type metricsRequest struct {
 	baseRequest
@@ -49,7 +49,7 @@ func (req *metricsRequest) onPartialError(partialErr consumererror.PartialError)
 	return newMetricsRequest(req.ctx, partialErr.GetMetrics(), req.pusher)
 }
 
-func (req *metricsRequest) export(ctx context.Context) (int, error) {
+func (req *metricsRequest) export(ctx context.Context) error {
 	return req.pusher(ctx, req.md)
 }
 
@@ -67,8 +67,7 @@ func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metric
 	if mexp.baseExporter.convertResourceToTelemetry {
 		md = convertResourceToLabels(md)
 	}
-	_, err := mexp.sender.send(newMetricsRequest(ctx, md, mexp.pusher))
-	return err
+	return mexp.sender.send(newMetricsRequest(ctx, md, mexp.pusher))
 }
 
 // NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
@@ -109,16 +108,9 @@ type metricsSenderWithObservability struct {
 	nextSender requestSender
 }
 
-func (mewo *metricsSenderWithObservability) send(req request) (int, error) {
+func (mewo *metricsSenderWithObservability) send(req request) error {
 	req.setContext(mewo.obsrep.StartMetricsExportOp(req.context()))
-	_, err := mewo.nextSender.send(req)
-
-	// TODO: this is not ideal: it should come from the next function itself.
-	// 	temporarily loading it from internal format. Once full switch is done
-	// 	to new metrics will remove this.
-	mReq := req.(*metricsRequest)
-	numReceivedMetrics, numPoints := mReq.md.MetricAndDataPointCount()
-
-	mewo.obsrep.EndMetricsExportOp(req.context(), numPoints, err)
-	return numReceivedMetrics, err
+	err := mewo.nextSender.send(req)
+	mewo.obsrep.EndMetricsExportOp(req.context(), req.count(), err)
+	return err
 }
