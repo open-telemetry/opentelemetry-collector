@@ -16,23 +16,19 @@ package kafkareceiver
 
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
-type otlpProtoUnmarshaller struct {
+type otlpTracesPbUnmarshaller struct {
 }
 
-var _ Unmarshaller = (*otlpProtoUnmarshaller)(nil)
+var _ Unmarshaller = (*otlpTracesPbUnmarshaller)(nil)
 
-func (p *otlpProtoUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
-	request := &otlptrace.ExportTraceServiceRequest{}
-	err := request.Unmarshal(bytes)
-	if err != nil {
-		return pdata.NewTraces(), err
-	}
-	return pdata.TracesFromOtlp(request.GetResourceSpans()), nil
+func (p *otlpTracesPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+	td := pdata.NewTraces()
+	err := td.FromOtlpProtoBytes(bytes)
+	return td, err
 }
 
-func (*otlpProtoUnmarshaller) Encoding() string {
+func (*otlpTracesPbUnmarshaller) Encoding() string {
 	return defaultEncoding
 }

@@ -21,28 +21,26 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 func TestUnmarshallOTLP(t *testing.T) {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
-	}
-	expected, err := request.Marshal()
+
+	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)
 
-	p := otlpProtoUnmarshaller{}
+	p := otlpTracesPbUnmarshaller{}
 	got, err := p.Unmarshal(expected)
 	require.NoError(t, err)
+
 	assert.Equal(t, td, got)
 	assert.Equal(t, "otlp_proto", p.Encoding())
 }
 
 func TestUnmarshallOTLP_error(t *testing.T) {
-	p := otlpProtoUnmarshaller{}
+	p := otlpTracesPbUnmarshaller{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)
