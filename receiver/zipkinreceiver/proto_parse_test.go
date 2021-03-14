@@ -25,10 +25,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/internal/data"
-	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
-	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -111,174 +107,49 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)
 	require.Equal(t, reqs.ResourceSpans().Len(), 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
-	want := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{
-		{
-			Resource: otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key: conventions.AttributeServiceName,
-						Value: otlpcommon.AnyValue{
-							Value: &otlpcommon.AnyValue_StringValue{
-								StringValue: "svc-1",
-							},
-						},
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						{
-							TraceId:           data.NewTraceID([16]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
-							SpanId:            data.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
-							ParentSpanId:      data.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}),
-							Name:              "ProtoSpan1",
-							StartTimeUnixNano: uint64(now.UnixNano()),
-							EndTimeUnixNano:   uint64(now.Add(12 * time.Second).UnixNano()),
-							Attributes: []otlpcommon.KeyValue{
-								{
-									Key: conventions.AttributeNetHostIP,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: "192.168.0.1",
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetHostPort,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_IntValue{
-											IntValue: 8009,
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetPeerName,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: "memcached",
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetPeerIP,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: "fe80::1453:a77c:da4d:d21b",
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetPeerPort,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_IntValue{
-											IntValue: 11211,
-										},
-									},
-								},
-								{
-									Key: tracetranslator.TagSpanKind,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: string(tracetranslator.OpenTracingSpanKindConsumer),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Resource: otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key: conventions.AttributeServiceName,
-						Value: otlpcommon.AnyValue{
-							Value: &otlpcommon.AnyValue_StringValue{
-								StringValue: "search",
-							},
-						},
-					},
-				},
-			},
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						{
-							TraceId:           data.NewTraceID([16]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0}),
-							SpanId:            data.NewSpanID([8]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60}),
-							ParentSpanId:      data.NewSpanID([8]byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10}),
-							Name:              "CacheWarmUp",
-							StartTimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
-							EndTimeUnixNano:   uint64(now.Add(-10 * time.Hour).Add(7 * time.Second).UnixNano()),
-							Attributes: []otlpcommon.KeyValue{
-								{
-									Key: conventions.AttributeNetHostIP,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: "10.0.0.13",
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetHostPort,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_IntValue{
-											IntValue: 8009,
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetPeerName,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: "redis",
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetPeerIP,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: "fe80::1453:a77c:da4d:d21b",
-										},
-									},
-								},
-								{
-									Key: conventions.AttributeNetPeerPort,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_IntValue{
-											IntValue: 6379,
-										},
-									},
-								},
-								{
-									Key: tracetranslator.TagSpanKind,
-									Value: otlpcommon.AnyValue{
-										Value: &otlpcommon.AnyValue_StringValue{
-											StringValue: string(tracetranslator.OpenTracingSpanKindProducer),
-										},
-									},
-								},
-							},
-							Events: []*otlptrace.Span_Event{
-								{
-									TimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
-									Name:         "DB reset",
-								},
-								{
-									TimeUnixNano: uint64(now.Add(-10 * time.Hour).UnixNano()),
-									Name:         "GC Cycle 39",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	})
+	want := pdata.NewTraces()
+	want.ResourceSpans().Resize(2)
+
+	// First span/resource
+	want.ResourceSpans().At(0).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "svc-1")
+	want.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	span0 := want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span0.SetTraceID(pdata.NewTraceID([16]byte{0x7F, 0x6F, 0x5F, 0x4F, 0x3F, 0x2F, 0x1F, 0x0F, 0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
+	span0.SetSpanID(pdata.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
+	span0.SetParentSpanID(pdata.NewSpanID([8]byte{0xF7, 0xF6, 0xF5, 0xF4, 0xF3, 0xF2, 0xF1, 0xF0}))
+	span0.SetName("ProtoSpan1")
+	span0.SetStartTime(pdata.TimestampFromTime(now))
+	span0.SetEndTime(pdata.TimestampFromTime(now.Add(12 * time.Second)))
+	span0.Attributes().UpsertString(conventions.AttributeNetHostIP, "192.168.0.1")
+	span0.Attributes().UpsertInt(conventions.AttributeNetHostPort, 8009)
+	span0.Attributes().UpsertString(conventions.AttributeNetPeerName, "memcached")
+	span0.Attributes().UpsertString(conventions.AttributeNetPeerIP, "fe80::1453:a77c:da4d:d21b")
+	span0.Attributes().UpsertInt(conventions.AttributeNetPeerPort, 11211)
+	span0.Attributes().UpsertString(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindConsumer))
+
+	// Second span/resource
+	want.ResourceSpans().At(1).Resource().Attributes().UpsertString(conventions.AttributeServiceName, "search")
+	want.ResourceSpans().At(1).InstrumentationLibrarySpans().Resize(1)
+	want.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	span1 := want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span1.SetTraceID(pdata.NewTraceID([16]byte{0x7A, 0x6A, 0x5A, 0x4A, 0x3A, 0x2A, 0x1A, 0x0A, 0xC7, 0xC6, 0xC5, 0xC4, 0xC3, 0xC2, 0xC1, 0xC0}))
+	span1.SetSpanID(pdata.NewSpanID([8]byte{0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x60}))
+	span1.SetParentSpanID(pdata.NewSpanID([8]byte{0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10}))
+	span1.SetName("CacheWarmUp")
+	span1.SetStartTime(pdata.TimestampFromTime(now.Add(-10 * time.Hour)))
+	span1.SetEndTime(pdata.TimestampFromTime(now.Add(-10 * time.Hour).Add(7 * time.Second)))
+	span1.Attributes().UpsertString(conventions.AttributeNetHostIP, "10.0.0.13")
+	span1.Attributes().UpsertInt(conventions.AttributeNetHostPort, 8009)
+	span1.Attributes().UpsertString(conventions.AttributeNetPeerName, "redis")
+	span1.Attributes().UpsertString(conventions.AttributeNetPeerIP, "fe80::1453:a77c:da4d:d21b")
+	span1.Attributes().UpsertInt(conventions.AttributeNetPeerPort, 6379)
+	span1.Attributes().UpsertString(tracetranslator.TagSpanKind, string(tracetranslator.OpenTracingSpanKindProducer))
+	span1.Events().Resize(2)
+	span1.Events().At(0).SetName("DB reset")
+	span1.Events().At(0).SetTimestamp(pdata.TimestampFromTime(now.Add(-10 * time.Hour)))
+	span1.Events().At(1).SetName("GC Cycle 39")
+	span1.Events().At(1).SetTimestamp(pdata.TimestampFromTime(now.Add(-10 * time.Hour)))
 
 	assert.Equal(t, want.SpanCount(), reqs.SpanCount())
 	assert.Equal(t, want.ResourceSpans().Len(), reqs.ResourceSpans().Len())
