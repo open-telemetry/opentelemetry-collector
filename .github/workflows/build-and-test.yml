@@ -115,7 +115,7 @@ jobs:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Lint
-        run: make -j4 gochecklicense goimpi golint gomisspell
+        run: make -j5 gochecklicense checkdoc goimpi golint gomisspell
       - name: Gen Metadata
         run: |
           make genmdata

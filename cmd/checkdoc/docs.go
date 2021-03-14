@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package main
 
 import (
 	"fmt"
@@ -23,35 +23,18 @@ import (
 	"strings"
 )
 
-// TODO: This file will be deleted after the checkdoc tool
-// is imported in contrib repo
-
 const (
 	readMeFileName = "README.md"
 )
 
-// CheckDocs returns an error if README.md for at least one
+// checkDocs returns an error if README.md for at least one
 // enabled component is missing. "projectPath" is the absolute path to the root
 // of the project to which the components belong. "defaultComponentsFilePath" is
 // the path to the file that contains imports to all required components,
 // "goModule" is the Go module to which the imports belong. This method is intended
 // to be used only to verify documentation in Opentelemetry core and contrib
-// repositories. Examples,
-// 1) Usage in the core repo:
-//
-// componenttest.CheckDocs(
-//		"path/to/project",
-//		"service/defaultcomponents/defaults.go",
-//      "go.opentelemetry.io/collector",
-//	)
-//
-// 2) Usage in the contrib repo:
-// componenttest.CheckDocs(
-//		"path/to/project",
-//		"cmd/otelcontrib/components.go",
-//      "github.com/open-telemetry/opentelemetry-collector-contrib",
-//	).
-func CheckDocs(projectPath string, relativeComponentsPath string, projectGoModule string) error {
+// repositories.
+func checkDocs(projectPath string, relativeComponentsPath string, projectGoModule string) error {
 	defaultComponentsFilePath := filepath.Join(projectPath, relativeComponentsPath)
 	_, err := os.Stat(defaultComponentsFilePath)
 	if err != nil {

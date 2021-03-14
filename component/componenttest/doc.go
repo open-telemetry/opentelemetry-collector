@@ -15,3 +15,6 @@
 // Package componenttest define types and functions used to help test packages
 // implementing the component package interfaces.
 package componenttest
+
+// TODO: This file will be deleted after the checkdoc tool
+// is imported in contrib repo

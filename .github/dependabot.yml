@@ -22,3 +22,7 @@ updates:
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/checkdoc"
+    schedule:
+      interval: "weekly"
