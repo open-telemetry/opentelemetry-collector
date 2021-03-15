@@ -25,7 +25,7 @@ import (
 // SessionParams is passed to ConfigSource at the begin and end of
 // a configuration session.
 type SessionParams struct {
-	// LoadCount tracks the number of the configuration load session
+	// LoadCount tracks the number of the configuration load session.
 	LoadCount int
 }
 
@@ -49,7 +49,7 @@ type ConfigSource interface {
 	// is ready to be loaded. Each ConfigSource can use this call according
 	// to their needs: release resources, start background tasks, update
 	// internal state, etc.
-	EndSession(ctx context.Context, sessionParams SessionParams) error
+	EndSession(ctx context.Context, sessionParams SessionParams)
 }
 
 // ConfigSourceCreateParams is passed to ConfigSourceFactory.Create* functions.
