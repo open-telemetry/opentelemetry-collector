@@ -5,6 +5,7 @@ ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './cmd/issuegenerator/*' \
 							-not -path './cmd/mdatagen/*' \
 							-not -path './cmd/schemagen/*' \
+							-not -path './cmd/checkdoc/*' \
 							-not -path './internal/tools/*' \
 							-not -path './examples/demo/app/*' \
 							-not -path './internal/data/protogen/*' \
@@ -41,6 +42,9 @@ RUN_CONFIG?=examples/local/otel-config.yaml
 
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
 
+COMP_REL_PATH=service/defaultcomponents/defaults.go
+MOD_NAME=go.opentelemetry.io/collector
+
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
 # Accepts command to execute as first parameter.
@@ -52,7 +56,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: gochecklicense goimpi golint gomisspell gotest otelcol
+all: gochecklicense checkdoc goimpi golint gomisspell gotest otelcol
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -149,6 +153,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd cmd/mdatagen && go install ./
+	cd cmd/checkdoc && go install ./
 
 .PHONY: otelcol
 otelcol:
@@ -356,3 +361,8 @@ certs:
 .PHONY: certs-dryrun
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
+
+# Verify existence of READMEs for components specified as default components in the collector.
+.PHONY: checkdoc
+checkdoc:
+	go run cmd/checkdoc/main.go cmd/checkdoc/docs.go --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)

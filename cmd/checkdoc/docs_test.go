@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package main
 
 import (
 	"os"
@@ -22,9 +22,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-// TODO: This file will be deleted after the checkdoc tool
-// is imported in contrib repo
 
 func TestIsComponentImport(t *testing.T) {
 	type args struct {
@@ -162,8 +159,8 @@ func TestCheckDocs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := CheckDocs(tt.args.projectPath, tt.args.relativeDefaultComponentsPath, tt.args.projectGoModule); (err != nil) != tt.wantErr {
-				t.Errorf("CheckDocs() error = %v, wantErr %v", err, tt.wantErr)
+			if err := checkDocs(tt.args.projectPath, tt.args.relativeDefaultComponentsPath, tt.args.projectGoModule); (err != nil) != tt.wantErr {
+				t.Errorf("checkDocs() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
