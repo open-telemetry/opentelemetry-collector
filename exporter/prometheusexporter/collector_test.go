@@ -22,6 +22,7 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -94,6 +95,72 @@ func TestConvertInvalidMetric(t *testing.T) {
 		_, err := c.convertMetric(metric)
 		require.Error(t, err)
 	}
+}
+
+// errorCheckCore keeps track of logged errors
+type errorCheckCore struct {
+	errorMessages []string
+}
+
+func (*errorCheckCore) Enabled(zapcore.Level) bool      { return true }
+func (c *errorCheckCore) With([]zap.Field) zapcore.Core { return c }
+func (c *errorCheckCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if c.Enabled(ent.Level) {
+		return ce.AddCore(ent, c)
+	}
+	return ce
+}
+func (c *errorCheckCore) Write(ent zapcore.Entry, field []zapcore.Field) error {
+	if ent.Level == zapcore.ErrorLevel {
+		c.errorMessages = append(c.errorMessages, ent.Message)
+	}
+	return nil
+}
+func (*errorCheckCore) Sync() error { return nil }
+
+func TestCollectMetricsLabelSanitize(t *testing.T) {
+	dp := pdata.NewIntDataPoint()
+	dp.SetValue(42)
+	dp.LabelsMap().Insert("label.1", "1")
+	dp.LabelsMap().Insert("label/2", "2")
+	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+
+	metric := pdata.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.IntGauge().DataPoints().Append(dp)
+	metric.SetDescription("test description")
+
+	loggerCore := errorCheckCore{}
+	c := collector{
+		namespace: "test_space",
+		accumulator: &mockAccumulator{
+			[]pdata.Metric{metric},
+		},
+		sendTimestamps: false,
+		logger:         zap.New(&loggerCore),
+	}
+
+	ch := make(chan prometheus.Metric, 1)
+	go func() {
+		c.Collect(ch)
+		close(ch)
+	}()
+
+	for m := range ch {
+		require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+		require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+
+		pbMetric := io_prometheus_client.Metric{}
+		m.Write(&pbMetric)
+
+		labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+		for _, l := range pbMetric.Label {
+			require.Equal(t, labelsKeys[*l.Name], *l.Value)
+		}
+	}
+
+	require.Empty(t, loggerCore.errorMessages, "labels were not sanitized properly")
 }
 
 func TestCollectMetrics(t *testing.T) {
