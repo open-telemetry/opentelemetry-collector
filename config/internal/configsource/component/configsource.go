@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -32,7 +33,7 @@ type SessionParams struct {
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
 type ConfigSource interface {
-	Component
+	component.Component
 
 	// BeginSession signals that the object is about to be used to inject data into
 	// the configuration. ConfigSource objects can assume that there won't be
@@ -59,12 +60,12 @@ type ConfigSourceCreateParams struct {
 	Logger *zap.Logger
 
 	// ApplicationStartInfo can be used to retrieve data according to version, etc.
-	ApplicationStartInfo ApplicationStartInfo
+	ApplicationStartInfo component.ApplicationStartInfo
 }
 
 // ConfigSourceFactory is a factory interface for configuration sources.
 type ConfigSourceFactory interface {
-	Factory
+	component.Factory
 
 	// CreateDefaultConfig creates the default configuration for the ConfigSource.
 	// This method can be called multiple times depending on the pipeline

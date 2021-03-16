@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
+	publiccomponent "go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/internal/configsource/component"
 )
 
 func TestApplyConfigSources(t *testing.T) {
@@ -391,15 +392,15 @@ type cfgSrcMock struct {
 	Keys              map[string]interface{} `mapstructure:"keys"`
 }
 
-func (c cfgSrcMock) Start(_ context.Context, _ component.Host) error {
+func (c cfgSrcMock) Start(context.Context, publiccomponent.Host) error {
 	return nil
 }
 
-func (c cfgSrcMock) Shutdown(_ context.Context) error {
+func (c cfgSrcMock) Shutdown(context.Context) error {
 	return nil
 }
 
-func (c cfgSrcMock) BeginSession(_ context.Context, _ component.SessionParams) error {
+func (c cfgSrcMock) BeginSession(context.Context, component.SessionParams) error {
 	if c.ErrOnBeginSession {
 		return errors.New("request to error on BeginSession")
 	}
@@ -423,7 +424,7 @@ func (c cfgSrcMock) Apply(_ context.Context, params interface{}) (interface{}, e
 	return nil, nil
 }
 
-func (c cfgSrcMock) EndSession(_ context.Context, _ component.SessionParams) {
+func (c cfgSrcMock) EndSession(context.Context, component.SessionParams) {
 }
 
 // TODO: Create proper factories and methods to load generic ConfigSources, temporary test helper.

@@ -23,8 +23,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/internal/configsource/component"
 )
 
 const (
