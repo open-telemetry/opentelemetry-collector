@@ -29,7 +29,6 @@ var (
 )
 
 const (
-	TestLabelKey        = "label"
 	TestLabelKey1       = "label-1"
 	TestLabelValue1     = "label-value-1"
 	TestLabelKey2       = "label-2"

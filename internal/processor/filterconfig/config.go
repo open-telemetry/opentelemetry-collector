@@ -133,9 +133,6 @@ func (mp *MatchProperties) ValidateForLogs() error {
 	return nil
 }
 
-// MatchTypeFieldName is the mapstructure field name for MatchProperties.Attributes field.
-const AttributesFieldName = "attributes"
-
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {
 	// Key specifies the attribute key.
