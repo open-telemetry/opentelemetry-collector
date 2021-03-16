@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/internal/configsource/configmodels"
 )
 
 // SessionParams is passed to ConfigSource at the begin and end of

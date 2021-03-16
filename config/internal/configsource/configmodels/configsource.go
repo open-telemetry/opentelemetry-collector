@@ -14,11 +14,15 @@
 
 package configmodels
 
+import (
+	"go.opentelemetry.io/collector/config/configmodels"
+)
+
 // ConfigSource is the configuration of a config source. Specific configuration
 // sources must implement this interface and will typically embed ConfigSourceSettings
 // or a struct that extends it.
 type ConfigSource interface {
-	NamedEntity
+	configmodels.NamedEntity
 }
 
 // ConfigSources is a map of names to ConfigSource instances.
@@ -27,8 +31,8 @@ type ConfigSources map[string]ConfigSource
 // ConfigSourceSettings defines common settings for a ConfigSource configuration.
 // Specific ConfigSource types can embed this struct and extend it with more fields if needed.
 type ConfigSourceSettings struct {
-	TypeVal Type   `mapstructure:"-"`
-	NameVal string `mapstructure:"-"`
+	TypeVal configmodels.Type `mapstructure:"-"`
+	NameVal string            `mapstructure:"-"`
 }
 
 var _ ConfigSource = (*ConfigSourceSettings)(nil)
@@ -44,6 +48,6 @@ func (css *ConfigSourceSettings) SetName(name string) {
 }
 
 // Type sets the ConfigSource type.
-func (css *ConfigSourceSettings) Type() Type {
+func (css *ConfigSourceSettings) Type() configmodels.Type {
 	return css.TypeVal
 }
