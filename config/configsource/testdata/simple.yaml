@@ -1,0 +1,4 @@
+simple:
+  test:
+    $cfgsrc:
+      key: simple

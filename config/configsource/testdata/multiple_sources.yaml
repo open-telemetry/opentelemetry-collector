@@ -1,0 +1,7 @@
+cfgsrc/0:
+  keys:
+    some: value
+cfgsrc/1:
+  keys:
+    recurse_to_cfgsrc/0:
+        $cfgsrc/0: deep_1

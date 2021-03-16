@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package configsource
 
 import (
 	"context"
-	"errors"
-	"github.com/spf13/viper"
-	"go.opentelemetry.io/collector/component"
+	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/spf13/viper"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -50,10 +53,16 @@ func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigS
 	}
 
 	// Notify all sources that we are about to start.
-	for _, cfgSrc := range params.ConfigSources {
+	for cfgSrcName, cfgSrc := range params.ConfigSources {
 		if err := cfgSrc.BeginSession(ctx, sessionParams); err != nil {
-			return nil, err // TODO: wrap error with more information.
+			return nil, &cfgSrcError{
+				msg:  fmt.Sprintf("config source %s begin session error: %v", cfgSrcName, err),
+				code: errCfgSrcBeginSession,
+			}
 		}
+
+		// The scope of usage of the cfgSrc is the whole function so it is fine to defer
+		// the EndSession call to the function exit.
 		defer cfgSrc.EndSession(ctx, sessionParams)
 	}
 
@@ -62,8 +71,8 @@ func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigS
 
 	var err error
 	done := false
-	for i := uint(0); i <= params.MaxRecursionDepth && !done; i++ {
-		dstCfg = NewViper()
+	for i := -1; i <= int(params.MaxRecursionDepth) && !done; i++ {
+		dstCfg = config.NewViper()
 		done, err = applyConfigSources(ctx, srcCfg, dstCfg, params.ConfigSources)
 		if err != nil {
 			return nil, err
@@ -72,16 +81,42 @@ func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigS
 	}
 
 	if !done {
-		return nil, errors.New("couldn't fully expand the configuration")
+		return nil, &cfgSrcError{
+			msg:  "config source recursion chain is too deep, couldn't fully expand the configuration",
+			code: errCfgSrcChainTooLong,
+		}
 	}
 
 	return dstCfg, nil
 }
 
+// cfgSrcError private error type used to accurate identify the type of error in tests.
+type cfgSrcError struct {
+	msg  string          // human readable error message.
+	code cfgSrcErrorCode // internal error code.
+}
+
+func (e *cfgSrcError) Error() string {
+	return e.msg
+}
+
+// These are errors that can be returned by ApplyConfigSources function.
+// Note that error codes are not part public API, they are for unit testing only.
+type cfgSrcErrorCode int
+
+const (
+	_ cfgSrcErrorCode = iota // skip 0, start errors codes from 1.
+	errCfgSrcChainTooLong
+	errOnlyMapAtRootLevel
+	errCfgSrcBeginSession
+	errCfgSrcNotFound
+	errCfgSrcApply
+)
+
 func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSources map[string]component.ConfigSource) (bool, error) {
 	// Expand any item env vars in the config, do it every time so env vars
 	// added on previous pass are also handled.
-	expandEnvConfig(srcCfg)
+	config.ExpandEnvConfig(srcCfg)
 
 	done := true
 	appliedTags := make(map[string]struct{})
@@ -106,13 +141,19 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		appliedTags[dstKey] = struct{}{}
 		cfgSrc, ok := cfgSources[cfgSrcName]
 		if !ok {
-			return false, errors.New("unknown config source") // TODO: error similar to other config errors.
+			return false, &cfgSrcError{
+				msg:  fmt.Sprintf("config source %s not found", cfgSrcName),
+				code: errCfgSrcNotFound,
+			}
 		}
 
 		applyParams := srcCfg.Get(paramsKey)
 		actualCfg, err := cfgSrc.Apply(ctx, applyParams)
 		if err != nil {
-			return false, err // TODO: Add config source name to the error.
+			return false, &cfgSrcError{
+				msg:  fmt.Sprintf("error applying config source %s: %v", cfgSrcName, err),
+				code: errCfgSrcApply,
+			}
 		}
 
 		// The injection may require further expansion, assume that we are not done yet.
@@ -125,7 +166,10 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		// This is at the root level, have to inject the top keys one by one.
 		rootMap, ok := actualCfg.(map[string]interface{})
 		if !ok {
-			return false, errors.New("only a map can be injected at the root level") // TODO: better error info.
+			return false, &cfgSrcError{
+				msg:  "only a map can be injected at the root level",
+				code: errOnlyMapAtRootLevel,
+			}
 		}
 		for k, v := range rootMap {
 			dstCfg.Set(k, v)
@@ -161,10 +205,10 @@ func extractCfgSrcInvocation(k string) (dstKey, cfgSrcName, paramsKey string) {
 
 	// Check for a deeper one.
 	tagPrefixIdx := strings.LastIndex(k, ConfigSourcePrefix)
-	dstKey = strings.TrimSuffix(k[:tagPrefixIdx], ViperDelimiter)
+	dstKey = strings.TrimSuffix(k[:tagPrefixIdx], config.ViperDelimiter)
 
 	cfgSrcFromStart := k[tagPrefixIdx+len(ConfigSourcePrefix):]
-	prefixToTagEndLen := strings.Index(cfgSrcFromStart, ViperDelimiter)
+	prefixToTagEndLen := strings.Index(cfgSrcFromStart, config.ViperDelimiter)
 	if prefixToTagEndLen > -1 {
 		cfgSrcName = cfgSrcFromStart[:prefixToTagEndLen]
 	} else {
