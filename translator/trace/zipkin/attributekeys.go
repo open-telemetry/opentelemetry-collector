@@ -17,13 +17,5 @@ package zipkin
 // These constants are the attribute keys used when translating from zipkin
 // format to the internal collector data format.
 const (
-	LocalEndpointIPv4         = "ipv4"
-	LocalEndpointIPv6         = "ipv6"
-	LocalEndpointPort         = "port"
-	LocalEndpointServiceName  = "serviceName"
-	RemoteEndpointIPv4        = "zipkin.remoteEndpoint.ipv4"
-	RemoteEndpointIPv6        = "zipkin.remoteEndpoint.ipv6"
-	RemoteEndpointPort        = "zipkin.remoteEndpoint.port"
-	RemoteEndpointServiceName = "zipkin.remoteEndpoint.serviceName"
-	StartTimeAbsent           = "otel.zipkin.absentField.startTime"
+	StartTimeAbsent = "otel.zipkin.absentField.startTime"
 )
