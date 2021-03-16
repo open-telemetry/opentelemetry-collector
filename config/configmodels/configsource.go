@@ -20,3 +20,30 @@ package configmodels
 type ConfigSource interface {
 	NamedEntity
 }
+
+// ConfigSources is a map of names to ConfigSource instances.
+type ConfigSources map[string]ConfigSource
+
+// ConfigSourceSettings defines common settings for a ConfigSource configuration.
+// Specific ConfigSource types can embed this struct and extend it with more fields if needed.
+type ConfigSourceSettings struct {
+	TypeVal Type   `mapstructure:"-"`
+	NameVal string `mapstructure:"-"`
+}
+
+var _ ConfigSource = (*ConfigSourceSettings)(nil)
+
+// Name gets the ConfigSource name.
+func (css *ConfigSourceSettings) Name() string {
+	return css.NameVal
+}
+
+// SetName sets the ConfigSource name.
+func (css *ConfigSourceSettings) SetName(name string) {
+	css.NameVal = name
+}
+
+// Type sets the ConfigSource type.
+func (css *ConfigSourceSettings) Type() Type {
+	return css.TypeVal
+}
