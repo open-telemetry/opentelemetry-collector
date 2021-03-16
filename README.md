@@ -71,7 +71,6 @@ Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-tele
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Nail Islamov](https://github.com/nilebox), Google
