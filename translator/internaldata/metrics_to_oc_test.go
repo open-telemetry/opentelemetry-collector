@@ -32,6 +32,7 @@ import (
 func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
+	attrs.Upsert(conventions.OCAttributeResourceType, pdata.NewAttributeValueString("host_test"))
 	attrs.Upsert(conventions.AttributeHostName, pdata.NewAttributeValueString("host1"))
 	attrs.Upsert(conventions.AttributeProcessID, pdata.NewAttributeValueInt(123))
 	attrs.Upsert(conventions.OCAttributeProcessStartTime, pdata.NewAttributeValueString("2020-02-11T20:26:00Z"))
@@ -168,9 +169,12 @@ func generateOCTestData() MetricsData {
 			},
 		},
 		Resource: &ocresource.Resource{
+			Type: "host_test",
 			Labels: map[string]string{
 				"resource-attr": "resource-attr-val-1",
+				conventions.AttributeHostName: "host1",
 			},
+		},
 		},
 		Metrics: []*ocmetrics.Metric{
 			generateOCTestMetricInt(),

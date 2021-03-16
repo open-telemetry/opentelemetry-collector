@@ -104,6 +104,8 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			getProcessIdentifier(ocNode).StartTimestamp = ts
 		case conventions.AttributeHostName:
 			getProcessIdentifier(ocNode).HostName = val
+			// Put the hostname in labels too
+			labels[k] = val
 		case conventions.AttributeProcessID:
 			pid, err := strconv.Atoi(val)
 			if err != nil {

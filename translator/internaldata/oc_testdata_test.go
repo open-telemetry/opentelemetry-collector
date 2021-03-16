@@ -536,6 +536,7 @@ func generateOcResource() *ocresource.Resource {
 		Labels: map[string]string{
 			"resource-str-attr": "resource-str-attr-val",
 			"resource-int-attr": "123",
+			conventions.AttributeHostName: "host1",
 		},
 	}
 }
