@@ -121,7 +121,7 @@ type getExtensionConfigFn func() configmodels.Extension
 // the test can't be done with the default configuration for the component.
 func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
-	host := componenttest.NewAssertNoError(t)
+	host := newAssertNoErrorHost(t)
 	extCreateParams := component.ExtensionCreateParams{
 		Logger:               zap.NewNop(),
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
@@ -141,4 +141,24 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 	assert.NoError(t, firstExt.Shutdown(ctx))
 	assert.NoError(t, secondExt.Start(ctx, host))
 	assert.NoError(t, secondExt.Shutdown(ctx))
+}
+
+// assertNoErrorHost implements a component.Host that asserts that there were no errors.
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+var _ component.Host = (*assertNoErrorHost)(nil)
+
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		componenttest.NewNopHost(),
+		t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
 }

@@ -22,9 +22,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/testutil"
 )
@@ -85,7 +87,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
-	mh := componenttest.NewAssertNoError(t)
+	mh := newAssertNoErrorHost(t)
 	require.Error(t, hcExt.Start(context.Background(), mh))
 }
 
@@ -97,7 +99,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
 
-	mh := componenttest.NewAssertNoError(t)
+	mh := newAssertNoErrorHost(t)
 	require.NoError(t, hcExt.Start(context.Background(), mh))
 	defer hcExt.Shutdown(context.Background())
 
@@ -126,4 +128,24 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Shutdown(context.Background()))
+}
+
+// assertNoErrorHost implements a component.Host that asserts that there were no errors.
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+var _ component.Host = (*assertNoErrorHost)(nil)
+
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		componenttest.NewNopHost(),
+		t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
 }
