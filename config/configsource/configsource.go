@@ -17,6 +17,7 @@ package configsource
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -116,7 +117,7 @@ const (
 func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSources map[string]component.ConfigSource) (bool, error) {
 	// Expand any item env vars in the config, do it every time so env vars
 	// added on previous pass are also handled.
-	config.ExpandEnvConfig(srcCfg)
+	expandEnvConfig(srcCfg)
 
 	done := true
 	appliedTags := make(map[string]struct{})
@@ -218,4 +219,49 @@ func extractCfgSrcInvocation(k string) (dstKey, cfgSrcName, paramsKey string) {
 	paramsKey = k[:tagPrefixIdx+len(cfgSrcName)+len(ConfigSourcePrefix)]
 
 	return
+}
+
+// Copied from config package to avoid exposing as public API.
+// TODO: Add local tests covering the code below.
+
+// expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
+// It does not expand the keys.
+func expandEnvConfig(v *viper.Viper) {
+	for _, k := range v.AllKeys() {
+		v.Set(k, expandStringValues(v.Get(k)))
+	}
+}
+
+func expandStringValues(value interface{}) interface{} {
+	switch v := value.(type) {
+	default:
+		return v
+	case string:
+		return expandEnv(v)
+	case []interface{}:
+		nslice := make([]interface{}, 0, len(v))
+		for _, vint := range v {
+			nslice = append(nslice, expandStringValues(vint))
+		}
+		return nslice
+	case map[interface{}]interface{}:
+		nmap := make(map[interface{}]interface{}, len(v))
+		for k, vint := range v {
+			nmap[k] = expandStringValues(vint)
+		}
+		return nmap
+	}
+}
+
+func expandEnv(s string) string {
+	return os.Expand(s, func(str string) string {
+		// This allows escaping environment variable substitution via $$, e.g.
+		// - $FOO will be substituted with env var FOO
+		// - $$FOO will be replaced with $FOO
+		// - $$$FOO will be replaced with $ + substituted env var FOO
+		if str == "$" {
+			return "$"
+		}
+		return os.Getenv(str)
+	})
 }
