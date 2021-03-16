@@ -295,8 +295,6 @@ type ZipkinDataReceiver struct {
 
 var _ DataReceiver = (*ZipkinDataReceiver)(nil)
 
-const DefaultZipkinAddressPort = 9411
-
 func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
