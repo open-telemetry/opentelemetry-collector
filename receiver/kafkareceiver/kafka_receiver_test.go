@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 )
 
 func TestNewReceiver_version_err(t *testing.T) {
@@ -135,7 +134,7 @@ func TestConsumerGroupHandler(t *testing.T) {
 	defer view.Unregister(views...)
 
 	c := consumerGroupHandler{
-		unmarshaller: &otlpProtoUnmarshaller{},
+		unmarshaller: &otlpTracesPbUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewTracesNop(),
@@ -179,7 +178,7 @@ func TestConsumerGroupHandler(t *testing.T) {
 
 func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 	c := consumerGroupHandler{
-		unmarshaller: &otlpProtoUnmarshaller{},
+		unmarshaller: &otlpTracesPbUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewTracesNop(),
@@ -203,7 +202,7 @@ func TestConsumerGroupHandler_error_unmarshall(t *testing.T) {
 func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consumer")
 	c := consumerGroupHandler{
-		unmarshaller: &otlpProtoUnmarshaller{},
+		unmarshaller: &otlpTracesPbUnmarshaller{},
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: consumertest.NewTracesErr(consumerError),
@@ -222,10 +221,7 @@ func TestConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
-	}
-	bts, err := request.Marshal()
+	bts, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
