@@ -17,7 +17,6 @@ package conventions
 // OpenTelemetry Semantic Convention values for general Span attribute names.
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md
 const (
-	AttributeComponent    = "component"
 	AttributeEnduserID    = "enduser.id"
 	AttributeEnduserRole  = "enduser.role"
 	AttributeEnduserScope = "enduser.scope"
@@ -29,11 +28,4 @@ const (
 	AttributeNetPeerPort  = "net.peer.port"
 	AttributeNetTransport = "net.transport"
 	AttributePeerService  = "peer.service"
-)
-
-// OpenTelemetry Semantic Convention values for component attribute values.
-// Possibly being removed due to issue #336
-const (
-	ComponentTypeHTTP = "http"
-	ComponentTypeGRPC = "grpc"
 )
