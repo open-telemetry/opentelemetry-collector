@@ -91,9 +91,8 @@ func (ld Logs) LogRecordCount() int {
 	return logCount
 }
 
-// SizeBytes returns the number of bytes in the internal representation of the
-// logs.
-func (ld Logs) SizeBytes() int {
+// Size returns the number of bytes in the internal representation of the logs.
+func (ld Logs) Size() int {
 	return ld.orig.Size()
 }
 

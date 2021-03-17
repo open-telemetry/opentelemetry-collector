@@ -340,7 +340,7 @@ func (bm *batchLogs) itemCount() uint32 {
 }
 
 func (bm *batchLogs) size() int {
-	return bm.logData.SizeBytes()
+	return bm.logData.Size()
 }
 
 // resets the current batchLogs structure with zero/empty values.

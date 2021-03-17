@@ -558,7 +558,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
-		size += ld.SizeBytes()
+		size += ld.Size()
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
