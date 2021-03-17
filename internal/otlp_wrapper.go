@@ -16,7 +16,23 @@ package internal
 
 import (
 	otlpcollectorlog "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 )
+
+// MetricsWrapper is an intermediary struct that is declared in an internal package
+// as a way to prevent certain functions of pdata.Metrics data type to be callable by
+// any code outside of this module.
+type MetricsWrapper struct {
+	req *otlpcollectormetrics.ExportMetricsServiceRequest
+}
+
+func MetricsToOtlp(mw MetricsWrapper) *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return mw.req
+}
+
+func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) MetricsWrapper {
+	return MetricsWrapper{req: req}
+}
 
 // LogsWrapper is an intermediary struct that is declared in an internal package
 // as a way to prevent certain functions of pdata.Logs data type to be callable by

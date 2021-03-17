@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"go.opentelemetry.io/collector/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
@@ -37,57 +38,54 @@ func (at AggregationTemporality) String() string {
 // Outside of the core repository the metrics pipeline cannot be converted to the new model since data.MetricData is
 // part of the internal package.
 type Metrics struct {
-	orig *[]*otlpmetrics.ResourceMetrics
+	orig *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
 // NewMetrics creates a new Metrics.
 func NewMetrics() Metrics {
-	orig := []*otlpmetrics.ResourceMetrics(nil)
-	return Metrics{&orig}
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
 }
 
-// MetricsFromOtlp creates the internal Metrics representation from the OTLP.
-func MetricsFromOtlp(orig []*otlpmetrics.ResourceMetrics) Metrics {
-	return Metrics{&orig}
+// MetricsFromInternalRep creates Logs from the internal representation.
+// Should not be used outside this module.
+func MetricsFromInternalRep(wrapper internal.MetricsWrapper) Metrics {
+	return Metrics{orig: internal.MetricsToOtlp(wrapper)}
 }
 
-// MetricsToOtlp converts the internal Metrics to the OTLP.
-func MetricsToOtlp(md Metrics) []*otlpmetrics.ResourceMetrics {
-	return *md.orig
+// MetricsFromOtlpProtoBytes converts OTLP Collector ExportMetricsServiceRequest
+// ProtoBuf bytes to the internal Metrics.
+//
+// Returns an invalid Metrics instance if error is not nil.
+func MetricsFromOtlpProtoBytes(data []byte) (Metrics, error) {
+	req := otlpcollectormetrics.ExportMetricsServiceRequest{}
+	if err := req.Unmarshal(data); err != nil {
+		return Metrics{}, err
+	}
+	return Metrics{orig: &req}, nil
+}
+
+// InternalRep returns internal representation of the Metrics.
+// Should not be used outside this module.
+func (md Metrics) InternalRep() internal.MetricsWrapper {
+	return internal.MetricsFromOtlp(md.orig)
 }
 
 // ToOtlpProtoBytes returns the internal MetricData to the OTLP Collector
 // ExportMetricsServiceRequest ProtoBuf bytes. This is intended to export
 // OTLP Protobuf bytes for OTLP/HTTP transports.
 func (md Metrics) ToOtlpProtoBytes() ([]byte, error) {
-	metrics := otlpcollectormetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: *md.orig,
-	}
-	return metrics.Marshal()
-}
-
-// FromOtlpProtoBytes converts OTLP Collector ExportMetricsServiceRequest
-// ProtoBuf bytes to the internal Metrics. Overrides current data.
-// Calling this function on zero-initialized structure causes panic.
-// Use it with NewMetrics or on existing initialized Metrics.
-func (md Metrics) FromOtlpProtoBytes(data []byte) error {
-	metrics := otlpcollectormetrics.ExportMetricsServiceRequest{}
-	if err := metrics.Unmarshal(data); err != nil {
-		return err
-	}
-	*md.orig = metrics.ResourceMetrics
-	return nil
+	return md.orig.Marshal()
 }
 
 // Clone returns a copy of MetricData.
 func (md Metrics) Clone() Metrics {
-	rms := NewResourceMetricsSlice()
-	md.ResourceMetrics().CopyTo(rms)
-	return Metrics(rms)
+	cloneMd := NewMetrics()
+	md.ResourceMetrics().CopyTo(cloneMd.ResourceMetrics())
+	return cloneMd
 }
 
 func (md Metrics) ResourceMetrics() ResourceMetricsSlice {
-	return newResourceMetricsSlice(md.orig)
+	return newResourceMetricsSlice(&md.orig.ResourceMetrics)
 }
 
 // MetricCount calculates the total number of metrics.
@@ -107,14 +105,7 @@ func (md Metrics) MetricCount() int {
 
 // Size returns size in bytes.
 func (md Metrics) Size() int {
-	size := 0
-	for i := 0; i < len(*md.orig); i++ {
-		if (*md.orig)[i] == nil {
-			continue
-		}
-		size += (*(*md.orig)[i]).Size()
-	}
-	return size
+	return md.orig.Size()
 }
 
 // MetricAndDataPointCount calculates the total number of metrics and data points.

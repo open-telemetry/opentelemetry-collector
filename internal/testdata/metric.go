@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
 
@@ -47,8 +48,8 @@ func GenerateMetricsEmpty() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpEmpty() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics(nil)
+func generateMetricsOtlpEmpty() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{}
 }
 
 func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
@@ -57,9 +58,11 @@ func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpOneEmptyResourceMetrics() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{},
+func generateMetricsOtlpOneEmptyResourceMetrics() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{},
+		},
 	}
 }
 
@@ -70,10 +73,12 @@ func GenerateMetricsNoLibraries() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpNoLibraries() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateOtlpResource1(),
+func generateMetricsOtlpNoLibraries() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateOtlpResource1(),
+			},
 		},
 	}
 }
@@ -85,12 +90,14 @@ func GenerateMetricsOneEmptyInstrumentationLibrary() pdata.Metrics {
 }
 
 // generateMetricsOtlpOneEmptyInstrumentationLibrary returns the OTLP representation of the GenerateMetricsOneEmptyInstrumentationLibrary.
-func generateMetricsOtlpOneEmptyInstrumentationLibrary() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{},
+func generateMetricsOtlpOneEmptyInstrumentationLibrary() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{},
+				},
 			},
 		},
 	}
@@ -106,13 +113,15 @@ func GenerateMetricsOneMetricNoResource() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpOneMetricNoResource() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						generateOtlpCounterIntMetric(),
+func generateMetricsOtlpOneMetricNoResource() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							generateOtlpCounterIntMetric(),
+						},
 					},
 				},
 			},
@@ -128,14 +137,16 @@ func GenerateMetricsOneMetric() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpOneMetric() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						generateOtlpCounterIntMetric(),
+func generateMetricsOtlpOneMetric() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							generateOtlpCounterIntMetric(),
+						},
 					},
 				},
 			},
@@ -169,15 +180,17 @@ func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
 	return md
 }
 
-func GenerateMetricsOtlpTwoMetrics() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						generateOtlpCounterIntMetric(),
-						generateOtlpCounterIntMetric(),
+func generateMetricsOtlpTwoMetrics() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							generateOtlpCounterIntMetric(),
+							generateOtlpCounterIntMetric(),
+						},
 					},
 				},
 			},
@@ -193,9 +206,9 @@ func GenerateMetricsOneMetricNoLabels() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpOneMetricNoLabels() []*otlpmetrics.ResourceMetrics {
+func generateMetricsOtlpOneMetricNoLabels() *otlpcollectormetrics.ExportMetricsServiceRequest {
 	md := generateMetricsOtlpOneMetric()
-	mis := md[0].InstrumentationLibraryMetrics[0].Metrics[0].Data.(*otlpmetrics.Metric_IntSum).IntSum
+	mis := md.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics[0].Data.(*otlpmetrics.Metric_IntSum).IntSum
 	mis.DataPoints[0].Labels = nil
 	mis.DataPoints[1].Labels = nil
 	return md
@@ -249,20 +262,22 @@ func GenerateMetricsMetricTypeInvalid() pdata.Metrics {
 	return md
 }
 
-func generateMetricsOtlpAllTypesNoDataPoints() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						generateOtlpMetric(TestGaugeDoubleMetricName, pdata.MetricDataTypeDoubleGauge),
-						generateOtlpMetric(TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge),
-						generateOtlpMetric(TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum),
-						generateOtlpMetric(TestCounterIntMetricName, pdata.MetricDataTypeIntSum),
-						generateOtlpMetric(TestDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram),
-						generateOtlpMetric(TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram),
-						generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary),
+func generateMetricsOtlpAllTypesNoDataPoints() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							generateOtlpMetric(TestGaugeDoubleMetricName, pdata.MetricDataTypeDoubleGauge),
+							generateOtlpMetric(TestGaugeIntMetricName, pdata.MetricDataTypeIntGauge),
+							generateOtlpMetric(TestCounterDoubleMetricName, pdata.MetricDataTypeDoubleSum),
+							generateOtlpMetric(TestCounterIntMetricName, pdata.MetricDataTypeIntSum),
+							generateOtlpMetric(TestDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram),
+							generateOtlpMetric(TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram),
+							generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary),
+						},
 					},
 				},
 			},
@@ -290,18 +305,20 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	return metricData
 }
 
-func generateMetricsOtlpAllTypesWithSampleDatapoints() []*otlpmetrics.ResourceMetrics {
-	return []*otlpmetrics.ResourceMetrics{
-		{
-			Resource: generateOtlpResource1(),
-			InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
-				{
-					Metrics: []*otlpmetrics.Metric{
-						generateOtlpCounterIntMetric(),
-						generateOtlpSumDoubleMetric(),
-						generateOtlpDoubleHistogramMetric(),
-						generateOtlpIntHistogramMetric(),
-						generateOTLPDoubleSummaryMetric(),
+func generateMetricsOtlpAllTypesWithSampleDatapoints() *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateOtlpResource1(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						Metrics: []*otlpmetrics.Metric{
+							generateOtlpCounterIntMetric(),
+							generateOtlpSumDoubleMetric(),
+							generateOtlpDoubleHistogramMetric(),
+							generateOtlpIntHistogramMetric(),
+							generateOTLPDoubleSummaryMetric(),
+						},
 					},
 				},
 			},

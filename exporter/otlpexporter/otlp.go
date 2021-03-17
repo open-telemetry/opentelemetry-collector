@@ -76,10 +76,8 @@ func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) error 
 }
 
 func (e *exporterImp) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
-	request := &otlpmetrics.ExportMetricsServiceRequest{
-		ResourceMetrics: pdata.MetricsToOtlp(md),
-	}
-	if err := e.w.exportMetrics(ctx, request); err != nil {
+	req := internal.MetricsToOtlp(md.InternalRep())
+	if err := e.w.exportMetrics(ctx, req); err != nil {
 		return fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
 	}
 	return nil

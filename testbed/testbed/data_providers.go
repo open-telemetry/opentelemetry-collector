@@ -355,7 +355,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 		}
 		message = &msg
 
-		md := pdata.MetricsFromOtlp(msg.ResourceMetrics)
+		md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&msg))
 		_, dataPointCount = md.MetricAndDataPointCount()
 
 	case configmodels.LogsDataType:
@@ -389,7 +389,7 @@ func (dp *FileDataProvider) GenerateTraces() (pdata.Traces, bool) {
 }
 
 func (dp *FileDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
-	md := pdata.MetricsFromOtlp(dp.message.(*otlpmetricscol.ExportMetricsServiceRequest).ResourceMetrics)
+	md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(dp.message.(*otlpmetricscol.ExportMetricsServiceRequest)))
 	dp.batchesGenerated.Inc()
 	_, dataPointCount := md.MetricAndDataPointCount()
 	dp.dataItemsGenerated.Add(uint64(dataPointCount))

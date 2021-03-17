@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/internal/data/protogen/resource/v1"
@@ -147,8 +149,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
     - key: opencensus.resourcetype
       action: delete
 `,
-			mockedConsumedMetricData: getMetricDataFrom(mockedConsumedResourceWithType),
-			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceWithType),
+			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: otlpresource.Resource{
 					Attributes: []otlpcommon.KeyValue{
 						{
@@ -173,8 +175,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
       action: insert
 
 `,
-			mockedConsumedMetricData: getMetricDataFrom(mockedConsumedResourceNil),
-			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceNil),
+			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: otlpresource.Resource{
 					Attributes: []otlpcommon.KeyValue{
 						{
@@ -194,8 +196,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
       value: additional-label-value
       action: insert
 `,
-			mockedConsumedMetricData: getMetricDataFrom(mockedConsumedResourceWithoutAttributes),
-			expectedMetricData: getMetricDataFromResourceMetrics(&otlpmetrics.ResourceMetrics{
+			mockedConsumedMetricData: metricsFromResourceMetrics(mockedConsumedResourceWithoutAttributes),
+			expectedMetricData: metricsFromResourceMetrics(&otlpmetrics.ResourceMetrics{
 				Resource: otlpresource.Resource{
 					Attributes: []otlpcommon.KeyValue{
 						{
@@ -211,12 +213,10 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 	return tests
 }
 
-func getMetricDataFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdata.MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
-}
-
-func getMetricDataFrom(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
-	return pdata.MetricsFromOtlp([]*otlpmetrics.ResourceMetrics{rm})
+func metricsFromResourceMetrics(rm *otlpmetrics.ResourceMetrics) pdata.Metrics {
+	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{rm},
+	}))
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
