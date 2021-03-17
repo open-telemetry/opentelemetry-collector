@@ -53,7 +53,7 @@ func TestSpanCount(t *testing.T) {
 
 func TestSize(t *testing.T) {
 	td := NewTraces()
-	assert.Equal(t, 0, td.Size())
+	assert.Equal(t, 0, td.OtlpProtoSize())
 	rms := td.ResourceSpans()
 	rms.Resize(1)
 	rms.At(0).InstrumentationLibrarySpans().Resize(1)
@@ -63,12 +63,12 @@ func TestSize(t *testing.T) {
 	size := otlp.Size()
 	bytes, err := otlp.Marshal()
 	require.NoError(t, err)
-	assert.Equal(t, size, td.Size())
-	assert.Equal(t, len(bytes), td.Size())
+	assert.Equal(t, size, td.OtlpProtoSize())
+	assert.Equal(t, len(bytes), td.OtlpProtoSize())
 }
 
 func TestTracesSizeWithNil(t *testing.T) {
-	assert.Equal(t, 0, NewTraces().Size())
+	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
