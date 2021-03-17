@@ -65,10 +65,12 @@ func TestApplication_Start(t *testing.T) {
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
+	healthCheckPortStr := strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)
 	app.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
+		"--set=extensions.health_check.port=" + healthCheckPortStr,
 	})
 
 	appDone := make(chan struct{})
@@ -79,7 +81,7 @@ func TestApplication_Start(t *testing.T) {
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())
 	assert.Equal(t, Running, <-app.GetStateChannel())
-	require.True(t, isAppAvailable(t, "http://localhost:13133"))
+	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckPortStr))
 	assert.Equal(t, app.logger, app.GetLogger())
 	assert.True(t, loggingHookCalled)
 

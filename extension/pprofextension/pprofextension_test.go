@@ -16,8 +16,10 @@ package pprofextension
 
 import (
 	"context"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"testing"
 
@@ -81,7 +83,7 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 	defer pprofExt.Shutdown(context.Background())
 
-	// Try to start it again, it will fail since it is on the same endpoint.
+	// The instance is already active it will fail.
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
@@ -106,5 +108,25 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
 
+	require.NoError(t, pprofExt.Shutdown(context.Background()))
+}
+
+func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
+	tmpFile, err := ioutil.TempFile("", "pprof*.yaml")
+	require.NoError(t, err)
+	defer func() {
+		os.Remove(tmpFile.Name())
+	}()
+	require.NoError(t, tmpFile.Close())
+
+	config := Config{
+		Endpoint:   testutil.GetAvailableLocalAddress(t),
+		SaveToFile: tmpFile.Name(),
+	}
+
+	pprofExt := newServer(config, zap.NewNop())
+	require.NotNil(t, pprofExt)
+
+	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, pprofExt.Shutdown(context.Background()))
 }

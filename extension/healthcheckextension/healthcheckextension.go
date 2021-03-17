@@ -31,6 +31,7 @@ type healthCheckExtension struct {
 	logger *zap.Logger
 	state  *healthcheck.HealthCheck
 	server http.Server
+	stopCh chan struct{}
 }
 
 var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
@@ -43,14 +44,15 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	portStr := ":" + strconv.Itoa(int(hc.config.Port))
 	ln, err := net.Listen("tcp", portStr)
 	if err != nil {
-		host.ReportFatalError(err)
-		return nil
+		return err
 	}
 
 	// Mount HC handler
 	hc.server.Handler = hc.state.Handler()
-
+	hc.stopCh = make(chan struct{})
 	go func() {
+		defer close(hc.stopCh)
+
 		// The listener ownership goes to the server.
 		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
@@ -61,7 +63,11 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 }
 
 func (hc *healthCheckExtension) Shutdown(context.Context) error {
-	return hc.server.Close()
+	err := hc.server.Close()
+	if hc.stopCh != nil {
+		<-hc.stopCh
+	}
+	return err
 }
 
 func (hc *healthCheckExtension) Ready() error {

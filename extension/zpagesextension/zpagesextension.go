@@ -29,6 +29,7 @@ type zpagesExtension struct {
 	config Config
 	logger *zap.Logger
 	server http.Server
+	stopCh chan struct{}
 }
 
 func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error {
@@ -54,7 +55,10 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 
 	zpe.logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
 	zpe.server = http.Server{Handler: zPagesMux}
+	zpe.stopCh = make(chan struct{})
 	go func() {
+		defer close(zpe.stopCh)
+
 		if err := zpe.server.Serve(ln); err != nil && err != http.ErrServerClosed {
 			host.ReportFatalError(err)
 		}
@@ -64,7 +68,11 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 }
 
 func (zpe *zpagesExtension) Shutdown(context.Context) error {
-	return zpe.server.Close()
+	err := zpe.server.Close()
+	if zpe.stopCh != nil {
+		<-zpe.stopCh
+	}
+	return err
 }
 
 func newServer(config Config, logger *zap.Logger) *zpagesExtension {
