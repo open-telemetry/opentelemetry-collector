@@ -41,7 +41,6 @@ func TestUnmarshallOTLP(t *testing.T) {
 
 func TestUnmarshallOTLP_error(t *testing.T) {
 	p := otlpTracesPbUnmarshaller{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, pdata.NewTraces(), got)
+	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }

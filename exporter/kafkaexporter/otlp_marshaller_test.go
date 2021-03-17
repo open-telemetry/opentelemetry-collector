@@ -31,8 +31,7 @@ func TestOTLPTracesPbMarshaller(t *testing.T) {
 	messages, err := m.Marshal(td)
 	require.NoError(t, err)
 	require.Len(t, messages, 1)
-	extracted := pdata.NewTraces()
-	err = extracted.FromOtlpProtoBytes(messages[0].Value)
+	extracted, err := pdata.TracesFromOtlpProtoBytes(messages[0].Value)
 	require.NoError(t, err)
 	assert.EqualValues(t, td, extracted)
 }

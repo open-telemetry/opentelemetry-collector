@@ -66,10 +66,7 @@ func (e *exporterImp) shutdown(context.Context) error {
 }
 
 func (e *exporterImp) pushTraceData(ctx context.Context, td pdata.Traces) error {
-	request := &otlptrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(td),
-	}
-	if err := e.w.exportTrace(ctx, request); err != nil {
+	if err := e.w.exportTrace(ctx, internal.TracesToOtlp(td.InternalRep())); err != nil {
 		return fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
 	}
 	return nil

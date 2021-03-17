@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	v1 "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/testdata"
 )
@@ -84,8 +84,8 @@ func TestJSONPbMarshal(t *testing.T) {
 		Indent: "  ",
 	}
 	td := testdata.GenerateTraceDataOneSpan()
-	otlp := pdata.TracesToOtlp(td)
-	bytes, err := jpb.Marshal(otlp[0])
+	otlp := internal.TracesToOtlp(td.InternalRep())
+	bytes, err := jpb.Marshal(otlp.ResourceSpans[0])
 	assert.NoError(t, err)
 	assert.JSONEq(t, expectedJSON, string(bytes))
 }
@@ -98,6 +98,6 @@ func TestJSONPbUnmarshal(t *testing.T) {
 	err := jpb.Unmarshal([]byte(expectedJSON), &proto)
 	assert.NoError(t, err)
 	td := testdata.GenerateTraceDataOneSpan()
-	otlp := pdata.TracesToOtlp(td)
-	assert.EqualValues(t, &proto, otlp[0])
+	otlp := internal.TracesToOtlp(td.InternalRep())
+	assert.EqualValues(t, &proto, otlp.ResourceSpans[0])
 }

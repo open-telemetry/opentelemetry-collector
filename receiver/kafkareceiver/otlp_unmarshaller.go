@@ -24,9 +24,7 @@ type otlpTracesPbUnmarshaller struct {
 var _ Unmarshaller = (*otlpTracesPbUnmarshaller)(nil)
 
 func (p *otlpTracesPbUnmarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
-	td := pdata.NewTraces()
-	err := td.FromOtlpProtoBytes(bytes)
-	return td, err
+	return pdata.TracesFromOtlpProtoBytes(bytes)
 }
 
 func (*otlpTracesPbUnmarshaller) Encoding() string {

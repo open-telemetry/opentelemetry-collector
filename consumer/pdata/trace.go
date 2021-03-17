@@ -15,6 +15,7 @@
 package pdata
 
 import (
+	"go.opentelemetry.io/collector/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
@@ -23,52 +24,49 @@ import (
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
 type Traces struct {
-	orig *[]*otlptrace.ResourceSpans
+	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
 
 // NewTraces creates a new Traces.
 func NewTraces() Traces {
-	orig := []*otlptrace.ResourceSpans(nil)
-	return Traces{&orig}
+	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
-// TracesFromOtlp creates the internal Traces representation from the OTLP.
-func TracesFromOtlp(orig []*otlptrace.ResourceSpans) Traces {
-	return Traces{&orig}
+// TracesFromInternalRep creates Traces from the internal representation.
+// Should not be used outside this module.
+func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
+	return Traces{orig: internal.TracesToOtlp(wrapper)}
 }
 
-// TracesToOtlp converts the internal Traces to the OTLP.
-func TracesToOtlp(td Traces) []*otlptrace.ResourceSpans {
-	return *td.orig
+// TracesFromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
+// ProtoBuf bytes to the internal Traces.
+//
+// Returns an invalid Traces instance if error is not nil.
+func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
+	req := otlpcollectortrace.ExportTraceServiceRequest{}
+	if err := req.Unmarshal(data); err != nil {
+		return Traces{}, err
+	}
+	return Traces{orig: &req}, nil
+}
+
+// InternalRep returns internal representation of the Traces.
+// Should not be used outside this module.
+func (td Traces) InternalRep() internal.TracesWrapper {
+	return internal.TracesFromOtlp(td.orig)
 }
 
 // ToOtlpProtoBytes converts the internal Traces to OTLP Collector
 // ExportTraceServiceRequest ProtoBuf bytes.
 func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
-	traces := otlpcollectortrace.ExportTraceServiceRequest{
-		ResourceSpans: *td.orig,
-	}
-	return traces.Marshal()
-}
-
-// FromOtlpProtoBytes converts OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes to the internal Traces. Overrides current data.
-// Calling this function on zero-initialized structure causes panic.
-// Use it with NewTraces or on existing initialized Traces.
-func (td Traces) FromOtlpProtoBytes(data []byte) error {
-	traces := otlpcollectortrace.ExportTraceServiceRequest{}
-	if err := traces.Unmarshal(data); err != nil {
-		return err
-	}
-	*td.orig = traces.ResourceSpans
-	return nil
+	return td.orig.Marshal()
 }
 
 // Clone returns a copy of Traces.
 func (td Traces) Clone() Traces {
-	rss := NewResourceSpansSlice()
-	td.ResourceSpans().CopyTo(rss)
-	return Traces(rss)
+	cloneTd := NewTraces()
+	td.ResourceSpans().CopyTo(cloneTd.ResourceSpans())
+	return cloneTd
 }
 
 // SpanCount calculates the total number of spans.
@@ -87,18 +85,11 @@ func (td Traces) SpanCount() int {
 
 // Size returns size in bytes.
 func (td Traces) Size() int {
-	size := 0
-	for i := 0; i < len(*td.orig); i++ {
-		if (*td.orig)[i] == nil {
-			continue
-		}
-		size += (*td.orig)[i].Size()
-	}
-	return size
+	return td.orig.Size()
 }
 
 func (td Traces) ResourceSpans() ResourceSpansSlice {
-	return newResourceSpansSlice(td.orig)
+	return newResourceSpansSlice(&td.orig.ResourceSpans)
 }
 
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header

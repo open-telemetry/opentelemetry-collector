@@ -19,7 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -27,7 +28,7 @@ import (
 type traceTestCase struct {
 	name string
 	td   pdata.Traces
-	otlp []*otlptrace.ResourceSpans
+	otlp *otlpcollectortrace.ExportTraceServiceRequest
 }
 
 func generateAllTraceTestCases() []traceTestCase {
@@ -65,7 +66,7 @@ func generateAllTraceTestCases() []traceTestCase {
 		{
 			name: "two-spans-same-resource",
 			td:   GenerateTraceDataTwoSpansSameResource(),
-			otlp: GenerateTraceOtlpSameResourceTwoSpans(),
+			otlp: generateTraceOtlpSameResourceTwoSpans(),
 		},
 		{
 			name: "two-spans-same-resource-one-different",
@@ -81,9 +82,9 @@ func TestToFromOtlpTrace(t *testing.T) {
 	for i := range allTestCases {
 		test := allTestCases[i]
 		t.Run(test.name, func(t *testing.T) {
-			td := pdata.TracesFromOtlp(test.otlp)
+			td := pdata.TracesFromInternalRep(internal.TracesFromOtlp(test.otlp))
 			assert.EqualValues(t, test.td, td)
-			otlp := pdata.TracesToOtlp(td)
+			otlp := internal.TracesToOtlp(td.InternalRep())
 			assert.EqualValues(t, test.otlp, otlp)
 		})
 	}

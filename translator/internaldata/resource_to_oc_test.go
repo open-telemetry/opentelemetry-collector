@@ -28,6 +28,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/internal/goldendataset"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -231,7 +233,9 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			traces := pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{{Resource: goldendataset.GenerateResource(test)}})
+			traces := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&otlpcollectortrace.ExportTraceServiceRequest{
+				ResourceSpans: []*otlptrace.ResourceSpans{{Resource: goldendataset.GenerateResource(test)}},
+			}))
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
 			actual := pdata.NewResource()
