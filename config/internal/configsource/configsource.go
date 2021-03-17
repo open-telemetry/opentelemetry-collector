@@ -115,7 +115,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 
 	done := true
 	appliedTags := make(map[string]struct{})
-	
+
 	// It is possible to have config sources injection depending on other config sources:
 	//
 	// $lower_cfgsrc:
