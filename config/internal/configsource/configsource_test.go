@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -291,6 +292,14 @@ func Test_deepestConfigSourcesFirst(t *testing.T) {
 			keys: []string{
 				concatKeys("a", cfgSrcKey("b"), "c", "f", "g"),
 				concatKeys("a", cfgSrcKey("b"), "c", "d", cfgSrcKey("e")),
+			},
+			expected: false,
+		},
+		{
+			name: "left_deepest_not_by_length",
+			keys: []string{
+				concatKeys("a", strings.Repeat("a", 100), cfgSrcKey("b")),
+				concatKeys("a", "a", "a", cfgSrcKey("b")),
 			},
 			expected: false,
 		},

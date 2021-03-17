@@ -115,7 +115,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 
 	done := true
 	appliedTags := make(map[string]struct{})
-
+	
 	// It is possible to have config sources injection depending on other config sources:
 	//
 	// $lower_cfgsrc:
@@ -131,8 +131,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 	allKeys := srcCfg.AllKeys()
 	sort.Slice(allKeys, deepestConfigSourcesFirst(allKeys))
 
-	// Inspect all key from original configuration and set the proper value on the
-	// destination config.
+	// Inspect all key from original configuration and set the proper value on the destination config.
 	for _, k := range allKeys {
 		dstKey, cfgSrcName, paramsKey := extractCfgSrcInvocation(k)
 		if cfgSrcName == "" {
@@ -142,7 +141,8 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		}
 
 		if _, ok := appliedTags[dstKey]; ok {
-			// Already applied this key.
+			// Already applied this key. If the config source has multiple parameters
+			// there will be multiple keys for the same application.
 			continue
 		}
 
@@ -189,7 +189,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 	return done, nil
 }
 
-// deepestConfigSourcesFirst function returns a compare function to be used
+// deepestConfigSourcesFirst function returns a "less" function to be used
 // with slice.Sort to ensure that the "deepest" config source invocation appears
 // first in the sorted slice. The configuration:
 //
@@ -208,19 +208,34 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 // before "$lower::a".
 func deepestConfigSourcesFirst(keys []string) func(int, int) bool {
 	return func(i, j int) bool {
-		iLastSrcIdx := strings.LastIndex(keys[i], ConfigSourcePrefix)
-		jLastSrcIdx := strings.LastIndex(keys[j], ConfigSourcePrefix)
+		iBranch := strings.Split(keys[i], config.ViperDelimiter)
+		jBranch := strings.Split(keys[j], config.ViperDelimiter)
+
+		iLastSrcIdx := lastIndexConfigSource(iBranch)
+		jLastSrcIdx := lastIndexConfigSource(jBranch)
+
 		if iLastSrcIdx != jLastSrcIdx {
-			// At least one of the keys has a config source.
+			// Both have at least one of the keys has a config source.
+			// Return the deepest one.
 			return iLastSrcIdx > jLastSrcIdx
 		}
 
 		// It can be one of the following cases:
 		//  1. None has a config source invocation
-		//  2. Both have at the same level, ie.: they are siblings in the config.
-		// In any case it doesn't matter which one is considered "smaller".
-		return true
+		//  2. Only one has a config source
+		// Return the deepest "branch".
+		return len(iBranch) > len(jBranch)
 	}
+}
+
+func lastIndexConfigSource(keyNodes []string) int {
+	lastIndexConfigSource := -1
+	for i, node := range keyNodes {
+		if strings.HasPrefix(node, ConfigSourcePrefix) {
+			lastIndexConfigSource = i
+		}
+	}
+	return lastIndexConfigSource
 }
 
 // extractCfgSrcInvocation breaks down a key from the configuration if it contains the ConfigSourcePrefix.
