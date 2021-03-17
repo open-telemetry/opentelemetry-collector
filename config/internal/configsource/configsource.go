@@ -106,6 +106,7 @@ const (
 	errCfgSrcBeginSession
 	errCfgSrcNotFound
 	errCfgSrcApply
+	errNestedCfgSrc
 )
 
 func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSources map[string]component.ConfigSource) (bool, error) {
@@ -134,6 +135,22 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 	// Inspect all key from original configuration and set the proper value on the destination config.
 	for _, k := range allKeys {
 		dstKey, cfgSrcName, paramsKey := extractCfgSrcInvocation(k)
+
+		// Nested injection is not supported. That is the following is not supported:
+		//
+		// $lower:
+		//   lower_param0: false
+		//   lower_param1:
+		//     $deeper:
+		//       key: deeperkey
+		//
+		if _, parentCfgSrcName, _ := extractCfgSrcInvocation(dstKey); parentCfgSrcName != "" {
+			return false, &cfgSrcError{
+				msg:  fmt.Sprintf("nested config source usage at %s this is not supported", paramsKey),
+				code: errNestedCfgSrc,
+			}
+		}
+
 		if cfgSrcName == "" {
 			// Nothing to apply take the key and value as it is.
 			dstCfg.Set(k, srcCfg.Get(k))

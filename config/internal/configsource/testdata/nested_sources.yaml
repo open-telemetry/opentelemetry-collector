@@ -1,0 +1,6 @@
+lower:
+  keys:
+    lowerkey: lowervalue
+deeper:
+  keys:
+    deeperkey: lowerkey

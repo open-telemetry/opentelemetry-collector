@@ -1,0 +1,5 @@
+$lower:
+  err_begin_session: false # Just to force a configuration key at this point.
+  key:
+    $deeper:
+      key: deeperkey

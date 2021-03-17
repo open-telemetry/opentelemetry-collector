@@ -36,7 +36,14 @@ func TestApplyConfigSources(t *testing.T) {
 		applyParams     ApplyConfigSourcesParams
 	}{
 		{
+			name: "nil_param",
+		},
+		{
 			name: "simple",
+		},
+		{
+			name:            "nested",
+			cfgSrcErrorCode: errNestedCfgSrc,
 		},
 		{
 			name:            "err_begin_session",
@@ -142,31 +149,6 @@ func Test_applyConfigSources_no_error(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "nested",
-			srcCfg: map[string]interface{}{
-				"a": map[string]interface{}{
-					cfgSrcKey("cfgsrc"): map[string]interface{}{
-						"b": map[string]interface{}{
-							cfgSrcKey("cfgsrc"): map[string]interface{}{
-								"key": "bool",
-								"int": 1,
-								"map": map[string]interface{}{
-									"str": "force_already_visied_cfgsrc",
-								},
-							},
-						},
-					},
-				},
-			},
-			dstCfg: map[string]interface{}{
-				"a": map[string]interface{}{
-					cfgSrcKey("cfgsrc"): map[string]interface{}{
-						"b": true,
-					},
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -225,6 +207,25 @@ func Test_applyConfigSources_error(t *testing.T) {
 				},
 			},
 			errCode: errOnlyMapAtRootLevel,
+		},
+		{
+			name: "nested_cfgsrc",
+			srcCfg: map[string]interface{}{
+				"a": map[string]interface{}{
+					cfgSrcKey("cfgsrc"): map[string]interface{}{
+						"b": map[string]interface{}{
+							cfgSrcKey("cfgsrc"): map[string]interface{}{
+								"key": "bool",
+								"int": 1,
+								"map": map[string]interface{}{
+									"str": "force_already_visied_cfgsrc",
+								},
+							},
+						},
+					},
+				},
+			},
+			errCode: errNestedCfgSrc,
 		},
 	}
 
