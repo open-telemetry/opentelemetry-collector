@@ -20,7 +20,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/internal/data/protogen/metrics/v1"
 )
 
-type AggregationTemporality otlpmetrics.AggregationTemporality
+type AggregationTemporality int32
 
 const (
 	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
@@ -144,7 +144,7 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 }
 
 // MetricDataType specifies the type of data in a Metric.
-type MetricDataType int
+type MetricDataType int32
 
 const (
 	MetricDataTypeNone MetricDataType = iota
