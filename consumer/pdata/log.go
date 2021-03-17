@@ -29,56 +29,51 @@ import (
 // Must use NewLogs functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Logs struct {
-	orig *[]*otlplogs.ResourceLogs
+	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
 
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
-	orig := []*otlplogs.ResourceLogs(nil)
-	return Logs{&orig}
+	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
 }
 
 // LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should
 // not be used outside this module. This is intended to be used only by OTLP exporter and
 // File exporter, which legitimately need to work with OTLP Protobuf structs.
-func LogsFromInternalRep(logs internal.OtlpLogsWrapper) Logs {
-	return Logs{logs.Orig}
+func LogsFromInternalRep(logs internal.LogsWrapper) Logs {
+	return Logs{orig: internal.LogsToOtlp(logs)}
+}
+
+// LogsFromOtlpProtoBytes converts OTLP Collector ExportLogsServiceRequest
+// ProtoBuf bytes to the internal Logs.
+//
+// Returns an invalid Logs instance if error is not nil.
+func LogsFromOtlpProtoBytes(data []byte) (Logs, error) {
+	req := otlpcollectorlog.ExportLogsServiceRequest{}
+	if err := req.Unmarshal(data); err != nil {
+		return Logs{}, err
+	}
+	return Logs{orig: &req}, nil
 }
 
 // InternalRep returns internal representation of the logs. Should not be used outside
 // this module. This is intended to be used only by OTLP exporter and File exporter,
 // which legitimately need to work with OTLP Protobuf structs.
-func (ld Logs) InternalRep() internal.OtlpLogsWrapper {
-	return internal.OtlpLogsWrapper{Orig: ld.orig}
+func (ld Logs) InternalRep() internal.LogsWrapper {
+	return internal.LogsFromOtlp(ld.orig)
 }
 
 // ToOtlpProtoBytes returns the internal Logs to OTLP Collector ExportTraceServiceRequest
 // ProtoBuf bytes. This is intended to export OTLP Protobuf bytes for OTLP/HTTP transports.
 func (ld Logs) ToOtlpProtoBytes() ([]byte, error) {
-	logs := otlpcollectorlog.ExportLogsServiceRequest{
-		ResourceLogs: *ld.orig,
-	}
-	return logs.Marshal()
-}
-
-// FromOtlpProtoBytes converts OTLP Collector ExportLogsServiceRequest
-// ProtoBuf bytes to the internal Logs. Overrides current data.
-// Calling this function on zero-initialized structure causes panic.
-// Use it with NewLogs or on existing initialized Logs.
-func (ld Logs) FromOtlpProtoBytes(data []byte) error {
-	logs := otlpcollectorlog.ExportLogsServiceRequest{}
-	if err := logs.Unmarshal(data); err != nil {
-		return err
-	}
-	*ld.orig = logs.ResourceLogs
-	return nil
+	return ld.orig.Marshal()
 }
 
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
-	rls := NewResourceLogsSlice()
-	ld.ResourceLogs().CopyTo(rls)
-	return Logs(rls)
+	cloneLd := NewLogs()
+	ld.ResourceLogs().CopyTo(cloneLd.ResourceLogs())
+	return cloneLd
 }
 
 // LogRecordCount calculates the total number of log records.
@@ -99,15 +94,11 @@ func (ld Logs) LogRecordCount() int {
 // SizeBytes returns the number of bytes in the internal representation of the
 // logs.
 func (ld Logs) SizeBytes() int {
-	size := 0
-	for i := range *ld.orig {
-		size += (*ld.orig)[i].Size()
-	}
-	return size
+	return ld.orig.Size()
 }
 
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
-	return ResourceLogsSlice(ld)
+	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.

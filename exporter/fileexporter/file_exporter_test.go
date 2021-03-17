@@ -73,105 +73,109 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, exporter)
 
 	now := time.Now()
-	ld := []*logspb.ResourceLogs{
-		{
-			Resource: otresourcepb.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key:   "attr1",
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
-					},
-				},
-			},
-			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-				{
-					Logs: []*logspb.LogRecord{
+	otlp := &collectorlogs.ExportLogsServiceRequest{
+		ResourceLogs: []*logspb.ResourceLogs{
+			{
+				Resource: otresourcepb.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
-							TimeUnixNano: uint64(now.UnixNano()),
-							Name:         "logA",
-						},
-						{
-							TimeUnixNano: uint64(now.UnixNano()),
-							Name:         "logB",
+							Key:   "attr1",
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 						},
 					},
 				},
-			},
-		},
-		{
-			Resource: otresourcepb.Resource{
-				Attributes: []otlpcommon.KeyValue{
+				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 					{
-						Key:   "attr2",
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
+						Logs: []*logspb.LogRecord{
+							{
+								TimeUnixNano: uint64(now.UnixNano()),
+								Name:         "logA",
+							},
+							{
+								TimeUnixNano: uint64(now.UnixNano()),
+								Name:         "logB",
+							},
+						},
 					},
 				},
 			},
-			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-				{
-					Logs: []*logspb.LogRecord{
+			{
+				Resource: otresourcepb.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
-							TimeUnixNano: uint64(now.UnixNano()),
-							Name:         "logC",
+							Key:   "attr2",
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
+						},
+					},
+				},
+				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
+					{
+						Logs: []*logspb.LogRecord{
+							{
+								TimeUnixNano: uint64(now.UnixNano()),
+								Name:         "logC",
+							},
 						},
 					},
 				},
 			},
 		},
 	}
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld))))
+	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
 	var j collectorlogs.ExportLogsServiceRequest
 
 	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
-	assert.EqualValues(t, ld, j.ResourceLogs)
+	assert.EqualValues(t, otlp.ResourceLogs, j.ResourceLogs)
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
 
 	now := time.Now()
-	ld := []*logspb.ResourceLogs{
-		{
-			Resource: otresourcepb.Resource{
-				Attributes: []otlpcommon.KeyValue{
-					{
-						Key:   "attr1",
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
-					},
-				},
-			},
-			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-				{
-					Logs: []*logspb.LogRecord{
+	otlp := &collectorlogs.ExportLogsServiceRequest{
+		ResourceLogs: []*logspb.ResourceLogs{
+			{
+				Resource: otresourcepb.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
-							TimeUnixNano: uint64(now.UnixNano()),
-							Name:         "logA",
-						},
-						{
-							TimeUnixNano: uint64(now.UnixNano()),
-							Name:         "logB",
+							Key:   "attr1",
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 						},
 					},
 				},
-			},
-		},
-		{
-			Resource: otresourcepb.Resource{
-				Attributes: []otlpcommon.KeyValue{
+				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
 					{
-						Key:   "attr2",
-						Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
+						Logs: []*logspb.LogRecord{
+							{
+								TimeUnixNano: uint64(now.UnixNano()),
+								Name:         "logA",
+							},
+							{
+								TimeUnixNano: uint64(now.UnixNano()),
+								Name:         "logB",
+							},
+						},
 					},
 				},
 			},
-			InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
-				{
-					Logs: []*logspb.LogRecord{
+			{
+				Resource: otresourcepb.Resource{
+					Attributes: []otlpcommon.KeyValue{
 						{
-							TimeUnixNano: uint64(now.UnixNano()),
-							Name:         "logC",
+							Key:   "attr2",
+							Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value2"}},
+						},
+					},
+				},
+				InstrumentationLibraryLogs: []*logspb.InstrumentationLibraryLogs{
+					{
+						Logs: []*logspb.LogRecord{
+							{
+								TimeUnixNano: uint64(now.UnixNano()),
+								Name:         "logC",
+							},
 						},
 					},
 				},
@@ -210,7 +214,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			exporter := &fileExporter{file: mf}
 			require.NotNil(t, exporter)
 
-			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld))))
+			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
 			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}

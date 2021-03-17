@@ -365,7 +365,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 		}
 		message = &msg
 
-		md := pdata.LogsFromInternalRep(internal.LogsFromOtlp(msg.ResourceLogs))
+		md := pdata.LogsFromInternalRep(internal.LogsFromOtlp(&msg))
 		dataPointCount = md.LogRecordCount()
 	}
 
