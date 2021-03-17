@@ -287,7 +287,7 @@ func (dp *GoldenDataProvider) GetGeneratedSpan(traceID pdata.TraceID, spanID pda
 	if dp.spansMap == nil {
 		var resourceSpansList []*otlptrace.ResourceSpans
 		for _, td := range dp.tracesGenerated {
-			resourceSpansList = append(resourceSpansList, pdata.TracesToOtlp(td)...)
+			resourceSpansList = append(resourceSpansList, internal.TracesToOtlp(td.InternalRep()).ResourceSpans...)
 		}
 		dp.spansMap = populateSpansMap(resourceSpansList)
 	}
@@ -345,7 +345,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 		}
 		message = &msg
 
-		md := pdata.TracesFromOtlp(msg.ResourceSpans)
+		md := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&msg))
 		dataPointCount = md.SpanCount()
 
 	case configmodels.MetricsDataType:

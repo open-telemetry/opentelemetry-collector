@@ -20,6 +20,8 @@ import (
 	"math/rand"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 )
@@ -49,7 +51,10 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]pdata.Traces
 		if spanErr != nil {
 			err = spanErr
 		}
-		traces[index-1] = pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{rscSpan})
+		traces[index-1] = pdata.TracesFromInternalRep(
+			internal.TracesFromOtlp(&otlpcollectortrace.ExportTraceServiceRequest{
+				ResourceSpans: []*otlptrace.ResourceSpans{rscSpan},
+			}))
 	}
 	return traces, err
 }

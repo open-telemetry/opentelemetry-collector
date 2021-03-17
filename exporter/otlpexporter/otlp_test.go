@@ -239,9 +239,7 @@ func TestSendTraces(t *testing.T) {
 	// A trace with 2 spans.
 	td = testdata.GenerateTraceDataTwoSpansSameResource()
 
-	expectedOTLPReq := &otlptraces.ExportTraceServiceRequest{
-		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
-	}
+	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
 
 	err = exp.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
@@ -449,6 +447,9 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
+	// Clone the request and store as expected.
+	expectedOTLPReq := internal.TracesToOtlp(td.Clone().InternalRep())
+
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	assert.NoError(t, exp.ConsumeTraces(ctx, td))
@@ -458,10 +459,6 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pd
 	testutil.WaitFor(t, func() bool {
 		return atomic.LoadInt32(&rcv.requestCount) > 0
 	}, "receive a request")
-
-	expectedOTLPReq := &otlptraces.ExportTraceServiceRequest{
-		ResourceSpans: testdata.GenerateTraceOtlpSameResourceTwoSpans(),
-	}
 
 	// Verify received span.
 	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))

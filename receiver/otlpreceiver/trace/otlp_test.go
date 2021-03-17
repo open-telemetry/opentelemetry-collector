@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
@@ -54,20 +55,22 @@ func TestExport(t *testing.T) {
 	unixnanos := uint64(12578940000000012345)
 	traceID := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
 	spanID := [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
-	resourceSpans := []*otlptrace.ResourceSpans{
-		{
-			InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
-				{
-					Spans: []*otlptrace.Span{
-						{
-							TraceId:           data.NewTraceID(traceID),
-							SpanId:            data.NewSpanID(spanID),
-							Name:              "operationB",
-							Kind:              otlptrace.Span_SPAN_KIND_SERVER,
-							StartTimeUnixNano: unixnanos,
-							EndTimeUnixNano:   unixnanos,
-							Status:            otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_STATUS_CODE_ERROR},
-							TraceState:        "a=text,b=123",
+	req := &collectortrace.ExportTraceServiceRequest{
+		ResourceSpans: []*otlptrace.ResourceSpans{
+			{
+				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+					{
+						Spans: []*otlptrace.Span{
+							{
+								TraceId:           data.NewTraceID(traceID),
+								SpanId:            data.NewSpanID(spanID),
+								Name:              "operationB",
+								Kind:              otlptrace.Span_SPAN_KIND_SERVER,
+								StartTimeUnixNano: unixnanos,
+								EndTimeUnixNano:   unixnanos,
+								Status:            otlptrace.Status{Message: "status-cancelled", Code: otlptrace.Status_STATUS_CODE_ERROR},
+								TraceState:        "a=text,b=123",
+							},
 						},
 					},
 				},
@@ -77,11 +80,7 @@ func TestExport(t *testing.T) {
 
 	// Keep trace data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := pdata.TracesFromOtlp(resourceSpans).Clone()
-
-	req := &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: resourceSpans,
-	}
+	traceData := pdata.TracesFromInternalRep(internal.TracesFromOtlp(req)).Clone()
 
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
@@ -288,7 +287,7 @@ func TestDeprecatedStatusCode(t *testing.T) {
 			// Check that Code is as expected.
 			assert.EqualValues(t, rcvdStatus.Code(), test.expectedRcvCode)
 
-			spanProto := pdata.TracesToOtlp(traceSink.AllTraces()[0])[0].InstrumentationLibrarySpans[0].Spans[0]
+			spanProto := internal.TracesToOtlp(traceSink.AllTraces()[0].InternalRep()).ResourceSpans[0].InstrumentationLibrarySpans[0].Spans[0]
 
 			// Check that DeprecatedCode is passed as is.
 			assert.EqualValues(t, spanProto.Status.DeprecatedCode, test.expectedDeprecatedCode)

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/obsreport"
@@ -76,7 +77,7 @@ func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceSe
 		}
 	}
 
-	td := pdata.TracesFromOtlp(req.ResourceSpans)
+	td := pdata.TracesFromInternalRep(internal.TracesFromOtlp(req))
 	err := r.sendToNextConsumer(ctxWithReceiverName, td)
 	if err != nil {
 		return nil, err

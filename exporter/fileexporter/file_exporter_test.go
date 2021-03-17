@@ -45,10 +45,10 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 	assert.NoError(t, lte.Shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
-	var j collectortrace.ExportTraceServiceRequest
-	assert.NoError(t, unmarshaler.Unmarshal(mf, &j))
+	got := &collectortrace.ExportTraceServiceRequest{}
+	assert.NoError(t, unmarshaler.Unmarshal(mf, got))
 
-	assert.EqualValues(t, pdata.TracesToOtlp(td), j.ResourceSpans)
+	assert.EqualValues(t, internal.TracesToOtlp(td.InternalRep()), got)
 }
 
 func TestFileMetricsExporterNoErrors(t *testing.T) {

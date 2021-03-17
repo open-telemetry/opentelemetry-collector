@@ -47,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/internal"
 	"go.opentelemetry.io/collector/internal/data"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/internal/data/protogen/common/v1"
@@ -127,7 +128,9 @@ var resourceSpansOtlp = otlptrace.ResourceSpans{
 	},
 }
 
-var traceOtlp = pdata.TracesFromOtlp([]*otlptrace.ResourceSpans{&resourceSpansOtlp})
+var traceOtlp = pdata.TracesFromInternalRep(internal.TracesFromOtlp(&collectortrace.ExportTraceServiceRequest{
+	ResourceSpans: []*otlptrace.ResourceSpans{&resourceSpansOtlp},
+}))
 
 func TestJsonHttp(t *testing.T) {
 	tests := []struct {
@@ -345,10 +348,7 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	wantOtlp := pdata.TracesToOtlp(testdata.GenerateTraceDataOneSpan())
-	traceProto := collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: wantOtlp,
-	}
+	traceProto := internal.TracesToOtlp(testdata.GenerateTraceDataOneSpan().InternalRep())
 	traceBytes, err := traceProto.Marshal()
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
@@ -365,7 +365,7 @@ func TestProtoHttp(t *testing.T) {
 			t.Run(test.name+targetURLPath, func(t *testing.T) {
 				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
 				tSink.Reset()
-				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, wantOtlp)
+				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, traceProto)
 			})
 		}
 	}
@@ -400,7 +400,7 @@ func testHTTPProtobufRequest(
 	encoding string,
 	traceBytes []byte,
 	expectedErr error,
-	wantOtlp []*otlptrace.ResourceSpans,
+	wantOtlp *collectortrace.ExportTraceServiceRequest,
 ) {
 	tSink.SetConsumeError(expectedErr)
 
@@ -426,20 +426,8 @@ func testHTTPProtobufRequest(
 
 		require.Len(t, allTraces, 1)
 
-		gotOtlp := pdata.TracesToOtlp(allTraces[0])
-
-		if len(gotOtlp) != len(wantOtlp) {
-			t.Fatalf("len(traces):\nGot: %d\nWant: %d\n", len(gotOtlp), len(wantOtlp))
-		}
-
-		got := gotOtlp[0]
-		want := wantOtlp[0]
-
-		if !assert.EqualValues(t, got, want) {
-			t.Errorf("Sending trace proto over http failed\nGot:\n%v\nWant:\n%v\n",
-				got.String(),
-				want.String())
-		}
+		gotOtlp := internal.TracesToOtlp(allTraces[0].InternalRep())
+		assert.EqualValues(t, gotOtlp, wantOtlp)
 	} else {
 		errStatus := &spb.Status{}
 		assert.NoError(t, proto.Unmarshal(respBytes, errStatus))
@@ -569,9 +557,7 @@ func TestHTTPStartWithoutConsumers(t *testing.T) {
 }
 
 func createSingleSpanTrace() *collectortrace.ExportTraceServiceRequest {
-	return &collectortrace.ExportTraceServiceRequest{
-		ResourceSpans: pdata.TracesToOtlp(testdata.GenerateTraceDataOneSpan()),
-	}
+	return internal.TracesToOtlp(testdata.GenerateTraceDataOneSpan().InternalRep())
 }
 
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
