@@ -23,38 +23,46 @@ import (
 	"go.opentelemetry.io/collector/config/internal/configsource/configmodels"
 )
 
-// SessionParams is passed to ConfigSource at the begin and end of
-// a configuration session.
-type SessionParams struct {
-	// LoadCount tracks the number of the configuration load session.
-	LoadCount int
-}
-
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
 type ConfigSource interface {
 	component.Component
 
-	// BeginSession signals that the object is about to be used to inject data into
+	// BeginSession signals that the ConfigSource is about to be used to inject data into
 	// the configuration. ConfigSource objects can assume that there won't be
 	// concurrent sessions and can use this call according to their needs:
 	// lock needed resources, suspend background tasks, etc.
-	BeginSession(ctx context.Context, sessionParams SessionParams) error
+	BeginSession(ctx context.Context) error
 
 	// Apply retrieves generic values given the arguments specified on a specific
 	// invocation of a configuration source. The returned object is injected on
-	// configuration.
+	// configuration. When Apply is called params will be the value associated to
+	// an invocation of the ConfigSource. For example, the following YAML:
+	//
+	//  $my_config_src:
+	//    param0: true
+	//    param1: "some string"
+	//
+	// will have a call to Apply in which params is:
+	//
+	//  map[string]interface{}{
+	//    "param0": true,
+	//    "param1": "some string",
+	// }
+	//
+	// A ConfigSource implementation should unmarshall, or cast it, as appropriate
+	// and report errors if it doesn't fit their usage expectation.
 	Apply(ctx context.Context, params interface{}) (interface{}, error)
 
 	// EndSession signals that the configuration was fully flattened and it
 	// is ready to be loaded. Each ConfigSource can use this call according
 	// to their needs: release resources, start background tasks, update
 	// internal state, etc.
-	EndSession(ctx context.Context, sessionParams SessionParams)
+	EndSession(ctx context.Context)
 }
 
-// ConfigSourceCreateParams is passed to ConfigSourceFactory.Create* functions.
-type ConfigSourceCreateParams struct {
+// CreateConfigSourceParams is passed to ConfigSourceFactory.CreateConfigSource function.
+type CreateConfigSourceParams struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
 	Logger *zap.Logger
@@ -77,5 +85,5 @@ type ConfigSourceFactory interface {
 	CreateDefaultConfig() configmodels.ConfigSource
 
 	// CreateConfigSource creates a configuration source based on the given config.
-	CreateConfigSource(ctx context.Context, params ConfigSourceCreateParams, cfg configmodels.ConfigSource) (ConfigSource, error)
+	CreateConfigSource(ctx context.Context, params CreateConfigSourceParams, cfg configmodels.ConfigSource) (ConfigSource, error)
 }

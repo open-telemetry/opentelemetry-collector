@@ -400,7 +400,7 @@ func (c cfgSrcMock) Shutdown(context.Context) error {
 	return nil
 }
 
-func (c cfgSrcMock) BeginSession(context.Context, component.SessionParams) error {
+func (c cfgSrcMock) BeginSession(context.Context) error {
 	if c.ErrOnBeginSession {
 		return errors.New("request to error on BeginSession")
 	}
@@ -424,7 +424,7 @@ func (c cfgSrcMock) Apply(_ context.Context, params interface{}) (interface{}, e
 	return nil, nil
 }
 
-func (c cfgSrcMock) EndSession(context.Context, component.SessionParams) {
+func (c cfgSrcMock) EndSession(context.Context) {
 }
 
 // TODO: Create proper factories and methods to load generic ConfigSources, temporary test helper.

@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	// ConfigSourcePrefix is used to identified a configuration source invocation.
+	// ConfigSourcePrefix is used to identify a configuration source invocation.
 	ConfigSourcePrefix = "$"
 )
 
@@ -40,8 +40,6 @@ type ApplyConfigSourcesParams struct {
 	// MaxRecursionDepth limits the maximum number of times that a configuration source
 	// can inject another into the config.
 	MaxRecursionDepth uint
-	// LoadCount tracks the number of the configuration load session.
-	LoadCount int
 }
 
 // ApplyConfigSources takes a viper object with the configuration to which the
@@ -49,13 +47,9 @@ type ApplyConfigSourcesParams struct {
 // returned as a separated object.
 func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigSourcesParams) (*viper.Viper, error) {
 
-	sessionParams := component.SessionParams{
-		LoadCount: params.LoadCount,
-	}
-
 	// Notify all sources that we are about to start.
 	for cfgSrcName, cfgSrc := range params.ConfigSources {
-		if err := cfgSrc.BeginSession(ctx, sessionParams); err != nil {
+		if err := cfgSrc.BeginSession(ctx); err != nil {
 			return nil, &cfgSrcError{
 				msg:  fmt.Sprintf("config source %s begin session error: %v", cfgSrcName, err),
 				code: errCfgSrcBeginSession,
@@ -64,7 +58,7 @@ func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigS
 
 		// The scope of usage of the cfgSrc is the whole function so it is fine to defer
 		// the EndSession call to the function exit.
-		defer cfgSrc.EndSession(ctx, sessionParams)
+		defer cfgSrc.EndSession(ctx)
 	}
 
 	srcCfg := v
@@ -122,10 +116,23 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 	done := true
 	appliedTags := make(map[string]struct{})
 
-	// Apply tags from the deepest config sources to the lowest so nested invocations are properly resolved.
+	// It is possible to have config sources injection depending on other config sources:
+	//
+	// $lower_cfgsrc:
+	//   a: "just an example"
+	//   b:
+	//     $deeper_cfgsrc:
+	//       c: true
+	//
+	// By injecting the deepest ones first they can be resolved in the proper order.
+	// See function deepestConfigSourcesFirst for more info.
+	//
+	// TODO: Bug when lower injection happening after deeper but without the inject values.
 	allKeys := srcCfg.AllKeys()
 	sort.Slice(allKeys, deepestConfigSourcesFirst(allKeys))
 
+	// Inspect all key from original configuration and set the proper value on the
+	// destination config.
 	for _, k := range allKeys {
 		dstKey, cfgSrcName, paramsKey := extractCfgSrcInvocation(k)
 		if cfgSrcName == "" {
@@ -158,6 +165,8 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		}
 
 		// The injection may require further expansion, assume that we are not done yet.
+		// This is pessimistic, alternatively we could explore the injected configuration
+		// to check if it injected other configuration sources or not.
 		done = false
 		if dstKey != "" {
 			dstCfg.Set(dstKey, actualCfg)
@@ -180,6 +189,23 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 	return done, nil
 }
 
+// deepestConfigSourcesFirst function returns a compare function to be used
+// with slice.Sort to ensure that the "deepest" config source invocation appears
+// first in the sorted slice. The configuration:
+//
+//   $lower:
+//     a: "just an example"
+//     b:
+//       $deeper:
+//         c: true
+//
+// will have two keys:
+//
+//   $lower::a
+//   $lower::b::$deeper::c
+//
+// by using deepestConfigSourcesFirst the sorted slice will have "$lower::b::$deeper::c"
+// before "$lower::a".
 func deepestConfigSourcesFirst(keys []string) func(int, int) bool {
 	return func(i, j int) bool {
 		iLastSrcIdx := strings.LastIndex(keys[i], ConfigSourcePrefix)
@@ -197,15 +223,22 @@ func deepestConfigSourcesFirst(keys []string) func(int, int) bool {
 	}
 }
 
+// extractCfgSrcInvocation breaks down a key from the configuration if it contains the ConfigSourcePrefix.
+// If the key contains the prefix, the return values are as follows:
+//
+// - dstKey: the key into which the result applying the config source will be injected.
+// - cfgSrcName: the name of the config source to be applied.
+// - paramsKey: the key of the parameters to be passed on the call to the config source Apply method.
+//
+// In case the prefix is not present on the key all returned strings have their default value.
 func extractCfgSrcInvocation(k string) (dstKey, cfgSrcName, paramsKey string) {
-	firstPrefixIdx := strings.Index(k, ConfigSourcePrefix)
-	if firstPrefixIdx == -1 {
+	// Check for the deepest config source prefix.
+	tagPrefixIdx := strings.LastIndex(k, ConfigSourcePrefix)
+	if tagPrefixIdx == -1 {
 		// No config source to be applied.
 		return
 	}
 
-	// Check for a deeper one.
-	tagPrefixIdx := strings.LastIndex(k, ConfigSourcePrefix)
 	dstKey = strings.TrimSuffix(k[:tagPrefixIdx], config.ViperDelimiter)
 
 	cfgSrcFromStart := k[tagPrefixIdx+len(ConfigSourcePrefix):]
