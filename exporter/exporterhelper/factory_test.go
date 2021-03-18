@@ -19,7 +19,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -107,6 +106,6 @@ func createLogsExporter(context.Context, component.ExporterCreateParams, configm
 	return nopLogsExporter, nil
 }
 
-func customUnmarshaler(*viper.Viper, interface{}) error {
+func customUnmarshaler(map[string]interface{}, interface{}) error {
 	return errors.New("my error")
 }

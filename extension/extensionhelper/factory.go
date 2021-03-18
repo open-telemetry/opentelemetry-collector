@@ -17,8 +17,6 @@ package extensionhelper
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -94,6 +92,6 @@ type factoryWithUnmarshaler struct {
 }
 
 // Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return f.customUnmarshaler(componentViperSection, intoCfg)
+func (f *factoryWithUnmarshaler) Unmarshal(componentSection map[string]interface{}, intoCfg interface{}) error {
+	return f.customUnmarshaler(componentSection, intoCfg)
 }

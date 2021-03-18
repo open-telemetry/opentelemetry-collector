@@ -19,7 +19,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
@@ -91,6 +90,6 @@ func createLogsReceiver(context.Context, component.ReceiverCreateParams, configm
 	return nil, nil
 }
 
-func customUnmarshaler(*viper.Viper, interface{}) error {
+func customUnmarshaler(map[string]interface{}, interface{}) error {
 	return errors.New("my error")
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -56,7 +57,7 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithTraces(createTraceReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
+		receiverhelper.WithCustomUnmarshaler(config.ToCustomUnmarshaler(customUnmarshaler)))
 }
 
 // customUnmarshaler is used to add defaults for named but empty protocols
