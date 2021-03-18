@@ -87,7 +87,7 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, labels pdata.StringMa
 	values := make([]string, 0, labels.Len())
 
 	labels.ForEach(func(k string, v string) {
-		keys = append(keys, k)
+		keys = append(keys, sanitize(k))
 		values = append(values, v)
 	})
 
