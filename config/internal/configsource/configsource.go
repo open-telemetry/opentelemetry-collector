@@ -51,7 +51,7 @@ func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigS
 	for cfgSrcName, cfgSrc := range params.ConfigSources {
 		if err := cfgSrc.BeginSession(ctx); err != nil {
 			return nil, &cfgSrcError{
-				msg:  fmt.Sprintf("config source %s begin session error: %v", cfgSrcName, err),
+				msg:  fmt.Sprintf("config source %q begin session error: %v", cfgSrcName, err),
 				code: errCfgSrcBeginSession,
 			}
 		}
@@ -77,7 +77,7 @@ func ApplyConfigSources(ctx context.Context, v *viper.Viper, params ApplyConfigS
 
 	if !done {
 		return nil, &cfgSrcError{
-			msg:  "config source recursion chain is too deep, couldn't fully expand the configuration",
+			msg:  fmt.Sprintf("config source recursion chain is deeper than the allowed maximum of %d", params.MaxRecursionDepth),
 			code: errCfgSrcChainTooLong,
 		}
 	}
@@ -146,7 +146,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		//
 		if _, parentCfgSrcName, _ := extractCfgSrcInvocation(dstKey); parentCfgSrcName != "" {
 			return false, &cfgSrcError{
-				msg:  fmt.Sprintf("nested config source usage at %s this is not supported", paramsKey),
+				msg:  fmt.Sprintf("nested config source usage at %q this is not supported", paramsKey),
 				code: errNestedCfgSrc,
 			}
 		}
@@ -167,7 +167,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		cfgSrc, ok := cfgSources[cfgSrcName]
 		if !ok {
 			return false, &cfgSrcError{
-				msg:  fmt.Sprintf("config source %s not found", cfgSrcName),
+				msg:  fmt.Sprintf("config source %q not found", cfgSrcName),
 				code: errCfgSrcNotFound,
 			}
 		}
@@ -176,7 +176,7 @@ func applyConfigSources(ctx context.Context, srcCfg, dstCfg *viper.Viper, cfgSou
 		actualCfg, err := cfgSrc.Apply(ctx, applyParams)
 		if err != nil {
 			return false, &cfgSrcError{
-				msg:  fmt.Sprintf("error applying config source %s: %v", cfgSrcName, err),
+				msg:  fmt.Sprintf("error applying config source %q: %v", cfgSrcName, err),
 				code: errCfgSrcApply,
 			}
 		}
