@@ -76,7 +76,9 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	if !r.cfg.UseStartTimeMetric {
 		jobsMap = internal.NewJobsMap(2 * time.Minute)
 	}
-	receiverCtx := obsreport.ReceiverContext(ctx, r.cfg.Name(), transport)
+	// Per component.Component Start instructions, for async operations we should not use the
+	// incoming context, it may get cancelled.
+	receiverCtx := obsreport.ReceiverContext(context.Background(), r.cfg.Name(), transport)
 	ocaStore := internal.NewOcaStore(receiverCtx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.Name())
 
 	scrapeManager := scrape.NewManager(logger, ocaStore)
