@@ -117,5 +117,5 @@ func Components() (
 		Exporters:  exporters,
 	}
 
-	return factories, consumererror.CombineErrors(errs)
+	return factories, consumererror.Combine(errs)
 }

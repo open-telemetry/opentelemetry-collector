@@ -92,8 +92,8 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	partialErr := consumererror.PartialTracesError(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
-	mockR := newMockRequest(context.Background(), 2, partialErr)
+	traceErr := consumererror.Traces(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
+	mockR := newMockRequest(context.Background(), 2, traceErr)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
 		require.NoError(t, be.sender.send(mockR))
@@ -339,7 +339,7 @@ func (mer *mockErrorRequest) export(_ context.Context) error {
 	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) onPartialError(consumererror.PartialError) request {
+func (mer *mockErrorRequest) onPartialError(error) request {
 	return mer
 }
 
@@ -374,7 +374,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *mockRequest) onPartialError(consumererror.PartialError) request {
+func (m *mockRequest) onPartialError(error) request {
 	return &mockRequest{
 		baseRequest:  m.baseRequest,
 		cnt:          1,

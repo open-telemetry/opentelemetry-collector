@@ -46,8 +46,8 @@ func (s *ScrapeErrors) Combine() error {
 	}
 
 	if !partialScrapeErr {
-		return consumererror.CombineErrors(s.errs)
+		return consumererror.Combine(s.errs)
 	}
 
-	return NewPartialScrapeError(consumererror.CombineErrors(s.errs), s.failedScrapeCount)
+	return NewPartialScrapeError(consumererror.Combine(s.errs), s.failedScrapeCount)
 }

@@ -155,7 +155,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 		}
 
 		if dropped != 0 {
-			return consumererror.CombineErrors(errs)
+			return consumererror.Combine(errs)
 		}
 
 		return nil

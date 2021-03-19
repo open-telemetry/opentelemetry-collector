@@ -45,8 +45,8 @@ func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetrics
 	}
 }
 
-func (req *metricsRequest) onPartialError(partialErr consumererror.PartialError) request {
-	return newMetricsRequest(req.ctx, partialErr.GetMetrics(), req.pusher)
+func (req *metricsRequest) onPartialError(err error) request {
+	return newMetricsRequest(req.ctx, consumererror.GetMetrics(err), req.pusher)
 }
 
 func (req *metricsRequest) export(ctx context.Context) error {

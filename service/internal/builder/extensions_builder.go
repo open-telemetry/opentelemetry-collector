@@ -71,7 +71,7 @@ func (exts Extensions) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func (exts Extensions) NotifyPipelineReady() error {
@@ -99,7 +99,7 @@ func (exts Extensions) NotifyPipelineNotReady() error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func (exts Extensions) ToMap() map[configmodels.NamedEntity]component.Extension {

@@ -25,9 +25,6 @@ type permanent struct {
 	err error
 }
 
-// permanentError exists to test errors for "IsPermanent"
-var permanentError = &permanent{}
-
 // Permanent wraps an error to indicate that it is a permanent error, i.e.: an
 // error that will be always returned if its source receives the same inputs.
 func Permanent(err error) error {
@@ -42,8 +39,8 @@ func (p permanent) Error() string {
 // is used to indicate that a given error will always be returned in the case
 // that its sources receives the same input.
 func IsPermanent(err error) bool {
-	if err != nil {
-		return errors.As(err, permanentError)
+	if err == nil {
+		return false
 	}
-	return false
+	return errors.As(err, &permanent{})
 }

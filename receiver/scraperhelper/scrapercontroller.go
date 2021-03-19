@@ -166,7 +166,7 @@ func (sc *controller) Shutdown(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // startScraping initiates a ticker that calls Scrape based on the configured
@@ -250,7 +250,7 @@ func (mms *multiMetricScraper) Shutdown(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func (mms *multiMetricScraper) Scrape(ctx context.Context, receiverName string) (pdata.ResourceMetricsSlice, error) {

@@ -61,7 +61,7 @@ func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // StartAll starts all receivers.
