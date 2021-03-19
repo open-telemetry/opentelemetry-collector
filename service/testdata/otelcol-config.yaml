@@ -27,4 +27,3 @@ service:
       receivers: [jaeger]
       processors: [attributes, batch]
       exporters: [opencensus]
-
