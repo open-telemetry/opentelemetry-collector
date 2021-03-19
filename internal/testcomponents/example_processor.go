@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // ExampleProcessorCfg is for testing purposes. We are defining an example config and factory
@@ -32,21 +32,22 @@ type ExampleProcessorCfg struct {
 	ExtraListSetting               []string                 `mapstructure:"extra_list"`
 }
 
-// ExampleProcessorFactory is factory for ExampleProcessor.
-type ExampleProcessorFactory struct {
-}
+const procType = "exampleprocessor"
 
-// Type gets the type of the Processor config created by this factory.
-func (f *ExampleProcessorFactory) Type() configmodels.Type {
-	return "exampleprocessor"
-}
+// ExampleProcessorFactory is factory for exampleProcessor.
+var ExampleProcessorFactory = processorhelper.NewFactory(
+	procType,
+	createDefaultConfig,
+	processorhelper.WithTraces(createTracesProcessor),
+	processorhelper.WithMetrics(createMetricsProcessor),
+	processorhelper.WithLogs(createLogsProcessor))
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &ExampleProcessorCfg{
 		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: f.Type(),
-			NameVal: string(f.Type()),
+			TypeVal: procType,
+			NameVal: procType,
 		},
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
@@ -54,51 +55,32 @@ func (f *ExampleProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *ExampleProcessorFactory) CreateTracesProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
-	return &ExampleProcessor{nextTraces: nextConsumer}, nil
+func createTracesProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
+	return &exampleProcessor{TracesConsumer: nextConsumer}, nil
 }
 
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *ExampleProcessorFactory) CreateMetricsProcessor(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
-	return &ExampleProcessor{nextMetrics: nextConsumer}, nil
+func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
+	return &exampleProcessor{MetricsConsumer: nextConsumer}, nil
 }
 
-func (f *ExampleProcessorFactory) CreateLogsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateParams,
-	_ configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
-) (component.LogsProcessor, error) {
-	return &ExampleProcessor{nextLogs: nextConsumer}, nil
+func createLogsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
+	return &exampleProcessor{LogsConsumer: nextConsumer}, nil
 }
 
-type ExampleProcessor struct {
-	nextTraces  consumer.TracesConsumer
-	nextMetrics consumer.MetricsConsumer
-	nextLogs    consumer.LogsConsumer
+type exampleProcessor struct {
+	consumer.TracesConsumer
+	consumer.MetricsConsumer
+	consumer.LogsConsumer
 }
 
-func (ep *ExampleProcessor) Start(_ context.Context, _ component.Host) error {
+func (ep *exampleProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (ep *ExampleProcessor) Shutdown(_ context.Context) error {
+func (ep *exampleProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (ep *ExampleProcessor) GetCapabilities() component.ProcessorCapabilities {
+func (ep *exampleProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
-}
-
-func (ep *ExampleProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return ep.nextTraces.ConsumeTraces(ctx, td)
-}
-
-func (ep *ExampleProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	return ep.nextMetrics.ConsumeMetrics(ctx, md)
-}
-
-func (ep *ExampleProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	return ep.nextLogs.ConsumeLogs(ctx, ld)
 }

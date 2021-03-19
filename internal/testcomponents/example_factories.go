@@ -23,23 +23,19 @@ func ExampleComponents() (
 	factories component.Factories,
 	err error,
 ) {
-	if factories.Extensions, err = component.MakeExtensionFactoryMap(&ExampleExtensionFactory{}); err != nil {
+	if factories.Extensions, err = component.MakeExtensionFactoryMap(ExampleExtensionFactory); err != nil {
 		return
 	}
 
-	factories.Receivers, err = component.MakeReceiverFactoryMap(
-		&ExampleReceiverFactory{},
-	)
-	if err != nil {
+	if factories.Receivers, err = component.MakeReceiverFactoryMap(ExampleReceiverFactory); err != nil {
 		return
 	}
 
-	factories.Exporters, err = component.MakeExporterFactoryMap(&ExampleExporterFactory{})
-	if err != nil {
+	if factories.Exporters, err = component.MakeExporterFactoryMap(ExampleExporterFactory); err != nil {
 		return
 	}
 
-	factories.Processors, err = component.MakeProcessorFactoryMap(&ExampleProcessorFactory{})
+	factories.Processors, err = component.MakeProcessorFactoryMap(ExampleProcessorFactory)
 
 	return
 }

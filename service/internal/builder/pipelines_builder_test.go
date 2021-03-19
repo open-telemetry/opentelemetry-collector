@@ -59,9 +59,9 @@ func TestBuildPipelines(t *testing.T) {
 }
 
 func createExampleConfig(dataType string) *configmodels.Config {
-	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
-	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
-	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
+	exampleReceiverFactory := testcomponents.ExampleReceiverFactory
+	exampleProcessorFactory := testcomponents.ExampleProcessorFactory
+	exampleExporterFactory := testcomponents.ExampleExporterFactory
 
 	cfg := &configmodels.Config{
 		Receivers: map[string]configmodels.Receiver{

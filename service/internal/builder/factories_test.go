@@ -27,10 +27,9 @@ import (
 )
 
 func createTestFactories() component.Factories {
-	exampleExtensionFactory := &testcomponents.ExampleExtensionFactory{}
-	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
-	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
-	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
+	exampleReceiverFactory := testcomponents.ExampleReceiverFactory
+	exampleProcessorFactory := testcomponents.ExampleProcessorFactory
+	exampleExporterFactory := testcomponents.ExampleExporterFactory
 	badExtensionFactory := newBadExtensionFactory()
 	badReceiverFactory := newBadReceiverFactory()
 	badProcessorFactory := newBadProcessorFactory()
@@ -38,8 +37,7 @@ func createTestFactories() component.Factories {
 
 	factories := component.Factories{
 		Extensions: map[configmodels.Type]component.ExtensionFactory{
-			exampleExtensionFactory.Type(): exampleExtensionFactory,
-			badExtensionFactory.Type():     badExtensionFactory,
+			badExtensionFactory.Type(): badExtensionFactory,
 		},
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,

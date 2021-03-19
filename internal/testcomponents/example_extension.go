@@ -16,10 +16,11 @@ package testcomponents
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 // ExampleExtensionCfg is for testing purposes. We are defining an example config and factory
@@ -31,29 +32,17 @@ type ExampleExtensionCfg struct {
 	ExtraListSetting               []string                 `mapstructure:"extra_list"`
 }
 
-type ExampleExtension struct {
-}
-
-func (e *ExampleExtension) Start(_ context.Context, _ component.Host) error { return nil }
-
-func (e *ExampleExtension) Shutdown(_ context.Context) error { return nil }
+const extType = "exampleextension"
 
 // ExampleExtensionFactory is factory for ExampleExtensionCfg.
-type ExampleExtensionFactory struct {
-	FailCreation bool
-}
-
-// Type gets the type of the Extension config created by this factory.
-func (f *ExampleExtensionFactory) Type() configmodels.Type {
-	return "exampleextension"
-}
+var ExampleExtensionFactory = extensionhelper.NewFactory(extType, createExtensionDefaultConfig, createExtension)
 
 // CreateDefaultConfig creates the default configuration for the Extension.
-func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
+func createExtensionDefaultConfig() configmodels.Extension {
 	return &ExampleExtensionCfg{
 		ExtensionSettings: configmodels.ExtensionSettings{
-			TypeVal: f.Type(),
-			NameVal: string(f.Type()),
+			TypeVal: extType,
+			NameVal: extType,
 		},
 		ExtraSetting:     "extra string setting",
 		ExtraMapSetting:  nil,
@@ -62,9 +51,6 @@ func (f *ExampleExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 }
 
 // CreateExtension creates an Extension based on this config.
-func (f *ExampleExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateParams, _ configmodels.Extension) (component.Extension, error) {
-	if f.FailCreation {
-		return nil, fmt.Errorf("cannot create %q extension type", f.Type())
-	}
-	return &ExampleExtension{}, nil
+func createExtension(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.Extension, error) {
+	return componenthelper.NewComponent(componenthelper.DefaultComponentSettings()), nil
 }
