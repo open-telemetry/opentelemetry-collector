@@ -542,6 +542,31 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
+func TestReceiverLifecycle(t *testing.T) {
+	endpointGrpc := testutil.GetAvailableLocalAddress(t)
+	endpointHTTP := testutil.GetAvailableLocalAddress(t)
+
+	tracesSink := new(consumertest.TracesSink)
+	metricsSink := new(consumertest.MetricsSink)
+
+	// Create OTLP receiver with gRPC and HTTP protocols.
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.HTTP.Endpoint = endpointHTTP
+
+	fstReceiver := newReceiver(t, factory, cfg, tracesSink, metricsSink)
+	mh := newAssertNoErrorHost(t)
+	require.NoError(t, fstReceiver.Start(context.Background(), mh))
+
+	sndReceiver := newReceiver(t, factory, cfg, tracesSink, metricsSink)
+
+	require.NoError(t, fstReceiver.Shutdown(context.Background()))
+
+	require.NoError(t, sndReceiver.Start(context.Background(), mh))
+	require.NoError(t, sndReceiver.Shutdown(context.Background()))
+}
+
 func TestGRPCStartWithoutConsumers(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	r := newGRPCReceiver(t, otlpReceiverName, addr, nil, nil)
@@ -859,4 +884,20 @@ loop:
 
 	// Indicate that we are done.
 	close(doneSignal)
+}
+
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		componenttest.NewNopHost(),
+		t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
 }

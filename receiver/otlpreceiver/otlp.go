@@ -97,7 +97,7 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 		return err
 	}
 	go func() {
-		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil {
+		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && errGrpc != grpc.ErrServerStopped {
 			host.ReportFatalError(errGrpc)
 		}
 	}()
@@ -112,14 +112,32 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 		return err
 	}
 	go func() {
-		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil {
+		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
 	return nil
 }
 
-func (r *otlpReceiver) startProtocolServers(host component.Host) error {
+func (r *otlpReceiver) startProtocolServers(ctx context.Context, host component.Host) error {
+	if r.traceReceiver != nil {
+		if err := r.registerTraceServers(ctx); err != nil {
+			return err
+		}
+	}
+
+	if r.metricsReceiver != nil {
+		if err := r.registerMetricsServers(ctx); err != nil {
+			return err
+		}
+	}
+
+	if r.logReceiver != nil {
+		if err := r.registerLogsServers(ctx); err != nil {
+			return err
+		}
+	}
+
 	var err error
 	if r.cfg.GRPC != nil {
 		err = r.startGRPCServer(r.cfg.GRPC, host)
@@ -155,14 +173,14 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
+func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	if r.traceReceiver == nil && r.metricsReceiver == nil && r.logReceiver == nil {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
 	var err error
 	r.startServerOnce.Do(func() {
-		err = r.startProtocolServers(host)
+		err = r.startProtocolServers(ctx, host)
 	})
 	return err
 }
@@ -184,11 +202,15 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TracesConsumer) error {
+func (r *otlpReceiver) registerTraceConsumer(tc consumer.TracesConsumer) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.traceReceiver = trace.New(r.cfg.Name(), tc)
+	return nil
+}
+
+func (r *otlpReceiver) registerTraceServers(ctx context.Context) error {
 	if r.serverGRPC != nil {
 		collectortrace.RegisterTraceServiceServer(r.serverGRPC, r.traceReceiver)
 	}
@@ -203,11 +225,15 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 	return nil
 }
 
-func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
+func (r *otlpReceiver) registerMetricsConsumer(mc consumer.MetricsConsumer) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
 	r.metricsReceiver = metrics.New(r.cfg.Name(), mc)
+	return nil
+}
+
+func (r *otlpReceiver) registerMetricsServers(ctx context.Context) error {
 	if r.serverGRPC != nil {
 		collectormetrics.RegisterMetricsServiceServer(r.serverGRPC, r.metricsReceiver)
 	}
@@ -217,11 +243,15 @@ func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.
 	return nil
 }
 
-func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
-	if tc == nil {
+func (r *otlpReceiver) registerLogsConsumer(lc consumer.LogsConsumer) error {
+	if lc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
-	r.logReceiver = logs.New(r.cfg.Name(), tc)
+	r.logReceiver = logs.New(r.cfg.Name(), lc)
+	return nil
+}
+
+func (r *otlpReceiver) registerLogsServers(ctx context.Context) error {
 	if r.serverGRPC != nil {
 		collectorlog.RegisterLogsServiceServer(r.serverGRPC, r.logReceiver)
 	}

@@ -121,7 +121,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 // CreateTracesReceiver creates a  trace receiver based on provided config.
 func createTraceReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
@@ -130,7 +130,7 @@ func createTraceReceiver(
 	if err != nil {
 		return nil, err
 	}
-	if err = r.registerTraceConsumer(ctx, nextConsumer); err != nil {
+	if err = r.registerTraceConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -138,7 +138,7 @@ func createTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
@@ -147,7 +147,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	if err = r.registerMetricsConsumer(ctx, consumer); err != nil {
+	if err = r.registerMetricsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -155,7 +155,7 @@ func createMetricsReceiver(
 
 // CreateLogReceiver creates a log receiver based on provided config.
 func createLogReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.LogsConsumer,
@@ -164,7 +164,7 @@ func createLogReceiver(
 	if err != nil {
 		return nil, err
 	}
-	if err = r.registerLogsConsumer(ctx, consumer); err != nil {
+	if err = r.registerLogsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
