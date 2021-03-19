@@ -24,8 +24,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver/internal"
 )
+
+const transport = "http"
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
@@ -73,7 +76,8 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	if !r.cfg.UseStartTimeMetric {
 		jobsMap = internal.NewJobsMap(2 * time.Minute)
 	}
-	ocaStore := internal.NewOcaStore(ctx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.Name())
+	receiverCtx := obsreport.ReceiverContext(ctx, r.cfg.Name(), transport)
+	ocaStore := internal.NewOcaStore(receiverCtx, r.consumer, r.logger, jobsMap, r.cfg.UseStartTimeMetric, r.cfg.StartTimeMetricRegex, r.cfg.Name())
 
 	scrapeManager := scrape.NewManager(logger, ocaStore)
 	ocaStore.SetScrapeManager(scrapeManager)
