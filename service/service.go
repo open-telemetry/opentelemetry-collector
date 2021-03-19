@@ -21,12 +21,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"runtime"
-	"sort"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -40,9 +37,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
-	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/internal/builder"
-	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
 const (
@@ -63,18 +58,14 @@ const (
 
 // Application represents a collector application
 type Application struct {
-	info            component.ApplicationStartInfo
-	rootCmd         *cobra.Command
-	v               *viper.Viper
-	logger          *zap.Logger
-	builtExporters  builder.Exporters
-	builtReceivers  builder.Receivers
-	builtPipelines  builder.BuiltPipelines
-	builtExtensions builder.Extensions
-	stateChannel    chan State
+	info    component.ApplicationStartInfo
+	rootCmd *cobra.Command
+	logger  *zap.Logger
+
+	service      *service
+	stateChannel chan State
 
 	factories component.Factories
-	config    *configmodels.Config
 
 	// stopTestChan is used to terminate the application in end to end tests.
 	stopTestChan chan struct{}
@@ -132,7 +123,6 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 func New(params Parameters) (*Application, error) {
 	app := &Application{
 		info:         params.ApplicationStartInfo,
-		v:            config.NewViper(),
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}
@@ -147,13 +137,12 @@ func New(params Parameters) (*Application, error) {
 		Use:  params.ApplicationStartInfo.ExeName,
 		Long: params.ApplicationStartInfo.LongName,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := app.init(params.LoggingOptions)
-			if err != nil {
-				return err
+			var err error
+			if app.logger, err = newLogger(params.LoggingOptions); err != nil {
+				return fmt.Errorf("failed to get logger: %w", err)
 			}
 
-			err = app.execute(context.Background(), factory)
-			if err != nil {
+			if err := app.execute(context.Background(), factory); err != nil {
 				return err
 			}
 
@@ -196,41 +185,6 @@ func (app *Application) GetLogger() *zap.Logger {
 	return app.logger
 }
 
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-func (app *Application) ReportFatalError(err error) {
-	app.asyncErrorChannel <- err
-}
-
-func (app *Application) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
-	switch kind {
-	case component.KindReceiver:
-		return app.factories.Receivers[componentType]
-	case component.KindProcessor:
-		return app.factories.Processors[componentType]
-	case component.KindExporter:
-		return app.factories.Exporters[componentType]
-	case component.KindExtension:
-		return app.factories.Extensions[componentType]
-	}
-	return nil
-}
-
-func (app *Application) GetExtensions() map[configmodels.NamedEntity]component.Extension {
-	return app.builtExtensions.ToMap()
-}
-
-func (app *Application) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
-	return app.builtExporters.ToMapByDataType()
-}
-
-func (app *Application) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.HandleFunc(path.Join(pathPrefix, servicezPath), app.handleServicezRequest)
-	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), app.handlePipelinezRequest)
-	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), app.handleExtensionzRequest)
-}
-
 func (app *Application) Shutdown() {
 	// TODO: Implement a proper shutdown with graceful draining of the pipeline.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/483.
@@ -240,15 +194,6 @@ func (app *Application) Shutdown() {
 		}
 	}()
 	close(app.stopTestChan)
-}
-
-func (app *Application) init(options []zap.Option) error {
-	l, err := newLogger(options)
-	if err != nil {
-		return fmt.Errorf("failed to get logger: %w", err)
-	}
-	app.logger = l
-	return nil
 }
 
 func (app *Application) setupTelemetry(ballastSizeBytes uint64) error {
@@ -290,121 +235,26 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 	}
 
 	app.logger.Info("Loading configuration...")
-	cfg, err := factory(app.v, app.rootCmd, app.factories)
-	if err != nil {
-		return fmt.Errorf("cannot load configuration: %w", err)
-	}
-	err = cfg.Validate()
+
+	cfg, err := factory(config.NewViper(), app.rootCmd, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
 
-	app.config = cfg
 	app.logger.Info("Applying configuration...")
 
-	err = app.setupExtensions(ctx)
+	app.service, err = newService(&settings{
+		Factories:         app.factories,
+		StartInfo:         app.info,
+		Config:            cfg,
+		Logger:            app.logger,
+		AsyncErrorChannel: app.asyncErrorChannel,
+	})
 	if err != nil {
-		return fmt.Errorf("cannot setup extensions: %w", err)
+		return err
 	}
 
-	err = app.setupPipelines(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot setup pipelines: %w", err)
-	}
-
-	return nil
-}
-
-func (app *Application) setupExtensions(ctx context.Context) error {
-	var err error
-	app.builtExtensions, err = builder.BuildExtensions(app.logger, app.info, app.config, app.factories.Extensions)
-	if err != nil {
-		return fmt.Errorf("cannot build builtExtensions: %w", err)
-	}
-	app.logger.Info("Starting extensions...")
-	return app.builtExtensions.StartAll(ctx, app)
-}
-
-func (app *Application) setupPipelines(ctx context.Context) error {
-	// Pipeline is built backwards, starting from exporters, so that we create objects
-	// which are referenced before objects which reference them.
-
-	// First create exporters.
-	var err error
-	app.builtExporters, err = builder.BuildExporters(app.logger, app.info, app.config, app.factories.Exporters)
-	if err != nil {
-		return fmt.Errorf("cannot build builtExporters: %w", err)
-	}
-
-	app.logger.Info("Starting exporters...")
-	err = app.builtExporters.StartAll(ctx, app)
-	if err != nil {
-		return fmt.Errorf("cannot start builtExporters: %w", err)
-	}
-
-	// Create pipelines and their processors and plug exporters to the
-	// end of the pipelines.
-	app.builtPipelines, err = builder.BuildPipelines(app.logger, app.info, app.config, app.builtExporters, app.factories.Processors)
-	if err != nil {
-		return fmt.Errorf("cannot build pipelines: %w", err)
-	}
-
-	app.logger.Info("Starting processors...")
-	err = app.builtPipelines.StartProcessors(ctx, app)
-	if err != nil {
-		return fmt.Errorf("cannot start processors: %w", err)
-	}
-
-	// Create receivers and plug them into the start of the pipelines.
-	app.builtReceivers, err = builder.BuildReceivers(app.logger, app.info, app.config, app.builtPipelines, app.factories.Receivers)
-	if err != nil {
-		return fmt.Errorf("cannot build receivers: %w", err)
-	}
-
-	app.logger.Info("Starting receivers...")
-	err = app.builtReceivers.StartAll(ctx, app)
-	if err != nil {
-		return fmt.Errorf("cannot start receivers: %w", err)
-	}
-
-	return nil
-}
-
-func (app *Application) shutdownPipelines(ctx context.Context) error {
-	// Shutdown order is the reverse of building: first receivers, then flushing pipelines
-	// giving senders a chance to send all their data. This may take time, the allowed
-	// time should be part of configuration.
-
-	var errs []error
-
-	app.logger.Info("Stopping receivers...")
-	err := app.builtReceivers.ShutdownAll(ctx)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to stop receivers: %w", err))
-	}
-
-	app.logger.Info("Stopping processors...")
-	err = app.builtPipelines.ShutdownProcessors(ctx)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown processors: %w", err))
-	}
-
-	app.logger.Info("Stopping exporters...")
-	err = app.builtExporters.ShutdownAll(ctx)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
-	}
-
-	return consumererror.CombineErrors(errs)
-}
-
-func (app *Application) shutdownExtensions(ctx context.Context) error {
-	app.logger.Info("Stopping extensions...")
-	err := app.builtExtensions.ShutdownAll(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to shutdown extensions: %w", err)
-	}
-	return nil
+	return app.service.Start(ctx)
 }
 
 func (app *Application) execute(ctx context.Context, factory ConfigFactory) error {
@@ -431,11 +281,6 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 		return err
 	}
 
-	err = app.builtExtensions.NotifyPipelineReady()
-	if err != nil {
-		return err
-	}
-
 	// Everything is ready, now run until an event requiring shutdown happens.
 	app.runAndWaitForShutdownEvent()
 
@@ -446,24 +291,12 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	runtime.KeepAlive(ballast)
 	app.logger.Info("Starting shutdown...")
 
-	err = app.builtExtensions.NotifyPipelineNotReady()
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
+	if err := app.service.Shutdown(ctx); err != nil {
+		errs = append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 	}
 
-	err = app.shutdownPipelines(ctx)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
-	}
-
-	err = app.shutdownExtensions(ctx)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
-	}
-
-	err = applicationTelemetry.shutdown()
-	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
+	if err := applicationTelemetry.shutdown(); err != nil {
+		errs = append(errs, fmt.Errorf("failed to shutdown application telemetry: %w", err))
 	}
 
 	app.logger.Info("Shutdown complete.")
@@ -480,109 +313,6 @@ func (app *Application) Run() error {
 	app.rootCmd.SilenceUsage = true
 
 	return app.rootCmd.Execute()
-}
-
-const (
-	zPipelineName  = "zpipelinename"
-	zComponentName = "zcomponentname"
-	zComponentKind = "zcomponentkind"
-	zExtensionName = "zextensionname"
-)
-
-func (app *Application) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Service"})
-	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-		Name:              "Pipelines",
-		ComponentEndpoint: pipelinezPath,
-		Link:              true,
-	})
-	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-		Name:              "Extensions",
-		ComponentEndpoint: extensionzPath,
-		Link:              true,
-	})
-	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
-	zpages.WriteHTMLFooter(w)
-}
-
-func (app *Application) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	pipelineName := r.Form.Get(zPipelineName)
-	componentName := r.Form.Get(zComponentName)
-	componentKind := r.Form.Get(zComponentKind)
-	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Pipelines"})
-	zpages.WriteHTMLPipelinesSummaryTable(w, app.getPipelinesSummaryTableData())
-	if pipelineName != "" && componentName != "" && componentKind != "" {
-		fullName := componentName
-		if componentKind == "processor" {
-			fullName = pipelineName + "/" + componentName
-		}
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-			Name: componentKind + ": " + fullName,
-		})
-		// TODO: Add config + status info.
-	}
-	zpages.WriteHTMLFooter(w)
-}
-
-func (app *Application) handleExtensionzRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	extensionName := r.Form.Get(zExtensionName)
-	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Extensions"})
-	zpages.WriteHTMLExtensionsSummaryTable(w, getExtensionsSummaryTableData(app))
-	if extensionName != "" {
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-			Name: extensionName,
-		})
-		// TODO: Add config + status info.
-	}
-	zpages.WriteHTMLFooter(w)
-}
-
-func (app *Application) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
-	data := zpages.SummaryPipelinesTableData{
-		ComponentEndpoint: pipelinezPath,
-	}
-
-	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(app.builtPipelines))
-	for c, p := range app.builtPipelines {
-		row := zpages.SummaryPipelinesTableRowData{
-			FullName:            c.Name,
-			InputType:           string(c.InputType),
-			MutatesConsumedData: p.MutatesConsumedData,
-			Receivers:           c.Receivers,
-			Processors:          c.Processors,
-			Exporters:           c.Exporters,
-		}
-		data.Rows = append(data.Rows, row)
-	}
-
-	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
-	})
-	return data
-}
-
-func getExtensionsSummaryTableData(host component.Host) zpages.SummaryExtensionsTableData {
-	data := zpages.SummaryExtensionsTableData{
-		ComponentEndpoint: extensionzPath,
-	}
-
-	extensions := host.GetExtensions()
-	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(extensions))
-	for c := range extensions {
-		row := zpages.SummaryExtensionsTableRowData{FullName: c.Name()}
-		data.Rows = append(data.Rows, row)
-	}
-
-	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
-	})
-	return data
 }
 
 func (app *Application) createMemoryBallast() ([]byte, uint64) {
