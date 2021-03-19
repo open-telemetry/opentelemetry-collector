@@ -255,17 +255,6 @@ When using the regular helpers, you should have some metrics added around key
 events automatically. For instance, exporters should have `otelcol_exporter_sent_spans` 
 tracked without your exporter doing anything.
 
-In addition to that, go over your code and try to assess what kind of information 
-you'd ask your users if they open a bug report:
-
-- are there internal queues in your components? Add a gauge (`LastValue`) with their states.
-- are you making HTTP calls? Measure the latency and expose a histogram. Consider
-providing a counter with the number of calls that your processor made.
-- are you making sampling decisions? Provide a counter with the outcomes.
-
-At this moment, the collector is still using the OpenCensus Go client for the 
-instrumentation, and discussions are happening on the appropriate long-term solution.
-
 ### Resource Usage
 
 Limit usage of CPU, RAM or other resources that the code can use. Do not write code
