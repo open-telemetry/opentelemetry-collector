@@ -136,7 +136,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraceDataManySpansSameResource(spansPerRequest)
-		sizeSum += td.Size()
+		sizeSum += td.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -320,7 +320,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
-		size += md.Size()
+		size += md.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -476,7 +476,7 @@ func getTestMetricName(requestNum, index int) string {
 func BenchmarkTraceSizeBytes(b *testing.B) {
 	td := testdata.GenerateTraceDataManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
-		fmt.Println(td.Size())
+		fmt.Println(td.OtlpProtoSize())
 	}
 }
 
@@ -558,7 +558,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogDataManyLogsSameResource(logsPerRequest)
-		size += ld.Size()
+		size += ld.OtlpProtoSize()
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 	require.NoError(t, batcher.Shutdown(context.Background()))

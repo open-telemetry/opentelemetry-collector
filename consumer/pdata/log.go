@@ -63,8 +63,10 @@ func (ld Logs) InternalRep() internal.LogsWrapper {
 	return internal.LogsFromOtlp(ld.orig)
 }
 
-// ToOtlpProtoBytes returns the internal Logs to OTLP Collector ExportTraceServiceRequest
-// ProtoBuf bytes. This is intended to export OTLP Protobuf bytes for OTLP/HTTP transports.
+// ToOtlpProtoBytes converts this Logs to the OTLP Collector ExportLogsServiceRequest
+// ProtoBuf bytes.
+//
+// Returns an nil byte-array if error is not nil.
 func (ld Logs) ToOtlpProtoBytes() ([]byte, error) {
 	return ld.orig.Marshal()
 }
@@ -91,8 +93,9 @@ func (ld Logs) LogRecordCount() int {
 	return logCount
 }
 
-// Size returns the number of bytes in the internal representation of the logs.
-func (ld Logs) Size() int {
+// OtlpProtoSize returns the size in bytes of this Logs encoded as OTLP Collector
+// ExportLogsServiceRequest ProtoBuf bytes.
+func (ld Logs) OtlpProtoSize() int {
 	return ld.orig.Size()
 }
 
