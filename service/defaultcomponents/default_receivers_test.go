@@ -108,7 +108,6 @@ type getReceiverConfigFn func() configmodels.Receiver
 func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	// logger, _ := zap.NewDevelopment()
 	receiverCreateParams := component.ReceiverCreateParams{
 		Logger:               zap.NewNop(),
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
