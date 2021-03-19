@@ -14,33 +14,38 @@
 
 package consumererror
 
-import "go.opentelemetry.io/collector/consumer/pdata"
+import (
+	"errors"
 
-// PartialError can be used to signalize that a subset of received data failed to be processed or send.
-// The preceding components in the pipeline can use this information for partial retries.
+	"go.opentelemetry.io/collector/consumer/pdata"
+)
+
+// PartialError can be used to signal that a subset of received data failed to be processed or sent.
+// The creator of a PartialError should include the failed signal data so that the preceding
+// components in the pipeline can use this information for partial retries.
 type PartialError struct {
 	error
-	failed        pdata.Traces
+	failedTraces  pdata.Traces
 	failedLogs    pdata.Logs
 	failedMetrics pdata.Metrics
 }
 
-// PartialTracesError creates PartialError for failed traces.
-// Use this error type only when a subset of received data set failed to be processed or sent.
-func PartialTracesError(err error, failed pdata.Traces) error {
+// PartialTracesError creates a PartialError for failed traces.
+// Use this error type only when a subset of the received data failed to be processed or sent.
+func PartialTracesError(err error, failedTraces pdata.Traces) error {
 	return PartialError{
-		error:  err,
-		failed: failed,
+		error:        err,
+		failedTraces: failedTraces,
 	}
 }
 
 // GetTraces returns failed traces.
 func (err PartialError) GetTraces() pdata.Traces {
-	return err.failed
+	return err.failedTraces
 }
 
-// PartialLogsError creates PartialError for failed logs.
-// Use this error type only when a subset of received data set failed to be processed or sent.
+// PartialLogsError creates a PartialError for failed logs.
+// Use this error type only when a subset of the received data failed to be processed or sent.
 func PartialLogsError(err error, failedLogs pdata.Logs) error {
 	return PartialError{
 		error:      err,
@@ -53,8 +58,8 @@ func (err PartialError) GetLogs() pdata.Logs {
 	return err.failedLogs
 }
 
-// PartialMetricsError creates PartialError for failed metrics.
-// Use this error type only when a subset of received data set failed to be processed or sent.
+// PartialMetricsError creates a PartialError for failed metrics.
+// Use this error type only when a subset of the received data failed to be processed or sent.
 func PartialMetricsError(err error, failedMetrics pdata.Metrics) error {
 	return PartialError{
 		error:         err,
@@ -65,4 +70,12 @@ func PartialMetricsError(err error, failedMetrics pdata.Metrics) error {
 // GetMetrics returns failed metrics.
 func (err PartialError) GetMetrics() pdata.Metrics {
 	return err.failedMetrics
+}
+
+// IsPartial checks if an error was wrapped with a PartialError.
+func IsPartial(err error) bool {
+	if err != nil {
+		return errors.As(err, &PartialError{})
+	}
+	return false
 }

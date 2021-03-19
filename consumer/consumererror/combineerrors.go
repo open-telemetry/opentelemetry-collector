@@ -20,6 +20,12 @@ import (
 )
 
 // CombineErrors converts a list of errors into one error.
+//
+// If any of the errors in errs are Permanent then the returned
+// error will also be Permanent.
+//
+// Any signal data associated with a PartialError will be discarded
+// and the resulting error will not be a PartialError.
 func CombineErrors(errs []error) error {
 	numErrors := len(errs)
 	if numErrors == 0 {

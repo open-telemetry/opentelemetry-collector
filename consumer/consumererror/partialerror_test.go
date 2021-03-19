@@ -27,22 +27,29 @@ func TestPartialError(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	err := fmt.Errorf("some error")
 	partialErr := PartialTracesError(err, td)
+	assert.True(t, IsPartial(partialErr))
 	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, td, partialErr.(PartialError).failed)
+	assert.Equal(t, td, partialErr.(PartialError).GetTraces())
 }
 
 func TestPartialErrorLogs(t *testing.T) {
 	td := testdata.GenerateLogDataOneLog()
 	err := fmt.Errorf("some error")
 	partialErr := PartialLogsError(err, td)
+	assert.True(t, IsPartial(partialErr))
 	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, td, partialErr.(PartialError).failedLogs)
+	assert.Equal(t, td, partialErr.(PartialError).GetLogs())
 }
 
 func TestPartialErrorMetrics(t *testing.T) {
 	td := testdata.GenerateMetricsOneMetric()
 	err := fmt.Errorf("some error")
 	partialErr := PartialMetricsError(err, td)
+	assert.True(t, IsPartial(partialErr))
 	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, td, partialErr.(PartialError).failedMetrics)
+	assert.Equal(t, td, partialErr.(PartialError).GetMetrics())
+}
+
+func TestIsPartialNilInput(t *testing.T) {
+	assert.False(t, IsPartial(nil))
 }
