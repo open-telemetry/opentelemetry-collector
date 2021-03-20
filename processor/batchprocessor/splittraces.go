@@ -23,7 +23,6 @@ func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
 	if toSplit.SpanCount() <= size {
 		return toSplit
 	}
-	copiedSpans := 0
 	result := pdata.NewTraces()
 	rss := toSplit.ResourceSpans()
 	result.ResourceSpans().Resize(rss.Len())
@@ -40,22 +39,21 @@ func splitTrace(size int, toSplit pdata.Traces) pdata.Traces {
 			destRs.InstrumentationLibrarySpans().Append(destInstSpans)
 			instSpans.InstrumentationLibrary().CopyTo(destInstSpans.InstrumentationLibrary())
 
-			if size-copiedSpans >= instSpans.Spans().Len() {
-				destInstSpans.Spans().Resize(instSpans.Spans().Len())
-			} else {
-				destInstSpans.Spans().Resize(size - copiedSpans)
-			}
-			for k, destIdx := instSpans.Spans().Len()-1, 0; k >= 0 && copiedSpans < size; k, destIdx = k-1, destIdx+1 {
-				span := instSpans.Spans().At(k)
-				span.CopyTo(destInstSpans.Spans().At(destIdx))
-				copiedSpans++
-				// remove span
-				instSpans.Spans().Resize(instSpans.Spans().Len() - 1)
-			}
-			if instSpans.Spans().Len() == 0 {
+			if size >= instSpans.Spans().Len() {
+				size -= instSpans.Spans().Len()
+				instSpans.Spans().MoveAndAppendTo(destInstSpans.Spans())
 				rs.InstrumentationLibrarySpans().Resize(rs.InstrumentationLibrarySpans().Len() - 1)
+			} else {
+				destInstSpans.Spans().Resize(size)
+				for k, destIdx := instSpans.Spans().Len()-1, 0; k >= 0 && size > 0; k, destIdx = k-1, destIdx+1 {
+					span := instSpans.Spans().At(k)
+					span.CopyTo(destInstSpans.Spans().At(destIdx))
+					size--
+					// remove span
+					instSpans.Spans().Resize(instSpans.Spans().Len() - 1)
+				}
 			}
-			if copiedSpans == size {
+			if size == 0 {
 				result.ResourceSpans().Resize(rssCount)
 				return result
 			}

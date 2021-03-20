@@ -106,8 +106,8 @@ func TestSplitTracesMultipleResourceSpans_split_size_greater_than_span_size(t *t
 	assert.Equal(t, splitSize, split.SpanCount())
 	assert.Equal(t, 40-splitSize, td.SpanCount())
 	assert.Equal(t, 1, td.ResourceSpans().Len())
-	assert.Equal(t, "test-span-1-19", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
-	assert.Equal(t, "test-span-1-0", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(19).Name())
+	assert.Equal(t, "test-span-1-0", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, "test-span-1-19", split.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(19).Name())
 	assert.Equal(t, "test-span-0-19", split.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-15", split.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().At(4).Name())
 }
