@@ -200,7 +200,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
 		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
-	pipelineLogger.Info("Pipeline is enabled.")
+	pipelineLogger.Info("Pipeline was built.")
 
 	bp := &builtPipeline{
 		pipelineLogger,

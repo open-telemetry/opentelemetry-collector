@@ -52,7 +52,7 @@ func (exts Extensions) StartAll(ctx context.Context, host component.Host) error 
 	for _, ext := range exts {
 		ext.logger.Info("Extension is starting...")
 
-		if err := ext.Start(ctx, host); err != nil {
+		if err := ext.Start(ctx, newHostWrapper(host, ext.logger)); err != nil {
 			return err
 		}
 
