@@ -114,6 +114,26 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestZipkinReceiverLifecycle(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	consumer := consumertest.NewTracesNop()
+	fstReceiver, err := New(cfg, consumer)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	mh := newAssertNoErrorHost(t)
+	require.NoError(t, fstReceiver.Start(ctx, mh))
+
+	sndReceiver, err := New(cfg, consumer)
+	assert.NoError(t, err)
+
+	require.NoError(t, fstReceiver.Shutdown(ctx))
+
+	require.NoError(t, sndReceiver.Start(ctx, mh))
+	require.NoError(t, sndReceiver.Shutdown(ctx))
+}
+
 func TestConvertSpansToTraceSpans_json(t *testing.T) {
 	// Using Adrian Cole's sample at https://gist.github.com/adriancole/e8823c19dfed64e2eb71
 	blob, err := ioutil.ReadFile("./testdata/sample1.json")
@@ -598,4 +618,20 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		t.Error("next consumer did not receive the batch")
 		break
 	}
+}
+
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		componenttest.NewNopHost(),
+		t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
 }
