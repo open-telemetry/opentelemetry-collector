@@ -97,7 +97,7 @@ func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	config := cfg.(*Config)
 	if config.PrometheusConfig == nil || len(config.PrometheusConfig.ScrapeConfigs) == 0 {

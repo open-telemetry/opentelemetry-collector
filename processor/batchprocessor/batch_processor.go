@@ -33,7 +33,7 @@ import (
 // batch_processor is a component that accepts spans and metrics, places them
 // into batches and sends downstream.
 //
-// batch_processor implements consumer.TracesConsumer and consumer.MetricsConsumer
+// batch_processor implements consumer.Traces and consumer.Metrics
 //
 // Batches are sent out with any of the following conditions:
 // - batch size reaches cfg.SendBatchSize
@@ -73,9 +73,9 @@ type batch interface {
 	add(item interface{})
 }
 
-var _ consumer.TracesConsumer = (*batchProcessor)(nil)
-var _ consumer.MetricsConsumer = (*batchProcessor)(nil)
-var _ consumer.LogsConsumer = (*batchProcessor)(nil)
+var _ consumer.Traces = (*batchProcessor)(nil)
+var _ consumer.Metrics = (*batchProcessor)(nil)
+var _ consumer.Logs = (*batchProcessor)(nil)
 
 func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) *batchProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -222,27 +222,27 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.TracesConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchTracesProcessor(params component.ProcessorCreateParams, trace consumer.Traces, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchTraces(trace), telemetryLevel)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.MetricsConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchMetricsProcessor(params component.ProcessorCreateParams, metrics consumer.Metrics, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchMetrics(metrics), telemetryLevel)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(params component.ProcessorCreateParams, logs consumer.LogsConsumer, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
+func newBatchLogsProcessor(params component.ProcessorCreateParams, logs consumer.Logs, cfg *Config, telemetryLevel configtelemetry.Level) *batchProcessor {
 	return newBatchProcessor(params, cfg, newBatchLogs(logs), telemetryLevel)
 }
 
 type batchTraces struct {
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	traceData    pdata.Traces
 	spanCount    uint32
 }
 
-func newBatchTraces(nextConsumer consumer.TracesConsumer) *batchTraces {
+func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
 	b := &batchTraces{nextConsumer: nextConsumer}
 	b.reset()
 	return b
@@ -279,12 +279,12 @@ func (bt *batchTraces) reset() {
 }
 
 type batchMetrics struct {
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	metricData   pdata.Metrics
 	metricCount  uint32
 }
 
-func newBatchMetrics(nextConsumer consumer.MetricsConsumer) *batchMetrics {
+func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
 	b := &batchMetrics{nextConsumer: nextConsumer}
 	b.reset()
 	return b
@@ -320,12 +320,12 @@ func (bm *batchMetrics) add(item interface{}) {
 }
 
 type batchLogs struct {
-	nextConsumer consumer.LogsConsumer
+	nextConsumer consumer.Logs
 	logData      pdata.Logs
 	logCount     uint32
 }
 
-func newBatchLogs(nextConsumer consumer.LogsConsumer) *batchLogs {
+func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 	b := &batchLogs{nextConsumer: nextConsumer}
 	b.reset()
 	return b

@@ -37,17 +37,17 @@ func (er *errConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
 	return er.err
 }
 
-// NewTracesErr returns a consumer.TracesConsumer that just drops all received data and returns the given error.
-func NewTracesErr(err error) consumer.TracesConsumer {
+// NewTracesErr returns a consumer.Traces that just drops all received data and returns the given error.
+func NewTracesErr(err error) consumer.Traces {
 	return &errConsumer{err: err}
 }
 
-// NewMetricsErr returns a consumer.MetricsConsumer that just drops all received data and returns the given error.
-func NewMetricsErr(err error) consumer.MetricsConsumer {
+// NewMetricsErr returns a consumer.Metrics that just drops all received data and returns the given error.
+func NewMetricsErr(err error) consumer.Metrics {
 	return &errConsumer{err: err}
 }
 
-// NewLogsErr returns a consumer.LogsConsumer that just drops all received data and returns the given error.
-func NewLogsErr(err error) consumer.LogsConsumer {
+// NewLogsErr returns a consumer.Logs that just drops all received data and returns the given error.
+func NewLogsErr(err error) consumer.Logs {
 	return &errConsumer{err: err}
 }

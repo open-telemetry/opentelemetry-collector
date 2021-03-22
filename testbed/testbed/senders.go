@@ -66,21 +66,21 @@ type DataSender interface {
 // to send a batch of Spans to the DataSender interface.
 type TraceDataSender interface {
 	DataSender
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // MetricDataSender defines the interface that allows sending metric data. It adds ability
 // to send a batch of Metrics to the DataSender interface.
 type MetricDataSender interface {
 	DataSender
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // LogDataSender defines the interface that allows sending log data. It adds ability
 // to send a batch of Logs to the DataSender interface.
 type LogDataSender interface {
 	DataSender
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 type DataSenderBase struct {
@@ -117,7 +117,7 @@ func (dsb *DataSenderBase) Flush() {
 // JaegerGRPCDataSender implements TraceDataSender for Jaeger thrift_http exporterType.
 type JaegerGRPCDataSender struct {
 	DataSenderBase
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // Ensure JaegerGRPCDataSender implements TraceDataSender.
@@ -148,7 +148,7 @@ func (je *JaegerGRPCDataSender) Start() error {
 		return err
 	}
 
-	je.TracesConsumer = exp
+	je.Traces = exp
 	return exp.Start(context.Background(), je)
 }
 
@@ -190,7 +190,7 @@ func (ods *ocDataSender) ProtocolName() string {
 // OCTraceDataSender implements TraceDataSender for OpenCensus trace exporterType.
 type OCTraceDataSender struct {
 	ocDataSender
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // Ensure OCTraceDataSender implements TraceDataSender.
@@ -217,14 +217,14 @@ func (ote *OCTraceDataSender) Start() error {
 		return err
 	}
 
-	ote.TracesConsumer = exp
+	ote.Traces = exp
 	return exp.Start(context.Background(), ote)
 }
 
 // OCMetricsDataSender implements MetricDataSender for OpenCensus metrics exporterType.
 type OCMetricsDataSender struct {
 	ocDataSender
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // Ensure OCMetricsDataSender implements MetricDataSender.
@@ -251,7 +251,7 @@ func (ome *OCMetricsDataSender) Start() error {
 		return err
 	}
 
-	ome.MetricsConsumer = exp
+	ome.Metrics = exp
 	return exp.Start(context.Background(), ome)
 }
 
@@ -287,7 +287,7 @@ func (ods *otlpHTTPDataSender) ProtocolName() string {
 // OTLPHTTPTraceDataSender implements TraceDataSender for OTLP/HTTP trace exporterType.
 type OTLPHTTPTraceDataSender struct {
 	otlpHTTPDataSender
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // Ensure OTLPHTTPTraceDataSender implements TraceDataSender.
@@ -313,14 +313,14 @@ func (ote *OTLPHTTPTraceDataSender) Start() error {
 		return err
 	}
 
-	ote.TracesConsumer = exp
+	ote.Traces = exp
 	return exp.Start(context.Background(), ote)
 }
 
 // OTLPHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics exporterType.
 type OTLPHTTPMetricsDataSender struct {
 	otlpHTTPDataSender
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // Ensure OTLPHTTPMetricsDataSender implements MetricDataSender.
@@ -347,14 +347,14 @@ func (ome *OTLPHTTPMetricsDataSender) Start() error {
 		return err
 	}
 
-	ome.MetricsConsumer = exp
+	ome.Metrics = exp
 	return exp.Start(context.Background(), ome)
 }
 
 // OTLPHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs exporterType.
 type OTLPHTTPLogsDataSender struct {
 	otlpHTTPDataSender
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 // Ensure OTLPHTTPLogsDataSender implements MetricDataSender.
@@ -381,7 +381,7 @@ func (olds *OTLPHTTPLogsDataSender) Start() error {
 		return err
 	}
 
-	olds.LogsConsumer = exp
+	olds.Logs = exp
 	return exp.Start(context.Background(), olds)
 }
 
@@ -417,7 +417,7 @@ func (ods *otlpDataSender) ProtocolName() string {
 // OTLPTraceDataSender implements TraceDataSender for OTLP trace exporterType.
 type OTLPTraceDataSender struct {
 	otlpDataSender
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // Ensure OTLPTraceDataSender implements TraceDataSender.
@@ -443,14 +443,14 @@ func (ote *OTLPTraceDataSender) Start() error {
 		return err
 	}
 
-	ote.TracesConsumer = exp
+	ote.Traces = exp
 	return exp.Start(context.Background(), ote)
 }
 
 // OTLPMetricsDataSender implements MetricDataSender for OTLP metrics exporterType.
 type OTLPMetricsDataSender struct {
 	otlpDataSender
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // Ensure OTLPMetricsDataSender implements MetricDataSender.
@@ -477,14 +477,14 @@ func (ome *OTLPMetricsDataSender) Start() error {
 		return err
 	}
 
-	ome.MetricsConsumer = exp
+	ome.Metrics = exp
 	return exp.Start(context.Background(), ome)
 }
 
 // OTLPLogsDataSender implements LogsDataSender for OTLP logs exporterType.
 type OTLPLogsDataSender struct {
 	otlpDataSender
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 // Ensure OTLPLogsDataSender implements LogDataSender.
@@ -511,14 +511,14 @@ func (olds *OTLPLogsDataSender) Start() error {
 		return err
 	}
 
-	olds.LogsConsumer = exp
+	olds.Logs = exp
 	return exp.Start(context.Background(), olds)
 }
 
 // ZipkinDataSender implements TraceDataSender for Zipkin http exporterType.
 type ZipkinDataSender struct {
 	DataSenderBase
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // Ensure ZipkinDataSender implements TraceDataSender.
@@ -549,7 +549,7 @@ func (zs *ZipkinDataSender) Start() error {
 		return err
 	}
 
-	zs.TracesConsumer = exp
+	zs.Traces = exp
 	return exp.Start(context.Background(), zs)
 }
 
@@ -567,7 +567,7 @@ func (zs *ZipkinDataSender) ProtocolName() string {
 
 type PrometheusDataSender struct {
 	DataSenderBase
-	consumer.MetricsConsumer
+	consumer.Metrics
 	namespace string
 }
 
@@ -593,7 +593,7 @@ func (pds *PrometheusDataSender) Start() error {
 		return err
 	}
 
-	pds.MetricsConsumer = exp
+	pds.Metrics = exp
 	return exp.Start(context.Background(), pds)
 }
 

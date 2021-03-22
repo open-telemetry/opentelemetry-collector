@@ -124,7 +124,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
@@ -141,7 +141,7 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {
@@ -158,7 +158,7 @@ func createLogReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.LogsConsumer,
+	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
 	if err != nil {

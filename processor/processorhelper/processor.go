@@ -132,7 +132,7 @@ func (bp *baseProcessor) GetCapabilities() component.ProcessorCapabilities {
 type tracesProcessor struct {
 	baseProcessor
 	processor    TProcessor
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 }
 
 func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -151,7 +151,7 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 // TODO: Add observability metrics support
 func NewTraceProcessor(
 	config configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 	processor TProcessor,
 	options ...Option,
 ) (component.TracesProcessor, error) {
@@ -173,7 +173,7 @@ func NewTraceProcessor(
 type metricsProcessor struct {
 	baseProcessor
 	processor    MProcessor
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 }
 
 func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -195,7 +195,7 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics
 // TODO: Add observability metrics support
 func NewMetricsProcessor(
 	config configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	processor MProcessor,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
@@ -217,7 +217,7 @@ func NewMetricsProcessor(
 type logProcessor struct {
 	baseProcessor
 	processor    LProcessor
-	nextConsumer consumer.LogsConsumer
+	nextConsumer consumer.Logs
 }
 
 func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
@@ -236,7 +236,7 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 // TODO: Add observability metrics support
 func NewLogsProcessor(
 	config configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 	processor LProcessor,
 	options ...Option,
 ) (component.LogsProcessor, error) {

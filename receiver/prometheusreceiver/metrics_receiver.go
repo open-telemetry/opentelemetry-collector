@@ -33,14 +33,14 @@ const transport = "http"
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
 type pReceiver struct {
 	cfg        *Config
-	consumer   consumer.MetricsConsumer
+	consumer   consumer.Metrics
 	cancelFunc context.CancelFunc
 
 	logger *zap.Logger
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.MetricsConsumer) *pReceiver {
+func newPrometheusReceiver(logger *zap.Logger, cfg *Config, next consumer.Metrics) *pReceiver {
 	pr := &pReceiver{
 		cfg:      cfg,
 		consumer: next,

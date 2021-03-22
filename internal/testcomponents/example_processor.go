@@ -55,22 +55,22 @@ func createDefaultConfig() configmodels.Processor {
 	}
 }
 
-func createTracesProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
-	return &exampleProcessor{TracesConsumer: nextConsumer}, nil
+func createTracesProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	return &exampleProcessor{Traces: nextConsumer}, nil
 }
 
-func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.MetricsConsumer) (component.MetricsProcessor, error) {
-	return &exampleProcessor{MetricsConsumer: nextConsumer}, nil
+func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+	return &exampleProcessor{Metrics: nextConsumer}, nil
 }
 
-func createLogsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
-	return &exampleProcessor{LogsConsumer: nextConsumer}, nil
+func createLogsProcessor(_ context.Context, _ component.ProcessorCreateParams, _ configmodels.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+	return &exampleProcessor{Logs: nextConsumer}, nil
 }
 
 type exampleProcessor struct {
-	consumer.TracesConsumer
-	consumer.MetricsConsumer
-	consumer.LogsConsumer
+	consumer.Traces
+	consumer.Metrics
+	consumer.Logs
 }
 
 func (ep *exampleProcessor) Start(_ context.Context, _ component.Host) error {

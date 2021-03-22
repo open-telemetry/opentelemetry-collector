@@ -32,9 +32,9 @@ import (
 // processor in the pipeline or the exporter if pipeline has no processors).
 type builtPipeline struct {
 	logger  *zap.Logger
-	firstTC consumer.TracesConsumer
-	firstMC consumer.MetricsConsumer
-	firstLC consumer.LogsConsumer
+	firstTC consumer.Traces
+	firstMC consumer.Metrics
+	firstLC consumer.Logs
 
 	// MutatesConsumedData is set to true if any processors in the pipeline
 	// can mutate the TraceData or MetricsData input argument.
@@ -118,9 +118,9 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	// BuildProcessors the pipeline backwards.
 
 	// First create a consumer junction point that fans out the data to all exporters.
-	var tc consumer.TracesConsumer
-	var mc consumer.MetricsConsumer
-	var lc consumer.LogsConsumer
+	var tc consumer.Traces
+	var mc consumer.Metrics
+	var lc consumer.Logs
 
 	switch pipelineCfg.InputType {
 	case configmodels.TracesDataType:
@@ -225,10 +225,10 @@ func (pb *pipelinesBuilder) getBuiltExportersByNames(exporterNames []string) []*
 	return result
 }
 
-func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.TracesConsumer {
+func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []string) consumer.Traces {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	var exporters []consumer.TracesConsumer
+	var exporters []consumer.Traces
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.getTraceExporter())
 	}
@@ -237,10 +237,10 @@ func (pb *pipelinesBuilder) buildFanoutExportersTraceConsumer(exporterNames []st
 	return fanoutconsumer.NewTraces(exporters)
 }
 
-func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.MetricsConsumer {
+func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []string) consumer.Metrics {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	var exporters []consumer.MetricsConsumer
+	var exporters []consumer.Metrics
 	for _, builtExp := range builtExporters {
 		exporters = append(exporters, builtExp.getMetricExporter())
 	}
@@ -249,10 +249,10 @@ func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterNames []
 	return fanoutconsumer.NewMetrics(exporters)
 }
 
-func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.LogsConsumer {
+func (pb *pipelinesBuilder) buildFanoutExportersLogConsumer(exporterNames []string) consumer.Logs {
 	builtExporters := pb.getBuiltExportersByNames(exporterNames)
 
-	exporters := make([]consumer.LogsConsumer, len(builtExporters))
+	exporters := make([]consumer.Logs, len(builtExporters))
 	for i, builtExp := range builtExporters {
 		exporters[i] = builtExp.getLogExporter()
 	}

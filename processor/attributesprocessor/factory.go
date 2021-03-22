@@ -56,7 +56,7 @@ func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {
@@ -86,7 +86,7 @@ func createLogProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {

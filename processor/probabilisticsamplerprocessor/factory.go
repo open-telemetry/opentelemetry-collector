@@ -50,7 +50,7 @@ func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 	return newTraceProcessor(nextConsumer, *oCfg)

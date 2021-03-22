@@ -24,7 +24,7 @@ import (
 
 // NewMetricsCloning wraps multiple metrics consumers in a single one and clones the data
 // before fanning out.
-func NewMetricsCloning(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewMetricsCloning(mcs []consumer.Metrics) consumer.Metrics {
 	if len(mcs) == 1 {
 		// Don't wrap if no need to do it.
 		return mcs[0]
@@ -32,9 +32,9 @@ func NewMetricsCloning(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer 
 	return metricsCloningConsumer(mcs)
 }
 
-type metricsCloningConsumer []consumer.MetricsConsumer
+type metricsCloningConsumer []consumer.Metrics
 
-var _ consumer.MetricsConsumer = (*metricsCloningConsumer)(nil)
+var _ consumer.Metrics = (*metricsCloningConsumer)(nil)
 
 // ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
 func (mfc metricsCloningConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -61,7 +61,7 @@ func (mfc metricsCloningConsumer) ConsumeMetrics(ctx context.Context, md pdata.M
 
 // NewTracesCloning wraps multiple traces consumers in a single one and clones the data
 // before fanning out.
-func NewTracesCloning(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
+func NewTracesCloning(tcs []consumer.Traces) consumer.Traces {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
 		return tcs[0]
@@ -69,9 +69,9 @@ func NewTracesCloning(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
 	return tracesCloningConsumer(tcs)
 }
 
-type tracesCloningConsumer []consumer.TracesConsumer
+type tracesCloningConsumer []consumer.Traces
 
-var _ consumer.TracesConsumer = (*tracesCloningConsumer)(nil)
+var _ consumer.Traces = (*tracesCloningConsumer)(nil)
 
 // ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
 func (tfc tracesCloningConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -98,7 +98,7 @@ func (tfc tracesCloningConsumer) ConsumeTraces(ctx context.Context, td pdata.Tra
 
 // NewLogsCloning wraps multiple trace consumers in a single one and clones the data
 // before fanning out.
-func NewLogsCloning(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
+func NewLogsCloning(lcs []consumer.Logs) consumer.Logs {
 	if len(lcs) == 1 {
 		// Don't wrap if no need to do it.
 		return lcs[0]
@@ -106,9 +106,9 @@ func NewLogsCloning(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	return logsCloningConsumer(lcs)
 }
 
-type logsCloningConsumer []consumer.LogsConsumer
+type logsCloningConsumer []consumer.Logs
 
-var _ consumer.LogsConsumer = (*logsCloningConsumer)(nil)
+var _ consumer.Logs = (*logsCloningConsumer)(nil)
 
 // ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
 func (lfc logsCloningConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {

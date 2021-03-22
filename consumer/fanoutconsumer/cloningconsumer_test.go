@@ -27,12 +27,12 @@ import (
 
 func TestTraceProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewTracesNop()
-	tfc := NewTracesCloning([]consumer.TracesConsumer{nop})
+	tfc := NewTracesCloning([]consumer.Traces{nop})
 	assert.Same(t, nop, tfc)
 }
 
 func TestTraceProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.TracesConsumer, 3)
+	processors := make([]consumer.Traces, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)
 	}
@@ -70,12 +70,12 @@ func TestTraceProcessorCloningMultiplexing(t *testing.T) {
 
 func TestMetricsProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewMetricsNop()
-	mfc := NewMetrics([]consumer.MetricsConsumer{nop})
+	mfc := NewMetrics([]consumer.Metrics{nop})
 	assert.Same(t, nop, mfc)
 }
 
 func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.MetricsConsumer, 3)
+	processors := make([]consumer.Metrics, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.MetricsSink)
 	}
@@ -113,12 +113,12 @@ func TestMetricsProcessorCloningMultiplexing(t *testing.T) {
 
 func TestLogsProcessorCloningNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewLogsNop()
-	lfc := NewLogsCloning([]consumer.LogsConsumer{nop})
+	lfc := NewLogsCloning([]consumer.Logs{nop})
 	assert.Same(t, nop, lfc)
 }
 
 func TestLogsProcessorCloningMultiplexing(t *testing.T) {
-	processors := make([]consumer.LogsConsumer, 3)
+	processors := make([]consumer.Logs, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.LogsSink)
 	}

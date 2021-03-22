@@ -52,8 +52,8 @@ type ocReceiver struct {
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
 
-	traceConsumer   consumer.TracesConsumer
-	metricsConsumer consumer.MetricsConsumer
+	traceConsumer   consumer.Traces
+	metricsConsumer consumer.Metrics
 
 	stopOnce                 sync.Once
 	startServerOnce          sync.Once
@@ -70,8 +70,8 @@ func newOpenCensusReceiver(
 	instanceName string,
 	transport string,
 	addr string,
-	tc consumer.TracesConsumer,
-	mc consumer.MetricsConsumer,
+	tc consumer.Traces,
+	mc consumer.Metrics,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.

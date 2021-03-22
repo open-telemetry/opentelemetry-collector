@@ -51,7 +51,7 @@ func (f *nopProcessorFactory) CreateTracesProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	_ configmodels.Processor,
-	_ consumer.TracesConsumer,
+	_ consumer.Traces,
 ) (component.TracesProcessor, error) {
 	return nopProcessorInstance, nil
 }
@@ -61,7 +61,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	_ configmodels.Processor,
-	_ consumer.MetricsConsumer,
+	_ consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	return nopProcessorInstance, nil
 }
@@ -71,24 +71,24 @@ func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	_ configmodels.Processor,
-	_ consumer.LogsConsumer,
+	_ consumer.Logs,
 ) (component.LogsProcessor, error) {
 	return nopProcessorInstance, nil
 }
 
 var nopProcessorInstance = &nopProcessor{
-	Component:       componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
-	TracesConsumer:  consumertest.NewTracesNop(),
-	MetricsConsumer: consumertest.NewMetricsNop(),
-	LogsConsumer:    consumertest.NewLogsNop(),
+	Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+	Traces:    consumertest.NewTracesNop(),
+	Metrics:   consumertest.NewMetricsNop(),
+	Logs:      consumertest.NewLogsNop(),
 }
 
 // nopProcessor stores consumed traces and metrics for testing purposes.
 type nopProcessor struct {
 	component.Component
-	consumer.TracesConsumer
-	consumer.MetricsConsumer
-	consumer.LogsConsumer
+	consumer.Traces
+	consumer.Metrics
+	consumer.Logs
 }
 
 func (*nopProcessor) GetCapabilities() component.ProcessorCapabilities {
