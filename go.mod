@@ -27,7 +27,7 @@ require (
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
-	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.19.0
 	github.com/prometheus/prometheus v1.8.2-0.20210217141258-a6be548dbc17
@@ -46,7 +46,7 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
+	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2
 	golang.org/x/text v0.3.5
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.36.0
