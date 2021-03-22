@@ -60,8 +60,7 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
 		{
-			receiver:     "otlp",
-			skipLifecyle: true, // TODO: Upcoming PR to fix zipkin lifecycle.
+			receiver: "otlp",
 		},
 		{
 			receiver: "prometheus",
