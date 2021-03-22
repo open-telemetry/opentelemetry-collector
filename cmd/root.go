@@ -30,6 +30,15 @@ var (
 
 	cfgFile string
 	cfg     = builder.DefaultConfig()
+
+	versionCmd = &cobra.Command{
+		Use:   "version",
+		Short: "Version of opentelemetry-collector-builder",
+		Long:  "Prints the version of opentelemetry-collector-builder binary",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
 )
 
 // Execute is the main entrypoint for this application
@@ -67,6 +76,9 @@ func Execute() {
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
 	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "/usr/bin/go", "The Go binary to use during the compilation phase")
 	cmd.Flags().StringVar(&cfg.Distribution.Module, "module", "github.com/jpkroehling/opentelemetry-collector-builder", "The Go module for the new distribution")
+
+	// version of this binary
+	cmd.AddCommand(versionCmd)
 
 	// tie Viper to flags
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {

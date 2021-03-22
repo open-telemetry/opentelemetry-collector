@@ -31,6 +31,9 @@
 !.vscode/extensions.json
 *.code-workspace
 
+### goland ###
+.idea
+
 # End of https://www.toptal.com/developers/gitignore/api/go,vscode
 
 /dist/
