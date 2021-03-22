@@ -149,22 +149,18 @@ type createReceiverFn func(
 
 func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver) (component.Receiver, error) {
-		return castReceiver(factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewLogsNop()))
+		return factory.CreateLogsReceiver(ctx, params, cfg, consumertest.NewLogsNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver) (component.Receiver, error) {
-		return castReceiver(factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewMetricsNop()))
+		return factory.CreateMetricsReceiver(ctx, params, cfg, consumertest.NewMetricsNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
 	return func(ctx context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver) (component.Receiver, error) {
-		return castReceiver(factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewTracesNop()))
+		return factory.CreateTracesReceiver(ctx, params, cfg, consumertest.NewTracesNop())
 	}
-}
-
-func castReceiver(p component.Receiver, err error) (component.Receiver, error) {
-	return p, err
 }

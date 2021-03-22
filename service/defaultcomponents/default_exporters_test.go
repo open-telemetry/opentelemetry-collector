@@ -194,22 +194,18 @@ type createExporterFn func(
 
 func wrapCreateLogsExp(factory component.ExporterFactory) createExporterFn {
 	return func(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.Exporter, error) {
-		return castExporter(factory.CreateLogsExporter(ctx, params, cfg))
+		return factory.CreateLogsExporter(ctx, params, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory component.ExporterFactory) createExporterFn {
 	return func(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.Exporter, error) {
-		return castExporter(factory.CreateTracesExporter(ctx, params, cfg))
+		return factory.CreateTracesExporter(ctx, params, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory component.ExporterFactory) createExporterFn {
 	return func(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.Exporter, error) {
-		return castExporter(factory.CreateMetricsExporter(ctx, params, cfg))
+		return factory.CreateMetricsExporter(ctx, params, cfg)
 	}
-}
-
-func castExporter(exp component.Exporter, err error) (component.Exporter, error) {
-	return exp, err
 }
