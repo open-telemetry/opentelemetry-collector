@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Sample contains a program that exports to the OpenCensus service.
+// Sample contains a program that exports to the OpenTelemetry service.
 package main
 
 import (

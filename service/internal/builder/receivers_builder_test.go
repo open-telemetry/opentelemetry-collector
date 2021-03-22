@@ -137,13 +137,13 @@ func testReceivers(
 	td := testdata.GenerateTraceDataOneSpan()
 	if test.hasTraces {
 		traceProducer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
-		assert.NoError(t, traceProducer.TraceConsumer.ConsumeTraces(context.Background(), td))
+		assert.NoError(t, traceProducer.ConsumeTraces(context.Background(), td))
 	}
 
 	md := testdata.GenerateMetricsOneMetric()
 	if test.hasMetrics {
 		metricsProducer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
-		assert.NoError(t, metricsProducer.MetricsConsumer.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, metricsProducer.ConsumeMetrics(context.Background(), md))
 	}
 
 	// Now verify received data.
@@ -243,7 +243,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			// Send one data.
 			log := pdata.Logs{}
 			producer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
-			producer.LogConsumer.ConsumeLogs(context.Background(), log)
+			producer.ConsumeLogs(context.Background(), log)
 
 			// Now verify received data.
 			for _, name := range exporterNames {

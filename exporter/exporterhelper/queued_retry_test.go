@@ -136,7 +136,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	// secondMockR.checkNumRequests(t, 1)
 	// ocs.checkSendItemsCount(t, 3)
 	ocs.checkDroppedItemsCount(t, 2)
-	// require.Zero(t, be.qrSender.queue.Size())
+	// require.Zero(t, be.qrSender.queue.OtlpProtoSize())
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {

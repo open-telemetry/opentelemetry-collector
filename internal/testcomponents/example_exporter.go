@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // ExampleExporter is for testing purposes. We are defining an example config and factory
@@ -33,21 +34,23 @@ type ExampleExporter struct {
 	ExtraListSetting              []string                 `mapstructure:"extra_list"`
 }
 
-// ExampleExporterFactory is factory for ExampleExporter.
-type ExampleExporterFactory struct {
-}
+const expType = "exampleexporter"
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *ExampleExporterFactory) Type() configmodels.Type {
-	return "exampleexporter"
-}
+// ExampleExporterFactory is factory for ExampleExporter.
+var ExampleExporterFactory = exporterhelper.NewFactory(
+	expType,
+	createExporterDefaultConfig,
+	exporterhelper.WithCustomUnmarshaler(customUnmarshal),
+	exporterhelper.WithTraces(createTracesExporter),
+	exporterhelper.WithMetrics(createMetricsExporter),
+	exporterhelper.WithLogs(createLogsExporter))
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
+func createExporterDefaultConfig() configmodels.Exporter {
 	return &ExampleExporter{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: f.Type(),
-			NameVal: string(f.Type()),
+			TypeVal: expType,
+			NameVal: expType,
 		},
 		ExtraSetting:     "some export string",
 		ExtraMapSetting:  nil,
@@ -55,15 +58,11 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-var _ (component.ConfigUnmarshaler) = (*ExampleExporterFactory)(nil)
-
-// Unmarshal implements the custom unmarshalers.
-func (f *ExampleExporterFactory) Unmarshal(componentSection *configload.Loader, intoCfg interface{}) error {
+func customUnmarshal(componentSection *configload.Loader, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 
-// CreateTracesExporter creates a trace exporter based on this config.
-func (f *ExampleExporterFactory) CreateTracesExporter(
+func createTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ configmodels.Exporter,
@@ -71,8 +70,7 @@ func (f *ExampleExporterFactory) CreateTracesExporter(
 	return &ExampleExporterConsumer{}, nil
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *ExampleExporterFactory) CreateMetricsExporter(
+func createMetricsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ configmodels.Exporter,
@@ -80,7 +78,7 @@ func (f *ExampleExporterFactory) CreateMetricsExporter(
 	return &ExampleExporterConsumer{}, nil
 }
 
-func (f *ExampleExporterFactory) CreateLogsExporter(
+func createLogsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	_ configmodels.Exporter,

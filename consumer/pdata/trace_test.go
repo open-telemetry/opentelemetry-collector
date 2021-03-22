@@ -53,7 +53,7 @@ func TestSpanCount(t *testing.T) {
 
 func TestSize(t *testing.T) {
 	td := NewTraces()
-	assert.Equal(t, 0, td.Size())
+	assert.Equal(t, 0, td.OtlpProtoSize())
 	rms := td.ResourceSpans()
 	rms.Resize(1)
 	rms.At(0).InstrumentationLibrarySpans().Resize(1)
@@ -63,12 +63,12 @@ func TestSize(t *testing.T) {
 	size := otlp.Size()
 	bytes, err := otlp.Marshal()
 	require.NoError(t, err)
-	assert.Equal(t, size, td.Size())
-	assert.Equal(t, len(bytes), td.Size())
+	assert.Equal(t, size, td.OtlpProtoSize())
+	assert.Equal(t, len(bytes), td.OtlpProtoSize())
 }
 
 func TestTracesSizeWithNil(t *testing.T) {
-	assert.Equal(t, 0, NewTraces().Size())
+	assert.Equal(t, 0, NewTraces().OtlpProtoSize())
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
@@ -93,26 +93,6 @@ func TestSpanCountWithEmpty(t *testing.T) {
 			},
 		},
 	}}.SpanCount())
-}
-
-func TestSpanID(t *testing.T) {
-	sid := InvalidSpanID()
-	assert.EqualValues(t, [8]byte{}, sid.Bytes())
-	assert.True(t, sid.IsEmpty())
-
-	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
-	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
-	assert.False(t, sid.IsEmpty())
-}
-
-func TestTraceID(t *testing.T) {
-	tid := InvalidTraceID()
-	assert.EqualValues(t, [16]byte{}, tid.Bytes())
-	assert.True(t, tid.IsEmpty())
-
-	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
-	assert.False(t, tid.IsEmpty())
 }
 
 func TestSpanStatusCode(t *testing.T) {

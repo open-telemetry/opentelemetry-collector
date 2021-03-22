@@ -99,9 +99,9 @@ receivers:
   otlp/mtls:
     protocols:
       grpc:
-        client_ca_file: client.pem
         endpoint: mysite.local:55690
         tls_settings:
+          client_ca_file: client.pem
           cert_file: server.crt
           key_file: server.key
   otlp/notls:

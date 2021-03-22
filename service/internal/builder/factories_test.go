@@ -15,23 +15,30 @@
 package builder
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/extension/extensionhelper"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 func createTestFactories() component.Factories {
-	exampleReceiverFactory := &testcomponents.ExampleReceiverFactory{}
-	exampleProcessorFactory := &testcomponents.ExampleProcessorFactory{}
-	exampleExporterFactory := &testcomponents.ExampleExporterFactory{}
+	exampleReceiverFactory := testcomponents.ExampleReceiverFactory
+	exampleProcessorFactory := testcomponents.ExampleProcessorFactory
+	exampleExporterFactory := testcomponents.ExampleExporterFactory
+	badExtensionFactory := newBadExtensionFactory()
 	badReceiverFactory := newBadReceiverFactory()
 	badProcessorFactory := newBadProcessorFactory()
 	badExporterFactory := newBadExporterFactory()
 
 	factories := component.Factories{
+		Extensions: map[configmodels.Type]component.ExtensionFactory{
+			badExtensionFactory.Type(): badExtensionFactory,
+		},
 		Receivers: map[configmodels.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 			badReceiverFactory.Type():     badReceiverFactory,
@@ -71,4 +78,18 @@ func newBadExporterFactory() component.ExporterFactory {
 			TypeVal: "bf",
 		}
 	})
+}
+
+func newBadExtensionFactory() component.ExtensionFactory {
+	return extensionhelper.NewFactory(
+		"bf",
+		func() configmodels.Extension {
+			return &configmodels.ExporterSettings{
+				TypeVal: "bf",
+			}
+		},
+		func(ctx context.Context, params component.ExtensionCreateParams, extension configmodels.Extension) (component.Extension, error) {
+			return nil, nil
+		},
+	)
 }

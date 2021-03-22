@@ -118,7 +118,10 @@ func newMemoryLimiter(logger *zap.Logger, cfg *Config) (*memoryLimiter, error) {
 		readMemStatsFn: runtime.ReadMemStats,
 		procName:       cfg.Name(),
 		logger:         logger,
-		obsrep:         obsreport.NewProcessor(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
+			Level:         configtelemetry.GetMetricsLevelFlagValue(),
+			ProcessorName: cfg.Name(),
+		}),
 	}
 
 	ml.startMonitoring()

@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // ExampleReceiver is for testing purposes. We are defining an example config and factory
@@ -35,22 +36,21 @@ type ExampleReceiver struct {
 	ExtraListSetting []string          `mapstructure:"extra_list"`
 }
 
+const recvType = "examplereceiver"
+
 // ExampleReceiverFactory is factory for ExampleReceiver.
-type ExampleReceiverFactory struct{}
+var ExampleReceiverFactory = receiverhelper.NewFactory(
+	recvType,
+	createReceiverDefaultConfig,
+	receiverhelper.WithTraces(createTracesReceiver),
+	receiverhelper.WithMetrics(createMetricsReceiver),
+	receiverhelper.WithLogs(createLogsReceiver))
 
-var _ component.ReceiverFactory = (*ExampleReceiverFactory)(nil)
-
-// Type gets the type of the Receiver config created by this factory.
-func (f *ExampleReceiverFactory) Type() configmodels.Type {
-	return "examplereceiver"
-}
-
-// CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func createReceiverDefaultConfig() configmodels.Receiver {
 	return &ExampleReceiver{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: f.Type(),
-			NameVal: string(f.Type()),
+			TypeVal: recvType,
+			NameVal: recvType,
 		},
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:1000",
@@ -62,18 +62,42 @@ func (f *ExampleReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *ExampleReceiverFactory) CreateTracesReceiver(
+func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesReceiver, error) {
-	receiver := f.createReceiver(cfg)
-	receiver.TraceConsumer = nextConsumer
+	receiver := createReceiver(cfg)
+	receiver.TracesConsumer = nextConsumer
 	return receiver, nil
 }
 
-func (f *ExampleReceiverFactory) createReceiver(cfg configmodels.Receiver) *ExampleReceiverProducer {
+// CreateMetricsReceiver creates a metrics receiver based on this config.
+func createMetricsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
+	receiver := createReceiver(cfg)
+	receiver.MetricsConsumer = nextConsumer
+	return receiver, nil
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	receiver := createReceiver(cfg)
+	receiver.LogsConsumer = nextConsumer
+
+	return receiver, nil
+}
+
+func createReceiver(cfg configmodels.Receiver) *ExampleReceiverProducer {
 	// There must be one receiver for all data types. We maintain a map of
 	// receivers per config.
 
@@ -88,37 +112,13 @@ func (f *ExampleReceiverFactory) createReceiver(cfg configmodels.Receiver) *Exam
 	return receiver
 }
 
-// CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *ExampleReceiverFactory) CreateMetricsReceiver(
-	_ context.Context,
-	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
-) (component.MetricsReceiver, error) {
-	receiver := f.createReceiver(cfg)
-	receiver.MetricsConsumer = nextConsumer
-	return receiver, nil
-}
-
-func (f *ExampleReceiverFactory) CreateLogsReceiver(
-	_ context.Context,
-	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.LogsConsumer,
-) (component.LogsReceiver, error) {
-	receiver := f.createReceiver(cfg)
-	receiver.LogConsumer = nextConsumer
-
-	return receiver, nil
-}
-
 // ExampleReceiverProducer allows producing traces and metrics for testing purposes.
 type ExampleReceiverProducer struct {
-	Started         bool
-	Stopped         bool
-	TraceConsumer   consumer.TracesConsumer
-	MetricsConsumer consumer.MetricsConsumer
-	LogConsumer     consumer.LogsConsumer
+	Started bool
+	Stopped bool
+	consumer.TracesConsumer
+	consumer.MetricsConsumer
+	consumer.LogsConsumer
 }
 
 // Start tells the receiver to start its processing.
