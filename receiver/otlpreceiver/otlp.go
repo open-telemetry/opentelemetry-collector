@@ -126,7 +126,7 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 	return nil
 }
 
-func (r *otlpReceiver) startProtocolServers(_ context.Context, host component.Host) error {
+func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	var err error
 	if r.cfg.GRPC != nil {
 		err = r.startGRPCServer(r.cfg.GRPC, host)
@@ -162,14 +162,14 @@ func (r *otlpReceiver) startProtocolServers(_ context.Context, host component.Ho
 
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
-func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
+func (r *otlpReceiver) Start(_ context.Context, host component.Host) error {
 	if r.traceReceiver == nil && r.metricsReceiver == nil && r.logReceiver == nil {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
 	var err error
 	r.startServerOnce.Do(func() {
-		err = r.startProtocolServers(ctx, host)
+		err = r.startProtocolServers(host)
 	})
 	return err
 }
