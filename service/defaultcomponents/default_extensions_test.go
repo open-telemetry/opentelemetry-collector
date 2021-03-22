@@ -91,7 +91,6 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 
 	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
 	require.NoError(t, err)
-
 	require.NoError(t, secondExt.Start(ctx, host))
 	require.NoError(t, secondExt.Shutdown(ctx))
 }

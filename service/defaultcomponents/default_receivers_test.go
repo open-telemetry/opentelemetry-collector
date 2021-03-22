@@ -135,7 +135,6 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 
 		secondRcvr, err := createFn(ctx, receiverCreateParams, getConfigFn())
 		require.NoError(t, err)
-
 		require.NoError(t, secondRcvr.Start(ctx, host))
 		require.NoError(t, secondRcvr.Shutdown(ctx))
 	}

@@ -143,7 +143,6 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 		secondExp, err := createFn(ctx, processorCreateParams, getConfigFn())
 		require.NoError(t, err)
-
 		require.NoError(t, secondExp.Start(ctx, host))
 		require.NoError(t, secondExp.Shutdown(ctx))
 	}
