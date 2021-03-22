@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -495,7 +496,7 @@ func TestLoadEmptyAllSections(t *testing.T) {
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
 	// Read yaml config from file
-	v := NewViper()
+	v := configload.NewViper()
 	v.SetConfigFile(fileName)
 	require.NoErrorf(t, v.ReadInConfig(), "unable to read the file %v", fileName)
 

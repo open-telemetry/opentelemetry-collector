@@ -26,11 +26,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -341,12 +341,12 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 func TestCustomUnmarshalErrors(t *testing.T) {
 	factory := NewFactory()
 
-	fu, ok := factory.(config.Unmarshaler)
+	fu, ok := factory.(component.ConfigUnmarshaler)
 	assert.True(t, ok)
 
-	err := fu.Unmarshal(config.NewLoader(), nil)
+	err := fu.Unmarshal(configload.NewLoader(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
-	err = fu.Unmarshal(config.NewLoader(), &RemoteSamplingConfig{})
+	err = fu.Unmarshal(configload.NewLoader(), &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }

@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -27,8 +27,8 @@ import (
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption func(o *factory)
 
-// WithCustomUnmarshaler implements config.Unmarshaler.
-func WithCustomUnmarshaler(customUnmarshaler config.CustomUnmarshaler) FactoryOption {
+// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
 	}
@@ -69,7 +69,7 @@ type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, co
 
 type factory struct {
 	cfgType               configmodels.Type
-	customUnmarshaler     config.CustomUnmarshaler
+	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
 	createTraceReceiver   CreateTraceReceiver
 	createMetricsReceiver CreateMetricsReceiver
@@ -144,13 +144,13 @@ func (f *factory) CreateLogsReceiver(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-var _ config.Unmarshaler = (*factoryWithUnmarshaler)(nil)
+var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
 
 type factoryWithUnmarshaler struct {
 	*factory
 }
 
 // Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentSection *config.Loader, intoCfg interface{}) error {
+func (f *factoryWithUnmarshaler) Unmarshal(componentSection *configload.Loader, intoCfg interface{}) error {
 	return f.customUnmarshaler(componentSection, intoCfg)
 }

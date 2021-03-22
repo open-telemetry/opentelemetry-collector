@@ -24,7 +24,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -49,7 +48,7 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithCustomUnmarshaler(config.ToCustomUnmarshaler(customUnmarshaler)))
+		receiverhelper.WithCustomUnmarshaler(component.ToCustomUnmarshaler(customUnmarshaler)))
 }
 
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {

@@ -22,7 +22,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -52,7 +51,7 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithTraces(createTraceReceiver),
 		receiverhelper.WithMetrics(createMetricsReceiver),
 		receiverhelper.WithLogs(createLogReceiver),
-		receiverhelper.WithCustomUnmarshaler(config.ToCustomUnmarshaler(customUnmarshaler)))
+		receiverhelper.WithCustomUnmarshaler(component.ToCustomUnmarshaler(customUnmarshaler)))
 }
 
 // createDefaultConfig creates the default configuration for receiver.

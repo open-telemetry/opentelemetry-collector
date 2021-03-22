@@ -17,9 +17,8 @@ package testcomponents
 import (
 	"context"
 
-	"github.com/spf13/viper"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -56,9 +55,11 @@ func (f *ExampleExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
+var _ (component.ConfigUnmarshaler) = (*ExampleExporterFactory)(nil)
+
 // Unmarshal implements the custom unmarshalers.
-func (f *ExampleExporterFactory) Unmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return componentViperSection.UnmarshalExact(intoCfg)
+func (f *ExampleExporterFactory) Unmarshal(componentSection *configload.Loader, intoCfg interface{}) error {
+	return componentSection.UnmarshalExact(intoCfg)
 }
 
 // CreateTracesExporter creates a trace exporter based on this config.

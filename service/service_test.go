@@ -39,6 +39,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
@@ -599,7 +600,7 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	v := config.NewViper()
+	v := configload.NewViper()
 	cmd := &cobra.Command{}
 	addSetFlag(cmd.Flags())
 	fs := &flag.FlagSet{}
@@ -640,7 +641,7 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	v := config.NewViper()
+	v := configload.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := config.Load(v, factories)

@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -40,7 +40,7 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-	_, ok := factory.(config.Unmarshaler)
+	_, ok := factory.(component.ConfigUnmarshaler)
 	assert.False(t, ok)
 	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{}, defaultCfg, nil)
 	assert.Error(t, err)
@@ -61,7 +61,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
 
-	fu, ok := factory.(config.Unmarshaler)
+	fu, ok := factory.(component.ConfigUnmarshaler)
 	assert.True(t, ok)
 	assert.Equal(t, errors.New("my error"), fu.Unmarshal(nil, nil))
 
@@ -91,6 +91,6 @@ func createLogsReceiver(context.Context, component.ReceiverCreateParams, configm
 	return nil, nil
 }
 
-func customUnmarshaler(*config.Loader, interface{}) error {
+func customUnmarshaler(*configload.Loader, interface{}) error {
 	return errors.New("my error")
 }

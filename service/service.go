@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -132,7 +133,7 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 func New(params Parameters) (*Application, error) {
 	app := &Application{
 		info:         params.ApplicationStartInfo,
-		v:            config.NewViper(),
+		v:            configload.NewViper(),
 		factories:    params.Factories,
 		stateChannel: make(chan State, Closed+1),
 	}

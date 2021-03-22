@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -42,11 +43,6 @@ const (
 	errUnknownType
 	errDuplicateName
 	errUnmarshalTopLevelStructureError
-)
-
-const (
-	// ViperDelimiter is used as the default key delimiter in the default viper instance
-	ViperDelimiter = "::"
 )
 
 type configError struct {
@@ -97,60 +93,6 @@ type pipelineSettings struct {
 
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
-
-// Creates a new Viper instance with a different key-delimitor "::" instead of the
-// default ".". This way configs can have keys that contain ".".
-func NewViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter(ViperDelimiter))
-}
-
-// NewLoader creates a new Loader instanceg
-func NewLoader() *Loader {
-	return &Loader{
-		v: NewViper(),
-	}
-}
-
-// Loader loads configuration
-type Loader struct {
-	v *viper.Viper
-}
-
-// UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent
-func (l *Loader) UnmarshalExact(intoCfg interface{}) error {
-	return l.v.UnmarshalExact(intoCfg)
-}
-
-// ToStringMap creates a map[string]interface{} from a ConfigLoader
-func (l *Loader) ToStringMap() map[string]interface{} {
-	return cast.ToStringMap(l.v)
-}
-
-// Unmarshaler interface is an optional interface that if implemented by a component.Factory,
-// the configuration loading system will use to unmarshal the config.
-type Unmarshaler interface {
-	// Unmarshal is a function that un-marshals map data into a config struct in a custom way.
-	// componentSection *Loader
-	//   The loader for this specific component. May be nil or empty if no config available.
-	// intoCfg interface{}
-	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-	Unmarshal(componentSection *Loader, intoCfg interface{}) error
-}
-
-// CustomUnmarshaler is a function that un-marshals map data into a config struct
-// in a custom way.
-// componentSection *Loader
-//   The loader for this specific component. May be nil or empty if no config available.
-// intoCfg interface{}
-//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-type CustomUnmarshaler func(componentSection *Loader, intoCfg interface{}) error
-
-// ToCustomUnmarshaler creates a custom unmarshaler from a Viper unmarshaler.
-func ToCustomUnmarshaler(viperUnmarshaler func(*viper.Viper, interface{}) error) CustomUnmarshaler {
-	return func(componentSection *Loader, intoCfg interface{}) error {
-		return viperUnmarshaler(componentSection.v, intoCfg)
-	}
-}
 
 // Load loads a Config from Viper.
 // After loading the config, need to check if it is valid by calling `ValidateConfig`.
@@ -310,7 +252,7 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
-		if err := unm(&Loader{componentConfig}, extensionCfg); err != nil {
+		if err := unm(configload.FromViper(componentConfig), extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, fullName, err)
 		}
 
@@ -346,7 +288,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
 	unm := unmarshaler(factory)
-	if err := unm(&Loader{componentConfig}, receiverCfg); err != nil {
+	if err := unm(configload.FromViper(componentConfig), receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, fullName, err)
 	}
 
@@ -419,7 +361,7 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
-		if err := unm(&Loader{componentConfig}, exporterCfg); err != nil {
+		if err := unm(configload.FromViper(componentConfig), exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, fullName, err)
 		}
 
@@ -462,7 +404,7 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
-		if err := unm(&Loader{componentConfig}, processorCfg); err != nil {
+		if err := unm(configload.FromViper(componentConfig), processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, fullName, err)
 		}
 
@@ -597,14 +539,14 @@ func expandEnv(s string) string {
 	})
 }
 
-func unmarshaler(factory component.Factory) CustomUnmarshaler {
-	if fu, ok := factory.(Unmarshaler); ok {
+func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
+	if fu, ok := factory.(component.ConfigUnmarshaler); ok {
 		return fu.Unmarshal
 	}
 	return defaultUnmarshaler
 }
 
-func defaultUnmarshaler(componentSection *Loader, intoCfg interface{}) error {
+func defaultUnmarshaler(componentSection *configload.Loader, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 
@@ -614,11 +556,11 @@ func defaultUnmarshaler(componentSection *Loader, intoCfg interface{}) error {
 func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
 	data := v.Get(key)
 	if data == nil {
-		return NewViper(), nil
+		return configload.NewViper(), nil
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := NewViper()
+		subv := configload.NewViper()
 		// Cannot return error because the subv is empty.
 		_ = subv.MergeConfigMap(cast.ToStringMap(data))
 		return subv, nil
@@ -630,7 +572,7 @@ func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
 }
 
 func viperFromStringMap(data map[string]interface{}) *viper.Viper {
-	v := NewViper()
+	v := configload.NewViper()
 	// Cannot return error because the subv is empty.
 	_ = v.MergeConfigMap(cast.ToStringMap(data))
 	return v

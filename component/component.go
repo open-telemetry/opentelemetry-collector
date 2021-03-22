@@ -17,6 +17,8 @@ package component
 import (
 	"context"
 
+	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -60,4 +62,30 @@ const (
 type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() configmodels.Type
+}
+
+// ConfigUnmarshaler interface is an optional interface that if implemented by a Factory,
+// the configuration loading system will use to unmarshal the config.
+type ConfigUnmarshaler interface {
+	// Unmarshal is a function that loads data into a config struct in a custom way.
+	// componentSection *configload.Loader
+	//   The loader for this specific component. May be nil or empty if no config available.
+	// intoCfg interface{}
+	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
+	Unmarshal(componentSection *configload.Loader, intoCfg interface{}) error
+}
+
+// CustomUnmarshaler is a function that loads data into a config struct
+// in a custom way.
+// componentSection *configload.Loader
+//   The loader for this specific component. May be nil or empty if no config available.
+// intoCfg interface{}
+//   An empty interface wrapping a pointer to the config struct to unmarshal into.
+type CustomUnmarshaler func(componentSection *configload.Loader, intoCfg interface{}) error
+
+// ToCustomUnmarshaler creates a custom unmarshaler from a Viper unmarshaler.
+func ToCustomUnmarshaler(viperUnmarshaler func(*viper.Viper, interface{}) error) CustomUnmarshaler {
+	return func(componentSection *configload.Loader, intoCfg interface{}) error {
+		return viperUnmarshaler(componentSection.Viper(), intoCfg)
+	}
 }
