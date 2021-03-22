@@ -25,6 +25,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/extension/healthcheckextension"
+	"go.opentelemetry.io/collector/extension/pprofextension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestDefaultExtensions(t *testing.T) {
@@ -32,6 +36,8 @@ func TestDefaultExtensions(t *testing.T) {
 	require.NoError(t, err)
 
 	extFactories := allFactories.Extensions
+	endpoint := testutil.GetAvailableLocalAddress(t)
+	port := testutil.GetAvailablePort(t)
 
 	tests := []struct {
 		extension   configmodels.Type
@@ -39,12 +45,27 @@ func TestDefaultExtensions(t *testing.T) {
 	}{
 		{
 			extension: "health_check",
+			getConfigFn: func() configmodels.Extension {
+				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
+				cfg.Port = port
+				return cfg
+			},
 		},
 		{
 			extension: "pprof",
+			getConfigFn: func() configmodels.Extension {
+				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
 		},
 		{
 			extension: "zpages",
+			getConfigFn: func() configmodels.Extension {
+				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
 		},
 		{
 			extension: "fluentbit",
