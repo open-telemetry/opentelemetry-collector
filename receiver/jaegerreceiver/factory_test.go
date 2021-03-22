@@ -347,6 +347,6 @@ func TestCustomUnmarshalErrors(t *testing.T) {
 	err := fu.Unmarshal(config.NewLoader(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
-	err = fu.Unmarshal(nil, &RemoteSamplingConfig{})
+	err = fu.Unmarshal(config.NewLoader(), &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }
