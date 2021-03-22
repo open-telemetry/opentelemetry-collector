@@ -16,6 +16,7 @@ package defaultcomponents
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -133,7 +134,7 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, processorCreateParams, getConfigFn())
-		if err == configerror.ErrDataTypeIsNotSupported {
+		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

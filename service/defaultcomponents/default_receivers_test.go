@@ -16,6 +16,7 @@ package defaultcomponents
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	promconfig "github.com/prometheus/prometheus/config"
@@ -125,7 +126,7 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 
 	for _, createFn := range createFns {
 		firstRcvr, err := createFn(ctx, receiverCreateParams, getConfigFn())
-		if err == configerror.ErrDataTypeIsNotSupported {
+		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)

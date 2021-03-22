@@ -16,6 +16,7 @@ package defaultcomponents
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 
@@ -171,7 +172,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 
 	for _, createFn := range createFns {
 		firstExp, err := createFn(ctx, expCreateParams, getConfigFn())
-		if err == configerror.ErrDataTypeIsNotSupported {
+		if errors.Is(err, configerror.ErrDataTypeIsNotSupported) {
 			continue
 		}
 		require.NoError(t, err)
