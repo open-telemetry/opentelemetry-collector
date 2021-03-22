@@ -176,13 +176,13 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		}
 		require.NoError(t, err)
 		require.NoError(t, firstExp.Start(ctx, host))
+		require.NoError(t, firstExp.Shutdown(ctx))
 
 		secondExp, err := createFn(ctx, expCreateParams, getConfigFn())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.NoError(t, firstExp.Shutdown(ctx))
-		assert.NoError(t, secondExp.Start(ctx, host))
-		assert.NoError(t, secondExp.Shutdown(ctx))
+		require.NoError(t, secondExp.Start(ctx, host))
+		require.NoError(t, secondExp.Shutdown(ctx))
 	}
 }
 

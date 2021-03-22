@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelcol is the OpenTelemetry Collector that collects stats
-// and traces and exports to a configured backend.
 package defaultcomponents
 
 import (
@@ -89,13 +87,13 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 	firstExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
 	require.NoError(t, err)
 	require.NoError(t, firstExt.Start(ctx, host))
+	require.NoError(t, firstExt.Shutdown(ctx))
 
 	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, firstExt.Shutdown(ctx))
-	assert.NoError(t, secondExt.Start(ctx, host))
-	assert.NoError(t, secondExt.Shutdown(ctx))
+	require.NoError(t, secondExt.Start(ctx, host))
+	require.NoError(t, secondExt.Shutdown(ctx))
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
