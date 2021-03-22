@@ -235,7 +235,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.doesnotexist.timeout=2s",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(config.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
 		require.Error(t, err)
 		require.Nil(t, cfg)
 
@@ -248,7 +248,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.batch/foo.timeout=2s",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(config.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -278,7 +278,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=extensions.health_check.port=8080",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(config.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
 		err = cfg.Validate()
