@@ -237,7 +237,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 	app.logger.Info("Loading configuration...")
 
-	cfg, err := factory(config.NewViper(), app.rootCmd, app.factories)
+	cfg, err := factory(configload.NewViper(), app.rootCmd, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}
