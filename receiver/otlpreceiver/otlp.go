@@ -190,7 +190,9 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 
 		r.shutdownWG.Wait()
 
-		// delete the receiver from the map.
+		// delete the receiver from the map so it doesn't leak and it becomes possible to create
+		// another instance with the same configuration that functions properly. Notice that an
+		// OTLP object can only be started and shutdown once.
 		delete(receivers, r.cfg)
 	})
 	return err
