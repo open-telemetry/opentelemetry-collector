@@ -15,6 +15,7 @@
 package consumererror
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -23,10 +24,10 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestPartialError(t *testing.T) {
+func TestPartialErrorTraces(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	err := fmt.Errorf("some error")
-	partialErr := PartialTracesError(err, td)
+	partialErr := PartialTraces(err, td)
 	assert.True(t, IsPartial(partialErr))
 	assert.Equal(t, err.Error(), partialErr.Error())
 	assert.Equal(t, td, partialErr.(PartialError).GetTraces())
@@ -35,7 +36,7 @@ func TestPartialError(t *testing.T) {
 func TestPartialErrorLogs(t *testing.T) {
 	td := testdata.GenerateLogDataOneLog()
 	err := fmt.Errorf("some error")
-	partialErr := PartialLogsError(err, td)
+	partialErr := PartialLogs(err, td)
 	assert.True(t, IsPartial(partialErr))
 	assert.Equal(t, err.Error(), partialErr.Error())
 	assert.Equal(t, td, partialErr.(PartialError).GetLogs())
@@ -44,7 +45,7 @@ func TestPartialErrorLogs(t *testing.T) {
 func TestPartialErrorMetrics(t *testing.T) {
 	td := testdata.GenerateMetricsOneMetric()
 	err := fmt.Errorf("some error")
-	partialErr := PartialMetricsError(err, td)
+	partialErr := PartialMetrics(err, td)
 	assert.True(t, IsPartial(partialErr))
 	assert.Equal(t, err.Error(), partialErr.Error())
 	assert.Equal(t, td, partialErr.(PartialError).GetMetrics())
@@ -52,4 +53,26 @@ func TestPartialErrorMetrics(t *testing.T) {
 
 func TestIsPartialNilInput(t *testing.T) {
 	assert.False(t, IsPartial(nil))
+}
+
+func BenchmarkIsPartialNil(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		IsPartial(nil)
+	}
+}
+
+func BenchmarkIsPartialFalse(b *testing.B) {
+	err := errors.New("Test error")
+	for n := 0; n < b.N; n++ {
+		IsPartial(err)
+	}
+}
+
+func BenchmarkIsPartialTrue(b *testing.B) {
+	td := testdata.GenerateTraceDataOneSpan()
+	err := fmt.Errorf("some error")
+	partialErr := PartialTraces(err, td)
+	for n := 0; n < b.N; n++ {
+		IsPartial(partialErr)
+	}
 }

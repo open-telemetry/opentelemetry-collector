@@ -15,7 +15,7 @@
 // Package consumererror provides wrappers to easily classify errors. This allows
 // appropriate action by error handlers without the need to know each individual
 // error type/instance.
-package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
+package consumererror
 
 import "errors"
 
@@ -39,8 +39,8 @@ func (p permanent) Error() string {
 // is used to indicate that a given error will always be returned in the case
 // that its sources receives the same input.
 func IsPermanent(err error) bool {
-	if err != nil {
-		return errors.As(err, &permanent{})
+	if err == nil {
+		return false
 	}
-	return false
+	return errors.As(err, &permanent{})
 }

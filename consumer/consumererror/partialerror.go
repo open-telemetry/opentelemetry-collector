@@ -30,9 +30,9 @@ type PartialError struct {
 	failedMetrics pdata.Metrics
 }
 
-// PartialTracesError creates a PartialError for failed traces.
+// PartialTraces creates a PartialError for failed traces.
 // Use this error type only when a subset of the received data failed to be processed or sent.
-func PartialTracesError(err error, failedTraces pdata.Traces) error {
+func PartialTraces(err error, failedTraces pdata.Traces) error {
 	return PartialError{
 		error:        err,
 		failedTraces: failedTraces,
@@ -44,9 +44,9 @@ func (err PartialError) GetTraces() pdata.Traces {
 	return err.failedTraces
 }
 
-// PartialLogsError creates a PartialError for failed logs.
+// PartialLogs creates a PartialError for failed logs.
 // Use this error type only when a subset of the received data failed to be processed or sent.
-func PartialLogsError(err error, failedLogs pdata.Logs) error {
+func PartialLogs(err error, failedLogs pdata.Logs) error {
 	return PartialError{
 		error:      err,
 		failedLogs: failedLogs,
@@ -58,9 +58,9 @@ func (err PartialError) GetLogs() pdata.Logs {
 	return err.failedLogs
 }
 
-// PartialMetricsError creates a PartialError for failed metrics.
+// PartialMetrics creates a PartialError for failed metrics.
 // Use this error type only when a subset of the received data failed to be processed or sent.
-func PartialMetricsError(err error, failedMetrics pdata.Metrics) error {
+func PartialMetrics(err error, failedMetrics pdata.Metrics) error {
 	return PartialError{
 		error:         err,
 		failedMetrics: failedMetrics,
@@ -74,8 +74,8 @@ func (err PartialError) GetMetrics() pdata.Metrics {
 
 // IsPartial checks if an error was wrapped with a PartialError.
 func IsPartial(err error) bool {
-	if err != nil {
-		return errors.As(err, &PartialError{})
+	if err == nil {
+		return false
 	}
-	return false
+	return errors.As(err, &PartialError{})
 }
