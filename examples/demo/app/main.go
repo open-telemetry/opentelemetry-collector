@@ -67,7 +67,7 @@ func initProvider() func() {
 
 	bsp := sdktrace.NewBatchSpanProcessor(exp)
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
@@ -78,7 +78,7 @@ func initProvider() func() {
 			exp,
 		),
 		controller.WithCollectPeriod(7*time.Second),
-		controller.WithPusher(exp),
+		controller.WithExporter(exp),
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
