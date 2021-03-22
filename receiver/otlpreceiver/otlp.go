@@ -51,6 +51,7 @@ type otlpReceiver struct {
 
 	stopOnce        sync.Once
 	startServerOnce sync.Once
+	shutdownWG      sync.WaitGroup
 
 	logger *zap.Logger
 }
@@ -96,8 +97,11 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 	if err != nil {
 		return err
 	}
+	r.shutdownWG.Add(1)
 	go func() {
-		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil {
+		defer r.shutdownWG.Done()
+
+		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && errGrpc != grpc.ErrServerStopped {
 			host.ReportFatalError(errGrpc)
 		}
 	}()
@@ -111,8 +115,11 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 	if err != nil {
 		return err
 	}
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil {
+		defer r.shutdownWG.Done()
+
+		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -180,6 +187,13 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 		if r.serverGRPC != nil {
 			r.serverGRPC.GracefulStop()
 		}
+
+		r.shutdownWG.Wait()
+
+		// delete the receiver from the map so it doesn't leak and it becomes possible to create
+		// another instance with the same configuration that functions properly. Notice that an
+		// OTLP object can only be started and shutdown once.
+		delete(receivers, r.cfg)
 	})
 	return err
 }
