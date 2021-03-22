@@ -56,8 +56,10 @@ func (td Traces) InternalRep() internal.TracesWrapper {
 	return internal.TracesFromOtlp(td.orig)
 }
 
-// ToOtlpProtoBytes converts the internal Traces to OTLP Collector
-// ExportTraceServiceRequest ProtoBuf bytes.
+// ToOtlpProtoBytes converts this Traces to the OTLP Collector ExportTraceServiceRequest
+// ProtoBuf bytes.
+//
+// Returns an nil byte-array if error is not nil.
 func (td Traces) ToOtlpProtoBytes() ([]byte, error) {
 	return td.orig.Marshal()
 }
@@ -83,8 +85,9 @@ func (td Traces) SpanCount() int {
 	return spanCount
 }
 
-// Size returns size in bytes.
-func (td Traces) Size() int {
+// OtlpProtoSize returns the size in bytes of this Traces encoded as OTLP Collector
+// ExportTraceServiceRequest ProtoBuf bytes.
+func (td Traces) OtlpProtoSize() int {
 	return td.orig.Size()
 }
 

@@ -269,7 +269,7 @@ func (bt *batchTraces) itemCount() uint32 {
 }
 
 func (bt *batchTraces) size() int {
-	return bt.traceData.Size()
+	return bt.traceData.OtlpProtoSize()
 }
 
 // resets the current batchTraces structure with zero values
@@ -299,7 +299,7 @@ func (bm *batchMetrics) itemCount() uint32 {
 }
 
 func (bm *batchMetrics) size() int {
-	return bm.metricData.Size()
+	return bm.metricData.OtlpProtoSize()
 }
 
 // resets the current batchMetrics structure with zero/empty values.
@@ -340,7 +340,7 @@ func (bm *batchLogs) itemCount() uint32 {
 }
 
 func (bm *batchLogs) size() int {
-	return bm.logData.Size()
+	return bm.logData.OtlpProtoSize()
 }
 
 // resets the current batchLogs structure with zero/empty values.

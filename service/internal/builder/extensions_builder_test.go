@@ -15,6 +15,8 @@
 package builder
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,21 +24,27 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 func TestService_setupExtensions(t *testing.T) {
-	exampleExtensionFactory := &testcomponents.ExampleExtensionFactory{FailCreation: true}
-	exampleExtensionConfig := &testcomponents.ExampleExtensionCfg{
-		ExtensionSettings: configmodels.ExtensionSettings{
-			TypeVal: exampleExtensionFactory.Type(),
-			NameVal: string(exampleExtensionFactory.Type()),
+	errExtensionFactory := extensionhelper.NewFactory(
+		"err",
+		func() configmodels.Extension {
+			return &configmodels.ExporterSettings{
+				TypeVal: "err",
+			}
 		},
-	}
+		func(ctx context.Context, params component.ExtensionCreateParams, extension configmodels.Extension) (component.Extension, error) {
+			return nil, fmt.Errorf("cannot create \"err\" extension type")
+		},
+	)
+	errExtensionConfig := errExtensionFactory.CreateDefaultConfig()
+	errExtensionConfig.SetName(string(errExtensionFactory.Type()))
 
 	badExtensionFactory := newBadExtensionFactory()
-	badExtensionFactoryCfg := badExtensionFactory.CreateDefaultConfig()
-	badExtensionFactoryCfg.SetName("bf")
+	badExtensionCfg := badExtensionFactory.CreateDefaultConfig()
+	badExtensionCfg.SetName(string(badExtensionFactory.Type()))
 
 	tests := []struct {
 		name       string
@@ -59,34 +67,34 @@ func TestService_setupExtensions(t *testing.T) {
 			name: "missing_extension_factory",
 			config: &configmodels.Config{
 				Extensions: map[string]configmodels.Extension{
-					string(exampleExtensionFactory.Type()): exampleExtensionConfig,
+					string(errExtensionFactory.Type()): errExtensionConfig,
 				},
 				Service: configmodels.Service{
 					Extensions: []string{
-						string(exampleExtensionFactory.Type()),
+						string(errExtensionFactory.Type()),
 					},
 				},
 			},
-			wantErrMsg: "extension factory for type \"exampleextension\" is not configured",
+			wantErrMsg: "extension factory for type \"err\" is not configured",
 		},
 		{
 			name: "error_on_create_extension",
 			factories: component.Factories{
 				Extensions: map[configmodels.Type]component.ExtensionFactory{
-					exampleExtensionFactory.Type(): exampleExtensionFactory,
+					errExtensionFactory.Type(): errExtensionFactory,
 				},
 			},
 			config: &configmodels.Config{
 				Extensions: map[string]configmodels.Extension{
-					string(exampleExtensionFactory.Type()): exampleExtensionConfig,
+					string(errExtensionFactory.Type()): errExtensionConfig,
 				},
 				Service: configmodels.Service{
 					Extensions: []string{
-						string(exampleExtensionFactory.Type()),
+						string(errExtensionFactory.Type()),
 					},
 				},
 			},
-			wantErrMsg: "failed to create extension \"exampleextension\": cannot create \"exampleextension\" extension type",
+			wantErrMsg: "failed to create extension \"err\": cannot create \"err\" extension type",
 		},
 		{
 			name: "bad_factory",
@@ -97,7 +105,7 @@ func TestService_setupExtensions(t *testing.T) {
 			},
 			config: &configmodels.Config{
 				Extensions: map[string]configmodels.Extension{
-					string(badExtensionFactory.Type()): badExtensionFactoryCfg,
+					string(badExtensionFactory.Type()): badExtensionCfg,
 				},
 				Service: configmodels.Service{
 					Extensions: []string{
