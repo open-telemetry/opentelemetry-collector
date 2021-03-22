@@ -1,6 +1,0 @@
-cfgsrc:
-  keys:
-    recurse:
-      test:
-        $cfgsrc:
-          key: recurse

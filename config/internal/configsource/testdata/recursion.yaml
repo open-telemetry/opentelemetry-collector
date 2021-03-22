@@ -1,4 +1,0 @@
-recurse:
-  test:
-    $cfgsrc:
-      key: "recurse"
