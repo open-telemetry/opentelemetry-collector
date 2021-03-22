@@ -558,11 +558,9 @@ func TestReceiverLifecycle(t *testing.T) {
 	fstReceiver := newReceiver(t, factory, cfg, tracesSink, metricsSink)
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, fstReceiver.Start(context.Background(), mh))
-
-	sndReceiver := newReceiver(t, factory, cfg, tracesSink, metricsSink)
-
 	require.NoError(t, fstReceiver.Shutdown(context.Background()))
 
+	sndReceiver := newReceiver(t, factory, cfg, tracesSink, metricsSink)
 	require.NoError(t, sndReceiver.Start(context.Background(), mh))
 	require.NoError(t, sndReceiver.Shutdown(context.Background()))
 }
