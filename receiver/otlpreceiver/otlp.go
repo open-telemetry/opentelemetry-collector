@@ -51,7 +51,7 @@ type otlpReceiver struct {
 
 	stopOnce        sync.Once
 	startServerOnce sync.Once
-	stopWaitGroup   sync.WaitGroup
+	shutdownWG      sync.WaitGroup
 
 	logger *zap.Logger
 }
@@ -97,9 +97,9 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 	if err != nil {
 		return err
 	}
-	r.stopWaitGroup.Add(1)
+	r.shutdownWG.Add(1)
 	go func() {
-		defer r.stopWaitGroup.Done()
+		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && errGrpc != grpc.ErrServerStopped {
 			host.ReportFatalError(errGrpc)
@@ -115,9 +115,9 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 	if err != nil {
 		return err
 	}
-	r.stopWaitGroup.Add(1)
+	r.shutdownWG.Add(1)
 	go func() {
-		defer r.stopWaitGroup.Done()
+		defer r.shutdownWG.Done()
 
 		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
@@ -206,7 +206,7 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 			r.serverGRPC.GracefulStop()
 		}
 
-		r.stopWaitGroup.Wait()
+		r.shutdownWG.Wait()
 	})
 	return err
 }
