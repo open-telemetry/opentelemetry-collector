@@ -104,7 +104,7 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 	return nil
 }
 
-// ConsumeTraces receives pdata.Traces for processing by the Traces.
+// ConsumeTraces receives pdata.Traces for processing by the consumer.Traces.
 func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
