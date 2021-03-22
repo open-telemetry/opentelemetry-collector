@@ -61,22 +61,3 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() configmodels.Type
 }
-
-// ConfigUnmarshaler interface is an optional interface that if implemented by a Factory,
-// the configuration loading system will use to unmarshal the config.
-type ConfigUnmarshaler interface {
-	// Unmarshal is a function that un-marshals map data into a config struct in a custom way.
-	// componentSection map[string]interface{}
-	//   The config for this specific component. May be nil or empty if no config available.
-	// intoCfg interface{}
-	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-	Unmarshal(componentSection map[string]interface{}, intoCfg interface{}) error
-}
-
-// CustomUnmarshaler is a function that un-marshals map data into a config struct
-// in a custom way.
-// componentSection map[string]interface{}
-//   The config for this specific component. May be nil or empty if no config available.
-// intoCfg interface{}
-//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-type CustomUnmarshaler func(componentSection map[string]interface{}, intoCfg interface{}) error

@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -340,10 +341,10 @@ func TestRemoteSamplingFileRequiresGRPC(t *testing.T) {
 func TestCustomUnmarshalErrors(t *testing.T) {
 	factory := NewFactory()
 
-	fu, ok := factory.(component.ConfigUnmarshaler)
+	fu, ok := factory.(config.Unmarshaler)
 	assert.True(t, ok)
 
-	err := fu.Unmarshal(nil, nil)
+	err := fu.Unmarshal(config.NewLoader(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
 	err = fu.Unmarshal(nil, &RemoteSamplingConfig{})

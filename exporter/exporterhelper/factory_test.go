@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -52,7 +53,7 @@ func TestNewFactory(t *testing.T) {
 		defaultConfig)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
-	_, ok := factory.(component.ConfigUnmarshaler)
+	_, ok := factory.(config.Unmarshaler)
 	assert.False(t, ok)
 	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, defaultCfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
@@ -73,7 +74,7 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, defaultCfg, factory.CreateDefaultConfig())
 
-	fu, ok := factory.(component.ConfigUnmarshaler)
+	fu, ok := factory.(config.Unmarshaler)
 	assert.True(t, ok)
 	assert.Equal(t, errors.New("my error"), fu.Unmarshal(nil, nil))
 
@@ -106,6 +107,6 @@ func createLogsExporter(context.Context, component.ExporterCreateParams, configm
 	return nopLogsExporter, nil
 }
 
-func customUnmarshaler(map[string]interface{}, interface{}) error {
+func customUnmarshaler(*config.Loader, interface{}) error {
 	return errors.New("my error")
 }

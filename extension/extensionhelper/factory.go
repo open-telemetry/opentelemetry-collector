@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -32,13 +33,13 @@ type CreateServiceExtension func(context.Context, component.ExtensionCreateParam
 
 type factory struct {
 	cfgType                configmodels.Type
-	customUnmarshaler      component.CustomUnmarshaler
+	customUnmarshaler      config.CustomUnmarshaler
 	createDefaultConfig    CreateDefaultConfig
 	createServiceExtension CreateServiceExtension
 }
 
-// WithCustomUnmarshaler implements component.ConfigUnmarshaler.
-func WithCustomUnmarshaler(customUnmarshaler component.CustomUnmarshaler) FactoryOption {
+// WithCustomUnmarshaler implements config.Unmarshaler.
+func WithCustomUnmarshaler(customUnmarshaler config.CustomUnmarshaler) FactoryOption {
 	return func(o *factory) {
 		o.customUnmarshaler = customUnmarshaler
 	}
@@ -85,13 +86,13 @@ func (f *factory) CreateExtension(
 	return f.createServiceExtension(ctx, params, cfg)
 }
 
-var _ component.ConfigUnmarshaler = (*factoryWithUnmarshaler)(nil)
+var _ config.Unmarshaler = (*factoryWithUnmarshaler)(nil)
 
 type factoryWithUnmarshaler struct {
 	*factory
 }
 
 // Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentSection map[string]interface{}, intoCfg interface{}) error {
+func (f *factoryWithUnmarshaler) Unmarshal(componentSection *config.Loader, intoCfg interface{}) error {
 	return f.customUnmarshaler(componentSection, intoCfg)
 }
