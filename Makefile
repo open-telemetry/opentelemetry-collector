@@ -151,6 +151,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
 	cd cmd/mdatagen && go install ./
 	cd cmd/checkdoc && go install ./
