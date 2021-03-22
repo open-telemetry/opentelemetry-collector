@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelcol is the OpenTelemetry Collector that collects stats
-// and traces and exports to a configured backend.
 package defaultcomponents
 
 import (
@@ -29,85 +27,40 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-func TestDefaultComponents(t *testing.T) {
-	expectedExtensions := []configmodels.Type{
-		"health_check",
-		"pprof",
-		"zpages",
-		"fluentbit",
-	}
-	expectedReceivers := []configmodels.Type{
-		"jaeger",
-		"zipkin",
-		"prometheus",
-		"opencensus",
-		"otlp",
-		"hostmetrics",
-		"fluentforward",
-		"kafka",
-	}
-	expectedProcessors := []configmodels.Type{
-		"attributes",
-		"resource",
-		"batch",
-		"memory_limiter",
-		"probabilistic_sampler",
-		"span",
-		"filter",
-	}
-	expectedExporters := []configmodels.Type{
-		"opencensus",
-		"prometheus",
-		"prometheusremotewrite",
-		"logging",
-		"zipkin",
-		"jaeger",
-		"file",
-		"otlp",
-		"otlphttp",
-		"kafka",
+func TestDefaultExtensions(t *testing.T) {
+	allFactories, err := Components()
+	require.NoError(t, err)
+
+	extFactories := allFactories.Extensions
+
+	tests := []struct {
+		extension   configmodels.Type
+		getConfigFn getExtensionConfigFn
+	}{
+		{
+			extension: "health_check",
+		},
+		{
+			extension: "pprof",
+		},
+		{
+			extension: "zpages",
+		},
+		{
+			extension: "fluentbit",
+		},
 	}
 
-	factories, err := Components()
-	assert.NoError(t, err)
+	assert.Equal(t, len(tests), len(extFactories))
+	for _, tt := range tests {
+		t.Run(string(tt.extension), func(t *testing.T) {
+			factory, ok := extFactories[tt.extension]
+			require.True(t, ok)
+			assert.Equal(t, tt.extension, factory.Type())
+			assert.Equal(t, tt.extension, factory.CreateDefaultConfig().Type())
 
-	exts := factories.Extensions
-	assert.Equal(t, len(expectedExtensions), len(exts))
-	for _, k := range expectedExtensions {
-		v, ok := exts[k]
-		assert.True(t, ok)
-		assert.Equal(t, k, v.Type())
-		cfg := v.CreateDefaultConfig()
-		assert.Equal(t, k, cfg.Type())
-
-		verifyExtensionLifecycle(t, v, nil)
-	}
-
-	recvs := factories.Receivers
-	assert.Equal(t, len(expectedReceivers), len(recvs))
-	for _, k := range expectedReceivers {
-		v, ok := recvs[k]
-		require.True(t, ok)
-		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
-	}
-
-	procs := factories.Processors
-	assert.Equal(t, len(expectedProcessors), len(procs))
-	for _, k := range expectedProcessors {
-		v, ok := procs[k]
-		require.True(t, ok)
-		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
-	}
-
-	exps := factories.Exporters
-	assert.Equal(t, len(expectedExporters), len(exps))
-	for _, k := range expectedExporters {
-		v, ok := exps[k]
-		require.True(t, ok)
-		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
+			verifyExtensionLifecycle(t, factory, nil)
+		})
 	}
 }
 
@@ -134,13 +87,12 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 	firstExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
 	require.NoError(t, err)
 	require.NoError(t, firstExt.Start(ctx, host))
+	require.NoError(t, firstExt.Shutdown(ctx))
 
 	secondExt, err := factory.CreateExtension(ctx, extCreateParams, getConfigFn())
-	assert.NoError(t, err)
-
-	assert.NoError(t, firstExt.Shutdown(ctx))
-	assert.NoError(t, secondExt.Start(ctx, host))
-	assert.NoError(t, secondExt.Shutdown(ctx))
+	require.NoError(t, err)
+	require.NoError(t, secondExt.Start(ctx, host))
+	require.NoError(t, secondExt.Shutdown(ctx))
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
