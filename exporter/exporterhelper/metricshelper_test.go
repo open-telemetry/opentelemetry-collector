@@ -48,7 +48,7 @@ var (
 func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsOneMetric(), nil)
 
-	partialErr := consumererror.PartialMetricsError(errors.New("some error"), testdata.GenerateMetricsEmpty())
+	partialErr := consumererror.PartialMetrics(errors.New("some error"), testdata.GenerateMetricsEmpty())
 	assert.EqualValues(
 		t,
 		newMetricsRequest(context.Background(), testdata.GenerateMetricsEmpty(), nil),

@@ -48,7 +48,7 @@ var (
 func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(context.Background(), testdata.GenerateLogDataOneLog(), nil)
 
-	partialErr := consumererror.PartialLogsError(errors.New("some error"), testdata.GenerateLogDataEmpty())
+	partialErr := consumererror.PartialLogs(errors.New("some error"), testdata.GenerateLogDataEmpty())
 	assert.EqualValues(
 		t,
 		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
