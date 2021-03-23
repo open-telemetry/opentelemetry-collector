@@ -111,8 +111,8 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeDoubleHistogram:
 		collectLabelKeysDoubleHistogramDataPoints(metric.DoubleHistogram().DataPoints(), keySet)
-	case pdata.MetricDataTypeDoubleSummary:
-		collectLabelKeysDoubleSummaryDataPoints(metric.DoubleSummary().DataPoints(), keySet)
+	case pdata.MetricDataTypeSummary:
+		collectLabelKeysDoubleSummaryDataPoints(metric.Summary().DataPoints(), keySet)
 	}
 
 	if len(keySet) == 0 {
@@ -171,7 +171,7 @@ func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.DoubleHistogramDataPoi
 	}
 }
 
-func collectLabelKeysDoubleSummaryDataPoints(dhdp pdata.DoubleSummaryDataPointSlice, keySet map[string]struct{}) {
+func collectLabelKeysDoubleSummaryDataPoints(dhdp pdata.SummaryDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
 		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
 	}
@@ -223,7 +223,7 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION
-	case pdata.MetricDataTypeDoubleSummary:
+	case pdata.MetricDataTypeSummary:
 		return ocmetrics.MetricDescriptor_SUMMARY
 	}
 	return ocmetrics.MetricDescriptor_UNSPECIFIED
@@ -243,8 +243,8 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeDoubleHistogram:
 		return doubleHistogramPointToOC(metric.DoubleHistogram().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeDoubleSummary:
-		return doubleSummaryPointToOC(metric.DoubleSummary().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeSummary:
+		return doubleSummaryPointToOC(metric.Summary().DataPoints(), labelKeys)
 	}
 
 	return nil
@@ -392,7 +392,7 @@ func histogramBucketsToOC(bcts []uint64) []*ocmetrics.DistributionValue_Bucket {
 	return ocBuckets
 }
 
-func doubleSummaryPointToOC(dps pdata.DoubleSummaryDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func doubleSummaryPointToOC(dps pdata.SummaryDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
 	if dps.Len() == 0 {
 		return nil
 	}

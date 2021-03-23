@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rename pdata.DoubleSummary to pdata.Summary (#2774)
+
 ## v0.23.0 Beta
 
 ## 🛑 Breaking changes 🛑
