@@ -110,7 +110,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // ReportFatalError is used to report to the host that the receiver encountered
@@ -240,5 +240,5 @@ func (srv *service) shutdownPipelines(ctx context.Context) error {
 		errs = append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Refactored `consumererror` package (#2768)
+  - Eliminated `PartialError` type in favor of signal-specific types
+  - Renamed `CombineErrors` to `Combine`
+
 ## v0.23.0 Beta
 
 ## 🛑 Breaking changes 🛑

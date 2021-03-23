@@ -19,8 +19,14 @@ import (
 	"strings"
 )
 
-// CombineErrors converts a list of errors into one error.
-func CombineErrors(errs []error) error {
+// Combine converts a list of errors into one error.
+//
+// If any of the errors in errs are Permanent then the returned
+// error will also be Permanent.
+//
+// Any signal data associated with an error from this package
+// will be discarded.
+func Combine(errs []error) error {
 	numErrors := len(errs)
 	if numErrors == 0 {
 		// No errors

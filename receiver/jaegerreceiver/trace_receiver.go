@@ -234,7 +234,7 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 			jr.grpc.Stop()
 			jr.grpc = nil
 		}
-		err = consumererror.CombineErrors(errs)
+		err = consumererror.Combine(errs)
 	})
 
 	return err

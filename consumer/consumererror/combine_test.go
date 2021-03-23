@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-func TestCombineErrors(t *testing.T) {
+func TestCombine(t *testing.T) {
 	testCases := []struct {
 		errors            []error
 		expected          string
@@ -53,15 +53,15 @@ func TestCombineErrors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got := CombineErrors(tc.errors)
+		got := Combine(tc.errors)
 		if (got == nil) != tc.expectNil {
-			t.Errorf("CombineErrors(%v) == nil? Got: %t. Want: %t", tc.errors, got == nil, tc.expectNil)
+			t.Errorf("Combine(%v) == nil? Got: %t. Want: %t", tc.errors, got == nil, tc.expectNil)
 		}
 		if got != nil && tc.expected != got.Error() {
-			t.Errorf("CombineErrors(%v) = %q. Want: %q", tc.errors, got, tc.expected)
+			t.Errorf("Combine(%v) = %q. Want: %q", tc.errors, got, tc.expected)
 		}
 		if tc.expectedPermanent && !IsPermanent(got) {
-			t.Errorf("CombineErrors(%v) = %q. Want: consumererror.permanent", tc.errors, got)
+			t.Errorf("Combine(%v) = %q. Want: consumererror.permanent", tc.errors, got)
 		}
 	}
 }
