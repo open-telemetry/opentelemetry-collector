@@ -58,7 +58,7 @@ func createExporterDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func customUnmarshal(componentSection *configload.Loader, intoCfg interface{}) error {
+func customUnmarshal(componentSection *configload.Parser, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 

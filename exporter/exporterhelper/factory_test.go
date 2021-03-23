@@ -107,6 +107,6 @@ func createLogsExporter(context.Context, component.ExporterCreateParams, configm
 	return nopLogsExporter, nil
 }
 
-func customUnmarshaler(*configload.Loader, interface{}) error {
+func customUnmarshaler(*configload.Parser, interface{}) error {
 	return errors.New("my error")
 }

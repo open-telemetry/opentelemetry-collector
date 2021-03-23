@@ -69,24 +69,24 @@ type Factory interface {
 // the configuration loading system will use to unmarshal the config.
 type ConfigUnmarshaler interface {
 	// Unmarshal is a function that loads data into a config struct in a custom way.
-	// componentSection *configload.Loader
-	//   The loader for this specific component. May be nil or empty if no config available.
+	// componentSection *configload.Parser
+	//   The parser for this specific component. May be nil or empty if no config available.
 	// intoCfg interface{}
 	//   An empty interface wrapping a pointer to the config struct to unmarshal into.
-	Unmarshal(componentSection *configload.Loader, intoCfg interface{}) error
+	Unmarshal(componentSection *configload.Parser, intoCfg interface{}) error
 }
 
 // CustomUnmarshaler is a function that loads data into a config struct
 // in a custom way.
-// componentSection *configload.Loader
-//   The loader for this specific component. May be nil or empty if no config available.
+// componentSection *configload.Parser
+//   The parser for this specific component. May be nil or empty if no config available.
 // intoCfg interface{}
 //   An empty interface wrapping a pointer to the config struct to unmarshal into.
-type CustomUnmarshaler func(componentSection *configload.Loader, intoCfg interface{}) error
+type CustomUnmarshaler func(componentSection *configload.Parser, intoCfg interface{}) error
 
 // ToCustomUnmarshaler creates a custom unmarshaler from a Viper unmarshaler.
 func ToCustomUnmarshaler(viperUnmarshaler func(*viper.Viper, interface{}) error) CustomUnmarshaler {
-	return func(componentSection *configload.Loader, intoCfg interface{}) error {
+	return func(componentSection *configload.Parser, intoCfg interface{}) error {
 		return viperUnmarshaler(componentSection.Viper(), intoCfg)
 	}
 }

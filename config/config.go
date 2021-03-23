@@ -546,7 +546,7 @@ func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
 	return defaultUnmarshaler
 }
 
-func defaultUnmarshaler(componentSection *configload.Loader, intoCfg interface{}) error {
+func defaultUnmarshaler(componentSection *configload.Parser, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 

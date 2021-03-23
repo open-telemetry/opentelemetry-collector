@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package configload implements the configuration Loader struct.
+// package configload implements the configuration Parser.
 package configload
 
 import (
@@ -31,34 +31,34 @@ func NewViper() *viper.Viper {
 	return viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter))
 }
 
-// NewLoader creates a new Loader instance.
-func NewLoader() *Loader {
-	return &Loader{
+// NewParser creates a new Parser instance.
+func NewParser() *Parser {
+	return &Parser{
 		v: NewViper(),
 	}
 }
 
-// FromViper creates a Loader from a Viper instance.
-func FromViper(v *viper.Viper) *Loader {
-	return &Loader{v: v}
+// FromViper creates a Parser from a Viper instance.
+func FromViper(v *viper.Viper) *Parser {
+	return &Parser{v: v}
 }
 
-// Loader loads configuration.
-type Loader struct {
+// Parser loads configuration.
+type Parser struct {
 	v *viper.Viper
 }
 
 // Viper returns the underlying Viper instance.
-func (l *Loader) Viper() *viper.Viper {
+func (l *Parser) Viper() *viper.Viper {
 	return l.v
 }
 
 // UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent.
-func (l *Loader) UnmarshalExact(intoCfg interface{}) error {
+func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
 	return l.v.UnmarshalExact(intoCfg)
 }
 
-// ToStringMap creates a map[string]interface{} from a ConfigLoader.
-func (l *Loader) ToStringMap() map[string]interface{} {
+// ToStringMap creates a map[string]interface{} from a Parser.
+func (l *Parser) ToStringMap() map[string]interface{} {
 	return cast.ToStringMap(l.v)
 }

@@ -93,6 +93,6 @@ type factoryWithUnmarshaler struct {
 }
 
 // Unmarshal un-marshals the config using the provided custom unmarshaler.
-func (f *factoryWithUnmarshaler) Unmarshal(componentSection *configload.Loader, intoCfg interface{}) error {
+func (f *factoryWithUnmarshaler) Unmarshal(componentSection *configload.Parser, intoCfg interface{}) error {
 	return f.customUnmarshaler(componentSection, intoCfg)
 }

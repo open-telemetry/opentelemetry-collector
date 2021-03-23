@@ -91,6 +91,6 @@ func createLogsProcessor(context.Context, component.ProcessorCreateParams, confi
 	return nil, nil
 }
 
-func customUnmarshaler(*configload.Loader, interface{}) error {
+func customUnmarshaler(*configload.Parser, interface{}) error {
 	return errors.New("my error")
 }
