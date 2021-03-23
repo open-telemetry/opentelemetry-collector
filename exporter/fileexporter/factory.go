@@ -16,7 +16,6 @@ package fileexporter
 
 import (
 	"context"
-	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -49,10 +48,10 @@ func createDefaultConfig() configmodels.Exporter {
 
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
-	return createExporter(cfg)
+	return newTracesExporter(cfg.(*Config), params)
 }
 
 func createMetricsExporter(
@@ -70,31 +69,3 @@ func createLogsExporter(
 ) (component.LogsExporter, error) {
 	return createExporter(cfg)
 }
-
-func createExporter(config configmodels.Exporter) (*fileExporter, error) {
-	cfg := config.(*Config)
-
-	// There must be one exporter for metrics, traces, and logs. We maintain a
-	// map of exporters per config.
-
-	// Check to see if there is already a exporter for this config.
-	exporter, ok := exporters[cfg]
-
-	if !ok {
-		file, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-		if err != nil {
-			return nil, err
-		}
-		exporter = &fileExporter{file: file}
-
-		// Remember the receiver in the map
-		exporters[cfg] = exporter
-	}
-	return exporter, nil
-}
-
-// This is the map of already created File exporters for particular configurations.
-// We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one Receiver object per configuration.
-var exporters = map[*Config]*fileExporter{}

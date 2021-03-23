@@ -17,6 +17,7 @@ package fileexporter
 import (
 	"context"
 	"io"
+	"os"
 	"sync"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -24,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal"
 )
 
@@ -37,17 +39,24 @@ type fileExporter struct {
 	mutex sync.Mutex
 }
 
-func (e *fileExporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func newTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+	fe, err := createExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewTraceExporter(cfg, params.Logger, fe.pushTraces, exporterhelper.WithShutdown(fe.shutdown))
+}
+
+func (e *fileExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	return exportMessageAsLine(e, internal.TracesToOtlp(td.InternalRep()))
 }
 
-func (e *fileExporter) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (e *fileExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
 	return exportMessageAsLine(e, internal.MetricsToOtlp(md.InternalRep()))
 }
 
-func (e *fileExporter) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
-	request := internal.LogsToOtlp(ld.InternalRep())
-	return exportMessageAsLine(e, request)
+func (e *fileExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
+	return exportMessageAsLine(e, internal.LogsToOtlp(ld.InternalRep()))
 }
 
 func exportMessageAsLine(e *fileExporter, message proto.Message) error {
@@ -63,11 +72,33 @@ func exportMessageAsLine(e *fileExporter, message proto.Message) error {
 	return nil
 }
 
-func (e *fileExporter) Start(context.Context, component.Host) error {
-	return nil
-}
-
 // Shutdown stops the exporter and is invoked during shutdown.
-func (e *fileExporter) Shutdown(context.Context) error {
+func (e *fileExporter) shutdown(context.Context) error {
 	return e.file.Close()
 }
+
+func createExporter(cfg *Config) (*fileExporter, error) {
+	// There must be one exporter for metrics, traces, and logs. We maintain a
+	// map of exporters per config.
+
+	// Check to see if there is already a exporter for this config.
+	exporter, ok := exporters[cfg]
+
+	if !ok {
+		file, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		exporter = &fileExporter{file: file}
+
+		// Remember the receiver in the map
+		exporters[cfg] = exporter
+	}
+	return exporter, nil
+}
+
+// This is the map of already created File exporters for particular configurations.
+// We maintain this map because the Factory is asked traces, metrics and logs receivers separately
+// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
+// create separate objects, they must use one Receiver object per configuration.
+var exporters = map[*Config]*fileExporter{}

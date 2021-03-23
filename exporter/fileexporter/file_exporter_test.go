@@ -41,8 +41,8 @@ func TestFileTraceExporterNoErrors(t *testing.T) {
 
 	td := testdata.GenerateTraceDataTwoSpansSameResource()
 
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), td))
-	assert.NoError(t, lte.Shutdown(context.Background()))
+	assert.NoError(t, lte.pushTraces(context.Background(), td))
+	assert.NoError(t, lte.shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
 	got := &collectortrace.ExportTraceServiceRequest{}
@@ -57,8 +57,8 @@ func TestFileMetricsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lme)
 
 	md := testdata.GenerateMetricsTwoMetrics()
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), md))
-	assert.NoError(t, lme.Shutdown(context.Background()))
+	assert.NoError(t, lme.pushMetrics(context.Background(), md))
+	assert.NoError(t, lme.shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
 	j := &collectormetrics.ExportMetricsServiceRequest{}
@@ -121,8 +121,8 @@ func TestFileLogsExporterNoErrors(t *testing.T) {
 			},
 		},
 	}
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.pushLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
+	assert.NoError(t, exporter.shutdown(context.Background()))
 
 	var unmarshaler = &jsonpb.Unmarshaler{}
 	var j collectorlogs.ExportLogsServiceRequest
@@ -214,8 +214,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 			exporter := &fileExporter{file: mf}
 			require.NotNil(t, exporter)
 
-			assert.Error(t, exporter.ConsumeLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
-			assert.NoError(t, exporter.Shutdown(context.Background()))
+			assert.Error(t, exporter.pushLogs(context.Background(), pdata.LogsFromInternalRep(internal.LogsFromOtlp(otlp))))
+			assert.NoError(t, exporter.shutdown(context.Background()))
 		})
 	}
 }
