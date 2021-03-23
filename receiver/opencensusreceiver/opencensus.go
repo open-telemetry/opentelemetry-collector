@@ -261,7 +261,7 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 			}
 		}()
 		go func() {
-			if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != nil {
+			if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != http.ErrServerClosed {
 				host.ReportFatalError(errHTTP)
 			}
 		}()
