@@ -61,7 +61,7 @@ type ZipkinReceiver struct {
 
 	startOnce  sync.Once
 	stopOnce   sync.Once
-	shutdownCh chan struct{}
+	shutdownWG sync.WaitGroup
 	server     *http.Server
 	config     *Config
 }
@@ -102,13 +102,12 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 		if err != nil {
 			return
 		}
-		zr.shutdownCh = make(chan struct{})
+		zr.shutdownWG.Add(1)
 		go func() {
-			defer close(zr.shutdownCh)
+			defer zr.shutdownWG.Done()
 
-			err = zr.server.Serve(listener)
-			if err != nil && err != http.ErrServerClosed {
-				host.ReportFatalError(err)
+			if errHTTP := zr.server.Serve(listener); errHTTP != http.ErrServerClosed {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 	})
@@ -168,9 +167,7 @@ func (zr *ZipkinReceiver) Shutdown(context.Context) error {
 	var err = componenterror.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
-		if zr.shutdownCh != nil {
-			<-zr.shutdownCh
-		}
+		zr.shutdownWG.Wait()
 	})
 	return err
 }
