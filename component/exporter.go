@@ -31,19 +31,19 @@ type Exporter interface {
 // TracesExporter is a Exporter that can consume traces.
 type TracesExporter interface {
 	Exporter
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // MetricsExporter is an Exporter that can consume metrics.
 type MetricsExporter interface {
 	Exporter
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // LogsExporter is an Exporter that can consume logs.
 type LogsExporter interface {
 	Exporter
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 // ExporterCreateParams is passed to Create*Exporter functions.

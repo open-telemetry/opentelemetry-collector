@@ -28,7 +28,7 @@ import (
 )
 
 // NewMetrics wraps multiple metrics consumers in a single one.
-func NewMetrics(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewMetrics(mcs []consumer.Metrics) consumer.Metrics {
 	if len(mcs) == 1 {
 		// Don't wrap if no need to do it.
 		return mcs[0]
@@ -36,9 +36,9 @@ func NewMetrics(mcs []consumer.MetricsConsumer) consumer.MetricsConsumer {
 	return metricsConsumer(mcs)
 }
 
-type metricsConsumer []consumer.MetricsConsumer
+type metricsConsumer []consumer.Metrics
 
-var _ consumer.MetricsConsumer = (*metricsConsumer)(nil)
+var _ consumer.Metrics = (*metricsConsumer)(nil)
 
 // ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
 func (mfc metricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -52,7 +52,7 @@ func (mfc metricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics)
 }
 
 // NewTraces wraps multiple trace consumers in a single one.
-func NewTraces(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
+func NewTraces(tcs []consumer.Traces) consumer.Traces {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
 		return tcs[0]
@@ -60,9 +60,9 @@ func NewTraces(tcs []consumer.TracesConsumer) consumer.TracesConsumer {
 	return traceConsumer(tcs)
 }
 
-type traceConsumer []consumer.TracesConsumer
+type traceConsumer []consumer.Traces
 
-var _ consumer.TracesConsumer = (*traceConsumer)(nil)
+var _ consumer.Traces = (*traceConsumer)(nil)
 
 // ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
 func (tfc traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -76,7 +76,7 @@ func (tfc traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) err
 }
 
 // NewLogs wraps multiple log consumers in a single one.
-func NewLogs(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
+func NewLogs(lcs []consumer.Logs) consumer.Logs {
 	if len(lcs) == 1 {
 		// Don't wrap if no need to do it.
 		return lcs[0]
@@ -84,15 +84,15 @@ func NewLogs(lcs []consumer.LogsConsumer) consumer.LogsConsumer {
 	return logsConsumer(lcs)
 }
 
-type logsConsumer []consumer.LogsConsumer
+type logsConsumer []consumer.Logs
 
-var _ consumer.LogsConsumer = (*logsConsumer)(nil)
+var _ consumer.Logs = (*logsConsumer)(nil)
 
 // ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
-func (fc logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (lfc logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errs []error
-	for _, tc := range fc {
-		if err := tc.ConsumeLogs(ctx, ld); err != nil {
+	for _, lc := range lfc {
+		if err := lc.ConsumeLogs(ctx, ld); err != nil {
 			errs = append(errs, err)
 		}
 	}

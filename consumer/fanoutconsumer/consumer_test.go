@@ -28,12 +28,12 @@ import (
 
 func TestTracesProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewTracesNop()
-	tfc := NewTraces([]consumer.TracesConsumer{nop})
+	tfc := NewTraces([]consumer.Traces{nop})
 	assert.Same(t, nop, tfc)
 }
 
 func TestTracesProcessorMultiplexing(t *testing.T) {
-	processors := make([]consumer.TracesConsumer, 3)
+	processors := make([]consumer.Traces, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)
 	}
@@ -59,7 +59,7 @@ func TestTracesProcessorMultiplexing(t *testing.T) {
 }
 
 func TestTraceProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]consumer.TracesConsumer, 3)
+	processors := make([]consumer.Traces, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.TracesSink)
 	}
@@ -82,12 +82,12 @@ func TestTraceProcessorWhenOneErrors(t *testing.T) {
 
 func TestMetricsProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewMetricsNop()
-	mfc := NewMetrics([]consumer.MetricsConsumer{nop})
+	mfc := NewMetrics([]consumer.Metrics{nop})
 	assert.Same(t, nop, mfc)
 }
 
 func TestMetricsProcessorMultiplexing(t *testing.T) {
-	processors := make([]consumer.MetricsConsumer, 3)
+	processors := make([]consumer.Metrics, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.MetricsSink)
 	}
@@ -113,7 +113,7 @@ func TestMetricsProcessorMultiplexing(t *testing.T) {
 }
 
 func TestMetricsProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]consumer.MetricsConsumer, 3)
+	processors := make([]consumer.Metrics, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.MetricsSink)
 	}
@@ -136,12 +136,12 @@ func TestMetricsProcessorWhenOneErrors(t *testing.T) {
 
 func TestLogsProcessorNotMultiplexing(t *testing.T) {
 	nop := consumertest.NewLogsNop()
-	lfc := NewLogs([]consumer.LogsConsumer{nop})
+	lfc := NewLogs([]consumer.Logs{nop})
 	assert.Same(t, nop, lfc)
 }
 
 func TestLogsProcessorMultiplexing(t *testing.T) {
-	processors := make([]consumer.LogsConsumer, 3)
+	processors := make([]consumer.Logs, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.LogsSink)
 	}
@@ -167,7 +167,7 @@ func TestLogsProcessorMultiplexing(t *testing.T) {
 }
 
 func TestLogsProcessorWhenOneErrors(t *testing.T) {
-	processors := make([]consumer.LogsConsumer, 3)
+	processors := make([]consumer.Logs, 3)
 	for i := range processors {
 		processors[i] = new(consumertest.LogsSink)
 	}

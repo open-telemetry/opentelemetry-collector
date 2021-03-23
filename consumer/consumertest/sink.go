@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// TracesSink is a consumer.TracesConsumer that acts like a sink that
+// TracesSink is a consumer.Traces that acts like a sink that
 // stores all traces and allows querying them for testing.
 type TracesSink struct {
 	mu         sync.Mutex
@@ -30,7 +30,7 @@ type TracesSink struct {
 	spansCount int
 }
 
-var _ consumer.TracesConsumer = (*TracesSink)(nil)
+var _ consumer.Traces = (*TracesSink)(nil)
 
 // ConsumeTraces stores traces to this sink.
 func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {
@@ -69,7 +69,7 @@ func (ste *TracesSink) Reset() {
 	ste.spansCount = 0
 }
 
-// MetricsSink is a consumer.MetricsConsumer that acts like a sink that
+// MetricsSink is a consumer.Metrics that acts like a sink that
 // stores all metrics and allows querying them for testing.
 type MetricsSink struct {
 	mu           sync.Mutex
@@ -77,7 +77,7 @@ type MetricsSink struct {
 	metricsCount int
 }
 
-var _ consumer.MetricsConsumer = (*MetricsSink)(nil)
+var _ consumer.Metrics = (*MetricsSink)(nil)
 
 // ConsumeMetrics stores metrics to this sink.
 func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
@@ -116,7 +116,7 @@ func (sme *MetricsSink) Reset() {
 	sme.metricsCount = 0
 }
 
-// LogsSink is a consumer.LogsConsumer that acts like a sink that
+// LogsSink is a consumer.Logs that acts like a sink that
 // stores all logs and allows querying them for testing.
 type LogsSink struct {
 	mu              sync.Mutex
@@ -124,7 +124,7 @@ type LogsSink struct {
 	logRecordsCount int
 }
 
-var _ consumer.LogsConsumer = (*LogsSink)(nil)
+var _ consumer.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
 func (sle *LogsSink) ConsumeLogs(_ context.Context, ld pdata.Logs) error {

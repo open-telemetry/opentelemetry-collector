@@ -90,7 +90,7 @@ type controller struct {
 	name               string
 	logger             *zap.Logger
 	collectionInterval time.Duration
-	nextConsumer       consumer.MetricsConsumer
+	nextConsumer       consumer.Metrics
 
 	metricsScrapers        *multiMetricScraper
 	resourceMetricScrapers []ResourceMetricsScraper
@@ -106,7 +106,7 @@ type controller struct {
 func NewScraperControllerReceiver(
 	cfg *ScraperControllerSettings,
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Receiver, error) {
 	if nextConsumer == nil {

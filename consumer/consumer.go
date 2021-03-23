@@ -21,23 +21,23 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// MetricsConsumer is the new metrics consumer interface that receives pdata.Metrics, processes it
+// Metrics is the new metrics consumer interface that receives pdata.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type MetricsConsumer interface {
+type Metrics interface {
 	// ConsumeMetrics receives pdata.Metrics for consumption.
 	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
 }
 
-// TracesConsumer is an interface that receives pdata.Traces, processes it
+// Traces is an interface that receives pdata.Traces, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type TracesConsumer interface {
+type Traces interface {
 	// ConsumeTraces receives pdata.Traces for consumption.
 	ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }
 
-// LogsConsumer is an interface that receives pdata.Logs, processes it
+// Logs is an interface that receives pdata.Logs, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
-type LogsConsumer interface {
+type Logs interface {
 	// ConsumeLogs receives pdata.Logs for consumption.
 	ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 }

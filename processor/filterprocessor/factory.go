@@ -51,7 +51,7 @@ func createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	fp, err := newFilterMetricProcessor(params.Logger, cfg.(*Config))
 	if err != nil {

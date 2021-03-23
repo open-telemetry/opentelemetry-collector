@@ -66,10 +66,10 @@ func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	receiver := createReceiver(cfg)
-	receiver.TracesConsumer = nextConsumer
+	receiver.Traces = nextConsumer
 	return receiver, nil
 }
 
@@ -78,10 +78,10 @@ func createMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	receiver := createReceiver(cfg)
-	receiver.MetricsConsumer = nextConsumer
+	receiver.Metrics = nextConsumer
 	return receiver, nil
 }
 
@@ -89,10 +89,10 @@ func createLogsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	receiver := createReceiver(cfg)
-	receiver.LogsConsumer = nextConsumer
+	receiver.Logs = nextConsumer
 
 	return receiver, nil
 }
@@ -116,9 +116,9 @@ func createReceiver(cfg configmodels.Receiver) *ExampleReceiverProducer {
 type ExampleReceiverProducer struct {
 	Started bool
 	Stopped bool
-	consumer.TracesConsumer
-	consumer.MetricsConsumer
-	consumer.LogsConsumer
+	consumer.Traces
+	consumer.Metrics
+	consumer.Logs
 }
 
 // Start tells the receiver to start its processing.

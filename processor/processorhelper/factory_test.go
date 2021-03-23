@@ -79,15 +79,15 @@ func defaultConfig() configmodels.Processor {
 	return defaultCfg
 }
 
-func createTraceProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.TracesConsumer) (component.TracesProcessor, error) {
+func createTraceProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Traces) (component.TracesProcessor, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.MetricsConsumer) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Logs) (component.LogsProcessor, error) {
 	return nil, nil
 }
 

@@ -118,7 +118,7 @@ func (f *factory) CreateTracesExporter(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// CreateMetricsExporter creates a consumer.MetricsConsumer based on this config.
+// CreateMetricsExporter creates a component.MetricsExporter based on this config.
 func (f *factory) CreateMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,

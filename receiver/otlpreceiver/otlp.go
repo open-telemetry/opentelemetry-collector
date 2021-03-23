@@ -198,7 +198,7 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.TracesConsumer) error {
+func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Traces) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -217,7 +217,7 @@ func (r *otlpReceiver) registerTraceConsumer(ctx context.Context, tc consumer.Tr
 	return nil
 }
 
-func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.MetricsConsumer) error {
+func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.Metrics) error {
 	if mc == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -231,7 +231,7 @@ func (r *otlpReceiver) registerMetricsConsumer(ctx context.Context, mc consumer.
 	return nil
 }
 
-func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.LogsConsumer) error {
+func (r *otlpReceiver) registerLogsConsumer(ctx context.Context, tc consumer.Logs) error {
 	if tc == nil {
 		return componenterror.ErrNilNextConsumer
 	}

@@ -154,7 +154,7 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 	}
 }
 
-var _ consumer.TracesConsumer = (*MockTraceConsumer)(nil)
+var _ consumer.Traces = (*MockTraceConsumer)(nil)
 
 func (mb *MockBackend) ConsumeLogs(ld pdata.Logs) {
 	mb.recordMutex.Lock()
@@ -205,7 +205,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) e
 	return nil
 }
 
-var _ consumer.MetricsConsumer = (*MockMetricConsumer)(nil)
+var _ consumer.Metrics = (*MockMetricConsumer)(nil)
 
 type MockMetricConsumer struct {
 	numMetricsReceived atomic.Uint64

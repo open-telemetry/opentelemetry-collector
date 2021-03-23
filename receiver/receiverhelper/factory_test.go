@@ -79,15 +79,15 @@ func defaultConfig() configmodels.Receiver {
 	return defaultCfg
 }
 
-func createTraceReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.TracesConsumer) (component.TracesReceiver, error) {
+func createTraceReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Traces) (component.TracesReceiver, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.LogsConsumer) (component.LogsReceiver, error) {
+func createLogsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Logs) (component.LogsReceiver, error) {
 	return nil, nil
 }
 

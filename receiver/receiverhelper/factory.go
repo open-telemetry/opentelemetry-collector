@@ -60,13 +60,13 @@ func WithLogs(createLogsReceiver CreateLogsReceiver) FactoryOption {
 type CreateDefaultConfig func() configmodels.Receiver
 
 // CreateTraceReceiver is the equivalent of component.ReceiverFactory.CreateTracesReceiver()
-type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.TracesConsumer) (component.TracesReceiver, error)
+type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Traces) (component.TracesReceiver, error)
 
 // CreateMetricsReceiver is the equivalent of component.ReceiverFactory.CreateMetricsReceiver()
-type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.MetricsConsumer) (component.MetricsReceiver, error)
+type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Metrics) (component.MetricsReceiver, error)
 
 // CreateLogsReceiver is the equivalent of component.ReceiverFactory.CreateLogsReceiver()
-type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.LogsConsumer) (component.LogsReceiver, error)
+type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Logs) (component.LogsReceiver, error)
 
 type factory struct {
 	cfgType               configmodels.Type
@@ -113,19 +113,19 @@ func (f *factory) CreateTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer) (component.TracesReceiver, error) {
+	nextConsumer consumer.Traces) (component.TracesReceiver, error) {
 	if f.createTraceReceiver != nil {
 		return f.createTraceReceiver(ctx, params, cfg, nextConsumer)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// CreateMetricsReceiver creates a consumer.MetricsConsumer based on this config.
+// CreateMetricsReceiver creates a component.MetricsReceiver based on this config.
 func (f *factory) CreateMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if f.createMetricsReceiver != nil {
 		return f.createMetricsReceiver(ctx, params, cfg, nextConsumer)
 	}
@@ -137,7 +137,7 @@ func (f *factory) CreateLogsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	if f.createLogsReceiver != nil {
 		return f.createLogsReceiver(ctx, params, cfg, nextConsumer)
