@@ -49,12 +49,13 @@ type BuiltPipelines map[*configmodels.Pipeline]*builtPipeline
 func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
 	for _, bp := range bps {
 		bp.logger.Info("Pipeline is starting...")
+		hostWrapper := newHostWrapper(host, bp.logger)
 		// Start in reverse order, starting from the back of processors pipeline.
 		// This is important so that processors that are earlier in the pipeline and
 		// reference processors that are later in the pipeline do not start sending
 		// data to later pipelines which are not yet started.
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			if err := bp.processors[i].Start(ctx, host); err != nil {
+			if err := bp.processors[i].Start(ctx, hostWrapper); err != nil {
 				return err
 			}
 		}
@@ -200,7 +201,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 
 	pipelineLogger := pb.logger.With(zap.String("pipeline_name", pipelineCfg.Name),
 		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
-	pipelineLogger.Info("Pipeline is enabled.")
+	pipelineLogger.Info("Pipeline was built.")
 
 	bp := &builtPipeline{
 		pipelineLogger,

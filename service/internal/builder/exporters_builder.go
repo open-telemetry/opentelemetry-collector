@@ -91,7 +91,7 @@ func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
 	for _, exp := range exps {
 		exp.logger.Info("Exporter is starting...")
 
-		if err := exp.Start(ctx, host); err != nil {
+		if err := exp.Start(ctx, newHostWrapper(host, exp.logger)); err != nil {
 			return err
 		}
 		exp.logger.Info("Exporter started.")
@@ -299,7 +299,7 @@ func (eb *exportersBuilder) buildExporter(
 		}
 	}
 
-	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))
+	eb.logger.Info("Exporter was built.", zap.String("exporter", config.Name()))
 
 	return exporter, nil
 }
