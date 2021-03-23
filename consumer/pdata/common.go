@@ -24,7 +24,7 @@ import (
 )
 
 // AttributeValueType specifies the type of AttributeValue.
-type AttributeValueType int
+type AttributeValueType int32
 
 const (
 	AttributeValueNULL AttributeValueType = iota
