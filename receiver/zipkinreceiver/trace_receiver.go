@@ -59,10 +59,11 @@ type ZipkinReceiver struct {
 	nextConsumer consumer.TracesConsumer
 	instanceName string
 
-	startOnce sync.Once
-	stopOnce  sync.Once
-	server    *http.Server
-	config    *Config
+	startOnce  sync.Once
+	stopOnce   sync.Once
+	shutdownWG sync.WaitGroup
+	server     *http.Server
+	config     *Config
 }
 
 var _ http.Handler = (*ZipkinReceiver)(nil)
@@ -99,13 +100,14 @@ func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error 
 		var listener net.Listener
 		listener, err = zr.config.HTTPServerSettings.ToListener()
 		if err != nil {
-			host.ReportFatalError(err)
 			return
 		}
+		zr.shutdownWG.Add(1)
 		go func() {
-			err = zr.server.Serve(listener)
-			if err != nil {
-				host.ReportFatalError(err)
+			defer zr.shutdownWG.Done()
+
+			if errHTTP := zr.server.Serve(listener); errHTTP != http.ErrServerClosed {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 	})
@@ -165,6 +167,7 @@ func (zr *ZipkinReceiver) Shutdown(context.Context) error {
 	var err = componenterror.ErrAlreadyStopped
 	zr.stopOnce.Do(func() {
 		err = zr.server.Close()
+		zr.shutdownWG.Wait()
 	})
 	return err
 }

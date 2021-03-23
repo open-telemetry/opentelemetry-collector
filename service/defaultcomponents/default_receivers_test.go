@@ -75,8 +75,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "zipkin",
-			skipLifecyle: true, // TODO: Upcoming PR to fix zipkin lifecycle.
+			receiver: "zipkin",
 		},
 	}
 

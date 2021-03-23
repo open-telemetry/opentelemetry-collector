@@ -119,7 +119,7 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 	go func() {
 		defer r.shutdownWG.Done()
 
-		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && errHTTP != http.ErrServerClosed {
+		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
