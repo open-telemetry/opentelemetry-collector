@@ -54,7 +54,7 @@ func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Ho
 		// reference processors that are later in the pipeline do not start sending
 		// data to later pipelines which are not yet started.
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			if err := bp.processors[i].Start(ctx, host); err != nil {
+			if err := bp.processors[i].Start(ctx, newHostWrapper(host, bp.logger)); err != nil {
 				return err
 			}
 		}
