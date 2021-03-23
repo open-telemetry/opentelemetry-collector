@@ -52,7 +52,7 @@ func TestLogsRequest(t *testing.T) {
 	assert.EqualValues(
 		t,
 		newLogsRequest(context.Background(), testdata.GenerateLogDataEmpty(), nil),
-		lr.onPartialError(logErr),
+		lr.onError(logErr),
 	)
 }
 

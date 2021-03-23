@@ -45,7 +45,7 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) r
 	}
 }
 
-func (req *tracesRequest) onPartialError(err error) request {
+func (req *tracesRequest) onError(err error) request {
 	return newTracesRequest(req.ctx, consumererror.GetTraces(err), req.pusher)
 }
 

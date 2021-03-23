@@ -339,7 +339,7 @@ func (mer *mockErrorRequest) export(_ context.Context) error {
 	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) onPartialError(error) request {
+func (mer *mockErrorRequest) onError(error) request {
 	return mer
 }
 
@@ -374,7 +374,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *mockRequest) onPartialError(error) request {
+func (m *mockRequest) onError(error) request {
 	return &mockRequest{
 		baseRequest:  m.baseRequest,
 		cnt:          1,

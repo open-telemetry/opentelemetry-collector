@@ -245,10 +245,7 @@ func (rs *retrySender) send(req request) error {
 			return err
 		}
 
-		// If partial error, update data and stats with non exported data.
-		if consumererror.IsPartial(err) {
-			req = req.onPartialError(err)
-		}
+		req = req.onError(err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {

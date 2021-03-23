@@ -45,8 +45,9 @@ type request interface {
 	// setContext updates the Context of the requests.
 	setContext(context.Context)
 	export(ctx context.Context) error
-	// Returns a new request that contains the items left to be sent.
-	onPartialError(error) request
+	// Returns a new request may contain the items left to be sent if some items failed to process and can be retried.
+	// Otherwise, it should return the original request.
+	onError(error) request
 	// Returns the count of spans/metric points or log records.
 	count() int
 }
