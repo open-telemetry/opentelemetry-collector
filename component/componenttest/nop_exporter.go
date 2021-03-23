@@ -74,7 +74,7 @@ func (f *nopExporterFactory) CreateLogsExporter(
 }
 
 var nopExporterInstance = &nopExporter{
-	Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+	Component: componenthelper.New(),
 	Traces:    consumertest.NewTracesNop(),
 	Metrics:   consumertest.NewMetricsNop(),
 	Logs:      consumertest.NewLogsNop(),

@@ -29,8 +29,12 @@ type ScrapeMetrics func(context.Context) (pdata.MetricSlice, error)
 // Scrape resource metrics.
 type ScrapeResourceMetrics func(context.Context) (pdata.ResourceMetricsSlice, error)
 
+type baseSettings struct {
+	componentOptions []componenthelper.Option
+}
+
 // ScraperOption apply changes to internal options.
-type ScraperOption func(*componenthelper.ComponentSettings)
+type ScraperOption func(*baseSettings)
 
 type BaseScraper interface {
 	component.Component
@@ -64,15 +68,15 @@ func (b baseScraper) Name() string {
 
 // WithStart sets the function that will be called on startup.
 func WithStart(start componenthelper.Start) ScraperOption {
-	return func(s *componenthelper.ComponentSettings) {
-		s.Start = start
+	return func(o *baseSettings) {
+		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
 }
 
 // WithShutdown sets the function that will be called on shutdown.
 func WithShutdown(shutdown componenthelper.Shutdown) ScraperOption {
-	return func(s *componenthelper.ComponentSettings) {
-		s.Shutdown = shutdown
+	return func(o *baseSettings) {
+		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
 }
 
@@ -91,14 +95,14 @@ func NewMetricsScraper(
 	scrape ScrapeMetrics,
 	options ...ScraperOption,
 ) MetricsScraper {
-	set := componenthelper.DefaultComponentSettings()
+	set := &baseSettings{}
 	for _, op := range options {
 		op(set)
 	}
 
 	ms := &metricsScraper{
 		baseScraper: baseScraper{
-			Component: componenthelper.NewComponent(set),
+			Component: componenthelper.New(set.componentOptions...),
 			name:      name,
 		},
 		ScrapeMetrics: scrape,
@@ -130,14 +134,14 @@ func NewResourceMetricsScraper(
 	scrape ScrapeResourceMetrics,
 	options ...ScraperOption,
 ) ResourceMetricsScraper {
-	set := componenthelper.DefaultComponentSettings()
+	set := &baseSettings{}
 	for _, op := range options {
 		op(set)
 	}
 
 	rms := &resourceMetricsScraper{
 		baseScraper: baseScraper{
-			Component: componenthelper.NewComponent(set),
+			Component: componenthelper.New(set.componentOptions...),
 			name:      name,
 		},
 		ScrapeResourceMetrics: scrape,

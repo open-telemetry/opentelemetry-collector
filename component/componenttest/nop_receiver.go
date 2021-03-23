@@ -76,7 +76,7 @@ func (f *nopReceiverFactory) CreateLogsReceiver(
 }
 
 var nopReceiverInstance = &nopReceiver{
-	Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+	Component: componenthelper.New(),
 }
 
 // nopReceiver stores consumed traces and metrics for testing purposes.
