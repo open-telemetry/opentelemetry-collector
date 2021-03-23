@@ -85,7 +85,7 @@ type customUnamarshaller struct {
 
 var _ Unmarshaller = (*customUnamarshaller)(nil)
 
-func (c customUnamarshaller) Unmarshal(bytes []byte) (pdata.Traces, error) {
+func (c customUnamarshaller) Unmarshal([]byte) (pdata.Traces, error) {
 	panic("implement me")
 }
 

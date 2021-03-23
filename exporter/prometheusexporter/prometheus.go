@@ -101,6 +101,6 @@ func (pe *prometheusExporter) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	return nil
 }
 
-func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
+func (pe *prometheusExporter) Shutdown(_ context.Context) error {
 	return pe.shutdownFunc()
 }
