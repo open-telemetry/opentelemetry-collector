@@ -46,7 +46,11 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) r
 }
 
 func (req *tracesRequest) onError(err error) request {
-	return newTracesRequest(req.ctx, consumererror.GetTraces(err), req.pusher)
+	traceError := &consumererror.Traces{}
+	if consumererror.AsTraces(err, traceError) {
+		return newTracesRequest(req.ctx, traceError.GetTraces(), req.pusher)
+	}
+	return req
 }
 
 func (req *tracesRequest) export(ctx context.Context) error {

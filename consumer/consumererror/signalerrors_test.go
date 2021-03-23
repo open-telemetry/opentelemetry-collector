@@ -27,99 +27,34 @@ func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	err := fmt.Errorf("some error")
 	traceErr := NewTraces(err, td)
-	assert.True(t, IsTraces(traceErr))
 	assert.Equal(t, err.Error(), traceErr.Error())
-	assert.Equal(t, td, GetTraces(traceErr))
+	target := &Traces{}
+	assert.False(t, AsTraces(nil, target))
+	assert.False(t, AsTraces(err, target))
+	assert.True(t, AsTraces(traceErr, target))
+	assert.Equal(t, td, target.GetTraces())
 }
 
 func TestLogs(t *testing.T) {
 	td := testdata.GenerateLogDataOneLog()
 	err := fmt.Errorf("some error")
 	logsErr := NewLogs(err, td)
-	assert.True(t, IsLogs(logsErr))
 	assert.Equal(t, err.Error(), logsErr.Error())
-	assert.Equal(t, td, GetLogs(logsErr))
+	target := &Logs{}
+	assert.False(t, AsLogs(nil, target))
+	assert.False(t, AsLogs(err, target))
+	assert.True(t, AsLogs(logsErr, target))
+	assert.Equal(t, td, target.GetLogs())
 }
 
 func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetricsOneMetric()
 	err := fmt.Errorf("some error")
 	metricErr := NewMetrics(err, td)
-	assert.True(t, IsMetrics(metricErr))
 	assert.Equal(t, err.Error(), metricErr.Error())
-	assert.Equal(t, td, GetMetrics(metricErr))
-}
-
-func TestPredicates(t *testing.T) {
-	for _, tc := range []struct {
-		name      string
-		expected  bool
-		err       error
-		predicate func(error) bool
-	}{
-		{
-			name:      "IsNotTraces(nil)",
-			expected:  false,
-			err:       nil,
-			predicate: IsTraces,
-		},
-		{
-			name:      "IsNotTraces",
-			expected:  false,
-			err:       fmt.Errorf("some error"),
-			predicate: IsTraces,
-		},
-		{
-			name:      "IsTraces",
-			expected:  true,
-			err:       NewTraces(fmt.Errorf("some error"), testdata.GenerateTraceDataOneSpan()),
-			predicate: IsTraces,
-		},
-		{
-			name:      "IsNotMetrics(nil)",
-			expected:  false,
-			err:       nil,
-			predicate: IsMetrics,
-		},
-		{
-			name:      "IsNotMetrics",
-			expected:  false,
-			err:       fmt.Errorf("some error"),
-			predicate: IsMetrics,
-		},
-		{
-			name:      "IsMetrics",
-			expected:  true,
-			err:       NewMetrics(fmt.Errorf("some error"), testdata.GenerateMetricsOneMetric()),
-			predicate: IsMetrics,
-		},
-		{
-			name:      "IsNotLogs(nil)",
-			expected:  false,
-			err:       nil,
-			predicate: IsLogs,
-		},
-		{
-			name:      "IsNotLogs",
-			expected:  false,
-			err:       fmt.Errorf("some error"),
-			predicate: IsLogs,
-		},
-		{
-			name:      "IsLogs",
-			expected:  true,
-			err:       NewLogs(fmt.Errorf("some error"), testdata.GenerateLogDataOneLog()),
-			predicate: IsLogs,
-		},
-		{
-			name:      "IsPartial",
-			expected:  true,
-			err:       NewLogs(fmt.Errorf("some error"), testdata.GenerateLogDataOneLog()),
-			predicate: IsPartial,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, tc.predicate(tc.err))
-		})
-	}
+	target := &Metrics{}
+	assert.False(t, AsMetrics(nil, target))
+	assert.False(t, AsMetrics(err, target))
+	assert.True(t, AsMetrics(metricErr, target))
+	assert.Equal(t, td, target.GetMetrics())
 }

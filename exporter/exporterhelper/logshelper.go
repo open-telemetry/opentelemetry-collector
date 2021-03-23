@@ -46,7 +46,11 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogs) request
 }
 
 func (req *logsRequest) onError(err error) request {
-	return newLogsRequest(req.ctx, consumererror.GetLogs(err), req.pusher)
+	logError := &consumererror.Logs{}
+	if consumererror.AsLogs(err, logError) {
+		return newLogsRequest(req.ctx, logError.GetLogs(), req.pusher)
+	}
+	return req
 }
 
 func (req *logsRequest) export(ctx context.Context) error {

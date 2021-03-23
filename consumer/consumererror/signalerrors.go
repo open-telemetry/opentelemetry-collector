@@ -35,21 +35,18 @@ func NewTraces(err error, failed pdata.Traces) error {
 	}
 }
 
-// IsTraces checks if an error includes a Traces.
-func IsTraces(err error) bool {
+// AsTraces finds the first error in err's chain that can be assigned to target. If such an error is found
+// it is assigned to target and true is returned, otherwise false is returned.
+func AsTraces(err error, target *Traces) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &Traces{})
+	return errors.As(err, target)
 }
 
-// GetTraces returns failed traces from the provided error.
-func GetTraces(err error) pdata.Traces {
-	var res pdata.Traces
-	if traceError, ok := err.(Traces); ok {
-		res = traceError.failed
-	}
-	return res
+// GetTraces returns failed traces from the associated error.
+func (err Traces) GetTraces() pdata.Traces {
+	return err.failed
 }
 
 // Logs is an error that may carry associated Log data for a subset of received data
@@ -67,21 +64,18 @@ func NewLogs(err error, failed pdata.Logs) error {
 	}
 }
 
-// IsLogs checks if an error includes a Logs.
-func IsLogs(err error) bool {
+// AsLogs finds the first error in err's chain that can be assigned to target. If such an error is found
+// it is assigned to target and true is returned, otherwise false is returned.
+func AsLogs(err error, target *Logs) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &Logs{})
+	return errors.As(err, target)
 }
 
-// GetLogs returns failed logs from the provided error.
-func GetLogs(err error) pdata.Logs {
-	var res pdata.Logs
-	if logError, ok := err.(Logs); ok {
-		res = logError.failed
-	}
-	return res
+// GetLogs returns failed logs from the associated error.
+func (err Logs) GetLogs() pdata.Logs {
+	return err.failed
 }
 
 // Metrics is an error that may carry associated Metrics data for a subset of received data
@@ -99,25 +93,16 @@ func NewMetrics(err error, failed pdata.Metrics) error {
 	}
 }
 
-// IsMetrics checks if an error includes a Metrics.
-func IsMetrics(err error) bool {
+// AsMetrics finds the first error in err's chain that can be assigned to target. If such an error is found
+// it is assigned to target and true is returned, otherwise false is returned.
+func AsMetrics(err error, target *Metrics) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &Metrics{})
+	return errors.As(err, target)
 }
 
-// GetMetrics returns failed metrics from the provided error.
-func GetMetrics(err error) pdata.Metrics {
-	var res pdata.Metrics
-	if metricError, ok := err.(Metrics); ok {
-		res = metricError.failed
-	}
-	return res
-}
-
-// IsPartial is a convenience for testing whether an error is any of the consumererror types
-// that may convey information about partial processing failures.
-func IsPartial(err error) bool {
-	return IsTraces(err) || IsMetrics(err) || IsLogs(err)
+// GetMetrics returns failed metrics from the associated error.
+func (err Metrics) GetMetrics() pdata.Metrics {
+	return err.failed
 }
