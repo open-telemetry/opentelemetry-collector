@@ -181,7 +181,7 @@ type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(index int) int32 {
+func (p *processHandlesMock) Pid(int) int32 {
 	return 1
 }
 
