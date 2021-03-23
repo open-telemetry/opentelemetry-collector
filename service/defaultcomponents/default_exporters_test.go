@@ -143,8 +143,11 @@ func TestDefaultExporters(t *testing.T) {
 			assert.Equal(t, tt.exporter, factory.CreateDefaultConfig().Type())
 
 			if tt.skipLifecycle {
-				verifyExporterLifecycle(t, factory, tt.getConfigFn)
+				t.Log("Skipping lifecycle test", tt.exporter)
+				return
 			}
+
+			verifyExporterLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
