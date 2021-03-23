@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -71,7 +73,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
-	opts, err := gss.ToServerOption()
+	opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
 	assert.NoError(t, err)
 	assert.Len(t, opts, 0)
 }
@@ -104,7 +106,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.ToServerOption()
+	opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
 	assert.NoError(t, err)
 	assert.Len(t, opts, 7)
 }
@@ -113,19 +115,24 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
 
 	// sanity check
-	_, err := gss.ToServerOption()
+	_, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
 	require.NoError(t, err)
 
 	// test
 	gss.Auth = &configauth.Authentication{
-		OIDC: &configauth.OIDC{},
+		AuthenticatorName: "mock",
 	}
-	opts, err := gss.ToServerOption()
+	ext := map[config.NamedEntity]component.Extension{
+		&config.ExtensionSettings{
+			NameVal: "mock",
+			TypeVal: "mock",
+		}: &configauth.MockAuthenticator{},
+	}
+	opts, err := gss.ToServerOption(ext)
 
 	// verify
-	// an error here is a positive confirmation that Auth kicked in
-	assert.Error(t, err)
-	assert.Nil(t, opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, opts)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
@@ -260,7 +267,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToServerOption()
+			_, err := test.settings.ToServerOption(map[config.NamedEntity]component.Extension{})
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -413,7 +420,7 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
-			opts, err := gss.ToServerOption()
+			opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
 			assert.NoError(t, err)
 			s := grpc.NewServer(opts...)
 			otelcol.RegisterTraceServiceServer(s, &grpcTraceServer{})
@@ -458,7 +465,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.ToListener()
 	assert.NoError(t, err)
-	opts, err := gss.ToServerOption()
+	opts, err := gss.ToServerOption(map[config.NamedEntity]component.Extension{})
 	assert.NoError(t, err)
 	s := grpc.NewServer(opts...)
 	otelcol.RegisterTraceServiceServer(s, &grpcTraceServer{})

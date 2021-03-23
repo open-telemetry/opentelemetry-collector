@@ -98,12 +98,10 @@ func createReceiver(cfg config.Receiver) (*ocReceiver, error) {
 	receiver, ok := receivers[rCfg]
 	if !ok {
 		// Build the configuration options.
-		opts, err := rCfg.buildOptions()
-		if err != nil {
-			return nil, err
-		}
+		opts := rCfg.buildOptions()
 
 		// We don't have a receiver, so create one.
+		var err error
 		receiver, err = newOpenCensusReceiver(
 			rCfg.Name(), rCfg.NetAddr.Transport, rCfg.NetAddr.Endpoint, nil, nil, opts...)
 		if err != nil {

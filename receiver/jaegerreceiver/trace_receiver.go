@@ -58,11 +58,11 @@ import (
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
-	CollectorThriftPort   int
-	CollectorHTTPPort     int
-	CollectorHTTPSettings confighttp.HTTPServerSettings
-	CollectorGRPCPort     int
-	CollectorGRPCOptions  []grpc.ServerOption
+	CollectorThriftPort         int
+	CollectorHTTPPort           int
+	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorGRPCPort           int
+	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 
 	AgentCompactThriftPort       int
 	AgentCompactThriftConfig     ServerConfigUDP
@@ -469,7 +469,12 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 	}
 
 	if jr.collectorGRPCEnabled() {
-		jr.grpc = grpc.NewServer(jr.config.CollectorGRPCOptions...)
+		opts, err := jr.config.CollectorGRPCServerSettings.ToServerOption(host.GetExtensions())
+		if err != nil {
+			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %v", err)
+		}
+
+		jr.grpc = grpc.NewServer(opts...)
 		gaddr := jr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {

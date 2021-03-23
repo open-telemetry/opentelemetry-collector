@@ -17,21 +17,24 @@ package configauth
 import "context"
 
 var (
-	subjectKey = subjectType{}
-	groupsKey  = groupsType{}
+	// SubjectKey is the key to use when setting the subject (user, principal) information to the context. The value under this key should be a plain-text string.
+	SubjectKey = subjectType{}
+
+	// GroupsKey is the key to use when setting the subject's membership to the context. The value under this key should be a slice of strings.
+	GroupsKey = groupsType{}
 )
 
 type subjectType struct{}
 type groupsType struct{}
 
-// SubjectFromContext returns a list of groups the subject in the context belongs to
+// SubjectFromContext returns the subject behind this context.
 func SubjectFromContext(ctx context.Context) (string, bool) {
-	value, ok := ctx.Value(subjectKey).(string)
+	value, ok := ctx.Value(SubjectKey).(string)
 	return value, ok
 }
 
-// GroupsFromContext returns a list of groups the subject in the context belongs to
+// GroupsFromContext returns a list of groups the subject in the context belongs to.
 func GroupsFromContext(ctx context.Context) ([]string, bool) {
-	value, ok := ctx.Value(groupsKey).([]string)
+	value, ok := ctx.Value(GroupsKey).([]string)
 	return value, ok
 }

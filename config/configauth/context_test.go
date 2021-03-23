@@ -23,7 +23,7 @@ import (
 
 func TestSubjectFromContext(t *testing.T) {
 	// prepare
-	ctx := context.WithValue(context.Background(), subjectKey, "my-subject")
+	ctx := context.WithValue(context.Background(), SubjectKey, "my-subject")
 
 	// test
 	sub, ok := SubjectFromContext(ctx)
@@ -47,7 +47,7 @@ func TestSubjectFromContextNotPresent(t *testing.T) {
 
 func TestSubjectFromContextWrongType(t *testing.T) {
 	// prepare
-	ctx := context.WithValue(context.Background(), subjectKey, 123)
+	ctx := context.WithValue(context.Background(), SubjectKey, 123)
 
 	// test
 	sub, ok := SubjectFromContext(ctx)
@@ -59,7 +59,7 @@ func TestSubjectFromContextWrongType(t *testing.T) {
 
 func TestGroupsFromContext(t *testing.T) {
 	// prepare
-	ctx := context.WithValue(context.Background(), groupsKey, []string{"my-groups"})
+	ctx := context.WithValue(context.Background(), GroupsKey, []string{"my-groups"})
 
 	// test
 	groups, ok := GroupsFromContext(ctx)
@@ -83,7 +83,7 @@ func TestGroupsFromContextNotPresent(t *testing.T) {
 
 func TestGroupsFromContextWrongType(t *testing.T) {
 	// prepare
-	ctx := context.WithValue(context.Background(), subjectKey, 123)
+	ctx := context.WithValue(context.Background(), SubjectKey, 123)
 
 	// test
 	sub, ok := GroupsFromContext(ctx)
