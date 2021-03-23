@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -65,6 +66,10 @@ func (req *metricsRequest) count() int {
 type metricsExporter struct {
 	*baseExporter
 	pusher PushMetrics
+}
+
+func (mexp *metricsExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (mexp *metricsExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {

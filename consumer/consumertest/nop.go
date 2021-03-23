@@ -24,7 +24,9 @@ var (
 	nopInstance = &nopConsumer{}
 )
 
-type nopConsumer struct{}
+type nopConsumer struct {
+	baseConsumer
+}
 
 func (nc *nopConsumer) unexported() {}
 

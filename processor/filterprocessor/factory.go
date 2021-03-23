@@ -28,7 +28,7 @@ const (
 	typeStr = "filter"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() component.ProcessorFactory {

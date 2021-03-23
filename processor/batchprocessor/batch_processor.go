@@ -92,8 +92,8 @@ func newBatchProcessor(params component.ProcessorCreateParams, cfg *Config, batc
 	}, nil
 }
 
-func (bp *batchProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+func (bp *batchProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.

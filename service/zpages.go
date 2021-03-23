@@ -99,12 +99,12 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 			exps = append(exps, expID.String())
 		}
 		row := zpages.SummaryPipelinesTableRowData{
-			FullName:            c.Name,
-			InputType:           string(c.InputType),
-			MutatesConsumedData: p.MutatesConsumedData,
-			Receivers:           recvs,
-			Processors:          procs,
-			Exporters:           exps,
+			FullName:    c.Name,
+			InputType:   string(c.InputType),
+			MutatesData: p.MutatesData,
+			Receivers:   recvs,
+			Processors:  procs,
+			Exporters:   exps,
 		}
 		data.Rows = append(data.Rows, row)
 	}

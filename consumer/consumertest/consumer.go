@@ -26,6 +26,8 @@ import (
 // to allow us to add extra functions without breaking compatibility because
 // nobody else implements this interface.
 type Consumer interface {
+	// Capabilities to implement the base consumer functionality.
+	Capabilities() consumer.Capabilities
 	// ConsumeTraces to implement the consumer.Traces.
 	ConsumeTraces(context.Context, pdata.Traces) error
 	// ConsumeMetrics to implement the consumer.Metrics.
