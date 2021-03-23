@@ -71,6 +71,8 @@ type ActionKeyValue struct {
 	//           Either Value or FromAttribute must be set.
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
+	// RENAME  - Performs the INSERT and DELETE action.
+	//			 FromAttribute must be set.
 	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
 	//           value with it's SHA-1 hash result.
 	// EXTRACT - Extracts values using a regular expression rule from the input
@@ -100,6 +102,9 @@ const (
 
 	// DELETE deletes the attribute. If the key doesn't exist, no action is performed.
 	DELETE Action = "delete"
+
+	// RENAME performs the INSERT and DELETE action.
+	RENAME Action = "rename"
 
 	// HASH calculates the SHA-1 hash of an existing value and overwrites the
 	// value with it's SHA-1 hash result.
@@ -177,6 +182,14 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			if a.Value != nil || a.FromAttribute != "" || a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\", \"pattern\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
 			}
+		case RENAME:
+			if a.Value != nil || a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\" or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+			if a.FromAttribute == "" {
+				return nil, fmt.Errorf("error creating AttrProc. Field \"from_attribute\" setting must be specified for %d-th action", i)
+			}
+			action.FromAttribute = a.FromAttribute
 		case EXTRACT:
 			if a.Value != nil || a.FromAttribute != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
@@ -241,6 +254,14 @@ func (ap *AttrProc) Process(attrs pdata.AttributeMap) {
 			hashAttribute(action, attrs)
 		case EXTRACT:
 			extractAttributes(action, attrs)
+		case RENAME:
+			av, found := attrs.Get(action.FromAttribute)
+			_, existing := attrs.Get(action.Key)
+			if existing || !found || action.Key == action.FromAttribute {
+				continue
+			}
+			attrs.Insert(action.Key, av)
+			attrs.Delete(action.FromAttribute)
 		}
 	}
 }

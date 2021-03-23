@@ -535,6 +535,63 @@ func TestAttributes_Delete(t *testing.T) {
 	}
 }
 
+func TestAttributes_Rename(t *testing.T) {
+
+	testCases := []testCase{
+		// Ensure no attribute is renamed because attributes do not exist.
+		{
+			name:               "RenameEmptyAttributes",
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
+		},
+		// Ensure no attribute is renamed because from_attribute `string_key` does not exist.
+		{
+			name: "RenameMissingFromAttribute",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"bob": pdata.NewAttributeValueInt(1),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"bob": pdata.NewAttributeValueInt(1),
+			},
+		},
+		// Ensure attribute is renamed.
+		{
+			name: "RenameFromAttributeExists",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"string key": pdata.NewAttributeValueInt(8892342),
+			},
+		},
+		// Ensures no rename is performed because the keys `string key` is same with the attribute.
+		{
+			name: "RenameKeyExists",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
+				"string key": pdata.NewAttributeValueString("here"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"anotherkey": pdata.NewAttributeValueInt(8892342),
+				"string key": pdata.NewAttributeValueString("here"),
+			},
+		},
+	}
+	cfg := &Settings{
+		Actions: []ActionKeyValue{
+			{Key: "string key", Action: RENAME, FromAttribute: "anotherkey"},
+		},
+	}
+
+	ap, err := NewAttrProc(cfg)
+	require.Nil(t, err)
+	require.NotNil(t, ap)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, ap)
+	}
+}
+
 func TestAttributes_HashValue(t *testing.T) {
 
 	intVal := int64(24)
@@ -835,6 +892,27 @@ func TestInvalidConfig(t *testing.T) {
 			},
 			errorString: "error creating AttrProc. Field \"pattern\" contains at least one unnamed matcher group at the 0-th actions",
 		},
+		{
+			name: "rename with regex",
+			actionLists: []ActionKeyValue{
+				{RegexPattern: "(?P<operation_website>.*?)$", Key: "ab", Action: RENAME},
+			},
+			errorString: "error creating AttrProc. Action \"rename\" does not use \"value\" or \"pattern\" field. These must not be specified for 0-th action",
+		},
+		{
+			name: "rename with value",
+			actionLists: []ActionKeyValue{
+				{Value: "cdcd", Key: "ab", Action: RENAME},
+			},
+			errorString: "error creating AttrProc. Action \"rename\" does not use \"value\" or \"pattern\" field. These must not be specified for 0-th action",
+		},
+		{
+			name: "rename with missing attribute string",
+			actionLists: []ActionKeyValue{
+				{Key: "ab", Action: RENAME},
+			},
+			errorString: "error creating AttrProc. Field \"from_attribute\" setting must be specified for 0-th action",
+		},
 	}
 
 	for _, tc := range testcase {
@@ -854,6 +932,7 @@ func TestValidConfiguration(t *testing.T) {
 			{Key: "three", FromAttribute: "two", Action: "upDaTE"},
 			{Key: "five", FromAttribute: "two", Action: "upsert"},
 			{Key: "two", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<documentId>.*)\\/update$", Action: "EXTRact"},
+			{Key: "four", FromAttribute: "two", Action: "RenamE"},
 		},
 	}
 	ap, err := NewAttrProc(cfg)
@@ -869,6 +948,7 @@ func TestValidConfiguration(t *testing.T) {
 		{Key: "three", FromAttribute: "two", Action: UPDATE},
 		{Key: "five", FromAttribute: "two", Action: UPSERT},
 		{Key: "two", Regex: compiledRegex, AttrNames: []string{"", "documentId"}, Action: EXTRACT},
+		{Key: "four", FromAttribute: "two", Action: RENAME},
 	}, ap.actions)
 
 }
