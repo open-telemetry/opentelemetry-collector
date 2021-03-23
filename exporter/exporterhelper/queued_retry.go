@@ -245,6 +245,8 @@ func (rs *retrySender) send(req request) error {
 			return err
 		}
 
+		// Give the request a chance to extract signal data to retry if only some data
+		// failed to process.
 		req = req.onError(err)
 
 		backoffDelay := expBackoff.NextBackOff()

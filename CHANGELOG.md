@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Refactored `consumererror` package (#2768)
+  - Eliminated `PartialError` type in favor of signal-specific types
+  - Renamed `CombineErrors` to `Combine`
+
 ## v0.23.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -12,7 +18,6 @@
 - Remove ValidateConfig and add Validate on the Config struct (#2665)
 - Rename pdata Size to OtlpProtoSize (#2726)
 - Rename [Traces|Metrics|Logs]Consumer to [Traces|Metrics|Logs] (#2761)
-- Refactored `consumererror` package, eliminating `PartialError` type (#TBD)
 
 ## 💡 Enhancements 💡
 

@@ -28,10 +28,10 @@ func TestTraces(t *testing.T) {
 	err := fmt.Errorf("some error")
 	traceErr := NewTraces(err, td)
 	assert.Equal(t, err.Error(), traceErr.Error())
-	target := &Traces{}
-	assert.False(t, AsTraces(nil, target))
-	assert.False(t, AsTraces(err, target))
-	assert.True(t, AsTraces(traceErr, target))
+	var target Traces
+	assert.False(t, AsTraces(nil, &target))
+	assert.False(t, AsTraces(err, &target))
+	assert.True(t, AsTraces(traceErr, &target))
 	assert.Equal(t, td, target.GetTraces())
 }
 
@@ -40,10 +40,10 @@ func TestLogs(t *testing.T) {
 	err := fmt.Errorf("some error")
 	logsErr := NewLogs(err, td)
 	assert.Equal(t, err.Error(), logsErr.Error())
-	target := &Logs{}
-	assert.False(t, AsLogs(nil, target))
-	assert.False(t, AsLogs(err, target))
-	assert.True(t, AsLogs(logsErr, target))
+	var target Logs
+	assert.False(t, AsLogs(nil, &target))
+	assert.False(t, AsLogs(err, &target))
+	assert.True(t, AsLogs(logsErr, &target))
 	assert.Equal(t, td, target.GetLogs())
 }
 
@@ -52,9 +52,9 @@ func TestMetrics(t *testing.T) {
 	err := fmt.Errorf("some error")
 	metricErr := NewMetrics(err, td)
 	assert.Equal(t, err.Error(), metricErr.Error())
-	target := &Metrics{}
-	assert.False(t, AsMetrics(nil, target))
-	assert.False(t, AsMetrics(err, target))
-	assert.True(t, AsMetrics(metricErr, target))
+	var target Metrics
+	assert.False(t, AsMetrics(nil, &target))
+	assert.False(t, AsMetrics(err, &target))
+	assert.True(t, AsMetrics(metricErr, &target))
 	assert.Equal(t, td, target.GetMetrics())
 }

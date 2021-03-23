@@ -79,7 +79,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 	ocs.checkDroppedItemsCount(t, 2)
 }
 
-func TestQueuedRetry_PartialError(t *testing.T) {
+func TestQueuedRetry_OnError(t *testing.T) {
 	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := DefaultRetrySettings()
