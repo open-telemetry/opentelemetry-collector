@@ -78,7 +78,7 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 
 	rootKeys := map[string]struct{}{}
 	for _, k := range viperFlags.AllKeys() {
-		keys := strings.Split(k, configload.ViperDelimiter)
+		keys := strings.Split(k, configload.KeyDelimiter)
 		if len(keys) > 0 {
 			rootKeys[keys[0]] = struct{}{}
 		}

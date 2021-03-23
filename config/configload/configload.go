@@ -21,44 +21,44 @@ import (
 )
 
 const (
-	// ViperDelimiter is used as the default key delimiter in the default viper instance
-	ViperDelimiter = "::"
+	// KeyDelimiter is used as the default key delimiter in the default viper instance.
+	KeyDelimiter = "::"
 )
 
-// Creates a new Viper instance with a different key-delimitor "::" instead of the
+// NewViper creates a new Viper instance with key delimiter KeyDelimiter instead of the
 // default ".". This way configs can have keys that contain ".".
 func NewViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter(ViperDelimiter))
+	return viper.NewWithOptions(viper.KeyDelimiter(KeyDelimiter))
 }
 
-// NewLoader creates a new Loader instanceg
+// NewLoader creates a new Loader instance.
 func NewLoader() *Loader {
 	return &Loader{
 		v: NewViper(),
 	}
 }
 
-// FromViper creates a Loader from a Viper instance
+// FromViper creates a Loader from a Viper instance.
 func FromViper(v *viper.Viper) *Loader {
 	return &Loader{v: v}
 }
 
-// Loader loads configuration
+// Loader loads configuration.
 type Loader struct {
 	v *viper.Viper
 }
 
-// Viper returns the underlying Viper instance
+// Viper returns the underlying Viper instance.
 func (l *Loader) Viper() *viper.Viper {
 	return l.v
 }
 
-// UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent
+// UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent.
 func (l *Loader) UnmarshalExact(intoCfg interface{}) error {
 	return l.v.UnmarshalExact(intoCfg)
 }
 
-// ToStringMap creates a map[string]interface{} from a ConfigLoader
+// ToStringMap creates a map[string]interface{} from a ConfigLoader.
 func (l *Loader) ToStringMap() map[string]interface{} {
 	return cast.ToStringMap(l.v)
 }

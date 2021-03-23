@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
