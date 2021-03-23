@@ -48,5 +48,5 @@ type Session interface {
 	// Close signals that the object won't be used anymore to inject data into a configuration.
 	// Each Session object should use this call according to their needs: release resources,
 	// close communication channels, etc.
-	Close(ctx context.Context)
+	Close(ctx context.Context) error
 }
