@@ -12,22 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package configsource
 
 import (
 	"context"
-
-	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/internal/configsource/configmodels"
 )
 
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
 type ConfigSource interface {
-	component.Component
-
 	// BeginSession signals that the ConfigSource is about to be used to inject data into
 	// the configuration. The difference between BeginSession and the component.Start method
 	// is that the latter is used by the host to manage the life-time of a ConfigSource and to
@@ -68,31 +61,4 @@ type ConfigSource interface {
 	// to their needs: release resources, start background or watcher tasks, update
 	// internal state, etc.
 	EndSession(ctx context.Context)
-}
-
-// CreateConfigSourceParams is passed to ConfigSourceFactory.CreateConfigSource function.
-type CreateConfigSourceParams struct {
-	// Logger that the factory can use during creation and can pass to the created
-	// component to be used later as well.
-	Logger *zap.Logger
-
-	// ApplicationStartInfo can be used to retrieve data according to version, etc.
-	ApplicationStartInfo component.ApplicationStartInfo
-}
-
-// ConfigSourceFactory is a factory interface for configuration sources.
-type ConfigSourceFactory interface {
-	component.Factory
-
-	// CreateDefaultConfig creates the default configuration for the ConfigSource.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the ConfigSource.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.ConfigSource
-
-	// CreateConfigSource creates a configuration source based on the given config.
-	CreateConfigSource(ctx context.Context, params CreateConfigSourceParams, cfg configmodels.ConfigSource) (ConfigSource, error)
 }
