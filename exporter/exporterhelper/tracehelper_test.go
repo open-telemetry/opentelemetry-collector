@@ -49,7 +49,7 @@ var (
 func TestTracesRequest(t *testing.T) {
 	mr := newTracesRequest(context.Background(), testdata.GenerateTraceDataOneSpan(), nil)
 
-	traceErr := consumererror.Traces(errors.New("some error"), testdata.GenerateTraceDataEmpty())
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraceDataEmpty())
 	assert.EqualValues(t, newTracesRequest(context.Background(), testdata.GenerateTraceDataEmpty(), nil), mr.onPartialError(traceErr))
 }
 

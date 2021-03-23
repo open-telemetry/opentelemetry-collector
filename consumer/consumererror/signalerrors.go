@@ -20,97 +20,97 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// TraceError is an error that may carry associated Trace data for a subset of received data
+// Traces is an error that may carry associated Trace data for a subset of received data
 // that faiiled to be processed or sent.
-type TraceError struct {
+type Traces struct {
 	error
 	failed pdata.Traces
 }
 
-// Traces creates a TraceError that can encapsulate received data that failed to be processed or sent.
-func Traces(err error, failed pdata.Traces) error {
-	return TraceError{
+// NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
+func NewTraces(err error, failed pdata.Traces) error {
+	return Traces{
 		error:  err,
 		failed: failed,
 	}
 }
 
-// IsTrace checks if an error includes a TraceError.
-func IsTrace(err error) bool {
+// IsTraces checks if an error includes a Traces.
+func IsTraces(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &TraceError{})
+	return errors.As(err, &Traces{})
 }
 
 // GetTraces returns failed traces from the provided error.
 func GetTraces(err error) pdata.Traces {
 	var res pdata.Traces
-	if traceError, ok := err.(TraceError); ok {
+	if traceError, ok := err.(Traces); ok {
 		res = traceError.failed
 	}
 	return res
 }
 
-// LogError is an error that may carry associated Log data for a subset of received data
+// Logs is an error that may carry associated Log data for a subset of received data
 // that faiiled to be processed or sent.
-type LogError struct {
+type Logs struct {
 	error
 	failed pdata.Logs
 }
 
-// Logs creates a LogError that can encapsulate received data that failed to be processed or sent.
-func Logs(err error, failed pdata.Logs) error {
-	return LogError{
+// NewLogs creates a Logs that can encapsulate received data that failed to be processed or sent.
+func NewLogs(err error, failed pdata.Logs) error {
+	return Logs{
 		error:  err,
 		failed: failed,
 	}
 }
 
-// IsLogs checks if an error includes a LogError.
+// IsLogs checks if an error includes a Logs.
 func IsLogs(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &LogError{})
+	return errors.As(err, &Logs{})
 }
 
 // GetLogs returns failed logs from the provided error.
 func GetLogs(err error) pdata.Logs {
 	var res pdata.Logs
-	if logError, ok := err.(LogError); ok {
+	if logError, ok := err.(Logs); ok {
 		res = logError.failed
 	}
 	return res
 }
 
-// MetricError is an error that may carry associated Metrics data for a subset of received data
+// Metrics is an error that may carry associated Metrics data for a subset of received data
 // that faiiled to be processed or sent.
-type MetricError struct {
+type Metrics struct {
 	error
 	failed pdata.Metrics
 }
 
-// Metrics creates a MetricError that can encapsulate received data that failed to be processed or sent.
-func Metrics(err error, failed pdata.Metrics) error {
-	return MetricError{
+// NewMetrics creates a Metrics that can encapsulate received data that failed to be processed or sent.
+func NewMetrics(err error, failed pdata.Metrics) error {
+	return Metrics{
 		error:  err,
 		failed: failed,
 	}
 }
 
-// IsMetrics checks if an error includes a MetricError.
+// IsMetrics checks if an error includes a Metrics.
 func IsMetrics(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.As(err, &MetricError{})
+	return errors.As(err, &Metrics{})
 }
 
 // GetMetrics returns failed metrics from the provided error.
 func GetMetrics(err error) pdata.Metrics {
 	var res pdata.Metrics
-	if metricError, ok := err.(MetricError); ok {
+	if metricError, ok := err.(Metrics); ok {
 		res = metricError.failed
 	}
 	return res
@@ -119,5 +119,5 @@ func GetMetrics(err error) pdata.Metrics {
 // IsPartial is a convenience for testing whether an error is any of the consumererror types
 // that may convey information about partial processing failures.
 func IsPartial(err error) bool {
-	return IsTrace(err) || IsMetrics(err) || IsLogs(err)
+	return IsTraces(err) || IsMetrics(err) || IsLogs(err)
 }

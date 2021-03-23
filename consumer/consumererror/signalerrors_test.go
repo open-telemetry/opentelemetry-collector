@@ -23,28 +23,28 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestTraceError(t *testing.T) {
+func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	err := fmt.Errorf("some error")
-	traceErr := Traces(err, td)
-	assert.True(t, IsTrace(traceErr))
+	traceErr := NewTraces(err, td)
+	assert.True(t, IsTraces(traceErr))
 	assert.Equal(t, err.Error(), traceErr.Error())
 	assert.Equal(t, td, GetTraces(traceErr))
 }
 
-func TestLogError(t *testing.T) {
+func TestLogs(t *testing.T) {
 	td := testdata.GenerateLogDataOneLog()
 	err := fmt.Errorf("some error")
-	logsErr := Logs(err, td)
+	logsErr := NewLogs(err, td)
 	assert.True(t, IsLogs(logsErr))
 	assert.Equal(t, err.Error(), logsErr.Error())
 	assert.Equal(t, td, GetLogs(logsErr))
 }
 
-func TestMetricError(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetricsOneMetric()
 	err := fmt.Errorf("some error")
-	metricErr := Metrics(err, td)
+	metricErr := NewMetrics(err, td)
 	assert.True(t, IsMetrics(metricErr))
 	assert.Equal(t, err.Error(), metricErr.Error())
 	assert.Equal(t, td, GetMetrics(metricErr))
@@ -61,19 +61,19 @@ func TestPredicates(t *testing.T) {
 			name:      "IsNotTraces(nil)",
 			expected:  false,
 			err:       nil,
-			predicate: IsTrace,
+			predicate: IsTraces,
 		},
 		{
 			name:      "IsNotTraces",
 			expected:  false,
 			err:       fmt.Errorf("some error"),
-			predicate: IsTrace,
+			predicate: IsTraces,
 		},
 		{
 			name:      "IsTraces",
 			expected:  true,
-			err:       Traces(fmt.Errorf("some error"), testdata.GenerateTraceDataOneSpan()),
-			predicate: IsTrace,
+			err:       NewTraces(fmt.Errorf("some error"), testdata.GenerateTraceDataOneSpan()),
+			predicate: IsTraces,
 		},
 		{
 			name:      "IsNotMetrics(nil)",
@@ -90,7 +90,7 @@ func TestPredicates(t *testing.T) {
 		{
 			name:      "IsMetrics",
 			expected:  true,
-			err:       Metrics(fmt.Errorf("some error"), testdata.GenerateMetricsOneMetric()),
+			err:       NewMetrics(fmt.Errorf("some error"), testdata.GenerateMetricsOneMetric()),
 			predicate: IsMetrics,
 		},
 		{
@@ -108,13 +108,13 @@ func TestPredicates(t *testing.T) {
 		{
 			name:      "IsLogs",
 			expected:  true,
-			err:       Logs(fmt.Errorf("some error"), testdata.GenerateLogDataOneLog()),
+			err:       NewLogs(fmt.Errorf("some error"), testdata.GenerateLogDataOneLog()),
 			predicate: IsLogs,
 		},
 		{
 			name:      "IsPartial",
 			expected:  true,
-			err:       Logs(fmt.Errorf("some error"), testdata.GenerateLogDataOneLog()),
+			err:       NewLogs(fmt.Errorf("some error"), testdata.GenerateLogDataOneLog()),
 			predicate: IsPartial,
 		},
 	} {

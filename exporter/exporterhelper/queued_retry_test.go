@@ -92,7 +92,7 @@ func TestQueuedRetry_PartialError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.Traces(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraceDataOneSpan())
 	mockR := newMockRequest(context.Background(), 2, traceErr)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
