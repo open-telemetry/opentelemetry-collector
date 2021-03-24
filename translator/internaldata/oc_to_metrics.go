@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// OCSliceToMetricData converts a slice of OC data format to data.MetricData.
+// OCSliceToMetrics converts a slice of OC data format to data.MetricData.
 // Deprecated: use pdata.Metrics instead.
 func OCSliceToMetrics(ocmds []MetricsData) pdata.Metrics {
 	metricData := pdata.NewMetrics()
@@ -34,7 +34,7 @@ func OCSliceToMetrics(ocmds []MetricsData) pdata.Metrics {
 	return metricData
 }
 
-// OCToMetricData converts OC data format to data.MetricData.
+// OCToMetrics converts OC data format to data.MetricData.
 // Deprecated: use pdata.Metrics instead. OCToMetrics may be used only by OpenCensus
 // receiver and exporter implementations.
 func OCToMetrics(md MetricsData) pdata.Metrics {

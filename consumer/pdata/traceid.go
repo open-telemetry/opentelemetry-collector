@@ -21,10 +21,12 @@ import (
 // TraceID is an alias of OTLP TraceID data type.
 type TraceID data.TraceID
 
+// InvalidTraceID returns an empty (all zero bytes) TraceID.
 func InvalidTraceID() TraceID {
 	return TraceID(data.NewTraceID([16]byte{}))
 }
 
+// NewTraceID returns a new TraceID from the given byte array.
 func NewTraceID(bytes [16]byte) TraceID {
 	return TraceID(data.NewTraceID(bytes))
 }

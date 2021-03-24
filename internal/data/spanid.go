@@ -55,7 +55,7 @@ func (sid SpanID) Equal(that SpanID) bool {
 	return sid.id == that.id
 }
 
-// IsValid returns true if id contains at least one non-zero byte.
+// IsEmpty returns true if id contains at least one non-zero byte.
 func (sid SpanID) IsEmpty() bool {
 	return sid.id == [8]byte{}
 }

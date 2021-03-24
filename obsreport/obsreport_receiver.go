@@ -26,27 +26,27 @@ import (
 )
 
 const (
-	// Key used to identify receivers in metrics and traces.
+	// ReceiverKey used to identify receivers in metrics and traces.
 	ReceiverKey = "receiver"
-	// Key used to identify the transport used to received the data.
+	// TransportKey used to identify the transport used to received the data.
 	TransportKey = "transport"
-	// Key used to identify the format of the data received.
+	// FormatKey used to identify the format of the data received.
 	FormatKey = "format"
 
-	// Key used to identify spans accepted by the Collector.
+	// AcceptedSpansKey used to identify spans accepted by the Collector.
 	AcceptedSpansKey = "accepted_spans"
-	// Key used to identify spans refused (ie.: not ingested) by the Collector.
+	// RefusedSpansKey used to identify spans refused (ie.: not ingested) by the Collector.
 	RefusedSpansKey = "refused_spans"
 
-	// Key used to identify metric points accepted by the Collector.
+	// AcceptedMetricPointsKey used to identify metric points accepted by the Collector.
 	AcceptedMetricPointsKey = "accepted_metric_points"
-	// Key used to identify metric points refused (ie.: not ingested) by the
+	// RefusedMetricPointsKey used to identify metric points refused (ie.: not ingested) by the
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
 
-	// Key used to identify log records accepted by the Collector.
+	// AcceptedLogRecordsKey used to identify log records accepted by the Collector.
 	AcceptedLogRecordsKey = "accepted_log_records"
-	// Key used to identify log records refused (ie.: not ingested) by the
+	// RefusedLogRecordsKey used to identify log records refused (ie.: not ingested) by the
 	// Collector.
 	RefusedLogRecordsKey = "refused_log_records"
 )
