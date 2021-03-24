@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// ComponentSettings for timeout. The timeout applies to individual attempts to send data to the backend.
+// TimeoutSettings for timeout. The timeout applies to individual attempts to send data to the backend.
 type TimeoutSettings struct {
 	// Timeout is the timeout for every attempt to send data to the backend.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -72,7 +72,7 @@ func (req *baseRequest) setContext(ctx context.Context) {
 
 // baseSettings represents all the options that users can configure.
 type baseSettings struct {
-	*componenthelper.ComponentSettings
+	componentOptions []componenthelper.Option
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
@@ -83,8 +83,7 @@ type baseSettings struct {
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		ComponentSettings: componenthelper.DefaultComponentSettings(),
-		TimeoutSettings:   DefaultTimeoutSettings(),
+		TimeoutSettings: DefaultTimeoutSettings(),
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)
@@ -102,19 +101,19 @@ func fromOptions(options []Option) *baseSettings {
 // Option apply changes to baseSettings.
 type Option func(*baseSettings)
 
-// WithShutdown overrides the default Shutdown function for an exporter.
-// The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.Shutdown) Option {
-	return func(o *baseSettings) {
-		o.Shutdown = shutdown
-	}
-}
-
 // WithStart overrides the default Start function for an exporter.
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start componenthelper.Start) Option {
 	return func(o *baseSettings) {
-		o.Start = start
+		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
+	}
+}
+
+// WithShutdown overrides the default Shutdown function for an exporter.
+// The default shutdown function does nothing and always returns nil.
+func WithShutdown(shutdown componenthelper.Shutdown) Option {
+	return func(o *baseSettings) {
+		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
 }
 
@@ -162,7 +161,7 @@ type baseExporter struct {
 func newBaseExporter(cfg configmodels.Exporter, logger *zap.Logger, options ...Option) *baseExporter {
 	bs := fromOptions(options)
 	be := &baseExporter{
-		Component:                  componenthelper.NewComponent(bs.ComponentSettings),
+		Component:                  componenthelper.New(bs.componentOptions...),
 		cfg:                        cfg,
 		convertResourceToTelemetry: bs.ResourceToTelemetrySettings.Enabled,
 	}

@@ -77,7 +77,7 @@ func (f *nopProcessorFactory) CreateLogsProcessor(
 }
 
 var nopProcessorInstance = &nopProcessor{
-	Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+	Component: componenthelper.New(),
 	Traces:    consumertest.NewTracesNop(),
 	Metrics:   consumertest.NewMetricsNop(),
 	Logs:      consumertest.NewLogsNop(),

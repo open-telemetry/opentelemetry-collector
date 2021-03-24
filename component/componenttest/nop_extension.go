@@ -54,7 +54,7 @@ func (f *nopExtensionFactory) CreateExtension(
 }
 
 var nopExtensionInstance = &nopExtension{
-	Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+	Component: componenthelper.New(),
 }
 
 // nopExtension stores consumed traces and metrics for testing purposes.
