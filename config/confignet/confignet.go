@@ -37,7 +37,7 @@ func (na *NetAddr) Dial() (net.Conn, error) {
 	return net.Dial(na.Transport, na.Endpoint)
 }
 
-// Dial equivalent with net.Listen for this address.
+// Listen equivalent with net.Listen for this address.
 func (na *NetAddr) Listen() (net.Listener, error) {
 	return net.Listen(na.Transport, na.Endpoint)
 }
@@ -57,7 +57,7 @@ func (na *TCPAddr) Dial() (net.Conn, error) {
 	return net.Dial("tcp", na.Endpoint)
 }
 
-// Dial equivalent with net.Listen for this address.
+// Listen equivalent with net.Listen for this address.
 func (na *TCPAddr) Listen() (net.Listener, error) {
 	return net.Listen("tcp", na.Endpoint)
 }
