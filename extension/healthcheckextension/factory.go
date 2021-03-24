@@ -41,7 +41,7 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Port: 13133,
+		Endpoint: "localhost:13133",
 	}
 }
 

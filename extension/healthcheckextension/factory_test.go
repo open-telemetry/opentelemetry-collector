@@ -35,7 +35,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},
-		Port: 13133,
+		Endpoint: "localhost:13133",
 	},
 		cfg)
 
@@ -47,7 +47,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Port = testutil.GetAvailablePort(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)

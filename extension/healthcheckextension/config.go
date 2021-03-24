@@ -23,7 +23,7 @@ import (
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
 
-	// Port is the port used to publish the health check status.
-	// The default value is 13133.
-	Port uint16 `mapstructure:"port"`
+	// Endpoint is the address and port used to publish the health check status.
+	// The default value is "localhost:13133".
+	Endpoint string `mapstructure:"endpoint"`
 }

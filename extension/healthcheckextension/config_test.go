@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "health_check",
 				NameVal: "health_check/1",
 			},
-			Port: 13,
+			Endpoint: "localhost:13",
 		},
 		ext1)
 
