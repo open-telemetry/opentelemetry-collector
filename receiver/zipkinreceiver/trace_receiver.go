@@ -83,7 +83,7 @@ func New(config *Config, nextConsumer consumer.Traces) (*ZipkinReceiver, error) 
 }
 
 // Start spins up the receiver's HTTP server and makes the receiver start its processing.
-func (zr *ZipkinReceiver) Start(ctx context.Context, host component.Host) error {
+func (zr *ZipkinReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errors.New("nil host")
 	}

@@ -2,7 +2,12 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
 - Rename pdata.DoubleSummary to pdata.Summary (#2774)
+- Refactored `consumererror` package (#2768)
+  - Eliminated `PartialError` type in favor of signal-specific types
+  - Renamed `CombineErrors` to `Combine`
 
 ## v0.23.0 Beta
 

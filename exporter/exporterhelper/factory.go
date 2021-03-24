@@ -30,8 +30,8 @@ type FactoryOption func(o *factory)
 // CreateDefaultConfig is the equivalent of component.ExporterFactory.CreateDefaultConfig()
 type CreateDefaultConfig func() configmodels.Exporter
 
-// CreateTraceExporter is the equivalent of component.ExporterFactory.CreateTracesExporter()
-type CreateTraceExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.TracesExporter, error)
+// CreateTracesExporter is the equivalent of component.ExporterFactory.CreateTracesExporter()
+type CreateTracesExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.TracesExporter, error)
 
 // CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
 type CreateMetricsExporter func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.MetricsExporter, error)
@@ -43,15 +43,15 @@ type factory struct {
 	cfgType               configmodels.Type
 	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
-	createTraceExporter   CreateTraceExporter
+	createTracesExporter  CreateTracesExporter
 	createMetricsExporter CreateMetricsExporter
 	createLogsExporter    CreateLogsExporter
 }
 
 // WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver.
-func WithTraces(createTraceExporter CreateTraceExporter) FactoryOption {
+func WithTraces(createTraceExporter CreateTracesExporter) FactoryOption {
 	return func(o *factory) {
-		o.createTraceExporter = createTraceExporter
+		o.createTracesExporter = createTraceExporter
 	}
 }
 
@@ -107,13 +107,13 @@ func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 	return f.createDefaultConfig()
 }
 
-// CreateTraceExporter creates a component.TracesExporter based on this config.
+// CreateTracesExporter creates a component.TracesExporter based on this config.
 func (f *factory) CreateTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.TracesExporter, error) {
-	if f.createTraceExporter != nil {
-		return f.createTraceExporter(ctx, params, cfg)
+	if f.createTracesExporter != nil {
+		return f.createTracesExporter(ctx, params, cfg)
 	}
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

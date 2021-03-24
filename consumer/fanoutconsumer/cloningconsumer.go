@@ -56,7 +56,7 @@ func (mfc metricsCloningConsumer) ConsumeMetrics(ctx context.Context, md pdata.M
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // NewTracesCloning wraps multiple traces consumers in a single one and clones the data
@@ -93,7 +93,7 @@ func (tfc tracesCloningConsumer) ConsumeTraces(ctx context.Context, td pdata.Tra
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // NewLogsCloning wraps multiple trace consumers in a single one and clones the data
@@ -130,5 +130,5 @@ func (lfc logsCloningConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) e
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }

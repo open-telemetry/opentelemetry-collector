@@ -43,7 +43,7 @@ func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error
 		}
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
@@ -56,7 +56,7 @@ func (bexp *builtExporter) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 func (bexp *builtExporter) getTraceExporter() component.TracesExporter {
@@ -91,7 +91,7 @@ func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
 	for _, exp := range exps {
 		exp.logger.Info("Exporter is starting...")
 
-		if err := exp.Start(ctx, host); err != nil {
+		if err := exp.Start(ctx, newHostWrapper(host, exp.logger)); err != nil {
 			return err
 		}
 		exp.logger.Info("Exporter started.")
@@ -109,7 +109,7 @@ func (exps Exporters) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func (exps Exporters) ToMapByDataType() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
@@ -299,7 +299,7 @@ func (eb *exportersBuilder) buildExporter(
 		}
 	}
 
-	eb.logger.Info("Exporter is enabled.", zap.String("exporter", config.Name()))
+	eb.logger.Info("Exporter was built.", zap.String("exporter", config.Name()))
 
 	return exporter, nil
 }

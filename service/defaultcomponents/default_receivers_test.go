@@ -89,9 +89,10 @@ func TestDefaultReceivers(t *testing.T) {
 
 			if tt.skipLifecyle {
 				t.Log("Skipping lifecycle test", tt.receiver)
-			} else {
-				verifyReceiverLifecycle(t, factory, tt.getConfigFn)
+				return
 			}
+
+			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }

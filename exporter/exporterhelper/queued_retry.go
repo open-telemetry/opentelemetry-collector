@@ -245,10 +245,9 @@ func (rs *retrySender) send(req request) error {
 			return err
 		}
 
-		// If partial error, update data and stats with non exported data.
-		if partialErr, isPartial := err.(consumererror.PartialError); isPartial {
-			req = req.onPartialError(partialErr)
-		}
+		// Give the request a chance to extract signal data to retry if only some data
+		// failed to process.
+		req = req.onError(err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {

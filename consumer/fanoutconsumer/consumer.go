@@ -48,7 +48,7 @@ func (mfc metricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics)
 			errs = append(errs, err)
 		}
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // NewTraces wraps multiple trace consumers in a single one.
@@ -72,7 +72,7 @@ func (tfc traceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) err
 			errs = append(errs, err)
 		}
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // NewLogs wraps multiple log consumers in a single one.
@@ -96,5 +96,5 @@ func (lfc logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 			errs = append(errs, err)
 		}
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }

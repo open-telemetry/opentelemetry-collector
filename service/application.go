@@ -303,7 +303,7 @@ func (app *Application) execute(ctx context.Context, factory ConfigFactory) erro
 	app.stateChannel <- Closed
 	close(app.stateChannel)
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // Run starts the collector according to the command and configuration

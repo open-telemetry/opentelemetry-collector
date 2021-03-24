@@ -45,8 +45,12 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher PushTraces) r
 	}
 }
 
-func (req *tracesRequest) onPartialError(partialErr consumererror.PartialError) request {
-	return newTracesRequest(req.ctx, partialErr.GetTraces(), req.pusher)
+func (req *tracesRequest) onError(err error) request {
+	var traceError consumererror.Traces
+	if consumererror.AsTraces(err, &traceError) {
+		return newTracesRequest(req.ctx, traceError.GetTraces(), req.pusher)
+	}
+	return req
 }
 
 func (req *tracesRequest) export(ctx context.Context) error {

@@ -282,15 +282,15 @@ func (t testConsumerGroupSession) GenerationID() int32 {
 	panic("implement me")
 }
 
-func (t testConsumerGroupSession) MarkOffset(topic string, partition int32, offset int64, metadata string) {
+func (t testConsumerGroupSession) MarkOffset(string, int32, int64, string) {
 	panic("implement me")
 }
 
-func (t testConsumerGroupSession) ResetOffset(topic string, partition int32, offset int64, metadata string) {
+func (t testConsumerGroupSession) ResetOffset(string, int32, int64, string) {
 	panic("implement me")
 }
 
-func (t testConsumerGroupSession) MarkMessage(msg *sarama.ConsumerMessage, metadata string) {
+func (t testConsumerGroupSession) MarkMessage(*sarama.ConsumerMessage, string) {
 }
 
 func (t testConsumerGroupSession) Context() context.Context {

@@ -56,7 +56,7 @@ func ValidateConfigFromFactories(factories component.Factories) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // ValidateConfig enforces that given configuration object is following the patterns
@@ -109,7 +109,7 @@ func validateConfigDataType(t reflect.Type) error {
 		// reflect.UnsafePointer.
 	}
 
-	if err := consumererror.CombineErrors(errs); err != nil {
+	if err := consumererror.Combine(errs); err != nil {
 		return fmt.Errorf(
 			"type %q from package %q has invalid config settings: %v",
 			t.Name(),
