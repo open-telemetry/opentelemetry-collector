@@ -62,7 +62,7 @@ type Option func(*baseSettings)
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start componenthelper.Start) Option {
 	return func(o *baseSettings) {
-		o.Start = start
+		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
 	}
 }
 
@@ -70,7 +70,7 @@ func WithStart(start componenthelper.Start) Option {
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown componenthelper.Shutdown) Option {
 	return func(o *baseSettings) {
-		o.Shutdown = shutdown
+		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
 	}
 }
 
@@ -83,16 +83,15 @@ func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
 }
 
 type baseSettings struct {
-	*componenthelper.ComponentSettings
-	capabilities component.ProcessorCapabilities
+	componentOptions []componenthelper.Option
+	capabilities     component.ProcessorCapabilities
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		ComponentSettings: componenthelper.DefaultComponentSettings(),
-		capabilities:      component.ProcessorCapabilities{MutatesConsumedData: true},
+		capabilities: component.ProcessorCapabilities{MutatesConsumedData: true},
 	}
 
 	for _, op := range options {
@@ -114,7 +113,7 @@ type baseProcessor struct {
 func newBaseProcessor(fullName string, options ...Option) baseProcessor {
 	bs := fromOptions(options)
 	be := baseProcessor{
-		Component:    componenthelper.NewComponent(bs.ComponentSettings),
+		Component:    componenthelper.New(bs.componentOptions...),
 		fullName:     fullName,
 		capabilities: bs.capabilities,
 		traceAttributes: []trace.Attribute{

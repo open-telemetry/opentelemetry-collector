@@ -7,7 +7,10 @@
 - Rename pdata.DoubleSummary to pdata.Summary (#2774)
 - Refactor `consumererror` package (#2768)
   - Remove `PartialError` type in favor of signal-specific types
-  - Rename `CombineErrors` to `Combine`
+  - Rename `CombineErrors()` to `Combine()`
+- Refactor `componenthelper` package (#2778)
+  - Remove `ComponentSettings` and `DefaultComponentSettings()`
+  - Rename `NewComponent()` to `New()`
 - obsReport.NewExporter accepts a settings struct (#2668)
 
 ## 💡 Enhancements 💡
@@ -23,6 +26,9 @@
 - Remove ValidateConfig and add Validate on the Config struct (#2665)
 - Rename pdata Size to OtlpProtoSize (#2726)
 - Rename [Traces|Metrics|Logs]Consumer to [Traces|Metrics|Logs] (#2761)
+- Remove public access for `componenttest.Example*` components:
+  - Users of these structs for testing configs should use the newly added `componenttest.Nop*` (update all components name in the config `example*` -> `nop` and use `componenttest.NopComponents()`).
+  - Users of these structs for sink like behavior should use `consumertest.*Sink`.
 
 ## 💡 Enhancements 💡
 
