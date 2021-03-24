@@ -213,9 +213,9 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleHistogram
 	case ocmetrics.MetricDescriptor_SUMMARY:
-		metric.SetDataType(pdata.MetricDataTypeDoubleSummary)
+		metric.SetDataType(pdata.MetricDataTypeSummary)
 		// no temporality specified for summary metric
-		return pdata.MetricDataTypeDoubleSummary
+		return pdata.MetricDataTypeSummary
 	}
 	return pdata.MetricDataTypeNone
 }
@@ -233,8 +233,8 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 		fillDoubleDataPoint(ocMetric, metric.DoubleSum().DataPoints())
 	case pdata.MetricDataTypeDoubleHistogram:
 		fillDoubleHistogramDataPoint(ocMetric, metric.DoubleHistogram().DataPoints())
-	case pdata.MetricDataTypeDoubleSummary:
-		fillDoubleSummaryDataPoint(ocMetric, metric.DoubleSummary().DataPoints())
+	case pdata.MetricDataTypeSummary:
+		fillDoubleSummaryDataPoint(ocMetric, metric.Summary().DataPoints())
 	}
 }
 
@@ -347,7 +347,7 @@ func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleHi
 	dps.Resize(pos)
 }
 
-func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleSummaryDataPointSlice) {
+func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
 	dps.Resize(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
@@ -394,7 +394,7 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 	dp.SetBucketCounts(buckets)
 }
 
-func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, dp pdata.DoubleSummaryDataPoint) {
+func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, dp pdata.SummaryDataPoint) {
 	if len(ocPercentiles) == 0 {
 		return
 	}

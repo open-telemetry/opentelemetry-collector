@@ -173,6 +173,16 @@ func (bp *batchProcessor) processItem(item interface{}) {
 				}()
 			}
 		}
+		if td, ok := item.(pdata.Logs); ok {
+			itemCount := bp.batch.itemCount()
+			if itemCount+uint32(td.LogRecordCount()) > bp.sendBatchMaxSize {
+				tdRemainSize := splitLogs(int(bp.sendBatchSize-itemCount), td)
+				item = tdRemainSize
+				go func() {
+					bp.newItem <- td
+				}()
+			}
+		}
 	}
 
 	bp.batch.add(item)

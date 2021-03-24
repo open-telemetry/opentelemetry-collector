@@ -1724,7 +1724,7 @@ func init() {
 	proto.RegisterType((*DoubleSum)(nil), "opentelemetry.proto.metrics.v1.DoubleSum")
 	proto.RegisterType((*IntHistogram)(nil), "opentelemetry.proto.metrics.v1.IntHistogram")
 	proto.RegisterType((*DoubleHistogram)(nil), "opentelemetry.proto.metrics.v1.DoubleHistogram")
-	proto.RegisterType((*DoubleSummary)(nil), "opentelemetry.proto.metrics.v1.DoubleSummary")
+	proto.RegisterType((*DoubleSummary)(nil), "opentelemetry.proto.metrics.v1.Summary")
 	proto.RegisterType((*IntDataPoint)(nil), "opentelemetry.proto.metrics.v1.IntDataPoint")
 	proto.RegisterType((*DoubleDataPoint)(nil), "opentelemetry.proto.metrics.v1.DoubleDataPoint")
 	proto.RegisterType((*IntHistogramDataPoint)(nil), "opentelemetry.proto.metrics.v1.IntHistogramDataPoint")
@@ -4078,7 +4078,7 @@ func (m *Metric) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 11:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DoubleSummary", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4775,10 +4775,10 @@ func (m *DoubleSummary) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DoubleSummary: wiretype end group for non-group")
+			return fmt.Errorf("proto: Summary: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DoubleSummary: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Summary: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
