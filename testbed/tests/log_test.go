@@ -24,7 +24,6 @@ import (
 )
 
 func TestLog10kDPS(t *testing.T) {
-	flw := testbed.NewFluentBitFileLogWriter(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	tests := []struct {
 		name         string
 		sender       testbed.DataSender
