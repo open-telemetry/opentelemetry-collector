@@ -372,3 +372,8 @@ checkdoc:
 .PHONY: apidiff-build
 apidiff-build:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+
+# Compare API state snapshots
+.PHONY: apidiff-compare
+apidiff-compare:
+	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
