@@ -19,6 +19,9 @@
 - Remove ValidateConfig and add Validate on the Config struct (#2665)
 - Rename pdata Size to OtlpProtoSize (#2726)
 - Rename [Traces|Metrics|Logs]Consumer to [Traces|Metrics|Logs] (#2761)
+- Remove public access for `componenttest.Example*` components:
+  - Users of these structs for testing configs should use the newly added `componenttest.Nop*` (update all components name in the config `example*` -> `nop` and use `componenttest.NopComponents()`).
+  - Users of these structs for sink like behavior should use `consumertest.*Sink`.
 
 ## 💡 Enhancements 💡
 
