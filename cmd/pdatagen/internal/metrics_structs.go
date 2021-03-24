@@ -212,8 +212,8 @@ var doubleHistogram = &messageValueStruct{
 }
 
 var doubleSummary = &messageValueStruct{
-	structName:     "DoubleSummary",
-	description:    "// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
+	structName:     "Summary",
+	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.DoubleSummary",
 	fields: []baseField{
 		&sliceField{
@@ -303,13 +303,13 @@ var doubleHistogramDataPoint = &messageValueStruct{
 }
 
 var doubleSummaryDataPointSlice = &sliceOfPtrs{
-	structName: "DoubleSummaryDataPointSlice",
+	structName: "SummaryDataPointSlice",
 	element:    doubleSummaryDataPoint,
 }
 
 var doubleSummaryDataPoint = &messageValueStruct{
-	structName:     "DoubleSummaryDataPoint",
-	description:    "// DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
+	structName:     "SummaryDataPoint",
+	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.DoubleSummaryDataPoint",
 	fields: []baseField{
 		labelsField,
