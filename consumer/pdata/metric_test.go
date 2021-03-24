@@ -116,8 +116,8 @@ func TestDataType(t *testing.T) {
 	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeDoubleHistogram)
 	assert.Equal(t, MetricDataTypeDoubleHistogram, m.DataType())
-	m.SetDataType(MetricDataTypeDoubleSummary)
-	assert.Equal(t, MetricDataTypeDoubleSummary, m.DataType())
+	m.SetDataType(MetricDataTypeSummary)
+	assert.Equal(t, MetricDataTypeSummary, m.DataType())
 }
 
 func TestResourceMetricsWireCompatibility(t *testing.T) {

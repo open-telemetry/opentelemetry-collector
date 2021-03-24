@@ -225,7 +225,7 @@ func GenerateMetricsAllTypesNoDataPoints() pdata.Metrics {
 	initMetric(ms.At(3), TestCounterIntMetricName, pdata.MetricDataTypeIntSum)
 	initMetric(ms.At(4), TestDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram)
 	initMetric(ms.At(5), TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram)
-	initMetric(ms.At(6), TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary)
+	initMetric(ms.At(6), TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
 	return md
 }
 
@@ -247,8 +247,8 @@ func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 	ms.At(4).DoubleHistogram().DataPoints().Resize(1)
 	initMetric(ms.At(5), TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram)
 	ms.At(5).IntHistogram().DataPoints().Resize(1)
-	initMetric(ms.At(6), TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary)
-	ms.At(6).DoubleSummary().DataPoints().Resize(1)
+	initMetric(ms.At(6), TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+	ms.At(6).Summary().DataPoints().Resize(1)
 	return md
 }
 
@@ -276,7 +276,7 @@ func generateMetricsOtlpAllTypesNoDataPoints() *otlpcollectormetrics.ExportMetri
 							generateOtlpMetric(TestCounterIntMetricName, pdata.MetricDataTypeIntSum),
 							generateOtlpMetric(TestDoubleHistogramMetricName, pdata.MetricDataTypeDoubleHistogram),
 							generateOtlpMetric(TestIntHistogramMetricName, pdata.MetricDataTypeIntHistogram),
-							generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary),
+							generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary),
 						},
 					},
 				},
@@ -530,9 +530,9 @@ func generateOtlpIntHistogramMetric() *otlpmetrics.Metric {
 }
 
 func initDoubleSummaryMetric(sm pdata.Metric) {
-	initMetric(sm, TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary)
+	initMetric(sm, TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
 
-	sdps := sm.DoubleSummary().DataPoints()
+	sdps := sm.Summary().DataPoints()
 	sdps.Resize(2)
 	sdp0 := sdps.At(0)
 	initMetricLabels13(sdp0.LabelsMap())
@@ -556,7 +556,7 @@ func initDoubleSummaryMetric(sm pdata.Metric) {
 }
 
 func generateOTLPDoubleSummaryMetric() *otlpmetrics.Metric {
-	m := generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeDoubleSummary)
+	m := generateOtlpMetric(TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
 	m.Data.(*otlpmetrics.Metric_DoubleSummary).DoubleSummary.DataPoints =
 		[]*otlpmetrics.DoubleSummaryDataPoint{
 			{
@@ -635,7 +635,7 @@ func generateOtlpMetric(name string, ty pdata.MetricDataType) *otlpmetrics.Metri
 		m.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{
 			AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 		}}
-	case pdata.MetricDataTypeDoubleSummary:
+	case pdata.MetricDataTypeSummary:
 		m.Data = &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
 	}
 	return m
