@@ -39,18 +39,14 @@ type ConfigSource interface {
 // object is created from a ConfigSource. The code using Session objects must guarantee that
 // methods of a single instance are not called concurrently.
 type Session interface {
-	// Apply goes to the configuration source, and according to the specified selector and
-	// parameters retrieves a configuration value that is injected into the configuration.
+	// Retrieve goes to the configuration source and retrieves the selected data which
+	// contains the value to be injected in the configuration and the corresponding Watcher that
+	// will be used to monitor for updates of the retrieved value. The retrieved value is selected
+	// according to the selector and the params passed in the call to Retrieve.
 	//
-	// The selector is a string that is required on all invocations, the params are optional.
-	Apply(ctx context.Context, selector string, params interface{}) (interface{}, error)
-
-	// Watcher method returns a Watcher object that will be used to monitor for updates on the
-	// items used during the configuration session. The code using the Session object must
-	// guarantee that there won't be calls to Apply after the Watcher method is called.
-	// The Watcher method must be called only once for a Session object. This method must not
-	// be called in case any call to Apply return errors during the configuration session.
-	Watcher() (Watcher, error)
+	// The selector is a string that is required on all invocations, the params are optional. Each
+	// implementation handles the generic params according to their requirements.
+	Retrieve(ctx context.Context, selector string, params interface{}) (RetrievedConfig, error)
 
 	// Close signals that the object won't be used anymore to inject data into a configuration.
 	// This method must be called when the configuration session ends, either in case of success
@@ -59,25 +55,29 @@ type Session interface {
 	Close(ctx context.Context) error
 }
 
+// RetrievedConfig holds the result of a call to the Retrieve method of a Session object.
+type RetrievedConfig struct {
+	// Value is the retrieved data that will be injected on the configuration.
+	Value interface{}
+	// Watcher monitors for updates of the retrieved value on the configuration source.
+	Watcher Watcher
+}
+
 // Watcher provides an way for configuration sources to notify when
-// updates to the configuration in use were detected. A Watcher must be
-// created at the end of a successful configuration session from a Session object
-// via the Watcher method.
+// updates to a specific value used in the configuration were detected.
 type Watcher interface {
 	// WatchForUpdate must not return until one of the following happens:
 	//
-	// 1. An update is detected for at least one of the items that were requested in
-	//    the original configuration session.
+	// 1. An update is detected for the monitored value.
 	//
-	// 2. The stopWatchingCh channel is closed.
+	// 2. The parent Session object is closed, in which case the method should return
+	//    ErrSessionClosed.
 	//
 	// 3. An error happens while watching for updates. The method should not return
 	//    on first instances of transient errors, optionally there should be
-	//    configurable thresholds to control for long such errors can be ignored.
+	//    configurable thresholds to control for how long such errors can be ignored.
 	//
 	// The method must return with a nil error when an update has happened to
-	// any of the items used during the configuration session from which the watcher
-	// object was created. Optionally the object can also return a string with some
-	// information about the item that was updated.
-	WatchForUpdate(stopWatchingCh <-chan struct{}) (string, error)
+	// the value monitored by the Watcher.
+	WatchForUpdate() error
 }
