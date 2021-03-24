@@ -250,7 +250,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         consumer.LogsConsumer
+		sink         consumer.Logs
 	}{
 		{
 			name: "default",

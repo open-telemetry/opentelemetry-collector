@@ -50,7 +50,7 @@ func (f *nopReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	_ consumer.TracesConsumer,
+	_ consumer.Traces,
 ) (component.TracesReceiver, error) {
 	return nopReceiverInstance, nil
 }
@@ -60,7 +60,7 @@ func (f *nopReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	_ consumer.MetricsConsumer,
+	_ consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nopReceiverInstance, nil
 }
@@ -70,13 +70,13 @@ func (f *nopReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	_ consumer.LogsConsumer,
+	_ consumer.Logs,
 ) (component.LogsReceiver, error) {
 	return nopReceiverInstance, nil
 }
 
 var nopReceiverInstance = &nopReceiver{
-	Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+	Component: componenthelper.New(),
 }
 
 // nopReceiver stores consumed traces and metrics for testing purposes.

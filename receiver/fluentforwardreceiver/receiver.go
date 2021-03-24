@@ -38,7 +38,7 @@ type fluentReceiver struct {
 	cancel    context.CancelFunc
 }
 
-func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.LogsConsumer) (component.LogsReceiver, error) {
+func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.Logs) (component.LogsReceiver, error) {
 	eventCh := make(chan Event, eventChannelLength)
 
 	collector := newCollector(eventCh, next, logger)

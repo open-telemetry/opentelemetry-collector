@@ -338,7 +338,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
 	errs := []error{nil, errFake}
 	numExportedSpans := []int{22, 14}
 	for i, err := range errs {
@@ -385,7 +385,7 @@ func TestExportMetricsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
 
 	errs := []error{nil, errFake}
 	toSendMetricPoints := []int{17, 23}
@@ -434,7 +434,7 @@ func TestExportLogsOp(t *testing.T) {
 		t.Name(), trace.WithSampler(trace.AlwaysSample()))
 	defer parentSpan.End()
 
-	obsrep := obsreport.NewExporter(configtelemetry.LevelNormal, exporter)
+	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{configtelemetry.LevelNormal, exporter})
 	errs := []error{nil, errFake}
 	toSendLogRecords := []int{17, 23}
 	for i, err := range errs {

@@ -47,7 +47,7 @@ func initProvider() func() {
 
 	otelAgentAddr, ok := os.LookupEnv("OTEL_AGENT_ENDPOINT")
 	if !ok {
-		otelAgentAddr = "0.0.0.0:55680"
+		otelAgentAddr = "0.0.0.0:4317"
 	}
 
 	exp, err := otlp.NewExporter(ctx, otlpgrpc.NewDriver(
@@ -67,7 +67,7 @@ func initProvider() func() {
 
 	bsp := sdktrace.NewBatchSpanProcessor(exp)
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
@@ -78,7 +78,7 @@ func initProvider() func() {
 			exp,
 		),
 		controller.WithCollectPeriod(7*time.Second),
-		controller.WithPusher(exp),
+		controller.WithExporter(exp),
 	)
 
 	// set global propagator to tracecontext (the default is no-op).

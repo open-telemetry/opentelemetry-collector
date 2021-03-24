@@ -104,7 +104,7 @@ func (ld Logs) ResourceLogs() ResourceLogsSlice {
 }
 
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.
-type SeverityNumber otlplogs.SeverityNumber
+type SeverityNumber int32
 
 const (
 	SeverityNumberUNDEFINED = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED)
@@ -133,3 +133,5 @@ const (
 	SeverityNumberFATAL3    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL3)
 	SeverityNumberFATAL4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
+
+func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }

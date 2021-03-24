@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testbed
+package builder
 
-// MockDataConsumer is an interface that keeps the count of number of events received by mock receiver.
-// This is mainly useful for the Exporters that are not have the matching receiver
-type MockTraceDataConsumer interface {
-	// MockConsumeTraceData receives traces and counts the number of events received.
-	MockConsumeTraceData(spansCount int) error
-}
+import (
+	"errors"
+	"testing"
 
-type MockMetricDataConsumer interface {
-	// MockConsumeMetricData receives metrics and counts the number of events received.
-	MockConsumeMetricData(metricsCount int) error
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+)
+
+func Test_newHostWrapper(t *testing.T) {
+	hw := newHostWrapper(componenttest.NewNopHost(), zap.NewNop())
+	hw.ReportFatalError(errors.New("test error"))
 }

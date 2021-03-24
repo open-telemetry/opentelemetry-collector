@@ -758,35 +758,35 @@ func (ms DoubleHistogram) CopyTo(dest DoubleHistogram) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
-// DoubleSummary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
+// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleSummary function to create new instances.
+// Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleSummary struct {
+type Summary struct {
 	orig *otlpmetrics.DoubleSummary
 }
 
-func newDoubleSummary(orig *otlpmetrics.DoubleSummary) DoubleSummary {
-	return DoubleSummary{orig: orig}
+func newSummary(orig *otlpmetrics.DoubleSummary) Summary {
+	return Summary{orig: orig}
 }
 
-// NewDoubleSummary creates a new empty DoubleSummary.
+// NewSummary creates a new empty Summary.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleSummary() DoubleSummary {
-	return newDoubleSummary(&otlpmetrics.DoubleSummary{})
+func NewSummary() Summary {
+	return newSummary(&otlpmetrics.DoubleSummary{})
 }
 
-// DataPoints returns the DataPoints associated with this DoubleSummary.
-func (ms DoubleSummary) DataPoints() DoubleSummaryDataPointSlice {
-	return newDoubleSummaryDataPointSlice(&(*ms.orig).DataPoints)
+// DataPoints returns the DataPoints associated with this Summary.
+func (ms Summary) DataPoints() SummaryDataPointSlice {
+	return newSummaryDataPointSlice(&(*ms.orig).DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleSummary) CopyTo(dest DoubleSummary) {
+func (ms Summary) CopyTo(dest Summary) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
@@ -1596,34 +1596,34 @@ func (ms DoubleHistogramDataPoint) CopyTo(dest DoubleHistogramDataPoint) {
 	ms.Exemplars().CopyTo(dest.Exemplars())
 }
 
-// DoubleSummaryDataPointSlice logically represents a slice of DoubleSummaryDataPoint.
+// SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleSummaryDataPointSlice function to create new instances.
+// Must use NewSummaryDataPointSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleSummaryDataPointSlice struct {
+type SummaryDataPointSlice struct {
 	// orig points to the slice otlpmetrics.DoubleSummaryDataPoint field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]*otlpmetrics.DoubleSummaryDataPoint
 }
 
-func newDoubleSummaryDataPointSlice(orig *[]*otlpmetrics.DoubleSummaryDataPoint) DoubleSummaryDataPointSlice {
-	return DoubleSummaryDataPointSlice{orig}
+func newSummaryDataPointSlice(orig *[]*otlpmetrics.DoubleSummaryDataPoint) SummaryDataPointSlice {
+	return SummaryDataPointSlice{orig}
 }
 
-// NewDoubleSummaryDataPointSlice creates a DoubleSummaryDataPointSlice with 0 elements.
+// NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
-func NewDoubleSummaryDataPointSlice() DoubleSummaryDataPointSlice {
+func NewSummaryDataPointSlice() SummaryDataPointSlice {
 	orig := []*otlpmetrics.DoubleSummaryDataPoint(nil)
-	return DoubleSummaryDataPointSlice{&orig}
+	return SummaryDataPointSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewDoubleSummaryDataPointSlice()".
-func (es DoubleSummaryDataPointSlice) Len() int {
+// Returns "0" for a newly instance created with "NewSummaryDataPointSlice()".
+func (es SummaryDataPointSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -1634,13 +1634,13 @@ func (es DoubleSummaryDataPointSlice) Len() int {
 //     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es DoubleSummaryDataPointSlice) At(ix int) DoubleSummaryDataPoint {
-	return newDoubleSummaryDataPoint((*es.orig)[ix])
+func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
+	return newSummaryDataPoint((*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es DoubleSummaryDataPointSlice) MoveAndAppendTo(dest DoubleSummaryDataPointSlice) {
+func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -1651,13 +1651,13 @@ func (es DoubleSummaryDataPointSlice) MoveAndAppendTo(dest DoubleSummaryDataPoin
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es DoubleSummaryDataPointSlice) CopyTo(dest DoubleSummaryDataPointSlice) {
+func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newDoubleSummaryDataPoint((*es.orig)[i]).CopyTo(newDoubleSummaryDataPoint((*dest.orig)[i]))
+			newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint((*dest.orig)[i]))
 		}
 		return
 	}
@@ -1665,7 +1665,7 @@ func (es DoubleSummaryDataPointSlice) CopyTo(dest DoubleSummaryDataPointSlice) {
 	wrappers := make([]*otlpmetrics.DoubleSummaryDataPoint, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newDoubleSummaryDataPoint((*es.orig)[i]).CopyTo(newDoubleSummaryDataPoint(wrappers[i]))
+		newSummaryDataPoint((*es.orig)[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -1674,14 +1674,14 @@ func (es DoubleSummaryDataPointSlice) CopyTo(dest DoubleSummaryDataPointSlice) {
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-// Here is how a new DoubleSummaryDataPointSlice can be initialized:
-// es := NewDoubleSummaryDataPointSlice()
+// Here is how a new SummaryDataPointSlice can be initialized:
+// es := NewSummaryDataPointSlice()
 // es.Resize(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.At(i)
 //     // Here should set all the values for e.
 // }
-func (es DoubleSummaryDataPointSlice) Resize(newLen int) {
+func (es SummaryDataPointSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
@@ -1702,88 +1702,88 @@ func (es DoubleSummaryDataPointSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the DoubleSummaryDataPointSlice by one and set the
-// given DoubleSummaryDataPoint at that new position.  The original DoubleSummaryDataPoint
+// Append will increase the length of the SummaryDataPointSlice by one and set the
+// given SummaryDataPoint at that new position.  The original SummaryDataPoint
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleSummaryDataPointSlice) Append(e DoubleSummaryDataPoint) {
+func (es SummaryDataPointSlice) Append(e SummaryDataPoint) {
 	*es.orig = append(*es.orig, e.orig)
 }
 
-// DoubleSummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
+// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleSummaryDataPoint function to create new instances.
+// Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleSummaryDataPoint struct {
+type SummaryDataPoint struct {
 	orig *otlpmetrics.DoubleSummaryDataPoint
 }
 
-func newDoubleSummaryDataPoint(orig *otlpmetrics.DoubleSummaryDataPoint) DoubleSummaryDataPoint {
-	return DoubleSummaryDataPoint{orig: orig}
+func newSummaryDataPoint(orig *otlpmetrics.DoubleSummaryDataPoint) SummaryDataPoint {
+	return SummaryDataPoint{orig: orig}
 }
 
-// NewDoubleSummaryDataPoint creates a new empty DoubleSummaryDataPoint.
+// NewSummaryDataPoint creates a new empty SummaryDataPoint.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleSummaryDataPoint() DoubleSummaryDataPoint {
-	return newDoubleSummaryDataPoint(&otlpmetrics.DoubleSummaryDataPoint{})
+func NewSummaryDataPoint() SummaryDataPoint {
+	return newSummaryDataPoint(&otlpmetrics.DoubleSummaryDataPoint{})
 }
 
-// LabelsMap returns the Labels associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) LabelsMap() StringMap {
+// LabelsMap returns the Labels associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) LabelsMap() StringMap {
 	return newStringMap(&(*ms.orig).Labels)
 }
 
-// StartTime returns the starttime associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) StartTime() Timestamp {
+// StartTime returns the starttime associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) StartTime() Timestamp {
 	return Timestamp((*ms.orig).StartTimeUnixNano)
 }
 
-// SetStartTime replaces the starttime associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetStartTime(v Timestamp) {
+// SetStartTime replaces the starttime associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetStartTime(v Timestamp) {
 	(*ms.orig).StartTimeUnixNano = uint64(v)
 }
 
-// Timestamp returns the timestamp associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) Timestamp() Timestamp {
+// Timestamp returns the timestamp associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetTimestamp(v Timestamp) {
+// SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Count returns the count associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) Count() uint64 {
+// Count returns the count associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Count() uint64 {
 	return (*ms.orig).Count
 }
 
-// SetCount replaces the count associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetCount(v uint64) {
+// SetCount replaces the count associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetCount(v uint64) {
 	(*ms.orig).Count = v
 }
 
-// Sum returns the sum associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) Sum() float64 {
+// Sum returns the sum associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Sum() float64 {
 	return (*ms.orig).Sum
 }
 
-// SetSum replaces the sum associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) SetSum(v float64) {
+// SetSum replaces the sum associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetSum(v float64) {
 	(*ms.orig).Sum = v
 }
 
-// QuantileValues returns the QuantileValues associated with this DoubleSummaryDataPoint.
-func (ms DoubleSummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
+// QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 	return newValueAtQuantileSlice(&(*ms.orig).QuantileValues)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleSummaryDataPoint) CopyTo(dest DoubleSummaryDataPoint) {
+func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.LabelsMap().CopyTo(dest.LabelsMap())
 	dest.SetStartTime(ms.StartTime())
 	dest.SetTimestamp(ms.Timestamp())

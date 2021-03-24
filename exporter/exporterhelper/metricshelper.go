@@ -45,8 +45,12 @@ func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher PushMetrics
 	}
 }
 
-func (req *metricsRequest) onPartialError(partialErr consumererror.PartialError) request {
-	return newMetricsRequest(req.ctx, partialErr.GetMetrics(), req.pusher)
+func (req *metricsRequest) onError(err error) request {
+	var metricsError consumererror.Metrics
+	if consumererror.AsMetrics(err, &metricsError) {
+		return newMetricsRequest(req.ctx, metricsError.GetMetrics(), req.pusher)
+	}
+	return req
 }
 
 func (req *metricsRequest) export(ctx context.Context) error {
@@ -92,7 +96,10 @@ func NewMetricsExporter(
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
-			obsrep:     obsreport.NewExporter(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
+				Level:        configtelemetry.GetMetricsLevelFlagValue(),
+				ExporterName: cfg.Name(),
+			}),
 			nextSender: nextSender,
 		}
 	})

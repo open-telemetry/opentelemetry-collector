@@ -40,17 +40,17 @@ func (f *TestProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.TracesConsumer) (TracesProcessor, error) {
+func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.Traces) (TracesProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.MetricsConsumer) (MetricsProcessor, error) {
+func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.Metrics) (MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.LogsConsumer) (LogsProcessor, error) {
+func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.Logs) (LogsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

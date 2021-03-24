@@ -43,7 +43,7 @@ import (
 // from Collector and the corresponding entity in the Collector that sends this data is
 // an exporter.
 type DataReceiver interface {
-	Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error
+	Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error
 	Stop() error
 
 	// Generate a config string to place in exporter part of collector config
@@ -98,7 +98,7 @@ func NewOCDataReceiver(port int) *OCDataReceiver {
 	return &OCDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (or *OCDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (or *OCDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := opencensusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.SetName(or.ProtocolName())
@@ -153,7 +153,7 @@ func NewJaegerDataReceiver(port int) *JaegerDataReceiver {
 	return &JaegerDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (jr *JaegerDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (jr *JaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
 	cfg.SetName(jr.ProtocolName())
@@ -197,7 +197,7 @@ type BaseOTLPDataReceiver struct {
 	compression     string
 }
 
-func (bor *BaseOTLPDataReceiver) Start(tc consumer.TracesConsumer, mc consumer.MetricsConsumer, lc consumer.LogsConsumer) error {
+func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.SetName(bor.exporterType)
@@ -299,7 +299,7 @@ func NewZipkinDataReceiver(port int) *ZipkinDataReceiver {
 	return &ZipkinDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (zr *ZipkinDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (zr *ZipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.SetName(zr.ProtocolName())
@@ -345,7 +345,7 @@ func NewPrometheusDataReceiver(port int) *PrometheusDataReceiver {
 	return &PrometheusDataReceiver{DataReceiverBase: DataReceiverBase{Port: port}}
 }
 
-func (dr *PrometheusDataReceiver) Start(_ consumer.TracesConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (dr *PrometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)

@@ -24,6 +24,16 @@ import (
 
 // Component is either a receiver, exporter, processor or extension.
 type Component interface {
+	// Components lifecycle goes through the following phases:
+	//
+	// 1. Creation. The component is created using the factory, via Create* call.
+	// 2. Start. The component's Start() method is called.
+	// 3. Running. The component is up and running.
+	// 4. Shutdown. The component's Shutdown() method is called, the lifecycle is complete.
+	//
+	// Once the lifecycle is complete it may be repeated, in which case a new component
+	// is created and goes through the lifecycle.
+
 	// Start tells the component to start. Host parameter can be used for communicating
 	// with the host after Start() has already returned. If error is returned by
 	// Start() then the collector startup will be aborted.
@@ -44,6 +54,11 @@ type Component interface {
 	// Remember that if you started any long-running background operation from the Start() method that operation
 	// must be also cancelled. If there are any buffer in the component, it should be cleared and the data sent
 	// immediately to the next component.
+	//
+	// Once the Shutdown() method returns the component's lifecycle is completed. No other
+	// methods of the component are called after that. If necessary a new component with
+	// the same or different configuration may be created and started (this may happen
+	// for example if we want to restart the component).
 	Shutdown(ctx context.Context) error
 }
 

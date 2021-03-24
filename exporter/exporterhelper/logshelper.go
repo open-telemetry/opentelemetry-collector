@@ -45,8 +45,12 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher PushLogs) request
 	}
 }
 
-func (req *logsRequest) onPartialError(partialErr consumererror.PartialError) request {
-	return newLogsRequest(req.ctx, partialErr.GetLogs(), req.pusher)
+func (req *logsRequest) onError(err error) request {
+	var logError consumererror.Logs
+	if consumererror.AsLogs(err, &logError) {
+		return newLogsRequest(req.ctx, logError.GetLogs(), req.pusher)
+	}
+	return req
 }
 
 func (req *logsRequest) export(ctx context.Context) error {
@@ -88,7 +92,10 @@ func NewLogsExporter(
 	be := newBaseExporter(cfg, logger, options...)
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
-			obsrep:     obsreport.NewExporter(configtelemetry.GetMetricsLevelFlagValue(), cfg.Name()),
+			obsrep: obsreport.NewExporter(obsreport.ExporterSettings{
+				Level:        configtelemetry.GetMetricsLevelFlagValue(),
+				ExporterName: cfg.Name(),
+			}),
 			nextSender: nextSender,
 		}
 	})

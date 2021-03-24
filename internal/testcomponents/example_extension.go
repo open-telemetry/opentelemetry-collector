@@ -52,5 +52,5 @@ func createExtensionDefaultConfig() configmodels.Extension {
 
 // CreateExtension creates an Extension based on this config.
 func createExtension(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.Extension, error) {
-	return componenthelper.NewComponent(componenthelper.DefaultComponentSettings()), nil
+	return componenthelper.New(), nil
 }

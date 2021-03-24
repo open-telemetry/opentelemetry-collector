@@ -31,11 +31,11 @@ type mockAccumulator struct {
 	metrics []pdata.Metric
 }
 
-func (a *mockAccumulator) Accumulate(rm pdata.ResourceMetrics) (n int) {
+func (a *mockAccumulator) Accumulate(pdata.ResourceMetrics) (n int) {
 	return 0
 }
-func (a *mockAccumulator) Collect() []pdata.Metric {
 
+func (a *mockAccumulator) Collect() []pdata.Metric {
 	return a.metrics
 }
 
@@ -110,7 +110,7 @@ func (c *errorCheckCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zap
 	}
 	return ce
 }
-func (c *errorCheckCore) Write(ent zapcore.Entry, field []zapcore.Field) error {
+func (c *errorCheckCore) Write(ent zapcore.Entry, _ []zapcore.Field) error {
 	if ent.Level == zapcore.ErrorLevel {
 		c.errorMessages = append(c.errorMessages, ent.Message)
 	}

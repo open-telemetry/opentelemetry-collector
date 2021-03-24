@@ -98,13 +98,13 @@ func (td Traces) ResourceSpans() ResourceSpansSlice {
 // TraceState in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState string
 
-type SpanKind otlptrace.Span_SpanKind
-
-func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
-
 const (
 	TraceStateEmpty TraceState = ""
 )
+
+type SpanKind int32
+
+func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
 
 const (
 	SpanKindUNSPECIFIED = SpanKind(0)
@@ -117,7 +117,7 @@ const (
 
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-type StatusCode otlptrace.Status_StatusCode
+type StatusCode int32
 
 const (
 	StatusCodeUnset = StatusCode(otlptrace.Status_STATUS_CODE_UNSET)
