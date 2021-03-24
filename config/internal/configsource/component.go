@@ -45,8 +45,39 @@ type Session interface {
 	// The selector is a string that is required on all invocations, the params are optional.
 	Apply(ctx context.Context, selector string, params interface{}) (interface{}, error)
 
+	// Watcher method returns a Watcher object that will be used to monitor for updates on the
+	// items used during the configuration session. The code using the Session object must
+	// guarantee that there won't be calls to Apply after the Watcher method is called.
+	// The Watcher method must be called only once for a Session object. This method must not
+	// be called in case any call to Apply return errors during the configuration session.
+	Watcher() (Watcher, error)
+
 	// Close signals that the object won't be used anymore to inject data into a configuration.
-	// Each Session object should use this call according to their needs: release resources,
+	// This method must be called when the configuration session ends, either in case of success
+	// or error. Each Session object should use this call according to their needs: release resources,
 	// close communication channels, etc.
 	Close(ctx context.Context) error
+}
+
+// Watcher provides an way for configuration sources to notify when
+// updates to the configuration in use were detected. A Watcher must be
+// created at the end of a successful configuration session from a Session object
+// via the Watcher method.
+type Watcher interface {
+	// WatchForUpdate must not return until one of the following happens:
+	//
+	// 1. An update is detected for at least one of the items that were requested in
+	//    the original configuration session.
+	//
+	// 2. The stopWatchingCh channel is closed.
+	//
+	// 3. An error happens while watching for updates. The method should not return
+	//    on first instances of transient errors, optionally there should be
+	//    configurable thresholds to control for long such errors can be ignored.
+	//
+	// The method must return with a nil error when an update has happened to
+	// any of the items used during the configuration session from which the watcher
+	// object was created. Optionally the object can also return a string with some
+	// information about the item that was updated.
+	WatchForUpdate(stopWatchingCh <-chan struct{}) (string, error)
 }
