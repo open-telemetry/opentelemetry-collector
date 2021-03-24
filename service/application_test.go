@@ -412,7 +412,8 @@ func TestApplication_updateActiveConfig(t *testing.T) {
 				return
 			}
 
-			require.NoError(t, app.service.Shutdown(ctx))
+			// If successful need to shutdown active service.
+			assert.NoError(t, app.service.Shutdown(ctx))
 		})
 	}
 }
