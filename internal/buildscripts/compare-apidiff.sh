@@ -36,6 +36,9 @@ fi
 set -e
 
 if [ -d $input_dir/$package ]; then
-  echo "Checking $package for API changes"
-  apidiff $input_dir/$package/apidiff.state $package
+  changes=$(apidiff $input_dir/$package/apidiff.state $package)
+  if [ ! -z "$changes" -a "$changes"!=" " ]; then
+    echo "Changes found in $package:"
+    echo "$changes"
+  fi
 fi
