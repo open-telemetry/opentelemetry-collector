@@ -43,9 +43,6 @@ func TestDefaultReceivers(t *testing.T) {
 		getConfigFn  getReceiverConfigFn
 	}{
 		{
-			receiver: "fluentforward",
-		},
-		{
 			receiver: "hostmetrics",
 		},
 		{
