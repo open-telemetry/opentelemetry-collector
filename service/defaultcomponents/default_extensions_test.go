@@ -67,9 +67,6 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
-		{
-			extension: "fluentbit",
-		},
 	}
 
 	assert.Equal(t, len(tests), len(extFactories))
