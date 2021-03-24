@@ -5,9 +5,13 @@
 ## 🛑 Breaking changes 🛑
 
 - Rename pdata.DoubleSummary to pdata.Summary (#2774)
-- Refactored `consumererror` package (#2768)
-  - Eliminated `PartialError` type in favor of signal-specific types
-  - Renamed `CombineErrors` to `Combine`
+- Refactor `consumererror` package (#2768)
+  - Remove `PartialError` type in favor of signal-specific types
+  - Rename `CombineErrors` to `Combine`
+- obsReport.NewExporter accepts a settings struct (#2668)
+
+## 💡 Enhancements 💡
+- `batch` processor: - Support max batch size for logs (#2736)
 
 ## v0.23.0 Beta
 
