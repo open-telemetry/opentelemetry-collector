@@ -546,8 +546,8 @@ func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
 	return defaultUnmarshaler
 }
 
-func defaultUnmarshaler(componentSection *viper.Viper, intoCfg interface{}) error {
-	return componentSection.UnmarshalExact(intoCfg)
+func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
 // Copied from the Viper but changed to use the same delimiter
