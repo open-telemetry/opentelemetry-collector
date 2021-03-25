@@ -97,7 +97,7 @@ const typeAndNameSeparator = "/"
 // After loading the config, need to check if it is valid by calling `ValidateConfig`.
 func Load(v *config.Parser, factories component.Factories) (*configmodels.Config, error) {
 
-	var config configmodels.Config
+	var cfg configmodels.Config
 
 	// Load the config.
 
@@ -120,7 +120,7 @@ func Load(v *config.Parser, factories component.Factories) (*configmodels.Config
 	if err != nil {
 		return nil, err
 	}
-	config.Extensions = extensions
+	cfg.Extensions = extensions
 
 	// Load data components (receivers, exporters, and processors).
 
@@ -128,28 +128,28 @@ func Load(v *config.Parser, factories component.Factories) (*configmodels.Config
 	if err != nil {
 		return nil, err
 	}
-	config.Receivers = receivers
+	cfg.Receivers = receivers
 
 	exporters, err := loadExporters(cast.ToStringMap(v.Get(exportersKeyName)), factories.Exporters)
 	if err != nil {
 		return nil, err
 	}
-	config.Exporters = exporters
+	cfg.Exporters = exporters
 
 	processors, err := loadProcessors(cast.ToStringMap(v.Get(processorsKeyName)), factories.Processors)
 	if err != nil {
 		return nil, err
 	}
-	config.Processors = processors
+	cfg.Processors = processors
 
 	// Load the service and its data pipelines.
 	service, err := loadService(rawCfg.Service)
 	if err != nil {
 		return nil, err
 	}
-	config.Service = service
+	cfg.Service = service
 
-	return &config, nil
+	return &cfg, nil
 }
 
 // DecodeTypeAndName decodes a key in type[/name] format into type and fullName.
