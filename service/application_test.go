@@ -30,14 +30,13 @@ import (
 
 	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configload"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
@@ -145,7 +144,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 
 	params := Parameters{
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
-		ConfigFactory: func(_ *viper.Viper, _ *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
 		Factories: factories,
@@ -235,7 +234,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.doesnotexist.timeout=2s",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
 		require.Error(t, err)
 		require.Nil(t, cfg)
 
@@ -248,7 +247,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.batch/foo.timeout=2s",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -278,7 +277,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=extensions.health_check.port=8080",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -300,7 +299,6 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	v := configload.NewViper()
 	cmd := &cobra.Command{}
 	addSetFlag(cmd.Flags())
 	fs := &flag.FlagSet{}
@@ -315,7 +313,7 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 		"--set=processors.attributes.actions.value=bar",
 		"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
 	})
-	cfg, err := FileLoaderConfigFactory(v, cmd, factories)
+	cfg, err := FileLoaderConfigFactory(cmd, factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 }
@@ -341,10 +339,10 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	v := configload.NewViper()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := configparser.Load(v, factories)
+	cfg, err := configparser.Load(config.ParserFromViper(v), factories)
 	assert.NoError(t, err)
 	err = cfg.Validate()
 	assert.NoError(t, err)

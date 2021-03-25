@@ -21,9 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 
-	"go.opentelemetry.io/collector/config/configload"
+	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -38,7 +37,7 @@ func addSetFlag(flagSet *pflag.FlagSet) {
 // AddSetFlagProperties overrides properties from set flag(s) in supplied viper instance.
 // The implementation reads set flag(s) from the cmd and passes the content to a new viper instance as .properties file.
 // Then the properties from new viper instance are read and set to the supplied viper.
-func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
+func AddSetFlagProperties(cp *config.Parser, cmd *cobra.Command) error {
 	flagProperties, err := cmd.Flags().GetStringArray(setFlagName)
 	if err != nil {
 		return err
@@ -53,7 +52,7 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 			return err
 		}
 	}
-	viperFlags := configload.NewViper()
+	viperFlags := config.NewViper()
 	viperFlags.SetConfigType(setFlagFileType)
 	if err := viperFlags.ReadConfig(b); err != nil {
 		return fmt.Errorf("failed to read set flag config: %v", err)
@@ -78,20 +77,20 @@ func AddSetFlagProperties(v *viper.Viper, cmd *cobra.Command) error {
 
 	rootKeys := map[string]struct{}{}
 	for _, k := range viperFlags.AllKeys() {
-		keys := strings.Split(k, configload.KeyDelimiter)
+		keys := strings.Split(k, config.KeyDelimiter)
 		if len(keys) > 0 {
 			rootKeys[keys[0]] = struct{}{}
 		}
 	}
 
 	for k := range rootKeys {
-		v.Set(k, v.Get(k))
+		cp.Set(k, cp.Get(k))
 	}
 
 	// now that we've copied the config into the viper "overrides" copy the --set flags
 	// as well
 	for _, k := range viperFlags.AllKeys() {
-		v.Set(k, viperFlags.Get(k))
+		cp.Set(k, viperFlags.Get(k))
 	}
 
 	return nil

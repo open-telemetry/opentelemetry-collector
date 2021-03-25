@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configload
+package config
 
 import (
 	"testing"
@@ -81,7 +81,7 @@ func TestToStringMap(t *testing.T) {
 			v := NewViper()
 			v.SetConfigFile(test.fileName)
 			require.NoError(t, v.ReadInConfig(), "Unable to read configuration file '%s'", test.fileName)
-			parser := FromViper(v)
+			parser := ParserFromViper(v)
 			assert.Equal(t, test.stringMap, parser.ToStringMap())
 		})
 	}

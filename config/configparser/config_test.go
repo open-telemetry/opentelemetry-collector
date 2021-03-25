@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configload"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -202,11 +202,11 @@ func TestSimpleConfig(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Load the config
-			config, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
+			cfg, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
 			require.NoError(t, err, "Unable to load config")
 
 			// Verify extensions.
-			assert.Equalf(t, 1, len(config.Extensions), "TEST[%s]", test.name)
+			assert.Equalf(t, 1, len(cfg.Extensions), "TEST[%s]", test.name)
 			assert.Equalf(t,
 				&testcomponents.ExampleExtensionCfg{
 					ExtensionSettings: configmodels.ExtensionSettings{
@@ -217,15 +217,15 @@ func TestSimpleConfig(t *testing.T) {
 					ExtraMapSetting:  map[string]string{"ext-1": extensionExtraMapValue + "_1", "ext-2": extensionExtraMapValue + "_2"},
 					ExtraListSetting: []string{extensionExtraListElement + "_1", extensionExtraListElement + "_2"},
 				},
-				config.Extensions["exampleextension"],
+				cfg.Extensions["exampleextension"],
 				"TEST[%s] Did not load extension config correctly", test.name)
 
 			// Verify service.
-			assert.Equalf(t, 1, len(config.Service.Extensions), "TEST[%s]", test.name)
-			assert.Equalf(t, "exampleextension", config.Service.Extensions[0], "TEST[%s]", test.name)
+			assert.Equalf(t, 1, len(cfg.Service.Extensions), "TEST[%s]", test.name)
+			assert.Equalf(t, "exampleextension", cfg.Service.Extensions[0], "TEST[%s]", test.name)
 
 			// Verify receivers
-			assert.Equalf(t, 1, len(config.Receivers), "TEST[%s]", test.name)
+			assert.Equalf(t, 1, len(cfg.Receivers), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
 				&testcomponents.ExampleReceiver{
@@ -240,11 +240,11 @@ func TestSimpleConfig(t *testing.T) {
 					ExtraMapSetting:  map[string]string{"recv.1": receiverExtraMapValue + "_1", "recv.2": receiverExtraMapValue + "_2"},
 					ExtraListSetting: []string{receiverExtraListElement + "_1", receiverExtraListElement + "_2"},
 				},
-				config.Receivers["examplereceiver"],
+				cfg.Receivers["examplereceiver"],
 				"TEST[%s] Did not load receiver config correctly", test.name)
 
 			// Verify exporters
-			assert.Equalf(t, 1, len(config.Exporters), "TEST[%s]", test.name)
+			assert.Equalf(t, 1, len(cfg.Exporters), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
 				&testcomponents.ExampleExporter{
@@ -257,11 +257,11 @@ func TestSimpleConfig(t *testing.T) {
 					ExtraMapSetting:  map[string]string{"exp_1": exporterExtraMapValue + "_1", "exp_2": exporterExtraMapValue + "_2"},
 					ExtraListSetting: []string{exporterExtraListElement + "_1", exporterExtraListElement + "_2"},
 				},
-				config.Exporters["exampleexporter"],
+				cfg.Exporters["exampleexporter"],
 				"TEST[%s] Did not load exporter config correctly", test.name)
 
 			// Verify Processors
-			assert.Equalf(t, 1, len(config.Processors), "TEST[%s]", test.name)
+			assert.Equalf(t, 1, len(cfg.Processors), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
 				&testcomponents.ExampleProcessorCfg{
@@ -273,11 +273,11 @@ func TestSimpleConfig(t *testing.T) {
 					ExtraMapSetting:  map[string]string{"proc_1": processorExtraMapValue + "_1", "proc_2": processorExtraMapValue + "_2"},
 					ExtraListSetting: []string{processorExtraListElement + "_1", processorExtraListElement + "_2"},
 				},
-				config.Processors["exampleprocessor"],
+				cfg.Processors["exampleprocessor"],
 				"TEST[%s] Did not load processor config correctly", test.name)
 
 			// Verify Pipelines
-			assert.Equalf(t, 1, len(config.Service.Pipelines), "TEST[%s]", test.name)
+			assert.Equalf(t, 1, len(cfg.Service.Pipelines), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
 				&configmodels.Pipeline{
@@ -287,7 +287,7 @@ func TestSimpleConfig(t *testing.T) {
 					Processors: []string{"exampleprocessor"},
 					Exporters:  []string{"exampleexporter"},
 				},
-				config.Service.Pipelines["traces"],
+				cfg.Service.Pipelines["traces"],
 				"TEST[%s] Did not load pipeline config correctly", test.name)
 		})
 	}
@@ -304,11 +304,11 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
+	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "simple-config-with-escaped-env.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
-	assert.Equal(t, 1, len(config.Extensions))
+	assert.Equal(t, 1, len(cfg.Extensions))
 	assert.Equal(t,
 		&testcomponents.ExampleExtensionCfg{
 			ExtensionSettings: configmodels.ExtensionSettings{
@@ -319,15 +319,15 @@ func TestEscapedEnvVars(t *testing.T) {
 			ExtraMapSetting:  map[string]string{"ext-1": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_1}", "ext-2": "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_MAP_EXT_VALUE_2}"},
 			ExtraListSetting: []string{"${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_1}", "${EXTENSIONS_EXAMPLEEXTENSION_EXTRA_LIST_VALUE_2}"},
 		},
-		config.Extensions["exampleextension"],
+		cfg.Extensions["exampleextension"],
 		"Did not load extension config correctly")
 
 	// Verify service.
-	assert.Equal(t, 1, len(config.Service.Extensions))
-	assert.Equal(t, "exampleextension", config.Service.Extensions[0])
+	assert.Equal(t, 1, len(cfg.Service.Extensions))
+	assert.Equal(t, "exampleextension", cfg.Service.Extensions[0])
 
 	// Verify receivers
-	assert.Equal(t, 1, len(config.Receivers))
+	assert.Equal(t, 1, len(cfg.Receivers))
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
@@ -357,11 +357,11 @@ func TestEscapedEnvVars(t *testing.T) {
 			},
 			ExtraListSetting: []string{"$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_1", "$RECEIVERS_EXAMPLERECEIVER_EXTRA_LIST_VALUE_2"},
 		},
-		config.Receivers["examplereceiver"],
+		cfg.Receivers["examplereceiver"],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
-	assert.Equal(t, 1, len(config.Exporters))
+	assert.Equal(t, 1, len(cfg.Exporters))
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
@@ -373,11 +373,11 @@ func TestEscapedEnvVars(t *testing.T) {
 			ExtraMapSetting:  map[string]string{"exp_1": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_1}", "exp_2": "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_MAP_EXP_VALUE_2}"},
 			ExtraListSetting: []string{"${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_1}", "${EXPORTERS_EXAMPLEEXPORTER_EXTRA_LIST_VALUE_2}"},
 		},
-		config.Exporters["exampleexporter"],
+		cfg.Exporters["exampleexporter"],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
-	assert.Equal(t, 1, len(config.Processors))
+	assert.Equal(t, 1, len(cfg.Processors))
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
@@ -389,11 +389,11 @@ func TestEscapedEnvVars(t *testing.T) {
 			ExtraMapSetting:  map[string]string{"proc_1": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_1", "proc_2": "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_MAP_PROC_VALUE_2"},
 			ExtraListSetting: []string{"$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_1", "$PROCESSORS_EXAMPLEPROCESSOR_EXTRA_LIST_VALUE_2"},
 		},
-		config.Processors["exampleprocessor"],
+		cfg.Processors["exampleprocessor"],
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Service.Pipelines))
+	assert.Equal(t, 1, len(cfg.Service.Pipelines))
 
 	assert.Equal(t,
 		&configmodels.Pipeline{
@@ -403,7 +403,7 @@ func TestEscapedEnvVars(t *testing.T) {
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
 		},
-		config.Service.Pipelines["traces"],
+		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
 }
 
@@ -495,10 +495,8 @@ func TestLoadEmptyAllSections(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
-	// Read yaml config from file
-	v := configload.NewViper()
-	v.SetConfigFile(fileName)
-	require.NoErrorf(t, v.ReadInConfig(), "unable to read the file %v", fileName)
+	v, err := config.NewParserFromFile(fileName)
+	require.NoError(t, err)
 
 	// Load the config from viper using the given factories.
 	return Load(v, factories)
@@ -532,7 +530,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 
 	testString := "$PTR_VALUE"
 
-	config := &testConfig{
+	cfg := &testConfig{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type("test"),
 			NameVal: "test",
@@ -550,7 +548,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 		IntValue:       3,
 	}
 
-	expandEnvLoadedConfig(config)
+	expandEnvLoadedConfig(cfg)
 
 	replacedTestString := "replaced_ptr_value"
 
@@ -570,7 +568,7 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 		StringValue:    "replaced_value",
 		StringPtrValue: &replacedTestString,
 		IntValue:       3,
-	}, config)
+	}, cfg)
 }
 
 func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
@@ -586,7 +584,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 
 	testString := "$$ESCAPED_PTR_VALUE"
 
-	config := &testConfig{
+	cfg := &testConfig{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type("test"),
 			NameVal: "test",
@@ -604,7 +602,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 		IntValue:       3,
 	}
 
-	expandEnvLoadedConfig(config)
+	expandEnvLoadedConfig(cfg)
 
 	replacedTestString := "$ESCAPED_PTR_VALUE"
 
@@ -624,7 +622,7 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 		StringValue:    "$ESCAPED_VALUE",
 		StringPtrValue: &replacedTestString,
 		IntValue:       3,
-	}, config)
+	}, cfg)
 }
 
 func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
@@ -636,7 +634,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 
 	testString := "$PTR_VALUE"
 
-	config := &testConfig{
+	cfg := &testConfig{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type("test"),
 			NameVal: "test",
@@ -654,7 +652,7 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 		IntValue:       3,
 	}
 
-	expandEnvLoadedConfig(config)
+	expandEnvLoadedConfig(cfg)
 
 	replacedTestString := ""
 
@@ -674,31 +672,29 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 		StringValue:    "",
 		StringPtrValue: &replacedTestString,
 		IntValue:       3,
-	}, config)
+	}, cfg)
 }
 
 func TestExpandEnvLoadedConfigNil(t *testing.T) {
-	var config *testConfig
+	var cfg *testConfig
 
 	// This should safely do nothing
-	expandEnvLoadedConfig(config)
+	expandEnvLoadedConfig(cfg)
 
-	assert.Equal(t, (*testConfig)(nil), config)
+	assert.Equal(t, (*testConfig)(nil), cfg)
 }
 
 func TestExpandEnvLoadedConfigNoPointer(t *testing.T) {
 	assert.NoError(t, os.Setenv("VALUE", "replaced_value"))
 
-	config := testConfig{
+	cfg := testConfig{
 		StringValue: "$VALUE",
 	}
 
-	// This should do nothing as config is not a pointer
-	expandEnvLoadedConfig(config)
+	// This should do nothing as cfg is not a pointer
+	expandEnvLoadedConfig(cfg)
 
-	assert.Equal(t, testConfig{
-		StringValue: "$VALUE",
-	}, config)
+	assert.Equal(t, testConfig{StringValue: "$VALUE"}, cfg)
 }
 
 type testUnexportedConfig struct {
@@ -715,15 +711,15 @@ func TestExpandEnvLoadedConfigUnexportedField(t *testing.T) {
 		assert.NoError(t, os.Unsetenv("VALUE"))
 	}()
 
-	config := &testUnexportedConfig{
+	cfg := &testUnexportedConfig{
 		unexportedStringValue: "$VALUE",
 		ExportedStringValue:   "$VALUE",
 	}
 
-	expandEnvLoadedConfig(config)
+	expandEnvLoadedConfig(cfg)
 
 	assert.Equal(t, &testUnexportedConfig{
 		unexportedStringValue: "$VALUE",
 		ExportedStringValue:   "replaced_value",
-	}, config)
+	}, cfg)
 }

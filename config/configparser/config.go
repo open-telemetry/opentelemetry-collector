@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configload"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -38,7 +38,6 @@ type configErrorCode int
 
 const (
 	_ configErrorCode = iota // skip 0, start errors codes from 1.
-	errInvalidSubConfig
 	errInvalidTypeAndNameKey
 	errUnknownType
 	errDuplicateName
@@ -94,12 +93,9 @@ type pipelineSettings struct {
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
-// Load loads a Config from Viper.
+// Load loads a Config from Parser.
 // After loading the config, need to check if it is valid by calling `ValidateConfig`.
-func Load(
-	v *viper.Viper,
-	factories component.Factories,
-) (*configmodels.Config, error) {
+func Load(v *config.Parser, factories component.Factories) (*configmodels.Config, error) {
 
 	var config configmodels.Config
 
@@ -120,7 +116,7 @@ func Load(
 
 	// Start with the service extensions.
 
-	extensions, err := loadExtensions(v.GetStringMap(extensionsKeyName), factories.Extensions)
+	extensions, err := loadExtensions(cast.ToStringMap(v.Get(extensionsKeyName)), factories.Extensions)
 	if err != nil {
 		return nil, err
 	}
@@ -128,19 +124,19 @@ func Load(
 
 	// Load data components (receivers, exporters, and processors).
 
-	receivers, err := loadReceivers(v.GetStringMap(receiversKeyName), factories.Receivers)
+	receivers, err := loadReceivers(cast.ToStringMap(v.Get(receiversKeyName)), factories.Receivers)
 	if err != nil {
 		return nil, err
 	}
 	config.Receivers = receivers
 
-	exporters, err := loadExporters(v.GetStringMap(exportersKeyName), factories.Exporters)
+	exporters, err := loadExporters(cast.ToStringMap(v.Get(exportersKeyName)), factories.Exporters)
 	if err != nil {
 		return nil, err
 	}
 	config.Exporters = exporters
 
-	processors, err := loadProcessors(v.GetStringMap(processorsKeyName), factories.Processors)
+	processors, err := loadProcessors(cast.ToStringMap(v.Get(processorsKeyName)), factories.Processors)
 	if err != nil {
 		return nil, err
 	}
@@ -550,29 +546,8 @@ func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{})
 	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
-// Copied from the Viper but changed to use the same delimiter
-// and return error if the sub is not a map.
-// See https://github.com/spf13/viper/issues/871
-func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
-	data := v.Get(key)
-	if data == nil {
-		return configload.NewViper(), nil
-	}
-
-	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := configload.NewViper()
-		// Cannot return error because the subv is empty.
-		_ = subv.MergeConfigMap(cast.ToStringMap(data))
-		return subv, nil
-	}
-	return nil, &configError{
-		code: errInvalidSubConfig,
-		msg:  fmt.Sprintf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind()),
-	}
-}
-
 func viperFromStringMap(data map[string]interface{}) *viper.Viper {
-	v := configload.NewViper()
+	v := config.NewViper()
 	// Cannot return error because the subv is empty.
 	_ = v.MergeConfigMap(cast.ToStringMap(data))
 	return v
