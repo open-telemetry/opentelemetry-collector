@@ -14,6 +14,7 @@
   - Remove `ComponentSettings` and `DefaultComponentSettings()`
   - Rename `NewComponent()` to `New()`
 - obsReport.NewExporter accepts a settings struct (#2668)
+- Remove ErrorWaitingHost from `componenttest` (#2582)
 
 ## 💡 Enhancements 💡
 - `batch` processor: - Support max batch size for logs (#2736)

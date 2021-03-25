@@ -136,13 +136,11 @@ type assertNoErrorHost struct {
 	*testing.T
 }
 
-var _ component.Host = (*assertNoErrorHost)(nil)
-
 // newAssertNoErrorHost returns a new instance of assertNoErrorHost.
 func newAssertNoErrorHost(t *testing.T) component.Host {
 	return &assertNoErrorHost{
-		componenttest.NewNopHost(),
-		t,
+		Host: componenttest.NewNopHost(),
+		T:    t,
 	}
 }
 
