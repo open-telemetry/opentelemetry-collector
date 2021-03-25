@@ -16,7 +16,9 @@ package healthcheckextension
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.uber.org/zap"
@@ -39,7 +41,16 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 
 	// Initialize listener
-	ln, err := hc.config.TCPAddr.Listen()
+	var (
+		ln  net.Listener
+		err error
+	)
+	if hc.config.Port != 0 && hc.config.TCPAddr.Endpoint == defaultEndpoint {
+		portStr := ":" + strconv.Itoa(int(hc.config.Port))
+		ln, err = net.Listen("tcp", portStr)
+	} else {
+		ln, err = hc.config.TCPAddr.Listen()
+	}
 	if err != nil {
 		return err
 	}

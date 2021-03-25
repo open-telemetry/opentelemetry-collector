@@ -26,6 +26,8 @@ import (
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "health_check"
+
+	defaultEndpoint = "localhost:13133"
 )
 
 // NewFactory creates a factory for HealthCheck extension.
@@ -43,7 +45,7 @@ func createDefaultConfig() configmodels.Extension {
 			NameVal: typeStr,
 		},
 		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:13133",
+			Endpoint: defaultEndpoint,
 		},
 	}
 }

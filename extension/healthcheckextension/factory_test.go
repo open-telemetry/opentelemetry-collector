@@ -38,7 +38,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			TypeVal: typeStr,
 		},
 		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:13133",
+			Endpoint: defaultEndpoint,
 		},
 	}, cfg)
 
