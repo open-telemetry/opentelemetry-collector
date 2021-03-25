@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package configload implements the configuration Parser.
-package configload
+// package config implements the configuration Parser.
+package config
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 )
 
@@ -39,8 +42,19 @@ func NewParser() *Parser {
 	}
 }
 
-// FromViper creates a Parser from a Viper instance.
-func FromViper(v *viper.Viper) *Parser {
+// NewParserFromFile creates a new Parser by reading the given file.
+func NewParserFromFile(fileName string) (*Parser, error) {
+	// Read yaml config from file
+	v := NewViper()
+	v.SetConfigFile(fileName)
+	if err := v.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
+	}
+	return ParserFromViper(v), nil
+}
+
+// ParserFromViper creates a Parser from a Viper instance.
+func ParserFromViper(v *viper.Viper) *Parser {
 	return &Parser{v: v}
 }
 
@@ -49,14 +63,52 @@ type Parser struct {
 	v *viper.Viper
 }
 
-// Viper returns the underlying Viper instance.
-func (l *Parser) Viper() *viper.Viper {
-	return l.v
+// AllKeys returns all keys holding a value, regardless of where they are set.
+// Nested keys are returned with a KeyDelimiter separator
+func (l *Parser) AllKeys() []string {
+	return l.v.AllKeys()
+}
+
+// Unmarshal unmarshals the config into a struct. Make sure that the tags
+// on the fields of the structure are properly set.
+func (l *Parser) Unmarshal(rawVal interface{}) error {
+	return l.v.Unmarshal(rawVal)
 }
 
 // UnmarshalExact unmarshals the config into a struct, erroring if a field is nonexistent.
 func (l *Parser) UnmarshalExact(intoCfg interface{}) error {
+	l.v.AllKeys()
 	return l.v.UnmarshalExact(intoCfg)
+}
+
+// Get can retrieve any value given the key to use.
+func (l *Parser) Get(key string) interface{} {
+	return l.v.Get(key)
+}
+
+// Set sets the value for the key.
+func (l *Parser) Set(key string, value interface{}) {
+	l.v.Set(key, value)
+}
+
+// Sub returns new Parser instance representing a sub tree of this instance.
+func (l *Parser) Sub(key string) (*Parser, error) {
+	// Copied from the Viper but changed to use the same delimiter
+	// and return error if the sub is not a map.
+	// See https://github.com/spf13/viper/issues/871
+	data := l.Get(key)
+	if data == nil {
+		return NewParser(), nil
+	}
+
+	if reflect.TypeOf(data).Kind() == reflect.Map {
+		subv := NewViper()
+		// Cannot return error because the subv is empty.
+		_ = subv.MergeConfigMap(cast.ToStringMap(data))
+		return ParserFromViper(subv), nil
+	}
+
+	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
 }
 
 // deepSearch scans deep maps, following the key indexes listed in the

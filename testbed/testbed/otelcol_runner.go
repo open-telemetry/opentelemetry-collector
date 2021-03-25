@@ -20,12 +20,11 @@ import (
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configload"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/internal/version"
@@ -83,10 +82,10 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 		return configCleanup, err
 	}
 	ipp.logger = logger
-	v := configload.NewViper()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := configparser.Load(v, ipp.factories)
+	cfg, err := configparser.Load(config.ParserFromViper(v), ipp.factories)
 	if err != nil {
 		return configCleanup, err
 	}
@@ -106,7 +105,7 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(_ *viper.Viper, _ *cobra.Command, _ component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *cobra.Command, _ component.Factories) (*configmodels.Config, error) {
 			return ipp.config, nil
 		},
 		Factories: ipp.factories,

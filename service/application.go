@@ -27,12 +27,11 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -97,27 +96,26 @@ type Parameters struct {
 // The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
 // Viper and command instances are passed from the Application.
 // The factories also belong to the Application and are equal to the factories passed via Parameters.
-type ConfigFactory func(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
+type ConfigFactory func(cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
 // and from --set command line flag (if the flag is present).
-func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")
 	}
-	// first load the config file
-	v.SetConfigFile(file)
-	err := v.ReadInConfig()
+
+	cp, err := config.NewParserFromFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("error loading config file %q: %v", file, err)
 	}
 
 	// next overlay the config file with --set flags
-	if err := AddSetFlagProperties(v, cmd); err != nil {
+	if err := AddSetFlagProperties(cp, cmd); err != nil {
 		return nil, fmt.Errorf("failed to process set flag: %v", err)
 	}
-	return configparser.Load(v, factories)
+	return configparser.Load(cp, factories)
 }
 
 // New creates and returns a new instance of Application.
@@ -237,7 +235,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 	app.logger.Info("Loading configuration...")
 
-	cfg, err := factory(configload.NewViper(), app.rootCmd, app.factories)
+	cfg, err := factory(app.rootCmd, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}

@@ -23,8 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -78,8 +78,9 @@ func NewFactory() component.ReceiverFactory {
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
 
 	// load the non-dynamic config normally
+	cp := config.ParserFromViper(componentViperSection)
 
-	err := componentViperSection.Unmarshal(intoCfg)
+	err := cp.Unmarshal(intoCfg)
 	if err != nil {
 		return err
 	}
@@ -93,11 +94,11 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 	cfg.Scrapers = map[string]internal.Config{}
 
-	scrapersViperSection, err := configparser.ViperSubExact(componentViperSection, scrapersKey)
+	scrapersSection, err := cp.Sub(scrapersKey)
 	if err != nil {
 		return err
 	}
-	if len(scrapersViperSection.AllKeys()) == 0 {
+	if len(scrapersSection.AllKeys()) == 0 {
 		return errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
 
@@ -108,7 +109,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 		}
 
 		collectorCfg := factory.CreateDefaultConfig()
-		collectorViperSection, err := configparser.ViperSubExact(scrapersViperSection, key)
+		collectorViperSection, err := scrapersSection.Sub(key)
 		if err != nil {
 			return err
 		}
