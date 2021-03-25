@@ -34,20 +34,20 @@ func TestDecodeConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Load the config
-	config, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
+	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
-	assert.Equal(t, 3, len(config.Extensions))
-	assert.Equal(t, "some string", config.Extensions["exampleextension/1"].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
+	assert.Equal(t, 3, len(cfg.Extensions))
+	assert.Equal(t, "some string", cfg.Extensions["exampleextension/1"].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
 
 	// Verify service.
-	assert.Equal(t, 2, len(config.Service.Extensions))
-	assert.Equal(t, "exampleextension/0", config.Service.Extensions[0])
-	assert.Equal(t, "exampleextension/1", config.Service.Extensions[1])
+	assert.Equal(t, 2, len(cfg.Service.Extensions))
+	assert.Equal(t, "exampleextension/0", cfg.Service.Extensions[0])
+	assert.Equal(t, "exampleextension/1", cfg.Service.Extensions[1])
 
 	// Verify receivers
-	assert.Equal(t, 2, len(config.Receivers), "Incorrect receivers count")
+	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
@@ -60,7 +60,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some string",
 		},
-		config.Receivers["examplereceiver"],
+		cfg.Receivers["examplereceiver"],
 		"Did not load receiver config correctly")
 
 	assert.Equal(t,
@@ -74,11 +74,11 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some string",
 		},
-		config.Receivers["examplereceiver/myreceiver"],
+		cfg.Receivers["examplereceiver/myreceiver"],
 		"Did not load receiver config correctly")
 
 	// Verify exporters
-	assert.Equal(t, 2, len(config.Exporters), "Incorrect exporters count")
+	assert.Equal(t, 2, len(cfg.Exporters), "Incorrect exporters count")
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
@@ -88,7 +88,7 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some export string",
 		},
-		config.Exporters["exampleexporter"],
+		cfg.Exporters["exampleexporter"],
 		"Did not load exporter config correctly")
 
 	assert.Equal(t,
@@ -99,11 +99,11 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some export string 2",
 		},
-		config.Exporters["exampleexporter/myexporter"],
+		cfg.Exporters["exampleexporter/myexporter"],
 		"Did not load exporter config correctly")
 
 	// Verify Processors
-	assert.Equal(t, 1, len(config.Processors), "Incorrect processors count")
+	assert.Equal(t, 1, len(cfg.Processors), "Incorrect processors count")
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
@@ -113,11 +113,11 @@ func TestDecodeConfig(t *testing.T) {
 			},
 			ExtraSetting: "some export string",
 		},
-		config.Processors["exampleprocessor"],
+		cfg.Processors["exampleprocessor"],
 		"Did not load processor config correctly")
 
 	// Verify Pipelines
-	assert.Equal(t, 1, len(config.Service.Pipelines), "Incorrect pipelines count")
+	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
 		&configmodels.Pipeline{
@@ -127,7 +127,7 @@ func TestDecodeConfig(t *testing.T) {
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
 		},
-		config.Service.Pipelines["traces"],
+		cfg.Service.Pipelines["traces"],
 		"Did not load pipeline config correctly")
 }
 
