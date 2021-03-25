@@ -40,20 +40,20 @@ type ConfigSource interface {
 // methods of a single instance are not called concurrently.
 type Session interface {
 	// Retrieve goes to the configuration source and retrieves the selected data which
-	// contains the value to be injected in the configuration and the corresponding Watcher that
+	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value. The retrieved value is selected
 	// according to the selector and the params passed in the call to Retrieve.
 	//
 	// The selector is a string that is required on all invocations, the params are optional. Each
 	// implementation handles the generic params according to their requirements.
-	Retrieve(ctx context.Context, selector string, params interface{}) (RetrievedConfig, error)
+	Retrieve(ctx context.Context, selector string, params interface{}) (Retrieved, error)
 
 	// RetrieveEnd signals that the Session must not be used to retrieve any new values from the
 	// source, ie.: all values from this source were retrieved for the configuration. It should
 	// be used to release resources that are only needed to retrieve configuration data.
 	RetrieveEnd(ctx context.Context) error
 
-	// Close signals that the configuration it was used to retrieve values is no longer in use
+	// Close signals that the configuration for which it was used to retrieve values is no longer in use
 	// and the object should close and release any watchers that it may have created.
 	// This method must be called when the configuration session ends, either in case of success
 	// or error. Each Session object should use this call according to their needs: release resources,
@@ -61,17 +61,10 @@ type Session interface {
 	Close(ctx context.Context) error
 }
 
-// RetrievedConfig holds the result of a call to the Retrieve method of a Session object.
-type RetrievedConfig struct {
+// Retrieved holds the result of a call to the Retrieve method of a Session object.
+type Retrieved struct {
 	// Value is the retrieved data that will be injected on the configuration.
 	Value interface{}
-	// Watcher monitors for updates of the retrieved value on the configuration source.
-	Watcher Watcher
-}
-
-// Watcher provides an way for configuration sources to notify when
-// updates to a specific value used in the configuration were detected.
-type Watcher interface {
 	// WatchForUpdate must not return until one of the following happens:
 	//
 	// 1. An update is detected for the monitored value.
@@ -85,5 +78,5 @@ type Watcher interface {
 	//
 	// The method must return with a nil error when an update has happened to
 	// the value monitored by the Watcher.
-	WatchForUpdate() error
+	WatchForUpdate func() error
 }
