@@ -13,6 +13,10 @@
   - Remove `ComponentSettings` and `DefaultComponentSettings()`
   - Rename `NewComponent()` to `New()`
 
+## 🧰 Bug fixes 🧰
+
+- `pdata.TracesFromOtlpProtoBytes`: Fixes to handle backwards compatibility changes in proto (#2798)
+
 ## v0.23.0 Beta
 
 ## 🛑 Breaking changes 🛑
