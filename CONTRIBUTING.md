@@ -288,6 +288,9 @@ the automated [Testbed](testbed/README.md).
 
 See [release](docs/release.md) for details.
 
+## Contributing Images
+If you are adding any new images, please use [Excalidraw](https://excalidraw.com). It's a free and open source web application and doesn't require any account to get started. Once you've created the design, while exporting the image, make sure to tick **"Embed scene into exported file"** option. This allows the image to be imported in an editable format for other contributors later.
+
 ## Common Issues
 
 Build fails due to dependency issues, e.g.
