@@ -42,7 +42,7 @@ func TestCreateProcessor(t *testing.T) {
 			NameVal: "resource",
 		},
 		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 		},
 	}
 

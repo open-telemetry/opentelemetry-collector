@@ -91,6 +91,8 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		val := tracetranslator.AttributeValueToString(v, false)
 
 		switch k {
+		case conventions.AttributeCloudAvailabilityZone:
+			labels[resourcekeys.CloudKeyZone] = val
 		case conventions.OCAttributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:

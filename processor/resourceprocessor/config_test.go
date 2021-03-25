@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "resource",
 		},
 		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
 			{Key: "redundant-attribute", Action: processorhelper.DELETE},
 		},

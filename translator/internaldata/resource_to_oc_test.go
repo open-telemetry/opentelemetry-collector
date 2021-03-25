@@ -86,12 +86,12 @@ func TestResourceToOC(t *testing.T) {
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pdata.NewResource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("cluster1"),
-		conventions.AttributeK8sPod:        pdata.NewAttributeValueString("pod1"),
-		conventions.AttributeK8sNamespace:  pdata.NewAttributeValueString("namespace1"),
-		conventions.AttributeContainerName: pdata.NewAttributeValueString("container-name1"),
-		conventions.AttributeCloudAccount:  pdata.NewAttributeValueString("proj1"),
-		conventions.AttributeCloudZone:     pdata.NewAttributeValueString("zone1"),
+		conventions.AttributeK8sCluster:            pdata.NewAttributeValueString("cluster1"),
+		conventions.AttributeK8sPod:                pdata.NewAttributeValueString("pod1"),
+		conventions.AttributeK8sNamespace:          pdata.NewAttributeValueString("namespace1"),
+		conventions.AttributeContainerName:         pdata.NewAttributeValueString("container-name1"),
+		conventions.AttributeCloudAccount:          pdata.NewAttributeValueString("proj1"),
+		conventions.AttributeCloudAvailabilityZone: pdata.NewAttributeValueString("zone1"),
 	})
 
 	want := &ocresource.Resource{
@@ -163,12 +163,12 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "container",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:    "cluster1",
-				conventions.AttributeK8sPod:        "pod1",
-				conventions.AttributeK8sNamespace:  "namespace1",
-				conventions.AttributeContainerName: "container-name1",
-				conventions.AttributeCloudAccount:  "proj1",
-				conventions.AttributeCloudZone:     "zone1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8sPod:                "pod1",
+				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeContainerName:         "container-name1",
+				conventions.AttributeCloudAccount:          "proj1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.ContainerType,
 			wantOk:           true,
@@ -176,10 +176,10 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "pod",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster:   "cluster1",
-				conventions.AttributeK8sPod:       "pod1",
-				conventions.AttributeK8sNamespace: "namespace1",
-				conventions.AttributeCloudZone:    "zone1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeK8sPod:                "pod1",
+				conventions.AttributeK8sNamespace:          "namespace1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.K8SType,
 			wantOk:           true,
@@ -187,9 +187,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "host",
 			labels: map[string]string{
-				conventions.AttributeK8sCluster: "cluster1",
-				conventions.AttributeCloudZone:  "zone1",
-				conventions.AttributeHostName:   "node1",
+				conventions.AttributeK8sCluster:            "cluster1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
+				conventions.AttributeHostName:              "node1",
 			},
 			wantResourceType: resourcekeys.HostType,
 			wantOk:           true,
@@ -197,9 +197,9 @@ func TestInferResourceType(t *testing.T) {
 		{
 			name: "gce",
 			labels: map[string]string{
-				conventions.AttributeCloudProvider: "gcp",
-				conventions.AttributeHostID:        "inst1",
-				conventions.AttributeCloudZone:     "zone1",
+				conventions.AttributeCloudProvider:         "gcp",
+				conventions.AttributeHostID:                "inst1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
 			},
 			wantResourceType: resourcekeys.CloudType,
 			wantOk:           true,
