@@ -16,7 +16,6 @@ package healthcheckextension
 
 import (
 	"context"
-	"net"
 	"net/http"
 
 	"github.com/jaegertracing/jaeger/pkg/healthcheck"
@@ -40,7 +39,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 
 	// Initialize listener
-	ln, err := net.Listen("tcp", hc.config.Endpoint)
+	ln, err := hc.config.TCPAddr.Listen()
 	if err != nil {
 		return err
 	}

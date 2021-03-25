@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
@@ -41,7 +42,9 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint: "localhost:13133",
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: "localhost:13133",
+		},
 	}
 }
 

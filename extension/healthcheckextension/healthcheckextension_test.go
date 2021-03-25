@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/confignet"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/testutil"
@@ -32,7 +34,9 @@ import (
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -45,7 +49,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 	runtime.Gosched()
 
 	client := &http.Client{}
-	url := "http://" + config.Endpoint
+	url := "http://" + config.TCPAddr.Endpoint
 	resp0, err := client.Get(url)
 	require.NoError(t, err)
 	defer resp0.Body.Close()
@@ -76,7 +80,9 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		Endpoint: endpoint,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: endpoint,
+		},
 	}
 	hcExt := newServer(config, zap.NewNop())
 	require.NotNil(t, hcExt)
@@ -87,7 +93,9 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -102,7 +110,9 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	hcExt := newServer(config, zap.NewNop())
@@ -115,7 +125,9 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	hcExt := newServer(config, zap.NewNop())

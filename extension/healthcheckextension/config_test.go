@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/confignet"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -47,7 +49,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "health_check",
 				NameVal: "health_check/1",
 			},
-			Endpoint: "localhost:13",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:13",
+			},
 		},
 		ext1)
 

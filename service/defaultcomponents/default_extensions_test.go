@@ -46,7 +46,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() configmodels.Extension {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.Endpoint = endpoint
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
 		},
