@@ -31,10 +31,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/collector/telemetry"
@@ -117,7 +117,7 @@ func FileLoaderConfigFactory(v *viper.Viper, cmd *cobra.Command, factories compo
 	if err := AddSetFlagProperties(v, cmd); err != nil {
 		return nil, fmt.Errorf("failed to process set flag: %v", err)
 	}
-	return config.Load(v, factories)
+	return configparser.Load(v, factories)
 }
 
 // New creates and returns a new instance of Application.

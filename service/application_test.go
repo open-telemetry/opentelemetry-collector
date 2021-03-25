@@ -37,9 +37,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
@@ -344,7 +344,7 @@ service:
 	v := configload.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
-	cfg, err := config.Load(v, factories)
+	cfg, err := configparser.Load(v, factories)
 	assert.NoError(t, err)
 	err = cfg.Validate()
 	assert.NoError(t, err)

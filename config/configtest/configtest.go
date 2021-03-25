@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 // NewViperFromYamlFile creates a viper instance that reads the given fileName as yaml config
@@ -43,7 +43,7 @@ func LoadConfigFile(t *testing.T, fileName string, factories component.Factories
 	v := NewViperFromYamlFile(t, fileName)
 
 	// Load the config from viper using the given factories.
-	cfg, err := config.Load(v, factories)
+	cfg, err := configparser.Load(v, factories)
 	if err != nil {
 		return nil, err
 	}
