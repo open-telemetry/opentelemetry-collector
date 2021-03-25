@@ -35,23 +35,24 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 // are satisfying the patterns used by the collector.
 func ValidateConfigFromFactories(factories component.Factories) error {
 	var errs []error
-	var configs []interface{}
 
 	for _, factory := range factories.Receivers {
-		configs = append(configs, factory.CreateDefaultConfig())
+		if err := ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	for _, factory := range factories.Processors {
-		configs = append(configs, factory.CreateDefaultConfig())
+		if err := ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	for _, factory := range factories.Exporters {
-		configs = append(configs, factory.CreateDefaultConfig())
+		if err := ValidateConfig(factory.CreateDefaultConfig()); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	for _, factory := range factories.Extensions {
-		configs = append(configs, factory.CreateDefaultConfig())
-	}
-
-	for _, config := range configs {
-		if err := ValidateConfig(config); err != nil {
+		if err := ValidateConfig(factory.CreateDefaultConfig()); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -66,17 +67,12 @@ func ValidateConfigFromFactories(factories component.Factories) error {
 // component factory.
 func ValidateConfig(config interface{}) error {
 	t := reflect.TypeOf(config)
-
-	tk := t.Kind()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
-		tk = t.Kind()
 	}
 
-	if tk != reflect.Struct {
-		return fmt.Errorf(
-			"config must be a struct or a pointer to one, the passed object is a %s",
-			tk)
+	if t.Kind() != reflect.Struct {
+		return fmt.Errorf("config must be a struct or a pointer to one, the passed object is a %s", t.Kind())
 	}
 
 	return validateConfigDataType(t)
