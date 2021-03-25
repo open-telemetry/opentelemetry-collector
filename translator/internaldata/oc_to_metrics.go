@@ -386,7 +386,7 @@ func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket
 	for i := range buckets {
 		buckets[i] = uint64(ocBuckets[i].GetCount())
 		if ocBuckets[i].GetExemplar() != nil {
-			exemplar := pdata.NewDoubleExemplar()
+			exemplar := pdata.NewExemplar()
 			exemplarToMetrics(ocBuckets[i].GetExemplar(), exemplar)
 			dp.Exemplars().Append(exemplar)
 		}
@@ -410,7 +410,7 @@ func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snaps
 	quantiles.CopyTo(dp.QuantileValues())
 }
 
-func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar pdata.DoubleExemplar) {
+func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exemplar pdata.Exemplar) {
 	if ocExemplar.GetTimestamp() != nil {
 		exemplar.SetTimestamp(pdata.TimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
 	}

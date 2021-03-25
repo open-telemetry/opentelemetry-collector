@@ -1147,8 +1147,8 @@ func (ms DoubleDataPoint) SetValue(v float64) {
 }
 
 // Exemplars returns the Exemplars associated with this DoubleDataPoint.
-func (ms DoubleDataPoint) Exemplars() DoubleExemplarSlice {
-	return newDoubleExemplarSlice(&(*ms.orig).Exemplars)
+func (ms DoubleDataPoint) Exemplars() ExemplarSlice {
+	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1580,8 +1580,8 @@ func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Exemplars() DoubleExemplarSlice {
-	return newDoubleExemplarSlice(&(*ms.orig).Exemplars)
+func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
+	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2120,34 +2120,34 @@ func (ms IntExemplar) CopyTo(dest IntExemplar) {
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())
 }
 
-// DoubleExemplarSlice logically represents a slice of DoubleExemplar.
+// ExemplarSlice logically represents a slice of Exemplar.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleExemplarSlice function to create new instances.
+// Must use NewExemplarSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleExemplarSlice struct {
+type ExemplarSlice struct {
 	// orig points to the slice otlpmetrics.DoubleExemplar field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like Resize.
 	orig *[]otlpmetrics.DoubleExemplar
 }
 
-func newDoubleExemplarSlice(orig *[]otlpmetrics.DoubleExemplar) DoubleExemplarSlice {
-	return DoubleExemplarSlice{orig}
+func newExemplarSlice(orig *[]otlpmetrics.DoubleExemplar) ExemplarSlice {
+	return ExemplarSlice{orig}
 }
 
-// NewDoubleExemplarSlice creates a DoubleExemplarSlice with 0 elements.
+// NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "Resize" to initialize with a given length.
-func NewDoubleExemplarSlice() DoubleExemplarSlice {
+func NewExemplarSlice() ExemplarSlice {
 	orig := []otlpmetrics.DoubleExemplar(nil)
-	return DoubleExemplarSlice{&orig}
+	return ExemplarSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewDoubleExemplarSlice()".
-func (es DoubleExemplarSlice) Len() int {
+// Returns "0" for a newly instance created with "NewExemplarSlice()".
+func (es ExemplarSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -2158,13 +2158,13 @@ func (es DoubleExemplarSlice) Len() int {
 //     e := es.At(i)
 //     ... // Do something with the element
 // }
-func (es DoubleExemplarSlice) At(ix int) DoubleExemplar {
-	return newDoubleExemplar(&(*es.orig)[ix])
+func (es ExemplarSlice) At(ix int) Exemplar {
+	return newExemplar(&(*es.orig)[ix])
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es DoubleExemplarSlice) MoveAndAppendTo(dest DoubleExemplarSlice) {
+func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -2175,7 +2175,7 @@ func (es DoubleExemplarSlice) MoveAndAppendTo(dest DoubleExemplarSlice) {
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
+func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -2185,7 +2185,7 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 	}
 
 	for i := range *es.orig {
-		newDoubleExemplar(&(*es.orig)[i]).CopyTo(newDoubleExemplar(&(*dest.orig)[i]))
+		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
 	}
 }
 
@@ -2193,14 +2193,14 @@ func (es DoubleExemplarSlice) CopyTo(dest DoubleExemplarSlice) {
 // 1. If the newLen <= len then equivalent with slice[0:newLen:cap].
 // 2. If the newLen > len then (newLen - cap) empty elements will be appended to the slice.
 //
-// Here is how a new DoubleExemplarSlice can be initialized:
-// es := NewDoubleExemplarSlice()
+// Here is how a new ExemplarSlice can be initialized:
+// es := NewExemplarSlice()
 // es.Resize(4)
 // for i := 0; i < es.Len(); i++ {
 //     e := es.At(i)
 //     // Here should set all the values for e.
 // }
-func (es DoubleExemplarSlice) Resize(newLen int) {
+func (es ExemplarSlice) Resize(newLen int) {
 	oldLen := len(*es.orig)
 	oldCap := cap(*es.orig)
 	if newLen <= oldLen {
@@ -2221,15 +2221,15 @@ func (es DoubleExemplarSlice) Resize(newLen int) {
 	}
 }
 
-// Append will increase the length of the DoubleExemplarSlice by one and set the
-// given DoubleExemplar at that new position.  The original DoubleExemplar
+// Append will increase the length of the ExemplarSlice by one and set the
+// given Exemplar at that new position.  The original Exemplar
 // could still be referenced so do not reuse it after passing it to this
 // method.
-func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
+func (es ExemplarSlice) Append(e Exemplar) {
 	*es.orig = append(*es.orig, *e.orig)
 }
 
-// DoubleExemplar is a sample input double measurement.
+// Exemplar is a sample input double measurement.
 //
 // Exemplars also hold information about the environment when the measurement was recorded,
 // for example the span and trace ID of the active span when the exemplar was recorded.
@@ -2237,50 +2237,50 @@ func (es DoubleExemplarSlice) Append(e DoubleExemplar) {
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewDoubleExemplar function to create new instances.
+// Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type DoubleExemplar struct {
+type Exemplar struct {
 	orig *otlpmetrics.DoubleExemplar
 }
 
-func newDoubleExemplar(orig *otlpmetrics.DoubleExemplar) DoubleExemplar {
-	return DoubleExemplar{orig: orig}
+func newExemplar(orig *otlpmetrics.DoubleExemplar) Exemplar {
+	return Exemplar{orig: orig}
 }
 
-// NewDoubleExemplar creates a new empty DoubleExemplar.
+// NewExemplar creates a new empty Exemplar.
 //
 // This must be used only in testing code since no "Set" method available.
-func NewDoubleExemplar() DoubleExemplar {
-	return newDoubleExemplar(&otlpmetrics.DoubleExemplar{})
+func NewExemplar() Exemplar {
+	return newExemplar(&otlpmetrics.DoubleExemplar{})
 }
 
-// Timestamp returns the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) Timestamp() Timestamp {
+// Timestamp returns the timestamp associated with this Exemplar.
+func (ms Exemplar) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
 }
 
-// SetTimestamp replaces the timestamp associated with this DoubleExemplar.
-func (ms DoubleExemplar) SetTimestamp(v Timestamp) {
+// SetTimestamp replaces the timestamp associated with this Exemplar.
+func (ms Exemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Value returns the value associated with this DoubleExemplar.
-func (ms DoubleExemplar) Value() float64 {
+// Value returns the value associated with this Exemplar.
+func (ms Exemplar) Value() float64 {
 	return (*ms.orig).Value
 }
 
-// SetValue replaces the value associated with this DoubleExemplar.
-func (ms DoubleExemplar) SetValue(v float64) {
+// SetValue replaces the value associated with this Exemplar.
+func (ms Exemplar) SetValue(v float64) {
 	(*ms.orig).Value = v
 }
 
-// FilteredLabels returns the FilteredLabels associated with this DoubleExemplar.
-func (ms DoubleExemplar) FilteredLabels() StringMap {
+// FilteredLabels returns the FilteredLabels associated with this Exemplar.
+func (ms Exemplar) FilteredLabels() StringMap {
 	return newStringMap(&(*ms.orig).FilteredLabels)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms DoubleExemplar) CopyTo(dest DoubleExemplar) {
+func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetValue(ms.Value())
 	ms.FilteredLabels().CopyTo(dest.FilteredLabels())

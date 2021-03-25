@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Rename pdata.DoubleExemplar to pdata.Exemplar (#2804)
 - Rename pdata.DoubleHistogram to pdata.Histogram (#2797)
 - Rename pdata.DoubleSummary to pdata.Summary (#2774)
 - Refactor `consumererror` package (#2768)
