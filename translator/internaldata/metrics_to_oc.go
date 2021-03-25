@@ -440,7 +440,7 @@ func summaryPercentilesToOC(qtls pdata.ValueAtQuantileSlice) []*ocmetrics.Summar
 	return ocPercentiles
 }
 
-func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.DoubleExemplarSlice) {
+func doubleExemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bucket, exemplars pdata.ExemplarSlice) {
 	if exemplars.Len() == 0 {
 		return
 	}

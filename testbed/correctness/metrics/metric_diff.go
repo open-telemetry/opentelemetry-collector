@@ -193,16 +193,16 @@ func diffDoubleHistogramPt(
 
 func diffDoubleExemplars(
 	diffs []*MetricDiff,
-	expected pdata.DoubleExemplarSlice,
-	actual pdata.DoubleExemplarSlice,
+	expected pdata.ExemplarSlice,
+	actual pdata.ExemplarSlice,
 ) []*MetricDiff {
 	var mismatch bool
-	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "DoubleExemplarSlice len")
+	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "ExemplarSlice len")
 	if mismatch {
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "DoubleExemplar Value")
+		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "Exemplar Value")
 	}
 	return diffs
 }
@@ -242,12 +242,12 @@ func diffIntExemplars(
 	actual pdata.IntExemplarSlice,
 ) []*MetricDiff {
 	var mismatch bool
-	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "DoubleExemplarSlice len")
+	diffs, mismatch = diffValues(diffs, expected.Len(), actual.Len(), "ExemplarSlice len")
 	if mismatch {
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "DoubleExemplar Value")
+		diffs = diff(diffs, expected.At(i).Value(), actual.At(i).Value(), "Exemplar Value")
 	}
 	return diffs
 }

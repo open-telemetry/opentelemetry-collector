@@ -54,8 +54,8 @@ var metricsFile = &File{
 		quantileValues,
 		intExemplarSlice,
 		intExemplar,
-		doubleExemplarSlice,
-		doubleExemplar,
+		exemplarSlice,
+		exemplar,
 	},
 }
 
@@ -256,7 +256,7 @@ var doubleDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		valueFloat64Field,
-		doubleExemplarsField,
+		exemplarsField,
 	},
 }
 
@@ -298,7 +298,7 @@ var histogramDataPoint = &messageValueStruct{
 		doubleSumField,
 		bucketCountsField,
 		explicitBoundsField,
-		doubleExemplarsField,
+		exemplarsField,
 	},
 }
 
@@ -363,14 +363,14 @@ var intExemplar = &messageValueStruct{
 	},
 }
 
-var doubleExemplarSlice = &sliceOfValues{
-	structName: "DoubleExemplarSlice",
-	element:    doubleExemplar,
+var exemplarSlice = &sliceOfValues{
+	structName: "ExemplarSlice",
+	element:    exemplar,
 }
 
-var doubleExemplar = &messageValueStruct{
-	structName: "DoubleExemplar",
-	description: "// DoubleExemplar is a sample input double measurement.\n//\n" +
+var exemplar = &messageValueStruct{
+	structName: "Exemplar",
+	description: "// Exemplar is a sample input double measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +
 		"// for example the span and trace ID of the active span when the exemplar was recorded.",
 
@@ -398,10 +398,10 @@ var intExemplarsField = &sliceField{
 	returnSlice:     intExemplarSlice,
 }
 
-var doubleExemplarsField = &sliceField{
+var exemplarsField = &sliceField{
 	fieldName:       "Exemplars",
 	originFieldName: "Exemplars",
-	returnSlice:     doubleExemplarSlice,
+	returnSlice:     exemplarSlice,
 }
 
 var countField = &primitiveField{
