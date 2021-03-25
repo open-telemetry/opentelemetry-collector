@@ -19,6 +19,10 @@ import (
 	"errors"
 )
 
+// ErrSessionClosed is returned by WatchForUpdate functions when its parent Session
+// object is closed.
+var ErrSessionClosed = errors.New("parent session was closed")
+
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
 type ConfigSource interface {
@@ -81,7 +85,3 @@ type Retrieved struct {
 	// the value monitored by the Watcher.
 	WatchForUpdate func() error
 }
-
-// ErrSessionClosed is returned by WatchForUpdate functions when its parent Session
-// object is closed.
-var ErrSessionClosed = errors.New("parent session was closed")
