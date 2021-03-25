@@ -80,7 +80,7 @@ func TestDefaultExtensions(t *testing.T) {
 			assert.Equal(t, tt.extension, factory.Type())
 			assert.Equal(t, tt.extension, factory.CreateDefaultConfig().Type())
 
-			verifyExtensionLifecycle(t, factory, nil)
+			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
