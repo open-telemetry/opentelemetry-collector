@@ -72,10 +72,10 @@ func TestDifferentPtTypes(t *testing.T) {
 
 func TestDoubleHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
+	cfg1.MetricDescriptorType = pdata.MetricDataTypeHistogram
 	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
+	cfg2.MetricDescriptorType = pdata.MetricDataTypeHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)

@@ -72,7 +72,7 @@ func TestNilIntHistogram(t *testing.T) {
 }
 
 func TestNilDoubleHistogram(t *testing.T) {
-	dataType := pdata.MetricDataTypeDoubleHistogram
+	dataType := pdata.MetricDataTypeHistogram
 	testNilValue(t, dataType)
 }
 
@@ -157,8 +157,8 @@ func TestDoubleHistogramEmptyDataPoint(t *testing.T) {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName("my.metric")
-	m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dps := m.DoubleHistogram().DataPoints()
+	m.SetDataType(pdata.MetricDataTypeHistogram)
+	dps := m.Histogram().DataPoints()
 	dps.Resize(1)
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
@@ -335,9 +335,9 @@ func matchDoubleHistogram(t *testing.T, metricName string) bool {
 	require.NoError(t, err)
 	m := pdata.NewMetric()
 	m.SetName(metricName)
-	m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dps := m.DoubleHistogram().DataPoints()
-	pt := pdata.NewDoubleHistogramDataPoint()
+	m.SetDataType(pdata.MetricDataTypeHistogram)
+	dps := m.Histogram().DataPoints()
+	pt := pdata.NewHistogramDataPoint()
 	dps.Append(pt)
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

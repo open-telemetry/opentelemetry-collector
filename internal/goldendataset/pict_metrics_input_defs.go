@@ -39,7 +39,7 @@ const (
 	MetricTypeMonotonicDoubleSum    PICTMetricDataType = "MonotonicDoubleSum"
 	MetricTypeNonMonotonicDoubleSum PICTMetricDataType = "NonMonotonicDoubleSum"
 	MetricTypeIntHistogram          PICTMetricDataType = "IntHistogram"
-	MetricTypeDoubleHistogram       PICTMetricDataType = "DoubleHistogram"
+	MetricTypeHistogram             PICTMetricDataType = "Histogram"
 )
 
 // Enumerates the number of labels on each datapoint.

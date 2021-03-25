@@ -32,7 +32,7 @@ func TestMetricData(t *testing.T) {
 		{&intHistogram{}, "IntHistogram", true, false},
 		{&doubleGauge{}, "DoubleGauge", false, false},
 		{&doubleSum{}, "DoubleSum", true, true},
-		{&doubleHistogram{}, "DoubleHistogram", true, false},
+		{&histogram{}, "Histogram", true, false},
 	} {
 		assert.Equal(t, arg.typ, arg.metricData.Type())
 		assert.Equal(t, arg.hasAggregated, arg.metricData.HasAggregated())

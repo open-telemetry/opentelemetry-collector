@@ -162,8 +162,8 @@ func (mb *Metrics) AddHistogramRawDataPoint(name string, hist pdata.IntHistogram
 	return mb
 }
 
-func (mb *Metrics) AddDHistogramRawDataPoint(name string, hist pdata.DoubleHistogramDataPoint) *Metrics {
-	mb.addDataPoint(name, pdata.MetricDataTypeDoubleHistogram, hist)
+func (mb *Metrics) AddDHistogramRawDataPoint(name string, hist pdata.HistogramDataPoint) *Metrics {
+	mb.addDataPoint(name, pdata.MetricDataTypeHistogram, hist)
 	return mb
 }
 
@@ -277,12 +277,12 @@ func (mb *Metrics) addDataPoint(name string, typ pdata.MetricDataType, val inter
 		dp.SetTimestamp(tsNano)
 		dps.Append(dp)
 
-	case pdata.MetricDataTypeDoubleHistogram:
-		m := metric.DoubleHistogram()
+	case pdata.MetricDataTypeHistogram:
+		m := metric.Histogram()
 		dps := m.DataPoints()
-		dp := pdata.NewDoubleHistogramDataPoint()
+		dp := pdata.NewHistogramDataPoint()
 		dp.LabelsMap().InitFromMap(mb.Labels)
-		val.(pdata.DoubleHistogramDataPoint).CopyTo(dp)
+		val.(pdata.HistogramDataPoint).CopyTo(dp)
 		dp.SetTimestamp(tsNano)
 		dps.Append(dp)
 
@@ -352,7 +352,7 @@ func (mb *SafeMetrics) AddHistogramRawDataPoint(name string, hist pdata.IntHisto
 	return mb
 }
 
-func (mb *SafeMetrics) AddDHistogramRawDataPoint(name string, hist pdata.DoubleHistogramDataPoint) *SafeMetrics {
+func (mb *SafeMetrics) AddDHistogramRawDataPoint(name string, hist pdata.HistogramDataPoint) *SafeMetrics {
 	mb.Lock()
 	mb.Metrics.AddDHistogramRawDataPoint(name, hist)
 	mb.Unlock()

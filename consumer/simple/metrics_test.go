@@ -271,7 +271,7 @@ func TestMetrics(t *testing.T) {
 		AddDSumDataPoint("disk.time_awake", 100.6)
 
 	intHisto := pdata.NewIntHistogramDataPoint()
-	doubleHisto := pdata.NewDoubleHistogramDataPoint()
+	doubleHisto := pdata.NewHistogramDataPoint()
 
 	mb.WithLabels(map[string]string{
 		"partition": "1",
@@ -418,7 +418,7 @@ func TestSafeMetrics(t *testing.T) {
 				AddDSumDataPoint("disk.time_awake"+idx, 100.6)
 
 			intHisto := pdata.NewIntHistogramDataPoint()
-			doubleHisto := pdata.NewDoubleHistogramDataPoint()
+			doubleHisto := pdata.NewHistogramDataPoint()
 
 			for j := 0; j < 5; j++ {
 				mb.WithLabels(map[string]string{

@@ -109,8 +109,8 @@ func collectLabelKeys(metric pdata.Metric) *labelKeys {
 		collectLabelKeysDoubleDataPoints(metric.DoubleSum().DataPoints(), keySet)
 	case pdata.MetricDataTypeIntHistogram:
 		collectLabelKeysIntHistogramDataPoints(metric.IntHistogram().DataPoints(), keySet)
-	case pdata.MetricDataTypeDoubleHistogram:
-		collectLabelKeysDoubleHistogramDataPoints(metric.DoubleHistogram().DataPoints(), keySet)
+	case pdata.MetricDataTypeHistogram:
+		collectLabelKeysDoubleHistogramDataPoints(metric.Histogram().DataPoints(), keySet)
 	case pdata.MetricDataTypeSummary:
 		collectLabelKeysDoubleSummaryDataPoints(metric.Summary().DataPoints(), keySet)
 	}
@@ -165,7 +165,7 @@ func collectLabelKeysIntHistogramDataPoints(ihdp pdata.IntHistogramDataPointSlic
 	}
 }
 
-func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.DoubleHistogramDataPointSlice, keySet map[string]struct{}) {
+func collectLabelKeysDoubleHistogramDataPoints(dhdp pdata.HistogramDataPointSlice, keySet map[string]struct{}) {
 	for i := 0; i < dhdp.Len(); i++ {
 		addLabelKeys(keySet, dhdp.At(i).LabelsMap())
 	}
@@ -211,8 +211,8 @@ func descriptorTypeToOC(metric pdata.Metric) ocmetrics.MetricDescriptor_Type {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DOUBLE
-	case pdata.MetricDataTypeDoubleHistogram:
-		hd := metric.DoubleHistogram()
+	case pdata.MetricDataTypeHistogram:
+		hd := metric.Histogram()
 		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
@@ -241,8 +241,8 @@ func dataPointsToTimeseries(metric pdata.Metric, labelKeys *labelKeys) []*ocmetr
 		return doublePointToOC(metric.DoubleSum().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeIntHistogram:
 		return intHistogramPointToOC(metric.IntHistogram().DataPoints(), labelKeys)
-	case pdata.MetricDataTypeDoubleHistogram:
-		return doubleHistogramPointToOC(metric.DoubleHistogram().DataPoints(), labelKeys)
+	case pdata.MetricDataTypeHistogram:
+		return doubleHistogramPointToOC(metric.Histogram().DataPoints(), labelKeys)
 	case pdata.MetricDataTypeSummary:
 		return doubleSummaryPointToOC(metric.Summary().DataPoints(), labelKeys)
 	}
@@ -298,7 +298,7 @@ func doublePointToOC(dps pdata.DoubleDataPointSlice, labelKeys *labelKeys) []*oc
 	return timeseries
 }
 
-func doubleHistogramPointToOC(dps pdata.DoubleHistogramDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
+func doubleHistogramPointToOC(dps pdata.HistogramDataPointSlice, labelKeys *labelKeys) []*ocmetrics.TimeSeries {
 	if dps.Len() == 0 {
 		return nil
 	}

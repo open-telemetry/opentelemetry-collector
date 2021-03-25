@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Rename pdata.DoubleHistogram to pdata.Histogram (#2797)
 - Rename pdata.DoubleSummary to pdata.Summary (#2774)
 - Refactor `consumererror` package (#2768)
   - Remove `PartialError` type in favor of signal-specific types

@@ -184,9 +184,9 @@ func SortedMetrics(metrics pdata.Metrics) pdata.Metrics {
 					for l := 0; l < m.IntHistogram().DataPoints().Len(); l++ {
 						m.IntHistogram().DataPoints().At(l).LabelsMap().Sort()
 					}
-				case pdata.MetricDataTypeDoubleHistogram:
-					for l := 0; l < m.DoubleHistogram().DataPoints().Len(); l++ {
-						m.DoubleHistogram().DataPoints().At(l).LabelsMap().Sort()
+				case pdata.MetricDataTypeHistogram:
+					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+						m.Histogram().DataPoints().At(l).LabelsMap().Sort()
 					}
 				}
 			}

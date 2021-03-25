@@ -24,7 +24,7 @@ var (
 	_ MetricData = &intHistogram{}
 	_ MetricData = &doubleGauge{}
 	_ MetricData = &doubleSum{}
-	_ MetricData = &doubleHistogram{}
+	_ MetricData = &histogram{}
 )
 
 type ymlMetricData struct {
@@ -54,8 +54,8 @@ func (e *ymlMetricData) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		md = &doubleGauge{}
 	case "double sum":
 		md = &doubleSum{}
-	case "double histogram":
-		md = &doubleHistogram{}
+	case "histogram":
+		md = &histogram{}
 	default:
 		return fmt.Errorf("metric data %q type invalid", m.Type)
 	}
@@ -178,18 +178,18 @@ func (i intHistogram) HasAggregated() bool {
 	return true
 }
 
-type doubleHistogram struct {
+type histogram struct {
 	Aggregated `yaml:",inline"`
 }
 
-func (d doubleHistogram) Type() string {
-	return "DoubleHistogram"
+func (d histogram) Type() string {
+	return "Histogram"
 }
 
-func (d doubleHistogram) HasMonotonic() bool {
+func (d histogram) HasMonotonic() bool {
 	return false
 }
 
-func (d doubleHistogram) HasAggregated() bool {
+func (d histogram) HasAggregated() bool {
 	return true
 }
