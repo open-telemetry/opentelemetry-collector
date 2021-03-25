@@ -15,7 +15,7 @@
 // Package config implements loading of configuration from Viper configuration.
 // The implementation relies on registered factories that allow creating
 // default configuration for each type of receiver/exporter/processor.
-package config
+package configparser
 
 import (
 	"errors"
