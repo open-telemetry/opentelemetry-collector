@@ -252,7 +252,7 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
-		if err := unm(configload.FromViper(componentConfig), extensionCfg); err != nil {
+		if err := unm(componentConfig, extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, fullName, err)
 		}
 
@@ -288,7 +288,7 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	// Now that the default config struct is created we can Unmarshal into it
 	// and it will apply user-defined config on top of the default.
 	unm := unmarshaler(factory)
-	if err := unm(configload.FromViper(componentConfig), receiverCfg); err != nil {
+	if err := unm(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, fullName, err)
 	}
 
@@ -361,7 +361,7 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
-		if err := unm(configload.FromViper(componentConfig), exporterCfg); err != nil {
+		if err := unm(componentConfig, exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, fullName, err)
 		}
 
@@ -404,7 +404,7 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 		// Now that the default config struct is created we can Unmarshal into it
 		// and it will apply user-defined config on top of the default.
 		unm := unmarshaler(factory)
-		if err := unm(configload.FromViper(componentConfig), processorCfg); err != nil {
+		if err := unm(componentConfig, processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, fullName, err)
 		}
 
@@ -546,7 +546,7 @@ func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
 	return defaultUnmarshaler
 }
 
-func defaultUnmarshaler(componentSection *configload.Parser, intoCfg interface{}) error {
+func defaultUnmarshaler(componentSection *viper.Viper, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 
