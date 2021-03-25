@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	collectortrace "go.opentelemetry.io/collector/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -54,29 +53,7 @@ const (
 func (r *Receiver) Export(ctx context.Context, req *collectortrace.ExportTraceServiceRequest) (*collectortrace.ExportTraceServiceResponse, error) {
 	// We need to ensure that it propagates the receiver name as a tag
 	ctxWithReceiverName := obsreport.ReceiverContext(ctx, r.instanceName, receiverTransport)
-
-	// Perform backward compatibility conversion of Span Status code according to
-	// OTLP specification as we are a new receiver and sender (we are pushing data to the pipelines):
-	// See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L239
-	// See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L253
-	for _, rss := range req.ResourceSpans {
-		for _, ils := range rss.InstrumentationLibrarySpans {
-			for _, span := range ils.Spans {
-				switch span.Status.Code {
-				case otlptrace.Status_STATUS_CODE_UNSET:
-					if span.Status.DeprecatedCode != otlptrace.Status_DEPRECATED_STATUS_CODE_OK {
-						span.Status.Code = otlptrace.Status_STATUS_CODE_ERROR
-					}
-				case otlptrace.Status_STATUS_CODE_OK:
-					// If status code is set then overwrites deprecated.
-					span.Status.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_OK
-				case otlptrace.Status_STATUS_CODE_ERROR:
-					span.Status.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
-				}
-			}
-		}
-	}
-
+	internal.TracesCompatibilityChanges(req)
 	td := pdata.TracesFromInternalRep(internal.TracesFromOtlp(req))
 	err := r.sendToNextConsumer(ctxWithReceiverName, td)
 	if err != nil {

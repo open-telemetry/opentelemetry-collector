@@ -47,6 +47,7 @@ func TracesFromOtlpProtoBytes(data []byte) (Traces, error) {
 	if err := req.Unmarshal(data); err != nil {
 		return Traces{}, err
 	}
+	internal.TracesCompatibilityChanges(&req)
 	return Traces{orig: &req}, nil
 }
 
