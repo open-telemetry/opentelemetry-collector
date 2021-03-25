@@ -32,6 +32,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -236,7 +237,7 @@ func (app *Application) setupConfigurationComponents(ctx context.Context, factor
 
 	app.logger.Info("Loading configuration...")
 
-	cfg, err := factory(configparser.NewViper(), app.rootCmd, app.factories)
+	cfg, err := factory(configload.NewViper(), app.rootCmd, app.factories)
 	if err != nil {
 		return fmt.Errorf("cannot load configuration: %w", err)
 	}

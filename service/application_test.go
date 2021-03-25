@@ -37,6 +37,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
@@ -234,7 +235,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.doesnotexist.timeout=2s",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(configparser.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
 		require.Error(t, err)
 		require.Nil(t, cfg)
 
@@ -247,7 +248,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.batch/foo.timeout=2s",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(configparser.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -277,7 +278,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=extensions.health_check.port=8080",
 		})
 		require.NoError(t, err)
-		cfg, err := FileLoaderConfigFactory(configparser.NewViper(), app.rootCmd, factories)
+		cfg, err := FileLoaderConfigFactory(configload.NewViper(), app.rootCmd, factories)
 		require.NoError(t, err)
 		require.NotNil(t, cfg)
 		err = cfg.Validate()
@@ -299,7 +300,7 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
-	v := configparser.NewViper()
+	v := configload.NewViper()
 	cmd := &cobra.Command{}
 	addSetFlag(cmd.Flags())
 	fs := &flag.FlagSet{}
@@ -340,7 +341,7 @@ service:
       processors: [batch]
       exporters: [logging]
 `
-	v := configparser.NewViper()
+	v := configload.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := configparser.Load(v, factories)

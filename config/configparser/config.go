@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -42,11 +43,6 @@ const (
 	errUnknownType
 	errDuplicateName
 	errUnmarshalTopLevelStructureError
-)
-
-const (
-	// ViperDelimiter is used as the default key delimiter in the default viper instance
-	ViperDelimiter = "::"
 )
 
 type configError struct {
@@ -97,12 +93,6 @@ type pipelineSettings struct {
 
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
-
-// Creates a new Viper instance with a different key-delimitor "::" instead of the
-// default ".". This way configs can have keys that contain ".".
-func NewViper() *viper.Viper {
-	return viper.NewWithOptions(viper.KeyDelimiter(ViperDelimiter))
-}
 
 // Load loads a Config from Viper.
 // After loading the config, need to check if it is valid by calling `ValidateConfig`.
@@ -566,11 +556,11 @@ func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{})
 func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
 	data := v.Get(key)
 	if data == nil {
-		return NewViper(), nil
+		return configload.NewViper(), nil
 	}
 
 	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv := NewViper()
+		subv := configload.NewViper()
 		// Cannot return error because the subv is empty.
 		_ = subv.MergeConfigMap(cast.ToStringMap(data))
 		return subv, nil
@@ -582,7 +572,7 @@ func ViperSubExact(v *viper.Viper, key string) (*viper.Viper, error) {
 }
 
 func viperFromStringMap(data map[string]interface{}) *viper.Viper {
-	v := NewViper()
+	v := configload.NewViper()
 	// Cannot return error because the subv is empty.
 	_ = v.MergeConfigMap(cast.ToStringMap(data))
 	return v

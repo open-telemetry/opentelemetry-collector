@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/internal/version"
@@ -82,7 +83,7 @@ func (ipp *InProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 		return configCleanup, err
 	}
 	ipp.logger = logger
-	v := configparser.NewViper()
+	v := configload.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(configStr))
 	cfg, err := configparser.Load(v, ipp.factories)

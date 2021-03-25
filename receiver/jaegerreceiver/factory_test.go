@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -344,9 +344,9 @@ func TestCustomUnmarshalErrors(t *testing.T) {
 	fu, ok := factory.(component.ConfigUnmarshaler)
 	assert.True(t, ok)
 
-	err := fu.Unmarshal(configparser.NewViper(), nil)
+	err := fu.Unmarshal(configload.NewViper(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 
-	err = fu.Unmarshal(configparser.NewViper(), &RemoteSamplingConfig{})
+	err = fu.Unmarshal(configload.NewViper(), &RemoteSamplingConfig{})
 	assert.Error(t, err, "should not have been able to marshal to a non-jaegerreceiver config")
 }
