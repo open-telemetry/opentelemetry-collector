@@ -30,3 +30,10 @@ type Config struct {
 	// Disabled by default
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
 }
+
+var _ configmodels.Receiver = (*Config)(nil)
+
+// Validate implements the custom validation check on configuration
+func (cfg *Config) Validate() error {
+	return configmodels.Validate(cfg)
+}

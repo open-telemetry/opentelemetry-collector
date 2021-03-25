@@ -36,3 +36,13 @@ type Config struct {
 	// structure, ie.: it will error if an unknown key is present.
 	ConfigPlaceholder interface{} `mapstructure:"config"`
 }
+
+var _ configmodels.Receiver = (*Config)(nil)
+
+// Validate implements the custom validation check on configuration
+func (cfg *Config) Validate() error {
+	if cfg.PrometheusConfig == nil || len(cfg.PrometheusConfig.ScrapeConfigs) == 0 {
+		return errNilScrapeConfig
+	}
+	return configmodels.Validate(cfg)
+}

@@ -111,6 +111,12 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 	return nil
 }
 
+func customValidator(intoCfg interface{}) error {
+	//receiverCfg := intoCfg.(*Config)
+	//receiverCfg.GRPC.NetAddr
+	return nil
+}
+
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{

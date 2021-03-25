@@ -66,9 +66,18 @@ func DefaultServerConfigUDP() ServerConfigUDP {
 	}
 }
 
+
 // Config defines configuration for Jaeger receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	Protocols                     `mapstructure:"protocols"`
 	RemoteSampling                *RemoteSamplingConfig `mapstructure:"remote_sampling"`
 }
+
+var _ configmodels.Receiver = (*Config)(nil)
+
+// Validate implements the custom validation check on configuration
+func (cfg *Config) Validate() error {
+	return configmodels.Validate(cfg)
+}
+

@@ -27,3 +27,10 @@ type Config struct {
 	// domain socket).
 	ListenAddress string `mapstructure:"endpoint"`
 }
+
+var _ configmodels.Receiver = (*Config)(nil)
+
+// Validate implements the custom validation check on configuration
+func (cfg *Config) Validate() error {
+	return configmodels.Validate(cfg)
+}

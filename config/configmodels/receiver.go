@@ -18,7 +18,26 @@ package configmodels
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.
 type Receiver interface {
 	NamedEntity
+	CustomConfigOptions
 }
+
+// CustomConfigOptions defines the interfaces for configuration customization options
+// Different custom interfaces can be added like CustomConfigValidator, CustomConfigUnmarshaller, etc.
+type CustomConfigOptions interface {
+	ConfigValidator
+	// CustomConfigUnmarshaller
+}
+
+// ConfigValidator defines the interface for the custom configuration validation on each component
+type ConfigValidator interface {
+	Validate() error
+}
+
+// CustomValidator is a function that run the customized validation
+// on component level configuration.
+// intoCfg interface{}
+//   An empty interface wrapping a pointer to the config struct.
+type CustomValidator func() error
 
 // Receivers is a map of names to Receivers.
 type Receivers map[string]Receiver
@@ -29,8 +48,6 @@ type ReceiverSettings struct {
 	TypeVal Type   `mapstructure:"-"`
 	NameVal string `mapstructure:"-"`
 }
-
-var _ Receiver = (*ReceiverSettings)(nil)
 
 // Name gets the receiver name.
 func (rs *ReceiverSettings) Name() string {
@@ -46,3 +63,9 @@ func (rs *ReceiverSettings) SetName(name string) {
 func (rs *ReceiverSettings) Type() Type {
 	return rs.TypeVal
 }
+
+func Validate(intoCfg interface{}) error {
+	// add some common validation logic
+	return nil
+}
+

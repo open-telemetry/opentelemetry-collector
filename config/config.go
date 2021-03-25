@@ -233,6 +233,13 @@ func errorDuplicateName(component string, fullName string) error {
 	}
 }
 
+func errorInvalidConfig(component string, fullName string, err error) error {
+	return &configError{
+		code: errInvalidSubConfig,
+		msg:  fmt.Sprintf("error on validating %s configuration for %s: %v", component, fullName, err),
+	}
+}
+
 func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type]component.ExtensionFactory) (configmodels.Extensions, error) {
 	// Prepare resulting map.
 	extensions := make(configmodels.Extensions)
@@ -300,6 +307,13 @@ func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullN
 	unm := unmarshaler(factory)
 	if err := unm(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, fullName, err)
+	}
+
+	// run the custom configuration validator for the current component
+	// if no custom config validation logic implemented it calls configmodels.Validate
+	err := receiverCfg.Validate()
+	if err != nil {
+		return nil, errorInvalidConfig(receiversKeyName, fullName, err)
 	}
 
 	return receiverCfg, nil
@@ -558,6 +572,11 @@ func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
 
 func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
 	return componentViperSection.UnmarshalExact(intoCfg)
+}
+
+func validator(config configmodels.Receiver) configmodels.CustomValidator {
+	cfg, _ := config.(configmodels.ConfigValidator)
+	return cfg.Validate
 }
 
 // Copied from the Viper but changed to use the same delimiter

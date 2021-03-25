@@ -15,6 +15,7 @@
 package hostmetricsreceiver
 
 import (
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/receiver/hostmetricsreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -23,4 +24,11 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	Scrapers                                map[string]internal.Config `mapstructure:"-"`
+}
+
+var _ configmodels.Receiver = (*Config)(nil)
+
+// Validate implements the custom validation check on configuration
+func (cfg *Config) Validate() error {
+	return configmodels.Validate(cfg)
 }

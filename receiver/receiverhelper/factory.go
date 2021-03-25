@@ -75,6 +75,7 @@ type factory struct {
 	createTraceReceiver   CreateTraceReceiver
 	createMetricsReceiver CreateMetricsReceiver
 	createLogsReceiver    CreateLogsReceiver
+
 }
 
 // NewFactory returns a component.ReceiverFactory.
