@@ -17,8 +17,9 @@ package testcomponents
 import (
 	"context"
 
+	"github.com/spf13/viper"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -58,8 +59,8 @@ func createExporterDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func customUnmarshal(componentSection *configload.Parser, intoCfg interface{}) error {
-	return componentSection.UnmarshalExact(intoCfg)
+func customUnmarshal(componentViperSection *viper.Viper, intoCfg interface{}) error {
+	return componentViperSection.UnmarshalExact(intoCfg)
 }
 
 func createTracesExporter(

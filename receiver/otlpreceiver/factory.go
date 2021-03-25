@@ -51,7 +51,7 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithTraces(createTraceReceiver),
 		receiverhelper.WithMetrics(createMetricsReceiver),
 		receiverhelper.WithLogs(createLogReceiver),
-		receiverhelper.WithCustomUnmarshaler(component.ToCustomUnmarshaler(customUnmarshaler)))
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
 // createDefaultConfig creates the default configuration for receiver.

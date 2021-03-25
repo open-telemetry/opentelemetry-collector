@@ -19,10 +19,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configload"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -91,6 +91,6 @@ func createLogsReceiver(context.Context, component.ReceiverCreateParams, configm
 	return nil, nil
 }
 
-func customUnmarshaler(*configload.Parser, interface{}) error {
+func customUnmarshaler(*viper.Viper, interface{}) error {
 	return errors.New("my error")
 }

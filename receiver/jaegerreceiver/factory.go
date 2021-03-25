@@ -56,7 +56,7 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithTraces(createTraceReceiver),
-		receiverhelper.WithCustomUnmarshaler(component.ToCustomUnmarshaler(customUnmarshaler)))
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
 // customUnmarshaler is used to add defaults for named but empty protocols

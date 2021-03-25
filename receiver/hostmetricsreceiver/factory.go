@@ -71,7 +71,7 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithCustomUnmarshaler(component.ToCustomUnmarshaler(customUnmarshaler)))
+		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
 }
 
 // customUnmarshaler returns custom unmarshaler for this config.
