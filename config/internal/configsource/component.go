@@ -21,21 +21,21 @@ import (
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
 type ConfigSource interface {
-	// NewSession must create a Session object that will be used to inject data into
-	// a configuration.
+	// NewSession must create a Session object that will be used to retrieve data to
+	// be injected into a configuration.
 	//
 	// The Session object should use its creation according to their ConfigSource needs:
-	// lock resources, suspend background tasks, etc. An implementation, for instance,
+	// lock resources, open connections, etc. An implementation, for instance,
 	// can use the creation of the Session object to prevent torn configurations,
 	// by acquiring a lock (or some other mechanism) that prevents concurrent changes to the
-	// configuration during the middle of a session.
+	// configuration during time that data is being retrieved from the source.
 	//
 	// The code managing the returned Session object must guarantee that the object is not used
-	// concurrently.
+	// concurrently and that a single ConfigSource only have one Session open at any time.
 	NewSession(ctx context.Context) (Session, error)
 }
 
-// Session is the interface used to inject configuration data from a ConfigSource. A Session
+// Session is the interface used to retrieve configuration data from a ConfigSource. A Session
 // object is created from a ConfigSource. The code using Session objects must guarantee that
 // methods of a single instance are not called concurrently.
 type Session interface {
@@ -48,7 +48,13 @@ type Session interface {
 	// implementation handles the generic params according to their requirements.
 	Retrieve(ctx context.Context, selector string, params interface{}) (RetrievedConfig, error)
 
-	// Close signals that the object won't be used anymore to inject data into a configuration.
+	// RetrieveEnd signals that the Session must not be used to retrieve any new values from the
+	// source, ie.: all values from this source were retrieved for the configuration. It should
+	// be used to release resources that are only needed to retrieve configuration data.
+	RetrieveEnd(ctx context.Context) error
+
+	// Close signals that the configuration it was used to retrieve values is no longer in use
+	// and the object should close and release any watchers that it may have created.
 	// This method must be called when the configuration session ends, either in case of success
 	// or error. Each Session object should use this call according to their needs: release resources,
 	// close communication channels, etc.
