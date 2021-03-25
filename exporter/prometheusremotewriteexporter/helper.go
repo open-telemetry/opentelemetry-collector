@@ -287,7 +287,7 @@ func getTypeString(metric *otlp.Metric) string {
 	case *otlp.Metric_IntSum:
 		return strconv.Itoa(int(pdata.MetricDataTypeIntSum))
 	case *otlp.Metric_DoubleHistogram:
-		return strconv.Itoa(int(pdata.MetricDataTypeDoubleHistogram))
+		return strconv.Itoa(int(pdata.MetricDataTypeHistogram))
 	case *otlp.Metric_IntHistogram:
 		return strconv.Itoa(int(pdata.MetricDataTypeIntHistogram))
 	}

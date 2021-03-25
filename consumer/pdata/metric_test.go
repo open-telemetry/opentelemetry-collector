@@ -81,7 +81,7 @@ func TestCopyData(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleHistogram",
+			name: "Histogram",
 			src: &otlpmetrics.Metric{
 				Data: &otlpmetrics.Metric_DoubleHistogram{
 					DoubleHistogram: &otlpmetrics.DoubleHistogram{},
@@ -114,8 +114,8 @@ func TestDataType(t *testing.T) {
 	assert.Equal(t, MetricDataTypeDoubleSum, m.DataType())
 	m.SetDataType(MetricDataTypeIntHistogram)
 	assert.Equal(t, MetricDataTypeIntHistogram, m.DataType())
-	m.SetDataType(MetricDataTypeDoubleHistogram)
-	assert.Equal(t, MetricDataTypeDoubleHistogram, m.DataType())
+	m.SetDataType(MetricDataTypeHistogram)
+	assert.Equal(t, MetricDataTypeHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeSummary)
 	assert.Equal(t, MetricDataTypeSummary, m.DataType())
 }
@@ -184,8 +184,8 @@ func TestMetricSize(t *testing.T) {
 	rms.At(0).InstrumentationLibraryMetrics().Resize(1)
 	rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
 	metric := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	metric.SetDataType(MetricDataTypeDoubleHistogram)
-	doubleHistogram := metric.DoubleHistogram()
+	metric.SetDataType(MetricDataTypeHistogram)
+	doubleHistogram := metric.Histogram()
 	doubleHistogram.DataPoints().Resize(1)
 	doubleHistogram.DataPoints().At(0).SetCount(123)
 	doubleHistogram.DataPoints().At(0).SetSum(123)
@@ -295,7 +295,7 @@ func TestMetricAndDataPointCountWithNilDataPoints(t *testing.T) {
 	intHistogram.SetDataType(MetricDataTypeIntHistogram)
 	doubleHistogram := NewMetric()
 	ilm.Metrics().Append(doubleHistogram)
-	doubleHistogram.SetDataType(MetricDataTypeDoubleHistogram)
+	doubleHistogram.SetDataType(MetricDataTypeHistogram)
 	intSum := NewMetric()
 	ilm.Metrics().Append(intSum)
 	intSum.SetDataType(MetricDataTypeIntSum)
@@ -378,8 +378,8 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.Name())
 	assert.EqualValues(t, "My metric", metricHistogram.Description())
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
-	assert.EqualValues(t, MetricDataTypeDoubleHistogram, metricHistogram.DataType())
-	dhd := metricHistogram.DoubleHistogram()
+	assert.EqualValues(t, MetricDataTypeHistogram, metricHistogram.DataType())
+	dhd := metricHistogram.Histogram()
 	assert.EqualValues(t, AggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
@@ -614,7 +614,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	metric.SetUnit("1")
 	assert.EqualValues(t, "1", metric.Unit())
 	// Mutate DataPoints
-	dhd := metric.DoubleHistogram()
+	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
 	dhd.DataPoints().Resize(1)
 	assert.EqualValues(t, 1, dhd.DataPoints().Len())
@@ -799,7 +799,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromInternalRep(internal.MetricsFromOtlp(req))
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleHistogram().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
+		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).LabelsMap().Upsert("key0", "value2")
 		newReq := internal.MetricsToOtlp(md.InternalRep())
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()

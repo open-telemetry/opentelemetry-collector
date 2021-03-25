@@ -91,7 +91,7 @@ func (a *lastValueAccumulator) addMetric(metric pdata.Metric, il pdata.Instrumen
 		return a.accumulateDoubleSum(metric, il)
 	case pdata.MetricDataTypeIntHistogram:
 		return a.accumulateIntHistogram(metric, il)
-	case pdata.MetricDataTypeDoubleHistogram:
+	case pdata.MetricDataTypeHistogram:
 		return a.accumulateDoubleHistogram(metric, il)
 	}
 
@@ -284,7 +284,7 @@ func (a *lastValueAccumulator) accumulateIntHistogram(metric pdata.Metric, il pd
 }
 
 func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il pdata.InstrumentationLibrary) (n int) {
-	doubleHistogram := metric.DoubleHistogram()
+	doubleHistogram := metric.Histogram()
 
 	// Drop metrics with non-cumulative aggregations
 	if doubleHistogram.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
@@ -301,21 +301,21 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
 			m := createMetric(metric)
-			m.DoubleHistogram().DataPoints().Append(ip)
+			m.Histogram().DataPoints().Append(ip)
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, stored: time.Now()})
 			n++
 			continue
 		}
 		mv := v.(*accumulatedValue)
 
-		if ts.Before(mv.value.DoubleHistogram().DataPoints().At(0).Timestamp().AsTime()) {
+		if ts.Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
 			// only keep datapoint with latest timestamp
 			continue
 		}
 
 		m := createMetric(metric)
-		m.DoubleHistogram().DataPoints().Append(ip)
-		m.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Histogram().DataPoints().Append(ip)
+		m.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, stored: time.Now()})
 		n++
 	}

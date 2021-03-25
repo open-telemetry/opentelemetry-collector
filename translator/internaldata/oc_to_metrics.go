@@ -208,10 +208,10 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		return pdata.MetricDataTypeDoubleSum
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-		histo := metric.DoubleHistogram()
+		metric.SetDataType(pdata.MetricDataTypeHistogram)
+		histo := metric.Histogram()
 		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		return pdata.MetricDataTypeDoubleHistogram
+		return pdata.MetricDataTypeHistogram
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		metric.SetDataType(pdata.MetricDataTypeSummary)
 		// no temporality specified for summary metric
@@ -231,8 +231,8 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric) {
 		fillIntDataPoint(ocMetric, metric.IntSum().DataPoints())
 	case pdata.MetricDataTypeDoubleSum:
 		fillDoubleDataPoint(ocMetric, metric.DoubleSum().DataPoints())
-	case pdata.MetricDataTypeDoubleHistogram:
-		fillDoubleHistogramDataPoint(ocMetric, metric.DoubleHistogram().DataPoints())
+	case pdata.MetricDataTypeHistogram:
+		fillDoubleHistogramDataPoint(ocMetric, metric.Histogram().DataPoints())
 	case pdata.MetricDataTypeSummary:
 		fillDoubleSummaryDataPoint(ocMetric, metric.Summary().DataPoints())
 	}
@@ -315,7 +315,7 @@ func fillDoubleDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleDataPointSl
 	dps.Resize(pos)
 }
 
-func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.DoubleHistogramDataPointSlice) {
+func fillDoubleHistogramDataPoint(ocMetric *ocmetrics.Metric, dps pdata.HistogramDataPointSlice) {
 	ocPointsCount := getPointsCount(ocMetric)
 	dps.Resize(ocPointsCount)
 	ocLabelsKeys := ocMetric.GetMetricDescriptor().GetLabelKeys()
@@ -378,7 +378,7 @@ func fillDoubleSummaryDataPoint(ocMetric *ocmetrics.Metric, dps pdata.SummaryDat
 	dps.Resize(pos)
 }
 
-func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket, dp pdata.DoubleHistogramDataPoint) {
+func ocHistogramBucketsToMetrics(ocBuckets []*ocmetrics.DistributionValue_Bucket, dp pdata.HistogramDataPoint) {
 	if len(ocBuckets) == 0 {
 		return
 	}

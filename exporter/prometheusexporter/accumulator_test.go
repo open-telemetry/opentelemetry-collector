@@ -96,9 +96,9 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleHistogram",
+			name: "Histogram",
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleHistogramDataPoint()
+				dp := pdata.NewHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
@@ -109,9 +109,9 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				metric.DoubleHistogram().DataPoints().Append(dp)
-				metric.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.Histogram().DataPoints().Append(dp)
+				metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 				metric.SetDescription("test description")
 
 				return
@@ -286,9 +286,9 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleHistogram",
+			name: "Histogram",
 			metric: func(ts time.Time, v float64) (metric pdata.Metric) {
-				dp := pdata.NewDoubleHistogramDataPoint()
+				dp := pdata.NewHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
@@ -299,9 +299,9 @@ func TestAccumulateMetrics(t *testing.T) {
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				metric.DoubleHistogram().DataPoints().Append(dp)
-				metric.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.Histogram().DataPoints().Append(dp)
+				metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 
 				return
@@ -415,11 +415,11 @@ func getMerticProperties(metric pdata.Metric) (
 		value = float64(metric.IntHistogram().DataPoints().At(0).Sum())
 		temporality = metric.IntHistogram().AggregationTemporality()
 		isMonotonic = true
-	case pdata.MetricDataTypeDoubleHistogram:
-		labels = metric.DoubleHistogram().DataPoints().At(0).LabelsMap()
-		ts = metric.DoubleHistogram().DataPoints().At(0).Timestamp().AsTime()
-		value = metric.DoubleHistogram().DataPoints().At(0).Sum()
-		temporality = metric.DoubleHistogram().AggregationTemporality()
+	case pdata.MetricDataTypeHistogram:
+		labels = metric.Histogram().DataPoints().At(0).LabelsMap()
+		ts = metric.Histogram().DataPoints().At(0).Timestamp().AsTime()
+		value = metric.Histogram().DataPoints().At(0).Sum()
+		temporality = metric.Histogram().AggregationTemporality()
 		isMonotonic = true
 	default:
 		log.Panicf("Invalid data type %s", metric.DataType().String())

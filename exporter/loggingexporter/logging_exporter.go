@@ -103,8 +103,8 @@ func (b *logDataBuffer) logMetricDataPoints(m pdata.Metric) {
 		data := m.IntHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logIntHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeDoubleHistogram:
-		data := m.DoubleHistogram()
+	case pdata.MetricDataTypeHistogram:
+		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
 	case pdata.MetricDataTypeSummary:
@@ -137,7 +137,7 @@ func (b *logDataBuffer) logDoubleDataPoints(ps pdata.DoubleDataPointSlice) {
 	}
 }
 
-func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.DoubleHistogramDataPointSlice) {
+func (b *logDataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)

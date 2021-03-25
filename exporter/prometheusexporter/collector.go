@@ -68,7 +68,7 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 		return c.convertDoubleSum(metric)
 	case pdata.MetricDataTypeIntHistogram:
 		return c.convertIntHistogram(metric)
-	case pdata.MetricDataTypeDoubleHistogram:
+	case pdata.MetricDataTypeHistogram:
 		return c.convertDoubleHistogram(metric)
 	}
 
@@ -208,7 +208,7 @@ func (c *collector) convertIntHistogram(metric pdata.Metric) (prometheus.Metric,
 }
 
 func (c *collector) convertDoubleHistogram(metric pdata.Metric) (prometheus.Metric, error) {
-	ip := metric.DoubleHistogram().DataPoints().At(0)
+	ip := metric.Histogram().DataPoints().At(0)
 	desc, labels := c.getMetricMetadata(metric, ip.LabelsMap())
 
 	indicesMap := make(map[float64]int)

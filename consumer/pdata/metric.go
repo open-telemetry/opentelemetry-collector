@@ -134,8 +134,8 @@ func (md Metrics) MetricAndDataPointCount() (metricCount int, dataPointCount int
 					dataPointCount += m.DoubleSum().DataPoints().Len()
 				case MetricDataTypeIntHistogram:
 					dataPointCount += m.IntHistogram().DataPoints().Len()
-				case MetricDataTypeDoubleHistogram:
-					dataPointCount += m.DoubleHistogram().DataPoints().Len()
+				case MetricDataTypeHistogram:
+					dataPointCount += m.Histogram().DataPoints().Len()
 				case MetricDataTypeSummary:
 					dataPointCount += m.Summary().DataPoints().Len()
 				}
@@ -155,7 +155,7 @@ const (
 	MetricDataTypeIntSum
 	MetricDataTypeDoubleSum
 	MetricDataTypeIntHistogram
-	MetricDataTypeDoubleHistogram
+	MetricDataTypeHistogram
 	MetricDataTypeSummary
 )
 
@@ -173,8 +173,8 @@ func (mdt MetricDataType) String() string {
 		return "DoubleSum"
 	case MetricDataTypeIntHistogram:
 		return "IntHistogram"
-	case MetricDataTypeDoubleHistogram:
-		return "DoubleHistogram"
+	case MetricDataTypeHistogram:
+		return "Histogram"
 	case MetricDataTypeSummary:
 		return "Summary"
 	}
@@ -196,7 +196,7 @@ func (ms Metric) DataType() MetricDataType {
 	case *otlpmetrics.Metric_IntHistogram:
 		return MetricDataTypeIntHistogram
 	case *otlpmetrics.Metric_DoubleHistogram:
-		return MetricDataTypeDoubleHistogram
+		return MetricDataTypeHistogram
 	case *otlpmetrics.Metric_DoubleSummary:
 		return MetricDataTypeSummary
 	}
@@ -217,7 +217,7 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 		ms.orig.Data = &otlpmetrics.Metric_DoubleSum{DoubleSum: &otlpmetrics.DoubleSum{}}
 	case MetricDataTypeIntHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_IntHistogram{IntHistogram: &otlpmetrics.IntHistogram{}}
-	case MetricDataTypeDoubleHistogram:
+	case MetricDataTypeHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
 	case MetricDataTypeSummary:
 		ms.orig.Data = &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}
@@ -259,11 +259,11 @@ func (ms Metric) IntHistogram() IntHistogram {
 	return newIntHistogram(ms.orig.Data.(*otlpmetrics.Metric_IntHistogram).IntHistogram)
 }
 
-// DoubleHistogram returns the data as DoubleHistogram.
-// Calling this function when DataType() != MetricDataTypeDoubleHistogram will cause a panic.
+// Histogram returns the data as Histogram.
+// Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DoubleHistogram() DoubleHistogram {
-	return newDoubleHistogram(ms.orig.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
+func (ms Metric) Histogram() Histogram {
+	return newHistogram(ms.orig.Data.(*otlpmetrics.Metric_DoubleHistogram).DoubleHistogram)
 }
 
 // Summary returns the data as Summary.
@@ -297,7 +297,7 @@ func copyData(src, dest *otlpmetrics.Metric) {
 		dest.Data = data
 	case *otlpmetrics.Metric_DoubleHistogram:
 		data := &otlpmetrics.Metric_DoubleHistogram{DoubleHistogram: &otlpmetrics.DoubleHistogram{}}
-		newDoubleHistogram(srcData.DoubleHistogram).CopyTo(newDoubleHistogram(data.DoubleHistogram))
+		newHistogram(srcData.DoubleHistogram).CopyTo(newHistogram(data.DoubleHistogram))
 		dest.Data = data
 	case *otlpmetrics.Metric_DoubleSummary:
 		data := &otlpmetrics.Metric_DoubleSummary{DoubleSummary: &otlpmetrics.DoubleSummary{}}

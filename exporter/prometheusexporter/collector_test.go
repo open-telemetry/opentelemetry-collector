@@ -67,7 +67,7 @@ func TestConvertInvalidDataType(t *testing.T) {
 
 func TestConvertInvalidMetric(t *testing.T) {
 	for _, mType := range []pdata.MetricDataType{
-		pdata.MetricDataTypeDoubleHistogram,
+		pdata.MetricDataTypeHistogram,
 		pdata.MetricDataTypeIntHistogram,
 		pdata.MetricDataTypeDoubleSum,
 		pdata.MetricDataTypeIntSum,
@@ -87,8 +87,8 @@ func TestConvertInvalidMetric(t *testing.T) {
 			metric.DoubleSum().DataPoints().Append(pdata.NewDoubleDataPoint())
 		case pdata.MetricDataTypeIntHistogram:
 			metric.IntHistogram().DataPoints().Append(pdata.NewIntHistogramDataPoint())
-		case pdata.MetricDataTypeDoubleHistogram:
-			metric.DoubleHistogram().DataPoints().Append(pdata.NewDoubleHistogramDataPoint())
+		case pdata.MetricDataTypeHistogram:
+			metric.Histogram().DataPoints().Append(pdata.NewHistogramDataPoint())
 		}
 		c := collector{}
 
@@ -399,7 +399,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			},
 		},
 		{
-			name: "DoubleHistogram",
+			name: "Histogram",
 			histogramPoints: map[float64]uint64{
 				3.5:  5,
 				10.0: 7,
@@ -407,7 +407,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			histogramSum:   42.42,
 			histogramCount: 7,
 			metric: func(ts time.Time) (metric pdata.Metric) {
-				dp := pdata.NewDoubleHistogramDataPoint()
+				dp := pdata.NewHistogramDataPoint()
 				dp.SetBucketCounts([]uint64{5, 2})
 				dp.SetCount(7)
 				dp.SetExplicitBounds([]float64{3.5, 10.0})
@@ -418,9 +418,9 @@ func TestAccumulateHistograms(t *testing.T) {
 
 				metric = pdata.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				metric.DoubleHistogram().DataPoints().Append(dp)
-				metric.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.Histogram().DataPoints().Append(dp)
+				metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 
 				return

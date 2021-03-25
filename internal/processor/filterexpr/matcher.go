@@ -54,8 +54,8 @@ func (m *Matcher) MatchMetric(metric pdata.Metric) (bool, error) {
 		return m.matchDoubleSum(metricName, metric.DoubleSum())
 	case pdata.MetricDataTypeIntHistogram:
 		return m.matchIntHistogram(metricName, metric.IntHistogram())
-	case pdata.MetricDataTypeDoubleHistogram:
-		return m.matchDoubleHistogram(metricName, metric.DoubleHistogram())
+	case pdata.MetricDataTypeHistogram:
+		return m.matchDoubleHistogram(metricName, metric.Histogram())
 	default:
 		return false, nil
 	}
@@ -131,7 +131,7 @@ func (m *Matcher) matchIntHistogram(metricName string, histogram pdata.IntHistog
 	return false, nil
 }
 
-func (m *Matcher) matchDoubleHistogram(metricName string, histogram pdata.DoubleHistogram) (bool, error) {
+func (m *Matcher) matchDoubleHistogram(metricName string, histogram pdata.Histogram) (bool, error) {
 	pts := histogram.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		matched, err := m.matchEnv(metricName, pts.At(i).LabelsMap())

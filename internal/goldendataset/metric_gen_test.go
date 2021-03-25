@@ -59,7 +59,7 @@ func TestGenDefault(t *testing.T) {
 }
 
 func TestDoubleHistogramFunctions(t *testing.T) {
-	pt := pdata.NewDoubleHistogramDataPoint()
+	pt := pdata.NewHistogramDataPoint()
 	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, len(pt.ExplicitBounds()))
 	require.Equal(t, 5, len(pt.BucketCounts()))
@@ -104,10 +104,10 @@ func TestIntHistogramFunctions(t *testing.T) {
 
 func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeDoubleHistogram
+	cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
 	cfg.PtVal = 2
 	md := MetricsFromCfg(cfg)
-	pts := getMetric(md).DoubleHistogram().DataPoints()
+	pts := getMetric(md).Histogram().DataPoints()
 	pt := pts.At(0)
 	buckets := pt.BucketCounts()
 	require.Equal(t, 5, len(buckets))
