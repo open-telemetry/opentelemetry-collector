@@ -54,7 +54,7 @@ const zipkinReceiverName = "zipkin_receiver_test"
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string
-		nextConsumer consumer.TracesConsumer
+		nextConsumer consumer.Traces
 	}
 	tests := []struct {
 		name    string

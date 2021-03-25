@@ -96,7 +96,7 @@ func (f *kafkaReceiverFactory) createTraceReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
 	r, err := newReceiver(*c, params, f.unmarshalers, nextConsumer)

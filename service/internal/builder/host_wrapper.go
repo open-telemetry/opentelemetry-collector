@@ -12,36 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consumererror
+package builder
 
 import (
-	"fmt"
-	"strings"
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
 )
 
-// CombineErrors converts a list of errors into one error.
-func CombineErrors(errs []error) error {
-	numErrors := len(errs)
-	if numErrors == 0 {
-		// No errors
-		return nil
-	}
+// hostWrapper adds behavior on top of the component.Host being passed when starting the built components.
+type hostWrapper struct {
+	component.Host
+	*zap.Logger
+}
 
-	if numErrors == 1 {
-		return errs[0]
+func newHostWrapper(host component.Host, logger *zap.Logger) component.Host {
+	return &hostWrapper{
+		host,
+		logger,
 	}
+}
 
-	errMsgs := make([]string, 0, numErrors)
-	permanent := false
-	for _, err := range errs {
-		if !permanent && IsPermanent(err) {
-			permanent = true
-		}
-		errMsgs = append(errMsgs, err.Error())
-	}
-	err := fmt.Errorf("[%s]", strings.Join(errMsgs, "; "))
-	if permanent {
-		err = Permanent(err)
-	}
-	return err
+func (hw *hostWrapper) ReportFatalError(err error) {
+	// The logger from the built component already identifies the component.
+	hw.Logger.Error("Component fatal error", zap.Error(err))
+	hw.Host.ReportFatalError(err)
 }

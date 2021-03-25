@@ -67,13 +67,11 @@ services:
       - otel-agent
 
   metrics-load-generator:
-    image: golang:1.12.7
-    volumes:
-      - ./app/main.go:/usr/src/main.go
+    build:
+      dockerfile: $PWD/app/Dockerfile
+      context: ./app
     environment:
-      - GO111MODULE=on
-      - OTEL_AGENT_ENDPOINT=otel-agent:55678
-    command: ["bash", "-c", "go run /usr/src/main.go"]
+      - OTEL_AGENT_ENDPOINT=otel-agent:4317
     depends_on:
       - otel-agent
 

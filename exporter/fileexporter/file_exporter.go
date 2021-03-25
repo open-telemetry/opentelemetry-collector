@@ -63,7 +63,7 @@ func exportMessageAsLine(e *fileExporter, message proto.Message) error {
 	return nil
 }
 
-func (e *fileExporter) Start(ctx context.Context, host component.Host) error {
+func (e *fileExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 

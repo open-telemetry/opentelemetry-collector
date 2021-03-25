@@ -30,12 +30,12 @@ import (
 // instances from several Forward events into one to hopefully reduce
 // allocations and GC overhead.
 type Collector struct {
-	nextConsumer consumer.LogsConsumer
+	nextConsumer consumer.Logs
 	eventCh      <-chan Event
 	logger       *zap.Logger
 }
 
-func newCollector(eventCh <-chan Event, next consumer.LogsConsumer, logger *zap.Logger) *Collector {
+func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger) *Collector {
 	return &Collector{
 		nextConsumer: next,
 		eventCh:      eventCh,

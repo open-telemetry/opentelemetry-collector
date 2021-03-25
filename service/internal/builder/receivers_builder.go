@@ -61,7 +61,7 @@ func (rcvs Receivers) ShutdownAll(ctx context.Context) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 // StartAll starts all receivers.
@@ -69,7 +69,7 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	for _, rcv := range rcvs {
 		rcv.logger.Info("Receiver is starting...")
 
-		if err := rcv.Start(ctx, host); err != nil {
+		if err := rcv.Start(ctx, newHostWrapper(host, rcv.logger)); err != nil {
 			return err
 		}
 		rcv.logger.Info("Receiver started.")
@@ -227,7 +227,7 @@ func (rb *receiversBuilder) attachReceiverToPipelines(
 	}
 	rcv.receiver = createdReceiver
 
-	logger.Info("Receiver is enabled.", zap.String("datatype", string(dataType)))
+	logger.Info("Receiver was built.", zap.String("datatype", string(dataType)))
 
 	return nil
 }
@@ -271,13 +271,13 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, logger *zap.Logge
 	return rcv, nil
 }
 
-func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TracesConsumer {
+func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.Traces {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstTC
 	}
 
-	var pipelineConsumers []consumer.TracesConsumer
+	var pipelineConsumers []consumer.Traces
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstTC)
@@ -296,13 +296,13 @@ func buildFanoutTraceConsumer(pipelines []*builtPipeline) consumer.TracesConsume
 	return fanoutconsumer.NewTraces(pipelineConsumers)
 }
 
-func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsumer {
+func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.Metrics {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstMC
 	}
 
-	var pipelineConsumers []consumer.MetricsConsumer
+	var pipelineConsumers []consumer.Metrics
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstMC)
@@ -321,13 +321,13 @@ func buildFanoutMetricConsumer(pipelines []*builtPipeline) consumer.MetricsConsu
 	return fanoutconsumer.NewMetrics(pipelineConsumers)
 }
 
-func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.LogsConsumer {
+func buildFanoutLogConsumer(pipelines []*builtPipeline) consumer.Logs {
 	// Optimize for the case when there is only one processor, no need to create junction point.
 	if len(pipelines) == 1 {
 		return pipelines[0].firstLC
 	}
 
-	var pipelineConsumers []consumer.LogsConsumer
+	var pipelineConsumers []consumer.Logs
 	anyPipelineMutatesData := false
 	for _, pipeline := range pipelines {
 		pipelineConsumers = append(pipelineConsumers, pipeline.firstLC)

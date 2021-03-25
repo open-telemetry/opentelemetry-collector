@@ -58,7 +58,7 @@ func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span

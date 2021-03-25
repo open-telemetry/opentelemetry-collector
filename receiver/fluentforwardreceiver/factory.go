@@ -50,7 +50,7 @@ func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.LogsConsumer,
+	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 
 	rCfg := cfg.(*Config)

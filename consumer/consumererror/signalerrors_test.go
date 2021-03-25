@@ -23,26 +23,38 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestPartialError(t *testing.T) {
+func TestTraces(t *testing.T) {
 	td := testdata.GenerateTraceDataOneSpan()
 	err := fmt.Errorf("some error")
-	partialErr := PartialTracesError(err, td)
-	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, td, partialErr.(PartialError).failed)
+	traceErr := NewTraces(err, td)
+	assert.Equal(t, err.Error(), traceErr.Error())
+	var target Traces
+	assert.False(t, AsTraces(nil, &target))
+	assert.False(t, AsTraces(err, &target))
+	assert.True(t, AsTraces(traceErr, &target))
+	assert.Equal(t, td, target.GetTraces())
 }
 
-func TestPartialErrorLogs(t *testing.T) {
+func TestLogs(t *testing.T) {
 	td := testdata.GenerateLogDataOneLog()
 	err := fmt.Errorf("some error")
-	partialErr := PartialLogsError(err, td)
-	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, td, partialErr.(PartialError).failedLogs)
+	logsErr := NewLogs(err, td)
+	assert.Equal(t, err.Error(), logsErr.Error())
+	var target Logs
+	assert.False(t, AsLogs(nil, &target))
+	assert.False(t, AsLogs(err, &target))
+	assert.True(t, AsLogs(logsErr, &target))
+	assert.Equal(t, td, target.GetLogs())
 }
 
-func TestPartialErrorMetrics(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	td := testdata.GenerateMetricsOneMetric()
 	err := fmt.Errorf("some error")
-	partialErr := PartialMetricsError(err, td)
-	assert.Equal(t, err.Error(), partialErr.Error())
-	assert.Equal(t, td, partialErr.(PartialError).failedMetrics)
+	metricErr := NewMetrics(err, td)
+	assert.Equal(t, err.Error(), metricErr.Error())
+	var target Metrics
+	assert.False(t, AsMetrics(nil, &target))
+	assert.False(t, AsMetrics(err, &target))
+	assert.True(t, AsMetrics(metricErr, &target))
+	assert.Equal(t, td, target.GetMetrics())
 }

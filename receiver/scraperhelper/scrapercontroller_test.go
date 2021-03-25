@@ -201,7 +201,7 @@ func TestScrapeController(t *testing.T) {
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
 
-			var nextConsumer consumer.MetricsConsumer
+			var nextConsumer consumer.Metrics
 			sink := new(consumertest.MetricsSink)
 			if !test.nilNextConsumer {
 				nextConsumer = sink
@@ -327,7 +327,7 @@ func getExpectedShutdownErr(test metricsTestCase) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func assertChannelsCalled(t *testing.T, chs []chan bool, message string) {

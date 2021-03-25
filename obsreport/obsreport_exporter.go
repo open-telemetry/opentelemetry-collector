@@ -89,7 +89,13 @@ type Exporter struct {
 	mutators     []tag.Mutator
 }
 
-func NewExporter(level configtelemetry.Level, exporterName string) *Exporter {
+type ExporterSettings struct {
+	Level        configtelemetry.Level
+	ExporterName string
+}
+
+func NewExporter(cfg ExporterSettings) *Exporter {
+	level, exporterName := cfg.Level, cfg.ExporterName
 	return &Exporter{
 		level:        level,
 		exporterName: exporterName,

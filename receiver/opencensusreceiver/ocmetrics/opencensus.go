@@ -33,11 +33,11 @@ import (
 type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
 	instanceName string
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(instanceName string, nextConsumer consumer.MetricsConsumer) (*Receiver, error) {
+func New(instanceName string, nextConsumer consumer.Metrics) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}

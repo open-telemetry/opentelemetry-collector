@@ -50,7 +50,7 @@ func (j jaegerMarshaller) Marshal(traces pdata.Traces) ([]Message, error) {
 			messages = append(messages, Message{Value: bts})
 		}
 	}
-	return messages, consumererror.CombineErrors(errs)
+	return messages, consumererror.Combine(errs)
 }
 
 func (j jaegerMarshaller) Encoding() string {

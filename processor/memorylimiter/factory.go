@@ -55,7 +55,7 @@ func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
 	if err != nil {
@@ -73,7 +73,7 @@ func createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
 	if err != nil {
@@ -91,7 +91,7 @@ func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	ml, err := newMemoryLimiter(params.Logger, cfg.(*Config))
 	if err != nil {
