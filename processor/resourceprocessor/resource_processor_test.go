@@ -37,7 +37,7 @@ var (
 	cfg = &Config{
 		ProcessorSettings: processorSettings,
 		AttributesActions: []processorhelper.ActionKeyValue{
-			{Key: "cloud.zone", Value: "zone-1", Action: processorhelper.UPSERT},
+			{Key: "cloud.availability_zone", Value: "zone-1", Action: processorhelper.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: processorhelper.INSERT},
 			{Key: "redundant-attribute", Action: processorhelper.DELETE},
 		},
@@ -56,7 +56,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			config:           cfg,
 			sourceAttributes: nil,
 			wantAttributes: map[string]string{
-				"cloud.zone": "zone-1",
+				"cloud.availability_zone": "zone-1",
 			},
 		},
 		{
@@ -64,21 +64,21 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			config:           cfg,
 			sourceAttributes: map[string]string{},
 			wantAttributes: map[string]string{
-				"cloud.zone": "zone-1",
+				"cloud.availability_zone": "zone-1",
 			},
 		},
 		{
 			name:   "config_attributes_applied_on_existing_resource_attributes",
 			config: cfg,
 			sourceAttributes: map[string]string{
-				"cloud.zone":          "to-be-replaced",
-				"k8s-cluster":         "test-cluster",
-				"redundant-attribute": "to-be-removed",
+				"cloud.availability_zone": "to-be-replaced",
+				"k8s-cluster":             "test-cluster",
+				"redundant-attribute":     "to-be-removed",
 			},
 			wantAttributes: map[string]string{
-				"cloud.zone":       "zone-1",
-				"k8s-cluster":      "test-cluster",
-				"k8s.cluster.name": "test-cluster",
+				"cloud.availability_zone": "zone-1",
+				"k8s-cluster":             "test-cluster",
+				"k8s.cluster.name":        "test-cluster",
 			},
 		},
 		{
