@@ -95,7 +95,7 @@ func TestApplication_Start(t *testing.T) {
 	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
 
 	// Trigger another configuration load.
-	require.NoError(t, app.updateActiveConfig(context.Background()))
+	require.NoError(t, app.updateService(context.Background()))
 	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckPortStr))
 
 	app.signalsChannel <- syscall.SIGTERM
@@ -353,7 +353,7 @@ service:
 	return cfg
 }
 
-func TestApplication_updateActiveConfig(t *testing.T) {
+func TestApplication_updateService(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 	ctx := context.Background()
@@ -405,7 +405,7 @@ func TestApplication_updateActiveConfig(t *testing.T) {
 				service:       tt.service,
 			}
 
-			err := app.updateActiveConfig(ctx)
+			err := app.updateService(ctx)
 
 			if err != nil {
 				assert.ErrorIs(t, err, sentinelError)

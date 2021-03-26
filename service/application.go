@@ -337,8 +337,10 @@ func (app *Application) createMemoryBallast() ([]byte, uint64) {
 	return nil, 0
 }
 
-// updateActiveConfig shutdown the currently active configuration and loads and starts a new one.
-func (app *Application) updateActiveConfig(ctx context.Context) error {
+// updateService shutdowns the current app.service and setups a new one according
+// to the latest configuration. It requires that app.configFactory and app.factories
+// are properly populated to finish successfully.
+func (app *Application) updateService(ctx context.Context) error {
 	if app.service != nil {
 		retiringService := app.service
 		app.service = nil
