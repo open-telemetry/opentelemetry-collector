@@ -96,7 +96,7 @@ func TestApplication_Start(t *testing.T) {
 
 	// Trigger another configuration load.
 	require.NoError(t, app.updateService(context.Background()))
-	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckPortStr))
+	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckEndpoint))
 
 	app.signalsChannel <- syscall.SIGTERM
 	<-appDone
@@ -358,8 +358,8 @@ func TestApplication_updateService(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 	sentinelError := errors.New("sentinel error")
-	returnConfigFactoryFn := func(cfg *configmodels.Config, err error) ConfigFactory {
-		return func(*cobra.Command, component.Factories) (*configmodels.Config, error) {
+	returnConfigFactoryFn := func(cfg *config.Config, err error) ConfigFactory {
+		return func(*cobra.Command, component.Factories) (*config.Config, error) {
 			return cfg, err
 		}
 	}
