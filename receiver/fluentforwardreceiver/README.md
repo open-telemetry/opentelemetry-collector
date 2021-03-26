@@ -5,7 +5,7 @@ protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-
 
 This receiver is usually used Collector and Fluent Bit are used in chained configuration.
 For more details see [FluentBit Subprocess Extension
-docs](../../extension/fluentbitextension/README.md#chained).
+docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/fluentbitextension/README.md#chained).
 
 This receiver:
 
