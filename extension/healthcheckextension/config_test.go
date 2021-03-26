@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -47,7 +48,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "health_check",
 				NameVal: "health_check/1",
 			},
-			Port: 13,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:13",
+			},
 		},
 		ext1)
 

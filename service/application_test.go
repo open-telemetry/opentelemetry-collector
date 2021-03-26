@@ -63,12 +63,12 @@ func TestApplication_Start(t *testing.T) {
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	healthCheckPortStr := strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)
+	healthCheckEndpoint := testutil.GetAvailableLocalAddress(t)
 	app.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-		"--set=extensions.health_check.port=" + healthCheckPortStr,
+		"--set=extensions.health_check.endpoint=" + healthCheckEndpoint,
 	})
 
 	appDone := make(chan struct{})
@@ -79,7 +79,7 @@ func TestApplication_Start(t *testing.T) {
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())
 	assert.Equal(t, Running, <-app.GetStateChannel())
-	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckPortStr))
+	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 	assert.Equal(t, app.logger, app.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -274,7 +274,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.attributes.actions.key=foo",
 			"--set=processors.attributes.actions.value=bar",
 			"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-			"--set=extensions.health_check.port=8080",
+			"--set=extensions.health_check.endpoint=localhost:8080",
 		})
 		require.NoError(t, err)
 		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)

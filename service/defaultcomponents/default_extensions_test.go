@@ -37,7 +37,6 @@ func TestDefaultExtensions(t *testing.T) {
 
 	extFactories := allFactories.Extensions
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	port := testutil.GetAvailablePort(t)
 
 	tests := []struct {
 		extension   configmodels.Type
@@ -47,7 +46,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() configmodels.Extension {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.Port = port
+				cfg.TCPAddr.Endpoint = endpoint
 				return cfg
 			},
 		},

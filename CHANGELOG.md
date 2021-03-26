@@ -17,7 +17,9 @@
 - Remove ErrorWaitingHost from `componenttest` (#2582)
 
 ## 💡 Enhancements 💡
+
 - `batch` processor: - Support max batch size for logs (#2736)
+- Use `Endpoint` for health check extension (#2782)
 
 ## 🧰 Bug fixes 🧰
 

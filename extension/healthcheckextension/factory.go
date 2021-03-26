@@ -19,12 +19,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "health_check"
+
+	defaultEndpoint = "localhost:13133"
 )
 
 // NewFactory creates a factory for HealthCheck extension.
@@ -41,7 +44,9 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Port: 13133,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 
