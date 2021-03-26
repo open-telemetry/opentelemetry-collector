@@ -17,6 +17,6 @@ jobs:
           base-branch: 'main'
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
-          config-file: '.github/workflows/check-links/config.json'
+          config-file: '.github/workflows/check_links_config.json'
           check-modified-files-only: 'yes'
           folder-path: ''
