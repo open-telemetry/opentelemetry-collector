@@ -21,7 +21,15 @@ import (
 
 // ErrSessionClosed is returned by WatchForUpdate functions when its parent Session
 // object is closed.
+// This error can be wrapped with additional information. Callers trying to identify this
+// specific error must use errors.Is.
 var ErrSessionClosed = errors.New("parent session was closed")
+
+// ErrValueUpdated is returned by WatchForUpdate functions when the value being watched
+// was changed or expired and needs to be retrieved again.
+// This error can be wrapped with additional information. Callers trying to identify this
+// specific error must use errors.Is.
+var ErrValueUpdated = errors.New("configuration must retrieve the updated value")
 
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
@@ -67,21 +75,33 @@ type Session interface {
 }
 
 // Retrieved holds the result of a call to the Retrieve method of a Session object.
-type Retrieved struct {
+type Retrieved interface {
 	// Value is the retrieved data that will be injected on the configuration.
-	Value interface{}
+	Value() interface{}
+}
+
+// WatchableRetrieved holds the result of a call to the Retrieve method of a Session object
+// for a value that can be watched for updates.
+type WatchableRetrieved interface {
+	Retrieved
+
 	// WatchForUpdate must not return until one of the following happens:
 	//
-	// 1. An update is detected for the monitored value.
+	// 1. An update is detected for the monitored value. In this case the function should
+	//    return ErrValueUpdated or an error wrapping it.
 	//
 	// 2. The parent Session object is closed, in which case the method should return
-	//    ErrSessionClosed.
+	//    ErrSessionClosed or an error wrapping it.
 	//
 	// 3. An error happens while watching for updates. The method should not return
 	//    on first instances of transient errors, optionally there should be
 	//    configurable thresholds to control for how long such errors can be ignored.
 	//
-	// The method must return with a nil error when an update has happened to
-	// the value monitored by the Watcher.
-	WatchForUpdate func() error
+	// This method must be only called when all calls to the Retrieve methods of the
+	// Session that retrieved the value were made.
+	WatchForUpdate() error
 }
+
+// WatchForUpdate defines the signature used by the method used to monitor for updates
+// on a retrieved configuration.
+type WatchForUpdate func() error
