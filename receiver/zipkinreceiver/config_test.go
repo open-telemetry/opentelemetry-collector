@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["zipkin/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "zipkin/customname",
 			},
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["zipkin/parse_strings"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "zipkin/parse_strings",
 			},

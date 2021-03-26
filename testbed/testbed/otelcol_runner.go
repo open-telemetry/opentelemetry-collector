@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service"
@@ -59,7 +58,7 @@ type OtelcolRunner interface {
 type InProcessCollector struct {
 	logger    *zap.Logger
 	factories component.Factories
-	config    *configmodels.Config
+	config    *config.Config
 	svc       *service.Application
 	appDone   chan struct{}
 	stopped   bool
@@ -105,7 +104,7 @@ func (ipp *InProcessCollector) Start(args StartParams) error {
 			Version:  version.Version,
 			GitHash:  version.GitHash,
 		},
-		ConfigFactory: func(_ *cobra.Command, _ component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *cobra.Command, _ component.Factories) (*config.Config, error) {
 			return ipp.config, nil
 		},
 		Factories: ipp.factories,

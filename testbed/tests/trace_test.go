@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -482,7 +482,7 @@ func TestMetricsFromFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use metrics previously recorded using "file" exporter and "k8scluster" receiver.
-	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.json", configmodels.MetricsDataType)
+	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.json", config.MetricsDataType)
 	assert.NoError(t, err)
 
 	options := testbed.LoadOptions{

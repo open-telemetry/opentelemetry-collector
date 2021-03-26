@@ -15,13 +15,13 @@
 package opencensusreceiver
 
 import (
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for OpenCensus receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Configures the receiver server protocol.
 	configgrpc.GRPCServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

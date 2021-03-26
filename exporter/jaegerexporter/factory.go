@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -37,9 +37,9 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithTraces(createTraceExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -56,7 +56,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)

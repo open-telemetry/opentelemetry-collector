@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -68,7 +68,7 @@ type ExporterFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Exporter
+	CreateDefaultConfig() config.Exporter
 
 	// CreateTracesExporter creates a trace exporter based on this config.
 	// If the exporter type does not support tracing or if the config is not valid
@@ -76,7 +76,7 @@ type ExporterFactory interface {
 	CreateTracesExporter(
 		ctx context.Context,
 		params ExporterCreateParams,
-		cfg configmodels.Exporter,
+		cfg config.Exporter,
 	) (TracesExporter, error)
 
 	// CreateMetricsExporter creates a metrics exporter based on this config.
@@ -85,7 +85,7 @@ type ExporterFactory interface {
 	CreateMetricsExporter(
 		ctx context.Context,
 		params ExporterCreateParams,
-		cfg configmodels.Exporter,
+		cfg config.Exporter,
 	) (MetricsExporter, error)
 
 	// CreateLogsExporter creates an exporter based on the config.
@@ -94,6 +94,6 @@ type ExporterFactory interface {
 	CreateLogsExporter(
 		ctx context.Context,
 		params ExporterCreateParams,
-		cfg configmodels.Exporter,
+		cfg config.Exporter,
 	) (LogsExporter, error)
 }

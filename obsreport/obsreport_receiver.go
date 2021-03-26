@@ -21,7 +21,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
@@ -173,7 +173,7 @@ func EndTraceDataReceiveOp(
 		format,
 		numReceivedSpans,
 		err,
-		configmodels.TracesDataType,
+		config.TracesDataType,
 	)
 }
 
@@ -207,7 +207,7 @@ func EndLogsReceiveOp(
 		format,
 		numReceivedLogRecords,
 		err,
-		configmodels.LogsDataType,
+		config.LogsDataType,
 	)
 }
 
@@ -241,7 +241,7 @@ func EndMetricsReceiveOp(
 		format,
 		numReceivedPoints,
 		err,
-		configmodels.MetricsDataType,
+		config.MetricsDataType,
 	)
 }
 
@@ -304,7 +304,7 @@ func endReceiveOp(
 	format string,
 	numReceivedItems int,
 	err error,
-	dataType configmodels.DataType,
+	dataType config.DataType,
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
@@ -318,13 +318,13 @@ func endReceiveOp(
 	if gLevel != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
 		switch dataType {
-		case configmodels.TracesDataType:
+		case config.TracesDataType:
 			acceptedMeasure = mReceiverAcceptedSpans
 			refusedMeasure = mReceiverRefusedSpans
-		case configmodels.MetricsDataType:
+		case config.MetricsDataType:
 			acceptedMeasure = mReceiverAcceptedMetricPoints
 			refusedMeasure = mReceiverRefusedMetricPoints
-		case configmodels.LogsDataType:
+		case config.LogsDataType:
 			acceptedMeasure = mReceiverAcceptedLogRecords
 			refusedMeasure = mReceiverRefusedLogRecords
 		}
@@ -339,13 +339,13 @@ func endReceiveOp(
 	if span.IsRecordingEvents() {
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
-		case configmodels.TracesDataType:
+		case config.TracesDataType:
 			acceptedItemsKey = AcceptedSpansKey
 			refusedItemsKey = RefusedSpansKey
-		case configmodels.MetricsDataType:
+		case config.MetricsDataType:
 			acceptedItemsKey = AcceptedMetricPointsKey
 			refusedItemsKey = RefusedMetricPointsKey
-		case configmodels.LogsDataType:
+		case config.LogsDataType:
 			acceptedItemsKey = AcceptedLogRecordsKey
 			refusedItemsKey = RefusedLogRecordsKey
 		}

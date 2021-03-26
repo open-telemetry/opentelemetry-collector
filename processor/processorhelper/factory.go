@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -29,19 +29,19 @@ import (
 type FactoryOption func(o *factory)
 
 // CreateDefaultConfig is the equivalent of component.ProcessorFactory.CreateDefaultConfig()
-type CreateDefaultConfig func() configmodels.Processor
+type CreateDefaultConfig func() config.Processor
 
 // CreateTraceProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
-type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Traces) (component.TracesProcessor, error)
+type CreateTraceProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error)
 
 // CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
-type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Metrics) (component.MetricsProcessor, error)
+type CreateMetricsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Metrics) (component.MetricsProcessor, error)
 
 // CreateLogsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
-type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Logs) (component.LogsProcessor, error)
+type CreateLogsProcessor func(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Logs) (component.LogsProcessor, error)
 
 type factory struct {
-	cfgType                configmodels.Type
+	cfgType                config.Type
 	customUnmarshaler      component.CustomUnmarshaler
 	createDefaultConfig    CreateDefaultConfig
 	createTraceProcessor   CreateTraceProcessor
@@ -79,7 +79,7 @@ func WithLogs(createLogsProcessor CreateLogsProcessor) FactoryOption {
 
 // NewFactory returns a component.ProcessorFactory.
 func NewFactory(
-	cfgType configmodels.Type,
+	cfgType config.Type,
 	createDefaultConfig CreateDefaultConfig,
 	options ...FactoryOption) component.ProcessorFactory {
 	f := &factory{
@@ -99,12 +99,12 @@ func NewFactory(
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *factory) Type() configmodels.Type {
+func (f *factory) Type() config.Type {
 	return f.cfgType
 }
 
 // CreateDefaultConfig creates the default configuration for processor.
-func (f *factory) CreateDefaultConfig() configmodels.Processor {
+func (f *factory) CreateDefaultConfig() config.Processor {
 	return f.createDefaultConfig()
 }
 
@@ -112,7 +112,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Processor {
 func (f *factory) CreateTracesProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	if f.createTraceProcessor != nil {
@@ -125,7 +125,7 @@ func (f *factory) CreateTracesProcessor(
 func (f *factory) CreateMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	if f.createMetricsProcessor != nil {
@@ -138,7 +138,7 @@ func (f *factory) CreateMetricsProcessor(
 func (f *factory) CreateLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	if f.createLogsProcessor != nil {

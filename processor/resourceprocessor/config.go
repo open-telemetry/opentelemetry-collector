@@ -15,13 +15,13 @@
 package resourceprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// AttributesActions specifies the list of actions to be applied on resource attributes.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.

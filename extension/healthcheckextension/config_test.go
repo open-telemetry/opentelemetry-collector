@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions["health_check/1"]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: configmodels.ExtensionSettings{
+			ExtensionSettings: config.ExtensionSettings{
 				TypeVal: "health_check",
 				NameVal: "health_check/1",
 			},

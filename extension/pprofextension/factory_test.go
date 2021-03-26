@@ -23,15 +23,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},

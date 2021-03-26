@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -57,19 +57,19 @@ func WithLogs(createLogsReceiver CreateLogsReceiver) FactoryOption {
 }
 
 // CreateDefaultConfig is the equivalent of component.ReceiverFactory.CreateDefaultConfig()
-type CreateDefaultConfig func() configmodels.Receiver
+type CreateDefaultConfig func() config.Receiver
 
 // CreateTraceReceiver is the equivalent of component.ReceiverFactory.CreateTracesReceiver()
-type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Traces) (component.TracesReceiver, error)
+type CreateTraceReceiver func(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error)
 
 // CreateMetricsReceiver is the equivalent of component.ReceiverFactory.CreateMetricsReceiver()
-type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Metrics) (component.MetricsReceiver, error)
+type CreateMetricsReceiver func(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error)
 
 // CreateLogsReceiver is the equivalent of component.ReceiverFactory.CreateLogsReceiver()
-type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Logs) (component.LogsReceiver, error)
+type CreateLogsReceiver func(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Logs) (component.LogsReceiver, error)
 
 type factory struct {
-	cfgType               configmodels.Type
+	cfgType               config.Type
 	customUnmarshaler     component.CustomUnmarshaler
 	createDefaultConfig   CreateDefaultConfig
 	createTraceReceiver   CreateTraceReceiver
@@ -79,7 +79,7 @@ type factory struct {
 
 // NewFactory returns a component.ReceiverFactory.
 func NewFactory(
-	cfgType configmodels.Type,
+	cfgType config.Type,
 	createDefaultConfig CreateDefaultConfig,
 	options ...FactoryOption) component.ReceiverFactory {
 	f := &factory{
@@ -99,12 +99,12 @@ func NewFactory(
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *factory) Type() configmodels.Type {
+func (f *factory) Type() config.Type {
 	return f.cfgType
 }
 
 // CreateDefaultConfig creates the default configuration for receiver.
-func (f *factory) CreateDefaultConfig() configmodels.Receiver {
+func (f *factory) CreateDefaultConfig() config.Receiver {
 	return f.createDefaultConfig()
 }
 
@@ -112,7 +112,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Receiver {
 func (f *factory) CreateTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces) (component.TracesReceiver, error) {
 	if f.createTraceReceiver != nil {
 		return f.createTraceReceiver(ctx, params, cfg, nextConsumer)
@@ -124,7 +124,7 @@ func (f *factory) CreateTracesReceiver(
 func (f *factory) CreateMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if f.createMetricsReceiver != nil {
 		return f.createMetricsReceiver(ctx, params, cfg, nextConsumer)
@@ -136,7 +136,7 @@ func (f *factory) CreateMetricsReceiver(
 func (f *factory) CreateLogsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	if f.createLogsReceiver != nil {

@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -35,13 +35,13 @@ func NewNopProcessorFactory() component.ProcessorFactory {
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *nopProcessorFactory) Type() configmodels.Type {
+func (f *nopProcessorFactory) Type() config.Type {
 	return "nop"
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *nopProcessorFactory) CreateDefaultConfig() configmodels.Processor {
-	return &configmodels.ProcessorSettings{
+func (f *nopProcessorFactory) CreateDefaultConfig() config.Processor {
+	return &config.ProcessorSettings{
 		TypeVal: f.Type(),
 	}
 }
@@ -50,7 +50,7 @@ func (f *nopProcessorFactory) CreateDefaultConfig() configmodels.Processor {
 func (f *nopProcessorFactory) CreateTracesProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	_ configmodels.Processor,
+	_ config.Processor,
 	_ consumer.Traces,
 ) (component.TracesProcessor, error) {
 	return nopProcessorInstance, nil
@@ -60,7 +60,7 @@ func (f *nopProcessorFactory) CreateTracesProcessor(
 func (f *nopProcessorFactory) CreateMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	_ configmodels.Processor,
+	_ config.Processor,
 	_ consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	return nopProcessorInstance, nil
@@ -70,7 +70,7 @@ func (f *nopProcessorFactory) CreateMetricsProcessor(
 func (f *nopProcessorFactory) CreateLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	_ configmodels.Processor,
+	_ config.Processor,
 	_ consumer.Logs,
 ) (component.LogsProcessor, error) {
 	return nopProcessorInstance, nil

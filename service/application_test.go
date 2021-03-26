@@ -37,7 +37,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -144,7 +143,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 
 	params := Parameters{
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
-		ConfigFactory: func(_ *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *cobra.Command, factories component.Factories) (*config.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
 		Factories: factories,
@@ -318,7 +317,7 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 	require.NotNil(t, cfg)
 }
 
-func constructMimumalOpConfig(t *testing.T, factories component.Factories) *configmodels.Config {
+func constructMimumalOpConfig(t *testing.T, factories component.Factories) *config.Config {
 	configStr := `
 receivers:
   otlp:

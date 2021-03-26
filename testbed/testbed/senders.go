@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -97,16 +97,16 @@ func (dsb *DataSenderBase) ReportFatalError(err error) {
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (dsb *DataSenderBase) GetFactory(_ component.Kind, _ configmodels.Type) component.Factory {
+func (dsb *DataSenderBase) GetFactory(_ component.Kind, _ config.Type) component.Factory {
 	return nil
 }
 
 // Return map of extensions. Only enabled and created extensions will be returned.
-func (dsb *DataSenderBase) GetExtensions() map[configmodels.NamedEntity]component.Extension {
+func (dsb *DataSenderBase) GetExtensions() map[config.NamedEntity]component.Extension {
 	return nil
 }
 
-func (dsb *DataSenderBase) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
+func (dsb *DataSenderBase) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
 	return nil
 }
 

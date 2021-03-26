@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -57,9 +56,9 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -126,7 +125,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -143,7 +142,7 @@ func createTraceReceiver(
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -160,7 +159,7 @@ func createMetricsReceiver(
 func createLogReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r, err := createReceiver(cfg, params.Logger)
@@ -173,7 +172,7 @@ func createLogReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
+func createReceiver(cfg config.Receiver, logger *zap.Logger) (*otlpReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

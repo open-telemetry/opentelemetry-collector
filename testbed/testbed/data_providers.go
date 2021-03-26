@@ -27,7 +27,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"go.uber.org/atomic"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal"
 	otlplogscol "go.opentelemetry.io/collector/internal/data/protogen/collector/logs/v1"
@@ -327,7 +327,7 @@ type FileDataProvider struct {
 
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
-func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*FileDataProvider, error) {
+func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataProvider, error) {
 	file, err := os.OpenFile(filepath.Clean(filePath), os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
@@ -339,7 +339,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 	// Load the message from the file and count the data points.
 
 	switch dataType {
-	case configmodels.TracesDataType:
+	case config.TracesDataType:
 		var msg otlptracecol.ExportTraceServiceRequest
 		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
 			return nil, err
@@ -349,7 +349,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 		md := pdata.TracesFromInternalRep(internal.TracesFromOtlp(&msg))
 		dataPointCount = md.SpanCount()
 
-	case configmodels.MetricsDataType:
+	case config.MetricsDataType:
 		var msg otlpmetricscol.ExportMetricsServiceRequest
 		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
 			return nil, err
@@ -359,7 +359,7 @@ func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*File
 		md := pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&msg))
 		_, dataPointCount = md.MetricAndDataPointCount()
 
-	case configmodels.LogsDataType:
+	case config.LogsDataType:
 		var msg otlplogscol.ExportLogsServiceRequest
 		if err := protobufJSONUnmarshaler.Unmarshal(file, &msg); err != nil {
 			return nil, err

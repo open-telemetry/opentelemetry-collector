@@ -23,19 +23,19 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 func TestService_setupExtensions(t *testing.T) {
 	errExtensionFactory := extensionhelper.NewFactory(
 		"err",
-		func() configmodels.Extension {
-			return &configmodels.ExporterSettings{
+		func() config.Extension {
+			return &config.ExporterSettings{
 				TypeVal: "err",
 			}
 		},
-		func(ctx context.Context, params component.ExtensionCreateParams, extension configmodels.Extension) (component.Extension, error) {
+		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {
 			return nil, fmt.Errorf("cannot create \"err\" extension type")
 		},
 	)
@@ -49,13 +49,13 @@ func TestService_setupExtensions(t *testing.T) {
 	tests := []struct {
 		name       string
 		factories  component.Factories
-		config     *configmodels.Config
+		config     *config.Config
 		wantErrMsg string
 	}{
 		{
 			name: "extension_not_configured",
-			config: &configmodels.Config{
-				Service: configmodels.Service{
+			config: &config.Config{
+				Service: config.Service{
 					Extensions: []string{
 						"myextension",
 					},
@@ -65,11 +65,11 @@ func TestService_setupExtensions(t *testing.T) {
 		},
 		{
 			name: "missing_extension_factory",
-			config: &configmodels.Config{
-				Extensions: map[string]configmodels.Extension{
+			config: &config.Config{
+				Extensions: map[string]config.Extension{
 					string(errExtensionFactory.Type()): errExtensionConfig,
 				},
-				Service: configmodels.Service{
+				Service: config.Service{
 					Extensions: []string{
 						string(errExtensionFactory.Type()),
 					},
@@ -80,15 +80,15 @@ func TestService_setupExtensions(t *testing.T) {
 		{
 			name: "error_on_create_extension",
 			factories: component.Factories{
-				Extensions: map[configmodels.Type]component.ExtensionFactory{
+				Extensions: map[config.Type]component.ExtensionFactory{
 					errExtensionFactory.Type(): errExtensionFactory,
 				},
 			},
-			config: &configmodels.Config{
-				Extensions: map[string]configmodels.Extension{
+			config: &config.Config{
+				Extensions: map[string]config.Extension{
 					string(errExtensionFactory.Type()): errExtensionConfig,
 				},
-				Service: configmodels.Service{
+				Service: config.Service{
 					Extensions: []string{
 						string(errExtensionFactory.Type()),
 					},
@@ -99,15 +99,15 @@ func TestService_setupExtensions(t *testing.T) {
 		{
 			name: "bad_factory",
 			factories: component.Factories{
-				Extensions: map[configmodels.Type]component.ExtensionFactory{
+				Extensions: map[config.Type]component.ExtensionFactory{
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
 			},
-			config: &configmodels.Config{
-				Extensions: map[string]configmodels.Extension{
+			config: &config.Config{
+				Extensions: map[string]config.Extension{
 					string(badExtensionFactory.Type()): badExtensionCfg,
 				},
-				Service: configmodels.Service{
+				Service: config.Service{
 					Extensions: []string{
 						string(badExtensionFactory.Type()),
 					},

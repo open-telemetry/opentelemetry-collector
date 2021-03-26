@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Component is either a receiver, exporter, processor or extension.
@@ -76,7 +76,7 @@ const (
 // Factory interface must be implemented by all component factories.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
-	Type() configmodels.Type
+	Type() config.Type
 }
 
 // ConfigUnmarshaler interface is an optional interface that if implemented by a Factory,

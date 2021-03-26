@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
@@ -38,9 +38,9 @@ func NewFactory() component.ExtensionFactory {
 		createExtension)
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -50,7 +50,7 @@ func createDefaultConfig() configmodels.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
 
 	return newServer(*config, params.Logger), nil

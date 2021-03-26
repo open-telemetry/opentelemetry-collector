@@ -28,7 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -306,7 +306,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},

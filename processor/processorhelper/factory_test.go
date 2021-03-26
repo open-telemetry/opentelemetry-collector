@@ -23,13 +23,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 const typeStr = "test"
 
-var defaultCfg = &configmodels.ProcessorSettings{
+var defaultCfg = &config.ProcessorSettings{
 	TypeVal: typeStr,
 	NameVal: typeStr,
 }
@@ -75,19 +75,19 @@ func TestNewMetrics_WithConstructors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func defaultConfig() configmodels.Processor {
+func defaultConfig() config.Processor {
 	return defaultCfg
 }
 
-func createTraceProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Traces) (component.TracesProcessor, error) {
+func createTraceProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateParams, configmodels.Processor, consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateParams, config.Processor, consumer.Logs) (component.LogsProcessor, error) {
 	return nil, nil
 }
 

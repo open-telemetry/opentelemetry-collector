@@ -32,8 +32,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -321,7 +321,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) compone
 	return exp
 }
 
-func createExporterConfig(baseURL string, defaultCfg configmodels.Exporter) *Config {
+func createExporterConfig(baseURL string, defaultCfg config.Exporter) *Config {
 	cfg := defaultCfg.(*Config)
 	cfg.Endpoint = baseURL
 	cfg.QueueSettings.Enabled = false
@@ -353,7 +353,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg configmodels.Exporter) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg config.Exporter) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil

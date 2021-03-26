@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["opencensus/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "opencensus/customname",
 			},
@@ -65,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["opencensus/keepalive"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "opencensus/keepalive",
 			},
@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 	r3 := cfg.Receivers["opencensus/msg-size-conc-connect-max-idle"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "opencensus/msg-size-conc-connect-max-idle",
 			},
@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 	r4 := cfg.Receivers["opencensus/tlscredentials"].(*Config)
 	assert.Equal(t, r4,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "opencensus/tlscredentials",
 			},
@@ -142,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 	r5 := cfg.Receivers["opencensus/cors"].(*Config)
 	assert.Equal(t, r5,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "opencensus/cors",
 			},
@@ -159,7 +159,7 @@ func TestLoadConfig(t *testing.T) {
 	r6 := cfg.Receivers["opencensus/uds"].(*Config)
 	assert.Equal(t, r6,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "opencensus/uds",
 			},
@@ -175,7 +175,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestBuildOptions_TLSCredentials(t *testing.T) {
 	cfg := Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: "IncorrectTLS",
 		},
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
