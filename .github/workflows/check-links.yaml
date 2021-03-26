@@ -12,13 +12,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Setup Node
-        uses: actions/setup-node@v2
+      - uses: gaurav-nelson/github-action-markdown-link-check@1.0.12
         with:
-          node-version: '14'
-      - name: Check links in markdown docs
-        run: |
-          pushd $HOME
-          npm install --save-dev markdown-link-check@3.8.1
-          popd
-      - run: ./.github/workflows/check-links/check-links.sh
+          base-branch: 'main'
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/workflows/check_links_config.json'
+          check-modified-files-only: 'yes'
+          folder-path: ''
