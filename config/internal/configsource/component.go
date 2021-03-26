@@ -101,7 +101,3 @@ type WatchableRetrieved interface {
 	// retrieved the value was successfully completed.
 	WatchForUpdate() error
 }
-
-// WatchForUpdate defines the signature used by the method used to monitor for updates
-// on a retrieved configuration.
-type WatchForUpdate func() error
