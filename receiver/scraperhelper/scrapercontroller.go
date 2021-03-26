@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -35,15 +35,15 @@ import (
 // configuration. Scraper controller receivers can embed this struct, instead
 // of configmodels.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	configmodels.ReceiverSettings `mapstructure:"squash"`
-	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
+	config.ReceiverSettings `mapstructure:"squash"`
+	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
 }
 
 // DefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func DefaultScraperControllerSettings(cfgType configmodels.Type) ScraperControllerSettings {
+func DefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: string(cfgType),
 			TypeVal: cfgType,
 		},

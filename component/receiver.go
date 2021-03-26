@@ -19,7 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -75,23 +75,23 @@ type ReceiverFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'configcheck.ValidateConfig'. It is recommended to have such check in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() configmodels.Receiver
+	CreateDefaultConfig() config.Receiver
 
 	// CreateTraceReceiver creates a trace receiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// error will be returned instead.
 	CreateTracesReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
+		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
 
 	// CreateMetricsReceiver creates a metrics receiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// error will be returned instead.
 	CreateMetricsReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
+		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
 
 	// CreateLogsReceiver creates a log receiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// error will be returned instead.
 	CreateLogsReceiver(ctx context.Context, params ReceiverCreateParams,
-		cfg configmodels.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
+		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
 }

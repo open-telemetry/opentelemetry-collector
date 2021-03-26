@@ -15,14 +15,14 @@
 package healthcheckextension
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Port is the port used to publish the health check status.
 	// The default value is 13133.

@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -34,13 +34,13 @@ func NewNopReceiverFactory() component.ReceiverFactory {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *nopReceiverFactory) Type() configmodels.Type {
+func (f *nopReceiverFactory) Type() config.Type {
 	return "nop"
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *nopReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
-	return &configmodels.ReceiverSettings{
+func (f *nopReceiverFactory) CreateDefaultConfig() config.Receiver {
+	return &config.ReceiverSettings{
 		TypeVal: f.Type(),
 	}
 }
@@ -49,7 +49,7 @@ func (f *nopReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
 func (f *nopReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	_ configmodels.Receiver,
+	_ config.Receiver,
 	_ consumer.Traces,
 ) (component.TracesReceiver, error) {
 	return nopReceiverInstance, nil
@@ -59,7 +59,7 @@ func (f *nopReceiverFactory) CreateTracesReceiver(
 func (f *nopReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	_ configmodels.Receiver,
+	_ config.Receiver,
 	_ consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nopReceiverInstance, nil
@@ -69,7 +69,7 @@ func (f *nopReceiverFactory) CreateMetricsReceiver(
 func (f *nopReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	_ configmodels.Receiver,
+	_ config.Receiver,
 	_ consumer.Logs,
 ) (component.LogsReceiver, error) {
 	return nopReceiverInstance, nil

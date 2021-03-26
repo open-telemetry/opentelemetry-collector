@@ -25,7 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -58,26 +58,26 @@ func TestBuildPipelines(t *testing.T) {
 	}
 }
 
-func createExampleConfig(dataType string) *configmodels.Config {
+func createExampleConfig(dataType string) *config.Config {
 	exampleReceiverFactory := testcomponents.ExampleReceiverFactory
 	exampleProcessorFactory := testcomponents.ExampleProcessorFactory
 	exampleExporterFactory := testcomponents.ExampleExporterFactory
 
-	cfg := &configmodels.Config{
-		Receivers: map[string]configmodels.Receiver{
+	cfg := &config.Config{
+		Receivers: map[string]config.Receiver{
 			string(exampleReceiverFactory.Type()): exampleReceiverFactory.CreateDefaultConfig(),
 		},
-		Processors: map[string]configmodels.Processor{
+		Processors: map[string]config.Processor{
 			string(exampleProcessorFactory.Type()): exampleProcessorFactory.CreateDefaultConfig(),
 		},
-		Exporters: map[string]configmodels.Exporter{
+		Exporters: map[string]config.Exporter{
 			string(exampleExporterFactory.Type()): exampleExporterFactory.CreateDefaultConfig(),
 		},
-		Service: configmodels.Service{
-			Pipelines: map[string]*configmodels.Pipeline{
+		Service: config.Service{
+			Pipelines: map[string]*config.Pipeline{
 				dataType: {
 					Name:       dataType,
-					InputType:  configmodels.DataType(dataType),
+					InputType:  config.DataType(dataType),
 					Receivers:  []string{string(exampleReceiverFactory.Type())},
 					Processors: []string{string(exampleProcessorFactory.Type())},
 					Exporters:  []string{string(exampleExporterFactory.Type())},

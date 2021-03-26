@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmodels
+package config
 
 // Receiver is the configuration of a receiver. Specific receivers must implement this
 // interface and will typically embed ReceiverSettings struct or a struct that extends it.

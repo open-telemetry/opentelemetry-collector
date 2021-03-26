@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -36,18 +36,18 @@ func createTestFactories() component.Factories {
 	badExporterFactory := newBadExporterFactory()
 
 	factories := component.Factories{
-		Extensions: map[configmodels.Type]component.ExtensionFactory{
+		Extensions: map[config.Type]component.ExtensionFactory{
 			badExtensionFactory.Type(): badExtensionFactory,
 		},
-		Receivers: map[configmodels.Type]component.ReceiverFactory{
+		Receivers: map[config.Type]component.ReceiverFactory{
 			exampleReceiverFactory.Type(): exampleReceiverFactory,
 			badReceiverFactory.Type():     badReceiverFactory,
 		},
-		Processors: map[configmodels.Type]component.ProcessorFactory{
+		Processors: map[config.Type]component.ProcessorFactory{
 			exampleProcessorFactory.Type(): exampleProcessorFactory,
 			badProcessorFactory.Type():     badProcessorFactory,
 		},
-		Exporters: map[configmodels.Type]component.ExporterFactory{
+		Exporters: map[config.Type]component.ExporterFactory{
 			exampleExporterFactory.Type(): exampleExporterFactory,
 			badExporterFactory.Type():     badExporterFactory,
 		},
@@ -57,24 +57,24 @@ func createTestFactories() component.Factories {
 }
 
 func newBadReceiverFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory("bf", func() configmodels.Receiver {
-		return &configmodels.ReceiverSettings{
+	return receiverhelper.NewFactory("bf", func() config.Receiver {
+		return &config.ReceiverSettings{
 			TypeVal: "bf",
 		}
 	})
 }
 
 func newBadProcessorFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory("bf", func() configmodels.Processor {
-		return &configmodels.ProcessorSettings{
+	return processorhelper.NewFactory("bf", func() config.Processor {
+		return &config.ProcessorSettings{
 			TypeVal: "bf",
 		}
 	})
 }
 
 func newBadExporterFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory("bf", func() configmodels.Exporter {
-		return &configmodels.ExporterSettings{
+	return exporterhelper.NewFactory("bf", func() config.Exporter {
+		return &config.ExporterSettings{
 			TypeVal: "bf",
 		}
 	})
@@ -83,12 +83,12 @@ func newBadExporterFactory() component.ExporterFactory {
 func newBadExtensionFactory() component.ExtensionFactory {
 	return extensionhelper.NewFactory(
 		"bf",
-		func() configmodels.Extension {
-			return &configmodels.ExporterSettings{
+		func() config.Extension {
+			return &config.ExporterSettings{
 				TypeVal: "bf",
 			}
 		},
-		func(ctx context.Context, params component.ExtensionCreateParams, extension configmodels.Extension) (component.Extension, error) {
+		func(ctx context.Context, params component.ExtensionCreateParams, extension config.Extension) (component.Extension, error) {
 			return nil, nil
 		},
 	)

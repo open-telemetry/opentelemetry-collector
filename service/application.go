@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -96,11 +95,11 @@ type Parameters struct {
 // The ConfigFactory implementation should call AddSetFlagProperties to enable configuration passed via `--set` flag.
 // Viper and command instances are passed from the Application.
 // The factories also belong to the Application and are equal to the factories passed via Parameters.
-type ConfigFactory func(cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error)
+type ConfigFactory func(cmd *cobra.Command, factories component.Factories) (*config.Config, error)
 
 // FileLoaderConfigFactory implements ConfigFactory and it creates configuration from file
 // and from --set command line flag (if the flag is present).
-func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+func FileLoaderConfigFactory(cmd *cobra.Command, factories component.Factories) (*config.Config, error) {
 	file := builder.GetConfigFile()
 	if file == "" {
 		return nil, errors.New("config file not specified")

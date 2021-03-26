@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -35,13 +35,13 @@ func NewNopExporterFactory() component.ExporterFactory {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *nopExporterFactory) Type() configmodels.Type {
+func (f *nopExporterFactory) Type() config.Type {
 	return "nop"
 }
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *nopExporterFactory) CreateDefaultConfig() configmodels.Exporter {
-	return &configmodels.ExporterSettings{
+func (f *nopExporterFactory) CreateDefaultConfig() config.Exporter {
+	return &config.ExporterSettings{
 		TypeVal: f.Type(),
 	}
 }
@@ -50,7 +50,7 @@ func (f *nopExporterFactory) CreateDefaultConfig() configmodels.Exporter {
 func (f *nopExporterFactory) CreateTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
+	_ config.Exporter,
 ) (component.TracesExporter, error) {
 	return nopExporterInstance, nil
 }
@@ -59,7 +59,7 @@ func (f *nopExporterFactory) CreateTracesExporter(
 func (f *nopExporterFactory) CreateMetricsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
+	_ config.Exporter,
 ) (component.MetricsExporter, error) {
 	return nopExporterInstance, nil
 }
@@ -68,7 +68,7 @@ func (f *nopExporterFactory) CreateMetricsExporter(
 func (f *nopExporterFactory) CreateLogsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
+	_ config.Exporter,
 ) (component.LogsExporter, error) {
 	return nopExporterInstance, nil
 }

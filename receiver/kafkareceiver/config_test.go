@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r := cfg.Receivers[typeStr].(*Config)
 	assert.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},

@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -119,7 +119,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: typeStr,
 				NameVal: typeStr,
 			},
@@ -193,7 +193,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	}
 	tp, err := processorhelper.NewTraceProcessor(
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: typeStr,
 				NameVal: typeStr,
 			},
@@ -267,7 +267,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: typeStr,
 				NameVal: typeStr,
 			},

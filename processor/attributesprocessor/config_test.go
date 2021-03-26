@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/internal/processor/filterset"
@@ -41,7 +41,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p0 := cfg.Processors["attributes/insert"]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/insert",
 			TypeVal: typeStr,
 		},
@@ -55,7 +55,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p1 := cfg.Processors["attributes/update"]
 	assert.Equal(t, p1, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/update",
 			TypeVal: typeStr,
 		},
@@ -69,7 +69,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p2 := cfg.Processors["attributes/upsert"]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/upsert",
 			TypeVal: typeStr,
 		},
@@ -83,7 +83,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p3 := cfg.Processors["attributes/delete"]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/delete",
 			TypeVal: typeStr,
 		},
@@ -97,7 +97,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p4 := cfg.Processors["attributes/hash"]
 	assert.Equal(t, p4, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/hash",
 			TypeVal: typeStr,
 		},
@@ -110,7 +110,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p5 := cfg.Processors["attributes/excludemulti"]
 	assert.Equal(t, p5, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/excludemulti",
 			TypeVal: typeStr,
 		},
@@ -134,7 +134,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p6 := cfg.Processors["attributes/includeservices"]
 	assert.Equal(t, p6, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/includeservices",
 			TypeVal: typeStr,
 		},
@@ -154,7 +154,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p7 := cfg.Processors["attributes/selectiveprocessing"]
 	assert.Equal(t, p7, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/selectiveprocessing",
 			TypeVal: typeStr,
 		},
@@ -180,7 +180,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p8 := cfg.Processors["attributes/complex"]
 	assert.Equal(t, p8, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/complex",
 			TypeVal: typeStr,
 		},
@@ -195,7 +195,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p9 := cfg.Processors["attributes/example"]
 	assert.Equal(t, p9, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/example",
 			TypeVal: typeStr,
 		},
@@ -212,7 +212,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	p10 := cfg.Processors["attributes/regexp"]
 	assert.Equal(t, p10, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "attributes/regexp",
 			TypeVal: typeStr,
 		},

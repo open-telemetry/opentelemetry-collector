@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "batch",
 				NameVal: "batch/2",
 			},

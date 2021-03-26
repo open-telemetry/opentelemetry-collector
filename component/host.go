@@ -15,7 +15,7 @@
 package component
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Host represents the entity that is hosting a Component. It is used to allow communication
@@ -36,13 +36,13 @@ type Host interface {
 	// GetFactory can be called by the component anytime after Start() begins and
 	// until Shutdown() is called. Note that the component is responsible for destroying
 	// other components that it creates.
-	GetFactory(kind Kind, componentType configmodels.Type) Factory
+	GetFactory(kind Kind, componentType config.Type) Factory
 
 	// Return map of extensions. Only enabled and created extensions will be returned.
 	// Typically is used to find an extension by type or by full config name. Both cases
 	// can be done by iterating the returned map. There are typically very few extensions
 	// so there there is no performance implications due to iteration.
-	GetExtensions() map[configmodels.NamedEntity]Extension
+	GetExtensions() map[config.NamedEntity]Extension
 
 	// Return map of exporters. Only enabled and created exporters will be returned.
 	// Typically is used to find exporters by type or by full config name. Both cases
@@ -52,5 +52,5 @@ type Host interface {
 	// Note that an exporter with the same name may be attached to multiple pipelines and
 	// thus we may have an instance of the exporter for multiple data types.
 	// This is an experimental function that may change or even be removed completely.
-	GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]Exporter
+	GetExporters() map[config.DataType]map[config.NamedEntity]Exporter
 }

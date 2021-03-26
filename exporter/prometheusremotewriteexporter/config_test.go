@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -50,7 +50,7 @@ func Test_loadConfig(t *testing.T) {
 	e1 := cfg.Exporters["prometheusremotewrite/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: config.ExporterSettings{
 				NameVal: "prometheusremotewrite/2",
 				TypeVal: "prometheusremotewrite",
 			},

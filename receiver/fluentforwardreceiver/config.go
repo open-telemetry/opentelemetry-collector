@@ -15,12 +15,12 @@
 package fluentforwardreceiver
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// The address to listen on for incoming Fluent Forward events.  Should be
 	// of the form `<ip addr>:<port>` (TCP) or `unix://<socket_path>` (Unix

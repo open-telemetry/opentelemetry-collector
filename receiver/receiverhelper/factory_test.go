@@ -23,13 +23,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 const typeStr = "test"
 
-var defaultCfg = &configmodels.ReceiverSettings{
+var defaultCfg = &config.ReceiverSettings{
 	TypeVal: typeStr,
 	NameVal: typeStr,
 }
@@ -75,19 +75,19 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func defaultConfig() configmodels.Receiver {
+func defaultConfig() config.Receiver {
 	return defaultCfg
 }
 
-func createTraceReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Traces) (component.TracesReceiver, error) {
+func createTraceReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateParams, configmodels.Receiver, consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(context.Context, component.ReceiverCreateParams, config.Receiver, consumer.Logs) (component.LogsReceiver, error) {
 	return nil, nil
 }
 

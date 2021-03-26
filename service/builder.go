@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/internal/builder"
 )
@@ -35,7 +35,7 @@ type settings struct {
 	StartInfo component.ApplicationStartInfo
 
 	// Config represents the configuration of the service.
-	Config *configmodels.Config
+	Config *config.Config
 
 	// Logger represents the logger used for all the components.
 	Logger *zap.Logger
@@ -48,7 +48,7 @@ type settings struct {
 type service struct {
 	factories         component.Factories
 	startInfo         component.ApplicationStartInfo
-	config            *configmodels.Config
+	config            *config.Config
 	logger            *zap.Logger
 	asyncErrorChannel chan error
 
@@ -120,7 +120,7 @@ func (srv *service) ReportFatalError(err error) {
 	srv.asyncErrorChannel <- err
 }
 
-func (srv *service) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
+func (srv *service) GetFactory(kind component.Kind, componentType config.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return srv.factories.Receivers[componentType]
@@ -134,11 +134,11 @@ func (srv *service) GetFactory(kind component.Kind, componentType configmodels.T
 	return nil
 }
 
-func (srv *service) GetExtensions() map[configmodels.NamedEntity]component.Extension {
+func (srv *service) GetExtensions() map[config.NamedEntity]component.Extension {
 	return srv.builtExtensions.ToMap()
 }
 
-func (srv *service) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
+func (srv *service) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
 	return srv.builtExporters.ToMapByDataType()
 }
 

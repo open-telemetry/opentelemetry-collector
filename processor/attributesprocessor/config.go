@@ -15,7 +15,7 @@
 package attributesprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/processor/filterconfig"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -28,7 +28,7 @@ import (
 // This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	filterconfig.MatchConfig `mapstructure:",squash"`
 

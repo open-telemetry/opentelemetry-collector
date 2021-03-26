@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	config2 "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/fanoutconsumer"
@@ -44,7 +44,7 @@ type builtPipeline struct {
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
-type BuiltPipelines map[*configmodels.Pipeline]*builtPipeline
+type BuiltPipelines map[*config2.Pipeline]*builtPipeline
 
 func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
 	for _, bp := range bps {
@@ -83,9 +83,9 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 type pipelinesBuilder struct {
 	logger    *zap.Logger
 	appInfo   component.ApplicationStartInfo
-	config    *configmodels.Config
+	config    *config2.Config
 	exporters Exporters
-	factories map[configmodels.Type]component.ProcessorFactory
+	factories map[config2.Type]component.ProcessorFactory
 }
 
 // BuildPipelines builds pipeline processors from config. Requires exporters to be already
@@ -93,9 +93,9 @@ type pipelinesBuilder struct {
 func BuildPipelines(
 	logger *zap.Logger,
 	appInfo component.ApplicationStartInfo,
-	config *configmodels.Config,
+	config *config2.Config,
 	exporters Exporters,
-	factories map[configmodels.Type]component.ProcessorFactory,
+	factories map[config2.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
 	pb := &pipelinesBuilder{logger, appInfo, config, exporters, factories}
 
@@ -114,7 +114,7 @@ func BuildPipelines(
 // Builds a pipeline of processors. Returns the first processor in the pipeline.
 // The last processor in the pipeline will be plugged to fan out the data into exporters
 // that are configured for this pipeline.
-func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *configmodels.Pipeline) (*builtPipeline, error) {
+func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *config2.Pipeline) (*builtPipeline, error) {
 
 	// BuildProcessors the pipeline backwards.
 
@@ -124,11 +124,11 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 	var lc consumer.Logs
 
 	switch pipelineCfg.InputType {
-	case configmodels.TracesDataType:
+	case config2.TracesDataType:
 		tc = pb.buildFanoutExportersTraceConsumer(pipelineCfg.Exporters)
-	case configmodels.MetricsDataType:
+	case config2.MetricsDataType:
 		mc = pb.buildFanoutExportersMetricsConsumer(pipelineCfg.Exporters)
-	case configmodels.LogsDataType:
+	case config2.LogsDataType:
 		lc = pb.buildFanoutExportersLogConsumer(pipelineCfg.Exporters)
 	}
 
@@ -157,7 +157,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 		}
 
 		switch pipelineCfg.InputType {
-		case configmodels.TracesDataType:
+		case config2.TracesDataType:
 			var proc component.TracesProcessor
 			proc, err = factory.CreateTracesProcessor(ctx, creationParams, procCfg, tc)
 			if proc != nil {
@@ -165,7 +165,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			}
 			processors[i] = proc
 			tc = proc
-		case configmodels.MetricsDataType:
+		case config2.MetricsDataType:
 			var proc component.MetricsProcessor
 			proc, err = factory.CreateMetricsProcessor(ctx, creationParams, procCfg, mc)
 			if proc != nil {
@@ -174,7 +174,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineCfg *conf
 			processors[i] = proc
 			mc = proc
 
-		case configmodels.LogsDataType:
+		case config2.LogsDataType:
 			var proc component.LogsProcessor
 			proc, err = factory.CreateLogsProcessor(ctx, creationParams, procCfg, lc)
 			if proc != nil {

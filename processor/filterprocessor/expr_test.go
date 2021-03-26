@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/goldendataset"
@@ -165,7 +165,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	return proc, next, logs
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) configmodels.Processor {
+func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) config.Processor {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

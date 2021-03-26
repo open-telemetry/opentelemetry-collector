@@ -15,13 +15,13 @@
 package kafkareceiver
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 )
 
 // Config defines configuration for Kafka receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
 	// Kafka protocol version

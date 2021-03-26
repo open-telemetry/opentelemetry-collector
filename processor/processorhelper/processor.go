@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -149,7 +149,7 @@ func (tp *tracesProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 // NewTraceProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewTraceProcessor(
-	config configmodels.Processor,
+	config config.Processor,
 	nextConsumer consumer.Traces,
 	processor TProcessor,
 	options ...Option,
@@ -193,7 +193,7 @@ func (mp *metricsProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics
 // NewMetricsProcessor creates a MetricsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewMetricsProcessor(
-	config configmodels.Processor,
+	config config.Processor,
 	nextConsumer consumer.Metrics,
 	processor MProcessor,
 	options ...Option,
@@ -234,7 +234,7 @@ func (lp *logProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 // NewLogsProcessor creates a LogsProcessor that ensure context propagation and the right tags are set.
 // TODO: Add observability metrics support
 func NewLogsProcessor(
-	config configmodels.Processor,
+	config config.Processor,
 	nextConsumer consumer.Logs,
 	processor LProcessor,
 	options ...Option,

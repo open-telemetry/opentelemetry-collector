@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	config2 "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal"
@@ -43,7 +43,7 @@ import (
 // Test_ NewPrwExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPrwExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings:   configmodels.ExporterSettings{},
+		ExporterSettings:   config2.ExporterSettings{},
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		QueueSettings:      exporterhelper.QueueSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
@@ -685,7 +685,7 @@ func Test_PushMetrics(t *testing.T) {
 			assert.NoError(t, uErr)
 
 			config := &Config{
-				ExporterSettings: configmodels.ExporterSettings{
+				ExporterSettings: config2.ExporterSettings{
 					TypeVal: "prometheusremotewrite",
 					NameVal: "prometheusremotewrite",
 				},
