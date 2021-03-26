@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -420,7 +421,7 @@ func newTraceExporter(config config.Exporter, level string, logger *zap.Logger) 
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(loggerSync(logger))),
 	)
 }
 
@@ -440,7 +441,7 @@ func newMetricsExporter(config config.Exporter, level string, logger *zap.Logger
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(loggerSync(logger))),
 	)
 }
 
@@ -460,7 +461,7 @@ func newLogsExporter(config config.Exporter, level string, logger *zap.Logger) (
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(loggerSync(logger))),
 	)
 }
 

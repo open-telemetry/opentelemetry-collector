@@ -101,19 +101,11 @@ func fromOptions(options []Option) *baseSettings {
 // Option apply changes to baseSettings.
 type Option func(*baseSettings)
 
-// WithStart overrides the default Start function for an exporter.
-// The default shutdown function does nothing and always returns nil.
-func WithStart(start componenthelper.Start) Option {
+// WithComponentOptions adds options that apply to a generic component
+// (such as start and shutdown hooks).
+func WithComponentOptions(opts ...componenthelper.Option) Option {
 	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
-	}
-}
-
-// WithShutdown overrides the default Shutdown function for an exporter.
-// The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.Shutdown) Option {
-	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
+		o.componentOptions = append(o.componentOptions, opts...)
 	}
 }
 

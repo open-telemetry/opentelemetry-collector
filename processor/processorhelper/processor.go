@@ -58,23 +58,15 @@ type LProcessor interface {
 // Option apply changes to internalOptions.
 type Option func(*baseSettings)
 
-// WithStart overrides the default Start function for an processor.
-// The default shutdown function does nothing and always returns nil.
-func WithStart(start componenthelper.Start) Option {
+// WithComponentOption adds options that apply to a generic component
+// (such as start and shutdown hooks).
+func WithComponentOptions(opts ...componenthelper.Option) Option {
 	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
+		o.componentOptions = append(o.componentOptions, opts...)
 	}
 }
 
-// WithShutdown overrides the default Shutdown function for an processor.
-// The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.Shutdown) Option {
-	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
-	}
-}
-
-// WithShutdown overrides the default GetCapabilities function for an processor.
+// WithCapabilities overrides the default GetCapabilities function for an processor.
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities component.ProcessorCapabilities) Option {
 	return func(o *baseSettings) {

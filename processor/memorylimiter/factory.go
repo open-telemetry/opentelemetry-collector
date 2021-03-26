@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -66,7 +67,7 @@ func createTraceProcessor(
 		nextConsumer,
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithComponentOptions(componenthelper.WithShutdown(ml.shutdown)))
 }
 
 func createMetricsProcessor(
@@ -84,7 +85,7 @@ func createMetricsProcessor(
 		nextConsumer,
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithComponentOptions(componenthelper.WithShutdown(ml.shutdown)))
 }
 
 func createLogsProcessor(
@@ -102,5 +103,5 @@ func createLogsProcessor(
 		nextConsumer,
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithComponentOptions(componenthelper.WithShutdown(ml.shutdown)))
 }

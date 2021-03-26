@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -61,7 +62,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(prwCfg.QueueSettings),
 		exporterhelper.WithRetry(prwCfg.RetrySettings),
-		exporterhelper.WithShutdown(prwe.Shutdown),
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(prwe.Shutdown)),
 	)
 
 	return prwexp, err

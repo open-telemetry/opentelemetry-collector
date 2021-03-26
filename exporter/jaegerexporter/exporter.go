@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -60,8 +61,10 @@ func newTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter
 	)
 	exp, err := exporterhelper.NewTraceExporter(
 		cfg, logger, s.pushTraceData,
-		exporterhelper.WithStart(s.start),
-		exporterhelper.WithShutdown(s.shutdown),
+		exporterhelper.WithComponentOptions(
+			componenthelper.WithStart(s.start),
+			componenthelper.WithShutdown(s.shutdown),
+		),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),

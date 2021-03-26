@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
@@ -127,7 +128,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		consumertest.NewMetricsNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithComponentOptions(componenthelper.WithShutdown(ml.shutdown)))
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -201,7 +202,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		consumertest.NewTracesNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithComponentOptions(componenthelper.WithShutdown(ml.shutdown)))
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -275,7 +276,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		consumertest.NewLogsNop(),
 		ml,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithComponentOptions(componenthelper.WithShutdown(ml.shutdown)))
 	require.NoError(t, err)
 
 	ctx := context.Background()

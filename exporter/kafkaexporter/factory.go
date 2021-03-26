@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -115,7 +116,7 @@ func (f *kafkaExporterFactory) createTraceExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(exp.Close)))
 }
 
 func (f *kafkaExporterFactory) createMetricsExporter(
@@ -140,5 +141,5 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(exp.Close)))
 }

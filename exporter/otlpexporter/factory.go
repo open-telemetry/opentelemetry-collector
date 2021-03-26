@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -72,7 +73,7 @@ func createTraceExporter(
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(oce.shutdown))
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(oce.shutdown)))
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func createMetricsExporter(
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(oce.shutdown)),
 	)
 	if err != nil {
 		return nil, err
@@ -123,7 +124,7 @@ func createLogsExporter(
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithComponentOptions(componenthelper.WithShutdown(oce.shutdown)),
 	)
 	if err != nil {
 		return nil, err
