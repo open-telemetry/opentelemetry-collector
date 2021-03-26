@@ -31,6 +31,12 @@ var ErrSessionClosed = errors.New("parent session was closed")
 // specific error must use errors.Is.
 var ErrValueUpdated = errors.New("configuration must retrieve the updated value")
 
+// ErrWatcherNotSupported is returned by WatchForUpdate functions when the configuration
+// source can't watch for updates on the value.
+// This error can be wrapped with additional information. Callers trying to identify this
+// specific error must use errors.Is.
+var ErrWatcherNotSupported = errors.New("value watcher is not supported")
+
 // ConfigSource is the interface to be implemented by objects used by the collector
 // to retrieve external configuration information.
 type ConfigSource interface {
@@ -78,12 +84,6 @@ type Session interface {
 type Retrieved interface {
 	// Value is the retrieved data that will be injected on the configuration.
 	Value() interface{}
-}
-
-// WatchableRetrieved holds the result of a call to the Retrieve method of a Session object
-// for a value that can be watched for updates.
-type WatchableRetrieved interface {
-	Retrieved
 
 	// WatchForUpdate must not return until one of the following happens:
 	//
