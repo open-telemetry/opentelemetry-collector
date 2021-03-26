@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package observ contains logic pertaining to the internal observation
+// Package observ contains logic pertaining to the internal observation
 // of the fluent forward receiver.
 package observ
 

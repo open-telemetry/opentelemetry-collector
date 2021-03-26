@@ -21,10 +21,12 @@ import (
 // SpanID is an alias of OTLP SpanID data type.
 type SpanID data.SpanID
 
+// InvalidSpanID returns an empty (all zero bytes) SpanID.
 func InvalidSpanID() SpanID {
 	return SpanID(data.NewSpanID([8]byte{}))
 }
 
+// NewSpanID returns a new SpanID from the given byte array.
 func NewSpanID(bytes [8]byte) SpanID {
 	return SpanID(data.NewSpanID(bytes))
 }

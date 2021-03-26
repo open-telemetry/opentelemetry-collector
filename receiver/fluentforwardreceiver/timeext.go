@@ -22,33 +22,33 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-type EventTimeExt time.Time
+type eventTimeExt time.Time
 
 func init() {
-	msgp.RegisterExtension(0, func() msgp.Extension { return new(EventTimeExt) })
+	msgp.RegisterExtension(0, func() msgp.Extension { return new(eventTimeExt) })
 }
 
-func (*EventTimeExt) ExtensionType() int8 {
+func (*eventTimeExt) ExtensionType() int8 {
 	return 0x00
 }
 
-func (e *EventTimeExt) Len() int {
+func (e *eventTimeExt) Len() int {
 	return 8
 }
 
-func (e *EventTimeExt) MarshalBinaryTo(b []byte) error {
+func (e *eventTimeExt) MarshalBinaryTo(b []byte) error {
 	binary.BigEndian.PutUint32(b[0:], uint32(time.Time(*e).Unix()))
 	binary.BigEndian.PutUint32(b[4:], uint32(time.Time(*e).Nanosecond()))
 
 	return nil
 }
 
-func (e *EventTimeExt) UnmarshalBinary(b []byte) error {
+func (e *eventTimeExt) UnmarshalBinary(b []byte) error {
 	if len(b) != 8 {
 		return errors.New("data should be exactly 8 bytes")
 	}
 	secs := int64(binary.BigEndian.Uint32(b[0:]))
 	nanos := int64(binary.BigEndian.Uint32(b[4:]))
-	*e = EventTimeExt(time.Unix(secs, nanos))
+	*e = eventTimeExt(time.Unix(secs, nanos))
 	return nil
 }

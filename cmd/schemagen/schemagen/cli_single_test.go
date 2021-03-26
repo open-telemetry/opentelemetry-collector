@@ -17,6 +17,7 @@ package schemagen
 import (
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -77,7 +78,7 @@ func TestCreateSingleSchemaFile(t *testing.T) {
 		return path.Join(tempDir, schemaFilename)
 	}
 	createSingleSchemaFile(testComponents(), "exporter", "otlp", e)
-	file, err := ioutil.ReadFile(path.Join(tempDir, schemaFilename))
+	file, err := ioutil.ReadFile(filepath.Clean(path.Join(tempDir, schemaFilename)))
 	require.NoError(t, err)
 	fld := field{}
 	err = yaml.Unmarshal(file, &fld)

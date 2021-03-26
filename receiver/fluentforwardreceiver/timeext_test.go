@@ -23,7 +23,7 @@ import (
 
 func TestTimeEventExp(t *testing.T) {
 	tim := time.Unix(500, 250)
-	e := EventTimeExt(tim)
+	e := eventTimeExt(tim)
 
 	require.Equal(t, 8, e.Len())
 	var b [8]byte

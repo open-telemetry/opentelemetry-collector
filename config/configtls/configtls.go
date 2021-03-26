@@ -120,6 +120,7 @@ func (c TLSSetting) loadCert(caPath string) (*x509.CertPool, error) {
 	return certPool, nil
 }
 
+// LoadTLSConfig loads the tls configuration.
 func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	if c.Insecure && c.CAFile == "" {
 		return nil, nil
@@ -134,6 +135,7 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
+// LoadTLSConfig loads the tls configuration.
 func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
 	if err != nil {

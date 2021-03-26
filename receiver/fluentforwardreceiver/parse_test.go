@@ -30,7 +30,7 @@ func parseHexDump(name string) []byte {
 	}
 
 	path := filepath.Join(dir, name+".hexdump")
-	dump, err := ioutil.ReadFile(path)
+	dump, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		panic("failed to read hex dump file " + path + ": " + err.Error())
 	}

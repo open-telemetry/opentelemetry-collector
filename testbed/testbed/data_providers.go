@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -327,7 +328,7 @@ type FileDataProvider struct {
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
 func NewFileDataProvider(filePath string, dataType configmodels.DataType) (*FileDataProvider, error) {
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0)
+	file, err := os.OpenFile(filepath.Clean(filePath), os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
 	}

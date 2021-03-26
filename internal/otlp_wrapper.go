@@ -28,10 +28,12 @@ type MetricsWrapper struct {
 	req *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
+// MetricsToOtlp internal helper to convert MetricsWrapper to protobuf representation.
 func MetricsToOtlp(mw MetricsWrapper) *otlpcollectormetrics.ExportMetricsServiceRequest {
 	return mw.req
 }
 
+// MetricsFromOtlp internal helper to convert protobuf representation to MetricsWrapper.
 func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) MetricsWrapper {
 	return MetricsWrapper{req: req}
 }
@@ -43,10 +45,12 @@ type TracesWrapper struct {
 	req *otlpcollectortrace.ExportTraceServiceRequest
 }
 
+// TracesToOtlp internal helper to convert TracesWrapper to protobuf representation.
 func TracesToOtlp(mw TracesWrapper) *otlpcollectortrace.ExportTraceServiceRequest {
 	return mw.req
 }
 
+// TracesFromOtlp internal helper to convert protobuf representation to TracesWrapper.
 func TracesFromOtlp(req *otlpcollectortrace.ExportTraceServiceRequest) TracesWrapper {
 	return TracesWrapper{req: req}
 }
@@ -82,10 +86,12 @@ type LogsWrapper struct {
 	req *otlpcollectorlog.ExportLogsServiceRequest
 }
 
+// LogsToOtlp internal helper to convert LogsWrapper to protobuf representation.
 func LogsToOtlp(l LogsWrapper) *otlpcollectorlog.ExportLogsServiceRequest {
 	return l.req
 }
 
+// LogsFromOtlp internal helper to convert protobuf representation to LogsWrapper.
 func LogsFromOtlp(req *otlpcollectorlog.ExportLogsServiceRequest) LogsWrapper {
 	return LogsWrapper{req: req}
 }

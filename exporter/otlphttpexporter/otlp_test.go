@@ -428,7 +428,8 @@ func TestErrorResponses(t *testing.T) {
 				if test.responseBody != nil {
 					msg, err := proto.Marshal(test.responseBody.Proto())
 					require.NoError(t, err)
-					writer.Write(msg)
+					_, err = writer.Write(msg)
+					require.NoError(t, err)
 				}
 			})
 			srv := http.Server{

@@ -113,7 +113,7 @@ func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	switch v := ts.(type) {
 	case int64:
 		return time.Unix(v, 0), nil
-	case *EventTimeExt:
+	case *eventTimeExt:
 		return time.Time(*v), nil
 	default:
 		return time.Time{}, fmt.Errorf("unknown type of value: %v", ts)
