@@ -37,7 +37,6 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

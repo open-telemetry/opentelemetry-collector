@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -225,7 +224,7 @@ func loadExtensions(exts map[string]interface{}, factories map[configmodels.Type
 
 	// Iterate over extensions and create a config for each.
 	for key, value := range exts {
-		componentConfig := viperFromStringMap(cast.ToStringMap(value))
+		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -275,7 +274,7 @@ func loadService(rawService serviceSettings) (configmodels.Service, error) {
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
-func LoadReceiver(componentConfig *viper.Viper, typeStr configmodels.Type, fullName string, factory component.ReceiverFactory) (configmodels.Receiver, error) {
+func LoadReceiver(componentConfig *config.Parser, typeStr configmodels.Type, fullName string, factory component.ReceiverFactory) (configmodels.Receiver, error) {
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetName(fullName)
@@ -297,7 +296,7 @@ func loadReceivers(recvs map[string]interface{}, factories map[configmodels.Type
 
 	// Iterate over input map and create a config for each.
 	for key, value := range recvs {
-		componentConfig := viperFromStringMap(cast.ToStringMap(value))
+		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -334,7 +333,7 @@ func loadExporters(exps map[string]interface{}, factories map[configmodels.Type]
 
 	// Iterate over Exporters and create a config for each.
 	for key, value := range exps {
-		componentConfig := viperFromStringMap(cast.ToStringMap(value))
+		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -377,7 +376,7 @@ func loadProcessors(procs map[string]interface{}, factories map[configmodels.Typ
 
 	// Iterate over processors and create a config for each.
 	for key, value := range procs {
-		componentConfig := viperFromStringMap(cast.ToStringMap(value))
+		componentConfig := config.NewParserFromStringMap(cast.ToStringMap(value))
 		expandEnvConfig(componentConfig)
 
 		// Decode the key into type and fullName components.
@@ -456,7 +455,7 @@ func loadPipelines(pipelinesConfig map[string]pipelineSettings) (configmodels.Pi
 
 // expandEnvConfig creates a new viper config with expanded values for all the values (simple, list or map value).
 // It does not expand the keys.
-func expandEnvConfig(v *viper.Viper) {
+func expandEnvConfig(v *config.Parser) {
 	for _, k := range v.AllKeys() {
 		v.Set(k, expandStringValues(v.Get(k)))
 	}
@@ -535,20 +534,15 @@ func expandEnv(s string) string {
 	})
 }
 
-func unmarshaler(factory component.Factory) component.CustomUnmarshaler {
+func unmarshaler(factory component.Factory) func(componentViperSection *config.Parser, intoCfg interface{}) error {
 	if fu, ok := factory.(component.ConfigUnmarshaler); ok {
-		return fu.Unmarshal
+		return func(componentParser *config.Parser, intoCfg interface{}) error {
+			return fu.Unmarshal(componentParser.Viper(), intoCfg)
+		}
 	}
 	return defaultUnmarshaler
 }
 
-func defaultUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	return componentViperSection.UnmarshalExact(intoCfg)
-}
-
-func viperFromStringMap(data map[string]interface{}) *viper.Viper {
-	v := config.NewViper()
-	// Cannot return error because the subv is empty.
-	_ = v.MergeConfigMap(cast.ToStringMap(data))
-	return v
+func defaultUnmarshaler(componentParser *config.Parser, intoCfg interface{}) error {
+	return componentParser.UnmarshalExact(intoCfg)
 }
