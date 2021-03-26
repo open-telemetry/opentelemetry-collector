@@ -27,7 +27,9 @@ const (
 	// The value of extension "type" in configuration.
 	typeStr = "health_check"
 
-	defaultEndpoint = "localhost:13133"
+	// Use 0.0.0.0 to make the health check endpoint accessible
+	// in container orchestration environments like Kubernetes.
+	defaultEndpoint = "0.0.0.0:13133"
 )
 
 // NewFactory creates a factory for HealthCheck extension.
