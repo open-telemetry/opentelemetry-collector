@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 )
@@ -50,8 +51,10 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	be := newBaseExporter(
 		defaultExporterCfg,
 		zap.NewNop(),
-		WithStart(func(ctx context.Context, host component.Host) error { return want }),
-		WithShutdown(func(ctx context.Context) error { return want }),
+		WithComponentOptions(
+			componenthelper.WithStart(func(ctx context.Context, host component.Host) error { return want }),
+			componenthelper.WithShutdown(func(ctx context.Context) error { return want }),
+		),
 		WithResourceToTelemetryConversion(defaultResourceToTelemetrySettings()),
 		WithTimeout(DefaultTimeoutSettings()),
 	)

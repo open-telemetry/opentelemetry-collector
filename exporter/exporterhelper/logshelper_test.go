@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -129,7 +130,7 @@ func TestLogsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdown))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithComponentOptions(componenthelper.WithShutdown(shutdown)))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
@@ -141,7 +142,7 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithShutdown(shutdownErr))
+	le, err := NewLogsExporter(fakeLogsExporterConfig, zap.NewNop(), newPushLogsData(nil), WithComponentOptions(componenthelper.WithShutdown(shutdownErr)))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 

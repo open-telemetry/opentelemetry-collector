@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -48,8 +49,10 @@ func TestDefaultOptions(t *testing.T) {
 func TestWithOptions(t *testing.T) {
 	want := errors.New("my_error")
 	bp := newBaseProcessor(testFullName,
-		WithStart(func(context.Context, component.Host) error { return want }),
-		WithShutdown(func(context.Context) error { return want }),
+		WithComponentOptions(
+			componenthelper.WithStart(func(context.Context, component.Host) error { return want }),
+			componenthelper.WithShutdown(func(context.Context) error { return want }),
+		),
 		WithCapabilities(component.ProcessorCapabilities{MutatesConsumedData: false}))
 	assert.Equal(t, want, bp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, want, bp.Shutdown(context.Background()))
