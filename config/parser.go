@@ -58,6 +58,13 @@ func ParserFromViper(v *viper.Viper) *Parser {
 	return &Parser{v: v}
 }
 
+func NewParserFromStringMap(data map[string]interface{}) *Parser {
+	v := NewViper()
+	// Cannot return error because the subv is empty.
+	_ = v.MergeConfigMap(data)
+	return ParserFromViper(v)
+}
+
 // Parser loads configuration.
 type Parser struct {
 	v *viper.Viper
@@ -109,6 +116,11 @@ func (l *Parser) Sub(key string) (*Parser, error) {
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
+}
+
+// Viper returns the viper.Viper implementation of this Parser.
+func (l *Parser) Viper() *viper.Viper {
+	return l.v
 }
 
 // deepSearch scans deep maps, following the key indexes listed in the

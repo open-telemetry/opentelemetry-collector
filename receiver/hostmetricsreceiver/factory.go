@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -76,11 +77,9 @@ func NewFactory() component.ReceiverFactory {
 
 // customUnmarshaler returns custom unmarshaler for this config.
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-
+	componentParser := config.ParserFromViper(componentViperSection)
 	// load the non-dynamic config normally
-	cp := config.ParserFromViper(componentViperSection)
-
-	err := cp.Unmarshal(intoCfg)
+	err := componentParser.Unmarshal(intoCfg)
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 	cfg.Scrapers = map[string]internal.Config{}
 
-	scrapersSection, err := cp.Sub(scrapersKey)
+	scrapersSection, err := componentParser.Sub(scrapersKey)
 	if err != nil {
 		return err
 	}
@@ -102,7 +101,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 		return errors.New("must specify at least one scraper when using hostmetrics receiver")
 	}
 
-	for key := range componentViperSection.GetStringMap(scrapersKey) {
+	for key := range cast.ToStringMap(componentParser.Get(scrapersKey)) {
 		factory, ok := getScraperFactory(key)
 		if !ok {
 			return fmt.Errorf("invalid scraper key: %s", key)

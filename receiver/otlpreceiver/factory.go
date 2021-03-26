@@ -18,10 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -79,18 +81,19 @@ func createDefaultConfig() configmodels.Receiver {
 
 // customUnmarshaler is used to add defaults for named but empty protocols
 func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	if componentViperSection == nil || len(componentViperSection.AllKeys()) == 0 {
+	componentParser := config.ParserFromViper(componentViperSection)
+	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
 		return fmt.Errorf("empty config for OTLP receiver")
 	}
 	// first load the config normally
-	err := componentViperSection.UnmarshalExact(intoCfg)
+	err := componentParser.UnmarshalExact(intoCfg)
 	if err != nil {
 		return err
 	}
 
 	receiverCfg := intoCfg.(*Config)
 	// next manually search for protocols in viper, if a protocol is not present it means it is disable.
-	protocols := componentViperSection.GetStringMap(protocolsFieldName)
+	protocols := cast.ToStringMap(componentParser.Get(protocolsFieldName))
 
 	// UnmarshalExact will ignore empty entries like a protocol with no values, so if a typo happened
 	// in the protocol that is intended to be enabled will not be enabled. So check if the protocols
