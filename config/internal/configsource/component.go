@@ -97,8 +97,8 @@ type WatchableRetrieved interface {
 	//    on first instances of transient errors, optionally there should be
 	//    configurable thresholds to control for how long such errors can be ignored.
 	//
-	// This method must be only called when all calls to the Retrieve methods of the
-	// Session that retrieved the value were made.
+	// This method must only be called when the RetrieveEnd method of the Session that
+	// retrieved the value was successfully completed.
 	WatchForUpdate() error
 }
 
