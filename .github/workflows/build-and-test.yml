@@ -244,13 +244,6 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
-      - name: Install fluentbit
-        if: ${{ contains(matrix.test, 'Log10kDPS') }}
-        run: |
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
-          echo "/opt/td-agent-bit/bin" >> $GITHUB_PATH
-          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Loadtest
         run: make testbed-loadtest
