@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	fakeMetricsExporterConfig = &configmodels.ExporterSettings{
+	fakeMetricsExporterConfig = &config.ExporterSettings{
 		TypeVal: fakeMetricsExporterType,
 		NameVal: fakeMetricsExporterName,
 	}

@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -72,7 +72,7 @@ func (texp *traceExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 
 // NewTraceExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
 func NewTraceExporter(
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 	logger *zap.Logger,
 	pusher PushTraces,
 	options ...Option,

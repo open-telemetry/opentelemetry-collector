@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oterr provides helper functions to create and process
+// Package componenterror provides helper functions to create and process
 // OpenTelemetry specific errors
 package componenterror
 

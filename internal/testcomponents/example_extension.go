@@ -19,17 +19,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 // ExampleExtensionCfg is for testing purposes. We are defining an example config and factory
 // for "exampleextension" extension type.
 type ExampleExtensionCfg struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting                   string                   `mapstructure:"extra"`
-	ExtraMapSetting                map[string]string        `mapstructure:"extra_map"`
-	ExtraListSetting               []string                 `mapstructure:"extra_list"`
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraSetting             string                   `mapstructure:"extra"`
+	ExtraMapSetting          map[string]string        `mapstructure:"extra_map"`
+	ExtraListSetting         []string                 `mapstructure:"extra_list"`
 }
 
 const extType = "exampleextension"
@@ -38,9 +38,9 @@ const extType = "exampleextension"
 var ExampleExtensionFactory = extensionhelper.NewFactory(extType, createExtensionDefaultConfig, createExtension)
 
 // CreateDefaultConfig creates the default configuration for the Extension.
-func createExtensionDefaultConfig() configmodels.Extension {
+func createExtensionDefaultConfig() config.Extension {
 	return &ExampleExtensionCfg{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			TypeVal: extType,
 			NameVal: extType,
 		},
@@ -51,6 +51,6 @@ func createExtensionDefaultConfig() configmodels.Extension {
 }
 
 // CreateExtension creates an Extension based on this config.
-func createExtension(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.Extension, error) {
+func createExtension(context.Context, component.ExtensionCreateParams, config.Extension) (component.Extension, error) {
 	return componenthelper.New(), nil
 }

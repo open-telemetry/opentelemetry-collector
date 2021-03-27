@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/viper"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -28,11 +28,11 @@ import (
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.
 type ExampleExporter struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraInt                      int32                    `mapstructure:"extra_int"`
-	ExtraSetting                  string                   `mapstructure:"extra"`
-	ExtraMapSetting               map[string]string        `mapstructure:"extra_map"`
-	ExtraListSetting              []string                 `mapstructure:"extra_list"`
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ExtraInt                int32                    `mapstructure:"extra_int"`
+	ExtraSetting            string                   `mapstructure:"extra"`
+	ExtraMapSetting         map[string]string        `mapstructure:"extra_map"`
+	ExtraListSetting        []string                 `mapstructure:"extra_list"`
 }
 
 const expType = "exampleexporter"
@@ -47,9 +47,9 @@ var ExampleExporterFactory = exporterhelper.NewFactory(
 	exporterhelper.WithLogs(createLogsExporter))
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
-func createExporterDefaultConfig() configmodels.Exporter {
+func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporter{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			TypeVal: expType,
 			NameVal: expType,
 		},
@@ -66,7 +66,7 @@ func customUnmarshal(componentViperSection *viper.Viper, intoCfg interface{}) er
 func createTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
+	_ config.Exporter,
 ) (component.TracesExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
@@ -74,7 +74,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
+	_ config.Exporter,
 ) (component.MetricsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
@@ -82,7 +82,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
+	_ config.Exporter,
 ) (component.LogsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }

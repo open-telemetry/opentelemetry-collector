@@ -15,13 +15,13 @@
 package zipkinreceiver
 
 import (
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for Zipkin receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
 
 	// Configures the receiver server protocol.
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

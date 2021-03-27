@@ -39,8 +39,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -76,7 +76,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -101,7 +101,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -288,7 +288,7 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -386,7 +386,7 @@ func TestReceiverContentTypes(t *testing.T) {
 				ch: make(chan pdata.Traces, 10),
 			}
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: zipkinReceiverName,
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -423,7 +423,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -452,7 +452,7 @@ func TestReceiverConsumerError(t *testing.T) {
 		err: errors.New("consumer error"),
 	}
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -556,7 +556,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		ch: make(chan pdata.Traces, 10),
 	}
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: zipkinReceiverName,
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{

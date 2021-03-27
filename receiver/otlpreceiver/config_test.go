@@ -23,9 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Receivers["otlp/customname"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/customname",
 			},
@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Receivers["otlp/keepalive"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/keepalive",
 			},
@@ -105,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Receivers["otlp/msg-size-conc-connect-max-idle"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/msg-size-conc-connect-max-idle",
 			},
@@ -132,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 	// 	use of fake cert/key for test purposes.
 	assert.Equal(t, cfg.Receivers["otlp/tlscredentials"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/tlscredentials",
 			},
@@ -164,7 +164,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Receivers["otlp/cors"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/cors",
 			},
@@ -178,7 +178,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Receivers["otlp/corsheader"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/corsheader",
 			},
@@ -193,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Receivers["otlp/uds"],
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "otlp/uds",
 			},

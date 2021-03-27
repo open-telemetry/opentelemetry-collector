@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
@@ -51,7 +50,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "examplereceiver",
 				NameVal: "examplereceiver",
 			},
@@ -65,7 +64,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "examplereceiver",
 				NameVal: "examplereceiver/myreceiver",
 			},
@@ -82,7 +81,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: config.ExporterSettings{
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
 			},
@@ -93,7 +92,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: config.ExporterSettings{
 				NameVal: "exampleexporter/myexporter",
 				TypeVal: "exampleexporter",
 			},
@@ -107,7 +106,7 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
 			},
@@ -120,9 +119,9 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
-		&configmodels.Pipeline{
+		&config.Pipeline{
 			Name:       "traces",
-			InputType:  configmodels.TracesDataType,
+			InputType:  config.TracesDataType,
 			Receivers:  []string{"examplereceiver"},
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
@@ -209,7 +208,7 @@ func TestSimpleConfig(t *testing.T) {
 			assert.Equalf(t, 1, len(cfg.Extensions), "TEST[%s]", test.name)
 			assert.Equalf(t,
 				&testcomponents.ExampleExtensionCfg{
-					ExtensionSettings: configmodels.ExtensionSettings{
+					ExtensionSettings: config.ExtensionSettings{
 						TypeVal: "exampleextension",
 						NameVal: "exampleextension",
 					},
@@ -229,7 +228,7 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleReceiver{
-					ReceiverSettings: configmodels.ReceiverSettings{
+					ReceiverSettings: config.ReceiverSettings{
 						TypeVal: "examplereceiver",
 						NameVal: "examplereceiver",
 					},
@@ -248,7 +247,7 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleExporter{
-					ExporterSettings: configmodels.ExporterSettings{
+					ExporterSettings: config.ExporterSettings{
 						NameVal: "exampleexporter",
 						TypeVal: "exampleexporter",
 					},
@@ -265,7 +264,7 @@ func TestSimpleConfig(t *testing.T) {
 
 			assert.Equalf(t,
 				&testcomponents.ExampleProcessorCfg{
-					ProcessorSettings: configmodels.ProcessorSettings{
+					ProcessorSettings: config.ProcessorSettings{
 						TypeVal: "exampleprocessor",
 						NameVal: "exampleprocessor",
 					},
@@ -280,9 +279,9 @@ func TestSimpleConfig(t *testing.T) {
 			assert.Equalf(t, 1, len(cfg.Service.Pipelines), "TEST[%s]", test.name)
 
 			assert.Equalf(t,
-				&configmodels.Pipeline{
+				&config.Pipeline{
 					Name:       "traces",
-					InputType:  configmodels.TracesDataType,
+					InputType:  config.TracesDataType,
 					Receivers:  []string{"examplereceiver"},
 					Processors: []string{"exampleprocessor"},
 					Exporters:  []string{"exampleexporter"},
@@ -311,7 +310,7 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t, 1, len(cfg.Extensions))
 	assert.Equal(t,
 		&testcomponents.ExampleExtensionCfg{
-			ExtensionSettings: configmodels.ExtensionSettings{
+			ExtensionSettings: config.ExtensionSettings{
 				TypeVal: "exampleextension",
 				NameVal: "exampleextension",
 			},
@@ -331,7 +330,7 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleReceiver{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "examplereceiver",
 				NameVal: "examplereceiver",
 			},
@@ -365,7 +364,7 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleExporter{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: config.ExporterSettings{
 				NameVal: "exampleexporter",
 				TypeVal: "exampleexporter",
 			},
@@ -381,7 +380,7 @@ func TestEscapedEnvVars(t *testing.T) {
 
 	assert.Equal(t,
 		&testcomponents.ExampleProcessorCfg{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "exampleprocessor",
 				NameVal: "exampleprocessor",
 			},
@@ -396,9 +395,9 @@ func TestEscapedEnvVars(t *testing.T) {
 	assert.Equal(t, 1, len(cfg.Service.Pipelines))
 
 	assert.Equal(t,
-		&configmodels.Pipeline{
+		&config.Pipeline{
 			Name:       "traces",
-			InputType:  configmodels.TracesDataType,
+			InputType:  config.TracesDataType,
 			Receivers:  []string{"examplereceiver"},
 			Processors: []string{"exampleprocessor"},
 			Exporters:  []string{"exampleexporter"},
@@ -494,7 +493,7 @@ func TestLoadEmptyAllSections(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*configmodels.Config, error) {
+func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
 	v, err := config.NewParserFromFile(fileName)
 	require.NoError(t, err)
 
@@ -508,7 +507,7 @@ type nestedConfig struct {
 }
 
 type testConfig struct {
-	configmodels.ExporterSettings
+	config.ExporterSettings
 
 	NestedConfigPtr   *nestedConfig
 	NestedConfigValue nestedConfig
@@ -531,8 +530,8 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type("test"),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type("test"),
 			NameVal: "test",
 		},
 		NestedConfigPtr: &nestedConfig{
@@ -553,8 +552,8 @@ func TestExpandEnvLoadedConfig(t *testing.T) {
 	replacedTestString := "replaced_ptr_value"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type("test"),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type("test"),
 			NameVal: "test",
 		},
 		NestedConfigPtr: &nestedConfig{
@@ -585,8 +584,8 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	testString := "$$ESCAPED_PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type("test"),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type("test"),
 			NameVal: "test",
 		},
 		NestedConfigPtr: &nestedConfig{
@@ -607,8 +606,8 @@ func TestExpandEnvLoadedConfigEscapedEnv(t *testing.T) {
 	replacedTestString := "$ESCAPED_PTR_VALUE"
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type("test"),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type("test"),
 			NameVal: "test",
 		},
 		NestedConfigPtr: &nestedConfig{
@@ -635,8 +634,8 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	testString := "$PTR_VALUE"
 
 	cfg := &testConfig{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type("test"),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type("test"),
 			NameVal: "test",
 		},
 		NestedConfigPtr: &nestedConfig{
@@ -657,8 +656,8 @@ func TestExpandEnvLoadedConfigMissingEnv(t *testing.T) {
 	replacedTestString := ""
 
 	assert.Equal(t, &testConfig{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type("test"),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type("test"),
 			NameVal: "test",
 		},
 		NestedConfigPtr: &nestedConfig{
@@ -698,7 +697,7 @@ func TestExpandEnvLoadedConfigNoPointer(t *testing.T) {
 }
 
 type testUnexportedConfig struct {
-	configmodels.ExporterSettings
+	config.ExporterSettings
 
 	unexportedStringValue string
 	ExportedStringValue   string

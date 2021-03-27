@@ -28,7 +28,7 @@ type PICTMetricInputs struct {
 	NumResourceAttrs PICTNumResourceAttrs
 }
 
-// Enumerates the types of metrics that can be generated.
+// PICTMetricDataType enumerates the types of metrics that can be generated.
 type PICTMetricDataType string
 
 const (
@@ -42,7 +42,7 @@ const (
 	MetricTypeHistogram             PICTMetricDataType = "Histogram"
 )
 
-// Enumerates the number of labels on each datapoint.
+// PICTNumPtLabels enumerates the number of labels on each datapoint.
 type PICTNumPtLabels string
 
 const (

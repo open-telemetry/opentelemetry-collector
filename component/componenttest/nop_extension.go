@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // nopExtensionFactory is factory for nopExtension.
@@ -33,13 +33,13 @@ func NewNopExtensionFactory() component.ExtensionFactory {
 }
 
 // Type gets the type of the Extension config created by this factory.
-func (f *nopExtensionFactory) Type() configmodels.Type {
+func (f *nopExtensionFactory) Type() config.Type {
 	return "nop"
 }
 
 // CreateDefaultConfig creates the default configuration for the Extension.
-func (f *nopExtensionFactory) CreateDefaultConfig() configmodels.Extension {
-	return &configmodels.ExtensionSettings{
+func (f *nopExtensionFactory) CreateDefaultConfig() config.Extension {
+	return &config.ExtensionSettings{
 		TypeVal: f.Type(),
 	}
 }
@@ -48,7 +48,7 @@ func (f *nopExtensionFactory) CreateDefaultConfig() configmodels.Extension {
 func (f *nopExtensionFactory) CreateExtension(
 	_ context.Context,
 	_ component.ExtensionCreateParams,
-	_ configmodels.Extension,
+	_ config.Extension,
 ) (component.Extension, error) {
 	return nopExtensionInstance, nil
 }

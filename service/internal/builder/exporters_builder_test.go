@@ -25,8 +25,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/opencensusexporter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -38,10 +38,10 @@ func TestBuildExporters(t *testing.T) {
 
 	oceFactory := opencensusexporter.NewFactory()
 	factories.Exporters[oceFactory.Type()] = oceFactory
-	cfg := &configmodels.Config{
-		Exporters: map[string]configmodels.Exporter{
+	cfg := &config.Config{
+		Exporters: map[string]config.Exporter{
 			"opencensus": &opencensusexporter.Config{
-				ExporterSettings: configmodels.ExporterSettings{
+				ExporterSettings: config.ExporterSettings{
 					NameVal: "opencensus",
 					TypeVal: "opencensus",
 				},
@@ -52,11 +52,11 @@ func TestBuildExporters(t *testing.T) {
 			},
 		},
 
-		Service: configmodels.Service{
-			Pipelines: map[string]*configmodels.Pipeline{
+		Service: config.Service{
+			Pipelines: map[string]*config.Pipeline{
 				"trace": {
 					Name:      "trace",
-					InputType: configmodels.TracesDataType,
+					InputType: config.TracesDataType,
 					Exporters: []string{"opencensus"},
 				},
 			},
@@ -112,18 +112,18 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.Nil(t, err)
 
-	cfg := &configmodels.Config{
-		Exporters: map[string]configmodels.Exporter{
+	cfg := &config.Config{
+		Exporters: map[string]config.Exporter{
 			"exampleexporter": &testcomponents.ExampleExporter{
-				ExporterSettings: configmodels.ExporterSettings{
+				ExporterSettings: config.ExporterSettings{
 					NameVal: "exampleexporter",
 					TypeVal: "exampleexporter",
 				},
 			},
 		},
 
-		Service: configmodels.Service{
-			Pipelines: map[string]*configmodels.Pipeline{
+		Service: config.Service{
+			Pipelines: map[string]*config.Pipeline{
 				"logs": {
 					Name:      "logs",
 					InputType: "logs",
@@ -174,16 +174,16 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 
 func TestBuildExporters_StartAll(t *testing.T) {
 	exporters := make(Exporters)
-	expCfg := &configmodels.ExporterSettings{}
+	expCfg := &config.ExporterSettings{}
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
-		expByDataType: map[configmodels.DataType]component.Exporter{
-			configmodels.TracesDataType:  traceExporter,
-			configmodels.MetricsDataType: metricExporter,
-			configmodels.LogsDataType:    logsExporter,
+		expByDataType: map[config.DataType]component.Exporter{
+			config.TracesDataType:  traceExporter,
+			config.MetricsDataType: metricExporter,
+			config.LogsDataType:    logsExporter,
 		},
 	}
 	assert.False(t, traceExporter.ExporterStarted)
@@ -199,16 +199,16 @@ func TestBuildExporters_StartAll(t *testing.T) {
 
 func TestBuildExporters_StopAll(t *testing.T) {
 	exporters := make(Exporters)
-	expCfg := &configmodels.ExporterSettings{}
+	expCfg := &config.ExporterSettings{}
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
 	exporters[expCfg] = &builtExporter{
 		logger: zap.NewNop(),
-		expByDataType: map[configmodels.DataType]component.Exporter{
-			configmodels.TracesDataType:  traceExporter,
-			configmodels.MetricsDataType: metricExporter,
-			configmodels.LogsDataType:    logsExporter,
+		expByDataType: map[config.DataType]component.Exporter{
+			config.TracesDataType:  traceExporter,
+			config.MetricsDataType: metricExporter,
+			config.LogsDataType:    logsExporter,
 		},
 	}
 	assert.False(t, traceExporter.ExporterShutdown)

@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -38,9 +38,9 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -58,7 +58,7 @@ func createDefaultConfig() configmodels.Receiver {
 func createTraceReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r, err := createReceiver(cfg)
@@ -74,7 +74,7 @@ func createTraceReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r, err := createReceiver(cfg)
@@ -87,7 +87,7 @@ func createMetricsReceiver(
 	return r, nil
 }
 
-func createReceiver(cfg configmodels.Receiver) (*ocReceiver, error) {
+func createReceiver(cfg config.Receiver) (*ocReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	// There must be one receiver for both metrics and traces. We maintain a map of

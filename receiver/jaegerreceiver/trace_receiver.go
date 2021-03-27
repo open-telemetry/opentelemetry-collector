@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
+	"html"
 	"io/ioutil"
 	"mime"
 	"net"
@@ -441,7 +442,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 
 	batch, hErr := jr.decodeThriftHTTPBody(r)
 	if hErr != nil {
-		http.Error(w, hErr.msg, hErr.statusCode)
+		http.Error(w, html.EscapeString(hErr.msg), hErr.statusCode)
 		obsreport.EndTraceDataReceiveOp(ctx, thriftFormat, 0, hErr)
 		return
 	}

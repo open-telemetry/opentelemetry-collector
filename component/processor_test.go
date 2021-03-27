@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -30,34 +30,34 @@ type TestProcessorFactory struct {
 }
 
 // Type gets the type of the Processor config created by this factory.
-func (f *TestProcessorFactory) Type() configmodels.Type {
-	return configmodels.Type(f.name)
+func (f *TestProcessorFactory) Type() config.Type {
+	return config.Type(f.name)
 }
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func (f *TestProcessorFactory) CreateDefaultConfig() configmodels.Processor {
+func (f *TestProcessorFactory) CreateDefaultConfig() config.Processor {
 	return nil
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.Traces) (TracesProcessor, error) {
+func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Traces) (TracesProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.Metrics) (MetricsProcessor, error) {
+func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, configmodels.Processor, consumer.Logs) (LogsProcessor, error) {
+func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateParams, config.Processor, consumer.Logs) (LogsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func TestFactoriesBuilder(t *testing.T) {
 	type testCase struct {
 		in  []ProcessorFactory
-		out map[configmodels.Type]ProcessorFactory
+		out map[config.Type]ProcessorFactory
 	}
 
 	testCases := []testCase{
@@ -66,7 +66,7 @@ func TestFactoriesBuilder(t *testing.T) {
 				&TestProcessorFactory{"p1"},
 				&TestProcessorFactory{"p2"},
 			},
-			out: map[configmodels.Type]ProcessorFactory{
+			out: map[config.Type]ProcessorFactory{
 				"p1": &TestProcessorFactory{"p1"},
 				"p2": &TestProcessorFactory{"p2"},
 			},

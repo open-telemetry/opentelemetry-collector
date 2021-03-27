@@ -39,9 +39,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -666,7 +666,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: "IncorrectTLS",
 		},
 		Protocols: Protocols{
@@ -692,7 +692,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			NameVal: "IncorrectTLS",
 		},
 		Protocols: Protocols{

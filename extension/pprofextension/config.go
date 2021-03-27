@@ -15,13 +15,13 @@
 package pprofextension
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config has the configuration for the extension enabling the golang
 // net/http/pprof (Performance Profiler) extension.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Endpoint is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to

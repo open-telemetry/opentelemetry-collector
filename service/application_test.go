@@ -37,7 +37,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -63,12 +62,12 @@ func TestApplication_Start(t *testing.T) {
 
 	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
-	healthCheckPortStr := strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)
+	healthCheckEndpoint := testutil.GetAvailableLocalAddress(t)
 	app.rootCmd.SetArgs([]string{
 		"--config=testdata/otelcol-config.yaml",
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
 		"--metrics-prefix=" + testPrefix,
-		"--set=extensions.health_check.port=" + healthCheckPortStr,
+		"--set=extensions.health_check.endpoint=" + healthCheckEndpoint,
 	})
 
 	appDone := make(chan struct{})
@@ -79,7 +78,7 @@ func TestApplication_Start(t *testing.T) {
 
 	assert.Equal(t, Starting, <-app.GetStateChannel())
 	assert.Equal(t, Running, <-app.GetStateChannel())
-	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckPortStr))
+	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 	assert.Equal(t, app.logger, app.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -144,7 +143,7 @@ func TestApplication_StartAsGoRoutine(t *testing.T) {
 
 	params := Parameters{
 		ApplicationStartInfo: component.DefaultApplicationStartInfo(),
-		ConfigFactory: func(_ *cobra.Command, factories component.Factories) (*configmodels.Config, error) {
+		ConfigFactory: func(_ *cobra.Command, factories component.Factories) (*config.Config, error) {
 			return constructMimumalOpConfig(t, factories), nil
 		},
 		Factories: factories,
@@ -274,7 +273,7 @@ func TestSetFlag(t *testing.T) {
 			"--set=processors.attributes.actions.key=foo",
 			"--set=processors.attributes.actions.value=bar",
 			"--set=receivers.jaeger.protocols.grpc.endpoint=localhost:12345",
-			"--set=extensions.health_check.port=8080",
+			"--set=extensions.health_check.endpoint=localhost:8080",
 		})
 		require.NoError(t, err)
 		cfg, err := FileLoaderConfigFactory(app.rootCmd, factories)
@@ -318,7 +317,7 @@ func TestSetFlag_component_does_not_exist(t *testing.T) {
 	require.NotNil(t, cfg)
 }
 
-func constructMimumalOpConfig(t *testing.T, factories component.Factories) *configmodels.Config {
+func constructMimumalOpConfig(t *testing.T, factories component.Factories) *config.Config {
 	configStr := `
 receivers:
   otlp:

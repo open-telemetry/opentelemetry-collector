@@ -17,12 +17,12 @@ package batchprocessor
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for batch processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`

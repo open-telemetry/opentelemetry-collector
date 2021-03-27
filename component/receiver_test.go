@@ -20,44 +20,44 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 type TestReceiverFactory struct {
-	name configmodels.Type
+	name config.Type
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *TestReceiverFactory) Type() configmodels.Type {
+func (f *TestReceiverFactory) Type() config.Type {
 	return f.name
 }
 
 // CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *TestReceiverFactory) CreateDefaultConfig() configmodels.Receiver {
+func (f *TestReceiverFactory) CreateDefaultConfig() config.Receiver {
 	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.Traces) (TracesReceiver, error) {
+func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Traces) (TracesReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.Metrics) (MetricsReceiver, error) {
+func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateLogsReceiver(context.Context, ReceiverCreateParams, configmodels.Receiver, consumer.Logs) (LogsReceiver, error) {
+func (f *TestReceiverFactory) CreateLogsReceiver(context.Context, ReceiverCreateParams, config.Receiver, consumer.Logs) (LogsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildReceivers(t *testing.T) {
 	type testCase struct {
 		in  []ReceiverFactory
-		out map[configmodels.Type]ReceiverFactory
+		out map[config.Type]ReceiverFactory
 	}
 
 	testCases := []testCase{
@@ -66,7 +66,7 @@ func TestBuildReceivers(t *testing.T) {
 				&TestReceiverFactory{"e1"},
 				&TestReceiverFactory{"e2"},
 			},
-			out: map[configmodels.Type]ReceiverFactory{
+			out: map[config.Type]ReceiverFactory{
 				"e1": &TestReceiverFactory{"e1"},
 				"e2": &TestReceiverFactory{"e2"},
 			},

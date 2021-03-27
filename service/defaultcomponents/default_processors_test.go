@@ -25,8 +25,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/attributesprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiter"
@@ -42,12 +42,12 @@ func TestDefaultProcessors(t *testing.T) {
 	procFactories := allFactories.Processors
 
 	tests := []struct {
-		processor   configmodels.Type
+		processor   config.Type
 		getConfigFn getProcessorConfigFn
 	}{
 		{
 			processor: "attributes",
-			getConfigFn: func() configmodels.Processor {
+			getConfigFn: func() config.Processor {
 				cfg := procFactories["attributes"].CreateDefaultConfig().(*attributesprocessor.Config)
 				cfg.Actions = []processorhelper.ActionKeyValue{
 					{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
@@ -63,7 +63,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "memory_limiter",
-			getConfigFn: func() configmodels.Processor {
+			getConfigFn: func() config.Processor {
 				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiter.Config)
 				cfg.CheckInterval = 100 * time.Millisecond
 				cfg.MemoryLimitMiB = 1024 * 1024
@@ -75,7 +75,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "resource",
-			getConfigFn: func() configmodels.Processor {
+			getConfigFn: func() config.Processor {
 				cfg := procFactories["resource"].CreateDefaultConfig().(*resourceprocessor.Config)
 				cfg.AttributesActions = []processorhelper.ActionKeyValue{
 					{Key: "attribute1", Action: processorhelper.INSERT, Value: 123},
@@ -85,7 +85,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "span",
-			getConfigFn: func() configmodels.Processor {
+			getConfigFn: func() config.Processor {
 				cfg := procFactories["span"].CreateDefaultConfig().(*spanprocessor.Config)
 				cfg.Rename.FromAttributes = []string{"test-key"}
 				return cfg
@@ -109,7 +109,7 @@ func TestDefaultProcessors(t *testing.T) {
 // getProcessorConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getProcessorConfigFn func() configmodels.Processor
+type getProcessorConfigFn func() config.Processor
 
 // verifyProcessorLifecycle is used to test if an processor type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
@@ -151,23 +151,23 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 type createProcessorFn func(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 ) (component.Processor, error)
 
 func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor) (component.Processor, error) {
+	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
 		return factory.CreateLogsProcessor(ctx, params, cfg, consumertest.NewLogsNop())
 	}
 }
 
 func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor) (component.Processor, error) {
+	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
 		return factory.CreateMetricsProcessor(ctx, params, cfg, consumertest.NewMetricsNop())
 	}
 }
 
 func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor) (component.Processor, error) {
+	return func(ctx context.Context, params component.ProcessorCreateParams, cfg config.Processor) (component.Processor, error) {
 		return factory.CreateTracesProcessor(ctx, params, cfg, consumertest.NewTracesNop())
 	}
 }

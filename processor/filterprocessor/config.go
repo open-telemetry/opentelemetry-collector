@@ -15,14 +15,14 @@
 package filterprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/processor/filtermetric"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
-	Metrics                        MetricFilters `mapstructure:"metrics"`
+	config.ProcessorSettings `mapstructure:",squash"`
+	Metrics                  MetricFilters `mapstructure:"metrics"`
 }
 
 // MetricFilter filters by Metric properties.

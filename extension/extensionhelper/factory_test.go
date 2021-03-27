@@ -23,13 +23,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 const typeStr = "test"
 
 var (
-	defaultCfg = &configmodels.ExtensionSettings{
+	defaultCfg = &config.ExtensionSettings{
 		TypeVal: typeStr,
 		NameVal: typeStr,
 	}
@@ -66,11 +66,11 @@ func TestNewFactory_WithConstructors(t *testing.T) {
 	assert.Same(t, nopExtensionInstance, ext)
 }
 
-func defaultConfig() configmodels.Extension {
+func defaultConfig() config.Extension {
 	return defaultCfg
 }
 
-func createExtension(context.Context, component.ExtensionCreateParams, configmodels.Extension) (component.Extension, error) {
+func createExtension(context.Context, component.ExtensionCreateParams, config.Extension) (component.Extension, error) {
 	return nopExtensionInstance, nil
 }
 
