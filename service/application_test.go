@@ -96,7 +96,7 @@ func TestApplication_Start(t *testing.T) {
 
 	// Trigger another configuration load.
 	require.NoError(t, app.updateService(context.Background()))
-	require.True(t, isAppAvailable(t, "http://localhost:"+healthCheckEndpoint))
+	require.True(t, isAppAvailable(t, "http://"+healthCheckEndpoint))
 
 	app.signalsChannel <- syscall.SIGTERM
 	<-appDone
