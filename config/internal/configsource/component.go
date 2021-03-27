@@ -85,7 +85,13 @@ type Retrieved interface {
 	// Value is the retrieved data that will be injected on the configuration.
 	Value() interface{}
 
-	// WatchForUpdate must not return until one of the following happens:
+	// WatchForUpdate is used to monitor for updates on the retrived value.
+	//
+	// If a watcher is not supported by the configuration store in general or for the specific
+	// retrieved value the WatchForUpdate must immediately return ErrWatcherNotSupported or
+	// an error wrapping it.
+	//
+	// When watching is supported WatchForUpdate must not return until one of the following happens:
 	//
 	// 1. An update is detected for the monitored value. In this case the function should
 	//    return ErrValueUpdated or an error wrapping it.
