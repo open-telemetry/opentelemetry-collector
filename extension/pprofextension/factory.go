@@ -20,12 +20,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "pprof"
+
+	defaultEndpoint = "localhost:1777"
 )
 
 // NewFactory creates a factory for pprof extension.
@@ -42,13 +45,15 @@ func createDefaultConfig() config.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint: "localhost:1777",
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 
 func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
-	if config.Endpoint == "" {
+	if config.TCPAddr.Endpoint == "" {
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
 	}
 

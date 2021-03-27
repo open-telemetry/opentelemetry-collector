@@ -16,6 +16,7 @@ package pprofextension
 
 import (
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config has the configuration for the extension enabling the golang
@@ -23,10 +24,10 @@ import (
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
-	// Endpoint is the address and port in which the pprof will be listening to.
+	// TCPAddr is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
 	// make it available on all network interfaces.
-	Endpoint string `mapstructure:"endpoint"`
+	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 
 	// Fraction of blocking events that are profiled. A value <= 0 disables
 	// profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.

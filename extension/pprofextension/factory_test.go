@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
 )
 
@@ -35,7 +36,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},
-		Endpoint: "localhost:1777",
+		TCPAddr: confignet.TCPAddr{Endpoint: defaultEndpoint},
 	},
 		cfg)
 
@@ -47,7 +48,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)

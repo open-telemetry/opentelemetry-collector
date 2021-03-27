@@ -68,7 +68,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	var ln net.Listener
-	ln, startErr = net.Listen("tcp", p.config.Endpoint)
+	ln, startErr = p.config.TCPAddr.Listen()
 	if startErr != nil {
 		return startErr
 	}

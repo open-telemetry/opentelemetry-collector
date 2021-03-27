@@ -27,12 +27,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testutil"
 )
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	config := Config{
-		Endpoint:             testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 		BlockProfileFraction: 3,
 		MutexProfileFraction: 5,
 	}
@@ -46,7 +49,7 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, pprofPort, err := net.SplitHostPort(config.Endpoint)
+	_, pprofPort, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -64,7 +67,9 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		Endpoint: endpoint,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: endpoint,
+		},
 	}
 	pprofExt := newServer(config, zap.NewNop())
 	require.NotNil(t, pprofExt)
@@ -74,7 +79,9 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	pprofExt := newServer(config, zap.NewNop())
@@ -89,7 +96,9 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	pprofExt := newServer(config, zap.NewNop())
@@ -102,7 +111,9 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		Endpoint: testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 	}
 
 	pprofExt := newServer(config, zap.NewNop())
@@ -120,7 +131,9 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	config := Config{
-		Endpoint:   testutil.GetAvailableLocalAddress(t),
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
 		SaveToFile: tmpFile.Name(),
 	}
 
