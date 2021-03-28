@@ -6,7 +6,7 @@ liveness and/or readiness probe on Kubernetes.
 
 The following settings are required:
 
-- `endpoint` (default = localhost:13133): Address to publish the health check status to
+- `endpoint` (default = 0.0.0.0:13133): Address to publish the health check status to
 - `port` (default = 13133): [deprecated] What port to expose HTTP health information.
 
 Example:
